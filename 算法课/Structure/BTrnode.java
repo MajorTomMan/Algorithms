@@ -1,7 +1,7 @@
 package Structure;
 
-public class BTrnode<T>{
+public class BTRnode<T>{
    public Data<T> item;
-   public BTrnode<T> Left;
-   public BTrnode<T> Right; 
+   public BTRnode<T> Left;
+   public BTRnode<T> Right; 
 }

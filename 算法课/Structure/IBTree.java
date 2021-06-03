@@ -1,20 +1,16 @@
 package Structure;
 
 public interface IBTree<T>{
-    void InitializeBTree(BTrnode<T> node);
+    void InitializeBTree(BTRnode<T> node);
     boolean BTreeIsEmpty();
     boolean BTreeIsFull();
     int BTreeItemCount();
-    boolean EnBRTree(BTrnode<T> node);
-    boolean DeBRTree(BTrnode<T> node);
+    boolean EnBRTree(BTRnode<T> node);
+    boolean DeBRTree(T data);
     //void BTree_Traverse(Method method);
-    BTrnode<T> FindMax(BTrnode<T> node);
-    BTrnode<T> FindMin(BTrnode<T> node);
-    void SearchAll_M(BTrnode<T> node);
-    void SearchAll_P(BTrnode<T> node);
-    void SearchAll_R(BTrnode<T> node);
-    void SearchAll_M_noFeedBack(BTrnode<T> node);
-    void SearchAll_P_noFeedBack(BTrnode<T> node);
-    void SearchAll_R_noFeedBack(BTrnode<T> node);
-    void SearchAll_L_noFeedBack(BTrnode<T> node);
+    BTRnode<T> FindMax(BTRnode<T> node);
+    BTRnode<T> FindMin(BTRnode<T> node);
+    void SearchAll_M(BTRnode<T> node);
+    void SearchAll_P(BTRnode<T> node);
+    void SearchAll_R(BTRnode<T> node);
 }
