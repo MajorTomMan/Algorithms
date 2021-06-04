@@ -3,7 +3,10 @@
 
 public class Linkedlist<T> implements ILinkedlist<T>{
     private Node<T> head;
-    public void Initial(Node<T> head) {
+    public void Initial(T var) {
+        Node<T> head=new Node<>();
+        createNode(head);
+        head.data.saveData=var;
         this.head = head;
     }
 
@@ -19,23 +22,30 @@ public class Linkedlist<T> implements ILinkedlist<T>{
         pre.next=temp.next;
     }
 
-    public void Insert(Node<T> node) {
+    public void Insert(T var) {
         if(head==null){
-            head=node;
+            Initial(var);
             return;
         }
         Node<T> temp=head;
+        Node<T> node=new Node<>();
+        createNode(node);
+        node.data.saveData=var;
         while(temp.next!=null){
             temp=temp.next;
         }
         temp.next=node;
     }
 
-    public void InsertMiddle(int index, Node<T> node) {
+    public void InsertMiddle(int index,T var) {
         if(head==null){
+            Initial(var);
             return;
         }
         Node<T> temp=head;
+        Node<T> node=new Node<>();
+        createNode(node);
+        node.data.saveData=var;
         int i=0;
         while(i!=index){
             temp=temp.next;
@@ -45,11 +55,14 @@ public class Linkedlist<T> implements ILinkedlist<T>{
         temp.next=node;
     }
 
-    public void InsertHead(Node<T> node) {
+    public void InsertHead(T var) {
         if(head==null){
-            head=node;
+            Initial(var);
             return;
         }
+        Node<T> node=new Node<>();
+        createNode(node);
+        node.data.saveData=var;
         node.next=head.next;
         head.next=node;
     }
@@ -62,5 +75,9 @@ public class Linkedlist<T> implements ILinkedlist<T>{
             System.out.println(temp.data.saveData);
             temp=temp.next;
         }
+    }
+    private void createNode(Node<T> node){
+        Data<T> data=new Data<>();
+        node.data=data;
     }
 }
