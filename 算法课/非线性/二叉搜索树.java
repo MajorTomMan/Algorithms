@@ -49,12 +49,10 @@ public class 二叉搜索树{
         System.out.println("------------------------------------------------");
         BTRnode<Integer> node=new BTRnode<Integer>();
         Data<Integer> data=new Data<Integer>();
-        data.saveData=3;
+        data.saveData=50;
         node.item=data;
         bTree.EnBRTree(node);
-        System.out.println(bTree.getRoot().Left.item.saveData);
-        System.out.println("------------------------------------------------");
-        bTree.DeBRTree(bTree.getRoot().Left.item.saveData);
+        bTree.DeBRTree(50);
         bTree.SearchAll_M(bTree.getRoot());
         System.out.println("------------------------------------------------");
     }

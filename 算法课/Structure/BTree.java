@@ -327,17 +327,16 @@ public class BTree<T extends Comparable<T>>implements IBTree<T>{
         }
     }
     private BTRnode<T> deletemin(BTRnode<T> node){
-        BTRnode<T> temp=node;
-        BTRnode<T> result=new BTRnode<>();
+        BTRnode<T> temp=new BTRnode<>();
         if(node==null){
             return null;
         }
-        while(temp.Right!=null){
-            temp=temp.Right;
+        while(node.Right!=null){
+            node=node.Right;
         }
-        result=temp;
-        temp=null;
-        return result;
+        temp=node;
+        node=null;
+        return temp;
     }
     public BTRnode<T> getRoot() {
         return Root;
