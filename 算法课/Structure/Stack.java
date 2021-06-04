@@ -1,9 +1,8 @@
 package Structure;
 
-import java.util.Iterator;
 
 public class Stack<T> implements IStack<T>{
-    public Node<T> top;
+    private Node<T> top;
     int size;
     @Override
     public T pop() {
@@ -48,6 +47,12 @@ public class Stack<T> implements IStack<T>{
     }
     public int getSize(){
         return size;
+    }
+    public Node<T> getTop() {
+        return top;
+    }
+    public void setTop(Node<T> top) {
+        this.top = top;
     }
     private void createNode(Node<T> node){
         node.data=new Data<T>();

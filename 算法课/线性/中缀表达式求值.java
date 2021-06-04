@@ -54,6 +54,6 @@ public class 中缀表达式求值{
             }
             i++;
         }
-        System.out.println(statement+" 这句表达式计算结果是:"+vals.top.data.saveData);
+        System.out.println(statement+" 这句表达式计算结果是:"+vals.getTop().data.saveData);
     }
 }

@@ -28,7 +28,6 @@ public class Queue<T> implements IQueue<T> {
             front.next = rear;
             size++;
         } else {
-            Node temp = new Node();
             rear.next=node;
             rear=node;
             size++;
@@ -61,7 +60,7 @@ public class Queue<T> implements IQueue<T> {
     @Override
     public void show(Queue<T> queue) {
         // TODO Auto-generated method stub
-        Node front = queue.front;
+        Node<T> front = queue.front;
         while (front != null) {
             System.out.println(front.data.saveData);
             front = front.next;
