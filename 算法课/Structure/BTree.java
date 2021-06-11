@@ -60,6 +60,18 @@ public class BTree<T> implements IBTree<T>{
     @Override
     public void SearchAll_M(BTnode<T> node) {
         // TODO Auto-generated method stub
-        
+        if(node==null){
+            return;
+        }
+        SearchAll_M(node.Left);
+        System.out.println(node.item.saveData);
+        SearchAll_M(node.Right);
+    }
+    public BTnode<T> getRoot() {
+        return root;
+    }
+
+    public void setRoot(BTnode<T> root) {
+        this.root = root;
     }
 }
