@@ -10,26 +10,11 @@ public class 链表{
             i++;
         }
         linkedlist.Show(linkedlist);
-        System.out.println("---------------------------");
-        i=0;
-        while(i!=3){
-            linkedlist.InsertMiddle(i+3,i);
-            i++;
-        }
+        linkedlist.Delete(3);
+        System.out.println("--------------------------");
+        linkedlist.Reverse(linkedlist);
         linkedlist.Show(linkedlist);
-        System.out.println("---------------------------");
-        i=0;
-        while(i!=5){
-            linkedlist.InsertHead(i);
-            i++;
-        }
-        linkedlist.Show(linkedlist);
-        System.out.println("---------------------------");
-        linkedlist.Delete(3);
-        linkedlist.Delete(3);
-        linkedlist.Delete(3);
-        linkedlist.Delete(3);
-        linkedlist.Show(linkedlist);
-        System.out.println("---------------------------");
+        System.out.println("----------递归遍历---------------");
+        linkedlist.show(linkedlist.getHead());
     }
 }

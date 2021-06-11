@@ -3,24 +3,24 @@ package 非线性;
 
 import java.util.Random;
 
-import Structure.BTree;
-import Structure.BTRnode;
+import Structure.BRTree;
+import Structure.BTnode;
 import Structure.Data;
 
 
 public class 二叉搜索树{
     public static void main(String[] args) {
         int i=0;
-        BTree<Integer> bTree=new BTree<Integer>();
+        BRTree<Integer> bTree=new BRTree<Integer>();
         Random random=new Random();
         System.out.println("-----------------------raw data--------------------");
         while(i!=12){
-            BTRnode<Integer> node=new BTRnode<Integer>();
+            BTnode<Integer> node=new BTnode<Integer>();
             Data<Integer> data=new Data<Integer>();
             data.saveData=random.nextInt(100);
             System.out.print(data.saveData+",");
             node.item=data;
-            bTree.EnBRTree(node);
+            bTree.Insert(node);
             i++;
         }
         System.out.println();
@@ -45,14 +45,14 @@ public class 二叉搜索树{
         System.out.println("-----------SearchAll_L_noFeedback---------------");
         bTree.SearchAll_L_noFeedBack(bTree.getRoot());
         System.out.println("------------------------------------------------");
-        System.out.println(bTree.BTreeItemCount());
+        System.out.println(bTree.BRTreeItemCount());
         System.out.println("------------------------------------------------");
-        BTRnode<Integer> node=new BTRnode<Integer>();
+        BTnode<Integer> node=new BTnode<Integer>();
         Data<Integer> data=new Data<Integer>();
         data.saveData=50;
         node.item=data;
-        bTree.EnBRTree(node);
-        bTree.DeBRTree(50);
+        bTree.Insert(node);
+        bTree.Delete(50);
         bTree.SearchAll_M(bTree.getRoot());
         System.out.println("------------------------------------------------");
     }

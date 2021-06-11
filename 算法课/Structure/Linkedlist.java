@@ -67,7 +67,15 @@ public class Linkedlist<T> implements ILinkedlist<T>{
         head.next=node;
     }
     public void Reverse(Linkedlist<T> list){
-        ;
+        Node<T> beg=null,mid=head,end=head.next;
+        while(end!=null){
+            mid.next=beg;
+            beg=mid;
+            mid=end;
+            end=end.next;
+        }
+        mid.next=beg;
+        head=mid;
     }
     public void Show(Linkedlist<T> list) {
         Node<T> temp=list.head;
@@ -76,8 +84,23 @@ public class Linkedlist<T> implements ILinkedlist<T>{
             temp=temp.next;
         }
     }
+    public void show(Node<T> node){
+        if(node==null){
+            return;
+        }
+        show(node.next);
+        System.out.println(node.data.saveData);
+    }
+    public Node<T> getHead() {
+        return head;
+    }
+
+    public void setHead(Node<T> head) {
+        this.head = head;
+    }
     private void createNode(Node<T> node){
         Data<T> data=new Data<>();
         node.data=data;
     }
+
 }
