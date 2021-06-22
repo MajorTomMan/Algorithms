@@ -1,14 +1,10 @@
 package Structure;
 
+import java.util.List;
+
 public class Tree<T> implements ITree<T>{
     private TRnode<T> root;
-    @Override
-    public void InitializeTree(TRnode<T> node) {
-        // TODO Auto-generated method stub
-        root=node;
-
-    }
-
+    private int depth;
     @Override
     public boolean TreeIsEmpty() {
         // TODO Auto-generated method stub
@@ -19,42 +15,31 @@ public class Tree<T> implements ITree<T>{
     }
 
     @Override
-    public boolean TreeIsFull() {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
     public int TreeItemCount() {
         // TODO Auto-generated method stub
-        int count=0;
-        TRnode<T> node=root;
-        while(node!=null){
-            count++;
-            node=node.child;
-        }
-        return count;
+        return 0;
     }
 
     @Override
-    public void Insert(TRnode<T> node) {
+    public void Insert(TRnode<T> child,TRnode<T> father) {
         // TODO Auto-generated method stub
-        TRnode<T> temp=root;
         if(TreeIsEmpty()){
-            InitializeTree(node);
+            setRoot(child);
             return;
         }
-        while(temp.child!=null){
-            temp=temp.child;
+        if(father.child.size()==0){
+            depth++;
         }
-        node.father=temp;
-        temp.child=node;
+        child.depth=depth;
+        child.father=father;
+        father.child.add(child);
     }
 
     @Override
-    public void Delete(T data) {
+    public void Delete(TRnode<T> delchild,TRnode<T> father) {
         // TODO Auto-generated method stub
-
+        father.child.remove(delchild.data.saveData);
+        System.out.println("节点已经删除");
     }
 
     @Override
@@ -63,15 +48,42 @@ public class Tree<T> implements ITree<T>{
         if(node==null){
             return;
         }
-        Show(node.child);
-        System.out.println(node.data.saveData);
+    }
+    public void getFather(TRnode<T> node){
+        System.out.println(node.father.data.saveData);
+    }
+    public void getchild(TRnode<T> father){
+        for (TRnode<T> child: father.child) {
+            System.out.println("--"+child.data.saveData);
+        }
+    }
+    public TRnode<T> Search(T data){
+        TRnode<T> temp=root;
+        TRnode<T> result=null;
+        List<TRnode<T>> childs=temp.child;
+        for (TRnode<T> child : childs) {
+            result=childSearch(child, data);
+            if(result!=null){
+                return result;
+            }
+        }
+        return result;
+    }
+    private TRnode<T> childSearch(TRnode<T> childnTRnode,T data){
+        TRnode<T> result=null;
+        if(childnTRnode.child.size()==0){
+            return null;
+        }
+        childSearch(childnTRnode.child.iterator().next(),data);
+        if(childnTRnode.data.saveData.equals(data)){
+            return result;
+        }
+        return null;
     }
     public TRnode<T> getRoot() {
         return root;
     }
-
     public void setRoot(TRnode<T> root) {
         this.root = root;
     }
-
 }

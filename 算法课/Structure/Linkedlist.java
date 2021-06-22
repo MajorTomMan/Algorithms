@@ -21,6 +21,26 @@ public class Linkedlist<T> implements ILinkedlist<T>{
         }
         pre.next=temp.next;
     }
+    public void delete(T var){
+        Node<T> temp=head;
+        Node<T> pre=new Node<T>();
+        boolean flag=false;
+        while(temp.data.saveData!=var&&temp!=null){
+            if(temp.data.saveData.equals(var)){
+                flag=true;
+                break;
+            }
+            pre=temp;
+            temp=temp.next;
+        }
+        if(flag){
+            pre.next=temp.next;
+            temp=null;
+        }
+        else{
+            System.out.println("未找到数据");
+        }
+    }
 
     public void Insert(T var) {
         if(head==null){
