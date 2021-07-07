@@ -18,11 +18,8 @@ public class 树 {
             TRnode<String> node=new TRnode<>();
             createNode(node);
             node.data.saveData=str_t[i];
-            if(i%5==0&&i!=0){
-                next=tree.getRoot().child.get(i/(i+3));
-                tree.Insert(node,next);
-            }
-            else if(next!=null){
+            if(i%str_t.length==3){
+                next=tree.getRoot().child.get(i-2);
                 tree.Insert(node,next);
             }
             else{
@@ -30,19 +27,24 @@ public class 树 {
             }
             i++;
         }
+        tree.Show(tree.getRoot());
         i=0;
         while(i!=3){
             Random random=new Random();
             int j=random.nextInt(6);
-            if(tree.Search(str_t[j])==null){
+            TRnode<String> node=new TRnode<>();
+            createNode(node);
+            node.data.saveData=str_t[j];
+            TRnode<String> result=tree.Search(str_t[j]);
+            if(result==null){
                 System.out.println("未找到相关数据,无法删除");
             }
             else{
-                TRnode<String> delchild=tree.Search(str_t[j]);
-                tree.Delete(delchild,delchild.father);
+                tree.Delete(result,result.father);
             }
             i++;
         }
+        tree.Show(tree.getRoot());
     }
     private static void createNode(TRnode<String> node){
         node.data=new Data<>();
