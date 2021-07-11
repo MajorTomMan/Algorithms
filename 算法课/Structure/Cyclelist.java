@@ -1,12 +1,15 @@
 package Structure;
 
+import Structure.Interface.ICyclelist;
+import Structure.Node.Data;
+import Structure.Node.Node;
+
 public class Cyclelist<T> implements ICyclelist<T> {
     private Node<T> head;
     @Override
     public void Initial(T var) {
         // TODO Auto-generated method stub
-        Node<T> node=new Node<>();
-        createNode(node);
+        Node<T> node=new Node<>(new Data<T>(var),null);
         node.data.saveData=var;
         head=node;
         node.next=head;
@@ -20,7 +23,7 @@ public class Cyclelist<T> implements ICyclelist<T> {
             return;
         }
         Node<T> temp=head;
-        Node<T> pre=new Node<>();
+        Node<T> pre=new Node<>(null,null);
         while(i!=index){
             pre=temp;
             temp=temp.next;
@@ -39,9 +42,7 @@ public class Cyclelist<T> implements ICyclelist<T> {
             return;
         }
         Node<T> temp=head;
-        Node<T> node=new Node<>();
-        createNode(node);
-        node.data.saveData=var;
+        Node<T> node=new Node<>(new Data<T>(var),null);
         while(temp.next!=head){
             temp=temp.next;
         }
@@ -49,14 +50,13 @@ public class Cyclelist<T> implements ICyclelist<T> {
         temp.next=node;
     }
     @Override
-    public void Show(Cyclelist<T> list) {
+    public void Show(Node<T> node) {
         // TODO Auto-generated method stub
-        Node<T> temp=list.head;
-        while(temp.next!=head){
-            System.out.print(temp.data.saveData);
-            temp=temp.next;
+        if(node.next==head){
+            return;
         }
-        System.out.println(temp.data.saveData);
+        Show(node.next);
+        System.out.println(node.data.saveData);
     }
     public Node<T> getHead() {
         return head;
@@ -64,9 +64,5 @@ public class Cyclelist<T> implements ICyclelist<T> {
 
     public void setHead(Node<T> head) {
         this.head = head;
-    }
-    private void createNode(Node<T> node){
-        Data<T> data=new Data<>();
-        node.data=data;
     }
 }

@@ -1,5 +1,9 @@
 package Structure;
 
+import Structure.Interface.IQueue;
+import Structure.Node.Data;
+import Structure.Node.Node;
+
 public class Queue<T> implements IQueue<T> {
     public Node<T> front; // 删除
     public Node<T> rear; // 插入
@@ -20,9 +24,7 @@ public class Queue<T> implements IQueue<T> {
             Inital(var);
             return;
         }
-        Node<T> node = new Node<T>();
-        createNode(node);
-        node.data.saveData = var;
+        Node<T> node = new Node<>(new Data<T>(var),null);
         if (rear == null) {
             rear = node;
             front.next = rear;
@@ -42,9 +44,7 @@ public class Queue<T> implements IQueue<T> {
     }
 
     public void Inital(T var) {
-        Node<T> node = new Node<T>();
-        createNode(node);
-        node.data.saveData = var;
+        Node<T> node = new Node<>(new Data<T>(var),null);
         front = node;
         size++;
     }
@@ -52,18 +52,13 @@ public class Queue<T> implements IQueue<T> {
     public int getSize() {
         return size;
     }
-
-    private void createNode(Node<T> node) {
-        node.data = new Data<T>();
-    }
-
     @Override
-    public void show(Queue<T> queue) {
+    public void show(Node<T> node) {
         // TODO Auto-generated method stub
-        Node<T> front = queue.front;
-        while (front != null) {
-            System.out.println(front.data.saveData);
-            front = front.next;
+        if(node==null){
+            return;
         }
+        show(node.next);
+        System.out.println(node.data.saveData);
     }
 }

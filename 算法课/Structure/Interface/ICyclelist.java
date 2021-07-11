@@ -1,8 +1,10 @@
-package Structure;
+package Structure.Interface;
+
+import Structure.Node.Node;
 
 public interface ICyclelist<T> {
     public void Initial(T var);
     public void Delete(int index);
     public void Insert(T var);
-    public void Show(Cyclelist<T> list);
+    public void Show(Node<T> node);
 }

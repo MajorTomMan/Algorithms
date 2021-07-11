@@ -3,6 +3,9 @@ package Structure;
 import java.util.HashSet;
 import java.util.List;
 
+import Structure.Interface.ITree;
+import Structure.Node.TRnode;
+
 public class Tree<T> implements ITree<T>{
     private TRnode<T> root;
     private int depth;
@@ -34,16 +37,18 @@ public class Tree<T> implements ITree<T>{
         child.depth=depth;
         child.father=father;
         father.child.add(child);
+        father.nodenumber=father.child.size();
     }
 
     @Override
     public void Delete(TRnode<T> delchild,TRnode<T> father) {
         // TODO Auto-generated method stu
-        if(father!=null&&!father.data.saveData.equals(root.data.saveData)){
+        if(father!=null&&!father.data.saveData.equals(root.data.saveData)){ //如果是非根节点的子节点要被删除,执行这句
             father.child.remove(delchild);
+            father.nodenumber=father.child.size();
             System.out.println("节点已经删除");
         }
-        else if(father!=null&&father.data.saveData.equals(root.data.saveData)){
+        else if(father!=null&&father.data.saveData.equals(root.data.saveData)){ //如果是根节点中的子节点,将根节点中的子节点中的节点复制给根节点
             for (TRnode<T> child:root.child) {
                 if(child.data.saveData.equals(delchild.data.saveData)){
                     List<TRnode<T>> temp=child.child;
@@ -52,12 +57,13 @@ public class Tree<T> implements ITree<T>{
                         tRnode.depth--;
                         root.child.add(tRnode);
                     }
+                    father.nodenumber=father.child.size();
                     System.out.println("节点已经删除");
                     return;
                 }
             }
         }
-        else{
+        else{ //如果是根节点被删除,则取根节点中第一个节点为根节点并将除第一个节点以为的节点复制成为第一个节点的子树
             TRnode<T> node=root.child.listIterator().next();
             node.depth=0;
             for(TRnode<T> child:root.child){
@@ -66,13 +72,14 @@ public class Tree<T> implements ITree<T>{
                 node.child.add(child);
             }
             root=node;
+            root.nodenumber=root.child.size();
             System.out.println("节点已经删除");
         }
 
     }
 
     @Override
-    public void Show(TRnode<T> node) {
+    public void Show(TRnode<T> node) { //深度优先搜索
         // TODO Auto-generated method stub
         if (node == null) {
             return;
@@ -100,7 +107,7 @@ public class Tree<T> implements ITree<T>{
             }
         }
     }
-    private TRnode<T> show(T data){
+    private TRnode<T> show(T data){ //用于查找树中节点的深度优先搜索,返回查找到的节点,若无,则返回null
         if (root== null) {
             return null;
         }
@@ -139,7 +146,7 @@ public class Tree<T> implements ITree<T>{
             System.out.println("--"+child.data.saveData);
         }
     }
-    public TRnode<T> Search(T data) {
+    public TRnode<T> Search(T data) { //查找节点
         System.out.println("要删除的节点是:"+data);
         TRnode<T> result=show(data);
         return result;

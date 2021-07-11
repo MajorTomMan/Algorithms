@@ -1,4 +1,4 @@
-package Structure;
+package Structure.Interface;
 
 
 public interface IString {

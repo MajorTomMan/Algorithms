@@ -1,10 +1,11 @@
 package 非线性;
-import java.util.ArrayList;
-import java.util.List;
+
+import java.util.LinkedList;
 import java.util.Scanner;
-import Structure.Data;
-import Structure.TRnode;
+
 import Structure.Tree;
+import Structure.Node.Data;
+import Structure.Node.TRnode;
 
 public class 目录创建系统 {
     static Scanner scanner;
@@ -16,10 +17,7 @@ public class 目录创建系统 {
                 case 1:tree.Show(tree.getRoot());break;
                 case 2:System.out.println("请输入要创建的文件夹名称:");
                        String chose=scanner.nextLine();
-                       TRnode<String> node=new TRnode<>();
-                       node.data=new Data<>();
-                       node.child=new ArrayList<>();
-                       node.data.saveData=chose;
+                       TRnode<String> node=new TRnode<>(new Data<String>(chose),null,new LinkedList<>());
                        tree.Insert(node,tree.getRoot());
                        System.out.println("文件夹创建成功!");
                        break;
@@ -30,13 +28,11 @@ public class 目录创建系统 {
                         System.out.println("没有找到目录名,请重试一遍");
                         break;
                        }
+                       break;
 
                 case 4:System.out.println("请输入要删除的文件夹名称:");
                        String dir=scanner.nextLine();
-                       TRnode<String> d_node=new TRnode<>();
-                       Data<String> d_data=new Data<>();
-                       d_node.data=d_data;
-                       d_node.data.saveData=dir;
+                       TRnode<String> d_node=new TRnode<>(new Data<String>(dir),null,new LinkedList<>());
                        tree.Delete(d_node,tree.getRoot());
                        break;
             }

@@ -1,5 +1,7 @@
 package Structure;
 
+import Structure.Interface.IString;
+
 public class Override_String implements IString {
     private char[] str;
     public Override_String(String s){

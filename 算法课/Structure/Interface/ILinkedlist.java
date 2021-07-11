@@ -1,4 +1,7 @@
-package Structure;
+package Structure.Interface;
+
+import Structure.Linkedlist;
+import Structure.Node.Node;
 
 public interface ILinkedlist<T> {
     public void Initial(T var);
@@ -7,5 +10,5 @@ public interface ILinkedlist<T> {
     public void InsertMiddle(int index,T var);
     public void InsertHead(T var);
     public void Reverse(Linkedlist<T> list);
-    public void Show(Linkedlist<T> list);
+    public void Show(Node<T> node);
 }

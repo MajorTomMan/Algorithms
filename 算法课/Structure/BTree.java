@@ -1,5 +1,8 @@
 package Structure;
 
+import Structure.Interface.IBTree;
+import Structure.Node.BTnode;
+
 public class BTree<T> implements IBTree<T>{
     private BTnode<T> root;
     @Override

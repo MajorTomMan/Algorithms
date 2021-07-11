@@ -1,5 +1,8 @@
 package Structure;
 
+import Structure.Interface.IBRTree;
+import Structure.Node.BTnode;
+import Structure.Node.Data;
 
 public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
     BTnode<T> Root;
@@ -63,18 +66,18 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
     @Override
     public boolean Delete(T data) {
         // TODO Auto-generated method stub
-        BTnode<T> node=new BTnode<T>();
+        BTnode<T> node=new BTnode<T>(new Data<T>(data),null,null);
         Stack<BTnode<T>> stack=new Stack<>();
-        if(toLeft(data, Root)){
+        if(toLeft(node.item.saveData, Root)){
             node=Root.Left;
         }
         else{
             node=Root.Right;
         }
-        if(Root.Left.item.saveData==data||Root.Right.item.saveData==data){
+        if(Root.Left.item.saveData==node.item.saveData||Root.Right.item.saveData==node.item.saveData){
             stack.push(Root);
         }
-        while(node.item.saveData!=data&&data!=Root.item.saveData){
+        while(node.item.saveData!=node.item.saveData&&node.item.saveData!=Root.item.saveData){
             stack.push(node);
             if(toLeft(data, node)){
                 node=node.Left;
@@ -313,7 +316,7 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         }
     }
     private void ChildHasTwo(BTnode<T> father,BTnode<T> child){
-        BTnode<T> temp=new BTnode<>();
+        BTnode<T> temp=new BTnode<>(null,null,null);
         temp=deletemin(father.Left);
         if(father.Left.item.saveData==child.item.saveData){
             temp.Left=father.Left.Left;
@@ -327,7 +330,7 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         }
     }
     private BTnode<T> deletemin(BTnode<T> node){
-        BTnode<T> temp=new BTnode<>();
+        BTnode<T> temp=new BTnode<>(new Data<T>(null),null,null);
         if(node==null){
             return null;
         }

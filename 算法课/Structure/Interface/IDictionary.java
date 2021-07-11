@@ -1,4 +1,4 @@
-package Structure;
+package Structure.Interface;
 
 public interface IDictionary<Key,Value>{
     void Put(Key key,Value val);

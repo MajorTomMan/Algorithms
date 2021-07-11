@@ -1,5 +1,6 @@
-package Structure;
+package Structure.Interface;
 
+import Structure.Node.Node;
 
 public interface IQueue<T>{
     T pop();
@@ -7,5 +8,5 @@ public interface IQueue<T>{
     boolean isEmpty();
     void Inital(T var);
     int getSize();
-    void show(Queue<T> queue);
+    void show(Node<T> node);
 }

@@ -1,4 +1,6 @@
-package Structure;
+package Structure.Interface;
+
+import Structure.Node.TRnode;
 
 public interface ITree<T>{
     boolean TreeIsEmpty();

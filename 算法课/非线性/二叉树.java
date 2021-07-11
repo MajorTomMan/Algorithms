@@ -1,9 +1,7 @@
 package 非线性;
-
-
-import Structure.BTnode;
 import Structure.BTree;
-import Structure.Data;
+import Structure.Node.BTnode;
+import Structure.Node.Data;
 
 public class 二叉树 {
     public static void main(String[] args) {
@@ -13,10 +11,7 @@ public class 二叉树 {
         String[] choose={"left","right"};
         BTree<String> bTree=new BTree<>();
         while(i!=temp.length){
-            BTnode<String> node=new BTnode<>();
-            Data<String> data=new Data<>();
-            node.item=data;
-            node.item.saveData=temp[i];
+            BTnode<String> node=new BTnode<>(new Data<String>(temp[i]),null,null);
             bTree.Insert(node,choose[i%2]);
             i++;
         }

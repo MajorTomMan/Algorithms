@@ -11,7 +11,7 @@ public class 队列 {
             i++;
         }
         i=0;
-        queue.show(queue);
+        queue.show(queue.front);
         System.out.println("-------------");
         while(i!=3){
             System.out.println(queue.pop());
@@ -23,6 +23,6 @@ public class 队列 {
             i++;
         }
         System.out.println("-------------");
-        queue.show(queue);
+        queue.show(queue.front);
     }
 }

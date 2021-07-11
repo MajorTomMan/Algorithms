@@ -1,5 +1,7 @@
 package Structure;
 
+import Structure.Interface.IDictionary;
+
 public class Dictionary<Key extends Comparable<Key>,Value> implements IDictionary<Key,Value>{
     private Key[] keys;
     private Value[] vals;

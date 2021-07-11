@@ -1,4 +1,6 @@
-package Structure;
+package Structure.Interface;
+
+import Structure.Node.BTnode;
 
 public interface IBTree<T>{
     void InitializeBTree(BTnode<T> node);

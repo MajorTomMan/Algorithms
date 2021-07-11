@@ -9,12 +9,10 @@ public class 链表{
             linkedlist.Insert(i);
             i++;
         }
-        linkedlist.Show(linkedlist);
+        linkedlist.Show(linkedlist.getHead());
         linkedlist.Delete(3);
         System.out.println("--------------------------");
         linkedlist.Reverse(linkedlist);
-        linkedlist.Show(linkedlist);
-        System.out.println("----------递归遍历---------------");
-        linkedlist.show(linkedlist.getHead());
+        linkedlist.Show(linkedlist.getHead());
     }
 }

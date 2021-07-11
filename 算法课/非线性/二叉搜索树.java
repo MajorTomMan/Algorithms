@@ -4,8 +4,8 @@ package 非线性;
 import java.util.Random;
 
 import Structure.BRTree;
-import Structure.BTnode;
-import Structure.Data;
+import Structure.Node.BTnode;
+import Structure.Node.Data;
 
 
 public class 二叉搜索树{
@@ -15,11 +15,8 @@ public class 二叉搜索树{
         Random random=new Random();
         System.out.println("-----------------------raw data--------------------");
         while(i!=12){
-            BTnode<Integer> node=new BTnode<Integer>();
-            Data<Integer> data=new Data<Integer>();
-            data.saveData=random.nextInt(100);
-            System.out.print(data.saveData+",");
-            node.item=data;
+            BTnode<Integer> node=new BTnode<Integer>(new Data<Integer>(random.nextInt(100)),null,null);
+            System.out.print(node.item.saveData+",");
             bTree.Insert(node);
             i++;
         }
@@ -47,10 +44,7 @@ public class 二叉搜索树{
         System.out.println("------------------------------------------------");
         System.out.println(bTree.BRTreeItemCount());
         System.out.println("------------------------------------------------");
-        BTnode<Integer> node=new BTnode<Integer>();
-        Data<Integer> data=new Data<Integer>();
-        data.saveData=50;
-        node.item=data;
+        BTnode<Integer> node=new BTnode<Integer>(new Data<Integer>(50),null,null);
         bTree.Insert(node);
         bTree.Delete(50);
         bTree.SearchAll_M(bTree.getRoot());

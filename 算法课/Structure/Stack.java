@@ -1,5 +1,8 @@
 package Structure;
 
+import Structure.Interface.IStack;
+import Structure.Node.Data;
+import Structure.Node.Node;
 
 public class Stack<T> implements IStack<T>{
     private Node<T> top;
@@ -15,13 +18,11 @@ public class Stack<T> implements IStack<T>{
     }
     @Override
     public void push(T var) {
-        Node<T> node=new Node<T>();
+        Node<T> node=new Node<>(new Data<T>(var),null);
         if(isEmpty()){
             Inital(var);
             return;
         }
-        createNode(node);
-        node.data.saveData=var;
         node.next=top;
         top=node;
         size++;
@@ -39,9 +40,7 @@ public class Stack<T> implements IStack<T>{
     @Override
     public void Inital(T var) {
         // TODO Auto-generated method stub
-        Node<T> node=new Node<T>();
-        createNode(node);
-        node.data.saveData=var;
+        Node<T> node=new Node<>(new Data<T>(var),null);
         top=node;
         size++;
     }
@@ -53,8 +52,5 @@ public class Stack<T> implements IStack<T>{
     }
     public void setTop(Node<T> top) {
         this.top = top;
-    }
-    private void createNode(Node<T> node){
-        node.data=new Data<T>();
     }
 }

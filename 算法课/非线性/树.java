@@ -1,11 +1,11 @@
 package 非线性;
 
 import Structure.Tree;
+import Structure.Node.Data;
+import Structure.Node.TRnode;
+
 import java.util.LinkedList;
 import java.util.Random;
-
-import Structure.Data;
-import Structure.TRnode;
 public class 树 {
     public static void main(String[] args) {
         int i=0;
@@ -15,9 +15,7 @@ public class 树 {
         String[] str_t=str.split(", ");
         i=0;
         while(i<str_t.length){
-            TRnode<String> node=new TRnode<>();
-            createNode(node);
-            node.data.saveData=str_t[i];
+            TRnode<String> node=new TRnode<>(new Data<String>(str_t[i]),null,new LinkedList<>());
             if(i%str_t.length==3){
                 next=tree.getRoot().child.get(i-2);
                 tree.Insert(node,next);
@@ -32,9 +30,6 @@ public class 树 {
         while(i!=3){
             Random random=new Random();
             int j=random.nextInt(6);
-            TRnode<String> node=new TRnode<>();
-            createNode(node);
-            node.data.saveData=str_t[j];
             TRnode<String> result=tree.Search(str_t[j]);
             if(result==null){
                 System.out.println("未找到相关数据,无法删除");
@@ -45,9 +40,5 @@ public class 树 {
             i++;
         }
         tree.Show(tree.getRoot());
-    }
-    private static void createNode(TRnode<String> node){
-        node.data=new Data<>();
-        node.child=new LinkedList<>();
     }
 }
