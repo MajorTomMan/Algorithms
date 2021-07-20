@@ -138,23 +138,23 @@ public class Tree<T> implements ITree<T>{
         }
         return null;
     }
-    public void getFather(TRnode<T> node){
-        System.out.println(node.father.data.saveData);
-    }
-    public void getchild(TRnode<T> father){
-        for (TRnode<T> child: father.child) {
-            System.out.println("--"+child.data.saveData);
+    public void EnterNextDir(T dirname){
+        TRnode<T> dirpath=Search(dirname);
+        if(dirpath==null){
+            System.out.println("没有找到目录名,请重试一遍");
+            return;
         }
-    }
-    public TRnode<T> Search(T data) { //查找节点
-        System.out.println("要删除的节点是:"+data);
-        TRnode<T> result=show(data);
-        return result;
+
     }
     public TRnode<T> getRoot() {
         return root;
     }
     public void setRoot(TRnode<T> root) {
         this.root = root;
+    }
+        private TRnode<T> Search(T data) { //查找节点
+        System.out.println("要删除的节点是:"+data);
+        TRnode<T> result=show(data);
+        return result;
     }
 }

@@ -12,7 +12,7 @@ public class 目录创建系统 {
     public static void main(String[] args) {
         Tree<String> tree=new Tree<>();
         String choose=Menu();
-        while(Integer.parseInt(choose)!=5){
+        while(Integer.parseInt(choose)!='q'){
             switch(Integer.parseInt(choose)){
                 case 1:tree.Show(tree.getRoot());break;
                 case 2:System.out.println("请输入要创建的文件夹名称:");
@@ -23,11 +23,6 @@ public class 目录创建系统 {
                        break;
                 case 3:System.out.println("请输入要进入的目录名:");
                        String dirname=scanner.nextLine();
-                       TRnode<String> dirpath=tree.Search(dirname);
-                       if(dirpath==null){
-                        System.out.println("没有找到目录名,请重试一遍");
-                        break;
-                       }
                        break;
 
                 case 4:System.out.println("请输入要删除的文件夹名称:");
@@ -46,7 +41,7 @@ public class 目录创建系统 {
         +"2.创建文件夹\n"
         +"3.进入目录\n"
         +"4.删除文件夹\n"
-        +"5.退出\n"
+        +"q.退出\n"
         +"请输入序号:"
         );
         scanner=new Scanner(System.in);
