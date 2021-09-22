@@ -152,7 +152,7 @@ public class Tree<T> implements ITree<T>{
     public void setRoot(TRnode<T> root) {
         this.root = root;
     }
-        private TRnode<T> Search(T data) { //查找节点
+        public TRnode<T> Search(T data) { //查找节点
         System.out.println("要删除的节点是:"+data);
         TRnode<T> result=show(data);
         return result;

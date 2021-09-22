@@ -37,9 +37,9 @@ public class Dictionary<Key extends Comparable<Key>,Value> implements IDictionar
         if(i<N&&keys[i].compareTo(key)==0){
             return vals[i];
         }
-        else[
+        else{
             return null;
-        ]
+        }
     }
 
     @Override
