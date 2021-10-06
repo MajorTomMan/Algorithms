@@ -1,0 +1,140 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch HelloWorld",
+            "request": "launch",
+            "mainClass": "引子.HelloWorld",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 递归算最大公约数",
+            "request": "launch",
+            "mainClass": "引子.递归算最大公约数",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch Clock算法",
+            "request": "launch",
+            "mainClass": "线性.Clock算法",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 一元表达式",
+            "request": "launch",
+            "mainClass": "线性.一元表达式",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 中缀表达式求值",
+            "request": "launch",
+            "mainClass": "线性.中缀表达式求值",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二进制",
+            "request": "launch",
+            "mainClass": "线性.二进制",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 前缀表达式求值",
+            "request": "launch",
+            "mainClass": "线性.前缀表达式求值",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 后缀表达式求值",
+            "request": "launch",
+            "mainClass": "线性.后缀表达式求值",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 回文",
+            "request": "launch",
+            "mainClass": "线性.回文",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 对称矩阵",
+            "request": "launch",
+            "mainClass": "线性.对称矩阵",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 数组",
+            "request": "launch",
+            "mainClass": "线性.数组",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 栈",
+            "request": "launch",
+            "mainClass": "线性.栈",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 约瑟夫环",
+            "request": "launch",
+            "mainClass": "线性.约瑟夫环",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 链表",
+            "request": "launch",
+            "mainClass": "线性.链表",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 队列",
+            "request": "launch",
+            "mainClass": "线性.队列",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉搜索树",
+            "request": "launch",
+            "mainClass": "非线性.二叉搜索树",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉树",
+            "request": "launch",
+            "mainClass": "非线性.二叉树",
+            "projectName": "JavaCode_52a3d704"
+        },
+        {
+            "type": "java",
+            "name": "Launch 树",
+            "request": "launch",
+            "mainClass": "非线性.树",
+            "projectName": "JavaCode_52a3d704"
+        }
+    ]
+}

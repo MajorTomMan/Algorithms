@@ -7,7 +7,7 @@ public class 中缀表达式求值{
         int i=0;
         Double result=0.0;
         Double temp=0.0;
-        String statement="(1+((2+3)+(4+5)))";
+        String statement="(1+((2*3)+(4*5)))";
         char[] state=statement.toCharArray();
         Character cr=' ';
         Stack<Character> ops=new Stack<Character>();
