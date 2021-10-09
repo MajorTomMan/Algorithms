@@ -1,4 +1,4 @@
-package 库函数.绘图;
+package Func.Drawing;
 
 /******************************************************************************
  *  Compilation:  javac StdDraw.java

@@ -14,6 +14,5 @@ public class Selection extends Example{
             }
             exch(a, i, min);
         }
-        show(a);
     }
 }

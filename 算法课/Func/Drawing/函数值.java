@@ -1,4 +1,4 @@
-package 库函数.绘图;
+package Func.Drawing;
 
 public class 函数值{
     public static void main(String[] args) {

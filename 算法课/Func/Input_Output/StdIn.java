@@ -1,4 +1,4 @@
-package 库函数.输入输出;
+package Func.Input_Output;
 
 /******************************************************************************
  *  Compilation:  javac StdIn.java

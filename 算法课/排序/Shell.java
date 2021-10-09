@@ -17,7 +17,6 @@ public class Shell extends Example{
             }
             h=h/3;
         }
-        show(a);
     }
     
 }

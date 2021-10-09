@@ -10,7 +10,6 @@ public class MergeBU extends Example{ //自底向上 适合链表形式组织的
                 merge(a, lo, lo+sz-1,Math.min(lo+sz+sz-1,N-1));
             }
         }
-        show(a);
     }
     private static void merge(Comparable[] a,int lo,int mid,int hi){
         int i=lo,j=mid+1;

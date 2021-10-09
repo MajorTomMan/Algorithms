@@ -5,7 +5,6 @@ public class Merge extends Example{ //自顶向下
     public void sort(Comparable[] a){
         aux=new Comparable[a.length];
         sort(a,0,a.length-1);
-        show(a);
     }
     private void sort(Comparable[] a,int lo,int hi){
         if(hi<=lo){

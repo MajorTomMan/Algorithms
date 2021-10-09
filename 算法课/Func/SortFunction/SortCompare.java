@@ -1,8 +1,10 @@
-package 库函数.排序比较;
+package Func.SortFunction;
 
-import 库函数.输入输出.StdOut;
-import 库函数.随机数.StdRandom;
+import Func.Random.StdRandom;
+import 排序.Heap;
 import 排序.Insertion;
+import 排序.Merge;
+import 排序.Quick;
 import 排序.Selection;
 import 排序.Shell;
 
@@ -19,17 +21,17 @@ public class SortCompare{
             new Shell().sort(a);
         }
         else if(alg.equals("Merge")){
-   //         new Merge().sort(a);
+            new Merge().sort(a);
         }
         else if(alg.equals("Quick")){
-   //         new Quick().sort(a);
+            new Quick().sort(a);
         }
         else if(alg.equals("Heap")){
-    //        new Heap().sort(a);
+            new Heap().sort(a);
         }
         return timer.elapsedTime();
     }
-    public static double timeRandomInput(String alg,int N,int T){
+    public double timeRandomInput(String alg,int N,int T){
         double total=0.0;
         Double[] a=new Double[N];
         for(int t=0;t<T;t++){
@@ -41,13 +43,14 @@ public class SortCompare{
         return total;
     }
     public static void main(String[] args) {
-        String alg1=args[0];
-        String alg2=args[1];
-        int N=Integer.parseInt(args[2]);
-        int T=Integer.parseInt(args[3]);
-        double t1=timeRandomInput(alg1, N, T);
-        double t2=timeRandomInput(alg2, N, T);
-        StdOut.printf("For %d random Doubles\n   %s is",N,alg1);
-        StdOut.printf(" %.1f times faster than %s\n ",t2/t1,alg2);
+        
+        // String alg1=args[0];
+        // String alg2=args[1];
+        // int N=Integer.parseInt(args[2]);
+        // int T=Integer.parseInt(args[3]);
+        // double t1=timeRandomInput(alg1, N, T);
+        // double t2=timeRandomInput(alg2, N, T);
+        // StdOut.printf("For %d random Doubles\n   %s is",N,alg1);
+        // StdOut.printf(" %.1f times faster than %s\n ",t2/t1,alg2);
     }
 }

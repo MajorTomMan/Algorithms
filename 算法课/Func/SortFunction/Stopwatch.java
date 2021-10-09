@@ -1,6 +1,6 @@
-package 库函数.排序比较;
+package Func.SortFunction;
 
-import 库函数.输入输出.StdOut;
+import Func.Input_Output.StdOut;
 
 /******************************************************************************
  *  Compilation:  javac Stopwatch.java

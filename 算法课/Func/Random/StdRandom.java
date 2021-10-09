@@ -1,4 +1,4 @@
-package 库函数.随机数;
+package Func.Random;
 
 /******************************************************************************
  *  Compilation:  javac StdRandom.java
@@ -49,7 +49,7 @@ package 库函数.随机数;
 
 import java.util.Random;
 
-import 库函数.输入输出.StdOut;
+import Func.Input_Output.StdOut;
 
 /**
  *  The {@code StdRandom} class provides static methods for generating
