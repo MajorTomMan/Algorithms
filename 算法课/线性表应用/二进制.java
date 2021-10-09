@@ -1,4 +1,4 @@
-package 线性;
+package 线性表应用;
 
 import Structure.Stack;
 

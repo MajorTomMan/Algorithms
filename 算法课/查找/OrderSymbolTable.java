@@ -1,8 +1,6 @@
 package 查找;
 
-public abstract class OrderSymbolTable<Key extends Comparable<Key>> extends SymbolTable{
-    public abstract void put(Object key, Object val);//加入键值对
-    protected abstract Object get(Object key); //获取键Key对应的值
+public abstract class OrderSymbolTable<Key extends Comparable<Key>,Value extends Comparable<Value>> extends SymbolTable{
     protected abstract Key min(); //最小的键
     protected abstract Key max(); //最大的键
     protected abstract Key floor(Key key); //小于等于key的最大值

@@ -1,4 +1,4 @@
-package 线性;
+package 线性表应用;
 
 public class 对称矩阵 {
     public static void main(String[] args) {

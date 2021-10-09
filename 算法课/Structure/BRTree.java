@@ -273,15 +273,15 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         // TODO Auto-generated method stub
         Queue<BTnode<T>> queue=new Queue<>();
         BTnode<T> temp;
-        queue.push(node);
+        queue.enqueue(node);
         while(!queue.isEmpty()){
-            temp = queue.pop();
+            temp = queue.dequeue();
             System.out.println(temp.item.saveData);
             if(temp.Left!=null) {
-                queue.push(temp.Left);
+                queue.enqueue(temp.Left);
             }
             if(temp.Right!=null){
-                queue.push(temp.Right);
+                queue.enqueue(temp.Right);
             }
         }
     }

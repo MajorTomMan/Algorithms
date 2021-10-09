@@ -5,11 +5,11 @@ import Structure.Node.Data;
 import Structure.Node.Node;
 
 public class Queue<T> implements IQueue<T> {
-    public Node<T> front; // 删除
-    public Node<T> rear; // 插入
-    public int size;
+    private Node<T> front; // 删除
+    private Node<T> rear; // 插入
+    private int size;
 
-    public T pop() {
+    public T dequeue() {
         T data = front.data.saveData;
         front = front.next;
         size--;
@@ -19,7 +19,7 @@ public class Queue<T> implements IQueue<T> {
         return data;
     }
 
-    public void push(T var) {
+    public void enqueue(T var) {
         if (isEmpty()) {
             Inital(var);
             return;
@@ -60,5 +60,24 @@ public class Queue<T> implements IQueue<T> {
         }
         show(node.next);
         System.out.println(node.data.saveData);
+    }
+    public Node<T> getFront() {
+        return front;
+    }
+
+    public void setFront(Node<T> front) {
+        this.front = front;
+    }
+
+    public Node<T> getRear() {
+        return rear;
+    }
+
+    public void setRear(Node<T> rear) {
+        this.rear = rear;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

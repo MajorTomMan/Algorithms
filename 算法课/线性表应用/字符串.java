@@ -1,3 +1,4 @@
+package 线性表应用;
 // package 线性;
 
 // import Structure.Override_String;

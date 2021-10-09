@@ -1,4 +1,4 @@
-package 线性;
+package 线性表应用;
 
 
 import Structure.Stack;
@@ -18,11 +18,11 @@ public class 回文 {
         while(i!=context.length()){
             String ch=""+context.charAt(i);
             stack.push(ch);
-            queue.push(ch);
+            queue.enqueue(ch);
             i++;
         }
         while(flag&&stack.getTop()!=null){
-            if(!stack.pop().equals(queue.pop())){
+            if(!stack.pop().equals(queue.dequeue())){
                 flag=false;
             }
         }

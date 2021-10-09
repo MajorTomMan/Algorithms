@@ -1,4 +1,4 @@
-package 线性;
+package 线性表应用;
 
 public class 数组{
     public static void main(String[] args) {
