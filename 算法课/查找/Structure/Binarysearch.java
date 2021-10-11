@@ -1,4 +1,4 @@
-package 查找;
+package 查找.Structure;
 public class Binarysearch{
     public static int rank(int key,int[] a) {
         // Arrays must be sorted before using this methods

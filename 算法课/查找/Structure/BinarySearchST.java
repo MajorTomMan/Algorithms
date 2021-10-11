@@ -1,38 +1,39 @@
-package 查找;
+package 查找.Structure;
 
 import Structure.Queue;
 
-public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable<Value>> extends OrderSymbolTable{
+public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
     private Key[] keys;
     private Value[] vals;
     private int N;
     public BinarySearchST(int capacity) {
         keys=(Key[])new Comparable[capacity];
-        vals=(Value[])new Object[capacity];
+        vals=(Value[])new Comparable[capacity];
     }
     @Override
-    protected Comparable min() {
+    protected Key min() {
         // TODO Auto-generated method stub
         return keys[0];
     }
     @Override
-    protected Comparable max() {
+    protected Key max() {
         // TODO Auto-generated method stub
         return keys[N-1];
     }
     @Override
-    protected Comparable floor(Comparable key) {
+    protected Key floor(Key key) {
         // TODO Auto-generated method stub
-        return null;
+        int lo=rank(key);
+        return keys[lo-1];
     }
     @Override
-    protected Comparable ceiling(Comparable key) {
+    protected Key ceiling(Key key) {
         // TODO Auto-generated method stub
         int i=rank(key);
         return keys[i];
     }
     @Override
-    protected int rank(Comparable key) {
+    protected int rank(Key key) {
         // TODO Auto-generated method stub
         int lo=0;
         int hi=N-1;
@@ -43,7 +44,7 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
                 hi=mid-1;
             }
             else if(cmp>0){
-                lo=mid-1;
+                lo=mid+1;
             }
             else{
                 return mid;
@@ -52,12 +53,12 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         return lo;
     }
     @Override
-    protected Comparable Select(int k) {
+    protected Key Select(int k) {
         // TODO Auto-generated method stub
         return keys[k];
     }
     @Override
-    protected Iterable keys(Comparable lo, Comparable hi) {
+    protected Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
         Queue<Key> q=new Queue<Key>();
         for(int i=rank(lo);i<rank(hi);i++){
@@ -66,7 +67,7 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         if(contains(hi)){
             q.enqueue(keys[rank(hi)]);
         }
-        return (Iterable) q;
+        return (Iterable<Key>) q;
     }
     @Override
     protected int size() {
@@ -74,13 +75,13 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         return N;
     }
     @Override
-    protected Object get(Object key) {
+    public Value get(Key key) {
         // TODO Auto-generated method stub
         if(isEmpty()){
             return null;
         }
-        int i=rank((Comparable) key);
-        if(i<N&&keys[i].compareTo((Key) key)==0){
+        int i=rank(key);
+        if(i<N&&keys[i].compareTo(key)==0){
             return vals[i];
         }
         else{
@@ -88,9 +89,9 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         }
     }
     @Override
-    protected void put(Object key, Object val) {
+    public void put(Key key,Value val) {
         // TODO Auto-generated method stub
-        int i=rank((Comparable) key);
+        int i=rank(key);
         if(i<N&&keys[i].compareTo((Key) key)==0){
             vals[i]=(Value) val;
             return;
@@ -99,8 +100,15 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
             keys[j]=keys[j-1];
             vals[j]=vals[j-1];
         }
-        keys[i]=(Key) key;
-        vals[i]=(Value) val;
+        keys[i]=key;
+        vals[i]=val;
         N++;
+    }
+    @Override
+    protected void delete(Key key) {
+        // TODO Auto-generated method stub
+        int i=rank(key);
+        vals[i]=null;
+        keys[i]=null;
     }
 }
