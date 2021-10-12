@@ -11,12 +11,12 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         vals=(Value[])new Comparable[capacity];
     }
     @Override
-    protected Key min() {
+    public Key min() {
         // TODO Auto-generated method stub
         return keys[0];
     }
     @Override
-    protected Key max() {
+    public Key max() {
         // TODO Auto-generated method stub
         return keys[N-1];
     }

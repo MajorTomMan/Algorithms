@@ -1,8 +1,8 @@
 package 查找.Structure;
 
-public abstract class OrderSymbolTable<Key extends Comparable<Key>,Value extends Comparable<Value>> extends SymbolTable<Key,Value>{
-    protected abstract Key min(); //最小的键
-    protected abstract Key max(); //最大的键
+public abstract class OrderSymbolTable<Key,Value> extends SymbolTable<Key,Value>{
+    public abstract Key min(); //最小的键
+    public abstract Key max(); //最大的键
     protected abstract Key floor(Key key); //小于等于key的最大值
     protected abstract Key ceiling(Key key); //大于等于key的最小值
     protected abstract int rank(Key key); //小于key的键的数量
@@ -22,7 +22,7 @@ public abstract class OrderSymbolTable<Key extends Comparable<Key>,Value extends
         delete(max());
     }
     public int size(Key lo,Key hi){ //lo到hi这个区间内的键的数量
-        if(hi.compareTo(lo)<0){
+        if(((Comparable) hi).compareTo(lo)<0){
             return 0;
         }
         else if(contains(hi)){
