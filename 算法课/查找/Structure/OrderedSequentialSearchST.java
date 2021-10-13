@@ -28,7 +28,7 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     }
 
     @Override
-    protected Key floor(Key key) {
+    public Key floor(Key key) {
         // TODO Auto-generated method stub
         SequentialSearchST<Key,Value> t=Linked;
         t.sort(t.getFirst());
@@ -42,7 +42,7 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     }
 
     @Override
-    protected Key ceiling(Key key) {
+    public Key ceiling(Key key) {
         // TODO Auto-generated method stub
         SequentialSearchST<Key,Value> t=Linked;
         t.sort(t.getFirst());
@@ -54,7 +54,7 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     }
 
     @Override
-    protected int rank(Key key) {
+    public int rank(Key key) {
         // TODO Auto-generated method stub
         Linked.sort(Linked.getFirst());
         int counter=0;
@@ -67,7 +67,7 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     }
 
     @Override
-    protected Key Select(int k) {
+    public Key select(int k) {
         // TODO Auto-generated method stub
         Linked.sort(Linked.getFirst());
         int counter=0;
@@ -80,20 +80,20 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     }
 
     @Override
-    protected Iterable<Key> keys(Key lo, Key hi) {
+    public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
         Linked.keys(Linked.getFirst());
         return null;
     }
 
     @Override
-    protected int size() {
+    public int size() {
         // TODO Auto-generated method stub
         return Linked.size();
     }
 
     @Override
-    protected void delete(Key key) {
+    public void delete(Key key) {
         // TODO Auto-generated method stub
         SequentialSearchST<Key,Value> t=Linked;
         t.sort(t.getFirst());

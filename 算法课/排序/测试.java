@@ -6,7 +6,7 @@ import Func.Input_Output.StdOut;
 import Func.SortFunction.SortCompare;
 
 
-public class Test{
+public class 测试{
     public static void main(String[] args) {
         String str="E A S Y Q U E S T I O N";
         String[] result=str.split(" ");

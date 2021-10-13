@@ -3,13 +3,13 @@ package 查找.Structure;
 public abstract class OrderSymbolTable<Key,Value> extends SymbolTable<Key,Value>{
     public abstract Key min(); //最小的键
     public abstract Key max(); //最大的键
-    protected abstract Key floor(Key key); //小于等于key的最大值
-    protected abstract Key ceiling(Key key); //大于等于key的最小值
-    protected abstract int rank(Key key); //小于key的键的数量
-    protected abstract Key Select(int k); //排名为K的键
-    protected abstract Iterable<Key> keys(Key lo,Key hi); //已排序的以lo到hi这个区间内的数据
-    protected abstract int size(); //表中所有键的数量
-    protected abstract void delete(Key key);
+    public abstract Key floor(Key key); //小于等于key的最大值
+    public abstract Key ceiling(Key key); //大于等于key的最小值
+    public abstract int rank(Key key); //小于key的键的数量
+    public abstract Key select(int k); //排名为K的键
+    public abstract Iterable<Key> keys(Key lo,Key hi); //已排序的以lo到hi这个区间内的数据
+    public abstract int size(); //表中所有键的数量
+    public abstract void delete(Key key);
     @Override
     public Iterable<Key> keys() { //所有表中键的集合
         // TODO Auto-generated method stub

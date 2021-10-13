@@ -21,19 +21,19 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         return keys[N-1];
     }
     @Override
-    protected Key floor(Key key) {
+    public Key floor(Key key) {
         // TODO Auto-generated method stub
         int lo=rank(key);
         return keys[lo-1];
     }
     @Override
-    protected Key ceiling(Key key) {
+    public Key ceiling(Key key) {
         // TODO Auto-generated method stub
         int i=rank(key);
         return keys[i];
     }
     @Override
-    protected int rank(Key key) {
+    public int rank(Key key) {
         // TODO Auto-generated method stub
         int lo=0;
         int hi=N-1;
@@ -53,12 +53,12 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         return lo;
     }
     @Override
-    protected Key Select(int k) {
+    public Key select(int k) {
         // TODO Auto-generated method stub
         return keys[k];
     }
     @Override
-    protected Iterable<Key> keys(Key lo, Key hi) {
+    public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
         Queue<Key> q=new Queue<Key>();
         for(int i=rank(lo);i<rank(hi);i++){
@@ -70,7 +70,7 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         return (Iterable<Key>) q;
     }
     @Override
-    protected int size() {
+    public int size() {
         // TODO Auto-generated method stub
         return N;
     }
@@ -105,7 +105,7 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
         N++;
     }
     @Override
-    protected void delete(Key key) {
+    public void delete(Key key) {
         // TODO Auto-generated method stub
         int i=rank(key);
         vals[i]=null;
