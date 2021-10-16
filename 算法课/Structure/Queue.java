@@ -1,10 +1,11 @@
 package Structure;
 
+import java.util.Iterator;
 import Structure.Interface.IQueue;
 import Structure.Node.Data;
 import Structure.Node.Node;
 
-public class Queue<T> implements IQueue<T> {
+public class Queue<T> implements IQueue<T>,Iterable<T>{
     private Node<T> front; // 删除
     private Node<T> rear; // 插入
     private int size;
@@ -12,27 +13,22 @@ public class Queue<T> implements IQueue<T> {
     public T dequeue() {
         T data = front.data.saveData;
         front = front.next;
-        size--;
-        if (front == null) {
+        if (isEmpty()) {
             rear = null;
         }
+        size--;
         return data;
     }
 
     public void enqueue(T var) {
-        if (isEmpty()) {
-            Inital(var);
-            return;
-        }
+        Node<T> oldRear=rear;
         Node<T> node = new Node<>(new Data<T>(var),null);
-        if (rear == null) {
-            rear = node;
-            front.next = rear;
-            size++;
-        } else {
-            rear.next=node;
-            rear=node;
-            size++;
+        rear=node;
+        if(isEmpty()){
+            front=node;
+        }
+        else{
+            oldRear.next=node;
         }
     }
 
@@ -43,41 +39,28 @@ public class Queue<T> implements IQueue<T> {
         return false;
     }
 
-    public void Inital(T var) {
-        Node<T> node = new Node<>(new Data<T>(var),null);
-        front = node;
-        size++;
-    }
-
     public int getSize() {
         return size;
     }
     @Override
-    public void show(Node<T> node) {
+    public Iterator<T> iterator() {
         // TODO Auto-generated method stub
-        if(node==null){
-            return;
+        return new ListIterator();
+    }
+    private class ListIterator implements Iterator<T>{
+        private Node<T> current=front;
+        @Override
+        public boolean hasNext() {
+            // TODO Auto-generated method stub
+            return current!=null;
         }
-        show(node.next);
-        System.out.println(node.data.saveData);
-    }
-    public Node<T> getFront() {
-        return front;
-    }
 
-    public void setFront(Node<T> front) {
-        this.front = front;
-    }
-
-    public Node<T> getRear() {
-        return rear;
-    }
-
-    public void setRear(Node<T> rear) {
-        this.rear = rear;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
+        @Override
+        public T next() {
+            // TODO Auto-generated method stub
+            Data<T> data=current.data;
+            current=current.next;
+            return data.saveData;
+        }
     }
 }

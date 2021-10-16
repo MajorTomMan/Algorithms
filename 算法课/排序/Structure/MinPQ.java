@@ -1,4 +1,4 @@
-package 排序;
+package 排序.Structure;
 
 /******************************************************************************
  *  Compilation:  javac MinPQ.java

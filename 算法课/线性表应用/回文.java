@@ -21,7 +21,7 @@ public class 回文 {
             queue.enqueue(ch);
             i++;
         }
-        while(flag&&stack.getTop()!=null){
+        while(flag&&stack.isEmpty()){
             if(!stack.pop().equals(queue.dequeue())){
                 flag=false;
             }

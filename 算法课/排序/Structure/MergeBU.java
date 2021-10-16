@@ -1,4 +1,4 @@
-package 排序;
+package 排序.Structure;
 
 public class MergeBU extends Example{ //自底向上 适合链表形式组织的数据
     private static Comparable[] aux;

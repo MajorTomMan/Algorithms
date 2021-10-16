@@ -1,17 +1,18 @@
 package Structure;
 
+
+import java.util.Iterator;
 import Structure.Interface.IStack;
 import Structure.Node.Data;
 import Structure.Node.Node;
 
-public class Stack<T> implements IStack<T>{
+public class Stack<T> implements IStack<T>,Iterable<T>{
     private Node<T> top;
     int size;
     @Override
     public T pop() {
         // TODO Auto-generated method stub
-        T data;
-        data=top.data.saveData;
+        T data=top.data.saveData;
         top=top.next;
         size--;
         return data;
@@ -20,7 +21,7 @@ public class Stack<T> implements IStack<T>{
     public void push(T var) {
         Node<T> node=new Node<>(new Data<T>(var),null);
         if(isEmpty()){
-            Inital(var);
+            top=node;
             return;
         }
         node.next=top;
@@ -38,19 +39,29 @@ public class Stack<T> implements IStack<T>{
         }
     }
     @Override
-    public void Inital(T var) {
+    public int getSize() {
         // TODO Auto-generated method stub
-        Node<T> node=new Node<>(new Data<T>(var),null);
-        top=node;
-        size++;
-    }
-    public int getSize(){
         return size;
     }
-    public Node<T> getTop() {
-        return top;
+    @Override
+    public Iterator<T> iterator() {
+        // TODO Auto-generated method stub
+        return new ListIterator();
     }
-    public void setTop(Node<T> top) {
-        this.top = top;
+    private class ListIterator implements Iterator<T>{
+        private Node<T> current=top;
+        @Override
+        public boolean hasNext() {
+            // TODO Auto-generated method stub
+            return current!=null;
+        }
+
+        @Override
+        public T next() {
+            // TODO Auto-generated method stub
+            Data<T> data=current.data;
+            current=current.next;
+            return data.saveData;
+        }
     }
 }

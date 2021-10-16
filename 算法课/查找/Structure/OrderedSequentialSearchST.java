@@ -1,7 +1,5 @@
 package 查找.Structure;
 
-import Structure.Node.SequentialSearchST;
-
 public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
     private SequentialSearchST<Key,Value> Linked;
 

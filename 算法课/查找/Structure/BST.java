@@ -1,6 +1,7 @@
 package 查找.Structure;
 
-import Structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class BST<Key extends Comparable<Key>,Value> extends OrderSymbolTable<Key,Value>{
     private Node root;
@@ -18,9 +19,9 @@ public class BST<Key extends Comparable<Key>,Value> extends OrderSymbolTable<Key
     @Override
     public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
-        Queue<Key> queue=new Queue<Key>();
+        Queue<Key> queue=new LinkedList<Key>();
         keys(root,queue,lo,hi);
-        return (Iterable<Key>) queue;
+        return queue;
     }
     private void keys(Node x, Queue<Key> queue, Key lo, Key hi) {
         if(x==null){
@@ -32,7 +33,7 @@ public class BST<Key extends Comparable<Key>,Value> extends OrderSymbolTable<Key
             keys(x.left,queue,lo,hi);
         }
         if(cmplo<=0&&cmphi>=0){
-            queue.enqueue(x.key);
+            queue.add(x.key);
         }
         if(cmphi>0){
             keys(x.right,queue,lo,hi);
@@ -94,7 +95,7 @@ public class BST<Key extends Comparable<Key>,Value> extends OrderSymbolTable<Key
 		return max(root).key;
 	}
     private Node max(Node x){
-        if(x.left==null){
+        if(x.right==null){
             return x;
         }
         return max(x.right);
@@ -145,9 +146,9 @@ public class BST<Key extends Comparable<Key>,Value> extends OrderSymbolTable<Key
             return x;
         }
         else if(cmp>0){
-            return floor(x.right,key);
+            return ceiling(x.right,key);
         }
-        Node t=floor(x.left,key);
+        Node t=ceiling(x.left,key);
         if(t!=null){
             return t;
         }

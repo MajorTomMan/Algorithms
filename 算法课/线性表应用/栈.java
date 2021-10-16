@@ -9,9 +9,8 @@ public class 栈 {
             i++;
         }
         i=0;
-        while(i!=6){
-            System.out.println(stack.pop());
-            i++;
+        for (Integer data : stack) {
+            System.out.println(data);
         }
     }
 }

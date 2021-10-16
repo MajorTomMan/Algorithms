@@ -1,11 +1,10 @@
-package 排序;
-
-import Func.Input_Output.StdIn;
-import Func.Input_Output.StdOut;
+package 排序.Structure;
 
 import java.util.Stack;
 
 import Func.API.Transaction;
+import Func.Input_Output.StdIn;
+import Func.Input_Output.StdOut;
 
 /******************************************************************************
  *  Compilation:  javac TopM.java

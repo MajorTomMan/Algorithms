@@ -11,18 +11,8 @@ public class 队列 {
             i++;
         }
         i=0;
-        queue.show(queue.getFront());
-        System.out.println("-------------");
-        while(i!=3){
-            System.out.println(queue.dequeue());
-            i++;
+        for (Integer data : queue) {
+            System.out.println(data);
         }
-
-        while(i!=10){
-            queue.enqueue(i);
-            i++;
-        }
-        System.out.println("-------------");
-        queue.show(queue.getFront());
     }
 }

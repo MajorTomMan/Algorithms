@@ -1,4 +1,4 @@
-package 排序;
+package 排序.Structure;
 
 import Func.Random.StdRandom;
 
@@ -8,6 +8,7 @@ public class Quick extends Example{
         // TODO Auto-generated method stub
         StdRandom.shuffle(a);
         sort(a,0,a.length-1);
+        show(a);
     }
     public static void sort(Comparable[] a,int lo,int hi) {
         if(hi<=lo){

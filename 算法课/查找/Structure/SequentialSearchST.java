@@ -1,4 +1,4 @@
-package Structure.Node;
+package 查找.Structure;
 
 public class SequentialSearchST<Key,Value extends Comparable<Value>>{
     private Node first;

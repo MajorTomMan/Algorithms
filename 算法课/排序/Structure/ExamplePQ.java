@@ -1,4 +1,4 @@
-package 排序;
+package 排序.Structure;
 
 
 public abstract class ExamplePQ<Key extends Comparable<Key>>{

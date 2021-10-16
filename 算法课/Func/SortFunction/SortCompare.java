@@ -1,12 +1,12 @@
 package Func.SortFunction;
 
 import Func.Random.StdRandom;
-import 排序.Heap;
-import 排序.Insertion;
-import 排序.Merge;
-import 排序.Quick;
-import 排序.Selection;
-import 排序.Shell;
+import 排序.Structure.Heap;
+import 排序.Structure.Insertion;
+import 排序.Structure.Merge;
+import 排序.Structure.Quick;
+import 排序.Structure.Selection;
+import 排序.Structure.Shell;
 
 public class SortCompare{
     public static double time(String alg,Comparable[] a){

@@ -4,6 +4,12 @@ import java.util.Scanner;
 
 import Func.Input_Output.StdOut;
 import Func.SortFunction.SortCompare;
+import 排序.Structure.Heap;
+import 排序.Structure.Insertion;
+import 排序.Structure.Merge;
+import 排序.Structure.Quick;
+import 排序.Structure.Selection;
+import 排序.Structure.Shell;
 
 
 public class 测试{

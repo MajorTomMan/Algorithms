@@ -1,4 +1,4 @@
-package 排序;
+package 排序.Structure;
 
 public class Merge extends Example{ //自顶向下
     private static Comparable[] aux;

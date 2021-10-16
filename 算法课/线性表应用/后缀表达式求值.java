@@ -1,3 +1,4 @@
+/*
 package 线性表应用;
 
 import java.util.Scanner;
@@ -21,13 +22,13 @@ public class 后缀表达式求值 {
         while(i<context.length()){
             String ch=Character.toString(context.charAt(i));
             if(ch.equals("*")||ch.equals("/")||ch.equals("+")||ch.equals("-")||ch.equals("(")||ch.equals(")")){
-                if(ops.getTop()==null||ch.equals("(")){
+                if(ops.isEmpty()||ch.equals("(")){
                     ops.push(ch);
                 }
-                else if(ch.equals("*")||ch.equals("/")&&ops.getTop().data.saveData.equals("+")||ops.getTop().data.saveData.equals("-")){
+                else if(ch.equals("*")||ch.equals("/")&&ops.iterator().next().equals("+")||ops.getTop().data.saveData.equals("-")){
                     ops.push(ch);
                 }
-                else if(ch.equals("+")||ch.equals("-")&&ops.getTop().data.saveData.equals("(")){
+                else if(ch.equals("+")||ch.equals("-")&&ops.iterator().next().data.saveData.equals("(")){
                     if(ops.getTop().data.saveData.equals("*")||ops.getTop().data.saveData.equals("/")){
                         vals.push(ops.pop());
                         continue;
@@ -98,3 +99,4 @@ public class 后缀表达式求值 {
         System.out.println("运算结果是:"+stack.pop());
     }
 }
+*/
