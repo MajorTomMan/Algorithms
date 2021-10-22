@@ -1,6 +1,6 @@
 package 查找.Structure;
 
-import Structure.Queue;
+import 基本.Structure.Queue;
 
 /**
  * ArrayST
@@ -42,7 +42,7 @@ public class ArrayST<Key,Value> extends SymbolTable<Key,Value>{
         }
     }
     @Override
-    protected int size() {
+    public int size() {
         // TODO Auto-generated method stub
         return N;
     }

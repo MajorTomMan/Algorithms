@@ -1,6 +1,6 @@
 package 线性表应用;
 
-import Structure.Stack;
+import 基本.Structure.Stack;
 
 
 

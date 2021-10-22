@@ -1,7 +1,7 @@
 package 线性表应用;
 
-import Structure.LoopQueue;
-import Structure.Node.Clocknode;
+import 基本.Structure.LoopQueue;
+import 基本.Structure.Node.Clocknode;
 
 public class Clock算法{
     public static void main(String[] args) {

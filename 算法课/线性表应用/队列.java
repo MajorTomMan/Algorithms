@@ -1,6 +1,6 @@
 package 线性表应用;
 
-import Structure.Queue;
+import 基本.Structure.Queue;
 
 public class 队列 {
     public static void main(String[] args) {

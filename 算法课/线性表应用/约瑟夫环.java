@@ -1,6 +1,6 @@
 package 线性表应用;
 
-import Structure.Cyclelist;
+import 基本.Structure.Cyclelist;
 
 public class 约瑟夫环{
     public static void main(String[] args) {

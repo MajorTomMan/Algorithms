@@ -1,5 +1,5 @@
 package 线性表应用;
-import Structure.Linkedlist;
+import 基本.Structure.Linkedlist;
 
 public class 链表{
     public static void main(String[] args) {

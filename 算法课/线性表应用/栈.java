@@ -1,5 +1,5 @@
 package 线性表应用;
-import Structure.Stack;
+import 基本.Structure.Stack;
 public class 栈 {
     public static void main(String[] args) {
         int i=0;

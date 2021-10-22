@@ -1,5 +1,7 @@
 package 查找.Structure;
 
+import 基本.Structure.Queue;
+
 public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
     private SequentialSearchST<Key,Value> Linked;
 
@@ -9,57 +11,73 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     @Override
     public Key min() {
         // TODO Auto-generated method stub
-        Linked.sort(Linked.getFirst());
-        return Linked.getFirst().getKey();
+        Linked.sort();
+        Key data=null;
+        for(Key key:Linked.keys()){
+            if(!Linked.isEmpty()){
+                data=key;
+            }
+        }
+        return data;
     }
 
     @Override
     public Key max() {
         // TODO Auto-generated method stub
-        SequentialSearchST<Key,Value> t=Linked;
-        t.sort(t.getFirst());
-        SequentialSearchST<Key,Value>.Node temp=t.getFirst();
-        while(temp.getNext()!=null){
-            temp=temp.getNext();
+        Linked.sort();
+        Key data=null;
+        for(Key key:Linked.keys()){
+            data=key;
+            break;
         }
-        return temp.getKey();
+        return data;
     }
 
     @Override
     public Key floor(Key key) {
         // TODO Auto-generated method stub
-        SequentialSearchST<Key,Value> t=Linked;
-        t.sort(t.getFirst());
-        SequentialSearchST<Key,Value>.Node temp=t.getFirst();
-        SequentialSearchST<Key,Value>.Node result=null;
-        while(!temp.getKey().equals(key)&&temp!=null){
-            result=temp;
-            temp=temp.getNext();
+        Linked.sort();
+        Key data=null;
+        for (Key k:Linked.keys()) {
+            if(k.equals(key)){
+                break;
+            }
+            else{
+                data=k;
+                continue;
+            }
         }
-        return result.getKey();
+        return data;
     }
 
     @Override
     public Key ceiling(Key key) {
         // TODO Auto-generated method stub
-        SequentialSearchST<Key,Value> t=Linked;
-        t.sort(t.getFirst());
-        SequentialSearchST<Key,Value>.Node temp=t.getFirst();
-        while(!temp.getKey().equals(key)&&temp!=null){
-            temp=temp.getNext();
+        Linked.sort();
+        Key data=null;
+        int flag=0;
+        for (Key k:Linked.keys()) {
+            if(k.equals(key)){
+                flag=1;
+            }
+            if(flag==1){
+                data=k;
+                break;
+            }
         }
-        return temp.getNext().getKey();
+        return data;
     }
 
     @Override
     public int rank(Key key) {
         // TODO Auto-generated method stub
-        Linked.sort(Linked.getFirst());
+        Linked.sort();
         int counter=0;
-        SequentialSearchST<Key,Value>.Node temp=Linked.getFirst();
-        while(!temp.getKey().equals(key)&&temp!=null){
+        for (Key k : Linked.keys()) {
+            if(k.equals(key)){
+                break;
+            }
             counter++;
-            temp=temp.getNext();
         }
         return counter;
     }
@@ -67,21 +85,27 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     @Override
     public Key select(int k) {
         // TODO Auto-generated method stub
-        Linked.sort(Linked.getFirst());
-        int counter=0;
-        SequentialSearchST<Key,Value>.Node temp=Linked.getFirst();
-        while(counter!=k){
-            counter++;
-            temp=temp.getNext();
+        Linked.sort();
+        int i=0;
+        Key data=null;
+        for (Key key :Linked.keys()) {
+            if(i==k){
+                data=key;
+                break;
+            }
+            i++;
         }
-        return temp.getKey();
+        return data;
     }
 
     @Override
     public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
-        Linked.keys(Linked.getFirst());
-        return null;
+        Queue<Key> queue = new Queue<Key>();
+        for (Key key : Linked.keys()) {
+            queue.enqueue(key);
+        }
+        return queue;
     }
 
     @Override
@@ -93,29 +117,20 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     @Override
     public void delete(Key key) {
         // TODO Auto-generated method stub
-        SequentialSearchST<Key,Value> t=Linked;
-        t.sort(t.getFirst());
-        SequentialSearchST<Key,Value>.Node temp=t.getFirst();
-        SequentialSearchST<Key,Value>.Node result=null;
-        while(!temp.getKey().equals(key)&&temp!=null){
-            result=temp;
-            temp=temp.getNext();
-        }
-        result.setNext(temp.getNext());
-        temp=null;
+        Linked.delete(key);
+        Linked.sort();
     }
 
     @Override
     public void put(Key key, Value val) {
         // TODO Auto-generated method stub
-        Linked.sort(Linked.getFirst());
         Linked.put(key, val);
     }
 
     @Override
     public Value get(Key key) {
         // TODO Auto-generated method stub
-        Linked.sort(Linked.getFirst());
+        Linked.sort();
         return Linked.get(key);
     }
     

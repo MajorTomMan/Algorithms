@@ -1,6 +1,6 @@
 package 查找.Structure;
 
-import Structure.Queue;
+import 基本.Structure.Queue;
 
 public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
     private Key[] keys;

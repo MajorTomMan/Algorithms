@@ -1,9 +1,10 @@
 package 线性表应用;
 
 
-import Structure.Stack;
-import Structure.Queue;
 import java.util.Scanner;
+
+import 基本.Structure.Queue;
+import 基本.Structure.Stack;
 
 public class 回文 {
     public static void main(String[] args) {
