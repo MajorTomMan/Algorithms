@@ -2,6 +2,7 @@ package NonLinear;
 
 import Func.Input_Output.In;
 import Func.Input_Output.StdOut;
+import Graph.AcyclicSP;
 import Graph.DijkstraSP;
 import Graph.DirectedEdge;
 import Graph.EdgeWeightedDigraph;
@@ -22,6 +23,23 @@ public class 最短路径测试 {
             }
             else {
                 StdOut.printf("%d to %d         no path\n", s, t);
+            }
+        }
+        System.out.println("---------------------------------------");
+        AcyclicSP(fileaddr,G);
+    }
+    private static void AcyclicSP(String fileaddr,EdgeWeightedDigraph G){ //无环加权有向图的最短路径
+        AcyclicSP ASP=new AcyclicSP(G,0);
+        for (int t = 0; t < G.V(); t++) {
+            if (ASP.hasPathTo(t)) {
+                StdOut.printf("%d to %d (%.2f)  ", 0, t, ASP.distTo(t));
+                for (DirectedEdge e : ASP.pathTo(t)) {
+                    StdOut.print(e + "   ");
+                }
+                StdOut.println();
+            }
+            else {
+                StdOut.printf("%d to %d         no path\n", 0, t);
             }
         }
     }
