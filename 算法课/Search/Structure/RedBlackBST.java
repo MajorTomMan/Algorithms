@@ -7,7 +7,6 @@ public class RedBlackBST<Key extends Comparable<Key>,Value> extends OrderSymbolT
     private RBTNode root;
     private static final boolean RED=true;
     private static final boolean BLACK=false;
-    private int i=0;
     private class RBTNode{
         Key key; //键
         Value val; //值
