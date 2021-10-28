@@ -1,7 +1,7 @@
-package Sort.Structure;
+package Sort.Structure.PQ;
 
 
-public abstract class ExamplePQ<Key extends Comparable<Key>>{
+public abstract class ExamplePQ<Key extends Comparable<Key>>{ //优先队列范例
     protected Key[] pq;
     protected int N=0;
     protected abstract void insert(Key v);

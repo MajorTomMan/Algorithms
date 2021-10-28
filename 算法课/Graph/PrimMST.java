@@ -1,8 +1,10 @@
 package Graph;
 
-import Sort.Structure.IndexMinPQ;
+import Graph.Dir.EdgeWeightedGraph;
+import Graph.E.Edge;
+import Sort.Structure.PQ.IndexMinPQ;
 
-public class PrimMST{
+public class PrimMST{ //加权无向图最小生成树算法中的即时Prim算法
     private Edge[] edgeTo; //距离树最近的边
     private double[] distTo; //distTo[w]=edgeTo[w].weight()
     private boolean[] marked; //如果v在树中则为true

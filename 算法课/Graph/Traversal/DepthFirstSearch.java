@@ -1,6 +1,8 @@
-package Graph;
+package Graph.Traversal;
 
-public class DepthFirstSearch {
+import Graph.UnDig.Graph;
+
+public class DepthFirstSearch { //深度优先搜素
     private boolean[] marked;
     private int count;
     public DepthFirstSearch(Graph G,int s){

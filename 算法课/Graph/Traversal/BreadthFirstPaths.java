@@ -1,9 +1,10 @@
-package Graph;
+package Graph.Traversal;
 
 import Basic.Structure.Queue;
 import Basic.Structure.Stack;
+import Graph.UnDig.Graph;
 
-public class BreadthFirstPaths {
+public class BreadthFirstPaths{//广度优先搜索实现查找图路径算法
     private boolean[] marked;
     private int[] edgeTo;
     private final int s;

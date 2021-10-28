@@ -80,8 +80,7 @@ package Graph;
  *  @author Kevin Wayne
  */
 
-public class UF {
-
+public class UF { //联合搜索
     private int[] parent;  // parent[i] = parent of i
     private byte[] rank;   // rank[i] = rank of subtree rooted at i (never more than 31)
     private int count;     // number of components

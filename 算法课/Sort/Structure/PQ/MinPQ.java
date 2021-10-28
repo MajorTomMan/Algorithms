@@ -1,4 +1,4 @@
-package Sort.Structure;
+package Sort.Structure.PQ;
 
 /******************************************************************************
  *  Compilation:  javac MinPQ.java
@@ -52,7 +52,7 @@ import Func.Input_Output.StdOut;
  *
  *  @param <Key> the generic type of key on this priority queue
  */
-public class MinPQ<Key> implements Iterable<Key> {
+public class MinPQ<Key> implements Iterable<Key> { //最小优先队列
     private Key[] pq;                    // store items at indices 1 to n
     private int n;                       // number of items on priority queue
     private Comparator<Key> comparator;  // optional comparator

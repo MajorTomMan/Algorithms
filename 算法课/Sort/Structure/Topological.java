@@ -26,7 +26,13 @@
  *
  ******************************************************************************/
 
-package Graph;
+package Sort.Structure;
+
+import Graph.Dig.Digraph;
+import Graph.Dir.DirectedCycle;
+import Graph.Dir.EdgeWeightedDigraph;
+import Graph.Dir.EdgeWeightedDirectedCycle;
+import Graph.Traversal.DepthFirstOrder;
 
 /**
  *  The {@code Topological} class represents a data type for 
@@ -56,7 +62,7 @@ package Graph;
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
  */
-public class Topological {
+public class Topological { //拓扑排序
     private Iterable<Integer> order;  // topological order
     private int[] rank;               // rank[v] = rank of vertex v in order
 

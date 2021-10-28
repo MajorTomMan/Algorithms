@@ -1,9 +1,11 @@
 package Graph;
 
 import Basic.Structure.Stack;
-import Sort.Structure.IndexMinPQ;
+import Graph.Dir.DirectedEdge;
+import Graph.Dir.EdgeWeightedDigraph;
+import Sort.Structure.PQ.IndexMinPQ;
 
-public class DijkstraSP {
+public class DijkstraSP { //图的最短路径算法
     private DirectedEdge[] edgeTo; //距离树最近的边
     private double[] distTo; //distTo[w]=edgeTo[w].weight()
     private IndexMinPQ<Double> pq; //有效的横切边

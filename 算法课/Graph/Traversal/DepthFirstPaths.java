@@ -1,8 +1,10 @@
-package Graph;
+package Graph.Traversal;
 
 import java.util.Stack;
 
-public class DepthFirstPaths {
+import Graph.UnDig.Graph;
+
+public class DepthFirstPaths { //深度优先搜素查找图路径
     private boolean[] marked;
     private int[] edgeTo;
     private final int s;

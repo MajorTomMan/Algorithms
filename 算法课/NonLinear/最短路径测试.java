@@ -4,8 +4,8 @@ import Func.Input_Output.In;
 import Func.Input_Output.StdOut;
 import Graph.AcyclicSP;
 import Graph.DijkstraSP;
-import Graph.DirectedEdge;
-import Graph.EdgeWeightedDigraph;
+import Graph.Dir.DirectedEdge;
+import Graph.Dir.EdgeWeightedDigraph;
 
 public class 最短路径测试 {
     public static void main(String[] args) {

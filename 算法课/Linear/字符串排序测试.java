@@ -2,6 +2,7 @@ package Linear;
 
 import Character.LSD;
 import Character.MSD;
+import Character.Quick3string;
 
 /**
  * 字符串排序测试
@@ -17,6 +18,12 @@ public class 字符串排序测试 {
         System.out.println("-------------------------------------------");
         temp=str.split(", ");
         MSD.sort(temp);
+        for (String data :temp) {
+            System.out.println(data);
+        }
+        System.out.println("-------------------------------------------");
+        temp=str.split(", ");
+        Quick3string.sort(temp);
         for (String data :temp) {
             System.out.println(data);
         }

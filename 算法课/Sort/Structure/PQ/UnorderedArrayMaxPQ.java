@@ -1,4 +1,4 @@
-package Sort.Structure;
+package Sort.Structure.PQ;
 
 import Func.Input_Output.StdOut;
 
@@ -16,7 +16,7 @@ import Func.Input_Output.StdOut;
  *
  ******************************************************************************/
 
-public class UnorderedArrayMaxPQ<Key extends Comparable<Key>> {
+public class UnorderedArrayMaxPQ<Key extends Comparable<Key>> { //无序数组最小优先队列
     private Key[] pq;      // elements
     private int n;         // number of elements
 

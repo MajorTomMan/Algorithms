@@ -4,13 +4,13 @@ import java.io.FileNotFoundException;
 
 import Func.Input_Output.StdIn;
 import Func.Input_Output.StdOut;
-import Graph.Graph;
-import Graph.SymboGraph;
+import Graph.Symbol.SymbolGraph;
+import Graph.UnDig.Graph;
 
 public class 符号图测试{
     public static void main(String[] args) throws FileNotFoundException{
         String name="NonLinear\\data\\movies-hero.txt";
-        SymboGraph sg = new SymboGraph(name,"/");
+        SymbolGraph sg = new SymbolGraph(name,"/");
         Graph graph = sg.G();
         while (StdIn.hasNextLine()) {
             String source = StdIn.readLine();

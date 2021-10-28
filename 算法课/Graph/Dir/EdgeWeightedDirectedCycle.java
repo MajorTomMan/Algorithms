@@ -9,9 +9,10 @@
  *
  ******************************************************************************/
 
-package Graph;
+package Graph.Dir;
 
 import Basic.Structure.Stack;
+import Sort.Structure.Topological;
 
 /**
  *  The {@code EdgeWeightedDirectedCycle} class represents a data type for 
@@ -38,7 +39,7 @@ import Basic.Structure.Stack;
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
  */
-public class EdgeWeightedDirectedCycle {
+public class EdgeWeightedDirectedCycle{ //加权边有向图环
     private boolean[] marked;             // marked[v] = has vertex v been marked?
     private DirectedEdge[] edgeTo;        // edgeTo[v] = previous edge on path to v
     private boolean[] onStack;            // onStack[v] = is vertex on the stack?

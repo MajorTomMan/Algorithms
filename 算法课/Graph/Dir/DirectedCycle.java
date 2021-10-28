@@ -15,9 +15,11 @@
  *
  ******************************************************************************/
 
-package Graph;
+package Graph.Dir;
 
 import Basic.Structure.Stack;
+import Graph.Dig.Digraph;
+import Sort.Structure.Topological;
 
 /**
  *  The {@code DirectedCycle} class represents a data type for 
@@ -43,7 +45,7 @@ import Basic.Structure.Stack;
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
  */
-public class DirectedCycle {
+public class DirectedCycle {//加权边
     private boolean[] marked;        // marked[v] = has vertex v been marked?
     private int[] edgeTo;            // edgeTo[v] = previous vertex on path to v
     private boolean[] onStack;       // onStack[v] = is vertex on the stack?

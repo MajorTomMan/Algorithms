@@ -1,16 +1,18 @@
-package Graph;
+package Graph.Symbol;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Scanner;
+
+import Graph.UnDig.Graph;
 import Search.Structure.RedBlackBST;
 
-public class SymboGraph {
+public class SymbolGraph { //符号图定义
     private RedBlackBST<String,Integer> st;
     private String[] keys;
     private Graph G;
-    public SymboGraph(String stream,String sp) throws FileNotFoundException {
+    public SymbolGraph(String stream,String sp) throws FileNotFoundException {
         st=new RedBlackBST<>();
         Scanner scanner=new Scanner(new FileReader(new File(stream)));
         while(scanner.hasNextLine()){

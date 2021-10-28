@@ -1,4 +1,4 @@
-package Graph;
+package Graph.Dir;
 
 import java.util.NoSuchElementException;
 
@@ -6,7 +6,7 @@ import Basic.Structure.Bag;
 import Basic.Structure.Stack;
 import Func.Input_Output.In;
 
-public class EdgeWeightedDigraph{
+public class EdgeWeightedDigraph{ //加权有向图实现
     private final int V;
     private int E;
     private Bag<DirectedEdge>[] adj;

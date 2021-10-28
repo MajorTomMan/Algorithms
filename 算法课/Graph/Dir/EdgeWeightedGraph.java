@@ -1,8 +1,9 @@
-package Graph;
+package Graph.Dir;
 
 import Basic.Structure.Bag;
+import Graph.E.Edge;
 
-public class EdgeWeightedGraph {
+public class EdgeWeightedGraph { //加权无向图的实现
     private final int V;
     private int E;
     private Bag<Edge>[] adj;

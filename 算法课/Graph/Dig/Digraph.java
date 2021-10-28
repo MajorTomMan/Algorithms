@@ -27,7 +27,7 @@
  *  
  ******************************************************************************/
 
-package Graph;
+package Graph.Dig;
 
 import java.util.NoSuchElementException;
 
@@ -66,7 +66,7 @@ import Func.Input_Output.In;
  *  @author Kevin Wayne
  */
 
-public class Digraph {
+public class Digraph{ //有向图定义
     private static final String NEWLINE = System.getProperty("line.separator");
 
     private final int V;           // number of vertices in this digraph

@@ -1,9 +1,9 @@
-package Graph;
+package Graph.UnDig;
 
 import Basic.Structure.Bag;
 import Func.Input_Output.StdIn;
 
-public class Graph{
+public class Graph{ //无向图定义和基础算法
     private final int V;
     private int E;
     private Bag<Integer>[] adj;

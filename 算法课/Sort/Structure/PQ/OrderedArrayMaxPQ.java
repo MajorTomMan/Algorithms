@@ -1,4 +1,4 @@
-package Sort.Structure;
+package Sort.Structure.PQ;
 
 import Func.Input_Output.StdOut;
 
@@ -17,7 +17,7 @@ import Func.Input_Output.StdOut;
  *
  ******************************************************************************/
 
-public class OrderedArrayMaxPQ<Key extends Comparable<Key>> {
+public class OrderedArrayMaxPQ<Key extends Comparable<Key>> { //有序数组最大优先队列
     private Key[] pq;          // elements
     private int n;             // number of elements
 

@@ -1,7 +1,7 @@
-package Graph;
+package Graph.E;
 
 
-public class Edge implements Comparable<Edge>{
+public class Edge implements Comparable<Edge>{ //加权边的定义
     private final int v; //顶点之一
     private final int w; //另一个顶点
     private final double weight; //边的权重

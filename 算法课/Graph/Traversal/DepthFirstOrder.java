@@ -31,12 +31,15 @@
  *
  ******************************************************************************/
 
-package Graph;
+package Graph.Traversal;
 
 import Basic.Structure.Queue;
 import Basic.Structure.Stack;
 import Func.Input_Output.In;
 import Func.Input_Output.StdOut;
+import Graph.Dig.Digraph;
+import Graph.Dir.DirectedEdge;
+import Graph.Dir.EdgeWeightedDigraph;
 
 /**
  *  The {@code DepthFirstOrder} class represents a data type for 
@@ -57,7 +60,7 @@ import Func.Input_Output.StdOut;
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
  */
-public class DepthFirstOrder {
+public class DepthFirstOrder { //有序深度优先搜素算法实现
     private boolean[] marked;          // marked[v] = has v been marked in dfs?
     private int[] pre;                 // pre[v]    = preorder  number of v
     private int[] post;                // post[v]   = postorder number of v

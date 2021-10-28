@@ -1,6 +1,6 @@
-package Graph;
+package Graph.Dir;
 
-public class DirectedEdge {
+public class DirectedEdge{ //加权有向边的实现
     private final int v; //边的起点
     private final int w; //边的终点
     private final double weight; //边的权重
