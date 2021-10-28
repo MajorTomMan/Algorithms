@@ -1,3 +1,0 @@
-class Design_Pattern{
-
-}
