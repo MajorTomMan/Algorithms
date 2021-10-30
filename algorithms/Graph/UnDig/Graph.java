@@ -4,8 +4,8 @@ import Basic.Structure.Bag;
 import Func.Input_Output.StdIn;
 
 public class Graph{ //无向图定义和基础算法
-    private final int V;
-    private int E;
+    private final int V; //顶点
+    private int E; //边
     private Bag<Integer>[] adj;
     public Graph(int V){
         this.V=V;
@@ -22,6 +22,14 @@ public class Graph{ //无向图定义和基础算法
             int v=StdIn.readInt();
             int w=StdIn.readInt();
             addEdge(v, w);
+        }
+    }
+    public Graph(){
+        this.V=0;
+        this.E=0;
+        adj=(Bag<Integer>[]) new Bag[V];
+        for(int v=0;v<V;v++){
+            adj[v]=new Bag<Integer>();
         }
     }
     public int V(){ //顶点数
@@ -60,7 +68,7 @@ public class Graph{ //无向图定义和基础算法
         return count/2;
     }
     public String toString(){
-        String s=V+" vertices, "+E+"edges\n";
+        String s=V+" vertices, "+E+" edges\n";
         for(int v=0;v<V;v++){
             s+=v+": ";
             for(int w:this.adj(v)){

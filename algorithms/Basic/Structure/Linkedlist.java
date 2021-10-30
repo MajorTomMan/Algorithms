@@ -1,4 +1,4 @@
- package Basic.Structure;
+package Basic.Structure;
 
 import Basic.Structure.Interface.ILinkedlist;
 import Basic.Structure.Node.Data;

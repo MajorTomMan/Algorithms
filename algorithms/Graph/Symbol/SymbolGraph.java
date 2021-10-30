@@ -8,7 +8,7 @@ import java.util.Scanner;
 import Graph.UnDig.Graph;
 import Search.Structure.RedBlackBST;
 
-public class SymbolGraph { //符号图定义
+public class SymbolGraph{ //符号图定义
     private RedBlackBST<String,Integer> st;
     private String[] keys;
     private Graph G;
