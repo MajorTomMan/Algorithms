@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch KMP算法测试",
+            "request": "launch",
+            "mainClass": "Linear.KMP算法测试",
+            "projectName": "Algscode_d9115099"
+        },
+        {
+            "type": "java",
             "name": "Launch Current File",
             "request": "launch",
             "mainClass": "${file}"
