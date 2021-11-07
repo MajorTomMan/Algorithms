@@ -2,7 +2,7 @@ package NonLinear;
 
 import java.util.Random;
 
-import Search.Structure.BST;
+import Search.Structure.Tree.BST;
 
 public class 二叉查找树测试 {
     public static void main(String[] args) {

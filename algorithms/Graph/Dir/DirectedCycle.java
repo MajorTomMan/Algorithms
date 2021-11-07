@@ -19,7 +19,7 @@ package Graph.Dir;
 
 import Basic.Structure.Stack;
 import Graph.Dig.Digraph;
-import Sort.Structure.Topological;
+import Sort.Structure.NonLinear.Topological;
 
 /**
  *  The {@code DirectedCycle} class represents a data type for 

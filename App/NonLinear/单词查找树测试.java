@@ -1,7 +1,7 @@
 package NonLinear;
 
-import Character.TST;
-import Character.TrieST;
+import Character.TrieSt.TST;
+import Character.TrieSt.TrieST;
 
 public class 单词查找树测试 {
     public static void main(String[] args) {
@@ -18,7 +18,12 @@ public class 单词查找树测试 {
             i++;
         }
         for (String key :trieST.keys()) {
-            System.out.println(key);
+            System.out.print(key+" ");
+        }
+        System.out.println();
+        System.out.println("-----------------------");
+        for(String data:trieST.keysThatMatch("**")){ //通配符测试 通配符:*|.
+            System.out.println(data);
         }
     }
 }

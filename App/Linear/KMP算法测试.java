@@ -1,6 +1,6 @@
 package Linear;
 
-import Character.KMP;
+import Character.SubStringSearch.KMP;
 
 public class KMP算法测试 {
     public static void main(String[] args) {

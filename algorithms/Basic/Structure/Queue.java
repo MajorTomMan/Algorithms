@@ -10,7 +10,6 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
     private Node<T> front; // 删除
     private Node<T> rear; // 插入
     private int size;
-
     public T dequeue() {
         T data = front.data.saveData;
         front = front.next;
@@ -31,6 +30,7 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
         else{
             oldRear.next=node;
         }
+        size++;
     }
 
     public boolean isEmpty() {

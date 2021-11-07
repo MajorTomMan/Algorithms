@@ -3,9 +3,9 @@ package NonLinear;
 import java.util.Random;
 
 import Basic.Structure.Stack;
-import Search.Structure.ArrayST;
-import Search.Structure.BinarySearchST;
-import Search.Structure.OrderedSequentialSearchST;
+import Search.Structure.LinearST.ArrayST;
+import Search.Structure.LinearST.OrderedSequentialSearchST;
+import Search.Structure.NonLinearST.BinarySearchST;
 
 public class GPA计算 {
     public static void main(String[] args) {

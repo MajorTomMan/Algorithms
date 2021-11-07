@@ -12,7 +12,7 @@
 package Graph.Dir;
 
 import Basic.Structure.Stack;
-import Sort.Structure.Topological;
+import Sort.Structure.NonLinear.Topological;
 
 /**
  *  The {@code EdgeWeightedDirectedCycle} class represents a data type for 

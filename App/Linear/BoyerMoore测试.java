@@ -1,6 +1,6 @@
 package Linear;
 
-import Character.BoyerMoore;
+import Character.SubStringSearch.BoyerMoore;
 
 public class BoyerMoore测试 {
     public static void main(String[] args) {

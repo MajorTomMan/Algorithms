@@ -1,6 +1,6 @@
 package Linear;
 
-import Character.RabinKarp;
+import Character.SubStringSearch.RabinKarp;
 
 public class RabinKarp测试 {
     public static void main(String[] args) {

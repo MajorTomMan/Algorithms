@@ -1,8 +1,8 @@
 package Linear;
 
-import Character.LSD;
-import Character.MSD;
-import Character.Quick3string;
+import Character.StringSort.LSD;
+import Character.StringSort.MSD;
+import Character.StringSort.Quick3string;
 
 /**
  * 字符串排序测试
