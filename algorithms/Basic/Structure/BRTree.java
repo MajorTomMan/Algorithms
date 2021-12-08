@@ -5,15 +5,14 @@ import Basic.Structure.Node.BTnode;
 import Basic.Structure.Node.Data;
 
 public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
-    BTnode<T> Root;
-    int depth; 
-    @Override
-    public void InitializeBRTree(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        Root=node;
+    private BTnode<T> Root;
+    private int depth;
+    private int count;
+    public BRTree(T data) {
+        Root = new BTnode<>(new Data<T>(data),null,null);
     }
     @Override
-    public boolean BRTreeIsEmpty() {
+    public boolean IsEmpty() {
         // TODO Auto-generated method stub
         if(Root==null){
             return true;
@@ -21,330 +20,151 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         return false;
     }
     @Override
-    public boolean BRTreeIsFull() {
+    public int Count() {
         // TODO Auto-generated method stub
-        return false;
+        count=Count(Root);
+        return count;
+    }
+    private int Count(BTnode<T> node){
+        if(node==null){
+            return 0;
+        }
+        Count(node.Left);
+        Count(node.Right);
+        return count++;
     }
     @Override
-    public int BRTreeItemCount() {
-        // TODO Auto-generated method stub
-        if(depth==0){
-            SearchAll_P(Root);
+    public void Insert(T data) {
+    // TODO Auto-generated method stub
+        BTnode<T> node=new BTnode<T>(new Data<T>(data),null,null);
+        Insert(Root,node);
+    }
+    private BTnode<T> Insert(BTnode<T> node,BTnode<T> data){
+        if(node==null){
+            node=data;
+            depth++;
+            return node;
         }
-        return depth;
+        if(node.item.saveData.compareTo(data.item.saveData)<0){ //node<data
+            node.Right=Insert(node.Right,data);
+            node.SubTreeNum++;
+        }
+        else if(node.item.saveData.compareTo(data.item.saveData)==0){ //node==data
+            return node;
+        }
+        else if(node.item.saveData.compareTo(data.item.saveData)>0){ //node>data
+            node.Left=Insert(node.Left, data);
+            node.SubTreeNum++;
+        }
+        return node;
     }
     @Override
-    public boolean Insert(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        BTnode<T> temp=Root;
-        if(BRTreeIsEmpty()){
-            InitializeBRTree(node);
-            return true;
-        }
-        while(true){
-            if(toLeft(node.item.saveData,temp)&&temp.Left!=null){
-                temp=temp.Left;
-            }
-            else if(toLeft(node.item.saveData,temp)&&temp.Left==null){
-                temp.Left=node;
-                break;
-            }
-            else if(toRight(node.item.saveData,temp)&&temp.Right==null){
-                temp.Right=node;
-                break;
-            }
-            else if(toRight(node.item.saveData,temp)&&temp.Right!=null){
-                temp=temp.Right;
-            }
-            else if(node.item.saveData.compareTo(temp.item.saveData)==0){
-                break;
-            }
-        }
-        return true;
-
-    }
-    @Override
-    public boolean Delete(T data) {
+    public void Delete(T data) {
         // TODO Auto-generated method stub
         BTnode<T> node=new BTnode<T>(new Data<T>(data),null,null);
-        Stack<BTnode<T>> stack=new Stack<>();
-        if(toLeft(node.item.saveData, Root)){
-            node=Root.Left;
+        Delete(Root,node);
+    }
+    private BTnode<T> Delete(BTnode<T> node,BTnode<T> target){
+        if(node==null){
+            depth--;
+            return node;
         }
-        else{
-            node=Root.Right;
+        if(node.item.saveData.compareTo(target.item.saveData)<0){
+            node.Right=Delete(node.Right,target);
         }
-        if(Root.Left.item.saveData==node.item.saveData||Root.Right.item.saveData==node.item.saveData){
-            stack.push(Root);
-        }
-        while(node.item.saveData!=node.item.saveData&&node.item.saveData!=Root.item.saveData){
-            stack.push(node);
-            if(toLeft(data, node)){
-                node=node.Left;
-            }
-            else if(toRight(data,node)){
+        else if(node.item.saveData.compareTo(target.item.saveData)==0){
+            int flag=Check(node, target);
+            if(flag==1){
                 node=node.Right;
             }
-            if(node==null){
-                break;
+            else if(flag==0){
+                node=node.Left;
+            }
+            else{
+                BTnode<T> temp=node;
+                node=Min(temp.Right);
+                node.Right=DelMin(temp.Right);
+                node.Left=temp.Left;
+                if(target.item.saveData.compareTo(Root.item.saveData)==0){
+                    Root=node;
+                }
             }
         }
-        if(node.Left==null&&node.Right==null){
-            BTnode<T> temp=stack.pop();
-            ChildIsNull(temp,node);
-        }else if(node.Left==null&&node.Right!=null||node.Left!=null&&node.Right==null){
-            BTnode<T> temp=stack.pop();
-            ChildHasOne(temp,node);
-        }
         else{
-            BTnode<T> temp=stack.pop();
-            ChildHasTwo(temp,node);
+            node.Left=Delete(node.Left,target);
         }
-        return true;
+        return node;
     }
-    //@Override
-    //public void BRTree_Traverse(Method method) {
-        // TODO Auto-generated method stub
-        
-   // }
-    @Override
-    public BTnode<T> FindMax(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        if(node==null){
-            return null;
+    private int Check(BTnode<T> node,BTnode<T> target){
+        int flag=0;
+        if(node.Left==null&&node.Right!=null){
+            flag=1;
         }
-        else if(node.Right==null){
+        else if(node.Right==null&&node.Left!=null){
+            flag=0;
+        }
+        else if(node.Left!=null&&node.Right!=null){
+            flag=-1;
+        }
+        return flag;
+    }
+    @Override
+    public T Max(){
+        // TODO Auto-generated method stub
+        BTnode<T> node;
+        for(node=Root;node.Right!=null;node=node.Right);
+        return node.item.saveData;
+    }
+    private BTnode<T> Max(BTnode<T> node){
+        if(node==null){
             return node;
         }
-            return FindMax(node.Right);
+        return Max(node.Right);
     }
     @Override
-    public BTnode<T> FindMin(BTnode<T> node) {
+    public T Min(){
         // TODO Auto-generated method stub
-        if(node==null){
-            return null;
+        BTnode<T> node;
+        for(node=Root;node.Left!=null;node=node.Left);
+        return node.item.saveData;
+    }
+    private BTnode<T> DelMax(BTnode<T> node){
+        if(node.Right==null){
+            node.SubTreeNum--;
+            return node.Left;
         }
-        else if(node.Left==null){
+        node.Right=DelMin(node.Right);
+        return node;
+    }
+    private BTnode<T> DelMin(BTnode<T> node){
+        if(node.Left==null){
+            node.SubTreeNum--;
+            return node.Right;
+        }
+        node.Left=DelMin(node.Left);
+        return node;
+    }
+    private BTnode<T> Min(BTnode<T> node){
+        if(node.Left==null){
             return node;
         }
-        else{
-            return FindMin(node.Left);
-        }
-    }
-    public BTnode<T> FindMax_NoFeedback(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        BTnode<T> temp=node;
-        if(node==null){
-            return null;
-        }
-        while(temp.Right!=null){
-            temp=temp.Right;
-        }
-        return temp;
-    }
-    public BTnode<T> FindMin_NoFeedback(BTnode<T> node) {
-        BTnode<T> temp=node;
-        // TODO Auto-generated method stub
-        if(node==null){
-            return null;
-        }
-        while(temp.Left!=null){
-            temp=temp.Left;
-        }
-        return temp;
-    }
-    /* 前序遍历 递归 */
-    @Override
-    public void SearchAll_P(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        if(node==null){
-            return;
-        }
-        System.out.println(node.item.saveData);
-        SearchAll_P(node.Left);
-        SearchAll_P(node.Right);
-        depth++;
+        return Min(node.Left);
     }
     /* 中序遍历 递归 */
     @Override
-    public void SearchAll_M(BTnode<T> node) {
+    public void Show() {
         // TODO Auto-generated method stub
+        Show(Root);
+    }
+    private void Show(BTnode<T> node){
         if(node==null){
             return;
         }
-        SearchAll_M(node.Left);
-        System.out.println(node.item.saveData);
-        SearchAll_M(node.Right);
+        Show(node.Left);
+        System.out.print(node.item.saveData+" ");
+        Show(node.Right);
     }
-    /* 后序遍历 递归 */
-    @Override
-    public void SearchAll_R(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        if(node==null){
-            return;
-        }
-        SearchAll_R(node.Left);
-        SearchAll_R(node.Right);
-        System.out.println(node.item.saveData);
-    }
-    /*      前序遍历非递归
-    首先申请一个新的栈，记为stack；
-    声明一个结点treeNode，让其指向node结点；
-    如果treeNode的不为空，将treeNode的值打印，并将treeNode入栈，然后让treeNode指向treeNode的右结点，
-    重复步骤3，直到treenode为空；
-    然后出栈，让treeNode指向treeNode的右孩子
-    重复步骤3，直到stack为空.*/
-    public void SearchAll_P_noFeedBack(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        Stack<BTnode<T>> stack=new Stack<>();
-        BTnode<T> temp=node;
-        while(temp!=null||!stack.isEmpty()){
-            while(temp!=null){
-                System.out.println(temp.item.saveData);
-                stack.push(temp);
-                temp=temp.Left;
-            }
-            if(!stack.isEmpty()){
-                temp=stack.pop();
-                temp=temp.Right;
-            }
-        }
-    }
-       /*    中序遍历非递归
-    申请一个新栈，记为stack，申请一个变量cur，初始时令treeNode为头节点；
-    先把treeNode节点压入栈中，对以treeNode节点为头的整棵子树来说，依次把整棵树的左子树压入栈中，即不断令treeNode=treeNode.leftChild，然后重复步骤2；
-    不断重复步骤2，直到发现cur为空，此时从stack中弹出一个节点记为treeNode，打印node的值，并让treeNode= treeNode.right，然后继续重复步骤2；
-    当stack为空并且cur为空时结束。*/
-    public void SearchAll_M_noFeedBack(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        Stack<BTnode<T>> stack=new Stack<>();
-        BTnode<T> temp=node;
-        while(temp!=null||!stack.isEmpty()){
-            while(temp!=null){
-                stack.push(temp);
-                temp=temp.Left;
-            }
-            if(!stack.isEmpty()){
-                temp=stack.pop();
-                System.out.println(temp.item.saveData);
-                temp=temp.Right;
-            }
-        }
-    }
-    /*           后序遍历非递归实现
-    后序遍历这里较前两者实现复杂一点
-    我们需要一个标记位来记忆我们此时节点上一个节点，具体看代码注释 */
-    public void SearchAll_R_noFeedBack(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        Stack<BTnode<T>> stack=new Stack<>();
-        BTnode<T> temp=node;
-        BTnode<T> lastVisit=null;
-        while(temp!=null||!stack.isEmpty()){
-            while(temp!=null){
-                stack.push(temp);
-                temp=temp.Left;
-            }
-             //出栈
-             temp= stack.pop();
-             /**
-              * 这块就是判断temp是否有右孩子，
-              * 如果没有输出temp.item.data，让lastVisit指向treeNode，并让treeNode为空
-              * 如果有右孩子，将当前节点继续入栈，treeNode指向它的右孩子,继续重复循环
-              */
-             if(temp.Right == null || temp.Right== lastVisit) {
-                 System.out.println(temp.item.saveData);
-                 lastVisit = temp;
-                 temp  = null;
-             }else{
-                 stack.push(temp);
-                 temp = temp.Right;
-             }
-
-
-        }
-    }
-    /*      层次遍历非递归
-    首先申请一个新的队列，记为queue；
-    将头结点head压入queue中；
-    每次从queue中出队，记为node，然后打印node值，如果node左孩子不为空，则将左孩子入队；如果node的右孩子不为空，则将右孩子入队；
-    重复步骤3，直到queue为空。
-     */
-    public void SearchAll_L_noFeedBack(BTnode<T> node) {
-        // TODO Auto-generated method stub
-        Queue<BTnode<T>> queue=new Queue<>();
-        BTnode<T> temp;
-        queue.enqueue(node);
-        while(!queue.isEmpty()){
-            temp = queue.dequeue();
-            System.out.println(temp.item.saveData);
-            if(temp.Left!=null) {
-                queue.enqueue(temp.Left);
-            }
-            if(temp.Right!=null){
-                queue.enqueue(temp.Right);
-            }
-        }
-    }
-    private boolean toLeft(T saveData,BTnode<T> node){
-        int result=saveData.compareTo(node.item.saveData);
-        if(result<0){ //比该节点的数值大 进入右子树比较
-            return true;
-        }
-        return false;
-    }
-    private boolean toRight(T saveData,BTnode<T> node){
-        int result=saveData.compareTo(node.item.saveData);
-        if(result>0){ //比该节点的数值大 进入右子树比较
-            return true;
-        }
-        return false;
-    }
-    private void ChildIsNull(BTnode<T> father,BTnode<T> child){
-        if(father.Left==child){
-            father.Left=null;
-        }
-        else{
-            father.Right=null;
-        }
-    }
-    private void ChildHasOne(BTnode<T> father,BTnode<T> child){
-        if(father.Left==child){
-            father.Left=child.Left;
-        }
-        else{
-            father.Right=child.Right;
-        }
-    }
-    private void ChildHasTwo(BTnode<T> father,BTnode<T> child){
-        BTnode<T> temp=new BTnode<>(null,null,null);
-        temp=deletemin(father.Left);
-        if(father.Left.item.saveData==child.item.saveData){
-            temp.Left=father.Left.Left;
-            temp.Right=father.Left.Right;
-            father.Left=temp;
-        }
-        else{
-            temp.Left=father.Right.Left;
-            temp.Right=father.Right.Right;
-            father.Right=temp;
-        }
-    }
-    private BTnode<T> deletemin(BTnode<T> node){
-        BTnode<T> temp=new BTnode<>(new Data<T>(null),null,null);
-        if(node==null){
-            return null;
-        }
-        while(node.Right!=null){
-            node=node.Right;
-        }
-        temp=node;
-        node=null;
-        return temp;
-    }
-    public BTnode<T> getRoot() {
-        return Root;
-    }
-    public int getDepth() {
+    public int Depth() {
         return depth;
     }
 }

@@ -9,10 +9,15 @@ public class 链表{
             linkedlist.Insert(i);
             i++;
         }
-        linkedlist.Show(linkedlist.getHead());
+        for (Integer t:linkedlist) {
+            System.out.println(t);
+        }
         linkedlist.Delete(3);
-        System.out.println("--------------------------");
         linkedlist.Reverse(linkedlist);
-        linkedlist.Show(linkedlist.getHead());
+        for (Integer t:linkedlist) {
+            System.out.println(t);
+        }
+        System.out.println("--------------------------");
+        System.out.println(linkedlist.Size());
     }
 }

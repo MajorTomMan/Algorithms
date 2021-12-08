@@ -24,14 +24,6 @@ public class Graph{ //无向图定义和基础算法
             addEdge(v, w);
         }
     }
-    public Graph(){
-        this.V=0;
-        this.E=0;
-        adj=(Bag<Integer>[]) new Bag[V];
-        for(int v=0;v<V;v++){
-            adj[v]=new Bag<Integer>();
-        }
-    }
     public int V(){ //顶点数
         return V;
     }

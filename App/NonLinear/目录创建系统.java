@@ -7,7 +7,7 @@ import Graph.UnDig.Graph;
 public class 目录创建系统 {
     private static Scanner scanner;
     public static void main(String[] args) {
-        Graph gr=new Graph();
+       // Graph gr=new Graph();
     }
     public static String Menu(){
         System.out.println("目录创建系统:\n"
