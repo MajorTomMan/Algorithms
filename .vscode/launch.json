@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 搜索插入位置",
+            "request": "launch",
+            "mainClass": "搜索插入位置",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
             "name": "Launch 输出元素种类",
             "request": "launch",
             "mainClass": "输出元素种类",
