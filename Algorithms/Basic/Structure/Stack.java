@@ -9,7 +9,7 @@ import Basic.Structure.Node.Node;
 
 public class Stack<T> implements IStack<T>,Iterable<T>{
     private Node<T> top;
-    int size;
+    private int size;
     @Override
     public T pop() {
         // TODO Auto-generated method stub
@@ -23,6 +23,7 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         Node<T> node=new Node<>(new Data<T>(var),null);
         if(isEmpty()){
             top=node;
+            size++;
             return;
         }
         node.next=top;
