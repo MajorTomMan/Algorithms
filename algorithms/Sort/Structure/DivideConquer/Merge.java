@@ -12,10 +12,10 @@ public class Merge extends Example{ //自顶向下
         if(hi<=lo){
             return;
         }
-        int mid=lo+(hi-lo)/2;
-        sort(a,lo,mid);
-        sort(a,mid+1,hi);
-        merge(a,lo,mid,hi);
+        int mid=lo+(hi-lo)/2; //确定中位数用来拆分数组
+        sort(a,lo,mid); //对左边排序
+        sort(a,mid+1,hi); //对右边排序
+        merge(a,lo,mid,hi); //归并
     }
     private static void merge(Comparable[] a,int lo,int mid,int hi){
         int i=lo,j=mid+1;

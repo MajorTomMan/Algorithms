@@ -11,4 +11,7 @@ public class BTnode<T>{
       this.Left = left;
       this.Right = right;
    }
+   public BTnode(Data<T> item){
+      this.item = item;
+   }
 }

@@ -1,4 +1,4 @@
-package Linear;
+
 /*
 package 线性表应用;
 

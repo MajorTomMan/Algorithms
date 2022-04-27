@@ -1,4 +1,3 @@
-package Linear;
 
 import java.util.Scanner;
 

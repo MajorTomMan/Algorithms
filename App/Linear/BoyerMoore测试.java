@@ -1,4 +1,4 @@
-package Linear;
+
 
 import Character.SubStringSearch.BoyerMoore;
 

@@ -6,4 +6,8 @@ public class Data<T>{
     public Data(T saveData) {
         this.saveData = saveData;
     }
+    @Override
+    public String toString() {
+        return "Data [saveData=" + saveData + "]";
+    }
 }

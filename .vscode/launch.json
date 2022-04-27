@@ -6,24 +6,10 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Launch Huffman",
+            "name": "Launch 输出元素种类",
             "request": "launch",
-            "mainClass": "Character.DataCompression.Huffman",
-            "projectName": "Algscode_d9115099"
-        },
-        {
-            "type": "java",
-            "name": "Launch 霍夫曼编码测试",
-            "request": "launch",
-            "mainClass": "NonLinear.霍夫曼编码测试",
-            "projectName": "Algscode_d9115099"
-        },
-        {
-            "type": "java",
-            "name": "Launch KMP算法测试",
-            "request": "launch",
-            "mainClass": "Linear.KMP算法测试",
-            "projectName": "Algscode_d9115099"
+            "mainClass": "输出元素种类",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
@@ -33,129 +19,423 @@
         },
         {
             "type": "java",
-            "name": "Launch HelloWorld",
+            "name": "Launch BoyerMoore测试",
             "request": "launch",
-            "mainClass": "引子.HelloWorld",
-            "projectName": "JavaCode_52a3d704"
-        },
-        {
-            "type": "java",
-            "name": "Launch 递归算最大公约数",
-            "request": "launch",
-            "mainClass": "引子.递归算最大公约数",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "BoyerMoore测试",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
             "name": "Launch Clock算法",
             "request": "launch",
-            "mainClass": "线性.Clock算法",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Clock算法",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 一元表达式",
+            "name": "Launch Date",
             "request": "launch",
-            "mainClass": "线性.一元表达式",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.API.Date",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 中缀表达式求值",
+            "name": "Launch Transaction",
             "request": "launch",
-            "mainClass": "线性.中缀表达式求值",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.API.Transaction",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 二进制",
+            "name": "Launch StdDraw",
             "request": "launch",
-            "mainClass": "线性.二进制",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Drawing.StdDraw",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 前缀表达式求值",
+            "name": "Launch 函数值",
             "request": "launch",
-            "mainClass": "线性.前缀表达式求值",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Drawing.test.函数值",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 后缀表达式求值",
+            "name": "Launch 数组可视化",
             "request": "launch",
-            "mainClass": "线性.后缀表达式求值",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Drawing.test.数组可视化",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 回文",
+            "name": "Launch 函数值(1)",
             "request": "launch",
-            "mainClass": "线性.回文",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Drawing.函数值",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 对称矩阵",
+            "name": "Launch BinaryDump",
             "request": "launch",
-            "mainClass": "线性.对称矩阵",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Dump.BinaryDump",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 数组",
+            "name": "Launch HexDump",
             "request": "launch",
-            "mainClass": "线性.数组",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Dump.HexDump",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 栈",
+            "name": "Launch BinaryIn",
             "request": "launch",
-            "mainClass": "线性.栈",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.BinaryIn",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 约瑟夫环",
+            "name": "Launch BinaryOut",
             "request": "launch",
-            "mainClass": "线性.约瑟夫环",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.BinaryOut",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 链表",
+            "name": "Launch BinaryStdIn",
             "request": "launch",
-            "mainClass": "线性.链表",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.BinaryStdIn",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 队列",
+            "name": "Launch BinaryStdOut",
             "request": "launch",
-            "mainClass": "线性.队列",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.BinaryStdOut",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 二叉搜索树",
+            "name": "Launch In",
             "request": "launch",
-            "mainClass": "非线性.二叉搜索树",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.In",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
-            "name": "Launch 二叉树",
+            "name": "Launch Out",
             "request": "launch",
-            "mainClass": "非线性.二叉树",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "Func.Input_Output.Out",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch StdIn",
+            "request": "launch",
+            "mainClass": "Func.Input_Output.StdIn",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch StdOut",
+            "request": "launch",
+            "mainClass": "Func.Input_Output.StdOut",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch StdRandom",
+            "request": "launch",
+            "mainClass": "Func.Random.StdRandom",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch SortCompare",
+            "request": "launch",
+            "mainClass": "Func.SortFunction.SortCompare",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch Stopwatch",
+            "request": "launch",
+            "mainClass": "Func.SortFunction.Stopwatch",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch DepthFirstOrder",
+            "request": "launch",
+            "mainClass": "Graph.Traversal.DepthFirstOrder",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch KMP算法测试",
+            "request": "launch",
+            "mainClass": "KMP算法测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch B树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.B树测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch GPA计算",
+            "request": "launch",
+            "mainClass": "NonLinear.GPA计算",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉排序树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉排序树测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉查找树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉查找树测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 单词查找树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.单词查找树测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 最短路径测试",
+            "request": "launch",
+            "mainClass": "NonLinear.最短路径测试",
+            "projectName": "Java_5cbfa9f"
         },
         {
             "type": "java",
             "name": "Launch 树",
             "request": "launch",
-            "mainClass": "非线性.树",
-            "projectName": "JavaCode_52a3d704"
+            "mainClass": "NonLinear.树",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 正则表达式测试",
+            "request": "launch",
+            "mainClass": "NonLinear.正则表达式测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 游程编码测试",
+            "request": "launch",
+            "mainClass": "NonLinear.游程编码测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 目录创建系统",
+            "request": "launch",
+            "mainClass": "NonLinear.目录创建系统",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 符号图测试",
+            "request": "launch",
+            "mainClass": "NonLinear.符号图测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 红黑树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.红黑树测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 霍夫曼编码测试",
+            "request": "launch",
+            "mainClass": "NonLinear.霍夫曼编码测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch RabinKarp测试",
+            "request": "launch",
+            "mainClass": "RabinKarp测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch IndexMaxPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.IndexMaxPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch IndexMinPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.IndexMinPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch MaxPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.MaxPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch MinPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.MinPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch OrderedArrayMaxPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.OrderedArrayMaxPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch UnorderedArrayMaxPQ",
+            "request": "launch",
+            "mainClass": "Sort.Structure.PQ.UnorderedArrayMaxPQ",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 一元表达式",
+            "request": "launch",
+            "mainClass": "一元表达式",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 中缀表达式求值",
+            "request": "launch",
+            "mainClass": "中缀表达式求值",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二进制",
+            "request": "launch",
+            "mainClass": "二进制",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二进制计算",
+            "request": "launch",
+            "mainClass": "二进制计算",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 各位整数计算",
+            "request": "launch",
+            "mainClass": "各位整数计算",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 回文",
+            "request": "launch",
+            "mainClass": "回文",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 字符串排序测试",
+            "request": "launch",
+            "mainClass": "字符串排序测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 对称矩阵",
+            "request": "launch",
+            "mainClass": "对称矩阵",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 排序测试",
+            "request": "launch",
+            "mainClass": "排序测试",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 摄氏度转换",
+            "request": "launch",
+            "mainClass": "摄氏度转换",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 数组",
+            "request": "launch",
+            "mainClass": "数组",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 栈",
+            "request": "launch",
+            "mainClass": "栈",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 约瑟夫环",
+            "request": "launch",
+            "mainClass": "约瑟夫环",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 递归算最大公约数",
+            "request": "launch",
+            "mainClass": "递归算最大公约数",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 链表",
+            "request": "launch",
+            "mainClass": "链表",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 链表倒序",
+            "request": "launch",
+            "mainClass": "链表倒序",
+            "projectName": "Java_5cbfa9f"
+        },
+        {
+            "type": "java",
+            "name": "Launch 队列",
+            "request": "launch",
+            "mainClass": "队列",
+            "projectName": "Java_5cbfa9f"
         }
     ]
 }

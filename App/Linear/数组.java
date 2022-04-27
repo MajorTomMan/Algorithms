@@ -1,4 +1,4 @@
-package Linear;
+
 
 public class 数组{
     public static void main(String[] args) {

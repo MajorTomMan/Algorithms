@@ -2,6 +2,7 @@ package Search.Structure.Linear;
 public class Binarysearch{
     public static int rank(int key,int[] a) {
         // Arrays must be sorted before using this methods
+        int[][] array;
         int lo=0;
         int hi=a.length-1;
         while(lo<=hi){

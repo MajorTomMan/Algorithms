@@ -1,4 +1,4 @@
-package Linear;
+
 import Basic.Structure.Stack;
 public class 栈 {
     public static void main(String[] args) {

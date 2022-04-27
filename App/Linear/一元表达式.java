@@ -1,4 +1,3 @@
-package Linear;
 
 
 public class 一元表达式{

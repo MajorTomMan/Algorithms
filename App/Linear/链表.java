@@ -1,10 +1,10 @@
-package Linear;
+
 import Basic.Structure.Linkedlist;
 
 public class 链表{
     public static void main(String[] args) {
         int i=0;
-        Linkedlist<Integer> linkedlist=new Linkedlist<>();
+        Linkedlist<Integer> linkedlist=new Linkedlist<>(99);
         while(i!=12){
             linkedlist.Insert(i);
             i++;
@@ -13,7 +13,7 @@ public class 链表{
             System.out.println(t);
         }
         linkedlist.Delete(3);
-        linkedlist.Reverse(linkedlist);
+        linkedlist.Reverse();
         for (Integer t:linkedlist) {
             System.out.println(t);
         }

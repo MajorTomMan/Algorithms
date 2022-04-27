@@ -12,8 +12,8 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
     public Linkedlist(Node<T> head) {
         this.head = head;
     }
-    public Linkedlist() {
-        head=new Node<>(new Data<T>(null),null);
+    public Linkedlist(T var){
+        this.head=new Node<>(new Data<T>(var),null);
     }
     public void Delete(int index) {
         int i=0;
@@ -46,10 +46,10 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
             System.out.println("未找到数据");
         }
     }
-    /*
+
     public void InsertTail(T var) {
         if(head==null){
-            Initial(var);
+            head=new Node<>(new Data<T>(var),null);
             return;
         }
         Node<T> temp=head;
@@ -62,7 +62,7 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
 
     public void InsertMiddle(int index,T var) {
         if(head==null){
-            Initial(var);
+            head=new Node<>(new Data<T>(var),null);
             return;
         }
         Node<T> temp=head;
@@ -75,13 +75,13 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         node.next=temp.next;
         temp.next=node;
     }
- */
     public void Insert(T var) {
         Node<T> node=new Node<>(new Data<T>(var),null);
         node.next=head.next;
         head.next=node;
+        size++;
     }
-    public void Reverse(Linkedlist<T> list){
+    public void Reverse(){
         Node<T> beg=null,mid=head,end=head.next;
         while(end!=null){
             mid.next=beg;
@@ -97,7 +97,7 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
             return;
         }
         Show(node.next);
-        System.out.println(node.data.saveData);
+        System.out.print(node.data.saveData+" ");
     }
     public boolean contains(T target) {
         for(Node<T> data=head;data!=null;data=data.next){
@@ -107,6 +107,7 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         }
         return false;
     }
+    
     public int Size(){
         if(size==0){
             Node<T> temp=head;
@@ -120,6 +121,18 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         }
         Size(node.next);
         return size++;
+    }
+    public Node<T> getHead() {
+        return head;
+    }
+    public void setHead(Node<T> head) {
+        this.head = head;
+    }
+    public int getSize() {
+        return size;
+    }
+    public void setSize(int size) {
+        this.size = size;
     }
     @Override
     public Iterator<T> iterator() {

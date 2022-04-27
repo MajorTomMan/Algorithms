@@ -1,4 +1,4 @@
-package Linear;
+
 
 import Basic.Structure.LoopQueue;
 import Basic.Structure.Node.Clocknode;

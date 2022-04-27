@@ -1,4 +1,3 @@
-package Linear;
 
 import Character.StringSort.LSD;
 import Character.StringSort.MSD;

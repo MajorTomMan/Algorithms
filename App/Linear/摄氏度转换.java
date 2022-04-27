@@ -1,4 +1,4 @@
-package Linear;
+
 
 public class 摄氏度转换{
     public static void main(String[] args) {
