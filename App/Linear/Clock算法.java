@@ -1,8 +1,6 @@
 
-
-import Basic.Structure.LoopQueue;
 import Basic.Structure.Node.Clocknode;
-
+/* 
 public class Clock算法{
     public static void main(String[] args) {
         int i=0;
@@ -40,3 +38,4 @@ public class Clock算法{
         }
     }
 }
+ */

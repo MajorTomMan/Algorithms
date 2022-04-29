@@ -1,3 +1,5 @@
+package Basic.Structure.Node;
+
 
 public class Treenode<T>{
    public T data;
