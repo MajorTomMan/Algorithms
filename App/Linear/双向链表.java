@@ -41,6 +41,7 @@ public class 双向链表 {
         for(Integer data:list){
             System.out.print(" "+data);
         }
+        System.out.println(list);
     }
     public static void showLink(twoSideLink<?> list) {
         showLink(list.getHead());
@@ -66,4 +67,5 @@ public class 双向链表 {
         showPrevious(node.pre);
         return node;
     }
+
 }

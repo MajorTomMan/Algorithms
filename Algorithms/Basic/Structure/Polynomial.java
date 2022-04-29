@@ -25,6 +25,10 @@ public class Polynomial implements IPolynomial{
     }
 
     @Override
+    public void Show() {
+        // TODO Auto-generated method stub
+        Show(head);
+    }
     public void Show(Polynomialnode node) {
         // TODO Auto-generated method stub
         if(node==null){

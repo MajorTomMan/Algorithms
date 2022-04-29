@@ -4,7 +4,6 @@ package Basic.Structure;
 import java.util.Iterator;
 
 import Basic.Structure.Interface.IStack;
-import Basic.Structure.Node.Data;
 import Basic.Structure.Node.Node;
 
 public class Stack<T> implements IStack<T>,Iterable<T>{
@@ -13,14 +12,14 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
     @Override
     public T pop() {
         // TODO Auto-generated method stub
-        T data=top.data.saveData;
+        T data=top.data;
         top=top.next;
         size--;
         return data;
     }
     @Override
-    public void push(T var) {
-        Node<T> node=new Node<>(new Data<T>(var),null);
+    public void push(T data) {
+        Node<T> node=new Node<>(data,null);
         if(isEmpty()){
             top=node;
             size++;
@@ -41,9 +40,22 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         }
     }
     @Override
-    public int getSize() {
+    public int Size() {
         // TODO Auto-generated method stub
         return size;
+    }
+    @Override
+    public void Show() {
+        // TODO Auto-generated method stub
+        Show(top);
+    }
+    private Node<T> Show(Node<T> node){
+        if(isEmpty()){
+            return node;
+        }
+        Show(node.next);
+        System.out.print(node.data+" ");
+        return node;
     }
     @Override
     public Iterator<T> iterator() {
@@ -61,9 +73,9 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         @Override
         public T next() {
             // TODO Auto-generated method stub
-            Data<T> data=current.data;
+            T data=current.data;
             current=current.next;
-            return data.saveData;
+            return data;
         }
     }
 }

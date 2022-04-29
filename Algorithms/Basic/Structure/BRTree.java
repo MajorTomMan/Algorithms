@@ -1,18 +1,17 @@
 package Basic.Structure;
 
 import Basic.Structure.Interface.IBRTree;
-import Basic.Structure.Node.BTnode;
-import Basic.Structure.Node.Data;
+import Basic.Structure.Node.Treenode;
 
 public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
-    private BTnode<T> Root;
+    private Treenode<T> Root;
     private int depth;
     private int count;
     public BRTree(T data) {
-        Root = new BTnode<>(new Data<T>(data),null,null);
+        Root = new Treenode<>(data,null,null);
     }
     @Override
-    public boolean IsEmpty() {
+    public boolean isEmpty() {
         // TODO Auto-generated method stub
         if(Root==null){
             return true;
@@ -20,39 +19,39 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         return false;
     }
     @Override
-    public int Count() {
+    public int Size() {
         // TODO Auto-generated method stub
-        count=Count(Root);
+        count=Size(Root);
         return count;
     }
-    private int Count(BTnode<T> node){
+    private int Size(Treenode<T> node){
         if(node==null){
             return 0;
         }
-        Count(node.Left);
-        Count(node.Right);
+        Size(node.Left);
+        Size(node.Right);
         return count++;
     }
     @Override
     public void Insert(T data) {
     // TODO Auto-generated method stub
-        BTnode<T> node=new BTnode<T>(new Data<T>(data),null,null);
+        Treenode<T> node=new Treenode<T>(data,null,null);
         Insert(Root,node);
     }
-    private BTnode<T> Insert(BTnode<T> node,BTnode<T> data){
+    private Treenode<T> Insert(Treenode<T> node,Treenode<T> data){
         if(node==null){
             node=data;
             depth++;
             return node;
         }
-        if(node.item.saveData.compareTo(data.item.saveData)<0){ //node<data
+        if(node.data.compareTo(data.data)<0){ //node<data
             node.Right=Insert(node.Right,data);
             node.SubTreeNum++;
         }
-        else if(node.item.saveData.compareTo(data.item.saveData)==0){ //node==data
+        else if(node.data.compareTo(data.data)==0){ //node==data
             return node;
         }
-        else if(node.item.saveData.compareTo(data.item.saveData)>0){ //node>data
+        else if(node.data.compareTo(data.data)>0){ //node>data
             node.Left=Insert(node.Left, data);
             node.SubTreeNum++;
         }
@@ -61,18 +60,18 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
     @Override
     public void Delete(T data) {
         // TODO Auto-generated method stub
-        BTnode<T> node=new BTnode<T>(new Data<T>(data),null,null);
+        Treenode<T> node=new Treenode<T>(data,null,null);
         Delete(Root,node);
     }
-    private BTnode<T> Delete(BTnode<T> node,BTnode<T> target){
+    private Treenode<T> Delete(Treenode<T> node,Treenode<T> target){
         if(node==null){
             depth--;
             return node;
         }
-        if(node.item.saveData.compareTo(target.item.saveData)<0){
+        if(node.data.compareTo(target.data)<0){
             node.Right=Delete(node.Right,target);
         }
-        else if(node.item.saveData.compareTo(target.item.saveData)==0){
+        else if(node.data.compareTo(target.data)==0){
             int flag=Check(node, target);
             if(flag==1){
                 node=node.Right;
@@ -81,11 +80,11 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
                 node=node.Left;
             }
             else{
-                BTnode<T> temp=node;
+                Treenode<T> temp=node;
                 node=Min(temp.Right);
-                node.Right=DelMin(temp.Right);
+                node.Right=delMin(temp.Right);
                 node.Left=temp.Left;
-                if(target.item.saveData.compareTo(Root.item.saveData)==0){
+                if(target.data.compareTo(Root.data)==0){
                     Root=node;
                 }
             }
@@ -95,7 +94,7 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         }
         return node;
     }
-    private int Check(BTnode<T> node,BTnode<T> target){
+    private int Check(Treenode<T> node,Treenode<T> target){
         int flag=0;
         if(node.Left==null&&node.Right!=null){
             flag=1;
@@ -111,11 +110,11 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
     @Override
     public T Max(){
         // TODO Auto-generated method stub
-        BTnode<T> node;
+        Treenode<T> node;
         for(node=Root;node.Right!=null;node=node.Right);
-        return node.item.saveData;
+        return node.data;
     }
-    private BTnode<T> Max(BTnode<T> node){
+    private Treenode<T> Max(Treenode<T> node){
         if(node==null){
             return node;
         }
@@ -124,27 +123,27 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
     @Override
     public T Min(){
         // TODO Auto-generated method stub
-        BTnode<T> node;
+        Treenode<T> node;
         for(node=Root;node.Left!=null;node=node.Left);
-        return node.item.saveData;
+        return node.data;
     }
-    private BTnode<T> DelMax(BTnode<T> node){
+    private Treenode<T> delMax(Treenode<T> node){
         if(node.Right==null){
             node.SubTreeNum--;
             return node.Left;
         }
-        node.Right=DelMin(node.Right);
+        node.Right=delMin(node.Right);
         return node;
     }
-    private BTnode<T> DelMin(BTnode<T> node){
+    private Treenode<T> delMin(Treenode<T> node){
         if(node.Left==null){
             node.SubTreeNum--;
             return node.Right;
         }
-        node.Left=DelMin(node.Left);
+        node.Left=delMin(node.Left);
         return node;
     }
-    private BTnode<T> Min(BTnode<T> node){
+    private Treenode<T> Min(Treenode<T> node){
         if(node.Left==null){
             return node;
         }
@@ -156,15 +155,30 @@ public class BRTree<T extends Comparable<T>>implements IBRTree<T>{
         // TODO Auto-generated method stub
         Show(Root);
     }
-    private void Show(BTnode<T> node){
+    private void Show(Treenode<T> node){
         if(node==null){
             return;
         }
         Show(node.Left);
-        System.out.print(node.item.saveData+" ");
+        System.out.print(node.data+" ");
         Show(node.Right);
     }
-    public int Depth() {
+    public Treenode<T> getRoot() {
+        return Root;
+    }
+    public void setRoot(Treenode<T> root) {
+        Root = root;
+    }
+    public int getDepth() {
         return depth;
+    }
+    public void setDepth(int depth) {
+        this.depth = depth;
+    }
+    public int getCount() {
+        return count;
+    }
+    public void setCount(int count) {
+        this.count = count;
     }
 }

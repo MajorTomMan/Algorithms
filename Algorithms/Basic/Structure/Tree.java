@@ -10,7 +10,7 @@ public class Tree<T> implements ITree<T>{
     private TRnode<T> root;
     private int depth;
     @Override
-    public boolean TreeIsEmpty() {
+    public boolean isEmpty() {
         // TODO Auto-generated method stub
         if(root==null){
             return true;
@@ -19,7 +19,7 @@ public class Tree<T> implements ITree<T>{
     }
 
     @Override
-    public int TreeItemCount() {
+    public int Size() {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -27,7 +27,7 @@ public class Tree<T> implements ITree<T>{
     @Override
     public void Insert(TRnode<T> child,TRnode<T> father) {
         // TODO Auto-generated method stub
-        if(TreeIsEmpty()){
+        if(isEmpty()){
             setRoot(child);
             return;
         }
@@ -43,14 +43,14 @@ public class Tree<T> implements ITree<T>{
     @Override
     public void Delete(TRnode<T> delchild,TRnode<T> father) {
         // TODO Auto-generated method stu
-        if(father!=null&&!father.data.saveData.equals(root.data.saveData)){ //如果是非根节点的子节点要被删除,执行这句
+        if(father!=null&&!father.data.equals(root.data)){ //如果是非根节点的子节点要被删除,执行这句
             father.child.remove(delchild);
             father.nodenumber=father.child.size();
             System.out.println("节点已经删除");
         }
-        else if(father!=null&&father.data.saveData.equals(root.data.saveData)){ //如果是根节点中的子节点,将根节点中的子节点中的节点复制给根节点
+        else if(father!=null&&father.data.equals(root.data)){ //如果是根节点中的子节点,将根节点中的子节点中的节点复制给根节点
             for (TRnode<T> child:root.child) {
-                if(child.data.saveData.equals(delchild.data.saveData)){
+                if(child.data.equals(delchild.data)){
                     List<TRnode<T>> temp=child.child;
                     root.child.remove(child);
                     for (TRnode<T> tRnode : temp) {
@@ -79,7 +79,11 @@ public class Tree<T> implements ITree<T>{
     }
 
     @Override
-    public void Show(TRnode<T> node) { //深度优先搜索
+    public void Show() {
+        // TODO Auto-generated method stub
+        Show(root);
+    }
+    private void Show(TRnode<T> node) { //深度优先搜索
         // TODO Auto-generated method stub
         if (node == null) {
             return;
@@ -88,7 +92,7 @@ public class Tree<T> implements ITree<T>{
         HashSet<TRnode<T>> set = new HashSet<>();
         stack.push(node);
         set.add(node);
-        System.out.println(node.data.saveData);
+        System.out.println(node.data);
         
         while (!stack.isEmpty()) {
             //弹栈获得一个节点
@@ -101,7 +105,7 @@ public class Tree<T> implements ITree<T>{
                     stack.push(cur);
                     stack.push(next);
                     set.add(next);
-                    System.out.println(next.data.saveData);
+                    System.out.println(next.data);
                     break;
                 }
             }
@@ -115,7 +119,7 @@ public class Tree<T> implements ITree<T>{
         HashSet<TRnode<T>> set = new HashSet<>();
         stack.push(root);
         set.add(root);
-        if(root.data.saveData.equals(data)){
+        if(root.data.equals(data)){
             return root;
         } 
         while (!stack.isEmpty()) {
@@ -123,7 +127,7 @@ public class Tree<T> implements ITree<T>{
             TRnode<T> cur = stack.pop();
             //查看这个节点的所有孩子
             for (TRnode<T> next : cur.child) {
-                if(next.data.saveData.equals(data)){
+                if(next.data.equals(data)){
                     return next;
                 }
                 //如果有孩子是之前没有遍历到的，说明这个节点没有深度遍历完

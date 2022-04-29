@@ -27,7 +27,7 @@ public class 二叉排序树测试{
         System.out.println(Tree.Max());
         System.out.println(Tree.Min());
         System.out.println("\n--------------");
-        System.out.println(Tree.Depth());
-        System.out.println(Tree.Count());
+        System.out.println(Tree.getDepth());
+        System.out.println(Tree.Size());
     }
 }

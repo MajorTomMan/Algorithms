@@ -3,7 +3,6 @@ package Basic.Structure;
 import java.util.Iterator;
 
 import Basic.Structure.Interface.IQueue;
-import Basic.Structure.Node.Data;
 import Basic.Structure.Node.Node;
 
 public class Queue<T> implements IQueue<T>,Iterable<T>{
@@ -11,7 +10,7 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
     private Node<T> rear; // 插入
     private int size;
     public T dequeue() {
-        T data = front.data.saveData;
+        T data = front.data;
         front = front.next;
         if (isEmpty()) {
             rear = null;
@@ -20,9 +19,9 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
         return data;
     }
 
-    public void enqueue(T var) {
+    public void enqueue(T data) {
         Node<T> oldRear=rear;
-        Node<T> node = new Node<>(new Data<T>(var),null);
+        Node<T> node = new Node<>(data,null);
         rear=node;
         if(isEmpty()){
             front=node;
@@ -32,16 +31,29 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
         }
         size++;
     }
-
+    @Override
     public boolean isEmpty() {
         if (front == null) {
             return true;
         }
         return false;
     }
-
-    public int getSize() {
+    @Override
+    public int Size() {
         return size;
+    }
+    @Override
+    public void Show() {
+        // TODO Auto-generated method stub
+        Show(front);
+    }
+    private Node<T> Show(Node<T> node){
+        if(node==null){
+            return node;
+        }
+        Show(node.next);
+        System.out.print(node.data+" ");
+        return node;
     }
     @Override
     public Iterator<T> iterator() {
@@ -59,9 +71,9 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
         @Override
         public T next() {
             // TODO Auto-generated method stub
-            Data<T> data=current.data;
+            T data=current.data;
             current=current.next;
-            return data.saveData;
+            return data;
         }
     }
 }

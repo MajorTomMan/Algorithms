@@ -15,7 +15,7 @@ public class 二进制计算{
             queue.enqueue(data%2);
             data/=2;
         }
-        i=queue.getSize();
+        i=queue.Size();
         while(!queue.isEmpty()){
             temp=queue.dequeue();
             if(temp==1){

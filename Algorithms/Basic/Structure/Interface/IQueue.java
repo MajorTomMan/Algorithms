@@ -1,8 +1,6 @@
 package Basic.Structure.Interface;
 
-public interface IQueue<T>{
+public interface IQueue<T> extends Example<T>{
     T dequeue();
-    void enqueue(T var);
-    boolean isEmpty();
-    int getSize();
+    void enqueue(T data);
 }

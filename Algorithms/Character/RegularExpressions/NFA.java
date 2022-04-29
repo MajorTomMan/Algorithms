@@ -46,7 +46,7 @@ public class NFA {
             if (regexp.charAt(i) == '(' || regexp.charAt(i) == '*' || regexp.charAt(i) == ')') 
                 graph.addEdge(i, i+1);
         }
-        if (ops.getSize() != 0)
+        if (ops.Size() != 0)
             throw new IllegalArgumentException("Invalid regular expression");
     } 
 

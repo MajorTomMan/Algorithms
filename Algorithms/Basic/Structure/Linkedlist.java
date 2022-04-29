@@ -3,17 +3,32 @@ package Basic.Structure;
 import java.util.Iterator;
 
 import Basic.Structure.Interface.ILinkedlist;
-import Basic.Structure.Node.Data;
 import Basic.Structure.Node.Node;
 
-public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
+public class Linkedlist<T extends Comparable<T>> implements ILinkedlist<T>,Iterable<T>{
     private Node<T> head;
     private int size;
     public Linkedlist(Node<T> head) {
         this.head = head;
+        size++;
     }
-    public Linkedlist(T var){
-        this.head=new Node<>(new Data<T>(var),null);
+    public Linkedlist(T data){
+        this.head=new Node<>(data,null);
+        size++;
+    }
+    public Linkedlist(){
+        
+    }
+    @Override
+    public boolean isEmpty() {
+        // TODO Auto-generated method stub
+        return head==null;
+    }
+    @Override
+    public void Show() {
+        // TODO Auto-generated method stub
+        Node<T> temp=head;
+        Show(temp);
     }
     public void Delete(int index) {
         int i=0;
@@ -26,12 +41,12 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         }
         pre.next=temp.next;
     }
-    public void Delete(T var){
+    public void Delete(T data){
         Node<T> temp=head;
         Node<T> pre=new Node<T>(null,null);
         boolean flag=false;
-        while(temp.data.saveData!=var&&temp!=null){
-            if(temp.data.saveData.equals(var)){
+        while(temp.data!=data&&temp!=null){
+            if(temp.data.equals(data)){
                 flag=true;
                 break;
             }
@@ -47,26 +62,29 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         }
     }
 
-    public void InsertTail(T var) {
-        if(head==null){
-            head=new Node<>(new Data<T>(var),null);
+    public void InsertTail(T data){
+        if(isEmpty()){
+            head=new Node<>(data,null);
             return;
         }
-        Node<T> temp=head;
-        Node<T> node=new Node<>(new Data<T>(var),null);
-        while(temp.next!=null){
-            temp=temp.next;
+        InsertTail(data,head);
+    }
+    private Node<T> InsertTail(T data,Node<T> node) {
+        if(node==null){
+            ++size;
+            return new Node<>(data,null);
         }
-        temp.next=node;
+        node.next=InsertTail(data,node.next);
+        return node;
     }
 
-    public void InsertMiddle(int index,T var) {
-        if(head==null){
-            head=new Node<>(new Data<T>(var),null);
+    public void InsertMiddle(int index,T data) {
+        if(isEmpty()){
+            head=new Node<>(data,null);
             return;
         }
         Node<T> temp=head;
-        Node<T> node=new Node<>(new Data<T>(var),null);
+        Node<T> node=new Node<>(data,null);
         int i=0;
         while(i!=index){
             temp=temp.next;
@@ -75,8 +93,12 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         node.next=temp.next;
         temp.next=node;
     }
-    public void Insert(T var) {
-        Node<T> node=new Node<>(new Data<T>(var),null);
+    public void Insert(T data) {
+        if(isEmpty()){
+            head=new Node<>(data,null);
+            return;
+        }
+        Node<T> node=new Node<>(data,null);
         node.next=head.next;
         head.next=node;
         size++;
@@ -97,17 +119,32 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
             return;
         }
         Show(node.next);
-        System.out.print(node.data.saveData+" ");
+        System.out.print(node.data+" ");
     }
     public boolean contains(T target) {
         for(Node<T> data=head;data!=null;data=data.next){
-            if(data.data.saveData==target){
+            if(data.data==target){
                 return true;
             }
         }
         return false;
     }
-    
+    public void Sort() {
+        Node<T> temp=head;
+        Sort(temp);
+    }
+    private void Sort(Node<T> node){
+        for(Node<T> i=node;i!=null;i=i.next){
+            for(Node<T> j=i.next;j!=null;j=j.next){
+                if(i.data.compareTo(j.data)==1){
+                    T data=i.data;
+                    i.data=j.data;
+                    j.data=data;
+                }
+            }
+        }
+    }
+
     public int Size(){
         if(size==0){
             Node<T> temp=head;
@@ -150,9 +187,9 @@ public class Linkedlist<T> implements ILinkedlist<T>,Iterable<T>{
         @Override
         public T next() {
             // TODO Auto-generated method stub
-            Data<T> data=current.data;
+            T data=current.data;
             current=current.next;
-            return data.saveData;
+            return data;
         }
     }
 }

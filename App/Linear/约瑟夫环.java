@@ -12,7 +12,7 @@ public class 约瑟夫环{
         }
         while(cyclelist.getHead().next!=cyclelist.getHead()){
             cyclelist.Delete(3);
-            cyclelist.Show(cyclelist.getHead());
+            cyclelist.Show();
         }
         System.out.println("约瑟夫环只剩一个元素");
     }

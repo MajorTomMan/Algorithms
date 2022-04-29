@@ -13,10 +13,8 @@ public class twoSideNode<T> {
         this.next = next;
         this.pre = pre;
     }
-
     @Override
     public String toString() {
-        return "DoubleLinckNode [data=" + data + ", next=" + next + ", pre=" + pre + "]";
+        return "[data=" + data + ", next=" + next + ", pre=" + pre + "]";
     }
-
 }

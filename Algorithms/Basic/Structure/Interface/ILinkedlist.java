@@ -1,12 +1,12 @@
 package Basic.Structure.Interface;
 import Basic.Structure.Node.Node;
 
-public interface ILinkedlist<T> {
-   // public void Initial(T var);
+public interface ILinkedlist<T> extends Example<T>{
+   // public void Initial(T data);
     public void Delete(int index);
-    public void Insert(T var);
-   // public void InsertMiddle(int index,T var);
-   // public void InsertHead(T var);
+    public void Insert(T data);
+   // public void InsertMiddle(int index,T data);
+   // public void InsertHead(T data);
     public void Reverse();
-    public void Show(Node<T> node);
+    public void Show();
 }

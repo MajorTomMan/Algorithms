@@ -19,7 +19,7 @@ public class 合并有序链表 {
         else if(list2==null){
             return list1;
         }
-        else if (list1.data.saveData<list2.data.saveData) {
+        else if (list1.data<list2.data) {
             list1.next = mergeTwoLists(list1.next,list2);
             return list1;
         } else {

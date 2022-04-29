@@ -22,7 +22,7 @@ public class 链表倒序 {
             node=node.next;
         }
         for (int i = List.size()-1; i>=0;i--) {
-            result.add(List.get(i).data.saveData);
+            result.add(List.get(i).data);
         }
         return result;
     }

@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.Random;
 
 import Basic.Structure.Tree;
-import Basic.Structure.Node.Data;
 import Basic.Structure.Node.TRnode;
 public class 树 {
     public static void main(String[] args) {
@@ -15,7 +14,7 @@ public class 树 {
         String[] str_t=str.split(", ");
         i=0;
         while(i<str_t.length){
-            TRnode<String> node=new TRnode<>(new Data<String>(str_t[i]),null,new LinkedList<>());
+            TRnode<String> node=new TRnode<>(str_t[i],null,new LinkedList<>());
             if(i%str_t.length==3){
                 next=tree.getRoot().child.get(i-2);
                 tree.Insert(node,next);
@@ -25,7 +24,7 @@ public class 树 {
             }
             i++;
         }
-        tree.Show(tree.getRoot());
+        tree.Show();
         i=0;
         while(i!=3){
             Random random=new Random();
@@ -39,6 +38,6 @@ public class 树 {
             }
             i++;
         }
-        tree.Show(tree.getRoot());
+        tree.Show();
     }
 }
