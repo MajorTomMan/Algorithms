@@ -17,10 +17,10 @@ public class 树 {
             TRnode<String> node=new TRnode<>(str_t[i],null,new LinkedList<>());
             if(i%str_t.length==3){
                 next=tree.getRoot().child.get(i-2);
-                tree.Insert(node,next);
+                tree.put(node,next);
             }
             else{
-                tree.Insert(node,tree.getRoot());
+                tree.put(node,tree.getRoot());
             }
             i++;
         }

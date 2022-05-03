@@ -14,8 +14,8 @@ public class 相同的树 {
         while(i!=12){
             int n=random.nextInt(100);
             int m=random.nextInt(100);
-            Tree_a.Insert(n);
-            Tree_b.Insert(n);
+            Tree_a.put(n);
+            Tree_b.put(n);
             System.out.print(n+" "+m+" \n");
             i++;
         }

@@ -9,11 +9,11 @@ public class 二叉树的最短路径 {
     public static void main(String[] args) {
         BRTree<Integer> tree=new BRTree<Integer>();
         System.out.println("-----------------------raw data--------------------");
-        tree.Insert(2);
-        tree.Insert(3);
-        tree.Insert(4);
-        tree.Insert(5);
-        tree.Insert(6);
+        tree.put(2);
+        tree.put(3);
+        tree.put(4);
+        tree.put(5);
+        tree.put(6);
         System.out.println();
         System.out.println(minDepth(tree.getRoot()));
     }

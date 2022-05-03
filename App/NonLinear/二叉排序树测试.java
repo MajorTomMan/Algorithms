@@ -13,11 +13,11 @@ public class 二叉排序树测试{
         System.out.println("-----------------------raw data--------------------");
         while(i!=12){
             int ran=random.nextInt(100);
-            Tree.Insert(ran);
+            Tree.put(ran);
             System.out.print(ran+",");
             i++;
         }
-        Tree.Insert(34);
+        Tree.put(34);
         System.out.println();
         Tree.Show();
         System.out.println("\n--------------");

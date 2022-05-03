@@ -14,7 +14,7 @@ public class 二叉树的中序遍历 {
         System.out.println("-----------------------raw data--------------------");
         while(i!=12){
             int ran=random.nextInt(100);
-            Tree.Insert(ran);
+            Tree.put(ran);
             System.out.print(ran+" ");
             i++;
         }

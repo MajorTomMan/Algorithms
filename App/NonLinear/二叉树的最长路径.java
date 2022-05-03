@@ -7,11 +7,11 @@ import Basic.Structure.Node.Treenode;
 public class 二叉树的最长路径 {
     public static void main(String[] args) {
         BRTree<Integer> Tree=new BRTree<Integer>();
-        Tree.Insert(3);
-        Tree.Insert(9);
-        Tree.Insert(20);
-        Tree.Insert(15);
-        Tree.Insert(7);
+        Tree.put(3);
+        Tree.put(9);
+        Tree.put(20);
+        Tree.put(15);
+        Tree.put(7);
         System.out.println(maxDepth(Tree.getRoot()));
     }
     public static int maxDepth(Treenode<Integer> root) {

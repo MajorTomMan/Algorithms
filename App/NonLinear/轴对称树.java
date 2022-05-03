@@ -11,12 +11,12 @@ public class 轴对称树 {
         int i=0;
         BRTree<Integer> Tree=new BRTree<Integer>(1);
         Random random=new Random();
-        Tree.Insert(2);
-        Tree.Insert(2);
-        Tree.Insert(3);
-        Tree.Insert(4);
-        Tree.Insert(3);
-        Tree.Insert(4);
+        Tree.put(2);
+        Tree.put(2);
+        Tree.put(3);
+        Tree.put(4);
+        Tree.put(3);
+        Tree.put(4);
         System.out.println();
         System.out.println(isSymmetric(Tree.getRoot()));
     }
