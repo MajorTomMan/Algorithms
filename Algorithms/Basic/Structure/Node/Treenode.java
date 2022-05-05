@@ -12,9 +12,15 @@ public class Treenode<T> {
       this.Right = right;
    }
 
+   public Treenode(T data) {
+      this.data = data;
+      this.Left = null;
+      this.Right = null;
+   }
+
    @Override
    public String toString() {
       // TODO Auto-generated method stub
-      return "data:" + data + "==>Left:" + Left+ " ===>Right "+Right+"";
+      return "data:" + data + "==>Left:" + Left + " ===>Right " + Right + "";
    }
 }

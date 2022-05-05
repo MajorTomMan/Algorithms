@@ -64,12 +64,16 @@ public class huffmanTree<T extends Comparable<T>> {
         printNode(root,code);
     }
     private Node<T> printNode(Node<T> node,String code){
-        if(node==null){
+        if(node==null){ 
             return node;
         }
         printNode(node.left,code+=node.code);
-        System.out.print("data:"+node.data+" code:"+code);
-        System.out.println();
+        if(node.data==null){
+            ;
+        }else{
+            System.out.print("data:"+node.data+" code:"+code);
+            System.out.println();
+        }
         printNode(node.right,code+=node.code);
         return node;
     }

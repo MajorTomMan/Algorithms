@@ -1,5 +1,6 @@
 package NonLinear;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import Basic.Structure.BRTree;
@@ -24,11 +25,15 @@ public class 二叉树的最短路径 {
         if(node==null){
             return 0;
         }
-        int leftHeigh=ShortestPath(node.Left);
-        int rightHeigh=ShortestPath(node.Right);
-        if(leftHeigh==-1||rightHeigh==-1){
-            return -1;
+        if(node.Left==null && node.Right==null){
+            return 1;
         }
-        return Math.min(leftHeigh, rightHeigh)<2?Math.min(leftHeigh, rightHeigh)+1:-1;
+        if(node.Left!=null){
+            return ShortestPath(node.Left)+1;
+        }
+        if(node.Right!=null){
+            return ShortestPath(node.Right)+1;
+        }
+        return Math.min(ShortestPath(node.Left),ShortestPath(node.Right))+1;
     }
 }

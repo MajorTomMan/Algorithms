@@ -1,25 +1,14 @@
 package NonLinear;
 
-import java.util.Random;
-
 import Basic.Structure.BRTree;
 import Basic.Structure.Queue;
 import Basic.Structure.Node.Treenode;
 
-public class 二叉树的层序遍历 {
+public class 二叉树的层序遍历 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=new BRTree<Integer>(50);
-        int i=0;
-        Random random=new Random();
-        System.out.println("-----------------------raw data--------------------");
-        while(i!=12){
-            int ran=random.nextInt(100);
-            Tree.put(ran);
-            System.out.print(ran+" ");
-            i++;
-        }
+        BRTree<Integer> Tree=buildTreeByRandom(12);
         System.out.println();
-        for (int data: levelOrder(Tree.getRoot(),i)) {
+        for (int data: levelOrder(Tree.getRoot(),Tree.Size())) {
             System.out.print(data+" ");
         }
     }

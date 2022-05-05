@@ -1,24 +1,12 @@
 package NonLinear;
 
-import java.util.Random;
-
 import Basic.Structure.BRTree;
-import Basic.Structure.Tree;
+
 import Basic.Structure.Node.Treenode;
 
-public class 平衡二叉树 {
+public class 平衡二叉树 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=new BRTree<Integer>(50);
-        int i=0;
-        Random random=new Random();
-        System.out.println("-----------------------raw data--------------------");
-        while(i!=12){
-            int ran=random.nextInt(100);
-            Tree.put(ran);
-            System.out.print(ran+" ");
-            i++;
-        }
-        System.out.println();
+        BRTree<Integer> Tree=buildTreeByRandom(12);
         System.out.println(isBalanced(Tree.getRoot()));
     }
     public static boolean isBalanced(Treenode<Integer> root) {
