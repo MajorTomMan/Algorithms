@@ -7,6 +7,10 @@ public class Node<T>{
         this.data = data;
         this.next = next;
     }
+    public Node(T data) {
+        this.data = data;
+        this.next = null;
+    }
     @Override
     public String toString() {
         return "data:" + data +"->" + next + " ";

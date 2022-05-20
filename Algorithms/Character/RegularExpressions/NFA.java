@@ -80,7 +80,7 @@ public class NFA {
                 if (dfs.marked(v)) pc.add(v);
 
             // optimization if no states reachable
-            if (pc.size() == 0) return false;
+            if (pc.Size() == 0) return false;
         }
 
         // check for accept state

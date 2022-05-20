@@ -224,7 +224,7 @@ public class Digraph{ //有向图定义
      */
     public int outdegree(int v) {
         validateVertex(v);
-        return adj[v].size();
+        return adj[v].Size();
     }
 
     /**

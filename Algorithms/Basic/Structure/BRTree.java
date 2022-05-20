@@ -170,7 +170,6 @@ public class BRTree<T extends Comparable<T>> implements IBRTree<T> {
     }
 
     /* 中序遍历 递归 */
-    @Override
     public void Show() {
         // TODO Auto-generated method stub
         Show(Root);

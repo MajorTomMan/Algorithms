@@ -43,7 +43,6 @@ public class SymbolGraph{ //符号图定义
         return st.contains(s);
     }
     public int index(String s){
-        System.out.println();
         return st.get(s);
     }
     public String name(int v){

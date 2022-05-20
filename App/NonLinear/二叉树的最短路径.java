@@ -1,12 +1,9 @@
 package NonLinear;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 import Basic.Structure.BRTree;
 import Basic.Structure.Node.Treenode;
 
-public class 二叉树的最短路径 {
+public class 二叉树的最短路径 extends Example {
     public static void main(String[] args) {
         BRTree<Integer> tree=new BRTree<Integer>();
         System.out.println("-----------------------raw data--------------------");

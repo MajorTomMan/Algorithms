@@ -6,6 +6,48 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 迷宫回溯问题",
+            "request": "launch",
+            "mainClass": "迷宫回溯问题",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 旋转数组的最小数字",
+            "request": "launch",
+            "mainClass": "旋转数组的最小数字",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 多数元素",
+            "request": "launch",
+            "mainClass": "多数元素",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 字符串最长前缀",
+            "request": "launch",
+            "mainClass": "字符串最长前缀",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 两数相加",
+            "request": "launch",
+            "mainClass": "两数相加",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 表列名称",
+            "request": "launch",
+            "mainClass": "表列名称",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 搜索插入位置",
             "request": "launch",
             "mainClass": "搜索插入位置",

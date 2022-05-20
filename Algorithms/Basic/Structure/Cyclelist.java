@@ -54,8 +54,6 @@ public class Cyclelist<T> implements ICyclelist<T> {
         // TODO Auto-generated method stub
         return size;
     }
-
-    @Override
     public void Show() {
         // TODO Auto-generated method stub
         Show(head);

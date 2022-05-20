@@ -24,7 +24,6 @@ public class Linkedlist<T extends Comparable<T>> implements ILinkedlist<T>,Itera
         // TODO Auto-generated method stub
         return head==null;
     }
-    @Override
     public void Show() {
         // TODO Auto-generated method stub
         Node<T> temp=head;

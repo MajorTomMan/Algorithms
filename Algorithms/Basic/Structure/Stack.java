@@ -44,7 +44,6 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         // TODO Auto-generated method stub
         return size;
     }
-    @Override
     public void Show() {
         // TODO Auto-generated method stub
         Show(top);

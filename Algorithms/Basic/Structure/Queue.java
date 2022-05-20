@@ -42,7 +42,6 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
     public int Size() {
         return size;
     }
-    @Override
     public void Show() {
         // TODO Auto-generated method stub
         Show(front);

@@ -7,10 +7,11 @@ public class Graph{ //无向图定义和基础算法
     private final int V; //顶点
     private int E; //边
     private Bag<Integer>[] adj;
+    @SuppressWarnings("unchecked")
     public Graph(int V){
         this.V=V;
         this.E=0;
-        adj=(Bag<Integer>[]) new Bag[V];
+        adj=new Bag[V];
         for(int v=0;v<V;v++){
             adj[v]=new Bag<Integer>();
         }

@@ -4,10 +4,10 @@ import java.util.Stack;
 
 import Graph.UnDig.Graph;
 
-public class DepthFirstPaths { //深度优先搜素查找图路径
-    private boolean[] marked;
-    private int[] edgeTo;
-    private final int s;
+public class DepthFirstPaths<T extends Comparable<T>>{ //深度优先搜素查找图路径
+    private boolean[] marked; //是否调用过dfs了
+    private int[] edgeTo; // 从起点到一个顶点的已知路径上的最后一个路径
+    private final int s; //起点
     public DepthFirstPaths(Graph G,int s){
         marked=new boolean[G.V()];
         edgeTo=new int[G.V()];

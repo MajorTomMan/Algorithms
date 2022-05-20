@@ -4,7 +4,7 @@ package NonLinear;
 import Basic.Structure.BRTree;
 import Basic.Structure.Node.Treenode;
 
-public class 二叉树的最长路径 {
+public class 二叉树的最长路径 extends Example{
     public static void main(String[] args) {
         BRTree<Integer> Tree=new BRTree<Integer>();
         Tree.put(3);
@@ -12,6 +12,7 @@ public class 二叉树的最长路径 {
         Tree.put(20);
         Tree.put(15);
         Tree.put(7);
+        printTree(Tree.getRoot());
         System.out.println(maxDepth(Tree.getRoot()));
     }
     public static int maxDepth(Treenode<Integer> root) {
