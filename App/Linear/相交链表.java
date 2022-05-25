@@ -1,5 +1,4 @@
 import Basic.Structure.Node.Node;
-import NonLinear.Example;
 
 public class 相交链表 extends Example{
     public static void main(String[] args) {

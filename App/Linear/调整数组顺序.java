@@ -1,38 +1,32 @@
 
-import java.util.Scanner;
-
 public class 调整数组顺序 {
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        int[] nums=new int[999];
-        int i=0;
-        while(scanner.hasNextInt()){
-            nums[i]=scanner.nextInt();
-            i++;
+        int[] nums = { 2, 16, 3, 5, 13, 1, 16, 1, 12, 18, 11, 8, 11, 11, 5, 1 };
+        nums = reverse(nums);
+        for (int i : nums) {
+            System.out.print(i + " ");
         }
-        reverse(nums);
-        String s = "[";
-        for (int data : nums) {
-            if (data == 0) {
-                continue;
-            }
-            s += data + ",";
-        }
-        s += "]";
-        System.out.println(s);
-        scanner.close();
     }
-
-    public static void reverse(int[] nums) {
-        for (int i = 0; i < nums.length; i++) {
-            for (int j = i + 1; j < nums.length; j++) {
-                if (nums[i] % 2 == 0 && nums[j] % 2 != 0) {
-                    int temp = nums[i];
-                    nums[i] = nums[j];
-                    nums[j] = temp;
-                }
-            }
+    // 快慢指针法
+    public static int[] reverse(int[] nums) {
+        if (nums.length == 0) {
+            return nums;
         }
-
+        int left = 0, right = nums.length - 1;
+        while (left < right) {
+            while (left <= right && nums[left] % 2 == 1) {
+                left++;
+            }
+            while (left <= right && nums[right] % 2 == 0) {
+                right--;
+            }
+            if (left > right) {
+                break;
+            }
+            int tmp = nums[left];
+            nums[left] = nums[right];
+            nums[right] = tmp;
+        }
+        return nums;
     }
 }

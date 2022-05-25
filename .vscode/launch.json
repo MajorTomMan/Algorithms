@@ -6,6 +6,83 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 合并有序链表",
+            "request": "launch",
+            "mainClass": "合并有序链表",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 反转链表",
+            "request": "launch",
+            "mainClass": "反转链表",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 链表中倒数第K个节点",
+            "request": "launch",
+            "mainClass": "链表中倒数第K个节点",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 调整数组顺序",
+            "request": "launch",
+            "mainClass": "调整数组顺序",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 删除链表节点",
+            "request": "launch",
+            "mainClass": "删除链表节点",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 打印从1到最大的n位数",
+            "request": "launch",
+            "mainClass": "打印从1到最大的n位数",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 数值的整数次方",
+            "request": "launch",
+            "mainClass": "数值的整数次方",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二进制中1的个数",
+            "request": "launch",
+            "mainClass": "二进制中1的个数",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 剪绳子",
+            "request": "launch",
+            "mainClass": "剪绳子",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 机器人的运动范围",
+            "request": "launch",
+            "mainClass": "机器人的运动范围",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 矩阵中的路径",
+            "request": "launch",
+            "mainClass": "矩阵中的路径",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 迷宫回溯问题",
             "request": "launch",
             "mainClass": "迷宫回溯问题",

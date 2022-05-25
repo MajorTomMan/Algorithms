@@ -1,7 +1,14 @@
+import Basic.Structure.Queue;
+
 public class 迷宫回溯问题 {
     public static void main(String[] args) {
-        int[][] map=getMap();
-        findWay(map,1,1);
+        int[][] map = getMap();
+        // 输出地图
+        setTarget(map, 6, 5, -9);
+        System.out.println("地图的初始情况:");
+        showMap(map);
+        System.out.println("--------------------start-------------------");
+        System.out.println(BFS(map, 1, 1,7));
     }
 
     /**
@@ -26,12 +33,21 @@ public class 迷宫回溯问题 {
         // 设置挡板
         map[3][1] = 1;
         map[3][2] = 1;
-
-        // 输出地图
-        System.out.println("地图的初始情况:");
-        showMap(map);
-
         return map;
+    }
+
+    /**
+     * 设置目标位置和指定数
+     * 
+     * 
+     * @param map    地图二维数组
+     * @param x      起始点横坐标
+     * @param y      起始点纵坐标
+     * @param target 目标数
+     * @return
+     */
+    private static void setTarget(int[][] map, int x, int y, int target) {
+        map[x][y] = target;
     }
 
     /**
@@ -59,7 +75,7 @@ public class 迷宫回溯问题 {
      */
     public static boolean findWay(int[][] map, int x, int y) {
         // 如果走到了终点就终止
-        if (map[6][5] == 2) {
+        if (map[6][5] == 7) {
             return true;
         } else {
             // 只有为0的路才能通过
@@ -90,5 +106,43 @@ public class 迷宫回溯问题 {
                 return false;
             }
         }
+    }
+
+    /**
+     * 给定起始点，根据地图找路,利用BFS算法(广度优先)
+     * 使用-1表示可以走通的路
+     * 
+     * @param map 地图二维数组
+     * @param x   起始点横坐标
+     * @param y   起始点纵坐标
+     * @return
+     */
+    public static boolean BFS(int[][] map, int x, int y, int target) {
+        Queue<Integer> queue = new Queue<>();
+        queue.enqueue(map[x][y]);
+        map[x][y] = -1;
+        while (!queue.isEmpty()) {
+            int currentPoint = queue.dequeue();
+            for (int i = y; i != map[x].length - 1 && x != map.length - 1; i++) {
+                if (map[x][i] == target) {
+                    System.out.println("Found!");
+                    showMap(map);
+                    System.out.println("----------every step------------");
+                    return true;
+                }
+                queue.enqueue(map[x][i]);
+                if (map[x][i] != 1) {
+                    map[x][i] = -1;
+                } else {
+                    continue;
+                }
+                showMap(map);
+                System.out.println("----------every step------------");
+            }
+            if (x < map.length - 1) {
+                x++;
+            }
+        }
+        return false;
     }
 }

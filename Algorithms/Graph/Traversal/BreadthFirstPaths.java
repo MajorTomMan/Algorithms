@@ -5,9 +5,9 @@ import Basic.Structure.Stack;
 import Graph.UnDig.Graph;
 
 public class BreadthFirstPaths{//广度优先搜索实现查找图路径算法
-    private boolean[] marked;
-    private int[] edgeTo;
-    private final int s;
+    private boolean[] marked; //是否调用过dfs了
+    private int[] edgeTo; // 从起点到一个顶点的已知路径上的最后一个路径
+    private final int s; //起点
     public BreadthFirstPaths(Graph G,int s){
         marked=new boolean[G.V()];
         edgeTo=new int[G.V()];

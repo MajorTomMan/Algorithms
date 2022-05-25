@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import Basic.Structure.Node.Node;
-import NonLinear.Example;
 
 public class 两数相加 extends Example{
     public static void main(String[] args) {

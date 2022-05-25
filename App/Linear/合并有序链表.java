@@ -1,16 +1,12 @@
-import Basic.Structure.Linkedlist;
+
 import Basic.Structure.Node.Node;
 
-public class 合并有序链表 {
+public class 合并有序链表 extends Example{
     public static void main(String[] args) {
-        Linkedlist<Integer> list_1=new Linkedlist<>(1);
-        Linkedlist<Integer> list_2=new Linkedlist<>(3);
-        list_1.InsertTail(2);
-        list_1.InsertTail(6);
-        list_2.InsertTail(4);
-        list_2.InsertTail(5);
-        Linkedlist<Integer> list_3=new Linkedlist<>(mergeTwoLists(list_1.getHead(),list_2.getHead()));
-        list_3.Show(list_3.getHead());
+        int[] nums_1={1,2,4},nums_2={1,3,4};
+        Node<Integer> head_1=buildLinkedList(nums_1),head_2=buildLinkedList(nums_2);
+        Node<Integer> result=mergeTwoLists(head_1, head_2);
+        printLinkedList(result);
     }
     public static Node<Integer> mergeTwoLists(Node<Integer> list1, Node<Integer> list2) {
         if(list1==null){

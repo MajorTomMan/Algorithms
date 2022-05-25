@@ -3,7 +3,6 @@ package NonLinear;
 import java.util.Random;
 
 import Basic.Structure.BRTree;
-import Basic.Structure.Node.Node;
 import Basic.Structure.Node.Treenode;
 
 public abstract class Example {
@@ -25,19 +24,6 @@ public abstract class Example {
         Treenode<Integer> node = new Treenode<Integer>(value);
         node.Left = buildTree(nums, index * 2);
         node.Right = buildTree(nums, index * 2 + 1);
-        return node;
-    }
-    public static Node<Integer> buildLinkedList(int nums[]){
-        return buildLinkedList(null,nums,0);
-    }
-    private static Node<Integer> buildLinkedList(Node<Integer> node,int nums[],int index){
-        if(index==nums.length){
-            return null;
-        }
-        if(node==null){
-            node=new Node<Integer>(nums[index],null);
-        }
-        node.next=buildLinkedList(node.next, nums,++index);
         return node;
     }
 
