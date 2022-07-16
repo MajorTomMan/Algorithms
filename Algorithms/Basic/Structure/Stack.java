@@ -49,11 +49,11 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         Show(top);
     }
     private Node<T> Show(Node<T> node){
-        if(isEmpty()){
+        if(node==null){
             return node;
         }
-        Show(node.next);
         System.out.print(node.data+" ");
+        Show(node.next);
         return node;
     }
     @Override

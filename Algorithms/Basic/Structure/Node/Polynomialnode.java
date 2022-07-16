@@ -9,6 +9,11 @@ public class Polynomialnode{
         this.exp = exp;
         this.next = next;
     }
+    public Polynomialnode(double power, int exp) {
+        this.power = power;
+        this.exp = exp;
+        this.next = null;
+    }
     public double getPower() {
         return power;
     }

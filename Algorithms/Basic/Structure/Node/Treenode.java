@@ -21,6 +21,6 @@ public class Treenode<T> {
    @Override
    public String toString() {
       // TODO Auto-generated method stub
-      return "data:" + data + "==>Left:" + Left + " ===>Right " + Right + "";
+      return "data->" + data + "\n\tLeft:" + Left + "\n\t\tRight:" + Right + "";
    }
 }

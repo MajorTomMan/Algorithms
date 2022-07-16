@@ -6,6 +6,97 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 无向图测试",
+            "request": "launch",
+            "mainClass": "NonLinear.无向图测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 位1的个数",
+            "request": "launch",
+            "mainClass": "位1的个数",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 只出现一次的数字",
+            "request": "launch",
+            "mainClass": "只出现一次的数字",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 颠倒二进制位",
+            "request": "launch",
+            "mainClass": "颠倒二进制位",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 十进制转十六进制",
+            "request": "launch",
+            "mainClass": "十进制转十六进制",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 十六进制转十进制",
+            "request": "launch",
+            "mainClass": "十六进制转十进制",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 地图测试",
+            "request": "launch",
+            "mainClass": "NonLinear.地图测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch Maze",
+            "request": "launch",
+            "mainClass": "Graph.Maze.Maze",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 地图测试",
+            "request": "launch",
+            "mainClass": "地图测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 对称二叉树",
+            "request": "launch",
+            "mainClass": "NonLinear.对称二叉树",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉树的镜像",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉树的镜像",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 树的子结构",
+            "request": "launch",
+            "mainClass": "NonLinear.树的子结构",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch test",
+            "request": "launch",
+            "mainClass": "test",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 合并有序链表",
             "request": "launch",
             "mainClass": "合并有序链表",

@@ -1,15 +1,18 @@
 
 import java.util.Random;
 
+
 import Basic.Structure.Node.Node;
 
 public abstract class Example{
     public static Node<Integer> buildLinkedList(int nums[]) {
         return buildLinkedList(null, nums, 0);
     }
-    public static void printLinkedList(Node<Integer> node){
+
+    public static void printLinkedList(Node<Integer> node) {
         System.out.println(node);
     }
+
     private static Node<Integer> buildLinkedList(Node<Integer> node, int nums[], int index) {
         if (index == nums.length) {
             return null;
@@ -40,29 +43,29 @@ public abstract class Example{
         }
         return map;
     }
-    public static void printGraph(int[][] map){
+
+    public static void printGraph(int[][] map) {
         for (int i = 0; i < map.length; i++) {
             System.out.print("[");
             for (int j = 0; j < map[i].length; j++) {
-                if(j==map[i].length-1){
+                if (j == map[i].length - 1) {
                     System.out.print(map[i][j]);
-                }
-                else{
-                    System.out.print(map[i][j]+",");
+                } else {
+                    System.out.print(map[i][j] + ",");
                 }
             }
             System.out.println("]");
         }
     }
-    public static void printGraph(boolean[][] map){
+
+    public static void printGraph(boolean[][] map) {
         for (int i = 0; i < map.length; i++) {
             System.out.print("[");
             for (int j = 0; j < map[i].length; j++) {
-                if(j==map[i].length-1){
+                if (j == map[i].length - 1) {
                     System.out.print(map[i][j]);
-                }
-                else{
-                    System.out.print(map[i][j]+",");
+                } else {
+                    System.out.print(map[i][j] + ",");
                 }
             }
             System.out.println("]");
