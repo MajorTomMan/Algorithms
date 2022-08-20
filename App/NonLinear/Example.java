@@ -8,6 +8,37 @@ import Basic.Structure.Node.Treenode;
 public abstract class Example {
     private static Treenode<Integer> root;
 
+    public static void printGraph(int[][] graph, boolean[] visited) {
+        boolean isPrint = false;
+        for (int i = 0; i < graph.length; i++) {
+            for (int j = 0; j < graph[0].length; j++) {
+                System.out.printf(graph[i][j] + " ");
+            }
+            if (!isPrint) {
+                System.out.print("\t");
+                for (int j = 0; j < graph[0].length; j++) {
+                    System.out.printf(visited[j] + " ");
+                }
+                isPrint = true;
+            }
+            System.out.println();
+        }
+    }
+
+    public static void printGraph(int[][] graph, boolean[][] visited) {
+        for (int i = 0; i < graph.length; i++) {
+            for (int j = 0; j < graph[0].length; j++) {
+                System.out.printf(graph[i][j] + " ");
+            }
+            System.out.print("\t");
+            for (int j = 0; j < graph[0].length; j++) {
+                System.out.printf(visited[i][j] + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------------------------");
+    }
+
     public static Treenode<Integer> buildTree(Integer[] nums) {
         root = buildTree(nums, 1);
         return root;
@@ -80,7 +111,6 @@ public abstract class Example {
             System.out.println(sb.toString());
         }
     }
-
 
     public static void printTree() {
         System.out.println();

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Graph { // 无向图
-    private List<List<Integer>> graph;
+    private List<List<Integer>> graph; //邻接表形式表示图
     private boolean[] visited;
     private int totalVertex;
     public Graph(int totalVertex, int[][] edges) {

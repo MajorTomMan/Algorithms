@@ -6,6 +6,34 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch Generator",
+            "request": "launch",
+            "mainClass": "Basic.Structure.Maze.Generator",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 算月份",
+            "request": "launch",
+            "mainClass": "算月份",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 迷宫生成算法",
+            "request": "launch",
+            "mainClass": "NonLinear.迷宫生成算法",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 多余连接",
+            "request": "launch",
+            "mainClass": "NonLinear.多余连接",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 无向图测试",
             "request": "launch",
             "mainClass": "NonLinear.无向图测试",
