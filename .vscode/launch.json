@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 符号图测试",
+            "request": "launch",
+            "mainClass": "NonLinear.符号图测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch Generator",
             "request": "launch",
             "mainClass": "Basic.Structure.Maze.Generator",

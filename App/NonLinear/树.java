@@ -6,7 +6,7 @@ import java.util.Random;
 import Basic.Structure.Tree;
 import Basic.Structure.Node.TRnode;
 public class 树 {
-    public static void main(String[] args) {
+/*     public static void main(String[] args) {
         int i=0;
         Tree<String> tree=new Tree<>();
         TRnode<String> next=null;
@@ -39,5 +39,5 @@ public class 树 {
             i++;
         }
         tree.Show();
-    }
+    } */
 }

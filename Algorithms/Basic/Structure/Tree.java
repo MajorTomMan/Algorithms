@@ -25,8 +25,13 @@ public class Tree<T> implements ITree<T> {
         return null;
     }
 
-    @Override
     public void put(T data, int depth) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void put(T data) {
         // TODO Auto-generated method stub
         
     }
