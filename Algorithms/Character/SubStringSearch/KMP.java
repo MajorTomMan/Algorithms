@@ -28,3 +28,5 @@ public class KMP { //利用有限状态自动机的KMP算法
         return n;                    //没找到
     }
 }
+
+

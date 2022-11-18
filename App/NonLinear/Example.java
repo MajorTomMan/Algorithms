@@ -43,7 +43,7 @@ public abstract class Example {
         root = buildTree(nums, 1);
         return root;
     }
-
+    // 根据数组重建二叉树
     private static Treenode<Integer> buildTree(Integer[] nums, int index) {
         if (index > nums.length) {
             return null;
@@ -57,20 +57,18 @@ public abstract class Example {
         node.Right = buildTree(nums, index * 2 + 1);
         return node;
     }
-
-    public static BRTree<Integer> buildTreeByRandom(int times) {
+    // 随机生成二叉树数据
+    public static Treenode<Integer> buildTreeByRandom(int times) {
         int i = 0;
         BRTree<Integer> tree = new BRTree<Integer>();
         Random random = new Random();
         System.out.println("-----------------------raw data--------------------");
-        while (i != times) {
+        while (i++!= times) {
             int ran = random.nextInt(100);
             tree.put(ran);
             System.out.print(ran + ",");
-            i++;
         }
-        root = tree.getRoot();
-        return tree;
+        return tree.getRoot();
     }
 
     public static void printTree(Treenode<Integer> root) {
@@ -113,9 +111,6 @@ public abstract class Example {
     }
 
     public static void printTree() {
-        System.out.println();
-        System.out.println();
-        System.out.println();
         if (root == null)
             System.out.println("EMPTY!");
         // 得到树的深度

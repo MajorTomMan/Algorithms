@@ -5,10 +5,12 @@ import Basic.Structure.Queue;
 import Basic.Structure.Node.Treenode;
 
 public class 二叉树的层序遍历 extends Example{
+    private static BRTree<Integer> tree=new BRTree<>();
     public static void main(String[] args) {
-        BRTree<Integer> Tree=buildTreeByRandom(12);
+        tree.setRoot(buildTreeByRandom(12));
         System.out.println();
-        for (int data: levelOrder(Tree.getRoot(),Tree.Size())) {
+        printTree(tree.getRoot());
+        for (int data: levelOrder(tree.getRoot(),tree.Size())) {
             System.out.print(data+" ");
         }
     }

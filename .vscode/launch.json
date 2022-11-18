@@ -6,6 +6,55 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 二叉树的层序遍历",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉树的层序遍历",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉查找树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉查找树测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 二叉排序树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉排序树测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch KMP算法",
+            "request": "launch",
+            "mainClass": "KMP算法",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch KMP算法测试",
+            "request": "launch",
+            "mainClass": "KMP算法测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 暴力字符串匹配",
+            "request": "launch",
+            "mainClass": "暴力字符串匹配",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 删除链表元素",
+            "request": "launch",
+            "mainClass": "删除链表元素",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 符号图测试",
             "request": "launch",
             "mainClass": "NonLinear.符号图测试",
