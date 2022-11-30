@@ -6,7 +6,8 @@ import Basic.Structure.Node.Treenode;
 
 public class 平衡二叉树 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=buildTreeByRandom(12);
+        BRTree<Integer> Tree=new BRTree<>();
+        Tree.setRoot(buildTreeByRandom(12));
         System.out.println(isBalanced(Tree.getRoot()));
     }
     public static boolean isBalanced(Treenode<Integer> root) {

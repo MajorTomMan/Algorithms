@@ -4,11 +4,12 @@ public class 迷宫回溯问题 {
     public static void main(String[] args) {
         int[][] map = getMap();
         // 输出地图
-        setTarget(map, 6, 5, -9);
+        setEnd(map, 6, 5, 5);
+        setStart(map, 1, 1, 3);
         System.out.println("地图的初始情况:");
         showMap(map);
         System.out.println("--------------------start-------------------");
-        System.out.println(BFS(map, 1, 1,7));
+        System.out.println(findWay(map, 1, 1,3, 5));
     }
 
     /**
@@ -46,8 +47,12 @@ public class 迷宫回溯问题 {
      * @param target 目标数
      * @return
      */
-    private static void setTarget(int[][] map, int x, int y, int target) {
-        map[x][y] = target;
+    private static void setEnd(int[][] map, int x, int y, int end) {
+        map[x][y] = end;
+    }
+
+    private static void setStart(int[][] map, int x, int y, int start) {
+        map[x][y] = start;
     }
 
     /**
@@ -73,27 +78,30 @@ public class 迷宫回溯问题 {
      * @param y   起始点纵坐标
      * @return
      */
-    public static boolean findWay(int[][] map, int x, int y) {
+    public static boolean findWay(int[][] map, int x, int y, int start, int end) {
         // 如果走到了终点就终止
-        if (map[6][5] == 7) {
+        if (map[y][x] == end) {
             return true;
         } else {
+            if (map[y][x] == start){
+                x=x+1;
+            }
             // 只有为0的路才能通过
             if (map[y][x] == 0) {
                 // 如果该点可以走通就打上标记
                 map[y][x] = 2;
                 showMap(map);
                 System.out.println("----------every step------------");
-                if (findWay(map, x, y + 1)) {
+                if (findWay(map, x, y + 1, start, end)) {
                     // 向下递归
                     return true;
-                } else if (findWay(map, x + 1, y)) {
+                } else if (findWay(map, x + 1, y, start, end)) {
                     // 向右递归
                     return true;
-                } else if (findWay(map, x, y - 1)) {
+                } else if (findWay(map, x, y - 1, start, end)) {
                     // 向上递归
                     return true;
-                } else if (findWay(map, x - 1, y)) {
+                } else if (findWay(map, x - 1, y, start, end)) {
                     // 向左递归
                     return true;
                 } else {
@@ -136,6 +144,7 @@ public class 迷宫回溯问题 {
                 } else {
                     continue;
                 }
+                map[x][i] = 0;
                 showMap(map);
                 System.out.println("----------every step------------");
             }

@@ -6,6 +6,48 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 买卖股票的最佳时机",
+            "request": "launch",
+            "mainClass": "买卖股票的最佳时机",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 杨辉三角",
+            "request": "launch",
+            "mainClass": "杨辉三角",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 霍夫曼编码测试",
+            "request": "launch",
+            "mainClass": "NonLinear.霍夫曼编码测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 数组转二叉树",
+            "request": "launch",
+            "mainClass": "NonLinear.数组转二叉树",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 平衡二叉树",
+            "request": "launch",
+            "mainClass": "NonLinear.平衡二叉树",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 输出ASCII码",
+            "request": "launch",
+            "mainClass": "输出ASCII码",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 二叉树的层序遍历",
             "request": "launch",
             "mainClass": "NonLinear.二叉树的层序遍历",
