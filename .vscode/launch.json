@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 树",
+            "request": "launch",
+            "mainClass": "NonLinear.树",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 买卖股票的最佳时机",
             "request": "launch",
             "mainClass": "买卖股票的最佳时机",
