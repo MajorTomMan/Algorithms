@@ -137,7 +137,7 @@ public class Tree<T extends Comparable<T>> implements ITree<T> {
         while(!queue.isEmpty()){
             Treenode<T> node=queue.dequeue();
             for (Treenode<T> children : node.getChildren()) {
-                if(children.data.compareTo(parent)==0){
+                if(children.data.compareTo(data)==0){
                     return children;
                 }
                 
