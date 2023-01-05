@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 有向图测试",
+            "request": "launch",
+            "mainClass": "NonLinear.有向图测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 迷宫生成",
+            "request": "launch",
+            "mainClass": "迷宫生成",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 树",
             "request": "launch",
             "mainClass": "NonLinear.树",
