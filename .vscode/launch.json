@@ -6,6 +6,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 迷宫生成算法测试",
+            "request": "launch",
+            "mainClass": "NonLinear.迷宫生成算法测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch Maze",
+            "request": "launch",
+            "mainClass": "Basic.Structure.Maze",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 最短路径算法测试",
+            "request": "launch",
+            "mainClass": "NonLinear.最短路径算法测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 有向图测试",
             "request": "launch",
             "mainClass": "NonLinear.有向图测试",

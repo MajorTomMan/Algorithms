@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class huffmanTree<T extends Comparable<T>> {
+public class HuffmanTree<T extends Comparable<T>> {
     private Node<T> root;
     private class Node<T> {
         T data;
@@ -59,22 +59,22 @@ public class huffmanTree<T extends Comparable<T>> {
         }
         root=list.get(0);
     }
+
     public void printTree(){
         String code="";
         printNode(root,code);
     }
-    private Node<T> printNode(Node<T> node,String code){
+    private void printNode(Node<T> node,String code){
         if(node==null){ 
-            return node;
+            return;
         }
-        printNode(node.left,code+=node.code);
+        printNode(node.left,code+node.code);
         if(node.data==null){
             ;
         }else{
             System.out.print("data:"+node.data+" code:"+code);
             System.out.println();
         }
-        printNode(node.right,code+=node.code);
-        return node;
+        printNode(node.right,code+node.code);
     }
 }

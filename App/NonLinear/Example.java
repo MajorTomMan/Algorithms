@@ -6,8 +6,11 @@ import Basic.Structure.BRTree;
 import Basic.Structure.Node.Treenode;
 
 public abstract class Example {
+    private static Random random=new Random();
     private static Treenode<Integer> root;
-
+    public static Integer randomNumGenerator(int max,int step){
+        return random.nextInt(max)+step;
+    }
     public static void printGraph(int[][] graph, boolean[] visited) {
         boolean isPrint = false;
         for (int i = 0; i < graph.length; i++) {

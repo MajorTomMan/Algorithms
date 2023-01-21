@@ -3,7 +3,7 @@ package NonLinear;
 import java.util.HashMap;
 import java.util.Map;
 
-import Basic.Structure.huffmanTree;
+import Basic.Structure.HuffmanTree;
 import Character.DataCompression.Huffman;
 
 public class 霍夫曼编码测试 {
@@ -17,7 +17,7 @@ public class 霍夫曼编码测试 {
         another_Tree();
     }
     public static void another_Tree(){
-        huffmanTree<String> tree=new huffmanTree<>();
+        HuffmanTree<String> tree=new HuffmanTree<>();
         Map<String,Integer> map=new HashMap<>(){
             {
                 put("A", 3);
