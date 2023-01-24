@@ -1,7 +1,9 @@
 package Basic.Structure;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import Basic.Structure.Node.Edge;
 import Basic.Structure.Node.Vertex;
@@ -20,6 +22,29 @@ public class Digraph {
         edge.setDest(dest);
         edge.setWeight(weight);
         src.getEdges().add(edge);
+    }
+    public Boolean hasCycle(){
+        Queue<Vertex> queue=new Queue<>();
+        Set<Vertex> visited=new HashSet<>();
+        Vertex v = vertexs.get(0);
+        visited.add(v);
+        queue.enqueue(v);
+        while(!queue.isEmpty()){
+            Vertex vertex = queue.dequeue();
+            for (Edge edge : vertex.getEdges()) {
+                Vertex dest = edge.getDest();
+                for (Edge e : dest.getEdges()) {
+                    if(e.getDest()==vertex){
+                        return true;
+                    }
+                    if(!visited.contains(dest)){
+                        visited.add(dest);
+                        queue.enqueue(dest);
+                    }
+                }
+            }
+        }
+        return false;
     }
         /**
      * @return 获取顶点

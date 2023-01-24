@@ -46,7 +46,17 @@ public class Maze extends JPanel {
     /* 生成地图 */
     public void generatorMaze(int startX, int startY) {
         map[startX][startY] = begin;
-        Recursion(startX, startY, visited, 0);
+        Prim(startY, startX);
+    }
+
+    private void RandomDirect() {
+        // 随机打乱四个方向的顺序
+        List<Integer> dxList = Arrays.stream(dx).boxed().collect(Collectors.toList());
+        List<Integer> dyList = Arrays.stream(dy).boxed().collect(Collectors.toList());
+        Collections.shuffle(dxList);
+        Collections.shuffle(dyList);
+        dx = dxList.stream().mapToInt(i -> i).toArray();
+        dy = dyList.stream().mapToInt(i -> i).toArray();
     }
 
     private void Recursion(int y, int x, Boolean[][] visited, int depth) {
@@ -63,13 +73,7 @@ public class Maze extends JPanel {
             }
             return;
         }
-        // 随机打乱四个方向的顺序
-        List<Integer> dxList = Arrays.stream(dx).boxed().collect(Collectors.toList());
-        List<Integer> dyList = Arrays.stream(dy).boxed().collect(Collectors.toList());
-        Collections.shuffle(dxList);
-        Collections.shuffle(dyList);
-        dx = dxList.stream().mapToInt(i -> i).toArray();
-        dy = dyList.stream().mapToInt(i -> i).toArray();
+        RandomDirect();
         /* 随机选择四个方向上的X,Y并继续递归寻找 */
         for (int i = 0; i < 4; i++) {
             int newX = x + dx[i];
@@ -86,6 +90,39 @@ public class Maze extends JPanel {
             map[newY][newX] = road;
             /* 继续寻找 */
             Recursion(newY, newX, visited, depth + 1);
+        }
+    }
+
+    private void Prim(int y, int x) {
+        Queue<Integer> queue = new Queue<>();
+        visited[y][x] = true;
+        queue.enqueue(map[y][x]);
+        printMap();
+        while (!queue.isEmpty()) {
+            queue.dequeue();
+            /* 若越界 则返回 */
+            if (x < 0 || x >= map[0].length || y < 0 || y >= map.length) {
+                continue;
+            }
+            if (map[y][x + dx[0]] == wall || visited[y][x + dx[0]] != true) {
+                queue.enqueue(map[y][x + dx[0]]);
+                x=x+dx[0];
+            } else if (map[y][x + dx[1]] == wall || visited[y][x + dx[1]] != true) {
+                queue.enqueue(map[y][x + dx[1]]);
+                x=x+dx[1];
+            } else if (map[y+dy[3]][x] == wall || visited[y + dy[3]][x] != true) {
+                queue.enqueue(map[y+dy[3]][x]);
+                y=y+dy[3];
+            } else if (map[y+dy[4]][x] == wall || visited[y + dy[4]][x] != true) {
+                queue.enqueue(map[y+dy[4]][x]);
+                y=y+dy[4];
+            }
+            if(map[y][x]!=wall || visited[y][x]==true){
+                continue;
+            }
+            map[y][x]=road;
+            visited[y][x]=true;
+            printMap();
         }
     }
 

@@ -26,6 +26,7 @@ public class 有向图测试 {
         digraph.addEdge(b, d, 2);
         digraph.addEdge(c, d, 5);
         digraph.addEdge(c, a, 5);
+        System.out.println(digraph.hasCycle());
         BFS(a);
     }
     /* 广度优先搜索遍历顶点集合 */
