@@ -3,6 +3,7 @@ package NonLinear;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import Basic.Structure.Digraph;
@@ -42,41 +43,49 @@ public class 拓扑排序 {
         digraph.addEdge(d, e, 0);
         digraph.addEdge(d, f, 0);
         digraph.addEdge(g, h, 0);
-        digraph.addEdge(g, d, 0);
+        System.out.println(digraph.hasPath(a, e));
         System.out.println(TopicalOrder(First));
     }
 
+    /* 以BFS打底作为拓扑排序框架 */
     private static String TopicalOrder(Vertex v) {
         if (digraph.hasCycle()) {
             return "Graph Has Cycle So it can't to be Ordered!";
         }
+        /* 先构建一张入度表来获取各节点之间的入度 */
         BFS(v);
         String result = new String();
         Queue<Vertex> queue = new Queue<>();
+        List<Vertex> orderList = new ArrayList<>();
         queue.enqueue(v);
-        result += v.getName() + "->";
+        orderList.add(v);
         while (!queue.isEmpty()) {
+            /* 弹出节点并将其相连的节点入度减一 */
             Vertex vertex = queue.dequeue();
             for (int i = 0; i < vertex.getEdges().size(); i++) {
                 Vertex dest = vertex.getEdges().get(i).getDest();
-                if(inNumberList.get(dest.getName())>0){
+                if (inNumberList.get(dest.getName()) > 0) {
                     Integer inNumber = inNumberList.get(dest.getName());
-                    inNumberList.put(dest.getName(),inNumber-1);
+                    inNumberList.put(dest.getName(), inNumber - 1);
                 }
             }
+            /* 将入度为0的节点加入队列 */
             for (Edge edge : vertex.getEdges()) {
                 Vertex dest = edge.getDest();
-                if(inNumberList.get(dest.getName())==0){
+                if (inNumberList.get(dest.getName()) == 0 && !orderList.contains(dest)) {
                     queue.enqueue(dest);
-                    result+=dest.getName()+"->";
+                    orderList.add(dest);
                 }
             }
-
+            /* 循环操作直到队列为空 */
+        }
+        for (Vertex vertex : orderList) {
+            result += vertex.getName() + "->";
         }
         return result;
     }
 
-    /* 广度优先搜索遍历顶点集合 */
+    /* 广度优先搜索遍历顶点集合并找出其对应的节点入度 */
     private static void BFS(Vertex v) {
         Queue<Vertex> queue = new Queue<>();
         Set<Vertex> visited = new HashSet<>();
