@@ -67,6 +67,9 @@ public class Digraph {
             return false;
         }
         HashMap<Vertex, Boolean> visited = new HashMap<>();
+        vertexs.stream().forEach(item->{
+            visited.put(item, false);
+        });
         return hasPath(src, dest, visited);
     }
 
@@ -77,13 +80,10 @@ public class Digraph {
         }
         for (Edge edge : src.getEdges()) {
             Vertex vertex = edge.getDest();
-            if(!visited.containsKey(vertex)){
-                Boolean isFind=hasPath(vertex, dest, visited);
+            if(!visited.get(vertex)){
+                Boolean isFind = hasPath(vertex, dest, visited);
                 if(isFind){
                     return true;
-                }
-                else{
-                    return false;
                 }
             }
         }

@@ -43,7 +43,6 @@ public class 拓扑排序 {
         digraph.addEdge(d, e, 0);
         digraph.addEdge(d, f, 0);
         digraph.addEdge(g, h, 0);
-        System.out.println(digraph.hasPath(a, e));
         System.out.println(TopicalOrder(First));
     }
 
