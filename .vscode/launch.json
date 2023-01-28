@@ -6,6 +6,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch 单词查找树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.单词查找树测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch B树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.B树测试",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 重建二叉树",
+            "request": "launch",
+            "mainClass": "NonLinear.重建二叉树",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 拓扑排序",
             "request": "launch",
             "mainClass": "NonLinear.拓扑排序",

@@ -2,7 +2,7 @@ package NonLinear;
 
 import java.util.Random;
 
-import Basic.Structure.BRTree;
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Node.Treenode;
 
 public abstract class Example {
@@ -63,7 +63,7 @@ public abstract class Example {
     // 随机生成二叉树数据
     public static Treenode<Integer> buildTreeByRandom(int times) {
         int i = 0;
-        BRTree<Integer> tree = new BRTree<Integer>();
+        BinaryTree<Integer> tree = new BinaryTree<Integer>();
         Random random = new Random();
         System.out.println("-----------------------raw data--------------------");
         while (i++!= times) {

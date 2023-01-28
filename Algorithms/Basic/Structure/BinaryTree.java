@@ -3,16 +3,16 @@ package Basic.Structure;
 import Basic.Structure.Interface.IBRTree;
 import Basic.Structure.Node.Treenode;
 
-public class BRTree<T extends Comparable<T>> implements IBRTree<T> {
+public class BinaryTree<T extends Comparable<T>> implements IBRTree<T> {
     private Treenode<T> Root;
     private int depth;
     private int count;
 
-    public BRTree(T data) {
+    public BinaryTree(T data) {
         Root = new Treenode<>(data, null, null);
     }
 
-    public BRTree() {
+    public BinaryTree() {
     }
 
     @Override
@@ -67,6 +67,7 @@ public class BRTree<T extends Comparable<T>> implements IBRTree<T> {
         }
         return node;
     }
+
     public T get(T data) {
         // TODO Auto-generated method stub
         return null;
@@ -188,6 +189,7 @@ public class BRTree<T extends Comparable<T>> implements IBRTree<T> {
     private int getTreeDepth(Treenode<T> root) {
         return root == null ? 0 : (1 + Math.max(getTreeDepth(root.Left), getTreeDepth(root.Right)));
     }
+
     public Treenode<T> getRoot() {
         return Root;
     }

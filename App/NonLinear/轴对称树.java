@@ -2,14 +2,13 @@ package NonLinear;
 
 import java.util.Random;
 
-import Basic.Structure.BRTree;
-import Basic.Structure.Tree;
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Node.Treenode;
 
 public class 轴对称树 {
     public static void main(String[] args) {
         int i=0;
-        BRTree<Integer> Tree=new BRTree<Integer>(1);
+        BinaryTree<Integer> Tree=new BinaryTree<Integer>(1);
         Random random=new Random();
         Tree.put(2);
         Tree.put(2);

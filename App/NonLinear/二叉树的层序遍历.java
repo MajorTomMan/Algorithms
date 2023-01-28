@@ -1,11 +1,11 @@
 package NonLinear;
 
-import Basic.Structure.BRTree;
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Queue;
 import Basic.Structure.Node.Treenode;
 
 public class 二叉树的层序遍历 extends Example{
-    private static BRTree<Integer> tree=new BRTree<>();
+    private static BinaryTree<Integer> tree=new BinaryTree<>();
     public static void main(String[] args) {
         tree.setRoot(buildTreeByRandom(12));
         System.out.println();

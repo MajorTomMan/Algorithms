@@ -1,11 +1,11 @@
 package NonLinear;
 
-import Basic.Structure.BRTree;
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Node.Treenode;
 
 public class 二叉树的最短路径 extends Example {
     public static void main(String[] args) {
-        BRTree<Integer> tree=new BRTree<Integer>();
+        BinaryTree<Integer> tree=new BinaryTree<Integer>();
         System.out.println("-----------------------raw data--------------------");
         tree.put(2);
         tree.put(3);

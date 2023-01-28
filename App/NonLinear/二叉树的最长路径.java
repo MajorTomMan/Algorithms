@@ -1,12 +1,11 @@
 package NonLinear;
 
-
-import Basic.Structure.BRTree;
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Node.Treenode;
 
 public class 二叉树的最长路径 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=new BRTree<Integer>();
+        BinaryTree<Integer> Tree=new BinaryTree<Integer>();
         Tree.put(3);
         Tree.put(9);
         Tree.put(20);

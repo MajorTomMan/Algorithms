@@ -1,12 +1,11 @@
 package NonLinear;
 
-import Basic.Structure.BRTree;
-
+import Basic.Structure.BinaryTree;
 import Basic.Structure.Node.Treenode;
 
 public class 平衡二叉树 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=new BRTree<>();
+        BinaryTree<Integer> Tree=new BinaryTree<>();
         Tree.setRoot(buildTreeByRandom(12));
         System.out.println(isBalanced(Tree.getRoot()));
     }

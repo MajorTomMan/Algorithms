@@ -1,10 +1,10 @@
 package NonLinear;
 
-import Basic.Structure.BRTree;
+import Basic.Structure.BinaryTree;
 
 public class 二叉排序树测试 extends Example{
     public static void main(String[] args) {
-        BRTree<Integer> Tree=new BRTree<>();
+        BinaryTree<Integer> Tree=new BinaryTree<>();
         Tree.setRoot(buildTreeByRandom(10));
         Tree.put(34);
         System.out.println();
