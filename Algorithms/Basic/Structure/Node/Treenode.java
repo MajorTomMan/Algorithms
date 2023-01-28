@@ -17,10 +17,4 @@ public class Treenode<T> {
       this.Left = null;
       this.Right = null;
    }
-
-   @Override
-   public String toString() {
-      // TODO Auto-generated method stub
-      return "data->" + data + "\n\tLeft:" + Left + "\n\t\tRight:" + Right + "";
-   }
 }

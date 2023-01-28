@@ -1,5 +1,7 @@
 package Basic.Structure;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import Basic.Structure.Interface.IBRTree;
 import Basic.Structure.Node.Treenode;
 
@@ -174,6 +176,7 @@ public class BinaryTree<T extends Comparable<T>> implements IBRTree<T> {
     public void Show() {
         // TODO Auto-generated method stub
         Show(Root);
+        System.out.println();
     }
 
     private void Show(Treenode<T> node) {
@@ -185,9 +188,24 @@ public class BinaryTree<T extends Comparable<T>> implements IBRTree<T> {
         Show(node.Right);
     }
 
-    // 用于获得树的层数
-    private int getTreeDepth(Treenode<T> root) {
-        return root == null ? 0 : (1 + Math.max(getTreeDepth(root.Left), getTreeDepth(root.Right)));
+    public void printTree() {
+        printTree(Root, 0);
+    }
+
+    private void printTree(Treenode<T> root, int level) {
+        if (root == null) {
+            return;
+        }
+        printTree(root.Right, level + 1);
+        if (level != 0) {
+            for (int i = 0; i < level - 1; i++) {
+                System.out.print("|\t");
+            }
+            System.out.println("|-------" + root.data);
+        } else {
+            System.out.println(root.data);
+        }
+        printTree(root.Left, level + 1);
     }
 
     public Treenode<T> getRoot() {

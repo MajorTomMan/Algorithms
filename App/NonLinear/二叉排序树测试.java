@@ -24,5 +24,7 @@ public class 二叉排序树测试 extends Example{
         Tree.put(30);
         printTree(Tree.getRoot());
         Tree.Show();
+        System.out.println("---------------------------");
+        Tree.printTree();
     }
 }
