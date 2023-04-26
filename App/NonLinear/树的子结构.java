@@ -1,12 +1,12 @@
 package NonLinear;
 
-import Basic.Structure.Node.Treenode;
+import basic.structure.node.TreeNode;
 
 public class 树的子结构 extends Example {
     public static void main(String[] args) {
         Integer[] a={1,0,1,-4,-3},b={1,-4};
-        Treenode<Integer> tree_a=buildTree(a);
-        Treenode<Integer> tree_b=buildTree(b);
+        TreeNode<Integer> tree_a=buildTree(a);
+        TreeNode<Integer> tree_b=buildTree(b);
         System.out.println(tree_a);
         System.out.println("-------------------------- test b tree----------------------");
         System.out.println(tree_b);
@@ -17,7 +17,7 @@ public class 树的子结构 extends Example {
         System.out.println(isSubStructure(tree_a,tree_b));
     }
     // 先检查A和B共同的子树根节点,然后递归判断子树结构
-    public static boolean isSubStructure(Treenode<Integer> A,Treenode<Integer> B) {
+    public static boolean isSubStructure(TreeNode<Integer> A,TreeNode<Integer> B) {
         if(A==null||B==null){
             return false;
         }
@@ -27,7 +27,7 @@ public class 树的子结构 extends Example {
         return isSubStructure(A.Left, B)||isSubStructure(A.Right, B);
     }
     // 先序遍历判断子树结构,当B子树为null 代表B树已经遍历完,即可返回true,若A为null 则代表该子树不是A中子树,返回false
-    public static boolean checkSubTree(Treenode<Integer> a,Treenode<Integer> b){
+    public static boolean checkSubTree(TreeNode<Integer> a,TreeNode<Integer> b){
         if(b==null){
             return true;
         }

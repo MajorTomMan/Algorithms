@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import Basic.Structure.Digraph;
-import Basic.Structure.Node.Edge;
-import Basic.Structure.Node.Vertex;
+import basic.structure.Digraph;
+import basic.structure.node.Edge;
+import basic.structure.node.Vertex;
 
 public class 最短路径算法测试  extends Example{
     /* 有向带权图 */

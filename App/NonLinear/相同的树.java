@@ -1,8 +1,14 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:28
+ * @FilePath: /alg/App/NonLinear/相同的树.java
+ */
 package NonLinear;
 import java.util.Random;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 相同的树 {
     public static void main(String[] args) {
@@ -22,7 +28,7 @@ public class 相同的树 {
         System.out.println("-------------------------");
         System.out.println(isSameTree(Tree_a.getRoot(), Tree_b.getRoot()));
     }
-    public static boolean isSameTree(Treenode<Integer> p, Treenode<Integer> q) {
+    public static boolean isSameTree(TreeNode<Integer> p, TreeNode<Integer> q) {
         if (p == null && q == null) {
             return true;
         } else if (p == null || q == null) {

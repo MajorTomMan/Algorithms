@@ -1,12 +1,18 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:34:46
+ * @FilePath: /alg/App/Linear/链表去重.java
+ */
 
 import java.util.Random;
 
-import Basic.Structure.Linkedlist;
-import Basic.Structure.Node.Node;
+import basic.structure.LinkedList;
+import basic.structure.node.ListNode;
 
 public class 链表去重 {
     public static void main(String[] args) {
-        Linkedlist<Integer> list=new Linkedlist<Integer>();
+        LinkedList<Integer> list=new LinkedList<Integer>();
         int i=0;
         Random random=new Random();
         while(i!=12){
@@ -20,7 +26,7 @@ public class 链表去重 {
         list.Sort();
         System.out.println(deleteDuplicates(list.getHead()));
     }
-    public static Node<Integer> deleteDuplicates(Node<Integer> head) {
+    public static ListNode<Integer> deleteDuplicates(ListNode<Integer> head) {
         if(head==null){
             return null;
         }
@@ -29,7 +35,7 @@ public class 链表去重 {
         }
         return deleteDuplicates(head.next,head);
     }
-    private static Node<Integer> deleteDuplicates(Node<Integer> node,Node<Integer> previous){
+    private static ListNode<Integer> deleteDuplicates(ListNode<Integer> node,ListNode<Integer> previous){
         if(node==null){
             return node;
         }
@@ -40,12 +46,12 @@ public class 链表去重 {
         return previous;
     }
     //处理不了乱序时的链表重复
-    private static Node<Integer> deleteDuplicatesFor(Node<Integer> head){
+    private static ListNode<Integer> deleteDuplicatesFor(ListNode<Integer> head){
         if(head==null){
             return null;
         }
-        Node<Integer> temp=head.next;
-        Node<Integer> pre=head;
+        ListNode<Integer> temp=head.next;
+        ListNode<Integer> pre=head;
         for(;temp!=null;){
             if(pre.data==temp.data){
                 pre.next=temp.next;

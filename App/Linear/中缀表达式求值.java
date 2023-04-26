@@ -1,6 +1,6 @@
 
 
-import Basic.Structure.Stack;
+import basic.structure.Stack;
 
 public class 中缀表达式求值 {
     public static void main(String[] args) {

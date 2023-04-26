@@ -1,7 +1,13 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:32
+ * @FilePath: /alg/App/NonLinear/平衡二叉树.java
+ */
 package NonLinear;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 平衡二叉树 extends Example{
     public static void main(String[] args) {
@@ -9,11 +15,11 @@ public class 平衡二叉树 extends Example{
         Tree.setRoot(buildTreeByRandom(12));
         System.out.println(isBalanced(Tree.getRoot()));
     }
-    public static boolean isBalanced(Treenode<Integer> root) {
+    public static boolean isBalanced(TreeNode<Integer> root) {
         return height(root)!=-1;
     }
 
-    public static int height(Treenode<Integer> node) {
+    public static int height(TreeNode<Integer> node) {
         if(node==null){
             return 0;
         }

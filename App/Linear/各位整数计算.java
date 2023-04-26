@@ -1,5 +1,5 @@
 
-import Basic.Structure.Queue;
+import basic.structure.Queue;
 
 public class 各位整数计算 {
     public static void main(String[] args) {

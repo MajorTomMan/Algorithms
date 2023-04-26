@@ -3,7 +3,7 @@ package NonLinear;
 
 import javax.swing.JFrame;
 
-import Basic.Structure.Maze;
+import basic.structure.Maze;
 
 public class 迷宫生成算法测试{
     public static void main(String[] args) {

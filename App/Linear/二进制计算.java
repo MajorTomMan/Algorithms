@@ -1,6 +1,6 @@
 
 
-import Basic.Structure.Queue;
+import basic.structure.Queue;
 
 public class 二进制计算{
     public static void main(String[] args) {

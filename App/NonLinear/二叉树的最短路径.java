@@ -1,7 +1,13 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:41
+ * @FilePath: /alg/App/NonLinear/二叉树的最短路径.java
+ */
 package NonLinear;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 二叉树的最短路径 extends Example {
     public static void main(String[] args) {
@@ -15,10 +21,10 @@ public class 二叉树的最短路径 extends Example {
         System.out.println();
         System.out.println(minDepth(tree.getRoot()));
     }
-    public static int minDepth(Treenode<Integer> root) {
+    public static int minDepth(TreeNode<Integer> root) {
         return ShortestPath(root);
     }
-    public static int ShortestPath(Treenode<Integer> node){
+    public static int ShortestPath(TreeNode<Integer> node){
         if(node==null){
             return 0;
         }

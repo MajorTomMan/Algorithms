@@ -2,7 +2,7 @@ package NonLinear;
 
 import java.util.Random;
 
-import Search.Structure.Tree.RedBlackBST;
+import search.structure.tree.RedBlackBST;
 public class 红黑树测试 {
     public static void main(String[] args) {
         RedBlackBST<Character,Integer> rBst=new RedBlackBST<>();

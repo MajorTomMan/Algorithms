@@ -3,8 +3,8 @@
 
 import java.util.Scanner;
 
-import Basic.Structure.Queue;
-import Basic.Structure.Stack;
+import basic.structure.Queue;
+import basic.structure.Stack;
 
 public class 回文 {
     public static void main(String[] args) {

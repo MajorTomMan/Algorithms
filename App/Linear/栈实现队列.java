@@ -1,4 +1,4 @@
-import Basic.Structure.Stack;
+import basic.structure.Stack;
 
 public class 栈实现队列 {
     private static class StackQueue{

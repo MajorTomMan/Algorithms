@@ -1,7 +1,13 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:42
+ * @FilePath: /alg/App/NonLinear/二叉树的最长路径.java
+ */
 package NonLinear;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 二叉树的最长路径 extends Example{
     public static void main(String[] args) {
@@ -14,10 +20,10 @@ public class 二叉树的最长路径 extends Example{
         printTree(Tree.getRoot());
         System.out.println(maxDepth(Tree.getRoot()));
     }
-    public static int maxDepth(Treenode<Integer> root) {
+    public static int maxDepth(TreeNode<Integer> root) {
         return longestPath(root);
     }
-    public static int longestPath(Treenode<Integer> node){
+    public static int longestPath(TreeNode<Integer> node){
         if(node==null){
             return 0;
         }

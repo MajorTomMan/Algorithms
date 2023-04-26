@@ -1,14 +1,14 @@
 
 import java.util.Scanner;
 
-import Func.Input_Output.StdOut;
-import Func.SortFunction.SortCompare;
-import Sort.Structure.DivideConquer.Merge;
-import Sort.Structure.DivideConquer.Quick;
-import Sort.Structure.Linear.Insertion;
-import Sort.Structure.Linear.Selection;
-import Sort.Structure.Linear.Shell;
-import Sort.Structure.NonLinear.Heap;
+import func.io.StdOut;
+import func.sortfunction.SortCompare;
+import soft.structure.divideconquer.Merge;
+import soft.structure.divideconquer.Quick;
+import soft.structure.linear.Insertion;
+import soft.structure.linear.Selection;
+import soft.structure.linear.Shell;
+import soft.structure.nonlinear.Heap;
 
 
 public class 排序测试{

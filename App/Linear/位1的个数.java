@@ -1,4 +1,4 @@
-import Basic.Structure.Stack;
+import basic.structure.Stack;
 
 public class 位1的个数 {
     public static void main(String[] args) {

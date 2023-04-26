@@ -1,6 +1,6 @@
 
 
-import Basic.Structure.Queue;
+import basic.structure.Queue;
 
 public class 队列 {
     public static void main(String[] args) {

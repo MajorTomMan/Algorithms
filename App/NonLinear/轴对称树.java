@@ -1,9 +1,15 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:25
+ * @FilePath: /alg/App/NonLinear/轴对称树.java
+ */
 package NonLinear;
 
 import java.util.Random;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 轴对称树 {
     public static void main(String[] args) {
@@ -19,10 +25,10 @@ public class 轴对称树 {
         System.out.println();
         System.out.println(isSymmetric(Tree.getRoot()));
     }
-    public static boolean isSymmetric(Treenode<Integer> root) {
+    public static boolean isSymmetric(TreeNode<Integer> root) {
         return isSymmetric(root.Left, root.Right);
     }
-    private static boolean isSymmetric(Treenode<Integer> left,Treenode<Integer> right) {
+    private static boolean isSymmetric(TreeNode<Integer> left,TreeNode<Integer> right) {
         if(left==null||right==null){
             return false;
         }

@@ -1,6 +1,6 @@
 
 
-import Character.SubStringSearch.BoyerMoore;
+import character.substringsearch.BoyerMoore;
 
 public class BoyerMoore测试 {
     public static void main(String[] args) {

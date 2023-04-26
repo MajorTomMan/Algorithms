@@ -1,9 +1,9 @@
-import Basic.Structure.twoSideLink;
-import Basic.Structure.Node.twoSideNode;
+import basic.structure.TwoSideLink;
+import basic.structure.node.TwoSideNode;
 
 public class 双向链表 {
     public static void main(String[] args) {
-        twoSideLink<Integer> list = new twoSideLink<>();
+        TwoSideLink<Integer> list = new TwoSideLink<>();
         System.out.println("原始链表：");
         showLink(list);
         for (int i = 0; i < 10; i++) {
@@ -43,11 +43,11 @@ public class 双向链表 {
         }
         System.out.println(list);
     }
-    public static void showLink(twoSideLink<?> list) {
+    public static void showLink(TwoSideLink<?> list) {
         showLink(list.getHead());
     }
 
-    private static twoSideNode<?> showLink(twoSideNode<?> node) {
+    private static TwoSideNode<?> showLink(TwoSideNode<?> node) {
         if (node == null) {
             return node;
         }
@@ -55,11 +55,11 @@ public class 双向链表 {
         showLink(node.next);
         return node;
     }
-    private static void showPrevious(twoSideLink<?> list){
-        twoSideNode<?> temp=list.getLast();
+    private static void showPrevious(TwoSideLink<?> list){
+        TwoSideNode<?> temp=list.getLast();
         showPrevious(temp);
     }
-    private static twoSideNode<?> showPrevious(twoSideNode<?> node){
+    private static TwoSideNode<?> showPrevious(TwoSideNode<?> node){
         if(node==null){
             return node;
         }

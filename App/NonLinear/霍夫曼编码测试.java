@@ -3,8 +3,8 @@ package NonLinear;
 import java.util.HashMap;
 import java.util.Map;
 
-import Basic.Structure.HuffmanTree;
-import Character.DataCompression.Huffman;
+import basic.structure.HuffmanTree;
+import character.datacompression.Huffman;
 
 public class 霍夫曼编码测试 {
     public static void main(String[] args) {

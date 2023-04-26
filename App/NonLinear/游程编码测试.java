@@ -2,7 +2,7 @@ package NonLinear;
 
 import java.io.IOException;
 
-import Character.DataCompression.RunLength;
+import character.datacompression.RunLength;
 
 
 public class 游程编码测试 {

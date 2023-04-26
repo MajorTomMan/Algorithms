@@ -1,7 +1,7 @@
 
-import Character.StringSort.LSD;
-import Character.StringSort.MSD;
-import Character.StringSort.Quick3string;
+import character.stringsort.LSD;
+import character.stringsort.MSD;
+import character.stringsort.Quick3string;
 
 /**
  * 字符串排序测试

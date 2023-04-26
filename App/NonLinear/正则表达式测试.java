@@ -1,7 +1,7 @@
 package NonLinear;
 
 
-import Character.RegularExpressions.NFA;
+import character.regularexpressions.NFA;
 
 public class 正则表达式测试 {
     public static void main(String[] args){

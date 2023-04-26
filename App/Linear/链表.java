@@ -1,12 +1,12 @@
 
 import java.util.Random;
 
-import Basic.Structure.Linkedlist;
+import basic.structure.LinkedList;
 
 public class 链表{
     public static void main(String[] args) {
         int i=0;
-        Linkedlist<Integer> linkedlist=new Linkedlist<>(99);
+        LinkedList<Integer> linkedlist=new LinkedList<>(99);
         Random random=new Random();
         while(i!=12){
             int j=random.nextInt(100)+1;

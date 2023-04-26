@@ -1,7 +1,7 @@
 package NonLinear;
 
-import Character.TrieSt.TST;
-import Character.TrieSt.TrieST;
+import character.triest.TST;
+import character.triest.TrieST;
 
 public class 单词查找树测试 {
     public static void main(String[] args) {

@@ -1,11 +1,17 @@
+import basic.structure.CycleList;
 
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 18:27:19
+ * @FilePath: /alg/App/Linear/约瑟夫环.java
+ */
 
-import Basic.Structure.Cyclelist;
 
 public class 约瑟夫环{
     public static void main(String[] args) {
         int i=0;
-        Cyclelist<Integer> cyclelist=new Cyclelist<>();
+        CycleList<Integer> cyclelist=new CycleList<>();
         while(i!=6){
             cyclelist.Insert(i);
             i++;

@@ -4,8 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
 
-import Graph.Symbol.SymbolGraph;
-import Graph.UnDig.Graph;
+import graph.symbol.SymbolGraph;
+import graph.undig.Graph;
 
 public class 符号图测试 {
     public static void main(String[] args) throws IOException {
@@ -77,7 +77,7 @@ public class 符号图测试 {
                 { "led Zepplin", "black Sabbath" },
                 { "led Zepplin", "linkin Park" },
         };
-        Basic.Structure.SymbolGraph graph = new Basic.Structure.SymbolGraph(edges);
+        basic.structure.SymbolGraph graph = new basic.structure.SymbolGraph(edges);
         graph.bfs("led Zepplin");
 
     }

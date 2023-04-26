@@ -1,5 +1,5 @@
 
-import Basic.Structure.Stack;
+import basic.structure.Stack;
 public class 栈 {
     public static void main(String[] args) {
         int i=0;

@@ -2,7 +2,7 @@ package NonLinear;
 
 import java.util.Scanner;
 
-import Basic.Structure.Tree;
+import basic.structure.Tree;
 
 public class 目录创建系统 {
     private static Scanner scanner;

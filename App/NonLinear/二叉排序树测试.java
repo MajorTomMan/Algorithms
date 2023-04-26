@@ -1,6 +1,6 @@
 package NonLinear;
 
-import Basic.Structure.BinaryTree;
+import basic.structure.BinaryTree;
 
 public class 二叉排序树测试 extends Example{
     public static void main(String[] args) {

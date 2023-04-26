@@ -1,7 +1,7 @@
 package NonLinear;
 
-import Basic.Structure.Graph;
-import Basic.Structure.Queue;
+import basic.structure.Graph;
+import basic.structure.Queue;
 
 public class 无向图测试 extends Example {
     public static void main(String[] args) {

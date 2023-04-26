@@ -1,21 +1,27 @@
-import Basic.Structure.Node.Node;
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:34:21
+ * @FilePath: /alg/App/Linear/相交链表.java
+ */
+import basic.structure.node.ListNode;
 
 public class 相交链表 extends Example{
     public static void main(String[] args) {
         int[] nums_a={0},nums_b={5,6,1,8,4,5};
-        Node<Integer> head_A=buildLinkedList(nums_a);
-        Node<Integer> head_B=buildLinkedList(nums_b);
+        ListNode<Integer> head_A=buildLinkedList(nums_a);
+        ListNode<Integer> head_B=buildLinkedList(nums_b);
         System.out.println(getIntersectionNode(head_A, head_B,head_A,head_B));
     }
-    public Node<Integer> getIntersectionNode(Node<Integer> headA, Node<Integer> headB) {
+    public ListNode<Integer> getIntersectionNode(ListNode<Integer> headA, ListNode<Integer> headB) {
         if(headA==null||headB==null){
             return null;
         }
         return getIntersectionNode(headA,headB,headA,headB);
     }
     //双指针
-    public static Node<Integer> getIntersectionNode(Node<Integer> headA,Node<Integer> headB,
-                  Node<Integer> origin_A,Node<Integer> origin_B) {
+    public static ListNode<Integer> getIntersectionNode(ListNode<Integer> headA,ListNode<Integer> headB,
+                  ListNode<Integer> origin_A,ListNode<Integer> origin_B) {
         if(headA==null&&headB==null){
             return null;
         }
@@ -28,7 +34,7 @@ public class 相交链表 extends Example{
         if(headA.equals(headB)){
             return headA;
         }
-        Node<Integer> result=getIntersectionNode(headA.next, headB.next,origin_A,origin_B); //同步往下找
+        ListNode<Integer> result=getIntersectionNode(headA.next, headB.next,origin_A,origin_B); //同步往下找
         return result;
     }
 }

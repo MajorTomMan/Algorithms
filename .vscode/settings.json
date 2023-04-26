@@ -3,5 +3,8 @@
         "App/Linear",
         "Algorithms",
         "App"
-    ]
+    ],
+    "files.watcherExclude": {
+        "**/target": true
+    }
 }

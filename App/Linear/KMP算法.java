@@ -1,5 +1,5 @@
 
-import Basic.Structure.KMP;
+import basic.structure.KMP;
 
 public class KMP算法 {
     public static void main(String[] args) {

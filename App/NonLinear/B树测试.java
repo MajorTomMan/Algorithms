@@ -1,7 +1,7 @@
 package NonLinear;
 
-import Context.Tree.BTree;
-import Func.Input_Output.StdOut;
+import context.tree.BTree;
+import func.io.StdOut;
 
 public class B树测试 {
     public static void main(String[] args) {

@@ -1,24 +1,29 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:32:13
+ * @FilePath: /alg/App/Linear/Example.java
+ */
 
 import java.util.Random;
 
-
-import Basic.Structure.Node.Node;
+import basic.structure.node.ListNode;
 
 public abstract class Example{
-    public static Node<Integer> buildLinkedList(int nums[]) {
+    public static ListNode<Integer> buildLinkedList(int nums[]) {
         return buildLinkedList(null, nums, 0);
     }
 
-    public static void printLinkedList(Node<Integer> node) {
+    public static void printLinkedList(ListNode<Integer> node) {
         System.out.println(node);
     }
 
-    private static Node<Integer> buildLinkedList(Node<Integer> node, int nums[], int index) {
+    private static ListNode<Integer> buildLinkedList(ListNode<Integer> node, int nums[], int index) {
         if (index == nums.length) {
             return null;
         }
         if (node == null) {
-            node = new Node<Integer>(nums[index], null);
+            node = new ListNode<Integer>(nums[index], null);
         }
         node.next = buildLinkedList(node.next, nums, ++index);
         return node;

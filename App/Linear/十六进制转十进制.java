@@ -1,4 +1,4 @@
-import Basic.Structure.Stack;
+import basic.structure.Stack;
 
 public class 十六进制转十进制 {
     private static String[] data;

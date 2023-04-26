@@ -2,12 +2,12 @@ package NonLinear;
 
 import java.util.Random;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public abstract class Example {
     private static Random random=new Random();
-    private static Treenode<Integer> root;
+    private static TreeNode<Integer> root;
     public static Integer randomNumGenerator(int max,int step){
         return random.nextInt(max)+step;
     }
@@ -42,12 +42,12 @@ public abstract class Example {
         System.out.println("--------------------------------------------");
     }
 
-    public static Treenode<Integer> buildTree(Integer[] nums) {
+    public static TreeNode<Integer> buildTree(Integer[] nums) {
         root = buildTree(nums, 1);
         return root;
     }
     // 根据数组重建二叉树
-    private static Treenode<Integer> buildTree(Integer[] nums, int index) {
+    private static TreeNode<Integer> buildTree(Integer[] nums, int index) {
         if (index > nums.length) {
             return null;
         }
@@ -55,13 +55,13 @@ public abstract class Example {
         if (value == null) {
             return null;
         }
-        Treenode<Integer> node = new Treenode<Integer>(value);
+        TreeNode<Integer> node = new TreeNode<Integer>(value);
         node.Left = buildTree(nums, index * 2);
         node.Right = buildTree(nums, index * 2 + 1);
         return node;
     }
     // 随机生成二叉树数据
-    public static Treenode<Integer> buildTreeByRandom(int times) {
+    public static TreeNode<Integer> buildTreeByRandom(int times) {
         int i = 0;
         BinaryTree<Integer> tree = new BinaryTree<Integer>();
         Random random = new Random();
@@ -74,7 +74,7 @@ public abstract class Example {
         return tree.getRoot();
     }
 
-    public static void printTree(Treenode<Integer> root) {
+    public static void printTree(TreeNode<Integer> root) {
         System.out.println();
         System.out.println();
         System.out.println();
@@ -150,11 +150,11 @@ public abstract class Example {
     }
 
     // 用于获得树的层数
-    private static int getTreeDepth(Treenode<Integer> root) {
+    private static int getTreeDepth(TreeNode<Integer> root) {
         return root == null ? 0 : (1 + Math.max(getTreeDepth(root.Left), getTreeDepth(root.Right)));
     }
 
-    private static void writeArray(Treenode<Integer> currNode, int rowIndex, int columnIndex, String[][] res,
+    private static void writeArray(TreeNode<Integer> currNode, int rowIndex, int columnIndex, String[][] res,
             int treeDepth) {
         // 保证输入的树不为空
         if (currNode == null)

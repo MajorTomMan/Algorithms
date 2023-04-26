@@ -2,10 +2,10 @@ package NonLinear;
 
 import java.util.Random;
 
-import Basic.Structure.Stack;
-import Search.Structure.LinearST.ArrayST;
-import Search.Structure.LinearST.OrderedSequentialSearchST;
-import Search.Structure.NonLinearST.BinarySearchST;
+import basic.structure.Stack;
+import search.structure.linearst.ArrayST;
+import search.structure.linearst.OrderedSequentialSearchST;
+import search.structure.nonlinest.BinarySearchST;
 
 public class GPA计算 {
     public static void main(String[] args) {

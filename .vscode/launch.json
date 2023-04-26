@@ -6,6 +6,41 @@
     "configurations": [
         {
             "type": "java",
+            "name": "反转链表",
+            "request": "launch",
+            "mainClass": "反转链表",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "买卖股票的最佳时机",
+            "request": "launch",
+            "mainClass": "买卖股票的最佳时机",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "多项式求和",
+            "request": "launch",
+            "mainClass": "多项式求和",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "Launch 表达式求值",
+            "request": "launch",
+            "mainClass": "表达式求值",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
+            "name": "Launch 后缀表达式求值",
+            "request": "launch",
+            "mainClass": "后缀表达式求值",
+            "projectName": "Java_d3706778"
+        },
+        {
+            "type": "java",
             "name": "Launch 单词查找树测试",
             "request": "launch",
             "mainClass": "NonLinear.单词查找树测试",

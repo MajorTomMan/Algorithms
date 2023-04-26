@@ -1,22 +1,28 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:32:29
+ * @FilePath: /alg/App/Linear/两数相加.java
+ */
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import Basic.Structure.Node.Node;
+import basic.structure.node.ListNode;
 
 public class 两数相加 extends Example{
     public static void main(String[] args) {
         int[] nums_1={1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},nums_2={5,6,4};
-        Node<Integer> root_1=buildLinkedList(nums_1),root_2=buildLinkedList(nums_2);
+        ListNode<Integer> root_1=buildLinkedList(nums_1),root_2=buildLinkedList(nums_2);
         System.out.println(addTwoNumbers(root_1,root_2));
     }
-    public static Node<Integer> addTwoNumbers(Node<Integer> l1,Node<Integer> l2) {
+    public static ListNode<Integer> addTwoNumbers(ListNode<Integer> l1,ListNode<Integer> l2) {
         List<Integer> list_1=new LinkedList<>();
         List<Integer> list_2=new LinkedList<>();
         List<Integer> result_list=new ArrayList<>();
-        for(Node<Integer> first=l1,second=l2;;){
+        for(ListNode<Integer> first=l1,second=l2;;){
             if(first!=null&&second!=null){
                 list_1.add(first.data);
                 list_2.add(second.data);
@@ -41,16 +47,16 @@ public class 两数相加 extends Example{
             }
         }
         addToList(list_1, list_2,result_list);
-        Node<Integer> result=buildList(result_list);
+        ListNode<Integer> result=buildList(result_list);
         return result;
     }
-    public static Node<Integer> buildList(List<Integer> list){
+    public static ListNode<Integer> buildList(List<Integer> list){
         int i=list.size()-1;
-        Node<Integer> root=new Node<Integer>(list.get(i));
-        Node<Integer> temp=root;
+        ListNode<Integer> root=new ListNode<Integer>(list.get(i));
+        ListNode<Integer> temp=root;
         i--;
         while(i>=0){
-            temp.next=new Node<Integer>(list.get(i));
+            temp.next=new ListNode<Integer>(list.get(i));
             i--;
             temp=temp.next;
         }

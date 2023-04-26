@@ -1,12 +1,18 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:33
+ * @FilePath: /alg/App/NonLinear/对称二叉树.java
+ */
 package NonLinear;
 
-import Basic.Structure.Queue;
-import Basic.Structure.Node.Treenode;
+import basic.structure.Queue;
+import basic.structure.node.TreeNode;
 
 public class 对称二叉树 extends Example {
     public static void main(String[] args) {
         Integer[] nums = { 1, 2, 2, 3, 4, 4, 3 };
-        Treenode<Integer> root = buildTree(nums);
+        TreeNode<Integer> root = buildTree(nums);
         printTree();
         System.out.println(isSymmetric(root));
     }
@@ -16,12 +22,12 @@ public class 对称二叉树 extends Example {
      * 它们的两个根结点具有相同的值
      * 每个树的右子树都与另一个树的左子树镜像对称
      */
-    public static boolean isSymmetric(Treenode<Integer> root) {
+    public static boolean isSymmetric(TreeNode<Integer> root) {
         return check(root);
 
     }
 
-    public static boolean check(Treenode<Integer> p, Treenode<Integer> q) {
+    public static boolean check(TreeNode<Integer> p, TreeNode<Integer> q) {
         if (p == null && q == null) {
             return true;
         }
@@ -37,13 +43,13 @@ public class 对称二叉树 extends Example {
      * 然后将两个结点的左右子结点按相反的顺序插入队列中。
      * 当队列为空时，或者我们检测到树不对称（即从队列中取出两个不相等的连续结点）时，该算法结束。
      */
-    public static boolean check(Treenode<Integer> root) {
-        Queue<Treenode<Integer>> queue = new Queue<>();
+    public static boolean check(TreeNode<Integer> root) {
+        Queue<TreeNode<Integer>> queue = new Queue<>();
         queue.enqueue(root);
         queue.enqueue(root);
         while (!queue.isEmpty()) {
-            Treenode<Integer> node_l = queue.dequeue();
-            Treenode<Integer> node_r = queue.dequeue();
+            TreeNode<Integer> node_l = queue.dequeue();
+            TreeNode<Integer> node_r = queue.dequeue();
             if (node_l == null && node_r == null) {
                 continue;
             }

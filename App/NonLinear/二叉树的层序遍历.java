@@ -1,8 +1,14 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:40
+ * @FilePath: /alg/App/NonLinear/二叉树的层序遍历.java
+ */
 package NonLinear;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Queue;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.Queue;
+import basic.structure.node.TreeNode;
 
 public class 二叉树的层序遍历 extends Example{
     private static BinaryTree<Integer> tree=new BinaryTree<>();
@@ -14,10 +20,10 @@ public class 二叉树的层序遍历 extends Example{
             System.out.print(data+" ");
         }
     }
-    public static int[] levelOrder(Treenode<Integer> root,int size){
+    public static int[] levelOrder(TreeNode<Integer> root,int size){
         // root节点不为空的情况下将root加入队列,然后弹出root
         // 若其还有左右子树,则加入队列中,可一定保证其层次的完整遍历
-        Queue<Treenode<Integer>> queue=new Queue<>();
+        Queue<TreeNode<Integer>> queue=new Queue<>();
         if(root==null){
             return null;
         }
@@ -27,7 +33,7 @@ public class 二叉树的层序遍历 extends Example{
         int[] temp=new int[size+1];
         int i=0;
         while(!queue.isEmpty()){
-            Treenode<Integer> node=queue.dequeue();
+            TreeNode<Integer> node=queue.dequeue();
             temp[i]=node.data.intValue();
             if(node.Left!=null){
                 queue.enqueue(node.Left);

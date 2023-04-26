@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import Basic.Structure.Digraph;
-import Basic.Structure.Queue;
-import Basic.Structure.Node.Edge;
-import Basic.Structure.Node.Vertex;
+import basic.structure.Digraph;
+import basic.structure.Queue;
+import basic.structure.node.Edge;
+import basic.structure.node.Vertex;
 
 public class 拓扑排序 {
     private static Digraph digraph = new Digraph();

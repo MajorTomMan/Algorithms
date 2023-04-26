@@ -1,21 +1,26 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:34:34
+ * @FilePath: /alg/App/Linear/链表倒序.java
+ */
 import java.util.ArrayList;
 
-import Basic.Structure.Linkedlist;
-import Basic.Structure.Node.Node;
-
+import basic.structure.LinkedList;
+import basic.structure.node.ListNode;
 /**
  * 链表倒序
  */
 public class 链表倒序 {
     public static void main(String[] args) {
-        Linkedlist<Integer> list=new Linkedlist<>(22);
+        LinkedList<Integer> list=new LinkedList<>(22);
         for(int i=0;i<10;i++){
             list.Insert(i);
         }
         System.out.println(reverse(list.getHead()));
     }
-    private static ArrayList<Integer> reverse(Node<Integer> node){
-        ArrayList<Node<Integer>> List = new ArrayList<>();
+    private static ArrayList<Integer> reverse(ListNode<Integer> node){
+        ArrayList<ListNode<Integer>> List = new ArrayList<>();
         ArrayList<Integer> result=new ArrayList<>();
         while(node!=null){
             List.add(node);

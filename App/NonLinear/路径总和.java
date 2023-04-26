@@ -1,6 +1,6 @@
 package NonLinear;
 
-import Basic.Structure.Node.Treenode;
+import basic.structure.node.TreeNode;
 
 /**
  * 路径总和
@@ -8,12 +8,12 @@ import Basic.Structure.Node.Treenode;
 public class 路径总和 extends Example {
     public static void main(String[] args) {
         Integer[] nums = {1,2};
-        Treenode<Integer> root = buildTree(nums);
+        TreeNode<Integer> root = buildTree(nums);
         printTree(root);
         System.out.println(hasPathSum(root, 1));
     }
 
-    public static boolean hasPathSum(Treenode<Integer> root, int targetSum) {
+    public static boolean hasPathSum(TreeNode<Integer> root, int targetSum) {
         if(root==null){
             return false;
         }

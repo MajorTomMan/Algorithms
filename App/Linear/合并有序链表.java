@@ -1,14 +1,20 @@
+import basic.structure.node.ListNode;
 
-import Basic.Structure.Node.Node;
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:33:46
+ * @FilePath: /alg/App/Linear/合并有序链表.java
+ */
 
 public class 合并有序链表 extends Example{
     public static void main(String[] args) {
         int[] nums_1={1,2,4},nums_2={1,3,4};
-        Node<Integer> head_1=buildLinkedList(nums_1),head_2=buildLinkedList(nums_2);
-        Node<Integer> result=mergeTwoLists(head_1, head_2);
+        ListNode<Integer> head_1=buildLinkedList(nums_1),head_2=buildLinkedList(nums_2);
+        ListNode<Integer> result=mergeTwoLists(head_1, head_2);
         printLinkedList(result);
     }
-    public static Node<Integer> mergeTwoLists(Node<Integer> list1, Node<Integer> list2) {
+    public static ListNode<Integer> mergeTwoLists(ListNode<Integer> list1, ListNode<Integer> list2) {
         if(list1==null){
             return list2;
         }

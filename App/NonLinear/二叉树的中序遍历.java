@@ -3,8 +3,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import Basic.Structure.BinaryTree;
-import Basic.Structure.Node.Treenode;
+import basic.structure.BinaryTree;
+import basic.structure.node.TreeNode;
 
 public class 二叉树的中序遍历 {
     public static void main(String[] args) {
@@ -21,12 +21,12 @@ public class 二叉树的中序遍历 {
         System.out.println();
         System.out.println(inorderTraversal(Tree.getRoot()));
     }
-    public static List<Integer> inorderTraversal(Treenode<Integer> root) {
+    public static List<Integer> inorderTraversal(TreeNode<Integer> root) {
         List<Integer> list=new ArrayList<>();
         inorderTraversal(root,list);
         return list;
     }
-    private static Treenode<Integer> inorderTraversal(Treenode<Integer> node,List<Integer> list) {
+    private static TreeNode<Integer> inorderTraversal(TreeNode<Integer> node,List<Integer> list) {
         if(node==null){
             return node;
         }

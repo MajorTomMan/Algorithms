@@ -1,6 +1,6 @@
 
 
-import Character.SubStringSearch.RabinKarp;
+import character.substringsearch.RabinKarp;
 
 public class RabinKarp测试 {
     public static void main(String[] args) {

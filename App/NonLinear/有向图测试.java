@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import Basic.Structure.Digraph;
-import Basic.Structure.Queue;
-import Basic.Structure.Node.Edge;
-import Basic.Structure.Node.Vertex;
+import basic.structure.Digraph;
+import basic.structure.Queue;
+import basic.structure.node.Edge;
+import basic.structure.node.Vertex;
 
 public class 有向图测试 {
     public static void main(String[] args) {

@@ -1,6 +1,12 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-04-26 17:58:31
+ * @FilePath: /alg/App/NonLinear/数组转二叉树.java
+ */
 package NonLinear;
 
-import Basic.Structure.Node.Treenode;
+import basic.structure.node.TreeNode;
 
 public class 数组转二叉树 extends Example{
     public static void main(String[] args) {
@@ -8,9 +14,9 @@ public class 数组转二叉树 extends Example{
         buildTree(nums);
         printTree();
     }
-    public static Treenode<Integer> transform(Treenode<Integer> node,int data){
+    public static TreeNode<Integer> transform(TreeNode<Integer> node,int data){
         if(node==null){
-            return new Treenode<Integer>(data,null,null);
+            return new TreeNode<Integer>(data,null,null);
         }
         if(node.Left==null){
             node.Left=transform(node.Left, data);
