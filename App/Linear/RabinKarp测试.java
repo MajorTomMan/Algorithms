@@ -1,3 +1,9 @@
+/*
+ * @Date: 2023-04-26 16:51:29
+ * @LastEditors: hujunhao hujunhao@rtczsz.com
+ * @LastEditTime: 2023-05-08 09:01:08
+ * @FilePath: /alg/App/Linear/RabinKarp测试.java
+ */
 
 
 import character.substringsearch.RabinKarp;

@@ -1,9 +1,5 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 18:04:11
- * @FilePath: /alg/Algorithms/basic/structure/CycleList.java
- */
+
+
 package basic.structure;
 
 import basic.structure.iface.ICycleList;

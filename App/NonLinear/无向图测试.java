@@ -1,9 +1,10 @@
+
 package NonLinear;
 
 import basic.structure.Graph;
 import basic.structure.Queue;
 
-public class 无向图测试 extends Example {
+public class 无向图测试 extends Common {
     public static void main(String[] args) {
         int[][] edges = {
                 { 0, 1 }, { 0, 2 }, { 1, 2 }, { 1, 3 }, { 2, 4 }, { 3, 4 }

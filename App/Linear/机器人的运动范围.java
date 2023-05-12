@@ -1,7 +1,8 @@
+
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class 机器人的运动范围 extends Example {
+public class 机器人的运动范围 extends Common {
     // 记录位置是否被遍历过
     private static boolean[][] visited;
 

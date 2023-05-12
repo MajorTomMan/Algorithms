@@ -5,7 +5,7 @@ import java.util.Random;
 import basic.structure.BinaryTree;
 import basic.structure.node.TreeNode;
 
-public abstract class Example {
+public abstract class Common {
     private static Random random=new Random();
     private static TreeNode<Integer> root;
     public static Integer randomNumGenerator(int max,int step){

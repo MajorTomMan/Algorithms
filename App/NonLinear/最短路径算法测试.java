@@ -11,7 +11,7 @@ import basic.structure.Digraph;
 import basic.structure.node.Edge;
 import basic.structure.node.Vertex;
 
-public class 最短路径算法测试  extends Example{
+public class 最短路径算法测试  extends Common{
     /* 有向带权图 */
     private static Digraph graph=new Digraph();
     /* 距离 */

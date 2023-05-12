@@ -1,9 +1,4 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:32:29
- * @FilePath: /alg/App/Linear/两数相加.java
- */
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +7,7 @@ import java.util.List;
 
 import basic.structure.node.ListNode;
 
-public class 两数相加 extends Example{
+public class 两数相加 extends Common{
     public static void main(String[] args) {
         int[] nums_1={1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},nums_2={5,6,4};
         ListNode<Integer> root_1=buildLinkedList(nums_1),root_2=buildLinkedList(nums_2);

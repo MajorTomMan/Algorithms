@@ -1,42 +1,95 @@
 import basic.structure.PolyList;
+import basic.structure.node.PolyListNode;
 
 /*
  * @Date: 2023-04-26 16:51:29
  * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 18:49:09
+ * @LastEditTime: 2023-04-27 11:56:30
  * @FilePath: /alg/App/Linear/多项式求和.java
  */
 
-
- 
 public class 多项式求和 {
-    public static void main(String[] args) {
-        PolyList list1=new PolyList();
-        PolyList list2=new PolyList();
-        list1.insert(2, 3);
-        list1.insert(3, 2);
-        list1.insert(4, 5);
-        list1.insert(5, 4);
-        list1.show();
-        System.out.println("---------------");
-        list1.delete(3, 2);
-        list1.delete(2, 3);
-        list1.show();
+    /*
+     * A:7+3x+9x^8+5x^17
+     * B:8x+22x^7-9x^8
+     * sum:7+11x+22x^7+5x^17
+     */
+    public static void main(String[] args){
+        PolyList list1 = new PolyList();
+        PolyList list2 = new PolyList();
+        list1.insert(7, 0);
+        list1.insert(3, 1);
+        list1.insert(9, 8);
+        list1.insert(5, 17);
+        list2.insert(8, 1);
+        list2.insert(22, 7);
+        list2.insert(-9, 8);
+        PolyList sumList = add(list1, list2);
+        sumList.show();
     }
 
     /*
-     * 1.如果L1所指向节点的exp大于L2所指向节点的exp，也就是L1 -> exp > L2 ->
-     * exp，则不需要相加，只需要把L1所指向节点的coef和exp拷贝到新的节点中，然后把新节点插入到求和的链表中。同时，还要让L1指针向后移动一个位置。
-     * 2.如果L2所指向节点的exp大于L1所指向节点的exp，也就是L2 -> exp > L1 ->
-     * exp，则不需要相加，只需要把L2所指向节点的coef和exp拷贝到新的节点中，然后把新节点插入到求和的链表中。同时，还要让L2指针向后移动一个位置。
-     * 
-     * 3.如果L2所指向节点的exp等于L1所指向节点的exp，也就是L2 -> exp == L1 ->
-     * exp，我们就需要对两个这节点的coef进行相加，把相加的结果存放到新节点的coef中，同时也要把当前的exp存放到新节点中。
-     * 再来对相加后的coef进行判断，如果相加后的coef ==0，
-     * 那么就不需要把它插入到求和的链表中，同时把新节点通过关键字delete删除。如果相加后的coef !=0
-     * 我们就把新节点插入到求和的链表中。最后，别忘了让L1和L2向后移动一个位置。
-     * 
-     * 4.当退出循环后，说明其中一个多项式已经为空了，这个时候我们只需要找到那个还没有空的多项式，然后把该多项式剩余的那部分节点都接到求和链表的后面，
-     * 就完成了两个多项式求和这个过程了。当然，如果退出时两个多项式都为空了，我们同样可以把其中的一个多项式接到求和链表的后面，只不过这个时候接的是NULL。
+     * 关键是把握指针何时需要往前走
      */
+    public static PolyList add(PolyList L1, PolyList L2) {
+        /* 如果链表为空 */
+        if (L1.isEmpty() || L2.isEmpty()) {
+            return null;
+        }
+        /* 结果链表 */
+        PolyList sumList = new PolyList();
+        /* 指向两个链表的指针 */
+        PolyListNode node1 = L1.getHead(), node2 = L2.getHead();
+        for (; node1 != null && node2 != null;) {
+            /*
+             * 如果A链表的节点指数要小于B链表的节点指数
+             * 那么结果链表先将A链表的节点加入其中,
+             * 再将指向A的指针指向下一个节点
+             * 指向B的指针不动
+             * 如果B链表的节点指数小于A链表
+             * 那么结果链表先将B链表的节点加入其中,
+             * 再将指向B的指针指向下一个节点
+             * 指向A的指针不动
+             * 如果两者相等,则分情况讨论
+             * 若两者系数相加等于0,等价于两个相反数相加结果必然为0,结果链表不需要加入已经相消的节点
+             * 若两者系数相加不等于0,将两者的系数相加后加入结果链表
+             * 两种情况在处理完以后都需要将指针往后移,因为此时该节点已经处理完了
+             * 需要处理下一个节点的情况
+             */
+            if (node1.getExp() < node2.getExp()) {
+                sumList.insert(node1.getPower(), node1.getExp());
+                node1 = node1.getNext();
+            } else if (node1.getExp() > node2.getExp()) {
+                sumList.insert(node2.getPower(), node2.getExp());
+                node2 = node2.getNext();
+            }
+            if (node1.getExp() == node2.getExp()) {
+                int sum = node1.getPower() + node2.getPower();
+                if (sum != 0) {
+                    sumList.insert(sum, node1.getExp());
+                }
+                node1 = node1.getNext();
+                node2 = node2.getNext();
+            }
+        }
+        /*
+         * 因为多项式的项数是不确定的,
+         * 所以需要一个保险措施，
+         * 检查有无剩余的节点还没处理
+         * 将剩下的节点加入结果链表
+         * 无论是哪个链表
+         */
+        if (node1 == null) {
+            while (node2 != null) {
+                sumList.insert(node2.getPower(), node2.getExp());
+                node2 = node2.getNext();
+            }
+        } else {
+            while (node1 != null) {
+                sumList.insert(node1.getPower(), node1.getExp());
+                node1 = node1.getNext();
+            }
+        }
+        return sumList;
+    }
 }

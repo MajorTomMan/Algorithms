@@ -1,15 +1,15 @@
 /*
  * @Date: 2023-04-26 16:51:29
  * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:32:13
- * @FilePath: /alg/App/Linear/Example.java
+ * @LastEditTime: 2023-04-27 13:35:50
+ * @FilePath: /alg/App/Linear/Common.java
  */
 
 import java.util.Random;
 
 import basic.structure.node.ListNode;
 
-public abstract class Example{
+public abstract class Common{
     public static ListNode<Integer> buildLinkedList(int nums[]) {
         return buildLinkedList(null, nums, 0);
     }

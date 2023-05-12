@@ -1,14 +1,7 @@
 import basic.structure.node.ListNode;
 
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:33:30
- * @FilePath: /alg/App/Linear/反转链表.java
- */
 
-
-public class 反转链表 extends Example{
+public class 反转链表 extends Common{
     public static void main(String[] args) {
         int[] nums={1,2,3,4,5};
         ListNode<Integer> head=buildLinkedList(nums);

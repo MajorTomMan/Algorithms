@@ -1,3 +1,4 @@
+
 package NonLinear;
 
 import basic.structure.node.TreeNode;
@@ -5,7 +6,7 @@ import basic.structure.node.TreeNode;
 /**
  * 路径总和
  */
-public class 路径总和 extends Example {
+public class 路径总和 extends Common {
     public static void main(String[] args) {
         Integer[] nums = {1,2};
         TreeNode<Integer> root = buildTree(nums);

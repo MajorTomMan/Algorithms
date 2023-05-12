@@ -65,7 +65,6 @@ public class TwoSideLink<T> implements Iterable<T> {
     }
 
     public boolean add(int index, T data) { // 往指定索引位置的前方插入结点
-        TwoSideNode<T> temp = head;
         if (isEmpty()) {
             head = new TwoSideNode<>(data, null, null);
             last = head;

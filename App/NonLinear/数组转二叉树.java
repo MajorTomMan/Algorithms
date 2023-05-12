@@ -1,14 +1,9 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:58:31
- * @FilePath: /alg/App/NonLinear/数组转二叉树.java
- */
+
 package NonLinear;
 
 import basic.structure.node.TreeNode;
 
-public class 数组转二叉树 extends Example{
+public class 数组转二叉树 extends Common{
     public static void main(String[] args) {
         Integer[] nums={5,4,8,11,null,13,4,7,2,null,null,null,1};
         buildTree(nums);

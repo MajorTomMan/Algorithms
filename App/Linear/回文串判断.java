@@ -1,6 +1,4 @@
 
-import java.util.Deque;
-import java.util.LinkedList;
 
 public class 回文串判断 {
     public static void main(String[] args) {

@@ -1,16 +1,11 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:58:40
- * @FilePath: /alg/App/NonLinear/二叉树的层序遍历.java
- */
+
 package NonLinear;
 
 import basic.structure.BinaryTree;
 import basic.structure.Queue;
 import basic.structure.node.TreeNode;
 
-public class 二叉树的层序遍历 extends Example{
+public class 二叉树的层序遍历 extends Common{
     private static BinaryTree<Integer> tree=new BinaryTree<>();
     public static void main(String[] args) {
         tree.setRoot(buildTreeByRandom(12));

@@ -1,13 +1,7 @@
+
 import basic.structure.node.ListNode;
 
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:33:46
- * @FilePath: /alg/App/Linear/合并有序链表.java
- */
-
-public class 合并有序链表 extends Example{
+public class 合并有序链表 extends Common{
     public static void main(String[] args) {
         int[] nums_1={1,2,4},nums_2={1,3,4};
         ListNode<Integer> head_1=buildLinkedList(nums_1),head_2=buildLinkedList(nums_2);

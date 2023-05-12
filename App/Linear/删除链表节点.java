@@ -1,14 +1,8 @@
+
 import basic.structure.node.ListNode;
 
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:33:10
- * @FilePath: /alg/App/Linear/删除链表节点.java
- */
 
-
-public class 删除链表节点 extends Example{
+public class 删除链表节点 extends Common{
     public static void main(String[] args){
         int[] nums={-3,5,-99};
         ListNode<Integer> head=buildLinkedList(nums);

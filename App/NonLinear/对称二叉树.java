@@ -1,15 +1,11 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:58:33
- * @FilePath: /alg/App/NonLinear/对称二叉树.java
- */
+
+
 package NonLinear;
 
 import basic.structure.Queue;
 import basic.structure.node.TreeNode;
 
-public class 对称二叉树 extends Example {
+public class 对称二叉树 extends Common {
     public static void main(String[] args) {
         Integer[] nums = { 1, 2, 2, 3, 4, 4, 3 };
         TreeNode<Integer> root = buildTree(nums);

@@ -6,17 +6,59 @@
     "configurations": [
         {
             "type": "java",
-            "name": "反转链表",
+            "name": "RabinKarp测试",
             "request": "launch",
-            "mainClass": "反转链表",
-            "projectName": "Java_37005a44"
+            "mainClass": "RabinKarp测试",
+            "projectName": "alg_cac50d56"
         },
         {
             "type": "java",
-            "name": "买卖股票的最佳时机",
+            "name": "二进制计算",
             "request": "launch",
-            "mainClass": "买卖股票的最佳时机",
-            "projectName": "Java_37005a44"
+            "mainClass": "二进制计算",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "删除有序数组的重复项",
+            "request": "launch",
+            "mainClass": "删除有序数组的重复项",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "排序测试",
+            "request": "launch",
+            "mainClass": "排序测试",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "求商",
+            "request": "launch",
+            "mainClass": "求商",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "链表去重",
+            "request": "launch",
+            "mainClass": "链表去重",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "拓扑排序",
+            "request": "launch",
+            "mainClass": "NonLinear.拓扑排序",
+            "projectName": "alg_cac50d56"
+        },
+        {
+            "type": "java",
+            "name": "矩阵中的路径",
+            "request": "launch",
+            "mainClass": "矩阵中的路径",
+            "projectName": "alg_cac50d56"
         },
         {
             "type": "java",

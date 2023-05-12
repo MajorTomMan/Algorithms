@@ -1,8 +1,9 @@
+
 package NonLinear;
 
 import basic.structure.node.TreeNode;
 
-public class 树的子结构 extends Example {
+public class 树的子结构 extends Common {
     public static void main(String[] args) {
         Integer[] a={1,0,1,-4,-3},b={1,-4};
         TreeNode<Integer> tree_a=buildTree(a);

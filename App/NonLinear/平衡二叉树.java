@@ -1,15 +1,10 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:58:32
- * @FilePath: /alg/App/NonLinear/平衡二叉树.java
- */
+
 package NonLinear;
 
 import basic.structure.BinaryTree;
 import basic.structure.node.TreeNode;
 
-public class 平衡二叉树 extends Example{
+public class 平衡二叉树 extends Common{
     public static void main(String[] args) {
         BinaryTree<Integer> Tree=new BinaryTree<>();
         Tree.setRoot(buildTreeByRandom(12));

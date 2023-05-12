@@ -1,9 +1,5 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 18:03:57
- * @FilePath: /alg/Algorithms/basic/structure/Bag.java
- */
+
+
 package basic.structure;
 
 import java.util.Iterator;
@@ -16,6 +12,7 @@ import basic.structure.node.ListNode;
 public class Bag<T> implements IBag<T>,Iterable<T>{
     private ListNode<T> top;
     private int size;
+    
     @Override
     public void add(T data) {
         ListNode<T> node=new ListNode<>(data,null);

@@ -1,17 +1,13 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 18:50:03
- * @FilePath: /alg/Algorithms/basic/structure/node/PolyListNode.java
- */
+
+
 package basic.structure.node;
 
 public class PolyListNode {
-    private double power; // 系数
+    private int power; // 系数
     private int exp; // 指数
     private PolyListNode next; // 指向下一个节点的指针
 
-    public PolyListNode(double power, int exp, PolyListNode next) {
+    public PolyListNode(int power, int exp, PolyListNode next) {
         this.power = power;
         this.exp = exp;
         this.next = next;
@@ -31,11 +27,11 @@ public class PolyListNode {
                 """.formatted(power, exp, next);
     }
 
-    public double getPower() {
+    public int getPower() {
         return power;
     }
 
-    public void setPower(double power) {
+    public void setPower(int power) {
         this.power = power;
     }
 
@@ -54,4 +50,5 @@ public class PolyListNode {
     public void setNext(PolyListNode next) {
         this.next = next;
     }
+    
 }
