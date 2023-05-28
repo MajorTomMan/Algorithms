@@ -6,66 +6,38 @@
     "configurations": [
         {
             "type": "java",
-            "name": "RabinKarp测试",
+            "name": "选择排序测试",
             "request": "launch",
-            "mainClass": "RabinKarp测试",
-            "projectName": "alg_cac50d56"
+            "mainClass": "选择排序测试",
+            "projectName": "alg_610bb9da"
         },
         {
             "type": "java",
-            "name": "二进制计算",
+            "name": "冒泡排序测试",
             "request": "launch",
-            "mainClass": "二进制计算",
-            "projectName": "alg_cac50d56"
+            "mainClass": "冒泡排序测试",
+            "projectName": "alg_610bb9da"
         },
         {
             "type": "java",
-            "name": "删除有序数组的重复项",
+            "name": "暴力字符串匹配",
             "request": "launch",
-            "mainClass": "删除有序数组的重复项",
-            "projectName": "alg_cac50d56"
+            "mainClass": "暴力字符串匹配",
+            "projectName": "alg_610bb9da"
         },
         {
             "type": "java",
-            "name": "排序测试",
+            "name": "插入排序测试",
             "request": "launch",
-            "mainClass": "排序测试",
-            "projectName": "alg_cac50d56"
+            "mainClass": "插入排序测试",
+            "projectName": "alg_610bb9da"
         },
         {
             "type": "java",
-            "name": "求商",
+            "name": "KMP算法",
             "request": "launch",
-            "mainClass": "求商",
-            "projectName": "alg_cac50d56"
-        },
-        {
-            "type": "java",
-            "name": "链表去重",
-            "request": "launch",
-            "mainClass": "链表去重",
-            "projectName": "alg_cac50d56"
-        },
-        {
-            "type": "java",
-            "name": "拓扑排序",
-            "request": "launch",
-            "mainClass": "NonLinear.拓扑排序",
-            "projectName": "alg_cac50d56"
-        },
-        {
-            "type": "java",
-            "name": "矩阵中的路径",
-            "request": "launch",
-            "mainClass": "矩阵中的路径",
-            "projectName": "alg_cac50d56"
-        },
-        {
-            "type": "java",
-            "name": "多项式求和",
-            "request": "launch",
-            "mainClass": "多项式求和",
-            "projectName": "alg_cac50d56"
+            "mainClass": "KMP算法",
+            "projectName": "alg_610bb9da"
         },
         {
             "type": "java",

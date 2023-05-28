@@ -19,7 +19,7 @@ package graph.dir;
 
 import basic.structure.Stack;
 import graph.dig.Digraph;
-import soft.structure.nonlinear.Topological;
+import sort.structure.nonlinear.Topological;
 
 /**
  *  The {@code DirectedCycle} class represents a data type for 

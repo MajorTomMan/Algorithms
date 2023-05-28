@@ -3,7 +3,7 @@ package graph;
 import basic.structure.Stack;
 import graph.dir.DirectedEdge;
 import graph.dir.EdgeWeightedDigraph;
-import soft.structure.pq.IndexMinPQ;
+import sort.structure.pq.IndexMinPQ;
 
 public class DijkstraSP { //图的最短路径算法
     private DirectedEdge[] edgeTo; //距离树最近的边

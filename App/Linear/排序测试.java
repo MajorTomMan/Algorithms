@@ -1,20 +1,14 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-27 13:48:14
- * @FilePath: /alg/App/Linear/排序测试.java
- */
 
 import java.util.Scanner;
 
 import func.io.StdOut;
 import func.sortfunction.SortCompare;
-import soft.structure.divideconquer.Merge;
-import soft.structure.divideconquer.Quick;
-import soft.structure.linear.Insertion;
-import soft.structure.linear.Selection;
-import soft.structure.linear.Shell;
-import soft.structure.nonlinear.Heap;
+import sort.structure.divideconquer.Merge;
+import sort.structure.divideconquer.Quick;
+import sort.structure.linear.Insertion;
+import sort.structure.linear.Selection;
+import sort.structure.linear.Shell;
+import sort.structure.nonlinear.Heap;
 
 
 public class 排序测试{

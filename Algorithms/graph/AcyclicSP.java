@@ -3,7 +3,7 @@ package graph;
 import basic.structure.Stack;
 import graph.dir.DirectedEdge;
 import graph.dir.EdgeWeightedDigraph;
-import soft.structure.nonlinear.Topological;
+import sort.structure.nonlinear.Topological;
 
 /******************************************************************************
  *  Compilation:  javac AcyclicSP.java

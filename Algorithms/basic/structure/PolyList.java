@@ -1,9 +1,4 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-27 11:55:44
- * @FilePath: /alg/Algorithms/basic/structure/PolyList.java
- */
+
 package basic.structure;
 
 import java.util.Iterator;

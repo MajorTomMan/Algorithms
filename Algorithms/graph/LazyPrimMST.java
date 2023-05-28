@@ -1,9 +1,10 @@
+
 package graph;
 
 import basic.structure.Queue;
 import graph.dir.EdgeWeightedGraph;
 import graph.e.Edge;
-import soft.structure.pq.MinPQ;
+import sort.structure.pq.MinPQ;
 
 public class LazyPrimMST { //加权无向图最小生成树算法中的懒惰Prim算法
     private boolean[] marked; //最小生成树的顶点

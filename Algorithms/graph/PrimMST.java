@@ -1,8 +1,9 @@
+
 package graph;
 
 import graph.dir.EdgeWeightedGraph;
 import graph.e.Edge;
-import soft.structure.pq.IndexMinPQ;
+import sort.structure.pq.IndexMinPQ;
 
 public class PrimMST{ //加权无向图最小生成树算法中的即时Prim算法
     private Edge[] edgeTo; //距离树最近的边

@@ -1,3 +1,4 @@
+
 public class 暴力字符串匹配 {
     private static String goal = "aaaabbbbaaabbbbcccabcdasdaasdasdasda";
     private static String target = "da";

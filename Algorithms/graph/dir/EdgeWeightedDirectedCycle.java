@@ -12,7 +12,7 @@
 package graph.dir;
 
 import basic.structure.Stack;
-import soft.structure.nonlinear.Topological;
+import sort.structure.nonlinear.Topological;
 
 /**
  *  The {@code EdgeWeightedDirectedCycle} class represents a data type for 

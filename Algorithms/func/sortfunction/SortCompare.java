@@ -1,12 +1,13 @@
+
 package func.sortfunction;
 
 import func.random.StdRandom;
-import soft.structure.divideconquer.Merge;
-import soft.structure.divideconquer.Quick;
-import soft.structure.linear.Insertion;
-import soft.structure.linear.Selection;
-import soft.structure.linear.Shell;
-import soft.structure.nonlinear.Heap;
+import sort.structure.divideconquer.Merge;
+import sort.structure.divideconquer.Quick;
+import sort.structure.linear.Insertion;
+import sort.structure.linear.Selection;
+import sort.structure.linear.Shell;
+import sort.structure.nonlinear.Heap;
 
 public class SortCompare{
     public static double time(String alg,Comparable[] a){

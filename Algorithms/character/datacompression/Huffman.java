@@ -1,6 +1,7 @@
+
 package character.datacompression;
 
-import soft.structure.pq.MinPQ;
+import sort.structure.pq.MinPQ;
 
 public class Huffman {
     private final static int R=256;

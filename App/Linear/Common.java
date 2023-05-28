@@ -1,20 +1,31 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-27 13:35:50
- * @FilePath: /alg/App/Linear/Common.java
- */
 
 import java.util.Random;
 
 import basic.structure.node.ListNode;
 
-public abstract class Common{
-    public static ListNode<Integer> buildLinkedList(int nums[]) {
+public abstract class Common {
+    private static Random random = new Random();
+    /**
+     * @description: 生成随机数组
+     * @return {*}
+     */
+    protected static int[] generatorRandomArray(int cap, int max) {
+        int[] arr = new int[cap];
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = random.nextInt(max);
+        }
+        return arr;
+    }
+
+    /**
+     * @description: 构建一个链表
+     * @return {*}
+     */
+    protected static ListNode<Integer> buildLinkedList(int nums[]) {
         return buildLinkedList(null, nums, 0);
     }
 
-    public static void printLinkedList(ListNode<Integer> node) {
+    protected static void printLinkedList(ListNode<Integer> node) {
         System.out.println(node);
     }
 
@@ -38,7 +49,7 @@ public abstract class Common{
      * 
      * @return int[][] 一张随机图
      */
-    public static int[][] buildGraph(int n, int m) {
+    protected static int[][] buildGraph(int n, int m) {
         int[][] map = new int[n][m];
         Random random = new Random();
         for (int i = 0; i < map.length; i++) {
@@ -49,7 +60,7 @@ public abstract class Common{
         return map;
     }
 
-    public static void printGraph(int[][] map) {
+    protected static void printGraph(int[][] map) {
         for (int i = 0; i < map.length; i++) {
             System.out.print("[");
             for (int j = 0; j < map[i].length; j++) {
@@ -63,7 +74,7 @@ public abstract class Common{
         }
     }
 
-    public static void printGraph(boolean[][] map) {
+    protected static void printGraph(boolean[][] map) {
         for (int i = 0; i < map.length; i++) {
             System.out.print("[");
             for (int j = 0; j < map[i].length; j++) {
@@ -75,5 +86,39 @@ public abstract class Common{
             }
             System.out.println("]");
         }
+    }
+
+    /**
+     * @description: 排序时用的交换方法
+     * @param {int[]} 数组
+     * @param {int} 待交换的数
+     * @param {int} 待交换的数
+     * @return {*}
+     */
+    protected static void swap(int[] arr, int i, int j) {
+        if (i == j)
+            return;
+        arr[i] = arr[i] ^ arr[j];
+        arr[j] = arr[i] ^ arr[j];
+        arr[i] = arr[i] ^ arr[j];
+    }
+
+    /**
+     * @description: 排序时的比较方法
+     * @param {int} 待交换的数
+     * @param {int} 待交换的数
+     * @return {*}
+     */
+    protected static boolean less(int i, int j) {
+        if (i <= j) {
+            return false;
+        }
+        return true;
+    }
+    protected static void show(int[] arr){
+        for (int i : arr) {
+            System.out.print(i+" ");
+        }
+        System.out.println();
     }
 }

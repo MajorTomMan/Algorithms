@@ -140,7 +140,6 @@ public class Tree<T extends Comparable<T>> implements ITree<T> {
                 if(children.data.compareTo(data)==0){
                     return children;
                 }
-                
             }
         }
         return null;

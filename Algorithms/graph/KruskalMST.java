@@ -1,9 +1,10 @@
+
 package graph;
 
 import basic.structure.Queue;
 import graph.dir.EdgeWeightedGraph;
 import graph.e.Edge;
-import soft.structure.pq.MinPQ;
+import sort.structure.pq.MinPQ;
 
 public class KruskalMST { //加权无向图寻找最小生成树算法中的Kruskal算法
    private Queue<Edge> mst;
