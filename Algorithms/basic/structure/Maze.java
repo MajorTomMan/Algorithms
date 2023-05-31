@@ -1,157 +1,259 @@
 package basic.structure;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Random;
+import java.util.Queue;
+import java.util.LinkedList;
 
-import javax.swing.JPanel;
-
-public class Maze extends JPanel {
+/**
+ * Maze
+ */
+public class Maze {
     private int[][] map;
+    private int start = 2;
+    private int end = 3;
+    private int path = 0;
     private int wall = 1;
-    private int road = 0;
-    private int begin = 2;
-    private int dest = 3;
-    private int[] dx = { -1, 1, 0, 0 }; // X轴上的四个方向（上下左右)
-    private int[] dy = { 0, 0, -1, 1 }; // Y轴上的四个方向(上下左右)
-    private Boolean destExist = false;
-    private Boolean[][] visited;
-    private final int blockSize = 60;
+    private int walk = 5;
+    private int width;
+    private int height;
+    private int startX;
+    private int startY;
+    private int endX;
+    private int endY;
+    /* 代表着上下左右 */
+    private int[][] direction = { { -1, 0 }, { 0, -1 }, { 1, 0 }, { 0, 1 } };
+    private boolean[][] visited;
+    private List<Integer> list = new ArrayList<>(Arrays.asList(0, 1, 2, 3));
 
-    /**
-     * @param map   地图
-     * @param wall  墙
-     * @param road  路
-     * @param begin 起点
-     * @param dest  终点
-     */
-    public Maze(int row, int column) {
-        map = new int[row][column];
-        visited = new Boolean[row][column];
-        for (int i = 0; i < visited.length; i++) {
-            for (int j = 0; j < visited[0].length; j++) {
-                visited[i][j] = false;
+    public Maze(int width, int height) {
+        map = new int[width][height];
+        visited = new boolean[width][height];
+        this.width = width;
+        this.height = height;
+        init();
+        randomStart();
+        randomEnd();
+    }
+
+    public void generatorMap() {
+        //startGenerator(startY, startX, visited, 2);
+        print();
+        System.out.println("-------------start DFS--------------------");
+        System.out.println("------------Random BFS-----------------");
+        map = new int[width][height];
+        init();
+        startBFSGenerator();
+
+    }
+
+    private void startGenerator(int currentY, int currentX, boolean[][] visited, int depth) {
+        /* 检查边界和已访问 */
+        if (map[currentY][currentX] == end) {
+            visited[currentY][currentX] = true;
+            return;
+        }
+        if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
+            return;
+        }
+        if (visited[currentY][currentX] == true) {
+            return;
+        }
+        /* 不是终点或者起点就变成路 */
+        if (map[currentY][currentX] != start) {
+            map[currentY][currentX] = path;
+        }
+        visited[currentY][currentX] = true;
+        /* 随机选择方向 */
+        /* 分别对应上下左右 */
+        List<Integer> list = new ArrayList<>(Arrays.asList(0, 1, 2, 3));
+        Collections.shuffle(list);
+        for (Integer integer : list) {
+            /* 获取新位置 */
+            int newY = currentY + 2 * direction[integer][0];
+            int newX = currentX + 2 * direction[integer][1];
+            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && map[newY][newX] == wall) {
+                map[currentY + direction[integer][0]][currentX + direction[integer][1]] = path;
+                startGenerator(newY, newX, visited, depth + 1);
             }
         }
-        for (int i = 0; i < map.length; i++) {
-            for (int j = 0; j < map[0].length; j++) {
+        if (depth == 2) {
+            map[currentY][currentX] = start;
+            map[endY][endX] = end;
+        }
+    }
+
+    private void startBFSGenerator() {
+        visited = new boolean[width][height];
+        Random random = new Random();
+        int newX = random.nextInt(width), newY = random.nextInt(height);
+        Queue<int[]> queue = new LinkedList<>();
+        queue.offer(new int[] { startY, startX });
+        visited[startY][startX] = true;
+        while (!queue.isEmpty()) {
+            int[] currentCell = queue.poll();
+            newY = currentCell[0];
+            newX = currentCell[1];
+            if (newY > 0 && !visited[newY - 1][newX]) {
+                queue.offer(new int[] { newY - 1, newX });
+                visited[newY - 1][newX] = true;
+                map[newY - 1][newX] = path;
+            }
+            if (newY < height - 1 && !visited[newY + 1][newX]) {
+                queue.offer(new int[] { newY + 1, newX });
+                visited[newY + 1][newX] = true;
+                map[newY + 1][newX] = path;
+            }
+            if (newX > 0 && !visited[newY][newX - 1]) {
+                queue.offer(new int[] { newY, newX - 1 });
+                visited[newY][newX - 1] = true;
+                map[newY][newX - 1] = path;
+            }
+            if (newX < width - 1 && !visited[newY][newX + 1]) {
+                queue.offer(new int[] { newY, newX + 1 });
+                visited[newY][newX + 1] = true;
+                map[newY][newX + 1] = path;
+            }
+            if (newY == endY && newX == endX) {
+                visited[newY][newX] = true;
+                break;
+            }
+        }
+        map[startY][startX] = start;
+        map[endY][endX] = end;
+        addWalls();
+    }
+
+    private void addWalls() {
+        Random random = new Random();
+        for (int i = 1; i < width - 1; i += 2) {
+            for (int j = 1; j < height - 1; j += 2) {
+                if (map[i][j] == path) {
+                    int direct = random.nextInt(direction.length);
+                    switch (direct) {
+                        case 0:
+                            // 上方
+                            map[i - 1][j] = wall;
+                            break;
+                        case 1:
+                            // 下方
+                            map[i + 1][j] = wall;
+                            break;
+                        case 2:
+                            // 左侧
+                            map[i][j - 1] = wall;
+                            break;
+                        case 3:
+                            // 右侧
+                            map[i][j + 1] = wall;
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void randomStart() {
+        Random random = new Random();
+        this.startX = random.nextInt(width - 1);
+        this.startY = random.nextInt(height - 1);
+        map[startY][startX] = start;
+    }
+
+    private void randomEnd() {
+        int i = 0;
+        Random random = new Random();
+        while (i != 6) {
+            this.endX = random.nextInt(width - 1);
+            this.endY = random.nextInt(height - 1);
+            if (startX - endX <= 2 || startY - endY <= 2) {
+                this.endX = random.nextInt(width - 1);
+                this.endY = random.nextInt(height - 1);
+            } else {
+                break;
+            }
+            i++;
+        }
+        map[endY][endX] = end;
+    }
+
+    private void init() {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
                 map[i][j] = 1;
             }
         }
     }
 
-    /* 生成地图 */
-    public void generatorMaze(int startX, int startY) {
-        map[startX][startY] = begin;
-        Prim(startY, startX);
+    public boolean isConnect() {
+        if (DFS(start, end, startY, startX, new boolean[width][height], 0)) {
+            return true;
+        }
+        return false;
     }
 
-    private void RandomDirect() {
-        // 随机打乱四个方向的顺序
-        List<Integer> dxList = Arrays.stream(dx).boxed().collect(Collectors.toList());
-        List<Integer> dyList = Arrays.stream(dy).boxed().collect(Collectors.toList());
-        Collections.shuffle(dxList);
-        Collections.shuffle(dyList);
-        dx = dxList.stream().mapToInt(i -> i).toArray();
-        dy = dyList.stream().mapToInt(i -> i).toArray();
+    private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] visited, int depth) {
+        if (map[currentY][currentX] == wall) {
+            return false;
+        }
+        if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
+            return false;
+        }
+        if (visited[currentY][currentX] == true) {
+            return false;
+        }
+        if (currentY == endY && currentX == endX) {
+            return true;
+        }
+        if (currentY != startY || currentX != startX) {
+            map[currentY][currentX] = walk;
+        }
+        System.out.println("-------------------------");
+        print();
+        visited[currentY][currentX] = true;
+        Collections.shuffle(list);
+        for (int i = 0; i < list.size(); i++) {
+            int newY = currentY + direction[list.get(i)][0];
+            int newX = currentX + direction[list.get(i)][1];
+            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && !visited[newY][newX]) {
+                if (currentY != startY || currentX != startX) {
+                    map[currentY][currentX] = path;
+                }
+                if (DFS(src, dest, newY, newX, visited, depth + 1)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    private void Recursion(int y, int x, Boolean[][] visited, int depth) {
-        /* 确保唯一终点会生成且只有一个 */
-        if (destExist) {
-            return;
-        }
-        /* 根据给定的递归深度来确定终点的生成时机 */
-        if (depth == 30) {
-            if (!destExist) {
-                map[y][x] = dest;
-                destExist = true;
-                visited[y][x] = true;
-            }
-            return;
-        }
-        RandomDirect();
-        /* 随机选择四个方向上的X,Y并继续递归寻找 */
-        for (int i = 0; i < 4; i++) {
-            int newX = x + dx[i];
-            int newY = y + dy[i];
-            /* 若越界 则返回 */
-            if (newX < 0 || newX >= map[0].length || newY < 0 || newY >= map.length) {
-                continue;
-            }
-            /* 若已经到过了就跳过 */
-            if (map[newY][newX] != wall || visited[newY][newX] == true) {
-                continue;
-            }
-            /* 将墙壁变成道路 */
-            map[newY][newX] = road;
-            /* 继续寻找 */
-            Recursion(newY, newX, visited, depth + 1);
-        }
-    }
-
-    private void Prim(int y, int x) {
-        Queue<Integer> queue = new Queue<>();
-        visited[y][x] = true;
-        queue.enqueue(map[y][x]);
-        printMap();
-        while (!queue.isEmpty()) {
-            queue.dequeue();
-            /* 若越界 则返回 */
-            if (x < 0 || x >= map[0].length || y < 0 || y >= map.length) {
-                continue;
-            }
-            if (map[y][x + dx[0]] == wall || visited[y][x + dx[0]] != true) {
-                queue.enqueue(map[y][x + dx[0]]);
-                x=x+dx[0];
-            } else if (map[y][x + dx[1]] == wall || visited[y][x + dx[1]] != true) {
-                queue.enqueue(map[y][x + dx[1]]);
-                x=x+dx[1];
-            } else if (map[y+dy[3]][x] == wall || visited[y + dy[3]][x] != true) {
-                queue.enqueue(map[y+dy[3]][x]);
-                y=y+dy[3];
-            } else if (map[y+dy[4]][x] == wall || visited[y + dy[4]][x] != true) {
-                queue.enqueue(map[y+dy[4]][x]);
-                y=y+dy[4];
-            }
-            if(map[y][x]!=wall || visited[y][x]==true){
-                continue;
-            }
-            map[y][x]=road;
-            visited[y][x]=true;
-            printMap();
-        }
-    }
-
-    public void printMap() {
-        for (int[] row : map) {
-            for (int column : row) {
-                System.out.printf(column + " ");
+    public void print(int[][] map) {
+        for (int[] is : map) {
+            for (int i : is) {
+                System.out.print(i + " ");
             }
             System.out.println();
         }
-        System.out.println();
     }
 
-    @Override
-    public void paint(Graphics g) {
-        // TODO Auto-generated method stub
-        for (int i = 0; i < map.length; i++) {
-            for (int j = 0; j < map[i].length; j++) {
-                if (map[i][j] == wall) {
-                    g.setColor(Color.BLACK);
-                } else if (map[i][j] == begin) {
-                    g.setColor(Color.GREEN);
-                } else if (map[i][j] == dest) {
-                    g.setColor(Color.RED);
-                } else {
-                    g.setColor(Color.WHITE);
-                }
-                g.fillRect(j * blockSize, i * blockSize, blockSize, blockSize);
+    public void print() {
+        for (int[] is : map) {
+            for (int i : is) {
+                System.out.print(i + " ");
             }
+            System.out.println();
+        }
+    }
+
+    public void printVisited() {
+        for (boolean[] is : visited) {
+            for (boolean i : is) {
+                System.out.print(i + " ");
+            }
+            System.out.println();
         }
     }
 }

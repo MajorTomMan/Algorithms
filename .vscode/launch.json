@@ -6,6 +6,34 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Maze",
+            "request": "launch",
+            "mainClass": "basic.structure.Maze",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "迷宫回溯问题",
+            "request": "launch",
+            "mainClass": "迷宫回溯问题",
+            "projectName": "alg_610bb9da"
+        },
+        {
+            "type": "java",
+            "name": "Maze",
+            "request": "launch",
+            "mainClass": "basic.structure.Maze",
+            "projectName": "alg_610bb9da"
+        },
+        {
+            "type": "java",
+            "name": "迷宫测试",
+            "request": "launch",
+            "mainClass": "迷宫测试",
+            "projectName": "alg_610bb9da"
+        },
+        {
+            "type": "java",
             "name": "选择排序测试",
             "request": "launch",
             "mainClass": "选择排序测试",
