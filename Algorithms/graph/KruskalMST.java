@@ -15,7 +15,7 @@ public class KruskalMST { //加权无向图寻找最小生成树算法中的Krus
            pq.insert(e);
        }
        UF uf=new UF(G.V());
-       while(!pq.isEmpty()&&mst.Size()<G.V()-1){
+       while(!pq.isEmpty()&&mst.size()<G.V()-1){
            Edge e=pq.delMin(); //从pq得到权重最小的边和它的顶点
            int v=e.either(),w=e.other(v);
            if(uf.connected(v, w)){ //忽略失效的边

@@ -25,7 +25,7 @@ public class 链表{
         }
         System.out.println();
         System.out.println("--------------------------");
-        System.out.println(linkedlist.Size());
+        System.out.println(linkedlist.size());
         linkedlist.Sort();
         for (Integer t:linkedlist) {
             System.out.print(t+" ");

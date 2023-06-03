@@ -40,7 +40,7 @@ public class Maze {
     }
 
     public void generatorMap() {
-        //startGenerator(startY, startX, visited, 2);
+        // startGenerator(startY, startX, visited, 2);
         print();
         System.out.println("-------------start DFS--------------------");
         System.out.println("------------Random BFS-----------------");

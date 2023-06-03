@@ -89,7 +89,7 @@ public class EdgeWeightedDigraph{ //加权有向图实现
     }
     public int outdegree(int v) {
         validateVertex(v);
-        return adj[v].Size();
+        return adj[v].size();
     }
     public int indegree(int v) {
         validateVertex(v);

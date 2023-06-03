@@ -3,19 +3,19 @@ package basic.structure.node;
 
 public class TreeNode<T> {
    public T data;
-   public int SubTreeNum;
-   public TreeNode<T> Left;
-   public TreeNode<T> Right;
+   public int subtreenum;
+   public TreeNode<T> left;
+   public TreeNode<T> right;
 
    public TreeNode(T data, TreeNode<T> left, TreeNode<T> right) {
       this.data = data;
-      this.Left = left;
-      this.Right = right;
+      this.left = left;
+      this.right = right;
    }
 
    public TreeNode(T data) {
       this.data = data;
-      this.Left = null;
-      this.Right = null;
+      this.left = null;
+      this.right = null;
    }
 }

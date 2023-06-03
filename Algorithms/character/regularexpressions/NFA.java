@@ -46,7 +46,7 @@ public class NFA {
             if (regexp.charAt(i) == '(' || regexp.charAt(i) == '*' || regexp.charAt(i) == ')') 
                 graph.addEdge(i, i+1);
         }
-        if (ops.Size() != 0)
+        if (ops.size() != 0)
             throw new IllegalArgumentException("Invalid regular expression");
     } 
 
@@ -80,7 +80,7 @@ public class NFA {
                 if (dfs.marked(v)) pc.add(v);
 
             // optimization if no states reachable
-            if (pc.Size() == 0) return false;
+            if (pc.size() == 0) return false;
         }
 
         // check for accept state

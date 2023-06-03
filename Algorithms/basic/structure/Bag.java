@@ -36,7 +36,7 @@ public class Bag<T> implements IBag<T>,Iterable<T>{
         }
     }
     @Override
-    public int Size() {
+    public int size() {
         // TODO Auto-generated method stub
         return size;
     }
