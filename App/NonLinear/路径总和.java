@@ -19,9 +19,9 @@ public class 路径总和 extends Common {
             return false;
         }
         targetSum-=root.data;
-        if(root.Left==null&&root.Right==null){
+        if(root.left==null&&root.right==null){
             return targetSum==0;
         }
-        return hasPathSum(root.Left,targetSum)||hasPathSum(root.Right,targetSum);
+        return hasPathSum(root.left,targetSum)||hasPathSum(root.right,targetSum);
     }
 }

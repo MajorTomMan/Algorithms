@@ -8,7 +8,5 @@ public class 树 {
         tree.put(2);
         tree.put(3);
         tree.put(4);
-        tree.put(6, 2);
-        tree.put(8, 3);
     }
 }

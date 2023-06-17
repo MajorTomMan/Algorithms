@@ -43,4 +43,24 @@ public class Tree<T extends Comparable<T>> implements ITree<T> {
         }
         return false;
     }
+
+    @Override
+    public int size() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void put(T data) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void get(T key) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void delete(T key) {
+        // TODO Auto-generated method stub
+    }
 }

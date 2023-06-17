@@ -30,7 +30,7 @@ public class 对称二叉树 extends Common {
         if (p == null || q == null) {
             return false;
         }
-        return p.data == q.data && check(p.Left, q.Right) && check(p.Right, q.Left);
+        return p.data == q.data && check(p.left, q.right) && check(p.right, q.left);
     }
 
     /*
@@ -52,10 +52,10 @@ public class 对称二叉树 extends Common {
             if (node_l == null || node_r == null || node_l.data != node_r.data) {
                 return false;
             }
-            queue.enqueue(node_l.Left);
-            queue.enqueue(node_r.Right);
-            queue.enqueue(node_l.Right);
-            queue.enqueue(node_r.Left);
+            queue.enqueue(node_l.left);
+            queue.enqueue(node_r.right);
+            queue.enqueue(node_l.right);
+            queue.enqueue(node_r.left);
         }
         return true;
     }

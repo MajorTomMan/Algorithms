@@ -13,18 +13,15 @@ public class 数组转二叉树 extends Common{
         if(node==null){
             return new TreeNode<Integer>(data,null,null);
         }
-        if(node.Left==null){
-            node.Left=transform(node.Left, data);
-            node.SubTreeNum++;
+        if(node.left==null){
+            node.left=transform(node.left, data);
         }
-        else if(node.Right==null){
-            node.Right=transform(node.Right, data);
-            node.SubTreeNum++;
+        else if(node.right==null){
+            node.right=transform(node.right, data);
         }
         else{
-            node.Left=transform(node.Left, data);
-            node.Right=transform(node.Right, data);
-            node.SubTreeNum++;
+            node.left=transform(node.left, data);
+            node.right=transform(node.right, data);
         }
         return node;
     }

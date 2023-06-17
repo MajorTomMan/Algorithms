@@ -56,12 +56,12 @@ public abstract class Common {
             return null;
         }
         TreeNode<Integer> node = new TreeNode<Integer>(value);
-        node.Left = buildTree(nums, index * 2);
-        node.Right = buildTree(nums, index * 2 + 1);
+        node.left = buildTree(nums, index * 2);
+        node.right = buildTree(nums, index * 2 + 1);
         return node;
     }
     // 随机生成二叉树数据
-    public static TreeNode<Integer> buildTreeByRandom(int times) {
+    public static BinaryTree<Integer> buildTreeByRandom(int times) {
         int i = 0;
         BinaryTree<Integer> tree = new BinaryTree<Integer>();
         Random random = new Random();
@@ -71,7 +71,7 @@ public abstract class Common {
             tree.put(ran);
             System.out.print(ran + ",");
         }
-        return tree.getRoot();
+        return tree;
     }
 
     public static void printTree(TreeNode<Integer> root) {
@@ -151,7 +151,7 @@ public abstract class Common {
 
     // 用于获得树的层数
     private static int getTreeDepth(TreeNode<Integer> root) {
-        return root == null ? 0 : (1 + Math.max(getTreeDepth(root.Left), getTreeDepth(root.Right)));
+        return root == null ? 0 : (1 + Math.max(getTreeDepth(root.left), getTreeDepth(root.right)));
     }
 
     private static void writeArray(TreeNode<Integer> currNode, int rowIndex, int columnIndex, String[][] res,
@@ -171,15 +171,15 @@ public abstract class Common {
         int gap = treeDepth - currLevel - 1;
 
         // 对左儿子进行判断，若有左儿子，则记录相应的"/"与左儿子的值
-        if (currNode.Left != null) {
+        if (currNode.left != null) {
             res[rowIndex + 1][columnIndex - gap] = "/";
-            writeArray(currNode.Left, rowIndex + 2, columnIndex - gap * 2, res, treeDepth);
+            writeArray(currNode.left, rowIndex + 2, columnIndex - gap * 2, res, treeDepth);
         }
 
         // 对右儿子进行判断，若有右儿子，则记录相应的"\"与右儿子的值
-        if (currNode.Right != null) {
+        if (currNode.right != null) {
             res[rowIndex + 1][columnIndex + gap] = "\\";
-            writeArray(currNode.Right, rowIndex + 2, columnIndex + gap * 2, res, treeDepth);
+            writeArray(currNode.right, rowIndex + 2, columnIndex + gap * 2, res, treeDepth);
         }
     }
 }

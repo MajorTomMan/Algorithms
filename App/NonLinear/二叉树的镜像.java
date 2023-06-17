@@ -15,10 +15,10 @@ public class 二叉树的镜像 extends Common {
         if(root==null){
             return null;
         }
-        TreeNode<Integer> left=mirrorTree(root.Left);
-        TreeNode<Integer> right=mirrorTree(root.Right);
-        root.Left=right;
-        root.Right=left;
+        TreeNode<Integer> left=mirrorTree(root.left);
+        TreeNode<Integer> right=mirrorTree(root.right);
+        root.left=right;
+        root.right=left;
         return root;
     }
 }

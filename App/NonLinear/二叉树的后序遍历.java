@@ -21,8 +21,8 @@ public class 二叉树的后序遍历 extends Common{
         if(root==null){
             return;
         }
-        postTraversal(root.Left,list);
-        postTraversal(root.Right,list);
+        postTraversal(root.left,list);
+        postTraversal(root.right,list);
         list.add((Integer) root.data);
     }
 }

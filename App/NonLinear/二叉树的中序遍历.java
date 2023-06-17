@@ -8,7 +8,7 @@ import basic.structure.node.TreeNode;
 
 public class 二叉树的中序遍历 {
     public static void main(String[] args) {
-        BinaryTree<Integer> Tree=new BinaryTree<Integer>(50);
+        BinaryTree<Integer> Tree=new BinaryTree<Integer>();
         int i=0;
         Random random=new Random();
         System.out.println("-----------------------raw data--------------------");
@@ -19,7 +19,7 @@ public class 二叉树的中序遍历 {
             i++;
         }
         System.out.println();
-        System.out.println(inorderTraversal(Tree.getRoot()));
+
     }
     public static List<Integer> inorderTraversal(TreeNode<Integer> root) {
         List<Integer> list=new ArrayList<>();
@@ -30,9 +30,9 @@ public class 二叉树的中序遍历 {
         if(node==null){
             return node;
         }
-        inorderTraversal(node.Left, list);
+        inorderTraversal(node.left, list);
         list.add(node.data);
-        inorderTraversal(node.Right, list);
+        inorderTraversal(node.right, list);
         return node;
     }
 }

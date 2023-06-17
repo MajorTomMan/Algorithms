@@ -12,8 +12,6 @@ public class 二叉树的最长路径 extends Common{
         Tree.put(20);
         Tree.put(15);
         Tree.put(7);
-        printTree(Tree.getRoot());
-        System.out.println(maxDepth(Tree.getRoot()));
     }
     public static int maxDepth(TreeNode<Integer> root) {
         return longestPath(root);
@@ -23,8 +21,8 @@ public class 二叉树的最长路径 extends Common{
             return 0;
         }
         else{
-            int leftHeight = longestPath(node.Left);
-            int rightHeight = longestPath(node.Right);
+            int leftHeight = longestPath(node.left);
+            int rightHeight = longestPath(node.right);
             return Math.max(leftHeight, rightHeight) + 1;
         }
     }

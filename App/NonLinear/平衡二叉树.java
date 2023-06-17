@@ -7,8 +7,6 @@ import basic.structure.node.TreeNode;
 public class 平衡二叉树 extends Common{
     public static void main(String[] args) {
         BinaryTree<Integer> Tree=new BinaryTree<>();
-        Tree.setRoot(buildTreeByRandom(12));
-        System.out.println(isBalanced(Tree.getRoot()));
     }
     public static boolean isBalanced(TreeNode<Integer> root) {
         return height(root)!=-1;
@@ -18,8 +16,8 @@ public class 平衡二叉树 extends Common{
         if(node==null){
             return 0;
         }
-        int leftHeigh=height(node.Left);
-        int rightHeigh=height(node.Right);
+        int leftHeigh=height(node.left);
+        int rightHeigh=height(node.right);
         if(leftHeigh==-1||rightHeigh==-1){
             return -1;
         }

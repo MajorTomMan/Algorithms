@@ -24,9 +24,9 @@ public class 有序数组转二叉树 {
             return new TreeNode<Integer>(data,null,null);
         }
         if(data>node.data){
-            node.Right=rebuild(node.Right, data);
+            node.right=rebuild(node.right, data);
         }else if(data<node.data){
-            node.Left=rebuild(node.Left, data);
+            node.left=rebuild(node.left, data);
         }
         return node;
     }

@@ -24,7 +24,7 @@ public class 二叉树的前序遍历 extends Common {
             return;
         }
         list.add((Integer) root.data);
-        preorderTraversal(root.Left,list);
-        preorderTraversal(root.Right,list);
+        preorderTraversal(root.left,list);
+        preorderTraversal(root.right,list);
     }
 }
