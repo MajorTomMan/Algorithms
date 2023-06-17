@@ -1,3 +1,5 @@
+package Linear;
+
 
 public class 颠倒二进制位 {
     public static void main(String[] args) {

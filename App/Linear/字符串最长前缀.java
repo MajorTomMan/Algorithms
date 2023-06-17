@@ -1,3 +1,5 @@
+package Linear;
+
 public class 字符串最长前缀 {
     public static void main(String[] args) {
         System.out.println(lcp("acctgttaac","accgttaa"));

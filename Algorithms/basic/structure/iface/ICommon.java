@@ -4,5 +4,5 @@ package basic.structure.iface;
 
 public interface ICommon<T>{
     boolean isEmpty();
-    int Size();
+    int size();
 }

@@ -1,3 +1,5 @@
+package Linear;
+
 import java.util.Arrays;
 
 public class 最长前缀{

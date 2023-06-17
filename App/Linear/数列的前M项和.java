@@ -1,3 +1,5 @@
+package Linear;
+
 import java.util.Scanner;
 
 public class 数列的前M项和 {

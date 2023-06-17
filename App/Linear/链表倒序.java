@@ -1,9 +1,6 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:34:34
- * @FilePath: /alg/App/Linear/链表倒序.java
- */
+package Linear;
+
+
 import java.util.ArrayList;
 
 import basic.structure.LinkedList;

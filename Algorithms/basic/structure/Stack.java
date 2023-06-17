@@ -41,7 +41,7 @@ public class Stack<T> implements IStack<T>,Iterable<T>{
         }
     }
     @Override
-    public int Size() {
+    public int size() {
         // TODO Auto-generated method stub
         return size;
     }

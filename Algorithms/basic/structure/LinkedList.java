@@ -144,18 +144,18 @@ public class LinkedList<T extends Comparable<T>> implements IList<T>,Iterable<T>
         }
     }
 
-    public int Size(){
+    public int size(){
         if(size==0){
             ListNode<T> temp=head;
-            size=Size(temp);
+            size=size(temp);
         }
         return size;
     }
-    private int Size(ListNode<T> node){
+    private int size(ListNode<T> node){
         if(node==null){
             return 0;
         }
-        Size(node.next);
+        size(node.next);
         return size++;
     }
     public ListNode<T> getHead() {

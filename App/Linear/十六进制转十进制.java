@@ -1,3 +1,5 @@
+package Linear;
+
 import basic.structure.Stack;
 
 public class 十六进制转十进制 {

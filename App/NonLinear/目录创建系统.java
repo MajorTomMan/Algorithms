@@ -1,3 +1,4 @@
+
 package NonLinear;
 
 import java.util.Scanner;
@@ -7,7 +8,16 @@ import basic.structure.Tree;
 public class 目录创建系统 {
     private static Scanner scanner;
     public static void main(String[] args) {
-        
+        String choose;
+        while((choose=Menu())!="q"){
+            switch(choose){
+                case "1": 
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+            }
+        }
     }
     public static String Menu(){
         System.out.println("目录创建系统:\n"
@@ -22,4 +32,5 @@ public class 目录创建系统 {
         String choose=scanner.nextLine();
         return choose;
     }
+    
 }

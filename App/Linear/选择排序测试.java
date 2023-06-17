@@ -1,3 +1,5 @@
+package Linear;
+
 
 public class 选择排序测试  extends Common{
     public static void main(String[] args) {

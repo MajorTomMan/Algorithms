@@ -1,3 +1,5 @@
+package Linear;
+
 public class 加一 {
     public static void main(String[] args) {
         int[] nums={1,2,9,9};

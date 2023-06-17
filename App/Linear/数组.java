@@ -1,3 +1,5 @@
+package Linear;
+
 
 
 public class 数组{

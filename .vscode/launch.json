@@ -6,6 +6,34 @@
     "configurations": [
         {
             "type": "java",
+            "name": "移除元素",
+            "request": "launch",
+            "mainClass": "Linear.移除元素",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "二进制中1的个数",
+            "request": "launch",
+            "mainClass": "Linear.二进制中1的个数",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "迷宫生成算法测试",
+            "request": "launch",
+            "mainClass": "NonLinear.迷宫生成算法测试",
+            "projectName": "alg_610bb9da"
+        },
+        {
+            "type": "java",
+            "name": "目录创建系统",
+            "request": "launch",
+            "mainClass": "目录创建系统",
+            "projectName": "alg_610bb9da"
+        },
+        {
+            "type": "java",
             "name": "Maze",
             "request": "launch",
             "mainClass": "basic.structure.Maze",

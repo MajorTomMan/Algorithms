@@ -1,3 +1,5 @@
+package Linear;
+
 import java.util.Stack;
 
 public class 判断括号 {

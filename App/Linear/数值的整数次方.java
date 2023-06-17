@@ -1,3 +1,5 @@
+package Linear;
+
 public class 数值的整数次方 {
     public static void main(String[] args) {
         System.out.println(myPow(2,10));

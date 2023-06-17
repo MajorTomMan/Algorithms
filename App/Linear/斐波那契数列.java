@@ -1,3 +1,5 @@
+package Linear;
+
 public class 斐波那契数列 {
     public static void main(String[] args) {
         System.out.println(fib(44));

@@ -40,17 +40,12 @@ public class Maze {
     }
 
     public void generatorMap() {
-        //startGenerator(startY, startX, visited, 2);
-        print();
-        System.out.println("-------------start DFS--------------------");
-        System.out.println("------------Random BFS-----------------");
-        map = new int[width][height];
-        init();
-        startBFSGenerator();
-
+        startGenerator();
     }
-
-    private void startGenerator(int currentY, int currentX, boolean[][] visited, int depth) {
+    private void startGenerator(){
+        startDFSGenerator(startY, startX, visited, 2);
+    }
+    private void startDFSGenerator(int currentY, int currentX, boolean[][] visited, int depth) {
         /* 检查边界和已访问 */
         if (map[currentY][currentX] == end) {
             visited[currentY][currentX] = true;
@@ -77,7 +72,7 @@ public class Maze {
             int newX = currentX + 2 * direction[integer][1];
             if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && map[newY][newX] == wall) {
                 map[currentY + direction[integer][0]][currentX + direction[integer][1]] = path;
-                startGenerator(newY, newX, visited, depth + 1);
+                startDFSGenerator(newY, newX, visited, depth + 1);
             }
         }
         if (depth == 2) {
@@ -195,14 +190,14 @@ public class Maze {
         return false;
     }
 
-    private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] visited, int depth) {
+    private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] connect_visited, int depth) {
         if (map[currentY][currentX] == wall) {
             return false;
         }
         if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
             return false;
         }
-        if (visited[currentY][currentX] == true) {
+        if (connect_visited[currentY][currentX] == true) {
             return false;
         }
         if (currentY == endY && currentX == endX) {
@@ -211,18 +206,16 @@ public class Maze {
         if (currentY != startY || currentX != startX) {
             map[currentY][currentX] = walk;
         }
-        System.out.println("-------------------------");
-        print();
-        visited[currentY][currentX] = true;
+        connect_visited[currentY][currentX] = true;
         Collections.shuffle(list);
         for (int i = 0; i < list.size(); i++) {
             int newY = currentY + direction[list.get(i)][0];
             int newX = currentX + direction[list.get(i)][1];
-            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && !visited[newY][newX]) {
+            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && !connect_visited[newY][newX]) {
                 if (currentY != startY || currentX != startX) {
                     map[currentY][currentX] = path;
                 }
-                if (DFS(src, dest, newY, newX, visited, depth + 1)) {
+                if (DFS(src, dest, newY, newX, connect_visited, depth + 1)) {
                     return true;
                 }
             }

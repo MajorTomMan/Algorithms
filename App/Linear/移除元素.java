@@ -1,3 +1,5 @@
+package Linear;
+
 public class 移除元素 {
     public static void main(String[] args) {
         int[] nums={0,1,2,2,3,0,4,2};

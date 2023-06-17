@@ -1,3 +1,5 @@
+package Linear;
+
 public class 爬楼梯 {
     public static void main(String[] args) {
         System.out.println(climbStairs(3));

@@ -8,17 +8,13 @@ import basic.structure.node.ListNode;
 public class CycleList<T> implements ICycleList<T> {
     private ListNode<T> head;
     private int size;
-    @Override
-    public void Initial(T data) {
-        // TODO Auto-generated method stub
-        ListNode<T> node=new ListNode<>(data,null);
-        node.data=data;
-        head=node;
-        node.next=head;
+
+
+    public CycleList(){
     }
 
     @Override
-    public void Delete(int index) {
+    public void delete(int index) {
         // TODO Auto-generated method stub
         int i=0;
         if(head==null){
@@ -37,10 +33,11 @@ public class CycleList<T> implements ICycleList<T> {
     }
 
     @Override
-    public void Insert(T data) {
+    public void insert(T data) {
         // TODO Auto-generated method stub
         if(head==null){
-            Initial(data);
+            head=new ListNode<>(data);
+            head.next=null;
             return;
         }
         ListNode<T> temp=head;
@@ -52,28 +49,21 @@ public class CycleList<T> implements ICycleList<T> {
         temp.next=node;
     }
     @Override
-    public int Size() {
+    public int size() {
         // TODO Auto-generated method stub
         return size;
     }
-    public void Show() {
+    public void show() {
         // TODO Auto-generated method stub
-        Show(head);
+        show(head);
     }
-    private void Show(ListNode<T> node) {
+    private void show(ListNode<T> node) {
         // TODO Auto-generated method stub
         if(node.next==head){
             return;
         }
-        Show(node.next);
+        show(node.next);
         System.out.println(node.data);
-    }
-    public ListNode<T> getHead() {
-        return head;
-    }
-
-    public void setHead(ListNode<T> head) {
-        this.head = head;
     }
 
     @Override

@@ -40,7 +40,7 @@ public class Queue<T> implements IQueue<T>,Iterable<T>{
         return false;
     }
     @Override
-    public int Size() {
+    public int size() {
         return size;
     }
     public void Show() {

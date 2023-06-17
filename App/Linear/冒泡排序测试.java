@@ -1,3 +1,5 @@
+package Linear;
+
 
 
 public class 冒泡排序测试 extends Common {

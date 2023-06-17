@@ -1,3 +1,5 @@
+package Linear;
+
 
 import basic.structure.Maze;
 

@@ -1,3 +1,5 @@
+package Linear;
+
 public class 搜索插入位置 {
     public static void main(String[] args) {
         int[] nums = {1,3,5,6};

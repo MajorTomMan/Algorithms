@@ -1,3 +1,5 @@
+package Linear;
+
 
 
 public class 矩阵中的路径 {

@@ -1,3 +1,5 @@
+package Linear;
+
 import basic.structure.Stack;
 
 public class 位1的个数 {
@@ -12,8 +14,8 @@ public class 位1的个数 {
             stack.push(n%2);
             n/=2;
         }
-        int limit=32-stack.Size();
-        if(stack.Size()!=32){
+        int limit=32-stack.size();
+        if(stack.size()!=32){
             while(i!=limit){
                 stack.push(0);
                 i++;
@@ -21,7 +23,7 @@ public class 位1的个数 {
         }
         stack.Show();
         i=0;
-        bits=new int[stack.Size()];
+        bits=new int[stack.size()];
         while(!stack.isEmpty()){
             bits[i]=stack.pop();
             i++;

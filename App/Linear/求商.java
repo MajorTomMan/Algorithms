@@ -1,3 +1,5 @@
+package Linear;
+
 public class 求商 {
     public static void main(String[] args) {
         System.out.println(divide(-2147483648,-1));

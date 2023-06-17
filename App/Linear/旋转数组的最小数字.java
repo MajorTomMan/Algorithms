@@ -1,3 +1,5 @@
+package Linear;
+
 public class 旋转数组的最小数字 {
     public static void main(String[] args) {
         int[] nums={2,2,2,0,1};

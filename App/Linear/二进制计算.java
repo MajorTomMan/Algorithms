@@ -1,4 +1,6 @@
+package Linear;
 
+ 
 import basic.structure.Queue;
 
 public class 二进制计算{
@@ -14,7 +16,7 @@ public class 二进制计算{
             queue.enqueue(data%2);
             data/=2;
         }
-        i=queue.Size();
+        i=queue.size();
         while(!queue.isEmpty()){
             temp=queue.dequeue();
             if(temp==1){

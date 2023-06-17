@@ -1,3 +1,5 @@
+package Linear;
+
 import basic.structure.Queue;
 
 public class 迷宫回溯问题 {

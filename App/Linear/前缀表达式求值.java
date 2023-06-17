@@ -1,8 +1,5 @@
-
+package Linear;
 /*
-package 线性表应用;
-
-
 import java.util.Scanner;
 
 import Structure.Stack;

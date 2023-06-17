@@ -1,3 +1,5 @@
+package Linear;
+
 
 public class 调整数组顺序 {
     public static void main(String[] args) {
