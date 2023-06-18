@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "二叉查找树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉查找树测试",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
+            "name": "二叉排序树测试",
+            "request": "launch",
+            "mainClass": "NonLinear.二叉排序树测试",
+            "projectName": "Java_37005a44"
+        },
+        {
+            "type": "java",
             "name": "移除元素",
             "request": "launch",
             "mainClass": "Linear.移除元素",
