@@ -1,10 +1,4 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-26 17:58:25
- * @FilePath: /alg/App/NonLinear/轴对称树.java
- */
-package NonLinear;
+package nonlinear;
 
 import java.util.Random;
 

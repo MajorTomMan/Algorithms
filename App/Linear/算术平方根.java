@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 算术平方根 {
     public static void main(String[] args) {

@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 字符串最长前缀 {
     public static void main(String[] args) {

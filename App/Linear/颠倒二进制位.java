@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 
 public class 颠倒二进制位 {

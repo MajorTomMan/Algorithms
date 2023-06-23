@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 public class 加一 {
     public static void main(String[] args) {

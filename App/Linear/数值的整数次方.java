@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 数值的整数次方 {
     public static void main(String[] args) {

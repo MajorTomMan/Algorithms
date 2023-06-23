@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 
 import func.io.In;
 import func.io.StdOut;

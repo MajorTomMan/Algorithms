@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 打印从1到最大的n位数 {
     public static void main(String[] args) {

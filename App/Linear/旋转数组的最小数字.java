@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 旋转数组的最小数字 {
     public static void main(String[] args) {

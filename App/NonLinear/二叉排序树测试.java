@@ -1,5 +1,4 @@
-
-package NonLinear;
+package nonlinear;
 
 import java.util.Random;
 

@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 算月份 {
     private static int[] m_Days = {

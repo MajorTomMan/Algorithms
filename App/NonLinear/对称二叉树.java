@@ -1,6 +1,4 @@
-
-
-package NonLinear;
+package nonlinear;
 
 import basic.structure.Queue;
 import basic.structure.node.TreeNode;

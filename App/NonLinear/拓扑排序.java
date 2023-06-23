@@ -1,10 +1,4 @@
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-27 13:44:49
- * @FilePath: /alg/App/NonLinear/拓扑排序.java
- */
-package NonLinear;
+package nonlinear;
 
 import java.util.ArrayList;
 import java.util.HashMap;

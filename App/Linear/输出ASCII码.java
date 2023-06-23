@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 /**
  * 输出ASCII码

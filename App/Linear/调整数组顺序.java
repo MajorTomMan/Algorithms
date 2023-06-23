@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 
 public class 调整数组顺序 {

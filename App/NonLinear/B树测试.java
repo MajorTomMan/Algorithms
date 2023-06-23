@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 
 import context.tree.BTree;
 import func.io.StdOut;

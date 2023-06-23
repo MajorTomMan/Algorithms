@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 import basic.structure.PolyList;
 import basic.structure.node.PolyListNode;

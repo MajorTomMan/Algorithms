@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
  
 import basic.structure.Queue;

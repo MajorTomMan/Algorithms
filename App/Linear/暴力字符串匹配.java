@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 
 public class 暴力字符串匹配 {

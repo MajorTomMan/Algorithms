@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 import basic.structure.TwoSideLink;
 import basic.structure.node.TwoSideNode;

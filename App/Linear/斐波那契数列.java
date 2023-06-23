@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 public class 斐波那契数列 {
     public static void main(String[] args) {

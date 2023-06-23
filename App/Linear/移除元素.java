@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 移除元素 {
     public static void main(String[] args) {

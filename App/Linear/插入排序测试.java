@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 
 public class 插入排序测试 extends Common {

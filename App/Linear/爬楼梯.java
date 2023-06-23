@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 爬楼梯 {
     public static void main(String[] args) {

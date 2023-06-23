@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 
 public class 选择排序测试  extends Common{

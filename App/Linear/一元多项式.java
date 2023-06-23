@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 
 public class 一元多项式 {

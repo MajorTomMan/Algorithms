@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 import java.util.Random;
 
 import basic.structure.BinaryTree;

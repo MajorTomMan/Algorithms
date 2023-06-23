@@ -1,6 +1,4 @@
-
-
-package NonLinear;
+package nonlinear;
 
 import basic.structure.BinaryTree;
 import basic.structure.node.TreeNode;

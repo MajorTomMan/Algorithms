@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 import java.util.HashMap;
 import java.util.Map;

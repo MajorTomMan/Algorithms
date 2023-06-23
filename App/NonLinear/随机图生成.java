@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 
 /**
  * 随机图生成

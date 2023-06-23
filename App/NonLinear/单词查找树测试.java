@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 
 import character.triest.TST;
 import character.triest.TrieST;

@@ -1,5 +1,4 @@
-
-package NonLinear;
+package nonlinear;
 
 import basic.structure.node.TreeNode;
 

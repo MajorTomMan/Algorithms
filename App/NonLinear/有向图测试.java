@@ -1,4 +1,4 @@
-package NonLinear;
+package nonlinear;
 
 import java.util.ArrayList;
 import java.util.HashSet;

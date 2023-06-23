@@ -1,5 +1,4 @@
-package Linear;
-
+package linear;
 
 public class 递归算最大公约数 {
     public static void main(String[] args) {

@@ -1,4 +1,5 @@
-package Linear;
+package linear;
+
 
 public class 二进制中1的个数 {
     public static void main(String[] args) {

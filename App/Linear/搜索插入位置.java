@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 搜索插入位置 {
     public static void main(String[] args) {

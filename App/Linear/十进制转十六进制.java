@@ -1,4 +1,4 @@
-package Linear;
+package linear;
 
 public class 十进制转十六进制 {
     public static void main(String[] args) {
