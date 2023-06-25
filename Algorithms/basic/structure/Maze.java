@@ -30,6 +30,7 @@ public class Maze {
     private List<Integer> list = new ArrayList<>(Arrays.asList(0, 1, 2, 3));
     /* 基础的并查集结构 */
     private UnionFind unionFind;
+    private Random random;
 
     public Maze(int width, int height) {
         map = new int[width][height];
@@ -37,6 +38,7 @@ public class Maze {
         this.width = width;
         this.height = height;
         init();
+        random = new Random();
         randomStart();
         randomEnd();
         unionFind = new UnionFind(width * height);
@@ -51,6 +53,7 @@ public class Maze {
         startBFSGenerator();
         generatorUnionFind();
     }
+
     /* 利用并查集来合并查询每个单元格的集合以便于之后查询联通 */
     private void generatorUnionFind() {
         for (int i = 0; i < height; i++) {
@@ -80,6 +83,7 @@ public class Maze {
             }
         }
     }
+
     /* 将二维数组中的xy映射成一维数组中的索引 */
     public int getIndex(int x, int y) {
         return x * width + y;
@@ -178,13 +182,13 @@ public class Maze {
                             break;
                         case 1:
                             // 下方
-                            if (map[i + 1][j] != end && map[i - 1][j] != start) {
+                            if (map[i + 1][j] != end && map[i + 1][j] != start) {
                                 map[i + 1][j] = wall;
                             }
                             break;
                         case 2:
                             // 左侧
-                            if (map[i][j - 1] != end && map[i - 1][j] != start) {
+                            if (map[i][j - 1] != end && map[i][j - 1] != start) {
                                 map[i][j - 1] = wall;
                             }
                             break;
@@ -201,16 +205,18 @@ public class Maze {
     }
 
     private void randomStart() {
-        Random random = new Random();
         this.startX = random.nextInt(width - 1);
         this.startY = random.nextInt(height - 1);
         map[startY][startX] = start;
     }
 
     private void randomEnd() {
-        Random random = new Random();
         this.endX = random.nextInt(width - 1);
         this.endY = random.nextInt(height - 1);
+        if (endX == startX && endY == startY) {
+            this.endX = random.nextInt(width - 1);
+            this.endY = random.nextInt(height - 1);
+        }
         map[endY][endX] = end;
     }
 
