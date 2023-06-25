@@ -56,19 +56,19 @@ public class Maze {
             for (int j = 0; j < width; j++) {
                 if (map[i][j] != 1) {
                     int currentIndex = getIndex(i, j);
-                    if (j < height - 1 && map[i][j + 1] != 1 && isConnected(currentIndex, getIndex(i, j + 1))) {
+                    if (j < height - 1 && map[i][j + 1] != 1) {
                         int rightIndex = getIndex(i, j + 1);
                         unionFind.union(currentIndex, rightIndex);
                     }
-                    if (j > 0 && map[i][j - 1] != 1 && isConnected(currentIndex, getIndex(i, j - 1))) {
+                    if (j > 0 && map[i][j - 1] != 1) {
                         int leftIndex = getIndex(i, j - 1);
                         unionFind.union(currentIndex, leftIndex);
                     }
-                    if (i > 0 && map[i - 1][j] != 1 && isConnected(currentIndex, getIndex(i - 1, j))) {
+                    if (i > 0 && map[i - 1][j] != 1) {
                         int upIndex = getIndex(i - 1, j);
                         unionFind.union(currentIndex, upIndex);
                     }
-                    if (i < width - 1 && map[i + 1][j] != 1 && isConnected(currentIndex, getIndex(i + 1, j))) {
+                    if (i < width - 1 && map[i + 1][j] != 1) {
                         int downIndex = getIndex(i + 1, j);
                         unionFind.union(currentIndex, downIndex);
                     }
@@ -216,7 +216,7 @@ public class Maze {
             int endIndex = getIndex(endY, endX);
             return isConnected(startIndex, endIndex);
         } else {
-            if (DFS(start, end, startY, startX, new boolean[width][height], 0)) {
+            if (DFS(start, end, startY, startX, new boolean[width][height])) {
                 return true;
             }
             return false;
@@ -224,11 +224,11 @@ public class Maze {
     }
 
     private boolean isConnected(int src, int dest) {
-        return unionFind.find(src) == unionFind.find(dest) ? true : false;
+        return unionFind.find(src) == unionFind.find(dest);
     }
 
     /* DFS检测迷宫是否拥有一条从起点到终点的路 */
-    private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] connect_visited, int depth) {
+    private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] connect_visited) {
         if (map[currentY][currentX] == wall) {
             return false;
         }
@@ -241,19 +241,12 @@ public class Maze {
         if (currentY == endY && currentX == endX) {
             return true;
         }
-        if (currentY != startY || currentX != startX) {
-            map[currentY][currentX] = walk;
-        }
         connect_visited[currentY][currentX] = true;
-        Collections.shuffle(list);
         for (int i = 0; i < list.size(); i++) {
             int newY = currentY + direction[list.get(i)][0];
             int newX = currentX + direction[list.get(i)][1];
-            if (!isArraysOverFlow(newX, newY) && isVisited(newX, newY, connect_visited)) {
-                if (currentY != startY || currentX != startX) {
-                    map[currentY][currentX] = path;
-                }
-                if (DFS(src, dest, newY, newX, connect_visited, depth + 1)) {
+            if (!isArraysOverFlow(newX, newY) && !isVisited(newX, newY, connect_visited)) {
+                if (DFS(src, dest, newY, newX, connect_visited)) {
                     return true;
                 }
             }

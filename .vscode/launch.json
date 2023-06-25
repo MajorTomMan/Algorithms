@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "迷宫生成算法测试",
+            "request": "launch",
+            "mainClass": "nonlinear.迷宫生成算法测试",
+            "projectName": "ALG_ea6ffefb"
+        },
+        {
+            "type": "java",
             "name": "二叉查找树测试",
             "request": "launch",
             "mainClass": "NonLinear.二叉查找树测试",
