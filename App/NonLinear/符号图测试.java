@@ -12,7 +12,7 @@ public class 符号图测试 {
         testGraph_codingByMySelf();
     }
 
-    private static void Test_1() throws FileNotFoundException {
+    private static void firm() throws FileNotFoundException {
         int i = 0;
         String temp = "";
         String name = "App\\Nonlinear\\data\\movies.txt";
@@ -39,7 +39,7 @@ public class 符号图测试 {
         scanner.close();
     }
 
-    private void Test_2() throws FileNotFoundException {
+    private void airPort() throws FileNotFoundException {
         int i = 0;
         String temp = "";
         String name = "App\\Nonlinear\\data\\routes.txt";

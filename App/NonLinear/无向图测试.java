@@ -1,3 +1,4 @@
+
 package nonlinear;
 
 import basic.structure.Graph;
@@ -14,7 +15,7 @@ public class 无向图测试 extends Common {
                 { 0, 1, 0, 1 },
                 { 1, 0, 1, 0 }
                 /*
-                 *   0 1 2 3
+                 *     0 1 2 3
                  * 0 0 1 0 1    无向图表示: 0-1-2-3-0 (有环)
                  * 1 1 0 1 0               
                  * 2 0 1 0 1
