@@ -18,8 +18,8 @@ public class Maze {
     private int path = 0;
     private int wall = 1;
     private int walk = 5;
-    private int width;
-    private int height;
+    private int width; // 宽度
+    private int height; // 长度
     private int startX;
     private int startY;
     private int endX;
@@ -28,6 +28,8 @@ public class Maze {
     private int[][] direction = { { -1, 0 }, { 0, -1 }, { 1, 0 }, { 0, 1 } };
     private boolean[][] visited;
     private List<Integer> list = new ArrayList<>(Arrays.asList(0, 1, 2, 3));
+    /* 基础的并查集结构 */
+    private UnionFind unionFind;
 
     public Maze(int width, int height) {
         map = new int[width][height];
@@ -37,24 +39,58 @@ public class Maze {
         init();
         randomStart();
         randomEnd();
+        unionFind = new UnionFind(width * height);
     }
 
     public void generatorMap() {
         startGenerator();
     }
-    private void startGenerator(){
+
+    private void startGenerator() {
         startDFSGenerator(startY, startX, visited, 2);
+        generatorUnionFind();
     }
+
+    private void generatorUnionFind() {
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (map[i][j] != 1) {
+                    int currentIndex = getIndex(i, j);
+                    if (j < height - 1 && map[i][j + 1] != 1 && isConnected(currentIndex, getIndex(i, j + 1))) {
+                        int rightIndex = getIndex(i, j + 1);
+                        unionFind.union(currentIndex, rightIndex);
+                    }
+                    if (j > 0 && map[i][j - 1] != 1 && isConnected(currentIndex, getIndex(i, j - 1))) {
+                        int leftIndex = getIndex(i, j - 1);
+                        unionFind.union(currentIndex, leftIndex);
+                    }
+                    if (i > 0 && map[i - 1][j] != 1 && isConnected(currentIndex, getIndex(i - 1, j))) {
+                        int upIndex = getIndex(i - 1, j);
+                        unionFind.union(currentIndex, upIndex);
+                    }
+                    if (i < width - 1 && map[i + 1][j] != 1 && isConnected(currentIndex, getIndex(i + 1, j))) {
+                        int downIndex = getIndex(i + 1, j);
+                        unionFind.union(currentIndex, downIndex);
+                    }
+                }
+            }
+        }
+    }
+
+    public int getIndex(int x, int y) {
+        return x * width + y;
+    }
+
     private void startDFSGenerator(int currentY, int currentX, boolean[][] visited, int depth) {
         /* 检查边界和已访问 */
         if (map[currentY][currentX] == end) {
             visited[currentY][currentX] = true;
             return;
         }
-        if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
+        if (isArraysOverFlow(currentX, currentY)) {
             return;
         }
-        if (visited[currentY][currentX] == true) {
+        if (isVisited(currentX, currentY, visited)) {
             return;
         }
         /* 不是终点或者起点就变成路 */
@@ -70,7 +106,7 @@ public class Maze {
             /* 获取新位置 */
             int newY = currentY + 2 * direction[integer][0];
             int newX = currentX + 2 * direction[integer][1];
-            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && map[newY][newX] == wall) {
+            if (!isArraysOverFlow(newX, newY) && map[newY][newX] == wall) {
                 map[currentY + direction[integer][0]][currentX + direction[integer][1]] = path;
                 startDFSGenerator(newY, newX, visited, depth + 1);
             }
@@ -93,6 +129,7 @@ public class Maze {
             newY = currentCell[0];
             newX = currentCell[1];
             if (newY > 0 && !visited[newY - 1][newX]) {
+                /* 将未访问的节点以及方向加入队列 */
                 queue.offer(new int[] { newY - 1, newX });
                 visited[newY - 1][newX] = true;
                 map[newY - 1][newX] = path;
@@ -159,19 +196,9 @@ public class Maze {
     }
 
     private void randomEnd() {
-        int i = 0;
         Random random = new Random();
-        while (i != 6) {
-            this.endX = random.nextInt(width - 1);
-            this.endY = random.nextInt(height - 1);
-            if (startX - endX <= 2 || startY - endY <= 2) {
-                this.endX = random.nextInt(width - 1);
-                this.endY = random.nextInt(height - 1);
-            } else {
-                break;
-            }
-            i++;
-        }
+        this.endX = random.nextInt(width - 1);
+        this.endY = random.nextInt(height - 1);
         map[endY][endX] = end;
     }
 
@@ -183,21 +210,32 @@ public class Maze {
         }
     }
 
-    public boolean isConnect() {
-        if (DFS(start, end, startY, startX, new boolean[width][height], 0)) {
-            return true;
+    public boolean isConnected(boolean isUseUnionFind) {
+        if (isUseUnionFind) {
+            int startIndex = getIndex(startY, startX);
+            int endIndex = getIndex(endY, endX);
+            return isConnected(startIndex, endIndex);
+        } else {
+            if (DFS(start, end, startY, startX, new boolean[width][height], 0)) {
+                return true;
+            }
+            return false;
         }
-        return false;
     }
 
+    private boolean isConnected(int src, int dest) {
+        return unionFind.find(src) == unionFind.find(dest) ? true : false;
+    }
+
+    /* DFS检测迷宫是否拥有一条从起点到终点的路 */
     private boolean DFS(int src, int dest, int currentY, int currentX, boolean[][] connect_visited, int depth) {
         if (map[currentY][currentX] == wall) {
             return false;
         }
-        if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
+        if (isArraysOverFlow(currentX, currentY)) {
             return false;
         }
-        if (connect_visited[currentY][currentX] == true) {
+        if (isVisited(currentX, currentY, connect_visited)) {
             return false;
         }
         if (currentY == endY && currentX == endX) {
@@ -211,7 +249,7 @@ public class Maze {
         for (int i = 0; i < list.size(); i++) {
             int newY = currentY + direction[list.get(i)][0];
             int newX = currentX + direction[list.get(i)][1];
-            if (newY >= 0 && newY + 1 < height && newX >= 0 && newX + 1 < width && !connect_visited[newY][newX]) {
+            if (!isArraysOverFlow(newX, newY) && isVisited(newX, newY, connect_visited)) {
                 if (currentY != startY || currentX != startX) {
                     map[currentY][currentX] = path;
                 }
@@ -248,5 +286,19 @@ public class Maze {
             }
             System.out.println();
         }
+    }
+
+    private boolean isArraysOverFlow(int currentX, int currentY) {
+        if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isVisited(int currentX, int currentY, boolean[][] _visited) {
+        if (!isArraysOverFlow(currentX, currentY) && _visited[currentY][currentX]) {
+            return true;
+        }
+        return false;
     }
 }
