@@ -47,28 +47,32 @@ public class Maze {
     }
 
     private void startGenerator() {
-        startDFSGenerator(startY, startX, visited, 2);
+        // startDFSGenerator(startY, startX, visited, 2);
+        startBFSGenerator();
         generatorUnionFind();
     }
-
+    /* 利用并查集来合并查询每个单元格的集合以便于之后查询联通 */
     private void generatorUnionFind() {
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                if (map[i][j] != 1) {
+                /* 如果不是墙 */
+                if (map[i][j] != wall) {
+                    /* 获取当前位置在并查集中的索引 */
                     int currentIndex = getIndex(i, j);
-                    if (j < height - 1 && map[i][j + 1] != 1) {
+                    if (j < height - 1 && map[i][j + 1] != wall) {
+                        /* 合并两个索引 */
                         int rightIndex = getIndex(i, j + 1);
                         unionFind.union(currentIndex, rightIndex);
                     }
-                    if (j > 0 && map[i][j - 1] != 1) {
+                    if (j > 0 && map[i][j - 1] != wall) {
                         int leftIndex = getIndex(i, j - 1);
                         unionFind.union(currentIndex, leftIndex);
                     }
-                    if (i > 0 && map[i - 1][j] != 1) {
+                    if (i > 0 && map[i - 1][j] != wall) {
                         int upIndex = getIndex(i - 1, j);
                         unionFind.union(currentIndex, upIndex);
                     }
-                    if (i < width - 1 && map[i + 1][j] != 1) {
+                    if (i < width - 1 && map[i + 1][j] != wall) {
                         int downIndex = getIndex(i + 1, j);
                         unionFind.union(currentIndex, downIndex);
                     }
@@ -76,7 +80,7 @@ public class Maze {
             }
         }
     }
-
+    /* 将二维数组中的xy映射成一维数组中的索引 */
     public int getIndex(int x, int y) {
         return x * width + y;
     }
@@ -150,7 +154,7 @@ public class Maze {
                 map[newY][newX + 1] = path;
             }
             if (newY == endY && newX == endX) {
-                visited[newY][newX] = true;
+                visited[newY][newX] = true; // 将终点的visited值设置为false
                 break;
             }
         }
@@ -168,19 +172,27 @@ public class Maze {
                     switch (direct) {
                         case 0:
                             // 上方
-                            map[i - 1][j] = wall;
+                            if (map[i - 1][j] != end && map[i - 1][j] != start) {
+                                map[i - 1][j] = wall;
+                            }
                             break;
                         case 1:
                             // 下方
-                            map[i + 1][j] = wall;
+                            if (map[i + 1][j] != end && map[i - 1][j] != start) {
+                                map[i + 1][j] = wall;
+                            }
                             break;
                         case 2:
                             // 左侧
-                            map[i][j - 1] = wall;
+                            if (map[i][j - 1] != end && map[i - 1][j] != start) {
+                                map[i][j - 1] = wall;
+                            }
                             break;
                         case 3:
                             // 右侧
-                            map[i][j + 1] = wall;
+                            if (map[i][j + 1] != end && map[i][j + 1] != start) {
+                                map[i][j + 1] = wall;
+                            }
                             break;
                     }
                 }
@@ -212,6 +224,7 @@ public class Maze {
 
     public boolean isConnected(boolean isUseUnionFind) {
         if (isUseUnionFind) {
+            /* 生成起点和终点在一维数组中的映射 */
             int startIndex = getIndex(startY, startX);
             int endIndex = getIndex(endY, endX);
             return isConnected(startIndex, endIndex);
