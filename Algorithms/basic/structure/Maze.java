@@ -1,10 +1,19 @@
 package basic.structure;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import basic.structure.gui.MazeVisualization;
+
 import java.util.Queue;
 import java.util.LinkedList;
 
@@ -17,7 +26,7 @@ public class Maze {
     private int end = 3;
     private int path = 0;
     private int wall = 1;
-    private int walk = 5;
+    private int currentPoint = 5;
     private int width; // 宽度
     private int height; // 长度
     private int startX;
@@ -31,6 +40,8 @@ public class Maze {
     /* 基础的并查集结构 */
     private UnionFind unionFind;
     private Random random;
+    private MazeVisualization mVisualization;
+    private Timer timer;
 
     public Maze(int width, int height) {
         map = new int[width][height];
@@ -42,6 +53,7 @@ public class Maze {
         randomStart();
         randomEnd();
         unionFind = new UnionFind(width * height);
+        mVisualization = new MazeVisualization(map);
     }
 
     public void generatorMap() {
@@ -49,9 +61,20 @@ public class Maze {
     }
 
     private void startGenerator() {
-        // startDFSGenerator(startY, startX, visited, 2);
-        startBFSGenerator();
+        timer = new Timer(50000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                // TODO Auto-generated method stub
+                mVisualization.updateMaze(map);
+            }
+        });
+        SwingUtilities.invokeLater(() -> {
+            timer.start();
+        });
+        // startBFSGenerator();
+        startDFSGenerator(startY, startX, visited, 2);
         generatorUnionFind();
+        timer.stop();
     }
 
     /* 利用并查集来合并查询每个单元格的集合以便于之后查询联通 */
@@ -276,7 +299,15 @@ public class Maze {
     public void print(int[][] map) {
         for (int[] is : map) {
             for (int i : is) {
-                System.out.print(i + " ");
+                if (i == path) {
+                    System.out.print(" ");
+                } else if (i == wall) {
+                    System.out.print("|");
+                } else if (i == start) {
+                    System.out.print("S");
+                } else if (i == end) {
+                    System.out.print("E");
+                }
             }
             System.out.println();
         }
@@ -285,7 +316,15 @@ public class Maze {
     public void print() {
         for (int[] is : map) {
             for (int i : is) {
-                System.out.print(i + " ");
+                if (i == path) {
+                    System.out.print(" ");
+                } else if (i == wall) {
+                    System.out.print("|");
+                } else if (i == start) {
+                    System.out.print("S");
+                } else if (i == end) {
+                    System.out.print("E");
+                }
             }
             System.out.println();
         }
@@ -312,5 +351,9 @@ public class Maze {
             return true;
         }
         return false;
+    }
+
+    public int[][] getMap() {
+        return this.map;
     }
 }

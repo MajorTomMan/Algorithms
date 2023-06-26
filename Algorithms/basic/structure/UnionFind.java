@@ -1,3 +1,4 @@
+
 package basic.structure;
 
 /* 用于处理集合合并和查询 */
@@ -9,12 +10,15 @@ public class UnionFind {
      * 在初期构造好单例集合后每个索引中的数据即代表着根节点
      */
     private int[] nodes;
+    private int[] rank;
 
     public UnionFind(int size) {
         nodes = new int[size];
+        rank = new int[size];
         /* 先根据给定的长度构建所有在集合中的元素的单例集合 */
         for (int i = 0; i < nodes.length; i++) {
             nodes[i] = i;
+            rank[i] = 1;
         }
     }
 
@@ -30,7 +34,8 @@ public class UnionFind {
         if (x == nodes[x]) {
             return x;
         }
-        return find(nodes[x]);
+        /* 使用路径压缩来减少时间复杂度 */
+        return nodes[x] = find(nodes[x]);
     }
 
     /* 对集合节点的合并,需要借助于查找操作来进行合并 */
@@ -42,8 +47,16 @@ public class UnionFind {
     public void union(int x, int y) {
         /* 先判断是否是相同的集合 */
         if (find(x) != find(y)) {
-            /* 将y集合合并到x集合中 */
-            nodes[find(x)] = find(y);
+            if (rank[find(x)] <= rank[find(y)]) {
+                /* 将y集合合并到x集合中 */
+                nodes[find(x)] = find(y);
+            } else {
+                nodes[find(y)] = find(x);
+            }
+            if (rank[find(x)] == rank[find(y)]) {
+                /* 更新节点树的大小 */
+                rank[find(x)]++;
+            }
         }
     }
 }
