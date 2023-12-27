@@ -2,7 +2,6 @@
 package nonlinear;
 
 import basic.structure.Maze;
-import basic.structure.gui.MazeVisualization;
 
 public class 迷宫生成算法测试{
     public static void main(String[] args) {

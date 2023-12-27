@@ -6,19 +6,11 @@ import java.util.Random;
 import basic.structure.BinaryTree;
 import basic.structure.node.TreeNode;
 
-public class 二叉树的中序遍历 {
+public class 二叉树的中序遍历 extends Common {
     public static void main(String[] args) {
-        BinaryTree<Integer> Tree=new BinaryTree<Integer>();
-        int i=0;
-        Random random=new Random();
-        System.out.println("-----------------------raw data--------------------");
-        while(i!=12){
-            int ran=random.nextInt(100);
-            Tree.put(ran);
-            System.out.print(ran+" ");
-            i++;
-        }
-        System.out.println();
+        Integer[] nums = new Integer[]{1,2,3,4,5,6,7,8,9,10};
+        TreeNode<Integer> tree = buildTree(nums);
+        System.out.println(inorderTraversal(tree));
 
     }
     public static List<Integer> inorderTraversal(TreeNode<Integer> root) {
