@@ -1,80 +1,81 @@
 package basic.structure;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-public class HuffmanTree<T extends Comparable<T>> {
-    private Node<T> root;
-    private class Node<T> {
-        T data;
-        int weight;
-        int code;
-        Node<T> left;
-        Node<T> right;
+/**
+ * HuffmanTree
+ */
+public class HuffmanTree {
+    private class Node {
+        private int weight;
+        private Node leftNode;
+        private Node rightNode;
 
-        public Node(T data, int weight, int code, Node<T> left, Node<T> right) {
-            this.data = data;
+        public Node(int weight, Node leftNode, Node rightNode) {
             this.weight = weight;
-            this.code = code;
-            this.left = left;
-            this.right = right;
+            this.leftNode = leftNode;
+            this.rightNode = rightNode;
         }
-        public void setCode(int code) {
-            this.code = code;
-        }
-        public int getWeight() {
-            return weight;
-        }
-        @Override
-        public String toString() {
-            return "Node [code=" + code + ", data=" + data + ", left=" + left + ", right=" + right + ", weight="
-                    + weight + "]";
-        }
-        
+
     }
 
-    public void buildTree(Map<T, Integer> map) {
-        List<Node<T>> list = new ArrayList<>();
-        for (T data : map.keySet()) {
-            list.add(new Node<T>(data, map.get(data), 0, null, null));
-        }
-        Collections.sort(list,new Comparator<Node<T>>() {
+    private Node root;
+
+    public HuffmanTree() {
+
+    }
+
+    /*
+     * 自底向上构建霍夫曼树
+     * 利用每一次循环的最小权重构建一个二叉树
+     */
+    public void generateTree(List<Integer> nodes) {
+        List<Node> collect = nodes.stream().map(n -> {
+            return new Node(n, null, null);
+        }).collect(Collectors.toList());
+        Comparator<Node> minComparator = new Comparator<Node>() {
             @Override
-            public int compare(Node<T> o1,Node<T> o2) {
+            public int compare(Node o1, Node o2) {
                 // TODO Auto-generated method stub
-                return o1.getWeight()-o2.getWeight();
+                return o1.weight - o2.weight;
             }
-        });
-        while (list.size() != 1) {
-            Node<T> left = list.get(0);
-            Node<T> right = list.get(1);
-            right.setCode(1);
-            Node<T> root = new Node<T>(null, left.getWeight() + right.getWeight(), 0, left, right);
-            list.remove(left);
-            list.remove(right);
-            list.add(root);
+        };
+        /* 利用两个最小的节点构建树并建立一个对应结构来储存 */
+        while (collect.size() != 1) {
+            Node min_l = Collections.min(collect, minComparator);
+            collect.remove(min_l);
+            Node min_r = Collections.min(collect, minComparator);
+            collect.remove(min_r);
+            Node root = new Node(min_l.weight + min_r.weight, min_l, min_r);
+            collect.add(root);
         }
-        root=list.get(0);
+        root = collect.get(0);
     }
 
-    public void printTree(){
-        String code="";
-        printNode(root,code);
-    }
-    private void printNode(Node<T> node,String code){
-        if(node==null){ 
+    public void printTree() {
+        if (root == null) {
             return;
         }
-        printNode(node.left,code+node.code);
-        if(node.data==null){
-            ;
-        }else{
-            System.out.print("data:"+node.data+" code:"+code);
-            System.out.println();
+        printTree(1, root);
+    }
+
+    private void printTree(int level, Node node) {
+        if (node == null) {
+            return;
         }
-        printNode(node.right,code+node.code);
+        System.out.print("|");
+        for (int i = 0; i < level; i++) {
+            System.out.printf("-");
+        }
+        if (node.leftNode == null && node.rightNode == null) {
+            System.out.println(":" + node.weight + " ->叶子节点");
+        } else {
+            System.out.println(":" + node.weight + " ->第" + level + "层");
+        }
+        printTree(level + 1, node.leftNode);
+        printTree(level + 1, node.rightNode);
     }
 }
