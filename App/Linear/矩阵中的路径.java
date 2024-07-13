@@ -89,7 +89,7 @@ public class 矩阵中的路径 {
                 if(dfs(board,word,0,i,j)) return true;
         return false;   
     }
-    int[] dx = new int[]{-1,0,1,0}, dy = new int[]{0,1,0,-1};
+    Integer[] dx = new Integer[]{-1,0,1,0}, dy = new Integer[]{0,1,0,-1};
     boolean dfs(char[][] board, String word,int u,int x,int y)
     {
         if(board[x][y] != word.charAt(u)) return false;

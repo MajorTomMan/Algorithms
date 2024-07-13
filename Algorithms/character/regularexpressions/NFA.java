@@ -1,7 +1,7 @@
 package character.regularexpressions;
 
 import basic.structure.Bag;
-import basic.structure.Stack;
+import java.util.Stack;
 import graph.dig.Digraph;
 import graph.dir.DirectedDFS;
 

@@ -1,7 +1,8 @@
 package graph.traversal;
 
-import basic.structure.Queue;
-import basic.structure.Stack;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
 import graph.undig.Graph;
 
 public class BreadthFirstPaths{//广度优先搜索实现查找图路径算法
@@ -15,16 +16,16 @@ public class BreadthFirstPaths{//广度优先搜索实现查找图路径算法
         bfs(G,s);
     }
     private void bfs(Graph G, int s) {
-        Queue<Integer> queue=new Queue<>();
+        Queue<Integer> queue=new LinkedList<>();
         marked[s]=true;
-        queue.enqueue(s);
+        queue.add(s);
         while(!queue.isEmpty()){
-            int v=queue.dequeue();
+            int v=queue.poll();
             for (int w: G.adj(v)) {
                 if(!marked[w]){
                     edgeTo[w]=v;
                     marked[w]=true;
-                    queue.enqueue(w);
+                    queue.add(w);
                 }
             }
         }

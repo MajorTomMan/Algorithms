@@ -10,7 +10,9 @@
 
 package search.structure.hash;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import search.structure.linearst.SequentialSearchST;
 import search.structure.nonlinest.BinarySearchST;
 import search.structure.tree.BST;
@@ -190,10 +192,10 @@ public class SeparateChainingHashST<Key, Value extends Comparable<Value>>{
 
     // return keys in symbol table as an Iterable
     public Iterable<Key> keys() {
-        Queue<Key> queue = new Queue<Key>();
+        Queue<Key> queue = new LinkedList<>();
         for (int i = 0; i < m; i++) {
             for (Key key : st[i].keys())
-                queue.enqueue(key);
+                queue.add(key);
         }
         return queue;
     } 

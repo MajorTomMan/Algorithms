@@ -1,6 +1,7 @@
 package character.triest;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class TrieST<Value>{ //R向单词查找树
     private static int R=256;
@@ -63,7 +64,7 @@ public class TrieST<Value>{ //R向单词查找树
         return keysWithPrefix("");
     }
     public Iterable<String> keysWithPrefix(String pre) {
-        Queue<String> q=new Queue<>();
+        Queue<String> q=new LinkedList<>();
         collect(get(root,pre,0),pre,q);
         return q;
     }
@@ -72,14 +73,14 @@ public class TrieST<Value>{ //R向单词查找树
             return;
         }
         if(x.val!=null){
-            q.enqueue(pre);
+            q.add(pre);
         }
         for (char c = 0; c < R; c++) {
             collect(x.next[c], pre+c, q);
         }
     }
     public Iterable<String> keysThatMatch(String pat){
-        Queue<String> q=new Queue<>();
+        Queue<String> q=new LinkedList<>();
         collect(root,"",pat, q);
         return q;
     }
@@ -89,7 +90,7 @@ public class TrieST<Value>{ //R向单词查找树
             return;
         }
         if(d==pat.length()&&x.val!=null){
-            q.enqueue(pre);
+            q.add(pre);
         }
         if(d==pat.length()){
             return;

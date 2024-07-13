@@ -25,7 +25,9 @@
  ******************************************************************************/
 
 package search.structure.linearst;
-import basic.structure.Queue;
+
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  *  The {@code SequentialSearchST} class represents an (unordered)
@@ -191,9 +193,9 @@ public class SequentialSearchST<Key, Value extends Comparable<Value>>{
      * @return all keys in the symbol table
      */
     public Iterable<Key> keys()  {
-        Queue<Key> queue = new Queue<Key>();
+        Queue<Key> queue =new LinkedList<>();
         for (Node x = first; x != null; x = x.next)
-            queue.enqueue(x.key);
+            queue.add(x.key);
         return queue;
     }
     //----------------------------------------------------------------

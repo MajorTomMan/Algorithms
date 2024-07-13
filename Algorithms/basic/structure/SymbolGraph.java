@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import basic.structure.interfaces.Queue;
+
 public class SymbolGraph {
     private Map<String, List<String>> graph;
     private Map<String, Boolean> visited;
@@ -48,15 +50,15 @@ public class SymbolGraph {
 
     public void bfs(String vertex) {
         visited.put(vertex, true);
-        Queue<String> queue = new Queue<>();
-        queue.enqueue(vertex);
+        Queue<String> queue = new LinkedList<>();
+        queue.add(vertex);
         while (!queue.isEmpty()) {
-            String v = queue.dequeue();
+            String v = queue.poll();
             System.out.println("point: "+keys.get(0) + "\t" + keys.get(1) + "\t" + keys.get(2) + "\t" + keys.get(3) + "\t");
             System.out.println("point is visited?"+"\t"+visited.get(keys.get(0)) + "\t" + visited.get(keys.get(1)) + "\t" + visited.get(keys.get(2)) + "\t" + visited.get(keys.get(3)) + " ");
             for (String w : graph.get(v)) {
                 if (!visited.get(w)) {
-                    queue.enqueue(w);
+                    queue.add(w);
                     visited.put(w, true);
                 } 
             }

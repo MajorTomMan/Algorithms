@@ -5,7 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import basic.structure.Digraph;
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 import basic.structure.node.Edge;
 import basic.structure.node.Vertex;
 
@@ -31,18 +32,18 @@ public class 有向图测试 {
     }
     /* 广度优先搜索遍历顶点集合 */
     private static void BFS(Vertex v){
-        Queue<Vertex> queue=new Queue<>();
+        Queue<Vertex> queue = new LinkedList<>();
         Set<Vertex> visited=new HashSet<>();
         visited.add(v);
-        queue.enqueue(v);
+        queue.add(v);
         System.out.println(v.getName()+" is Visited");
         while(!queue.isEmpty()){
-            Vertex vertex = queue.dequeue();
+            Vertex vertex = queue.poll();
             for (Edge edge : vertex.getEdges()) {
                 Vertex dest = edge.getDest();
                 if(!visited.contains(dest)){
                     visited.add(dest);
-                    queue.enqueue(dest);
+                    queue.add(dest);
                     System.out.println(dest.getName()+" is Visited");
                 }
             }

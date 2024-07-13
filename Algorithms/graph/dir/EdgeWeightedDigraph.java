@@ -1,9 +1,9 @@
 package graph.dir;
 
 import java.util.NoSuchElementException;
+import java.util.Stack;
 
 import basic.structure.Bag;
-import basic.structure.Stack;
 import func.io.In;
 
 public class EdgeWeightedDigraph{ //加权有向图实现

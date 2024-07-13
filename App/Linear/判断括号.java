@@ -1,6 +1,7 @@
 package linear;
 
-import java.util.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 public class 判断括号 {
     public static void main(String[] args) {
@@ -11,7 +12,7 @@ public class 判断括号 {
         if(s.length()==0||s.length()==1){
             return false;
         }
-        Stack<Character> stack= new Stack<>();
+        Stack<Character> stack= new LinkedList<>();
         for (int i = 0;i<s.length();i++) {
             if (s.charAt(i) == ')') {
                 if(stack.isEmpty()){

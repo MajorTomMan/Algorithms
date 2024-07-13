@@ -1,7 +1,7 @@
 package linear;
 
 public class 算月份 {
-    private static int[] m_Days = {
+    private static Integer[] m_Days = {
             31, 29, 31, 30, 31, 30, 31, 31, 30, 30, 31
     };
 

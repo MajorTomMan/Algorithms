@@ -1,7 +1,9 @@
 package linear;
 
 import java.util.Scanner;
-import java.util.Stack;
+
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 
 public class 水仙花数 {
@@ -15,8 +17,8 @@ public class 水仙花数 {
     public static String isNarcissistic(int n,int m){
         int temp=n;
         String s="";
-        int[] array=new int[3];
-        Stack<Integer> stack=new Stack<>();
+        Integer[] array=new Integer[3];
+        Stack<Integer> stack=new LinkedList<>();
         while(n<=m){
             if(temp!=0){
                 stack.push(temp%10);

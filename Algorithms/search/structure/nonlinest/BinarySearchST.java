@@ -1,6 +1,8 @@
 package search.structure.nonlinest;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import search.structure.example.OrderSymbolTable;
 
 public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
@@ -61,12 +63,12 @@ public class BinarySearchST<Key extends Comparable<Key>,Value extends Comparable
     @Override
     public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
-        Queue<Key> q=new Queue<Key>();
+        Queue<Key> q=new LinkedList<>();
         for(int i=rank(lo);i<rank(hi);i++){
-            q.enqueue(keys[i]);
+            q.add(keys[i]);
         }
         if(contains(hi)){
-            q.enqueue(keys[rank(hi)]);
+            q.add(keys[rank(hi)]);
         }
         return q;
     }

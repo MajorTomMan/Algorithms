@@ -2,12 +2,13 @@ package linear;
 
 
 import basic.structure.node.ListNode;
+import utils.AlgorithmsUtils;
 
 
-public class 反转链表 extends Common{
+public class 反转链表{
     public static void main(String[] args) {
-        int[] nums={1,2,3,4,5};
-        ListNode<Integer> head=buildLinkedList(nums);
+        Integer[] nums={1,2,3,4,5};
+        ListNode<Integer> head=AlgorithmsUtils.buildLinkedList(nums);
         System.out.println("反转完成后的链表:"+reverse(head));
     }
     // 递归

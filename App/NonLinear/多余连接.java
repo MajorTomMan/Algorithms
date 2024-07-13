@@ -2,11 +2,12 @@ package nonlinear;
 
 
 import basic.structure.Graph;
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 
 public class 多余连接 {
     public static void main(String[] args) {
-        int[][] edges={
+        Integer[][] edges={
             {0,1},{1,2},{2,3},{3,1}
         };
         Graph graph=new Graph(4,edges);
@@ -14,13 +15,13 @@ public class 多余连接 {
     }
     private static boolean bfs(int v,boolean[] visited,Graph graph){
         visited[v]=true;
-        Queue<Integer> queue = new Queue<>();
-        queue.enqueue(v);
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(v);
         while(!queue.isEmpty()){
-            int vertex=queue.dequeue();
+            int vertex=queue.poll();
             for(int w:graph.getGraph().get(vertex)){
                 if(!visited[w]){
-                    queue.enqueue(w);
+                    queue.add(w);
                     visited[w]=true;
                 }
             }

@@ -5,14 +5,14 @@ package linear;
 
 public class 对称矩阵 {
     public static void main(String[] args) {
-        int[][] data = { 
+        Integer[][] data = { 
                         { 5, 3, 8, 6 }, 
 						{ 3, 12, 9, 15 }, 
 						{ 8, 9, 3, -1 }, 
 						{ 6, 15, -1, 2 } 
         };
         int n=data.length;
-        int[] result_one=new int[n * (n + 1) / 2 + 1];
+        Integer[] result_one=new Integer[n * (n + 1) / 2 + 1];
         result_one=zip(data);
         for (int i : result_one) {
             System.out.print(i+" ");
@@ -20,9 +20,9 @@ public class 对称矩阵 {
         System.out.println();
         int i=result_one.length;
         int level=result_one[n-1];
-        int[][] result_two=new int[level][i];
+        Integer[][] result_two=new Integer[level][i];
         result_two=unzip(result_one);
-        for (int[] js : result_two) {
+        for (Integer[] js : result_two) {
             for(int g:js){
                 System.out.print(g+" ");
             }
@@ -30,9 +30,9 @@ public class 对称矩阵 {
         }
     }
 
-    public static int[] zip(int[][] array) {
+    public static Integer[] zip(Integer[][] array) {
         int n = array.length; // 获取对称矩阵的阶数
-        int[] onearr = new int[n * (n + 1) / 2 + 1]; // 一维数组保存下三角元素1+2+3+..+n，再预留一个空间，保留原始数据的阶数
+        Integer[] onearr = new Integer[n * (n + 1) / 2 + 1]; // 一维数组保存下三角元素1+2+3+..+n，再预留一个空间，保留原始数据的阶数
         for (int i = 0; i < n; i++) {
             for (int j = 0; j <= i; j++) {
                 onearr[i * (i + 1) / 2 + j] = array[i][j];
@@ -41,10 +41,10 @@ public class 对称矩阵 {
         onearr[n * (n + 1) / 2] = n;
         return onearr;
     }
-    public static int[][] unzip(int[] array){
+    public static Integer[][] unzip(Integer[] array){
         int len=array.length;
         int level=array[len-1];
-        int[][] temp=new int[level][level];
+        Integer[][] temp=new Integer[level][level];
         for(int i=0;i<level;i++){
             for(int j=0;j<level;j++){
                 if(j<=i){

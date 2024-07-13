@@ -17,7 +17,8 @@
 
 package graph.dir;
 
-import basic.structure.Stack;
+import java.util.Stack;
+
 import graph.dig.Digraph;
 import sort.structure.nonlinear.Topological;
 

@@ -1,3 +1,10 @@
+/*
+ * @Date: 2023-12-09 14:41:38
+ * @LastEditors: MajorTomMan 765719516@qq.com
+ * @LastEditTime: 2024-07-13 20:03:42
+ * @FilePath: \ALG\app\nonlinear\拓扑排序.java
+ * @Description: MajorTomMan @版权声明 保留文件所有权利
+ */
 
 package nonlinear;
 
@@ -6,7 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import basic.structure.Digraph;
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 import basic.structure.node.Edge;
 import basic.structure.node.Vertex;
 
@@ -51,11 +59,11 @@ public class 拓扑排序 {
         }
         /* 先构建一张入度表来获取各节点之间的入度 */
         HashMap<String, Integer> inNumberList = digraph.getInNumberList();
-        Queue<Vertex> queue = new Queue<>();
-        queue.enqueue(v);
+        Queue<Vertex> queue = new LinkedList<>();
+        queue.add(v);
         while (!queue.isEmpty()) {
             /* 弹出节点并将其相连的节点入度减一 */
-            Vertex vertex = queue.dequeue();
+            Vertex vertex = queue.poll();
             for (int i = 0; i < vertex.getEdges().size(); i++) {
                 Vertex dest = vertex.getEdges().get(i).getDest();
                 if (inNumberList.get(dest.getName()) > 0) {
@@ -67,7 +75,7 @@ public class 拓扑排序 {
             for (Edge edge : vertex.getEdges()) {
                 Vertex dest = edge.getDest();
                 if (inNumberList.get(dest.getName()) == 0) {
-                    queue.enqueue(dest);
+                    queue.add(dest);
                 }
             }
             /* 循环操作直到队列为空 */

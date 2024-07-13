@@ -1,5 +1,4 @@
 
-
 package basic.structure.node;
 
 public class PolyListNode {
@@ -50,5 +49,5 @@ public class PolyListNode {
     public void setNext(PolyListNode next) {
         this.next = next;
     }
-    
+
 }

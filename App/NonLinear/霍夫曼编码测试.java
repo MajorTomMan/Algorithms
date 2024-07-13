@@ -1,16 +1,34 @@
 package nonlinear;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import basic.structure.HuffmanTree;
-
+import character.datacompression.Huffman;
 
 public class 霍夫曼编码测试 {
     public static void main(String[] args) {
-        HuffmanTree tree = new HuffmanTree();
-        List<Integer> nodes = List.of(3,2,3,4,5,6,878,7523,31,231,23,123,1,-1,2,421,23,123,12,412,4,124,12,2412,41,23,12,3);
-        tree.generateTree(nodes);
+        String data ="ABRACADABRA!"; //字符
+        char[] input=data.toCharArray();
+        Huffman huffman = new Huffman();
+        huffman.createTree(input);
+        huffman.printTree();
+        System.out.println();
+        another_Tree();
+    }
+    public static void another_Tree(){
+        HuffmanTree<String> tree=new HuffmanTree<>();
+        Map<String,Integer> map=new HashMap<>(){
+            {
+                put("A", 3);
+                put("C", 4);
+                put("P", 2);
+                put("Q", 7);
+                put("S", 1);
+                put("Z", 5);
+            }
+        };
+        tree.buildTree(map);
         tree.printTree();
     }
-
 }

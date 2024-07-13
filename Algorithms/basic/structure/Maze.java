@@ -1,15 +1,10 @@
 package basic.structure;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import basic.structure.gui.MazeVisualization;
@@ -33,7 +28,7 @@ public class Maze {
     private int startY;
     private int endX;
     private int endY;
-    /* 代表着上下左右 */
+    /* 代表着上下左右 [y,x] */
     private int[][] direction = { { -1, 0 }, { 0, -1 }, { 1, 0 }, { 0, 1 } };
     private boolean[][] visited;
     private List<Integer> list = new ArrayList<>(Arrays.asList(0, 1, 2, 3));
@@ -42,6 +37,7 @@ public class Maze {
     private Random random;
     private MazeVisualization mVisualization;
     private Timer timer;
+    private List<int[]> neighbors;
 
     public Maze(int width, int height) {
         map = new int[width][height];
@@ -54,6 +50,7 @@ public class Maze {
         randomEnd();
         unionFind = new UnionFind(width * height);
         mVisualization = new MazeVisualization(map);
+        neighbors = new ArrayList<>();
     }
 
     public void generatorMap() {
@@ -61,20 +58,9 @@ public class Maze {
     }
 
     private void startGenerator() {
-        timer = new Timer(50000, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent arg0) {
-                // TODO Auto-generated method stub
-                mVisualization.updateMaze(map);
-            }
-        });
-        SwingUtilities.invokeLater(() -> {
-            timer.start();
-        });
-        // startBFSGenerator();
+        //startBFSGenerator();
         startDFSGenerator(startY, startX, visited, 2);
         generatorUnionFind();
-        timer.stop();
     }
 
     /* 利用并查集来合并查询每个单元格的集合以便于之后查询联通 */
@@ -111,6 +97,7 @@ public class Maze {
     public int getIndex(int x, int y) {
         return x * width + y;
     }
+
 
     private void startDFSGenerator(int currentY, int currentX, boolean[][] visited, int depth) {
         /* 检查边界和已访问 */
@@ -339,7 +326,7 @@ public class Maze {
         }
     }
 
-    private boolean isArraysOverFlow(int currentX, int currentY) {
+    private boolean isArraysOverFlow(int currentY, int currentX) {
         if (currentX < 0 || currentX >= width || currentY < 0 || currentY >= height) {
             return true;
         }

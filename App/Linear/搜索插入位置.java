@@ -2,11 +2,11 @@ package linear;
 
 public class 搜索插入位置 {
     public static void main(String[] args) {
-        int[] nums = {1,3,5,6};
+        Integer[] nums = {1,3,5,6};
         System.out.println(BinarysearchInsert(nums, 5));
     }
 
-    public static int searchInsert(int[] nums, int target) {
+    public static int searchInsert(Integer[] nums, int target) {
         if (target <= nums[0]) {
             return 0;
         }
@@ -17,7 +17,7 @@ public class 搜索插入位置 {
         }
         return nums.length;
     }
-    public static int BinarysearchInsert(int[] nums, int target){
+    public static int BinarysearchInsert(Integer[] nums, int target){
         int lo=0;
         int hi=nums.length-1;
         while(lo<=hi){

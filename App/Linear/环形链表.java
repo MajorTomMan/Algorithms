@@ -3,11 +3,12 @@ package linear;
 
 
 import basic.structure.node.ListNode;
+import utils.AlgorithmsUtils;
 
-public class 环形链表 extends Common {
+public class 环形链表 {
     public static void main(String[] args) {
-        int[] nums={3,2,0,-4};
-        System.out.println(hasCycle(buildLinkedList(nums)));
+        Integer[] nums={3,2,0,-4};
+        System.out.println(hasCycle(AlgorithmsUtils.buildLinkedList(nums)));
     }
     public static boolean hasCycle(ListNode<Integer> head) {
         if (head == null || head.next == null) {

@@ -1,14 +1,15 @@
 package linear;
 
-import basic.structure.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 public class 栈实现队列 {
     private static class StackQueue{
         private Stack<Integer> stack_1;
         private Stack<Integer> stack_2;
         public StackQueue(){
-            stack_1=new Stack<>();
-            stack_2=new Stack<>();
+            stack_1=new LinkedList<>();
+            stack_2=new LinkedList<>();
         }
         public void appendTail(int value) {
             stack_1.push(value);

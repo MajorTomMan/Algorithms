@@ -2,11 +2,12 @@ package linear;
 
 
 import basic.structure.node.ListNode;
+import utils.AlgorithmsUtils;
 
-public class 删除链表元素 extends Common {
+public class 删除链表元素 {
     public static void main(String[] args) {
-        int[] nums={1,2,6,3,4,5,6};
-        ListNode<Integer> head=buildLinkedList(nums);
+        Integer[] nums={1,2,6,3,4,5,6};
+        ListNode<Integer> head=AlgorithmsUtils.buildLinkedList(nums);
         System.out.println(removeElements(head,6));
     }
     public static ListNode<Integer> removeElements(ListNode<Integer> head, int val) {

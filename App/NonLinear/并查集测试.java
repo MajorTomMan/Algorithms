@@ -5,7 +5,7 @@ import basic.structure.Graph;
 
 public class 并查集测试 {
     public static void main(String[] args) {
-        Graph graph = new Graph(6, new int[][] {
+        Graph graph = new Graph(6, new Integer[][] {
                 { 0, 4 },
                 { 1, 1 }, { 1, 5 },
                 { 2, 2 }, { 2, 3 }, { 2, 5 },

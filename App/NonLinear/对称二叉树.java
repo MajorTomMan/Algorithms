@@ -1,13 +1,21 @@
+/*
+ * @Date: 2023-12-09 14:41:38
+ * @LastEditors: MajorTomMan 765719516@qq.com
+ * @LastEditTime: 2024-07-13 20:23:04
+ * @FilePath: \ALG\app\nonlinear\对称二叉树.java
+ * @Description: MajorTomMan @版权声明 保留文件所有权利
+ */
 package nonlinear;
 
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 import basic.structure.node.TreeNode;
+import utils.AlgorithmsUtils;
 
-public class 对称二叉树 extends Common {
+public class 对称二叉树{
     public static void main(String[] args) {
         Integer[] nums = { 1, 2, 2, 3, 4, 4, 3 };
-        TreeNode<Integer> root = buildTree(nums);
-        printTree();
+        TreeNode<Integer,Integer> root = AlgorithmsUtils.buildTree(nums,AlgorithmsUtils.randomArray(20, 30));
         System.out.println(isSymmetric(root));
     }
 
@@ -16,19 +24,19 @@ public class 对称二叉树 extends Common {
      * 它们的两个根结点具有相同的值
      * 每个树的右子树都与另一个树的左子树镜像对称
      */
-    public static boolean isSymmetric(TreeNode<Integer> root) {
+    public static boolean isSymmetric(TreeNode<Integer, Integer> root) {
         return check(root);
 
     }
 
-    public static boolean check(TreeNode<Integer> p, TreeNode<Integer> q) {
+    public static boolean check(TreeNode<Integer, Integer> p, TreeNode<Integer, Integer> q) {
         if (p == null && q == null) {
             return true;
         }
         if (p == null || q == null) {
             return false;
         }
-        return p.data == q.data && check(p.left, q.right) && check(p.right, q.left);
+        return p.value == q.value && check(p.left, q.right) && check(p.right, q.left);
     }
 
     /*
@@ -37,23 +45,23 @@ public class 对称二叉树 extends Common {
      * 然后将两个结点的左右子结点按相反的顺序插入队列中。
      * 当队列为空时，或者我们检测到树不对称（即从队列中取出两个不相等的连续结点）时，该算法结束。
      */
-    public static boolean check(TreeNode<Integer> root) {
-        Queue<TreeNode<Integer>> queue = new Queue<>();
-        queue.enqueue(root);
-        queue.enqueue(root);
+    public static boolean check(TreeNode<Integer, Integer> root) {
+        Queue<TreeNode<Integer, Integer>> queue = new LinkedList<>();
+        queue.add(root);
+        queue.add(root);
         while (!queue.isEmpty()) {
-            TreeNode<Integer> node_l = queue.dequeue();
-            TreeNode<Integer> node_r = queue.dequeue();
+            TreeNode<Integer, Integer> node_l = queue.poll();
+            TreeNode<Integer, Integer> node_r = queue.poll();
             if (node_l == null && node_r == null) {
                 continue;
             }
-            if (node_l == null || node_r == null || node_l.data != node_r.data) {
+            if (node_l == null || node_r == null || node_l.value != node_r.value) {
                 return false;
             }
-            queue.enqueue(node_l.left);
-            queue.enqueue(node_r.right);
-            queue.enqueue(node_l.right);
-            queue.enqueue(node_r.left);
+            queue.add(node_l.left);
+            queue.add(node_r.right);
+            queue.add(node_l.right);
+            queue.add(node_r.left);
         }
         return true;
     }

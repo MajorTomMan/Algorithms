@@ -33,8 +33,10 @@
 
 package graph.traversal;
 
-import basic.structure.Queue;
-import basic.structure.Stack;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
+
 import func.io.In;
 import func.io.StdOut;
 import graph.dig.Digraph;
@@ -76,8 +78,8 @@ public class DepthFirstOrder { //有序深度优先搜素算法实现
     public DepthFirstOrder(Digraph G) {
         pre    = new int[G.V()];
         post   = new int[G.V()];
-        postorder = new Queue<Integer>();
-        preorder  = new Queue<Integer>();
+        postorder = new LinkedList<>();
+        preorder  = new LinkedList<>();
         marked    = new boolean[G.V()];
         for (int v = 0; v < G.V(); v++)
             if (!marked[v]) dfs(G, v);
@@ -92,8 +94,8 @@ public class DepthFirstOrder { //有序深度优先搜素算法实现
     public DepthFirstOrder(EdgeWeightedDigraph G) {
         pre    = new int[G.V()];
         post   = new int[G.V()];
-        postorder = new Queue<Integer>();
-        preorder  = new Queue<Integer>();
+        postorder = new LinkedList<>();
+        preorder  = new LinkedList<>();
         marked    = new boolean[G.V()];
         for (int v = 0; v < G.V(); v++)
             if (!marked[v]) dfs(G, v);
@@ -103,13 +105,13 @@ public class DepthFirstOrder { //有序深度优先搜素算法实现
     private void dfs(Digraph G, int v) {
         marked[v] = true;
         pre[v] = preCounter++;
-        preorder.enqueue(v);
+        preorder.add(v);
         for (int w : G.adj(v)) {
             if (!marked[w]) {
                 dfs(G, w);
             }
         }
-        postorder.enqueue(v);
+        postorder.add(v);
         post[v] = postCounter++;
     }
 
@@ -117,14 +119,14 @@ public class DepthFirstOrder { //有序深度优先搜素算法实现
     private void dfs(EdgeWeightedDigraph G, int v) {
         marked[v] = true;
         pre[v] = preCounter++;
-        preorder.enqueue(v);
+        preorder.add(v);
         for (DirectedEdge e : G.adj(v)) {
             int w = e.to();
             if (!marked[w]) {
                 dfs(G, w);
             }
         }
-        postorder.enqueue(v);
+        postorder.add(v);
         post[v] = postCounter++;
     }
 

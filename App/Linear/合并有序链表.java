@@ -3,13 +3,14 @@ package linear;
 
 
 import basic.structure.node.ListNode;
+import utils.AlgorithmsUtils;
 
-public class 合并有序链表 extends Common{
+public class 合并有序链表{
     public static void main(String[] args) {
-        int[] nums_1={1,2,4},nums_2={1,3,4};
-        ListNode<Integer> head_1=buildLinkedList(nums_1),head_2=buildLinkedList(nums_2);
+        Integer[] nums_1={1,2,4},nums_2={1,3,4};
+        ListNode<Integer> head_1=AlgorithmsUtils.buildLinkedList(nums_1),head_2=AlgorithmsUtils.buildLinkedList(nums_2);
         ListNode<Integer> result=mergeTwoLists(head_1, head_2);
-        printLinkedList(result);
+        AlgorithmsUtils.printList(result);
     }
     public static ListNode<Integer> mergeTwoLists(ListNode<Integer> list1, ListNode<Integer> list2) {
         if(list1==null){

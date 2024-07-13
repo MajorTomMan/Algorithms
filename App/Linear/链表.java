@@ -1,37 +1,24 @@
 package linear;
 
 
-
-import java.util.Random;
-
 import basic.structure.LinkedList;
 
-public class 链表{
+public class 链表 {
     public static void main(String[] args) {
-        int i=0;
-        LinkedList<Integer> linkedlist=new LinkedList<>(99);
-        Random random=new Random();
-        while(i!=12){
-            int j=random.nextInt(100)+1;
-            linkedlist.Insert(j);
-            i++;
-        }
-        System.out.println();
-        for (Integer t:linkedlist) {
-            System.out.print(t+" ");
-        }
-        System.out.println();
-        linkedlist.Delete(3);
-        linkedlist.Reverse();
-        for (Integer t:linkedlist) {
-            System.out.print(t+" ");
-        }
-        System.out.println();
-        System.out.println("--------------------------");
-        System.out.println(linkedlist.size());
-        linkedlist.Sort();
-        for (Integer t:linkedlist) {
-            System.out.print(t+" ");
-        }
+        LinkedList<Integer> list = new LinkedList<>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(6);
+        list.add(8);
+        list.add(10);
+        list.add(1);
+        list.add(2);
+        list.sort();
+        list.foreach((t) -> {
+            System.out.println(t);
+        });
+        list.remove(1);
+        list.replace(6, 1);
     }
 }

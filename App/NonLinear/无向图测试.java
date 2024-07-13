@@ -2,20 +2,22 @@
 package nonlinear;
 
 import basic.structure.Graph;
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
+import utils.AlgorithmsUtils;
 
-public class 无向图测试 extends Common {
+public class 无向图测试{
     public static void main(String[] args) {
-        int[][] edges = {
+        Integer[][] edges = {
                 { 0, 1 }, { 0, 2 }, { 1, 2 }, { 1, 3 }, { 2, 4 }, { 3, 4 }
         };
-        int[][] matrix = {
+        Integer[][] matrix = {
                 { 0, 1, 0, 1 },
                 { 1, 0, 1, 0 },
                 { 0, 1, 0, 1 },
                 { 1, 0, 1, 0 }
                 /*
-                 *     0 1 2 3
+                 *   0 1 2 3
                  * 0 0 1 0 1    无向图表示: 0-1-2-3-0 (有环)
                  * 1 1 0 1 0               
                  * 2 0 1 0 1
@@ -32,32 +34,32 @@ public class 无向图测试 extends Common {
         dfs(1, visited.clone(), matrix.clone());
     }
 
-    private static void bfs(int v, boolean[] visited, int[][] graph) {
+    private static void bfs(int v, boolean[] visited, Integer[][] graph) {
         visited[v] = true;
-        printGraph(graph, visited);
+        AlgorithmsUtils.printGraph(graph, visited);
         System.out.println("D------------------------------");
-        Queue<Integer> queue = new Queue<>();
-        queue.enqueue(v);
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(v);
         while (!queue.isEmpty()) {
-            int vertex = queue.dequeue();
+            int vertex = queue.poll();
             for (int w = 0; w < graph[0].length; w++) {
                 if (graph[vertex][w] == 1 && !visited[w]) {
                     visited[w] = true;
-                    queue.enqueue(w);
+                    queue.add(w);
                     graph[vertex][w] = 9;
-                    printGraph(graph, visited);
+                    AlgorithmsUtils.printGraph(graph, visited);
                     System.out.println("------------------------------");
                 }
             }
         }
     }
 
-    private static void dfs(int v, boolean[] visited, int[][] graph) {
+    private static void dfs(int v, boolean[] visited, Integer[][] graph) {
         visited[v] = true;
         for (int w = 0; w < graph[0].length; w++) {
             if (graph[v][w] == 1 && !visited[w]) {
                 graph[v][w] = 9;
-                printGraph(graph, visited);
+                AlgorithmsUtils.printGraph(graph, visited);
                 graph[v][w] = 1;
                 System.out.println("------------------------------");
                 dfs(w, visited, graph);

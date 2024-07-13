@@ -4,23 +4,24 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import basic.structure.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 /**
  * 后缀表达式求值
  */
 public class 表达式求值 {
-    private static Boolean isPost=false;
+    private static Boolean isPost = false;
+
     public static void main(String[] args) {
         List<String> postFix = new ArrayList<>();
         List<String> preFix = new ArrayList<>();
         String target = "1+(5*6)/(7-4)";
         PostFix(postFix, target);
         PreFix(preFix, target);
-        if(isPost){
+        if (isPost) {
             Calculate(postFix, target);
-        }
-        else{
+        } else {
             Calculate(preFix, target);
         }
     }
@@ -35,7 +36,7 @@ public class 表达式求值 {
      * 将前缀表达式反转即可。
      */
     private static void PreFix(List<String> values, String target) {
-        Stack<Character> operators = new Stack<>();
+        Stack<Character> operators = new LinkedList<>();
         int i = target.length() - 1;
         while (i >= 0) {
             Character c = target.charAt(i);
@@ -91,7 +92,7 @@ public class 表达式求值 {
      * 否则，将栈顶运算符弹出，并输出，直到遇到一个优先级比该运算符低的运算符或者栈为空为止，然后将该运算符入栈。
      */
     private static void PostFix(List<String> values, String target) {
-        Stack<Character> operators = new Stack<>();
+        Stack<Character> operators = new LinkedList<>();
         int i = 0;
         while (i < target.length()) {
             Character c = target.charAt(i);
@@ -143,41 +144,40 @@ public class 表达式求值 {
      * 最终栈中仅剩下一个元素，即为后缀表达式的计算结果。
      */
     private static void Calculate(List<String> values, String target) {
-        Stack<Integer> result = new Stack<>();
+        Stack<Integer> result = new LinkedList<>();
         String s = "";
         for (String ss : values) {
             s += ss;
         }
-        if(isPost){
+        if (isPost) {
             int i = 0;
             while (i < s.length()) {
                 Calculate(s, result, i);
                 i++;
             }
-        }
-        else{
-            int i = s.length()-1;
-            while (i>=0) {
+        } else {
+            int i = s.length() - 1;
+            while (i >= 0) {
                 Calculate(s, result, i);
                 i--;
             }
         }
         System.out.println(result.pop());
     }
-    private static void Calculate(String s,Stack<Integer> result,int i){
+
+    private static void Calculate(String s, Stack<Integer> result, int i) {
         Character c = s.charAt(i);
         if (Character.isDigit(c)) {
             result.push(Integer.parseInt(c + ""));
         } else {
-            Integer left=0;
-            Integer right=0;
-            if(isPost){
-                right=result.pop();
-                left=result.pop();
-            }
-            else{
-                left=result.pop();
-                right=result.pop();
+            Integer left = 0;
+            Integer right = 0;
+            if (isPost) {
+                right = result.pop();
+                left = result.pop();
+            } else {
+                left = result.pop();
+                right = result.pop();
             }
             Integer temp = 0;
             switch (c) {

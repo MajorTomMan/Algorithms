@@ -4,17 +4,17 @@ package linear;
 import java.util.ArrayList;
 
 import basic.structure.LinkedList;
+import basic.structure.interfaces.List;
 import basic.structure.node.ListNode;
 /**
  * 链表倒序
  */
 public class 链表倒序 {
     public static void main(String[] args) {
-        LinkedList<Integer> list=new LinkedList<>(22);
+        List<Integer> list=new LinkedList<>();
         for(int i=0;i<10;i++){
-            list.Insert(i);
+            list.add(i);
         }
-        System.out.println(reverse(list.getHead()));
     }
     private static ArrayList<Integer> reverse(ListNode<Integer> node){
         ArrayList<ListNode<Integer>> List = new ArrayList<>();

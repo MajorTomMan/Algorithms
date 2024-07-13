@@ -5,7 +5,7 @@ package linear;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class 机器人的运动范围 extends Common {
+public class 机器人的运动范围 {
     // 记录位置是否被遍历过
     private static boolean[][] visited;
 
@@ -42,10 +42,10 @@ public class 机器人的运动范围 extends Common {
     private static int bfs(int m, int n, int k) {
         visited = new boolean[m][n];
         int res = 0;// 记录满足条件的方格数
-        Queue<int[]> queue = new LinkedList<int[]>(); 
-        queue.add(new int[] { 0, 0 });// 队列中加入此时i，j坐标，以供出队后拿来判断右、下
+        Queue<Integer[]> queue = new LinkedList<Integer[]>(); 
+        queue.add(new Integer[] { 0, 0 });// 队列中加入此时i，j坐标，以供出队后拿来判断右、下
         while (!queue.isEmpty()) {
-            int[] x = queue.poll();
+            Integer[] x = queue.poll();
             int i = x[0], j = x[1];
             if (i >= m || j >= n){ // 边界条件判断
                 continue;
@@ -59,9 +59,9 @@ public class 机器人的运动范围 extends Common {
             visited[i][j] = true; // 记录当前节点被访问过
             res++;
             // 将下面的方格加入队列
-            queue.add(new int[] { i + 1, j });
+            queue.add(new Integer[] { i + 1, j });
             // 将右面的方格加入队列
-            queue.add(new int[] { i, j + 1 });
+            queue.add(new Integer[] { i, j + 1 });
         }
         return res;
     }

@@ -3,47 +3,51 @@ package basic.structure;
 
 import java.util.Iterator;
 
-import basic.structure.iface.IPolyList;
 import basic.structure.node.PolyListNode;
+
 /* 一元多项式链表 */
-public class PolyList extends IPolyList implements Iterable<PolyListNode>{
-    @Override
-    public void insert(int power, int exp) {
+public class PolyList implements Iterable<PolyListNode> {
+    public PolyListNode head;
+
+    public boolean isEmpty() {
+        return head == null;
+    }
+
+    public void add(int power, int exp) {
         // TODO Auto-generated method stub
         if (isEmpty()) {
             head = new PolyListNode(power, exp, null);
             return;
         }
-        head = insert(power, exp, head);
+        head = add(power, exp, head);
     }
 
-    private PolyListNode insert(int power, int exp, PolyListNode node) {
+    private PolyListNode add(int power, int exp, PolyListNode node) {
         // TODO Auto-generated method stub
         if (node == null) {
             node = new PolyListNode(power, exp, null);
             return node;
         }
-        PolyListNode temp= insert(power, exp, node.getNext());
+        PolyListNode temp = add(power, exp, node.getNext());
         node.setNext(temp);
         return node;
     }
 
-    @Override
-    public void delete(int power, int exp) {
+    public void remove(int power, int exp) {
         // TODO Auto-generated method stub
         if (isEmpty()) {
             return;
         }
         if (head.getPower() == power && head.getExp() == exp) {
-            if(head.getNext()==null){
-                head=null;
-            }
-            else{
-                head=head.getNext();
+            if (head.getNext() == null) {
+                head = null;
+            } else {
+                head = head.getNext();
             }
             return;
         }
-        for (PolyListNode pre = head,current = head.getNext(); current != null; pre = current, current = current.getNext()) {
+        for (PolyListNode pre = head,
+                current = head.getNext(); current != null; pre = current, current = current.getNext()) {
             if (current.getPower() == power && current.getExp() == exp) {
                 pre.setNext(current.getNext());
                 current = null;
@@ -51,44 +55,30 @@ public class PolyList extends IPolyList implements Iterable<PolyListNode>{
             }
         }
     }
-    public PolyListNode getHead(){
-        return head;
-    }
-    @Override
-    public void show() {
-        // TODO Auto-generated method stub
-        super.show();
+
+    public void display() {
+        forEach((v) -> {
+            System.out.println(v);
+        });
     }
 
-    @Override
-    public void clear() {
-        // TODO Auto-generated method stub
-        super.clear();
-    }
-    @Override
-    public boolean isEmpty() {
-        // TODO Auto-generated method stub
-        return super.isEmpty();
-    }
-
-    @Override
     public Iterator<PolyListNode> iterator() {
         // TODO Auto-generated method stub
         return new ListIterator();
     }
-    private class ListIterator implements Iterator<PolyListNode>{
-        private PolyListNode current=head;
-        @Override
+
+    private class ListIterator implements Iterator<PolyListNode> {
+        private PolyListNode current = head;
+
         public boolean hasNext() {
             // TODO Auto-generated method stub
-            return current!=null;
+            return current != null;
         }
 
-        @Override
         public PolyListNode next() {
             // TODO Auto-generated method stub
-            PolyListNode data=current;
-            current=current.getNext();
+            PolyListNode data = current;
+            current = current.getNext();
             return data;
         }
     }

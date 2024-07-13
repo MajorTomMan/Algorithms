@@ -1,21 +1,21 @@
 package linear;
 
+import utils.AlgorithmsUtils;
 
-
-public class 冒泡排序测试 extends Common {
+public class 冒泡排序测试 {
     public static void main(String[] args) {
-        int[] arr = generatorRandomArray(10, 100);
+        Integer[] arr = AlgorithmsUtils.randomArray(10, 100);
         arr = sort(arr);
-        show(arr);
+        AlgorithmsUtils.display(arr);
     }
 
     /* 冒泡排序 */
-    private static int[] sort(int[] arr) {
-        for (int i = 0; i < arr.length; i++) {
+    private static Integer[] sort(Integer[] arr) {
+        for (Integer i = 0; i < arr.length; i++) {
             boolean swapped = false;
-            for (int j = i + 1; j < arr.length; j++) {
-                if (less(arr[i], arr[j])) {
-                    swap(arr, i, j);
+            for (Integer j = i + 1; j < arr.length; j++) {
+                if (AlgorithmsUtils.less(arr[i], arr[j])) {
+                    AlgorithmsUtils.swap(arr, i, j);
                     swapped = true;
                 }
             }

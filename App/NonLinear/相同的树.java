@@ -1,32 +1,24 @@
 package nonlinear;
+
 import java.util.Random;
 
-import basic.structure.BinaryTree;
 import basic.structure.node.TreeNode;
+import utils.AlgorithmsUtils;
 
 public class 相同的树 {
     public static void main(String[] args) {
-        BinaryTree<Integer> Tree_a=new BinaryTree<Integer>();
-        BinaryTree<Integer> Tree_b=new BinaryTree<Integer>();
-        int i=0;
-        Random random=new Random();
-        System.out.println("-----------------------raw data--------------------");
-        while(i!=12){
-            int n=random.nextInt(100);
-            int m=random.nextInt(100);
-            Tree_a.put(n);
-            Tree_b.put(n);
-            System.out.print(n+" "+m+" \n");
-            i++;
-        }
-        System.out.println("-------------------------");
+        TreeNode<Integer, Integer> p = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
+                AlgorithmsUtils.randomArray(20, 30));
+        TreeNode<Integer, Integer> q = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
+                AlgorithmsUtils.randomArray(20, 30));
     }
-    public static boolean isSameTree(TreeNode<Integer> p, TreeNode<Integer> q) {
+
+    public static boolean isSameTree(TreeNode<Integer, Integer> p, TreeNode<Integer, Integer> q) {
         if (p == null && q == null) {
             return true;
         } else if (p == null || q == null) {
             return false;
-        } else if (p.data != q.data) {
+        } else if (p.value != q.value) {
             return false;
         } else {
             return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);

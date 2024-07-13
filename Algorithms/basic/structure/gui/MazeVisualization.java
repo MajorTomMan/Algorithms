@@ -23,20 +23,34 @@ public class MazeVisualization extends JPanel {
     private Color start_color = Color.GREEN;
     private Color end_color = Color.RED;
     private Color currentPoint_color = Color.BLUE;
-    private int[] currentPoint=new int[2];
+    private int[] currentPoint = new int[2];
     private int delay = 100;
     private Timer timer;
 
     public MazeVisualization(int[][] map) {
         this.map = map;
-        this.width = map[0].length * cell_size;
-        this.height = map.length * cell_size;
+        // Initialize width and height based on map dimensions and cell_size
+        width = map[0].length * cell_size;
+        height = map.length * cell_size;
+
         setPreferredSize(new Dimension(width, height));
+
         JFrame frame = new JFrame("地图生成");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(width, height);
         frame.getContentPane().add(this);
         frame.setVisible(true);
+
+        // Initialize the timer
+        timer = new Timer(delay, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateMaze(map);
+                repaint();
+            }
+        });
+        // Start the timer
+        timer.start();
     }
 
     @Override
@@ -64,9 +78,11 @@ public class MazeVisualization extends JPanel {
             }
         }
     }
-    public void setCurrentPoint(){
+
+    public void setCurrentPoint() {
 
     }
+
     public void updateMaze(int[][] map) {
         this.map = map;
         repaint();

@@ -2,12 +2,13 @@ package linear;
 
 
 import basic.structure.node.ListNode;
+import utils.AlgorithmsUtils;
 
-public class 相交链表 extends Common{
+public class 相交链表{
     public static void main(String[] args) {
-        int[] nums_a={0},nums_b={5,6,1,8,4,5};
-        ListNode<Integer> head_A=buildLinkedList(nums_a);
-        ListNode<Integer> head_B=buildLinkedList(nums_b);
+        Integer[] nums_a={0},nums_b={5,6,1,8,4,5};
+        ListNode<Integer> head_A=AlgorithmsUtils.buildLinkedList(nums_a);
+        ListNode<Integer> head_B=AlgorithmsUtils.buildLinkedList(nums_b);
         System.out.println(getIntersectionNode(head_A, head_B,head_A,head_B));
     }
     public ListNode<Integer> getIntersectionNode(ListNode<Integer> headA, ListNode<Integer> headB) {

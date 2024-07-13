@@ -6,7 +6,9 @@
  */
 package search.structure.linearst;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import search.structure.example.SymbolTable;
 
 /**
@@ -56,9 +58,9 @@ public class ArrayST<Key,Value> extends SymbolTable<Key,Value>{
     @Override
     public Iterable<Key> keys() {
         // TODO Auto-generated method stub
-        Queue<Key> que=new Queue<>();
+        Queue<Key> que=new LinkedList<>();
         for(int i=0;i<keys.length;i++){
-            que.enqueue(keys[i]);
+            que.add(keys[i]);
         }
         return (Iterable<Key>) que;
     }

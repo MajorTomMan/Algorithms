@@ -10,8 +10,9 @@ import java.util.PriorityQueue;
 import basic.structure.Digraph;
 import basic.structure.node.Edge;
 import basic.structure.node.Vertex;
+import utils.AlgorithmsUtils;
 
-public class 最短路径算法测试  extends Common{
+public class 最短路径算法测试{
     /* 有向带权图 */
     private static Digraph graph=new Digraph();
     /* 距离 */
@@ -40,27 +41,27 @@ public class 最短路径算法测试  extends Common{
         graph.addVertex(v5);
         graph.addVertex(v6);
         graph.addVertex(v7);
-        graph.addEdge(v1, v2, randomNumGenerator(7,1));
-        graph.addEdge(v1, v3, randomNumGenerator(7,1));
-        graph.addEdge(v1, v4, randomNumGenerator(7,1));
-        graph.addEdge(v2, v1, randomNumGenerator(7,1));
-        graph.addEdge(v2, v4, randomNumGenerator(7,1));
-        graph.addEdge(v2, v5, randomNumGenerator(7,1));
-        graph.addEdge(v3, v1, randomNumGenerator(7,1));
-        graph.addEdge(v3, v6, randomNumGenerator(7,1));
-        graph.addEdge(v3, v7, randomNumGenerator(7,1));
-        graph.addEdge(v4, v2, randomNumGenerator(7,1));
-        graph.addEdge(v4, v5, randomNumGenerator(7,1));
-        graph.addEdge(v4, v6, randomNumGenerator(7,1));
-        graph.addEdge(v5, v3, randomNumGenerator(7,1));
-        graph.addEdge(v5, v1, randomNumGenerator(7,1));
-        graph.addEdge(v5, v2, randomNumGenerator(7,1));
-        graph.addEdge(v6, v1, randomNumGenerator(7,1));
-        graph.addEdge(v6, v3, randomNumGenerator(7,1));
-        graph.addEdge(v6, v7, randomNumGenerator(7,1));
-        graph.addEdge(v7, v5, randomNumGenerator(7,1));
-        graph.addEdge(v7, v4, randomNumGenerator(7,1));
-        graph.addEdge(v7, v3, randomNumGenerator(7,1));
+        graph.addEdge(v1, v2, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v1, v3, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v1, v4, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v2, v1, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v2, v4, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v2, v5, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v3, v1, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v3, v6, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v3, v7, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v4, v2, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v4, v5, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v4, v6, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v5, v3, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v5, v1, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v5, v2, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v6, v1, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v6, v3, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v6, v7, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v7, v5, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v7, v4, AlgorithmsUtils.randomNum(7,1));
+        graph.addEdge(v7, v3, AlgorithmsUtils.randomNum(7,1));
         Dijkstra(v6,v5);
     }
     /*  最短路径算法之迪杰斯特拉算法的实现 */

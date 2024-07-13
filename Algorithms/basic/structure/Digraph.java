@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import basic.structure.interfaces.Queue;
 import basic.structure.node.Edge;
 import basic.structure.node.Vertex;
 
@@ -34,13 +35,13 @@ public class Digraph {
         if (vertexs.isEmpty()) {
             return false;
         }
-        Queue<Vertex> queue = new Queue<>();
+        Queue<Vertex> queue = new LinkedList<>();
         Set<Vertex> visited = new HashSet<>();
         Vertex v = vertexs.get(0);
         visited.add(v);
-        queue.enqueue(v);
+        queue.add(v);
         while (!queue.isEmpty()) {
-            Vertex vertex = queue.dequeue();
+            Vertex vertex = queue.poll();
             /* 遍历所有邻居节点 */
             for (Edge edge : vertex.getEdges()) {
                 Vertex dest = edge.getDest();
@@ -51,7 +52,7 @@ public class Digraph {
                     }
                     if (!visited.contains(dest)) {
                         visited.add(dest);
-                        queue.enqueue(dest);
+                        queue.add(dest);
                     }
                 }
             }
@@ -100,13 +101,13 @@ public class Digraph {
 
     /* 广度优先搜索遍历顶点集合并找出其对应的节点入度 */
     private void BFS(Vertex v) {
-        Queue<Vertex> queue = new Queue<>();
+        Queue<Vertex> queue = new LinkedList<>();
         Set<Vertex> visited = new HashSet<>();
         visited.add(v);
-        queue.enqueue(v);
+        queue.add(v);
         inNumberList.put(v.getName(), 0);
         while (!queue.isEmpty()) {
-            Vertex vertex = queue.dequeue();
+            Vertex vertex = queue.poll();
             for (Edge edge : vertex.getEdges()) {
                 Vertex dest = edge.getDest();
                 if (inNumberList.containsKey(dest.getName())) {
@@ -117,7 +118,7 @@ public class Digraph {
                 }
                 if (!visited.contains(dest)) {
                     visited.add(dest);
-                    queue.enqueue(dest);
+                    queue.add(dest);
                 }
             }
         }

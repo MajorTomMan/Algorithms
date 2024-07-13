@@ -1,15 +1,12 @@
 package linear;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class 剪绳子 {
     public static void main(String[] args) {
         System.out.println(cuttingRope(6));
     }
     public static int cuttingRope(int n) {
-        int[] dp = new int[n + 1];
+        Integer[] dp = new Integer[n + 1];
         dp[2] = 1;
         for(int i = 3; i < n + 1; i++){
             for(int j = 2; j < i; j++){

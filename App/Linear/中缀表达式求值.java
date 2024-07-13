@@ -1,8 +1,7 @@
 package linear;
 
-
-
-import basic.structure.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 public class 中缀表达式求值 {
     public static void main(String[] args) {
@@ -12,8 +11,8 @@ public class 中缀表达式求值 {
         String statement = "(1+((2*3)+(4*5)))";
         char[] state = statement.toCharArray();
         Character cr = ' ';
-        Stack<Character> ops = new Stack<Character>();
-        Stack<Double> vals = new Stack<Double>();
+        Stack<Character> ops = new LinkedList<>();
+        Stack<Double> vals = new LinkedList<>();
         while (i != state.length) {
             if (state[i] == '(') {
                 i++;

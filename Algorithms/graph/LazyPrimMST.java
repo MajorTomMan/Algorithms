@@ -1,7 +1,9 @@
 
 package graph;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import graph.dir.EdgeWeightedGraph;
 import graph.e.Edge;
 import sort.structure.pq.MinPQ;
@@ -13,7 +15,7 @@ public class LazyPrimMST { //加权无向图最小生成树算法中的懒惰Pri
     public LazyPrimMST(EdgeWeightedGraph G){
         pq=new MinPQ<>();
         marked=new boolean[G.V()];
-        mst=new Queue<>();
+        mst=new LinkedList<>();
         visit(G,0);
         while(!pq.isEmpty()){
             Edge e=pq.delMin();
@@ -21,7 +23,7 @@ public class LazyPrimMST { //加权无向图最小生成树算法中的懒惰Pri
             if(marked[v]&&marked[w]){
                 continue;
             }
-            mst.enqueue(e);
+            mst.add(e);
             if(!marked[v]){
                 visit(G,v);
             }

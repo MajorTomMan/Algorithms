@@ -1,6 +1,6 @@
 package linear;
 
-import basic.structure.Stack;
+import basic.structure.interfaces.Stack;
 
 public class 十六进制转十进制 {
     private static String[] data;

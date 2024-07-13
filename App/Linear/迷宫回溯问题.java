@@ -1,10 +1,11 @@
 package linear;
 
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 
 public class 迷宫回溯问题 {
     public static void main(String[] args) {
-        int[][] map = getMap();
+        Integer[][] map = getMap();
         // 输出地图
         setEnd(map, 6, 5, 5);
         setStart(map, 1, 1, 3);
@@ -21,8 +22,8 @@ public class 迷宫回溯问题 {
      * 
      * @return
      */
-    private static int[][] getMap() {
-        int[][] map = new int[8][7];
+    private static Integer[][] getMap() {
+        Integer[][] map = new Integer[8][7];
         // 上下全置为1
         for (int i = 0; i < 7; i++) {
             map[0][i] = 1;
@@ -49,11 +50,11 @@ public class 迷宫回溯问题 {
      * @param target 目标数
      * @return
      */
-    private static void setEnd(int[][] map, int x, int y, int end) {
+    private static void setEnd(Integer[][] map, int x, int y, int end) {
         map[x][y] = end;
     }
 
-    private static void setStart(int[][] map, int x, int y, int start) {
+    private static void setStart(Integer[][] map, int x, int y, int start) {
         map[x][y] = start;
     }
 
@@ -62,7 +63,7 @@ public class 迷宫回溯问题 {
      * 
      * @param map
      */
-    private static void showMap(int[][] map) {
+    private static void showMap(Integer[][] map) {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 7; j++) {
                 System.out.print(map[i][j] + " ");
@@ -80,7 +81,7 @@ public class 迷宫回溯问题 {
      * @param y   起始点纵坐标
      * @return
      */
-    public static boolean findWay(int[][] map, int x, int y, int start, int end) {
+    public static boolean findWay(Integer[][] map, int x, int y, int start, int end) {
         // 如果走到了终点就终止
         if (map[y][x] == end) {
             return true;
@@ -127,12 +128,12 @@ public class 迷宫回溯问题 {
      * @param y   起始点纵坐标
      * @return
      */
-    public static boolean BFS(int[][] map, int x, int y, int target) {
-        Queue<Integer> queue = new Queue<>();
-        queue.enqueue(map[x][y]);
+    public static boolean BFS(Integer[][] map, int x, int y, int target) {
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(map[x][y]);
         map[x][y] = -1;
         while (!queue.isEmpty()) {
-            int currentPoint = queue.dequeue();
+            int currentPoint = queue.poll();
             for (int i = y; i != map[x].length - 1 && x != map.length - 1; i++) {
                 if (map[x][i] == target) {
                     System.out.println("Found!");
@@ -140,7 +141,7 @@ public class 迷宫回溯问题 {
                     System.out.println("----------every step------------");
                     return true;
                 }
-                queue.enqueue(map[x][i]);
+                queue.add(map[x][i]);
                 if (map[x][i] != 1) {
                     map[x][i] = -1;
                 } else {

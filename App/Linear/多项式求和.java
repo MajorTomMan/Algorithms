@@ -1,6 +1,5 @@
 package linear;
 
-
 import basic.structure.PolyList;
 import basic.structure.node.PolyListNode;
 
@@ -17,18 +16,18 @@ public class 多项式求和 {
      * B:8x+22x^7-9x^8
      * sum:7+11x+22x^7+5x^17
      */
-    public static void main(String[] args){
+    public static void main(String[] args) {
         PolyList list1 = new PolyList();
         PolyList list2 = new PolyList();
-        list1.insert(7, 0);
-        list1.insert(3, 1);
-        list1.insert(9, 8);
-        list1.insert(5, 17);
-        list2.insert(8, 1);
-        list2.insert(22, 7);
-        list2.insert(-9, 8);
+        list1.add(7, 0);
+        list1.add(3, 1);
+        list1.add(9, 8);
+        list1.add(5, 17);
+        list2.add(8, 1);
+        list2.add(22, 7);
+        list2.add(-9, 8);
         PolyList sumList = add(list1, list2);
-        sumList.show();
+        sumList.display();
     }
 
     /*
@@ -42,7 +41,7 @@ public class 多项式求和 {
         /* 结果链表 */
         PolyList sumList = new PolyList();
         /* 指向两个链表的指针 */
-        PolyListNode node1 = L1.getHead(), node2 = L2.getHead();
+        PolyListNode node1 = L1.head, node2 = L2.head;
         for (; node1 != null && node2 != null;) {
             /*
              * 如果A链表的节点指数要小于B链表的节点指数
@@ -60,16 +59,16 @@ public class 多项式求和 {
              * 需要处理下一个节点的情况
              */
             if (node1.getExp() < node2.getExp()) {
-                sumList.insert(node1.getPower(), node1.getExp());
+                sumList.add(node1.getPower(), node1.getExp());
                 node1 = node1.getNext();
             } else if (node1.getExp() > node2.getExp()) {
-                sumList.insert(node2.getPower(), node2.getExp());
+                sumList.add(node2.getPower(), node2.getExp());
                 node2 = node2.getNext();
             }
             if (node1.getExp() == node2.getExp()) {
                 int sum = node1.getPower() + node2.getPower();
                 if (sum != 0) {
-                    sumList.insert(sum, node1.getExp());
+                    sumList.add(sum, node1.getExp());
                 }
                 node1 = node1.getNext();
                 node2 = node2.getNext();
@@ -84,12 +83,12 @@ public class 多项式求和 {
          */
         if (node1 == null) {
             while (node2 != null) {
-                sumList.insert(node2.getPower(), node2.getExp());
+                sumList.add(node2.getPower(), node2.getExp());
                 node2 = node2.getNext();
             }
         } else {
             while (node1 != null) {
-                sumList.insert(node1.getPower(), node1.getExp());
+                sumList.add(node1.getPower(), node1.getExp());
                 node1 = node1.getNext();
             }
         }

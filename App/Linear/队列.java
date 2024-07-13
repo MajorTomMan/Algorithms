@@ -3,14 +3,15 @@ package linear;
 
 
 
-import basic.structure.Queue;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Queue;
 
 public class 队列 {
     public static void main(String[] args) {
         int i=0;
-        Queue<Integer> queue=new Queue<Integer>();
+        Queue<Integer> queue=new LinkedList<>();
         while(i!=6){
-            queue.enqueue(i);
+            queue.add(i);
             i++;
         }
         i=0;

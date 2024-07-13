@@ -30,9 +30,9 @@
 package graph.dig;
 
 import java.util.NoSuchElementException;
+import java.util.Stack;
 
 import basic.structure.Bag;
-import basic.structure.Stack;
 import func.io.In;
 
 /**
@@ -103,6 +103,7 @@ public class Digraph{ //有向图定义
      * @throws IllegalArgumentException if the number of vertices or edges is negative
      * @throws IllegalArgumentException if the input stream is in the wrong format
      */
+    @SuppressWarnings("unchecked")
     public Digraph(In in) {
         if (in == null) throw new IllegalArgumentException("argument is null");
         try {

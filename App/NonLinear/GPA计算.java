@@ -2,7 +2,8 @@ package nonlinear;
 
 import java.util.Random;
 
-import basic.structure.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 import search.structure.linearst.ArrayST;
 import search.structure.linearst.OrderedSequentialSearchST;
 import search.structure.nonlinest.BinarySearchST;
@@ -15,9 +16,9 @@ public class GPA计算 {
         Double result_l=0.0;
         String[] rank={"A+","A","A-","B+","B","B-","C+","C","C-","D","F"};
         String[] grade={"4.33","4.00","3.67","3.33","3.00","2.67","2.33","2.00","1.67","1.00","0.00"};
-        Stack<Double> stack=new Stack<Double>();
-        Stack<Double> stack_a=new Stack<Double>();
-        Stack<Double> stack_l=new Stack<Double>();
+        Stack<Double> stack=new LinkedList<>();
+        Stack<Double> stack_a=new LinkedList<>();
+        Stack<Double> stack_l=new LinkedList<>();
         BinarySearchST<String,Double> BST=new BinarySearchST<>(11);
         ArrayST<String,Double> AST=new ArrayST<>(11);
         OrderedSequentialSearchST<String,Double> LST=new OrderedSequentialSearchST<>();

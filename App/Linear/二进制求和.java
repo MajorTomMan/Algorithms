@@ -2,7 +2,8 @@ package linear;
 
 
 
-import java.util.Stack;
+import basic.structure.LinkedList;
+import basic.structure.interfaces.Stack;
 
 public class 二进制求和 {
     public static void main(String[] args) {
@@ -77,7 +78,7 @@ public class 二进制求和 {
         if (data == 0) {
             return "0";
         }
-        Stack<Long> stack = new Stack<>();
+        Stack<Long> stack = new LinkedList<>();
         String s = "";
         while (data != 0) {
             stack.push(data % 2);

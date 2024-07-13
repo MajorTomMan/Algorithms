@@ -1,6 +1,6 @@
 package graph;
 
-import basic.structure.Stack;
+import java.util.Stack;
 import graph.dir.DirectedEdge;
 import graph.dir.EdgeWeightedDigraph;
 import sort.structure.pq.IndexMinPQ;

@@ -1,7 +1,9 @@
 
 package graph;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import graph.dir.EdgeWeightedGraph;
 import graph.e.Edge;
 import sort.structure.pq.MinPQ;
@@ -9,7 +11,7 @@ import sort.structure.pq.MinPQ;
 public class KruskalMST { //加权无向图寻找最小生成树算法中的Kruskal算法
    private Queue<Edge> mst;
    public KruskalMST(EdgeWeightedGraph G){
-       mst=new Queue<>();
+       mst=new LinkedList<>();
        MinPQ<Edge> pq=new MinPQ<>();
        for(Edge e:G.edges()){
            pq.insert(e);
@@ -22,7 +24,7 @@ public class KruskalMST { //加权无向图寻找最小生成树算法中的Krus
                continue;
            }
            uf.union(v,w);
-           mst.enqueue(e);
+           mst.add(e);
        }
    }
    public Iterable<Edge> edges(){

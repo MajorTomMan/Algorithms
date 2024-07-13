@@ -1,6 +1,8 @@
 package search.structure.linearst;
 
-import basic.structure.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import search.structure.example.OrderSymbolTable;
 
 public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> extends OrderSymbolTable<Key,Value>{
@@ -102,9 +104,9 @@ public class OrderedSequentialSearchST<Key,Value extends Comparable<Value>> exte
     @Override
     public Iterable<Key> keys(Key lo, Key hi) {
         // TODO Auto-generated method stub
-        Queue<Key> queue = new Queue<Key>();
+        Queue<Key> queue = new LinkedList<>();
         for (Key key : Linked.keys()) {
-            queue.enqueue(key);
+            queue.add(key);
         }
         return queue;
     }

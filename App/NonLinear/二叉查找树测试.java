@@ -16,8 +16,8 @@ public class 二叉查找树测试 {
             bst.put((char)temp,temp);
             i++;
         }
-        for (char data:bst.keys()) {
-            System.out.print(data+" "+bst.get(data));
+        for (char value:bst.keys()) {
+            System.out.print(value+" "+bst.get(value));
             System.out.println();
         }
         System.out.println(bst.floor('F'));
