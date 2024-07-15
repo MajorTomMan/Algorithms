@@ -12,6 +12,8 @@ public interface List<T> extends Comparator<T>, Iterable<T> {
 
     public void add(T t);
 
+    public void add(T[] t);
+
     public T get(int index);
 
     public void remove(int index);
@@ -21,6 +23,10 @@ public interface List<T> extends Comparator<T>, Iterable<T> {
     public void foreach(Consumer<T> action);
 
     public void sort();
+
+    public void reverse();
+
+    public boolean contains(T t);
 
     @Override
     public default int compare(T arg0, T arg1) {

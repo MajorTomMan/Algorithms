@@ -1,6 +1,5 @@
 package linear;
 
-import character.substringsearch.KMP;
 
 public class 重写strStr {
     public static void main(String[] args) {

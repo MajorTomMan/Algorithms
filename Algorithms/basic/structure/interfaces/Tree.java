@@ -1,6 +1,7 @@
 
 package basic.structure.interfaces;
 
+import java.util.function.BiConsumer;
 
 public interface Tree<Key extends Comparable<Key>, Value extends Comparable<Value>> {
     public boolean isEmpty();
@@ -13,7 +14,11 @@ public interface Tree<Key extends Comparable<Key>, Value extends Comparable<Valu
 
     public void remove(Key key);
 
-    public void replace(Key key,Value value);
+    public void replace(Key key, Value value);
 
-    public void foreach();
+    public void foreach(BiConsumer<Key, Value> action);
+
+    public boolean containsKey(Key key);
+
+    public boolean containsValue(Value value);
 }

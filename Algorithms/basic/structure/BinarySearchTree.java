@@ -1,12 +1,14 @@
 package basic.structure;
 
-import basic.structure.interfaces.Tree;
+import java.util.function.BiConsumer;
+
+import basic.structure.interfaces.BalancedTree;
 import basic.structure.node.TreeNode;
 
 public class BinarySearchTree<Key extends Comparable<Key>, Value extends Comparable<Value>>
-        implements Tree<Key, Value> {
+        implements BalancedTree<Key,Value> {
     private TreeNode<Key, Value> root;
-    private Integer size;
+    private Integer size = 0;
 
     @Override
     public boolean isEmpty() {
@@ -17,7 +19,14 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
     @Override
     public int size() {
         // TODO Auto-generated method stub
-        return size;
+        return root == null ? 0 : doSize(root);
+    }
+
+    private int doSize(TreeNode<Key, Value> node) {
+        if (node == null) {
+            return 0;
+        }
+        return 1 + doSize(node.left) + doSize(node.right);
     }
 
     /*
@@ -32,20 +41,42 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
         }
         root = doPut(key, value, root);
     }
-
+    
     /*
      * 二叉搜索树,左小右大
      */
     private TreeNode<Key, Value> doPut(Key key, Value value, TreeNode<Key, Value> node) {
         if (node == null) {
+            size++;
             return new TreeNode<Key, Value>(key, value, null, null);
         }
-        if (node.key.compareTo(key) < 0) {
+        if (node.key.compareTo(key) == 0) {
+            node.value = value;
+            return node;
+        } else if (node.key.compareTo(key) < 0) {
             node.left = doPut(key, value, node.left);
         } else if (node.key.compareTo(key) > 0) {
             node.right = doPut(key, value, node.right);
         }
-        return doPut(key, value, node);
+        node.subTreeCount = 1 + count(node.left) + count(node.right);
+        node.height = 1 + Math.max(height(node.left), height(node.right));
+        // 旋转操作
+        int balance = checkBalance(node);
+        if (balance < -1) {
+            node = rightRotation(node);
+        } else if (balance > 1) {
+            node = leftRotation(node);
+        }
+        return node;
+    }
+
+
+    private int checkBalance(TreeNode<Key, Value> node) {
+        return height(node.left) - height(node.right);
+    }
+
+    private int count(TreeNode<Key, Value> node) {
+        return node == null ? 0 : node.subTreeCount;
     }
 
     @Override
@@ -80,9 +111,7 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
         if (isEmpty()) {
             return;
         }
-        if (root.key.compareTo(key) == 0) {
-            root = null;
-        }
+        doRemove(key, root);
     }
 
     /*
@@ -106,12 +135,24 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
         } else if (node.key.compareTo(key) < 0) {
             node.left = doRemove(key, node.left);
         }
+        node.subTreeCount = 1 + count(node.left) + count(node.right);
+        node.height = 1 + Math.max(height(node.left), height(node.right));
+        // 旋转操作
+        int balance = checkBalance(node);
+        if (balance < -1) {
+            node = rightRotation(node);
+        } else if (balance > 1) {
+            node = leftRotation(node);
+        }
         return node;
     }
 
     private TreeNode<Key, Value> doRemove(TreeNode<Key, Value> node) {
         // TODO Auto-generated method stub
-        if (node == null || (node.left == null && node.right == null)) {
+        if (node == null) {
+            return null;
+        }
+        if (node.left == null) {
             return null;
         }
         if (node.left == null) {
@@ -146,7 +187,7 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
         doReplace(key, value, root);
     }
 
-    public void doReplace(Key key, Value value, TreeNode<Key, Value> node) {
+    private void doReplace(Key key, Value value, TreeNode<Key, Value> node) {
         if (node == null) {
             return;
         }
@@ -162,8 +203,56 @@ public class BinarySearchTree<Key extends Comparable<Key>, Value extends Compara
     }
 
     @Override
-    public void foreach() {
+    public void foreach(BiConsumer<Key, Value> action) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'foreach'");
+        doForeach(action, root);
+    }
+
+    private void doForeach(BiConsumer<Key, Value> action, TreeNode<Key, Value> node) {
+        if (node == null) {
+            return;
+        }
+        doForeach(action, node.left);
+        action.accept(node.key, node.value);
+        doForeach(action, node.right);
+    }
+
+    @Override
+    public boolean containsKey(Key key) {
+        // TODO Auto-generated method stub
+        return doContainsKey(key, root);
+    }
+
+    private boolean doContainsKey(Key key, TreeNode<Key, Value> node) {
+        if (node == null) {
+            return false;
+        }
+        if (node.key.compareTo(key) == 0) {
+            return true;
+        } else if (node.key.compareTo(key) < 0) {
+            return doContainsKey(key, node.left);
+        } else if (node.key.compareTo(key) > 0) {
+            return doContainsKey(key, node.right);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean containsValue(Value value) {
+        return doContainsValue(value, root);
+    }
+
+    private boolean doContainsValue(Value value, TreeNode<Key, Value> node) {
+        if (node == null) {
+            return false;
+        }
+        if (node.value.compareTo(value) == 0) {
+            return true;
+        } else if (node.value.compareTo(value) < 0) {
+            return doContainsValue(value, node.left);
+        } else if (node.value.compareTo(value) > 0) {
+            return doContainsValue(value, node.right);
+        }
+        return false;
     }
 }

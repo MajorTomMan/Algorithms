@@ -6,7 +6,52 @@ import basic.structure.node.ListNode;
 import basic.structure.node.TreeNode;
 
 public abstract class AlgorithmsUtils {
+    private static final String UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
+    private static final String NUMBERS = "0123456789";
+    private static final String CHARACTERS = UPPER_CASE + LOWER_CASE + NUMBERS;
     private static Random random = new Random();
+
+    public static String[] randomStringArray(int cap, int length) {
+        return randomStringArray(cap, length, false, false, false);
+    }
+
+    public static String[] randomStringArray(int cap, int length, boolean isOnlyUpper) {
+        return randomStringArray(cap, length, isOnlyUpper, false, false);
+    }
+
+    public static String[] randomStringArray(int cap, int length, boolean isOnlyUpper, boolean isOnlyLower) {
+        return randomStringArray(cap, length, isOnlyUpper, isOnlyLower, false);
+    }
+
+    // 生成一个包含指定数量随机字符串的数组，每个字符串的长度为 stringLength
+    public static String[] randomStringArray(int cap, int length, boolean isOnlyUpper, boolean isOnlyLower,
+            boolean isOnlyNumber) {
+        String[] array = new String[cap];
+        String characters = CHARACTERS;
+
+        if (isOnlyUpper) {
+            characters = UPPER_CASE;
+        } else if (isOnlyLower) {
+            characters = LOWER_CASE;
+        } else if (isOnlyNumber) {
+            characters = NUMBERS;
+        }
+
+        for (int i = 0; i < cap; i++) {
+            array[i] = randomString(length, characters);
+        }
+        return array;
+    }
+
+    // 生成一个指定长度的随机字符串，使用指定的字符集
+    public static String randomString(int length, String characters) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            s.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return s.toString();
+    }
 
     /**
      * @description: 生成随机数组
@@ -16,6 +61,17 @@ public abstract class AlgorithmsUtils {
         Integer[] arr = new Integer[cap];
         for (Integer i = 0; i < arr.length; i++) {
             arr[i] = random.nextInt(max);
+        }
+        return arr;
+    }
+
+    public static Integer[] sortedArray(Integer cap, Integer max) {
+        if (cap < max) {
+            throw new IllegalArgumentException("容量必须大于最大数值");
+        }
+        Integer[] arr = new Integer[cap];
+        for (int i = 0; i <= max; i++) {
+            arr[i] = i;
         }
         return arr;
     }
@@ -160,6 +216,50 @@ public abstract class AlgorithmsUtils {
             System.out.println();
         }
         System.out.println("--------------------------------------------");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <Node, T, Key, Value> void display(Node node) {
+        if (node instanceof ListNode) {
+            doDisplay((ListNode<T>) node);
+        } else if (node instanceof TreeNode) {
+            doDisplay(0, (TreeNode<Key, Value>) node);
+        }
+    }
+
+    private static <T, Key, Value> void doDisplay(int depth, TreeNode<Key, Value> node) {
+        if (node == null) {
+            return;
+        }
+
+        for (int i = 0; i < depth; i++) {
+            System.out.print("-");
+        }
+
+        System.out.println("|- " + node.key + ": " + node.value);
+
+        if (node.children != null) {
+            for (TreeNode<Key, Value> child : node.children) {
+                doDisplay(depth + 1, child);
+            }
+        }
+
+        // Display left and right children if it's a binary tree node
+        if (node.left != null) {
+            doDisplay(depth + 1, node.left);
+        }
+        if (node.right != null) {
+            doDisplay(depth + 1, node.right);
+        }
+
+    }
+
+    private static <T> void doDisplay(ListNode<T> node) {
+        if (node == null) {
+            return;
+        }
+        System.out.println(node);
+        doDisplay(node.next);
     }
 
     public static <Key extends Comparable<Key>, Value> TreeNode<Key, Value> buildTree(Key[] keys,

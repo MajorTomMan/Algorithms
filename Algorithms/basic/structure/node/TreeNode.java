@@ -12,7 +12,8 @@ import java.util.List;
 public class TreeNode<Key, Value> {
    public Key key;
    public Value value;
-   public int subtreenum;
+   public int height;
+   public int subTreeCount;
    public TreeNode<Key, Value> left;
    public TreeNode<Key, Value> right;
    public List<TreeNode<Key, Value>> children;

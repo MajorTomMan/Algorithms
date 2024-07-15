@@ -40,16 +40,17 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
             return;
         }
         // doAdd(t);
-        head = doAdd(t, head, head.next);
+        head = doAdd(t, null, head);
     }
 
+    @Override
     public void add(T[] args) {
         for (T t : args) {
-            doAdd(t);
+            head = doAdd(t, null, head);
         }
     }
 
-    protected void doAdd(T t) {
+    private void doAdd(T t) {
         ListNode<T> node = new ListNode<>(t, head, null);
         head = node;
     }
@@ -62,7 +63,7 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
             return node;
         }
         current.next = doAdd(t, current, current.next);
-        return head;
+        return current;
     }
 
     @Override
@@ -165,6 +166,15 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
     public void sort() {
         // TODO Auto-generated method stub
         doSort(head);
+        handleTail(head);
+    }
+
+    private void handleTail(ListNode<T> node) {
+        if (node.next == null) {
+            tail = node;
+            return;
+        }
+        handleTail(node.next);
     }
 
     private ListNode<T> doSort(ListNode<T> node) {
@@ -248,20 +258,14 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
         return doPoll(head);
     }
 
+    // 如果是头插法,删除尾节点,如果是正常插入,则删除头结点
     private T doPoll(ListNode<T> node) {
         if (node == null) {
             return null;
         }
         T data = node.data;
-        if (node == head) {
-            head = head.next;
-            if (head != null) {
-                head.pre = null;
-            } else {
-                tail = null;
-            }
-        }
-        size--;
+        node = node.next;
+        node.pre = null;
         return data;
     }
 
@@ -286,5 +290,53 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
     public void push(T data) {
         // TODO Auto-generated method stub
         doAdd(data);
+    }
+
+    @Override
+    public void push(T[] data) {
+        // TODO Auto-generated method stub
+        for (T t : data) {
+            doAdd(t);
+        }
+    }
+
+    @Override
+    public void reverse() {
+        // TODO Auto-generated method stub
+        doReverse(head);
+        handleTail(head);
+    }
+
+    private void doReverse(ListNode<T> node) {
+        ListNode<T> current = node;
+        ListNode<T> prev = null;
+        tail = head;
+
+        while (current != null) {
+            ListNode<T> next = current.next;
+            current.next = prev;
+            current.pre = next;
+            prev = current;
+            current = next;
+        }
+
+        head = prev;
+    }
+
+    @Override
+    public boolean contains(T t) {
+        // TODO Auto-generated method stub
+        return doContains(t, head);
+    }
+
+    private boolean doContains(T t, ListNode<T> node) {
+        // TODO Auto-generated method stub
+        if (node == null) {
+            return false;
+        }
+        if (compare(node.data, t) == 0) {
+            return true;
+        }
+        return doContains(t, node.next);
     }
 }

@@ -20,5 +20,16 @@ public class 链表 {
         });
         list.remove(1);
         list.replace(6, 1);
+        System.out.println("--------------------------------------");
+        list.foreach((t) -> {
+            System.out.println(t);
+        });
+        list.reverse();
+        System.out.println("--------------------------------------");
+        list.foreach((t) -> {
+            System.out.println(t);
+        });
+        System.out.println(list.contains(1111));
+
     }
 }
