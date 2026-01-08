@@ -1,2 +1,26 @@
-.vscode/
+# 编译后的输出目录
+target/
+*.class
+
+# 日志文件
+*.log
+
+# 蓝图文件 (IDE 相关的配置)
+# IntelliJ IDEA
 .idea/
+*.iml
+*.iws
+
+# Eclipse
+.settings/
+.project
+.classpath
+bin/
+
+# 系统冗余
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.bak
