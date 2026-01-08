@@ -1,8 +1,6 @@
 package com.majortom.algorithms.app.leetcode.nonlinear;
 
-
-
-import com.majortom.algorithms.core.basic.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 /**
@@ -10,16 +8,15 @@ import com.majortom.algorithms.utils.AlgorithmsUtils;
  */
 public class 路径总和 {
     public static void main(String[] args) {
-        TreeNode<Integer, Integer> root = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
-                AlgorithmsUtils.randomArray(20, 30));
+        TreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         System.out.println(hasPathSum(root, 1));
     }
 
-    public static boolean hasPathSum(TreeNode<Integer, Integer> root, int targetSum) {
+    public static boolean hasPathSum(TreeNode<Integer> root, int targetSum) {
         if (root == null) {
             return false;
         }
-        targetSum -= root.value;
+        targetSum -= root.data;
         if (root.left == null && root.right == null) {
             return targetSum == 0;
         }

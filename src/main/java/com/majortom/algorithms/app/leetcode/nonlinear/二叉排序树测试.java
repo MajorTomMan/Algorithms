@@ -1,29 +1,22 @@
 package com.majortom.algorithms.app.leetcode.nonlinear;
 
-import com.majortom.algorithms.core.basic.BinarySearchTree;
+import javax.swing.SwingUtilities;
+
+import com.majortom.algorithms.app.visualization.impl.frame.TreeFrame;
+import com.majortom.algorithms.core.tree.impl.AVLTree;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 二叉排序树测试 {
     public static void main(String[] args) {
-        BinarySearchTree<String, Integer> tree = new BinarySearchTree<>();
-        Integer[] randomArray = AlgorithmsUtils.randomArray(20, 30);
-        String[] randomStringArray = AlgorithmsUtils.randomStringArray(20, 1, true);
-        for (int i = 0; i < randomStringArray.length; i++) {
-            tree.put(randomStringArray[i], randomArray[i]);
+        AVLTree<Integer> avl = new AVLTree<>();
+        Integer[] randomArray = AlgorithmsUtils.randomArray(10, 10);
+        for (Integer val : randomArray) {
+            avl.put(val);
         }
-        System.out.println(tree.size());
-        tree.foreach((k, v) -> {
-            System.out.println(k + ":" + v + "");
+        // 2. 将内核塞进可视化骨架
+        SwingUtilities.invokeLater(() -> {
+            TreeFrame frame = new TreeFrame(avl);
+            frame.setVisible(true);
         });
-        System.out.println(tree.containsKey("L"));
-        if (tree.containsKey("L")) {
-            tree.remove("L");
-        }
-        System.out.println(tree.containsKey("L"));
-        System.out.println("------------------------------------------");
-        tree.foreach((k, v) -> {
-            System.out.println(k + ":" + v + "");
-        });
-        System.out.println(tree.size());
     }
 }

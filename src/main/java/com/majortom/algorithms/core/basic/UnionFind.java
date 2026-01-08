@@ -1,7 +1,5 @@
 package com.majortom.algorithms.core.basic;
 
-
-
 /* 用于处理集合合并和查询 */
 public class UnionFind {
     /*
@@ -60,4 +58,16 @@ public class UnionFind {
             }
         }
     }
+
+    /**
+     * 判断两个节点是否连通（是否属于同一个集合）
+     * 
+     * @param p 节点 p
+     * @param q 节点 q
+     * @return 连通返回 true，否则返回 false
+     */
+    public boolean connected(int p, int q) {
+        return find(p) == find(q);
+    }
+
 }

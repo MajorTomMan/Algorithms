@@ -2,23 +2,21 @@ package com.majortom.algorithms.app.leetcode.nonlinear;
 
 import java.util.Random;
 
-import com.majortom.algorithms.core.basic.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 相同的树 {
     public static void main(String[] args) {
-        TreeNode<Integer, Integer> p = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
-                AlgorithmsUtils.randomArray(20, 30));
-        TreeNode<Integer, Integer> q = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
-                AlgorithmsUtils.randomArray(20, 30));
+        TreeNode<Integer> p = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        TreeNode<Integer> q = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
     }
 
-    public static boolean isSameTree(TreeNode<Integer, Integer> p, TreeNode<Integer, Integer> q) {
+    public static boolean isSameTree(TreeNode<Integer> p, TreeNode<Integer> q) {
         if (p == null && q == null) {
             return true;
         } else if (p == null || q == null) {
             return false;
-        } else if (p.value != q.value) {
+        } else if (p.data != q.data) {
             return false;
         } else {
             return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);

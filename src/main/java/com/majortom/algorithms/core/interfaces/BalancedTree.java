@@ -1,54 +1,70 @@
 package com.majortom.algorithms.core.interfaces;
 
-import com.majortom.algorithms.core.basic.node.TreeNode;
+import com.majortom.algorithms.core.tree.BaseTree;
+import com.majortom.algorithms.core.tree.node.TreeNode;
+import java.util.List;
 
-@SuppressWarnings("hiding")
-public interface BalancedTree<Key extends Comparable<Key>, Value extends Comparable<Value>> extends Tree<Key, Value> {
-    // 一般用不到
-    // 左-右旋-解决右子树过高
-    default TreeNode<Key, Value> leftRightRotation(TreeNode<Key, Value> node) {
-        node.right = rightRotation(node.right); // 对右子树进行右旋
-        return leftRotation(node); // 对当前节点进行左旋
+public abstract class BalancedTree<T extends Comparable<T>> extends BaseTree<T> {
+
+    protected int height(TreeNode<T> node) {
+        return node == null ? 0 : node.height;
     }
 
-    // 一般用不到
-    // 右-左旋-解决左子树过高
-    default TreeNode<Key, Value> rightLeftRotation(TreeNode<Key, Value> node) {
-        node.left = leftRotation(node.left); // 对左子树进行左旋
-        return rightRotation(node); // 对当前节点进行右旋
-    }
-
-    // 左旋-解决右子树过高
-    default TreeNode<Key, Value> leftRotation(TreeNode<Key, Value> node) {
-        if (node == null || node.right == null) {
-            return node;
+    // 泛用更新：不管是二叉旋转还是多叉变动，都用此方法刷新元数据
+    protected void updateMetrics(TreeNode<T> node) {
+        if (node == null)
+            return;
+        int h = 0;
+        int count = 1;
+        List<TreeNode<T>> allChildren = node.getAllChildren();
+        for (TreeNode<T> child : allChildren) {
+            h = Math.max(h, height(child));
+            count += (child == null ? 0 : child.subTreeCount);
         }
-        TreeNode<Key, Value> right = node.right;
-        node.right = right.left;
-        right.left = node;
-        // 更新节点高度
-        node.height = 1 + Math.max(height(node.left), height(node.right));
-        right.height = 1 + Math.max(height(right.left), height(right.right));
-        // 返回新的根节点 right
-        return right;
+        node.height = 1 + h;
+        node.subTreeCount = count;
     }
 
-    // 右旋-解决左子树过高
-    default TreeNode<Key, Value> rightRotation(TreeNode<Key, Value> node) {
-        if (node == null || node.left == null) {
+    protected TreeNode<T> leftRotation(TreeNode<T> node) {
+        if (node == null || node.right == null)
             return node;
-        }
-        TreeNode<Key, Value> left = node.left;
-        node.left = left.right;
-        left.right = node;
-        // 更新节点高度
-        node.height = 1 + Math.max(height(node.left), height(node.right));
-        left.height = 1 + Math.max(height(left.left), height(left.right)); // 更新左旋后的节点高度
-        return left;
+        actionCount++;
+        TreeNode<T> rightChild = node.right;
+        node.right = rightChild.left;
+        rightChild.left = node;
+
+        updateMetrics(node);
+        updateMetrics(rightChild);
+        onStep();
+        return rightChild;
     }
 
-    default int height(TreeNode<Key, Value> node) {
-        return node == null ? -1 : node.height;
+    protected TreeNode<T> rightRotation(TreeNode<T> node) {
+        if (node == null || node.left == null)
+            return node;
+        actionCount++;
+        TreeNode<T> leftChild = node.left;
+        node.left = leftChild.right;
+        leftChild.right = node;
+
+        updateMetrics(node);
+        updateMetrics(leftChild);
+        onStep();
+        return leftChild;
     }
 
+    protected TreeNode<T> leftRightRotation(TreeNode<T> node) {
+        node.left = leftRotation(node.left);
+        return rightRotation(node);
+    }
+
+    protected TreeNode<T> rightLeftRotation(TreeNode<T> node) {
+        node.right = rightRotation(node.right);
+        return leftRotation(node);
+    }
+
+    // 留给子类实现的业务方法
+    public abstract void put(T val);
+
+    public abstract void remove(T val);
 }

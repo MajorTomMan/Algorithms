@@ -45,13 +45,20 @@ public class DFSMaze extends BaseMaze {
         Collections.shuffle(orders);
 
         for (int i : orders) {
-            // 跳两格探测，中间的一格在打通时处理
+            // 1. 无论是否打通，只要尝试向这个方向移动，就记一次“探测”
+            incrementCheck();
+
             int nextR = r + DIRECTIONS[i][0] * 2;
             int nextC = c + DIRECTIONS[i][1] * 2;
 
             if (!isOutOfIndex(nextR, nextC) && !visited[nextR][nextC]) {
+                // 2. 只有满足条件、确定打通墙壁时，记一次“打通”
+                // 注意：这里一次动作实际上打通了“中间墙”和“目标格”，我们可以视作一次逻辑操作
+                incrementBreak();
+
                 // 打通中间的那面墙
                 setCell(r + DIRECTIONS[i][0], c + DIRECTIONS[i][1], PATH);
+                // 递归进入下一格
                 dfs(nextR, nextC);
             }
         }

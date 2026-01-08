@@ -50,15 +50,23 @@ public class BFSMaze extends BaseMaze {
             Collections.shuffle(orders);
 
             for (int i : orders) {
+                // 1. 尝试探测四个方向
+                incrementCheck();
+
                 int nextR = current[0] + DIRECTIONS[i][0] * 2;
                 int nextC = current[1] + DIRECTIONS[i][1] * 2;
 
                 if (!isOutOfIndex(nextR, nextC) && !visited[nextR][nextC]) {
                     visited[nextR][nextC] = true;
+
+                    // 2. 确定可以打通，计入“打通”次数
+                    incrementBreak();
+
                     // 打通连接处
                     setCell(current[0] + DIRECTIONS[i][0], current[1] + DIRECTIONS[i][1], PATH);
                     // 设置新路径点
                     setCell(nextR, nextC, PATH);
+
                     queue.offer(new int[] { nextR, nextC });
                 }
             }

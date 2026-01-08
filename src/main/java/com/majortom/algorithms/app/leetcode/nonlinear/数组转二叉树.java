@@ -1,6 +1,6 @@
 package com.majortom.algorithms.app.leetcode.nonlinear;
 
-import com.majortom.algorithms.core.basic.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 数组转二叉树 {
@@ -12,9 +12,9 @@ public class 数组转二叉树 {
 
     }
 
-    public static TreeNode<Integer, Integer> transform(TreeNode<Integer, Integer> node, int data) {
+    public static TreeNode<Integer> transform(TreeNode<Integer> node, int data) {
         if (node == null) {
-            return new TreeNode<Integer, Integer>(data, null, null);
+            return new TreeNode<Integer>(data);
         }
         if (node.left == null) {
             node.left = transform(node.left, data);

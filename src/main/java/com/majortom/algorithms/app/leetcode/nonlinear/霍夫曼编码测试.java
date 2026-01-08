@@ -27,7 +27,7 @@ public class 霍夫曼编码测试 {
                 put("Z", 5);
             }
         };
-        tree.buildTree(map);
+        tree.buildBST(map);
         tree.printTree();
     }
 }

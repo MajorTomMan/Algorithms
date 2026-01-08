@@ -7,22 +7,21 @@
  */
 package com.majortom.algorithms.app.leetcode.nonlinear;
 
-import com.majortom.algorithms.core.basic.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 二叉树的最短路径 {
     public static void main(String[] args) {
-        TreeNode<Integer, Integer> root = AlgorithmsUtils.buildTree(AlgorithmsUtils.randomArray(20, 30),
-                AlgorithmsUtils.randomArray(20, 30));
+        TreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         minDepth(root);
 
     }
 
-    public static int minDepth(TreeNode<Integer, Integer> root) {
+    public static int minDepth(TreeNode<Integer> root) {
         return ShortestPath(root);
     }
 
-    public static int ShortestPath(TreeNode<Integer, Integer> node) {
+    public static int ShortestPath(TreeNode<Integer> node) {
         if (node == null) {
             return 0;
         }

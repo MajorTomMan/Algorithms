@@ -22,6 +22,33 @@ public abstract class BaseMaze {
     protected int startRow, startCol;
     protected int endRow, endCol;
 
+    protected int checkCount = 0;
+    protected int breakCount = 0;
+
+    public void resetStatistics() {
+        this.checkCount = 0;
+        this.breakCount = 0;
+    }
+
+    // 在算法里调用这个来统计“探测”
+    protected void incrementCheck() {
+        checkCount++;
+    }
+
+    // 在算法里调用这个来统计“拆墙”
+    protected void incrementBreak() {
+        breakCount++;
+    }
+
+    // Getter 让 Frame 能拿到数据
+    public int getCheckCount() {
+        return checkCount;
+    }
+
+    public int getBreakCount() {
+        return breakCount;
+    }
+
     /**
      * 步进回调接口，用于通知 UI 更新
      */
@@ -53,7 +80,7 @@ public abstract class BaseMaze {
     /**
      * 初始化地图，默认填充为墙
      */
-    protected void initial() {
+    public void initial() {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 map[r][c] = WALL;

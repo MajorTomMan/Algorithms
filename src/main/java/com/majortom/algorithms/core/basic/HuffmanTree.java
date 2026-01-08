@@ -40,7 +40,7 @@ public class HuffmanTree<T extends Comparable<T>> {
 
     }
 
-    public void buildTree(Map<T, Integer> map) {
+    public void buildBST(Map<T, Integer> map) {
         List<Node<T>> list = new ArrayList<>();
         for (T data : map.keySet()) {
             list.add(new Node<T>(data, map.get(data), 0, null, null));
