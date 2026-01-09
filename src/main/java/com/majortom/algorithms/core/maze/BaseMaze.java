@@ -27,7 +27,12 @@ public abstract class BaseMaze<T> extends BaseAlgorithm<T> {
 
     protected abstract void updateInternalData(int r, int c, int type);
 
+    public abstract void pickRandomPoints();
+
+    public abstract boolean isOverBorder(int r, int c);
+
     public T getData() {
         return data;
     }
+
 }

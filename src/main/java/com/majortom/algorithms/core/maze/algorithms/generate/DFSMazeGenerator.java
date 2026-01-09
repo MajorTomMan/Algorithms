@@ -8,19 +8,32 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+
 /**
  * 深度优先搜索 (DFS) 迷宫生成策略
  * 特点：路径深邃、长路径多，具有极强的探险感。
  */
 public class DFSMazeGenerator implements MazeGeneratorStrategy<int[][]> {
 
+    // 步长与偏移常量
+    private static final int STEP = 2;
+    private static final int MID_OFFSET = 1;
+
+    // 方向向量定义：{rowOffset, colOffset}
+    private static final int[][] DIRECTIONS = {
+            { -STEP, 0 }, // 上
+            { STEP, 0 }, // 下
+            { 0, -STEP }, // 左
+            { 0, STEP } // 右
+    };
+
     @Override
     public void generate(BaseMaze<int[][]> baseMaze) {
-        // 1. 强转为 ArrayMaze 以使用 isOutOfIndex 等具体方法
+        // 1. 强转为 ArrayMaze 以使用具体方法
         ArrayMaze maze = (ArrayMaze) baseMaze;
 
         // 2. 初始起点通常设为 (1, 1)
-        // 注意：为了保证递归顺利进行，这里调用私有递归方法，并将容器传入
         dfs(maze, 1, 1);
     }
 
@@ -28,40 +41,28 @@ public class DFSMazeGenerator implements MazeGeneratorStrategy<int[][]> {
      * DFS 核心递归逻辑
      */
     private void dfs(ArrayMaze maze, int r, int c) {
-        // 1. 将当前单元格设为路径 (0)，触发一次操作统计
-        maze.setCellState(r, c, 0, true);
+        // 1. 将当前单元格设为路 (ROAD)
+        maze.setCellState(r, c, ROAD, true);
 
-        // 2. 准备并随机化方向
-        Integer[] directions = { 0, 1, 2, 3 };
-        List<Integer> dirList = Arrays.asList(directions);
+        // 2. 准备并随机化方向索引
+        Integer[] dirIndexes = { 0, 1, 2, 3 };
+        List<Integer> dirList = Arrays.asList(dirIndexes);
         Collections.shuffle(dirList);
 
-        for (int dir : dirList) {
-            // 计算跨过墙的目标点（步长为 2）
-            int nextR = r, nextC = c;
-            int midR = r, midC = c;
+        for (int index : dirList) {
+            int[] d = DIRECTIONS[index];
+            int nextR = r + d[0];
+            int nextC = c + d[1];
 
-            if (dir == 0) {
-                nextR = r - 2;
-                midR = r - 1;
-            } // 上
-            else if (dir == 1) {
-                nextR = r + 2;
-                midR = r + 1;
-            } // 下
-            else if (dir == 2) {
-                nextC = c - 2;
-                midC = c - 1;
-            } // 左
-            else if (dir == 3) {
-                nextC = c + 2;
-                midC = c + 1;
-            } // 右
+            // 3. 边界检查及未访问状态确认（WALL 代表未访问过）
+            if (!maze.isOverBorder(nextR, nextC) && maze.getCell(nextR, nextC) == WALL) {
 
-            // 3. 边界检查及未访问状态确认（1 为墙，代表未访问过）
-            if (!maze.isOutOfIndex(nextR, nextC) && maze.getCell(nextR, nextC) == 1) {
-                // 4. 打通两个路点之间的“墙”
-                maze.setCellState(midR, midC, 0, true);
+                // 4. 计算并打通两个路点之间的“墙”
+                // 根据偏移方向确定中间墙的坐标
+                int midR = r + (d[0] == 0 ? 0 : d[0] / STEP * MID_OFFSET);
+                int midC = c + (d[1] == 0 ? 0 : d[1] / STEP * MID_OFFSET);
+
+                maze.setCellState(midR, midC, ROAD, true);
 
                 // 5. 递归探索
                 dfs(maze, nextR, nextC);

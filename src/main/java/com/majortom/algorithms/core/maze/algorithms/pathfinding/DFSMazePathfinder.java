@@ -4,66 +4,102 @@ import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.core.maze.strategies.PathfindingStrategy;
 
+import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+
 /**
- * 深度优先搜索 (DFS) 寻路策略
- * 特点：路径深邃，具有极强的方向探索感，但不保证最短路径。
+ * 深度优先搜索 (DFS) 寻路算法
+ * 职责：从 Maze 容器中寻找状态为 START 和 END 的格子并建立路径。
  */
 public class DFSMazePathfinder implements PathfindingStrategy<int[][]> {
 
-    // 定义四个方向：右、下、左、上
+    // 扫描方向：右、下、左、上
     private final int[][] dirs = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+
+    // 成功标记：一旦找到终点则设为 true，终止所有递归
     private boolean found = false;
 
     @Override
     public void findPath(BaseMaze<int[][]> baseMaze) {
+        // 强制转型为 ArrayMaze 以获取行列信息
         ArrayMaze maze = (ArrayMaze) baseMaze;
-        found = false;
+        this.found = false;
 
-        // 记录访问状态，防止走回头路死循环
-        boolean[][] visited = new boolean[maze.getRows()][maze.getCols()];
+        // 1. 初始化坐标变量
+        int startR = -1, startC = -1;
+        int targetR = -1, targetC = -1;
 
-        // 从起点 (1, 1) 开始递归寻路，目标设为右下角的 (rows-2, cols-2)
-        dfs(maze, 1, 1, maze.getRows() - 2, maze.getCols() - 2, visited);
+        // 2. 遍历整个迷宫矩阵，寻找标记好的起点和终点
+        for (int i = 0; i < maze.getRows(); i++) {
+            for (int j = 0; j < maze.getCols(); j++) {
+                int cellType = maze.getCell(i, j);
+                if (cellType == START) {
+                    startR = i;
+                    startC = j;
+                } else if (cellType == END) {
+                    targetR = i;
+                    targetC = j;
+                }
+            }
+        }
+
+        // 3. 安全检查：如果起终点都存在，则开启递归寻路
+        if (startR != -1 && targetR != -1) {
+            // 访问标记数组，防止在环路中死循环
+            boolean[][] visited = new boolean[maze.getRows()][maze.getCols()];
+            dfs(maze, startR, startC, targetR, targetC, visited);
+        }
     }
 
-    private void dfs(ArrayMaze maze, int r, int c, int targetR, int targetC, boolean[][] visited) {
-        // 如果已经找到终点或当前线程被中断（点击了重置），则停止递归
-        if (found || Thread.currentThread().isInterrupted())
+    /**
+     * DFS 核心递归函数
+     */
+    private void dfs(ArrayMaze maze, int r, int c, int tr, int tc, boolean[][] visited) {
+        // A. 终止条件：已找到终点，或外部线程中断
+        if (found || Thread.currentThread().isInterrupted()) {
             return;
+        }
 
-        // 1. 标记当前点已访问，并更新 UI 状态
+        // B. 标记当前格子已访问
         visited[r][c] = true;
-        // 状态 2 可以定义为“正在探索的路径”，在 MazePanel 里可以涂成蓝色或紫色
-        maze.setCellState(r, c, 2, true);
 
-        // 2. 检查是否到达终点
-        if (r == targetR && c == targetC) {
+        // C. 判定是否到达目标坐标
+        if (r == tr && c == tc) {
             found = true;
             return;
         }
 
-        // 3. 尝试向四个方向探索
+        // D. 渲染路径：只有当格子是普通路 (ROAD) 时，才改为探索色 (PATH)
+        // 这样可以保护起点 (START) 不被覆盖颜色
+        if (maze.getCell(r, c) == ROAD) {
+            maze.setCellState(r, c, PATH, true);
+        }
+
+        // E. 递归尝试四个方向
         for (int[] d : dirs) {
             int nextR = r + d[0];
             int nextC = c + d[1];
 
-            // 检查：界内 + 是路(0) + 未访问
-            if (!maze.isOutOfIndex(nextR, nextC) &&
-                    maze.getCell(nextR, nextC) == 0 &&
-                    !visited[nextR][nextC]) {
-
-                dfs(maze, nextR, nextC, targetR, targetC, visited);
-
-                if (found)
-                    return; // 找到后直接回退，不执行后面的重置
+            if (!maze.isOverBorder(nextR, nextC)) {
+                int type = maze.getCell(nextR, nextC);
+                if (!visited[nextR][nextC] && (type == ROAD || type == END)) {
+                    dfs(maze, nextR, nextC, tr, tc, visited);
+                    if (found) {
+                        // 只要不是起点，就把当前格点亮为“最终路径”
+                        if (maze.getCell(r, c) != START) {
+                            maze.setCellState(r, c, BACKTRACK, true);
+                        }
+                        return;
+                    }
+                }
             }
         }
 
-        // 4. 【回溯逻辑】
-        // 如果四个方向都走不通，说明此路是死胡同，将状态改回通路 (0) 或标记为“已探索的死路” (4)
-        if (!found) {
-            // 在 UI 上撤销这一点的路径显示，表现出“退回去”的效果
-            maze.setCellState(r, c, 4, true);
+        // F. 回溯处理：如果运行到这一步还没找到终点，说明当前路径是死胡同
+        // 条件：没找到 && 且不是起点 (START) && 且不是终点 (END)
+        int currentType = maze.getCell(r, c);
+        if (!found && currentType != START && currentType != END) {
+            // 将该格改为死路色 (DEADEND)，在 UI 上表现为“回退”效果
+            maze.setCellState(r, c, DEADEND, true);
         }
     }
 }

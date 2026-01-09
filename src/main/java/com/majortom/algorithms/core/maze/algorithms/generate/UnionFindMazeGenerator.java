@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+
 /**
  * 基于并查集的迷宫生成算法（Kruskal's Algorithm 变体）
- * 
+ * 特点：生成的迷宫分支非常均匀，没有明显的“生长中心”。
  */
 public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
 
@@ -19,8 +21,7 @@ public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
 
     /**
      * 实现策略接口的 generate 方法
-     * 
-     * @param baseMaze 传入的迷宫容器
+     * * @param baseMaze 传入的迷宫容器
      */
     @Override
     public void generate(BaseMaze<int[][]> baseMaze) {
@@ -40,8 +41,8 @@ public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
             for (int c = 1; c < cols - 1; c++) {
                 // 情况 A：奇数行/奇数列 —— 它们是初始的“孤岛”路点
                 if (r % 2 != 0 && c % 2 != 0) {
-                    // 设为路，不计入操作步数统计
-                    maze.setCellState(r, c, 0, false);
+                    // 设为路 (ROAD)，初始化时不计入操作步数统计
+                    maze.setCellState(r, c, ROAD, false);
                 }
                 // 情况 B：潜在的墙（坐标为一奇一偶）
                 else if ((r % 2 == 0 && c % 2 != 0) || (r % 2 != 0 && c % 2 == 0)) {
@@ -58,19 +59,21 @@ public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
             int wr = w[0], wc = w[1];
             int p1, p2;
 
-            if (wr % 2 == 0) { // 偶数行墙：连接上方 (wr-1, wc) 和 下方 (wr+1, wc)
+            if (wr % 2 == 0) {
+                // 偶数行墙：连接上方 (wr-1, wc) 和 下方 (wr+1, wc)
                 p1 = (wr - 1) * cols + wc;
                 p2 = (wr + 1) * cols + wc;
-            } else { // 奇数行墙（必为偶数列）：连接左方 (wr, wc-1) 和 右方 (wr, wc+1)
+            } else {
+                // 奇数行墙（必为偶数列）：连接左方 (wr, wc-1) 和 右方 (wr, wc+1)
                 p1 = wr * cols + (wc - 1);
                 p2 = wr * cols + (wc + 1);
             }
 
-            // 6. 使用你写的 UnionFind 进行判断与合并
+            // 6. 使用并查集判断 p1 和 p2 是否已经连通
             if (!uf.connected(p1, p2)) {
                 uf.union(p1, p2);
-                // 拆墙：设为通路，并标记为一次“动作”以触发统计和 UI 刷新
-                maze.setCellState(wr, wc, 0, true);
+                // 拆墙：设为通路 (ROAD)，并标记为一次“动作”以触发 UI 刷新
+                maze.setCellState(wr, wc, ROAD, true);
             }
         }
     }
