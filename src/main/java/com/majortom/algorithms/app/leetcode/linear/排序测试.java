@@ -15,6 +15,6 @@ public class 排序测试 {
 
         int[] dataForShell = dataForInsertion.clone();
         SortFrame.launch(new InsertionSort(), dataForInsertion);
-        SortFrame.launch(new ShellSort(), dataForShell);
+        //SortFrame.launch(new ShellSort(), dataForShell);
     }
 }

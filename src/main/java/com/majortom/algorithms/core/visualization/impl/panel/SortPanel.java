@@ -16,66 +16,68 @@ public class SortPanel extends BasePanel<int[]> {
 
     public SortPanel(int[] data) {
         super(data);
-        // 设置首选尺寸，确保在 JFrame.pack() 时能获得合理的初始显示区域
         this.setPreferredSize(new Dimension(800, 500));
     }
 
-    /**
-     * 执行具体的渲染逻辑：将数据状态映射为图形
-     * 映射公式：$View = f(State)$
-     */
     @Override
     protected void render(Graphics2D g) {
-        // 防御性编程：确保数据有效
         if (data == null || data.length == 0)
             return;
 
         int maxVal = getMaxValue(data);
-        // 计算有效绘图区域（减去内边距）
-        int totalHeight = getHeight() - 2 * padding;
+        int viewW = getWidth() - 2 * padding;
+        int viewH = getHeight() - 2 * padding;
 
-        for (int i = 0; i < data.length; i++) {
-            // 1. 几何位置计算
-            // x: 根据索引 i 和单元宽度 cellSize 计算水平偏移
-            int x = padding + i * cellSize;
-            // h: 根据数值占最大值的比例计算高度
-            int h = (int) ((double) data[i] / maxVal * totalHeight);
-            // y: 坐标系原点在左上角，需用总高度减去柱体高度实现“底部对齐”
+        // --- 核心优化：降采样逻辑 ---
+        // 如果数据量远大于像素宽度，计算步长
+        // 例如 10万数据在 1000 像素宽的屏幕，每 100 个数据取 1 个画出来
+        double step = Math.max(1.0, (double) data.length / viewW);
+
+        // 动态计算单根柱子的宽度，至少 1 像素
+        int barWidth = Math.max(1, (int) Math.ceil((double) viewW / (data.length / step)));
+
+        for (double i = 0; i < data.length; i += step) {
+            int idx = (int) i;
+
+            // 映射坐标
+            int x = padding + (int) ((i / data.length) * viewW);
+            int h = (int) ((double) data[idx] / maxVal * viewH);
             int y = getHeight() - padding - h;
 
-            // 2. 状态颜色映射逻辑
-            // 检查当前索引是否为算法同步过来的 activeA 或 activeB（视觉焦点）
-            if ((activeA != null && activeA.equals(i)) || (activeB != null && activeB.equals(i))) {
-                g.setColor(new Color(224, 108, 117)); // 激活状态：原子红 (Atom One Dark Style)
+            // 颜色高亮逻辑：只高亮当前采样点附近的活跃元素
+            if (isActive(idx)) {
+                g.setColor(new Color(224, 108, 117)); // 原子红
             } else {
-                g.setColor(new Color(97, 175, 239)); // 默认状态：科技蓝
+                g.setColor(new Color(97, 175, 239)); // 科技蓝
             }
 
-            // 3. 绘制实体柱形
-            // cellSize - 1 用于在柱体间留出 1 像素的视觉间隙
-            g.fillRect(x, y, Math.max(1, cellSize - 1), h);
+            g.fillRect(x, y, barWidth, h);
         }
     }
 
-    /**
-     * 动态比例尺计算
-     * 在每次重绘前执行，确保在缩放窗口时柱子能自动填满横向空间。
-     */
-    @Override
-    protected void calculateScale() {
-        if (data == null || data.length == 0)
-            return;
-
-        // 计算每个元素可分配的平均宽度，最小保留 1 像素
-        this.cellSize = (int) Math.max(1, (double) (getWidth() - 2 * padding) / data.length);
+    private boolean isActive(int idx) {
+        // 由于是采样绘制，如果活跃索引在采样点附近，我们也将其高亮，否则看不见红点
+        if (activeA == null && activeB == null)
+            return false;
+        int threshold = Math.max(1, data.length / getWidth());
+        if (activeA instanceof Integer a && Math.abs(a - idx) < threshold)
+            return true;
+        if (activeB instanceof Integer b && Math.abs(b - idx) < threshold)
+            return true;
+        return false;
     }
 
-    /**
-     * 辅助方法：获取数组最大值
-     * 用于纵向比例归一化，确保最高的柱子始终适配画布高度。
-     */
+    @Override
+    protected void calculateScale() {
+        // 在大数据量模式下，cellSize 的含义变为“逻辑比例”，不再直接用于循环计数
+        if (data != null && data.length > 0) {
+            this.cellSize = Math.max(1, (getWidth() - 2 * padding) / data.length);
+        }
+    }
+
     private int getMaxValue(int[] arr) {
         int max = 1;
+        // 10万级数据量的 max 查找很快，可以保持
         for (int val : arr)
             if (val > max)
                 max = val;

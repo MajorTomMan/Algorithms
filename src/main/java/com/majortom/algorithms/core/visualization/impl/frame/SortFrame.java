@@ -99,12 +99,17 @@ public class SortFrame extends BaseFrame<int[]> {
      * 私有辅助方法：更新右侧实时文本序列
      */
     private void updateSideAreaText() {
+        // 核心优化：大数据量下强行停止文本拼接，否则 StringBuilder 会撑爆内存
+        if (data.length > 500) {
+            dataListArea.setText(String.format("状态: 正在排序...\n总元素: %d\n(数据量过大，已禁用实时文本预览)", data.length));
+            return;
+        }
+
         StringBuilder sb = new StringBuilder("当前序列:\n");
         for (int i = 0; i < data.length; i++) {
             sb.append(data[i]);
-            if (i < data.length - 1) {
+            if (i < data.length - 1)
                 sb.append(", ");
-            }
         }
         dataListArea.setText(sb.toString());
     }

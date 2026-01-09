@@ -1,102 +1,33 @@
 package com.majortom.algorithms.core.maze;
 
-import java.util.Random;
-
 import com.majortom.algorithms.core.base.BaseAlgorithm;
 
-/**
- * 适配后的迷宫算法基类
- * 继承自 BaseAlgorithm，数据快照为 int[][]
- */
-public abstract class BaseMaze extends BaseAlgorithm<int[][]> {
-    // 单元格类型定义保持不变
-    public static final int PATH = 0;
-    public static final int WALL = 1;
-    public static final int START = 2;
-    public static final int END = 3;
+public abstract class BaseMaze<T> extends BaseAlgorithm<T> {
+    protected T data;
 
-    protected final int rows;
-    protected final int cols;
-    protected final int[][] map;
-    protected final Random random = new Random();
-
-    // 记录起终点坐标
-    protected int startRow, startCol;
-    protected int endRow, endCol;
-
-    public BaseMaze(int rows, int cols) {
-        this.rows = rows;
-        this.cols = cols;
-        this.map = new int[rows][cols];
-        initial();
-    }
+    public abstract void initial();
 
     /**
-     * 初始化地图，默认填充为墙
+     * 提供给外部算法的接口：修改状态并自动同步
      */
-    public void initial() {
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                map[r][c] = WALL;
-            }
-        }
+    public void setCellState(int r, int c, int type, boolean isAction) {
+        // 1. 具体的数组修改逻辑（由子类 ArrayMaze 实现）
+        updateInternalData(r, c, type);
+
+        // 2. 统计数据管理
+        if (isAction)
+            actionCount++;
+        else
+            compareCount++;
+
+        // 3. 呼叫 BaseFrame 进行 UI 刷新
+        // 传入 r, c 作为当前操作的焦点坐标
+        this.sync(data, r, c);
     }
 
-    /**
-     * 核心适配：更新单元格状态并触发同步
-     * 对应原来的 setCell，但现在改用 sync 机制
-     */
-    protected void setCell(int r, int c, int type) {
-        if (!isOutOfIndex(r, c)) {
-            map[r][c] = type;
+    protected abstract void updateInternalData(int r, int c, int type);
 
-            // 逻辑映射：
-            // 拆墙/设路径 -> actionCount (操作)
-            // 设起点/终点 -> compareCount (探测/标记)
-            if (type == PATH)
-                actionCount++;
-            else
-                compareCount++;
-
-            // 同步到 UI。焦点 a, b 传入当前的行和列坐标
-            sync(map, r, c);
-        }
-    }
-
-    // --- 适配统计方法，对齐顶级基类命名 ---
-
-    protected void incrementCheck() {
-        compareCount++;
-        // sync(map, null, null); // 如果需要实时更新统计数字而不改图，可以单独同步
-    }
-
-    protected void incrementBreak() {
-        actionCount++;
-    }
-
-    // --- 业务接口保持抽象 ---
-    public abstract void generate();
-
-    public abstract boolean isConnected();
-
-    // --- 工具方法 ---
-    protected int getCell(int r, int c) {
-        return isOutOfIndex(r, c) ? WALL : map[r][c];
-    }
-
-    protected boolean isOutOfIndex(int r, int c) {
-        return r < 0 || r >= rows || c < 0 || c >= cols;
-    }
-
-    public int[][] getMap() {
-        return map;
-    }
-
-    public int getRows() {
-        return rows;
-    }
-
-    public int getCols() {
-        return cols;
+    public T getData() {
+        return data;
     }
 }

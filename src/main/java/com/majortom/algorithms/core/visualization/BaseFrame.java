@@ -26,6 +26,7 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
     // --- 运行状态变量 ---
     protected long startTime = 0;
     protected Runnable pendingTask;
+    private long lastRefreshTime = 0;
 
     /** 核心线程句柄：用于控制算法的启动与强制停止 */
     private volatile Thread algorithmThread = null;
@@ -71,7 +72,7 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
         add(sidePanel, BorderLayout.EAST);
 
         // --- 3. 绑定核心交互事件 ---
-        setupBaseActions();
+        setupActions();
     }
 
     /**
@@ -117,7 +118,7 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
     /**
      * 绑定基础按钮逻辑
      */
-    private void setupBaseActions() {
+    private void setupActions() {
         startBtn.addActionListener(e -> {
             if (pendingTask != null) {
                 this.executeTask();
@@ -161,26 +162,25 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
     }
 
     /**
-     * 任务执行入口
+     * 修改任务启动逻辑，确保每次开始都是干净的
      */
-    private void executeTask() {
-        // 确保不会同时运行多个任务线程
+    protected void executeTask() {
         stopAlgorithmThread();
 
         algorithmThread = new Thread(() -> {
             try {
-                SwingUtilities.invokeLater(() -> {
-                    startBtn.setEnabled(false);
-                });
+                SwingUtilities.invokeLater(() -> startBtn.setEnabled(false));
 
+                // 算法开始计时
                 this.startTime = System.currentTimeMillis();
+
                 if (pendingTask != null) {
                     pendingTask.run();
                 }
             } catch (Exception e) {
-                System.err.println("算法执行线程异常终止: " + e.getMessage());
+                // 捕获由重置触发的运行时异常，不做错误处理，因为这是正常中断
+                System.out.println("算法任务已停止。");
             } finally {
-                // 结束后恢复按钮状态（如果在 EDT 执行）
                 SwingUtilities.invokeLater(() -> startBtn.setEnabled(true));
             }
         }, "Algorithm-Thread");
@@ -193,34 +193,44 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
      */
     @Override
     public void onSync(T data, Object a, Object b, int compareCount, int actionCount) {
-        // 每次同步前检查中断位，实现即时重置响应
+        // 1. 即时中断检查：这是保证“点击重置即停止”的关键
         if (Thread.currentThread().isInterrupted()) {
-            throw new RuntimeException("Algorithm Terminated by User Reset");
+            // 抛出异常以彻底终结算法线程的递归或循环
+            throw new RuntimeException("Algorithm Terminated by User");
         }
 
+        // 2. 计算耗时
         long now = System.currentTimeMillis();
         double duration = (startTime == 0) ? 0 : (now - this.startTime) / 1000.0;
 
-        // 更新 UI 统计信息
-        SwingUtilities.invokeLater(() -> {
-            timeLabel.setText(String.format("耗时: %.3fs", duration));
-            compareLabel.setText("比较: " + compareCount);
-            actionLabel.setText("操作: " + actionCount);
+        // 3. UI 实时同步
+        int userDelay = speedSlider.getValue();
 
-            // 触发画布刷新
-            refresh(data, a, b);
-        });
+        if (userDelay > 0 || (now - lastRefreshTime) > 16) {
+            lastRefreshTime = now;
 
-        // 线程节流
+            SwingUtilities.invokeLater(() -> {
+                timeLabel.setText(String.format("耗时: %.3fs", duration));
+                compareLabel.setText("比较: " + compareCount);
+                actionLabel.setText("操作: " + actionCount);
+
+                // 刷新画布
+                refresh(data, a, b);
+            });
+        }
+
+        // 4. 线程节流
         try {
-            int delay = speedSlider.getValue();
-            if (delay > 0) {
-                Thread.sleep(delay);
+            if (userDelay > 0) {
+                Thread.sleep(userDelay);
+            } else {
+                // 即便延迟为 0，每隔一段时间也要强制让出 CPU 权限给 UI 线程
+                if (actionCount % 500 == 0) {
+                    Thread.sleep(1);
+                }
             }
         } catch (InterruptedException e) {
-            // 重新标记并抛出，确保任务循环彻底停止
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Visual Sync Interrupted");
         }
     }
 
