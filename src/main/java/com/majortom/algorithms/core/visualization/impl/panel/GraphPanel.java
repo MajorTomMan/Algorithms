@@ -5,87 +5,126 @@ import com.majortom.algorithms.core.graph.node.Edge;
 import com.majortom.algorithms.core.graph.node.Vertex;
 import com.majortom.algorithms.core.visualization.BasePanel;
 
+import javax.swing.*;
 import java.awt.*;
+import java.util.Collection;
 
+/**
+ * 图算法可视化画布（Graph Visualization Panel）
+ * 修复：解决遍历时高亮圆圈覆盖节点数据的图层问题。
+ * 兼容：适配 Vertex 类的 getX() 和 getY() 方法。
+ */
 public class GraphPanel<V> extends BasePanel<BaseGraph<V>> {
-    private static final int NODE_RADIUS = 20;
+    private final int RADIUS = 20; // 节点半径
 
     public GraphPanel(BaseGraph<V> data) {
         super(data);
-        // 显式设置画布的推荐大小，比如 800x600
         this.setPreferredSize(new Dimension(800, 600));
-        // 之前的深色背景设置
-        setBackground(new Color(33, 37, 43));
+    }
+
+    @Override
+    protected void render(Graphics2D g) {
+        if (data == null)
+            return;
+
+        Collection<Vertex<V>> vertices = data.getVertices();
+
+        // --- 第一步：绘制所有的边 ---
+        drawEdges(g, vertices);
+
+        // --- 第二步：绘制节点主体和高亮装饰 ---
+        // 先画所有的圆，确保它们都在边（Edge）的上方
+        for (Vertex<V> v : vertices) {
+            drawVertexBody(g, v);
+        }
+
+        // --- 第三步：最后统一绘制所有节点的文字 ---
+        // 关键修复：文字绘制放在最后，确保处于最顶层
+        for (Vertex<V> v : vertices) {
+            drawVertexText(g, v);
+        }
+    }
+
+    private void drawEdges(Graphics2D g, Collection<Vertex<V>> vertices) {
+        g.setStroke(new BasicStroke(1.5f));
+        g.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+
+        Color edgeColor = UIManager.getColor("Separator.foreground");
+        if (edgeColor == null)
+            edgeColor = new Color(171, 178, 191, 100);
+
+        for (Vertex<V> v : vertices) {
+            int x1 = v.getX();
+            int y1 = v.getY();
+
+            for (Edge<V> edge : v.getEdges()) {
+                Vertex<V> dest = edge.getDest();
+                int x2 = dest.getX();
+                int y2 = dest.getY();
+
+                // 绘制边线
+                g.setColor(edgeColor);
+                g.drawLine(x1, y1, x2, y2);
+
+                // 如果有权重，绘制权重文字
+                if (edge.getWeight() != 0) {
+                    g.setColor(UIManager.getColor("Label.disabledForeground"));
+                    g.drawString(String.valueOf(edge.getWeight()), (x1 + x2) / 2, (y1 + y2) / 2);
+                }
+            }
+        }
+    }
+
+    private void drawVertexBody(Graphics2D g, Vertex<V> v) {
+        int x = v.getX();
+        int y = v.getY();
+
+        // 1. 绘制高亮外发光（Focus 效果）
+        if (v == activeA || v == activeB) {
+            Color accentColor = UIManager.getColor("ProgressBar.selectionBackground");
+            if (accentColor == null)
+                accentColor = new Color(224, 108, 117);
+
+            g.setColor(new Color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 80));
+            g.fillOval(x - RADIUS - 6, y - RADIUS - 6, (RADIUS + 6) * 2, (RADIUS + 6) * 2);
+
+            // 高亮节点主体颜色
+            g.setColor(accentColor);
+        } else if (v.isVisited()) {
+            // 已访问节点颜色
+            g.setColor(UIManager.getColor("ProgressBar.foreground"));
+        } else {
+            // 默认节点颜色
+            g.setColor(UIManager.getColor("Component.borderColor"));
+        }
+
+        // 2. 填充圆饼
+        g.fillOval(x - RADIUS, y - RADIUS, RADIUS * 2, RADIUS * 2);
+
+        // 3. 绘制节点边框（白色细边让节点更立体）
+        g.setColor(Color.WHITE);
+        g.setStroke(new BasicStroke(2f));
+        g.drawOval(x - RADIUS, y - RADIUS, RADIUS * 2, RADIUS * 2);
+    }
+
+    private void drawVertexText(Graphics2D g, Vertex<V> v) {
+        int x = v.getX();
+        int y = v.getY();
+
+        // 统一使用白色文字
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("JetBrains Mono", Font.BOLD, 14));
+
+        String txt = String.valueOf(v.getData());
+        FontMetrics fm = g.getFontMetrics();
+        int tx = x - fm.stringWidth(txt) / 2;
+        int ty = y + fm.getAscent() / 2 - 2;
+
+        g.drawString(txt, tx, ty);
     }
 
     @Override
     protected void calculateScale() {
-        // 图算法通常使用固定坐标或力导向布局，cellSize 可作为节点缩放系数
-        this.cellSize = 1;
-    }
-
-    @Override
-    protected void render(Graphics2D g2d) {
-        if (data == null)
-            return;
-
-        // 1. 绘制所有的边 (先画线，防止覆盖点)
-        for (Vertex<V> v : data.getVertices()) {
-            for (Edge<V> edge : v.getEdges()) {
-                drawEdge(g2d, edge);
-            }
-        }
-
-        // 2. 绘制所有的顶点
-        for (Vertex<V> v : data.getVertices()) {
-            drawVertex(g2d, v);
-        }
-    }
-
-    private void drawEdge(Graphics2D g, Edge<V> edge) {
-        Vertex<V> src = edge.getSource();
-        Vertex<V> dest = edge.getDest();
-
-        // 逻辑：如果当前 activeA 是起点，activeB 是终点，则高亮这条边
-        if (activeA == src && activeB == dest) {
-            g.setColor(new Color(224, 108, 117)); // 高亮红
-            g.setStroke(new BasicStroke(3.0f));
-        } else {
-            g.setColor(new Color(90, 94, 105)); // 默认灰
-            g.setStroke(new BasicStroke(1.5f));
-        }
-
-        g.drawLine(src.getX(), src.getY(), dest.getX(), dest.getY());
-
-        // 如果是有权图，可以在中点画权重
-        if (edge.getWeight() != 0) {
-            g.setColor(Color.GRAY);
-            g.drawString(String.valueOf(edge.getWeight()), (src.getX() + dest.getX()) / 2,
-                    (src.getY() + dest.getY()) / 2);
-        }
-    }
-
-    private void drawVertex(Graphics2D g, Vertex<V> v) {
-        // 节点颜色状态映射
-        if (v == activeA) {
-            g.setColor(new Color(152, 195, 121)); // 正在访问：绿
-        } else if (v.isVisited()) {
-            g.setColor(new Color(97, 175, 239)); // 已访问：蓝
-        } else {
-            g.setColor(new Color(45, 49, 58)); // 未访问：深灰
-        }
-
-        g.fillOval(v.getX() - NODE_RADIUS, v.getY() - NODE_RADIUS, NODE_RADIUS * 2, NODE_RADIUS * 2);
-
-        // 画圆圈边界
-        g.setColor(Color.WHITE);
-        g.drawOval(v.getX() - NODE_RADIUS, v.getY() - NODE_RADIUS, NODE_RADIUS * 2, NODE_RADIUS * 2);
-
-        // 画文字：需要计算文字宽度以实现水平居中
-        String label = v.getData().toString();
-        FontMetrics fm = g.getFontMetrics();
-        int textX = v.getX() - fm.stringWidth(label) / 2;
-        int textY = v.getY() + fm.getAscent() / 2 - 2; // 垂直居中修正
-        g.drawString(label, textX, textY);
+        // 布局通常在 Frame 层通过 GraphUtils.autoLayout 完成
     }
 }

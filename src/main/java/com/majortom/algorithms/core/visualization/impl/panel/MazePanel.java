@@ -3,170 +3,124 @@ package com.majortom.algorithms.core.visualization.impl.panel;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
 import com.majortom.algorithms.core.visualization.BasePanel;
 import java.awt.*;
-import java.awt.image.BufferedImage;
+import java.awt.geom.*;
 
+/**
+ * 三原色霓虹艺术版 - 压暗背景，保留红蓝黄核心，叠加发光特效
+ */
 public class MazePanel extends BasePanel<int[][]> {
-    // --- 颜色常量 ---
-    private static final Color BG_COLOR = new Color(12, 12, 16);
-    private static final Color WALL_COLOR = new Color(28, 30, 38);
-    private static final Color WALL_BORDER = new Color(56, 62, 74);
-    private static final Color PATH_COLOR = new Color(220, 225, 235);
-    private static final Color GLOW_BLUE = new Color(0, 197, 255);
-    private static final Color GLOW_RED = new Color(255, 46, 99);
-    private static final Color GLOW_GREEN = new Color(57, 255, 20);
-    private static final Color COLOR_DEADEND = new Color(120, 130, 145);
-    private static final Color PATH_DECOR_COLOR = new Color(0, 0, 0, 15);
-    private static final Color CRYSTAL_WHITE = new Color(255, 255, 255, 150);
-    private static final Color GLOW_PURPLE = new Color(191, 0, 255); // 极致紫
-    // 或者
-    private static final Color GLOW_AMBER = new Color(255, 179, 0); // 琥珀金
-    // --- 绘图数值常量 ---
-    private static final int ARC_DEFAULT = 4; // 默认圆角
-    private static final int ARC_GLOW = 6; // 发光层圆角
-    private static final int ARC_CRYSTAL = 2; // 中心晶体圆角
-    private static final int GLOW_LAYERS = 3; // 发光层数
-    private static final int OFFSET_SMALL = 1; // 1像素偏移
-    private static final int OFFSET_DOUBLE = 2; // 2像素偏移（用于宽高缩减）
-    private static final int GLOW_ALPHA_BASE = 40; // 发光基础透明度
 
-    private BufferedImage mazeCache;
-    private boolean needsFullRedraw = true;
-    private final int initialCellSize;
+    // --- 色彩重构：暗底三原色 ---
+    private static final Color BG_DEEP = new Color(10, 10, 14); // 极深背景，衬托发光
+
+    // 三原色霓虹化
+    private static final Color NEON_RED = new Color(255, 30, 50); // 墙体 (红)
+    private static final Color NEON_BLUE = new Color(0, 160, 255); // 路径 (蓝)
+    private static final Color NEON_GOLD = new Color(255, 200, 0); // 回溯/起点 (黄)
+    private static final Color NEON_PINK = new Color(255, 0, 150); // 终点 (粉/红延伸)
+    private static final Color START_VIOLET = new Color(160, 80, 255);
+    private static final Color CRYSTAL_WHITE = new Color(255, 255, 255, 200);
 
     public MazePanel(int[][] data, int cellSize) {
         super(data);
-        this.initialCellSize = cellSize;
-        this.cellSize = cellSize;
-        if (data != null) {
-            int rows = data.length;
-            int cols = data[0].length;
-            Dimension prefSize = new Dimension(
-                    cols * cellSize + padding * 2,
-                    rows * cellSize + padding * 2);
-            this.setPreferredSize(prefSize);
-            this.setMinimumSize(prefSize);
-        }
         setDoubleBuffered(true);
     }
 
     @Override
-    public void updateData(int[][] data, Object a, Object b) {
-        this.data = data;
-        this.activeA = a;
-        this.activeB = b;
-        this.needsFullRedraw = true;
-        this.repaint();
-    }
+    protected void render(Graphics2D g2) {
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        g2d.setColor(BG_COLOR);
-        g2d.fillRect(0, 0, getWidth(), getHeight());
-
+        int w = getWidth(), h = getHeight();
         if (data == null)
             return;
-        calculateScale();
-        updateMazeCache();
-
-        if (mazeCache != null) {
-            g2d.drawImage(mazeCache, padding, padding, null);
-        }
-
-        if (activeA instanceof Integer r && activeB instanceof Integer c) {
-            drawGlowCell(g2d, c * cellSize + padding, r * cellSize + padding, GLOW_RED);
-        }
-    }
-
-    private void updateMazeCache() {
         int rows = data.length, cols = data[0].length;
-        int width = cols * cellSize, height = rows * cellSize;
 
-        if (mazeCache == null || mazeCache.getWidth() != width || mazeCache.getHeight() != height) {
-            mazeCache = new BufferedImage(Math.max(1, width), Math.max(1, height), BufferedImage.TYPE_INT_ARGB);
-            needsFullRedraw = true;
-        }
+        // 全屏自适应
+        int size = Math.min(w / cols, h / rows);
+        this.cellSize = Math.max(4, size);
+        int offsetX = (w - cols * cellSize) / 2;
+        int offsetY = (h - rows * cellSize) / 2;
 
-        if (needsFullRedraw) {
-            Graphics2D g = mazeCache.createGraphics();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // 1. 绘制深色背景
+        g2.setColor(BG_DEEP);
+        g2.fillRect(0, 0, w, h);
 
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < cols; j++) {
-                    int cellType = data[i][j];
-                    int x = j * cellSize, y = i * cellSize;
+        // 2. 绘制墙体 (红色框架感)
+        drawRedNeonWalls(g2, offsetX, offsetY, rows, cols);
 
-                    switch (cellType) {
-                        case MazeConstant.WALL -> drawWall(g, x, y);
-                        case MazeConstant.PATH -> drawGlowCell(g, x, y, GLOW_BLUE);
-                        case MazeConstant.START -> drawGlowCell(g, x, y, GLOW_GREEN);
-                        case MazeConstant.END -> drawGlowCell(g, x, y, GLOW_RED);
-                        case MazeConstant.DEADEND -> {
-                            g.setColor(COLOR_DEADEND);
-                            g.fillRoundRect(x + OFFSET_SMALL, y + OFFSET_SMALL,
-                                    cellSize - OFFSET_DOUBLE, cellSize - OFFSET_DOUBLE,
-                                    ARC_DEFAULT, ARC_DEFAULT);
-                        }
-                        case MazeConstant.BACKTRACK -> drawGlowCell(g, x, y, GLOW_AMBER);
-                        default -> {
-                            g.setColor(PATH_COLOR);
-                            g.fillRect(x, y, cellSize, cellSize);
-                            g.setColor(PATH_DECOR_COLOR);
-                            g.drawRect(x, y, cellSize, cellSize);
-                        }
-                    }
+        // 3. 绘制路径与回溯 (蓝/黄发光)
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                int type = data[i][j];
+                if (type != MazeConstant.WALL) {
+                    renderNeonArtNode(g2, offsetX + j * cellSize, offsetY + i * cellSize, type);
                 }
             }
-            g.dispose();
-            needsFullRedraw = false;
+        }
+
+        // 4. 实时焦点
+        if (activeA instanceof Integer r && activeB instanceof Integer c) {
+            drawArtFocus(g2, offsetX + c * cellSize, offsetY + r * cellSize);
         }
     }
 
-    private void drawGlowCell(Graphics2D g, int x, int y, Color color) {
-        for (int i = GLOW_LAYERS; i > 0; i--) {
-            g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), GLOW_ALPHA_BASE / i));
-            g.fillRoundRect(x - i, y - i, cellSize + i * 2, cellSize + i * 2, ARC_GLOW, ARC_GLOW);
+    private void drawRedNeonWalls(Graphics2D g2, int ox, int oy, int rows, int cols) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (data[i][j] == MazeConstant.WALL) {
+                    float x = ox + j * cellSize;
+                    float y = oy + i * cellSize;
+
+                    // 红色墙体：深红色填充 + 鲜红色边缘
+                    g2.setColor(new Color(100, 10, 20)); // 深红底
+                    g2.fill(new RoundRectangle2D.Float(x + 1, y + 1, cellSize - 2, cellSize - 2, 2, 2));
+
+                    g2.setColor(NEON_RED);
+                    g2.setStroke(new BasicStroke(0.8f));
+                    g2.draw(new RoundRectangle2D.Float(x + 1, y + 1, cellSize - 2, cellSize - 2, 2, 2));
+                }
+            }
         }
-        g.setColor(color);
-        g.fillRoundRect(x + OFFSET_SMALL, y + OFFSET_SMALL,
-                cellSize - OFFSET_DOUBLE, cellSize - OFFSET_DOUBLE,
-                ARC_DEFAULT, ARC_DEFAULT);
-
-        g.setColor(CRYSTAL_WHITE);
-        g.fillRoundRect(x + cellSize / 4, y + cellSize / 4, cellSize / 2, cellSize / 2, ARC_CRYSTAL, ARC_CRYSTAL);
     }
 
-    private void drawWall(Graphics2D g, int x, int y) {
-        g.setColor(WALL_COLOR);
-        g.fillRect(x, y, cellSize, cellSize);
-        g.setColor(WALL_BORDER);
-        g.drawRect(x, y, cellSize - OFFSET_SMALL, cellSize - OFFSET_SMALL);
+    private void renderNeonArtNode(Graphics2D g2, int x, int y, int type) {
+        Color base = switch (type) {
+            case MazeConstant.PATH -> NEON_BLUE;
+            case MazeConstant.START -> START_VIOLET;
+            case MazeConstant.BACKTRACK -> NEON_GOLD;
+            case MazeConstant.END -> NEON_PINK;
+            default -> Color.WHITE;
+        };
+
+        // A. 径向发光特效 (三原色扩散)
+        float radius = cellSize * 2.0f;
+        RadialGradientPaint glow = new RadialGradientPaint(
+                new Point2D.Float(x + cellSize / 2f, y + cellSize / 2f), radius,
+                new float[] { 0.0f, 0.7f },
+                new Color[] { new Color(base.getRed(), base.getGreen(), base.getBlue(), 80), new Color(0, 0, 0, 0) });
+        g2.setPaint(glow);
+        g2.fill(new Ellipse2D.Float(x - cellSize / 2f, y - cellSize / 2f, cellSize * 2, cellSize * 2));
+
+        // B. 核心块
+        g2.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), 210));
+        g2.fill(new RoundRectangle2D.Float(x + 2, y + 2, cellSize - 4, cellSize - 4, 4, 4));
+
+        // C. 中心晶体点
+        g2.setColor(CRYSTAL_WHITE);
+        float cs = cellSize / 4f;
+        g2.fill(new RoundRectangle2D.Float(x + (cellSize - cs) / 2, y + (cellSize - cs) / 2, cs, cs, 1, 1));
     }
 
-    @Override
-    protected void render(Graphics2D g) {
+    private void drawArtFocus(Graphics2D g2, int x, int y) {
+        float b = (float) (Math.sin(System.currentTimeMillis() / 200.0) * 0.15 + 1.05);
+        g2.setColor(Color.WHITE);
+        g2.setStroke(new BasicStroke(2.0f));
+        float s = cellSize * b;
+        g2.draw(new RoundRectangle2D.Float(x - (s - cellSize) / 2, y - (s - cellSize) / 2, s, s, 5, 5));
     }
 
     @Override
     protected void calculateScale() {
-        int availableW = getWidth() - 2 * padding;
-        int availableH = getHeight() - 2 * padding;
-
-        if (availableW > 0 && availableH > 0) {
-            int scaleW = availableW / data[0].length;
-            int scaleH = availableH / data.length;
-            int newCellSize = Math.max(1, Math.min(scaleW, scaleH));
-
-            if (this.cellSize != newCellSize) {
-                this.cellSize = newCellSize;
-                this.needsFullRedraw = true;
-            }
-        } else {
-            if (this.cellSize <= 0) {
-                this.cellSize = initialCellSize;
-            }
-        }
     }
 }
