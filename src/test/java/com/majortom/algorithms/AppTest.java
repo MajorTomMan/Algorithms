@@ -9,6 +9,7 @@ import com.majortom.algorithms.core.graph.impl.DirectedGraph;
 import com.majortom.algorithms.core.graph.impl.UndirectedGraph;
 import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
 import com.majortom.algorithms.core.maze.algorithms.generate.DFSMazeGenerator;
+import com.majortom.algorithms.core.maze.algorithms.pathfinding.AStarMazePathfinder;
 import com.majortom.algorithms.core.maze.algorithms.pathfinding.BFSMazePathfinder;
 import com.majortom.algorithms.core.maze.algorithms.pathfinding.DFSMazePathfinder;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
@@ -61,8 +62,9 @@ public class AppTest {
         ArrayMaze container = new ArrayMaze(31, 31);
 
         BFSMazeGenerator generator = new BFSMazeGenerator();
-        DFSMazePathfinder pathfinder = new DFSMazePathfinder();
-        //BFSMazePathfinder pathfinder = new BFSMazePathfinder();
+        // DFSMazePathfinder pathfinder = new DFSMazePathfinder();
+        // BFSMazePathfinder pathfinder = new BFSMazePathfinder();
+        AStarMazePathfinder pathfinder = new AStarMazePathfinder();
         MazeFrame.launch(container, 20, generator, pathfinder);
     }
 
