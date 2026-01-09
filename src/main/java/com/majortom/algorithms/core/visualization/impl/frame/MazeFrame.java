@@ -9,10 +9,6 @@ import com.majortom.algorithms.core.visualization.impl.panel.MazePanel;
 import javax.swing.*;
 import java.awt.BorderLayout;
 
-/**
- * 迷宫实验室可视化窗体 - 交互适配版
- * 严格基于峻豪提供的“上次成功代码”结构重构
- */
 public class MazeFrame<T> extends BaseFrame<int[][]> {
     /** 迷宫算法逻辑对象（此处 T 为 int[][]） */
     private final BaseMaze<int[][]> maze;
