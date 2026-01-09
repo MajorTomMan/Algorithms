@@ -1,5 +1,7 @@
 package com.majortom.algorithms.core.tree.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.majortom.algorithms.core.interfaces.BalancedTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 
@@ -8,38 +10,38 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
     @Override
     public void put(T val) {
         root = doPut(val, root);
+        this.currentHighlight = null;
+        sync(this, null, null);
     }
 
-    private TreeNode<T> doPut(T val, TreeNode<T> node) {
+    private TreeNode<T> doPut(T data, TreeNode<T> node) {
         if (node == null) {
-            TreeNode<T> newNode = new TreeNode<>(val);
-            onStep(); // 1. 发现空位，新节点诞生的瞬间
-            return newNode;
+            actionCount++;
+            return new TreeNode<>(data);
         }
 
+        // 查找埋点
         compareCount++;
-        int cmp = val.compareTo(node.data);
-        if (cmp < 0) {
-            node.left = doPut(val, node.left);
-        } else if (cmp > 0) {
-            node.right = doPut(val, node.right);
-        }
+        this.currentHighlight = node;
+        sync(this, node, null);
+
+        int cmp = data.compareTo(node.data);
+        if (cmp < 0)
+            node.left = doPut(data, node.left);
+        else if (cmp > 0)
+            node.right = doPut(data, node.right);
+        else
+            return node;
 
         updateMetrics(node);
-
-        // 关键点：旋转发生前
-        TreeNode<T> balanced = rebalance(node);
-
-        if (balanced != node) {
-            onStep(); // 2. 结构发生了旋转突变，触发回调
-        }
-
-        return balanced;
+        return rebalance(node);
     }
 
     @Override
     public void remove(T val) {
         root = doRemove(val, root);
+        this.currentHighlight = null;
+        sync(this, null, null);
     }
 
     private TreeNode<T> doRemove(T val, TreeNode<T> node) {
@@ -47,22 +49,22 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
             return null;
 
         compareCount++;
+        this.currentHighlight = node;
+        sync(this, node, null);
+
         int cmp = val.compareTo(node.data);
         if (cmp < 0) {
             node.left = doRemove(val, node.left);
         } else if (cmp > 0) {
             node.right = doRemove(val, node.right);
         } else {
-            // 找到节点了！
-            actionCount++; // 记录一次有效删除操作
+            actionCount++;
             if (node.left == null || node.right == null) {
                 node = (node.left != null) ? node.left : node.right;
-                onStep(); // 埋点：节点被替换或删除的瞬间
             } else {
-                // 找后继节点
                 TreeNode<T> successor = findMin(node.right);
                 node.data = successor.data;
-                onStep(); // 埋点：观察值被覆盖的过程
+                sync(this, node, successor);
                 node.right = doRemove(successor.data, node.right);
             }
         }
@@ -70,12 +72,7 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
         if (node == null)
             return null;
         updateMetrics(node);
-
-        TreeNode<T> balanced = rebalance(node);
-        if (balanced != node) {
-            onStep(); // 埋点：删除导致的失衡被修复（旋转）
-        }
-        return balanced;
+        return rebalance(node);
     }
 
     private TreeNode<T> rebalance(TreeNode<T> node) {
@@ -83,7 +80,7 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
 
         // LL
         if (balance > 1 && getBalance(node.left) >= 0) {
-            return rightRotation(node);
+            return rightRotation(node); // 调用父类重构后的旋转
         }
         // RR
         if (balance < -1 && getBalance(node.right) <= 0) {
@@ -97,7 +94,6 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
         if (balance < -1 && getBalance(node.right) > 0) {
             return rightLeftRotation(node);
         }
-
         return node;
     }
 
@@ -116,14 +112,15 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
         TreeNode<T> current = root;
         while (current != null) {
             compareCount++;
+            this.currentHighlight = current;
+            sync(this, current, null);
             int cmp = val.compareTo(current.data);
-            if (cmp < 0) {
+            if (cmp < 0)
                 current = current.left;
-            } else if (cmp > 0) {
+            else if (cmp > 0)
                 current = current.right;
-            } else {
+            else
                 return current;
-            }
         }
         return null;
     }
@@ -139,7 +136,7 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
 
     @Override
     public int height() {
-        return root == null ? 0 : root.height;
+        return height(root);
     }
 
     @Override
@@ -150,7 +147,23 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
     @Override
     public void clear() {
         root = null;
-        compareCount = 0;
-        actionCount = 0;
+        resetStatistics();
+        sync(this, null, null);
+    }
+
+    @Override
+    public List<T> toList() {
+        // TODO Auto-generated method stub
+        List<T> result = new ArrayList<>();
+        inOrder(root, result);
+        return result;
+    }
+
+    private void inOrder(TreeNode<T> node, List<T> list) {
+        if (node == null)
+            return;
+        inOrder(node.left, list);
+        list.add(node.data);
+        inOrder(node.right, list);
     }
 }

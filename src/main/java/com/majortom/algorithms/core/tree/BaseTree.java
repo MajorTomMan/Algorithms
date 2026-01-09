@@ -1,48 +1,43 @@
 package com.majortom.algorithms.core.tree;
 
-import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.tree.listeners.TreeStepListener;
+import com.majortom.algorithms.core.base.BaseAlgorithm;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 
+import java.util.List;
+
 /**
- * 树算法的抽象基类，用于管理可视化统计数据和步进回调
- * 泛型 T 代表树的根节点类型 (例如 TreeNode<Key, Value>)
+ * 树算法的抽象基类
+ * 继承自 BaseAlgorithm，将数据快照类型定义为 BaseTree<T> 自身
  */
-public abstract class BaseTree<T> {
+public abstract class BaseTree<T> extends BaseAlgorithm<BaseTree<T>> {
     protected TreeNode<T> root; // 树的根节点
-    protected int compareCount = 0; // 比较次数
-    protected int actionCount = 0; // 操作次数 (例如 AVL 树的旋转次数，BST 的插入次数)
+    protected TreeNode<T> currentHighlight; // 当前正在操作/遍历的节点（焦点）
 
-    protected TreeStepListener stepListener;
+    // --- 核心同步适配 ---
 
-    public void setStepListener(TreeStepListener listener) {
-        this.stepListener = listener;
+    /**
+     * 子类调用此方法同步树的状态到 UI
+     * 
+     * @param activeNode    当前高亮的节点 (对应焦点 a)
+     * @param secondaryNode 辅助高亮节点（如旋转时的对比点，对应焦点 b）
+     */
+    protected void syncTree(TreeNode<T> activeNode, TreeNode<T> secondaryNode) {
+        this.currentHighlight = activeNode;
+        sync(this, activeNode, secondaryNode);
     }
 
-    protected void onStep() {
-        if (stepListener != null) {
-            stepListener.onStep();
-        }
-    }
+    // --- 基础属性访问 ---
 
     public TreeNode<T> getRoot() {
         return root;
     }
 
-    public int getCompareCount() {
-        return compareCount;
+    public TreeNode<T> getCurrentHighlight() {
+        return currentHighlight;
     }
 
-    public int getActionCount() {
-        return actionCount;
-    }
+    // --- 抽象业务接口保持不变 ---
 
-    public void resetStatistics() {
-        this.compareCount = 0;
-        this.actionCount = 0;
-    }
-
-    // 抽象方法，子类实现具体算法逻辑
     public abstract void put(T val);
 
     public abstract void remove(T val);
@@ -58,4 +53,6 @@ public abstract class BaseTree<T> {
     public abstract boolean isEmpty();
 
     public abstract void clear();
+
+    public abstract List<T> toList();
 }

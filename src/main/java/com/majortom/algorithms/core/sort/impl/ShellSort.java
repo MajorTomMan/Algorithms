@@ -16,9 +16,9 @@ public class ShellSort extends BaseSort {
         }
         while (h >= 1) {
             for (int i = h; i < N; i++) {
-                for (int j = i; j >= h && less(data[j], data[j - h]); j -= h) {
+                for (int j = i; j >= h && less(data, data[j], data[j - h]); j -= h) {
                     swap(data, j, j - h);
-                    push(data, j, j - h);
+                    sync(data, j, j - h);
                 }
             }
             h = h / 3;

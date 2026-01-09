@@ -2,63 +2,27 @@ package com.majortom.algorithms.core.maze;
 
 import java.util.Random;
 
+import com.majortom.algorithms.core.base.BaseAlgorithm;
+
 /**
- * 迷宫算法基类
- * 提供基础的数据结构管理、坐标边界检查以及步进式可视化控制机制。
+ * 适配后的迷宫算法基类
+ * 继承自 BaseAlgorithm，数据快照为 int[][]
  */
-public abstract class BaseMaze {
-    // 单元格类型定义
+public abstract class BaseMaze extends BaseAlgorithm<int[][]> {
+    // 单元格类型定义保持不变
     public static final int PATH = 0;
     public static final int WALL = 1;
     public static final int START = 2;
     public static final int END = 3;
 
-    private final int rows;
-    private final int cols;
-    private final int[][] map;
+    protected final int rows;
+    protected final int cols;
+    protected final int[][] map;
     protected final Random random = new Random();
 
     // 记录起终点坐标
     protected int startRow, startCol;
     protected int endRow, endCol;
-
-    protected int checkCount = 0;
-    protected int breakCount = 0;
-
-    public void resetStatistics() {
-        this.checkCount = 0;
-        this.breakCount = 0;
-    }
-
-    // 在算法里调用这个来统计“探测”
-    protected void incrementCheck() {
-        checkCount++;
-    }
-
-    // 在算法里调用这个来统计“拆墙”
-    protected void incrementBreak() {
-        breakCount++;
-    }
-
-    // Getter 让 Frame 能拿到数据
-    public int getCheckCount() {
-        return checkCount;
-    }
-
-    public int getBreakCount() {
-        return breakCount;
-    }
-
-    /**
-     * 步进回调接口，用于通知 UI 更新
-     */
-    public interface StepListener {
-        void onStep();
-    }
-
-    private StepListener listener;
-    private final Object lock = new Object();
-    private boolean paused = true;
 
     public BaseMaze(int rows, int cols) {
         this.rows = rows;
@@ -66,16 +30,6 @@ public abstract class BaseMaze {
         this.map = new int[rows][cols];
         initial();
     }
-
-    /**
-     * 抽象生成方法：子类需实现具体的迷宫生成逻辑（如 DFS, BFS, Kruskal 等）
-     */
-    public abstract void generate();
-
-    /**
-     * 抽象联通性检查：判断当前迷宫起终点是否联通
-     */
-    public abstract boolean isConnected();
 
     /**
      * 初始化地图，默认填充为墙
@@ -89,50 +43,43 @@ public abstract class BaseMaze {
     }
 
     /**
-     * 更新单元格状态，并触发步进阻塞以便观察生成过程
-     * * @param r 行坐标
-     * 
-     * @param c    列坐标
-     * @param type 单元格类型
+     * 核心适配：更新单元格状态并触发同步
+     * 对应原来的 setCell，但现在改用 sync 机制
      */
     protected void setCell(int r, int c, int type) {
         if (!isOutOfIndex(r, c)) {
             map[r][c] = type;
-            if (listener != null) {
-                listener.onStep(); // 触发 UI 重绘回调
-                waitForSignal(); // 进入等待状态，由外部调用 nextStep 唤醒
-            }
+
+            // 逻辑映射：
+            // 拆墙/设路径 -> actionCount (操作)
+            // 设起点/终点 -> compareCount (探测/标记)
+            if (type == PATH)
+                actionCount++;
+            else
+                compareCount++;
+
+            // 同步到 UI。焦点 a, b 传入当前的行和列坐标
+            sync(map, r, c);
         }
     }
 
-    /**
-     * 外部控制入口：唤醒处于等待状态的算法线程，继续执行下一步
-     */
-    public void nextStep() {
-        synchronized (lock) {
-            paused = false;
-            lock.notifyAll();
-        }
+    // --- 适配统计方法，对齐顶级基类命名 ---
+
+    protected void incrementCheck() {
+        compareCount++;
+        // sync(map, null, null); // 如果需要实时更新统计数字而不改图，可以单独同步
     }
 
-    /**
-     * 内部阻塞方法：使当前线程进入等待状态
-     */
-    private void waitForSignal() {
-        synchronized (lock) {
-            paused = true;
-            while (paused) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
+    protected void incrementBreak() {
+        actionCount++;
     }
 
-    // --- 辅助工具方法 ---
+    // --- 业务接口保持抽象 ---
+    public abstract void generate();
 
+    public abstract boolean isConnected();
+
+    // --- 工具方法 ---
     protected int getCell(int r, int c) {
         return isOutOfIndex(r, c) ? WALL : map[r][c];
     }
@@ -141,10 +88,8 @@ public abstract class BaseMaze {
         return r < 0 || r >= rows || c < 0 || c >= cols;
     }
 
-    // --- Getters & Setters ---
-
-    public void setStepListener(StepListener listener) {
-        this.listener = listener;
+    public int[][] getMap() {
+        return map;
     }
 
     public int getRows() {
@@ -153,9 +98,5 @@ public abstract class BaseMaze {
 
     public int getCols() {
         return cols;
-    }
-
-    public int[][] getMap() {
-        return map;
     }
 }
