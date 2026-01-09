@@ -202,14 +202,10 @@ public abstract class AlgorithmsUtils {
             return null;
 
         int mid = start + (end - start) / 2;
-        // 使用你的单参数 TreeNode 构造函数
         TreeNode<T> node = new TreeNode<>(data[mid]);
 
         node.left = buildBSTInternal(data, start, mid - 1);
         node.right = buildBSTInternal(data, mid + 1, end);
-
-        // 记得同步更新高度和计数，否则 UI 渲染可能会错位
-        // 如果你的 TreeNode 已经在内部处理了这些，这里可以省略
         return node;
     }
 
