@@ -19,7 +19,6 @@ public class GraphFrame<V> extends BaseFrame<BaseGraph<V>> {
         this.canvas = new GraphPanel<>(graph);
         add(canvas, BorderLayout.CENTER);
 
-        // 注意：现在是图作为数据源被监听
         graph.setListener(this);
         setupActions();
     }
@@ -77,5 +76,14 @@ public class GraphFrame<V> extends BaseFrame<BaseGraph<V>> {
 
             frame.initAndLaunch();
         });
+    }
+
+    @Override
+    protected void handleDataReset() {
+        // 1. 调用你之前在 BaseGraph 里写的重置逻辑
+        this.graph.resetGraphNodes();
+
+        // 2. 让 canvas 显示最原始的图状态
+        this.canvas.updateData(this.graph, null, null);
     }
 }

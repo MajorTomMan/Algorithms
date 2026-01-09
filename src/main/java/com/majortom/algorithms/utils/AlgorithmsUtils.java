@@ -3,9 +3,12 @@ package com.majortom.algorithms.utils;
 import java.util.Random;
 
 import com.majortom.algorithms.core.basic.node.ListNode;
+import com.majortom.algorithms.core.graph.BaseGraph;
+import com.majortom.algorithms.core.graph.node.Vertex;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * 算法实验室工具类 v2.0
@@ -278,5 +281,50 @@ public abstract class AlgorithmsUtils {
         maze[0][0] = 0; // 起点必通
         maze[rows - 1][cols - 1] = 0; // 终点必通
         return maze;
+    }
+
+    /**
+     * 快速构建随机图数据
+     * * @param graph 图实例 (DirectedGraph 或 UndirectedGraph)
+     * 
+     * @param nodeCount 节点数量 (例如 5, 26)
+     * @param edgeCount 边数量
+     * @param isAlpha   是否使用字母作为节点数据 (true 则 A, B, C...; false 则 0, 1, 2...)
+     */
+    @SuppressWarnings("unchecked")
+    public static <V> void buildRandomGraph(BaseGraph<V> graph, int nodeCount, int edgeCount, boolean isAlpha) {
+        // 1. 生成并添加顶点
+        for (int i = 0; i < nodeCount; i++) {
+            V data;
+            if (isAlpha && i < 26) {
+                data = (V) String.valueOf((char) ('A' + i));
+            } else {
+                data = (V) Integer.valueOf(i);
+            }
+            graph.addVertex(new Vertex<>(data));
+        }
+
+        // 2. 随机生成边
+        List<Vertex<V>> vertices = graph.getVertices();
+        if (vertices.size() < 2)
+            return;
+
+        int actualEdges = 0;
+        while (actualEdges < edgeCount) {
+            int fromIdx = random.nextInt(nodeCount);
+            int toIdx = random.nextInt(nodeCount);
+
+            // 避免自环（如果你允许自环可以删掉这个判断）
+            if (fromIdx == toIdx)
+                continue;
+
+            V fromData = vertices.get(fromIdx).getData();
+            V toData = vertices.get(toIdx).getData();
+
+            // 调用 BaseGraph 的抽象接口 addEdge
+            // 如果是 UndirectedGraph，它会自动连两条；如果是 DirectedGraph，连一条
+            graph.addEdge(fromData, toData, random.nextInt(10) + 1);
+            actualEdges++;
+        }
     }
 }

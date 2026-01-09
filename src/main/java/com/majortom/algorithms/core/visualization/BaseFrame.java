@@ -6,35 +6,38 @@ import java.awt.*;
 
 /**
  * 通用可视化窗体基座（Abstract Base Frame for Visualization）
- * * 职责：
+ * 职责：
  * 1. 界面布局：提供标准的控制栏（南区）和统计侧边栏（东区）。
- * 2. 线程管理：通过独立子线程运行算法，避免阻塞 Swing 事件分发线程 (EDT)。
- * 3. 状态同步：实现 SyncListener 接口，将算法执行过程中的数据快照实时映射到 UI 元素上。
- * 4. 交互控制：通过 JSlider 控制算法步进延迟，实现“倍速”功能。
- * * @param <T> 数据快照类型（如 int[], BaseTree, BaseGraph 等）
+ * 2. 线程管理：通过独立子线程运行算法，提供强力重置与中断机制。
+ * 3. 状态同步：实现 SyncListener 接口，将算法数据实时映射到 UI。
+ * 4. 交互控制：通过 JSlider 实现步进延迟调节。
  */
 public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
-    // UI 组件：控制区与侧边栏
+
+    // --- UI 组件 ---
     protected JPanel controlPanel, sidePanel;
     protected JButton startBtn, resetBtn;
     protected JSlider speedSlider;
-    protected JTextArea dataListArea; // 实时数据显示区
-    
-    // 算法统计状态标签
+    protected JTextArea dataListArea;
+
+    // --- 统计标签 ---
     protected JLabel timeLabel, compareLabel, actionLabel;
-    
-    // 运行状态变量
+
+    // --- 运行状态变量 ---
     protected long startTime = 0;
-    protected Runnable pendingTask; // 待执行的算法任务逻辑
+    protected Runnable pendingTask;
+
+    /** 核心线程句柄：用于控制算法的启动与强制停止 */
+    private volatile Thread algorithmThread = null;
 
     public BaseFrame(String title) {
-        // 设置跨平台外观（确保不同操作系统下 UI 风格一致）
+        // 设置跨平台外观
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         setTitle(title);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -43,43 +46,44 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
         controlPanel = new JPanel();
         controlPanel.setBackground(new Color(45, 49, 58));
 
-        startBtn = new JButton("开始");
+        startBtn = new JButton("开始执行");
         resetBtn = new JButton("重置");
-        speedSlider = new JSlider(0, 500, 50); // 滑动条控制 0-500ms 的延迟
+
+        // 延迟控制：0ms - 500ms
+        speedSlider = new JSlider(0, 500, 50);
+        speedSlider.setBackground(new Color(45, 49, 58));
 
         controlPanel.add(startBtn);
         controlPanel.add(resetBtn);
-        controlPanel.add(new JLabel("<html><font color='white'> 延迟(ms): </font></html>"));
+        JLabel delayLabel = new JLabel(" 延迟(ms): ");
+        delayLabel.setForeground(Color.WHITE);
+        controlPanel.add(delayLabel);
         controlPanel.add(speedSlider);
         add(controlPanel, BorderLayout.SOUTH);
 
-        // 初始化信息标签
-        timeLabel = createInfoLabel("耗时: 0.000s", new Color(152, 195, 121));
-        compareLabel = createInfoLabel("比较: 0", new Color(97, 175, 239));
-        actionLabel = createInfoLabel("操作: 0", new Color(224, 108, 117));
+        // --- 2. 初始化侧边统计面板 ---
+        // 预定义颜色以匹配深色主题
+        timeLabel = createInfoLabel("耗时: 0.000s", new Color(152, 195, 121)); // 绿色
+        compareLabel = createInfoLabel("比较: 0", new Color(97, 175, 239)); // 蓝色
+        actionLabel = createInfoLabel("操作: 0", new Color(224, 108, 117)); // 红色
 
-        // --- 2. 组装侧边统计面板 ---
         initSidePanel();
         add(sidePanel, BorderLayout.EAST);
 
-        // 绑定开始按钮事件
-        startBtn.addActionListener(e -> {
-            if (pendingTask != null) {
-                this.executeTask();
-            }
-        });
+        // --- 3. 绑定核心交互事件 ---
+        setupBaseActions();
     }
 
     /**
-     * 初始化侧边栏布局：包含算法统计数值和实时序列显示
+     * 初始化侧边栏布局
      */
     private void initSidePanel() {
         sidePanel = new JPanel();
         sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
         sidePanel.setBackground(new Color(33, 37, 43));
         sidePanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
-        sidePanel.setPreferredSize(new Dimension(180, 0));
-        
+        sidePanel.setPreferredSize(new Dimension(200, 0));
+
         // 统计区块
         sidePanel.add(createSectionTitle("算法统计"));
         sidePanel.add(Box.createVerticalStrut(15));
@@ -88,10 +92,10 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
         sidePanel.add(compareLabel);
         sidePanel.add(Box.createVerticalStrut(10));
         sidePanel.add(actionLabel);
-        
-        sidePanel.add(Box.createVerticalStrut(20));
-        
-        // 数据序列显示区块
+
+        sidePanel.add(Box.createVerticalStrut(25));
+
+        // 实时数据区块
         sidePanel.add(createSectionTitle("实时序列"));
         sidePanel.add(Box.createVerticalStrut(10));
 
@@ -99,25 +103,145 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
         dataListArea.setEditable(false);
         dataListArea.setLineWrap(true);
         dataListArea.setWrapStyleWord(true);
-        dataListArea.setBackground(new Color(33, 37, 43));
+        dataListArea.setBackground(new Color(40, 44, 52));
         dataListArea.setForeground(new Color(171, 178, 191));
         dataListArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        dataListArea.setText("等待执行...");
 
-        // 滚动面板支持
         JScrollPane scrollPane = new JScrollPane(dataListArea);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(61, 68, 83)));
-        scrollPane.setPreferredSize(new Dimension(150, 250));
+        scrollPane.setPreferredSize(new Dimension(170, 300));
         sidePanel.add(scrollPane);
     }
 
     /**
-     * 注册待执行任务（装载算法但不立即启动）
+     * 绑定基础按钮逻辑
      */
+    private void setupBaseActions() {
+        startBtn.addActionListener(e -> {
+            if (pendingTask != null) {
+                this.executeTask();
+            }
+        });
+
+        resetBtn.addActionListener(e -> {
+            this.stopAlgorithmThread(); // 强行杀掉运行中的线程
+            this.resetExecutionState(); // 恢复 UI 和数据状态
+        });
+    }
+
+    /**
+     * 强行中断当前正在执行的算法线程
+     */
+    private void stopAlgorithmThread() {
+        if (algorithmThread != null && algorithmThread.isAlive()) {
+            algorithmThread.interrupt(); // 触发线程的中断标记
+            algorithmThread = null; // 销毁引用
+        }
+    }
+
+    /**
+     * 恢复执行前的初始状态
+     */
+    protected void resetExecutionState() {
+        this.startTime = 0;
+        SwingUtilities.invokeLater(() -> {
+            timeLabel.setText("耗时: 0.000s");
+            compareLabel.setText("比较: 0");
+            actionLabel.setText("操作: 0");
+            dataListArea.setText("已重置，等待执行...");
+
+            startBtn.setEnabled(true); // 恢复开始按钮
+
+            // 调用具体的业务重置逻辑（如清空图的访问标记、还原排序数组等）
+            handleDataReset();
+
+            repaint();
+        });
+    }
+
+    /**
+     * 任务执行入口
+     */
+    private void executeTask() {
+        // 确保不会同时运行多个任务线程
+        stopAlgorithmThread();
+
+        algorithmThread = new Thread(() -> {
+            try {
+                SwingUtilities.invokeLater(() -> {
+                    startBtn.setEnabled(false);
+                });
+
+                this.startTime = System.currentTimeMillis();
+                if (pendingTask != null) {
+                    pendingTask.run();
+                }
+            } catch (Exception e) {
+                System.err.println("算法执行线程异常终止: " + e.getMessage());
+            } finally {
+                // 结束后恢复按钮状态（如果在 EDT 执行）
+                SwingUtilities.invokeLater(() -> startBtn.setEnabled(true));
+            }
+        }, "Algorithm-Thread");
+
+        algorithmThread.start();
+    }
+
+    /**
+     * 核心同步回调
+     */
+    @Override
+    public void onSync(T data, Object a, Object b, int compareCount, int actionCount) {
+        // 每次同步前检查中断位，实现即时重置响应
+        if (Thread.currentThread().isInterrupted()) {
+            throw new RuntimeException("Algorithm Terminated by User Reset");
+        }
+
+        long now = System.currentTimeMillis();
+        double duration = (startTime == 0) ? 0 : (now - this.startTime) / 1000.0;
+
+        // 更新 UI 统计信息
+        SwingUtilities.invokeLater(() -> {
+            timeLabel.setText(String.format("耗时: %.3fs", duration));
+            compareLabel.setText("比较: " + compareCount);
+            actionLabel.setText("操作: " + actionCount);
+
+            // 触发画布刷新
+            refresh(data, a, b);
+        });
+
+        // 线程节流
+        try {
+            int delay = speedSlider.getValue();
+            if (delay > 0) {
+                Thread.sleep(delay);
+            }
+        } catch (InterruptedException e) {
+            // 重新标记并抛出，确保任务循环彻底停止
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Visual Sync Interrupted");
+        }
+    }
+
+    // --- 抽象方法：由具体子类（如 GraphFrame）实现 ---
+
+    /**
+     * 子类需实现：具体的画布刷新逻辑
+     */
+    protected abstract void refresh(T data, Object a, Object b);
+
+    /**
+     * 子类需实现：具体的数据结构重置逻辑（如 graph.resetNodes()）
+     */
+    protected abstract void handleDataReset();
+
+    // --- 辅助方法 ---
+
     public void setTask(Runnable task) {
         this.pendingTask = task;
     }
 
-    // UI 样式辅助方法
     private JLabel createInfoLabel(String text, Color color) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Monospaced", Font.BOLD, 14));
@@ -127,85 +251,14 @@ public abstract class BaseFrame<T> extends JFrame implements SyncListener<T> {
 
     private JLabel createSectionTitle(String title) {
         JLabel label = new JLabel(title);
-        label.setForeground(Color.GRAY);
-        label.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        label.setForeground(new Color(92, 99, 112));
+        label.setFont(new Font("Microsoft YaHei", Font.BOLD, 12));
         return label;
     }
 
-    /**
-     * 刷新并显示窗体
-     */
     protected void initAndLaunch() {
-        this.getContentPane().revalidate();
         this.pack();
         this.setLocationRelativeTo(null);
         this.setVisible(true);
-        this.repaint();
-    }
-
-    /**
-     * 核心监听回调：算法执行过程中数据发生变动时触发
-     * @param data 数据状态快照
-     * @param a 活跃焦点 A
-     * @param b 活跃焦点 B
-     * @param compareCount 当前累计比较次数
-     * @param actionCount 当前累计操作（交换/赋值）次数
-     */
-    @Override
-    public void onSync(T data, Object a, Object b, int compareCount, int actionCount) {
-        long now = System.currentTimeMillis();
-        double duration = (startTime == 0) ? 0 : (now - this.startTime) / 1000.0;
-
-        // 使用 SwingUtilities.invokeLater 确保 UI 更新操作在 EDT 线程执行
-        SwingUtilities.invokeLater(() -> {
-            timeLabel.setText(String.format("耗时: %.3fs", duration));
-            compareLabel.setText("比较: " + compareCount);
-            actionLabel.setText("操作: " + actionCount);
-
-            // 调用子类实现的具体刷新画布逻辑
-            refresh(data, a, b);
-        });
-
-        // 线程节流：根据 speedSlider 的值控制算法运行速度
-        try {
-            int delay = speedSlider.getValue();
-            if (delay > 0)
-                Thread.sleep(delay);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * 抽象刷新逻辑：需在子类中调用 BasePanel 的 updateData 方法
-     */
-    protected abstract void refresh(T data, Object a, Object b);
-
-    /**
-     * 任务执行入口：创建独立线程运行算法逻辑
-     */
-    private void executeTask() {
-        new Thread(() -> {
-            try {
-                // 执行前禁用按钮，防止算法运行中重复点击引发冲突
-                SwingUtilities.invokeLater(() -> {
-                    startBtn.setEnabled(false);
-                    resetBtn.setEnabled(false);
-                });
-
-                this.startTime = System.currentTimeMillis();
-                if (pendingTask != null) {
-                    pendingTask.run(); // 正式开始算法流程
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                // 任务结束（正常或异常）均恢复按钮状态
-                SwingUtilities.invokeLater(() -> {
-                    startBtn.setEnabled(true);
-                    resetBtn.setEnabled(true);
-                });
-            }
-        }, "Algorithm-Thread").start();
     }
 }
