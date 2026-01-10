@@ -1,6 +1,10 @@
 package com.majortom.algorithms;
 
+import com.majortom.algorithms.core.graph.BaseGraph;
+import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
+import com.majortom.algorithms.core.graph.impl.UndirectedGraph;
 import com.majortom.algorithms.core.sort.impl.InsertionSort;
+import com.majortom.algorithms.core.tree.impl.AVLTree;
 import com.majortom.algorithms.utils.AlgorithmLab;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
@@ -10,10 +14,10 @@ import com.majortom.algorithms.utils.AlgorithmsUtils;
  */
 public class App {
     public static void main(String[] args) {
-        Integer[] rawData = AlgorithmsUtils.randomArray(20, 100);
-        int[] dataForInsertion = AlgorithmsUtils.toPrimitive(rawData);
+        AVLTree<Integer> avl = new AVLTree<>();
+        Integer[] data = AlgorithmsUtils.randomArray(10, 100);
 
-        // 使用极简 API 启动排序实验室 [cite: 2026-01-10]
-        AlgorithmLab.showSort(dataForInsertion, new InsertionSort());
+        // 启动树实验室，展示 AVL 平衡过程
+        AlgorithmLab.showTree(avl, data);
     }
 }
