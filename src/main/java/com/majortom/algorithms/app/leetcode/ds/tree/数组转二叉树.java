@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import com.majortom.algorithms.core.tree.node.TreeNode;
-import com.majortom.algorithms.utils.AlgorithmsUtils;
+import com.majortom.algorithms.core.tree.node.AVLTreeNode;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 
 public class 数组转二叉树 {
     public static void main(String[] args) {
@@ -12,9 +12,9 @@ public class 数组转二叉树 {
 
     }
 
-    public static TreeNode<Integer> transform(TreeNode<Integer> node, int data) {
+    public static BinaryTreeNode<Integer> transform(BinaryTreeNode<Integer> node, int data) {
         if (node == null) {
-            return new TreeNode<Integer>(data);
+            return new AVLTreeNode<Integer>(data);
         }
         if (node.left == null) {
             node.left = transform(node.left, data);

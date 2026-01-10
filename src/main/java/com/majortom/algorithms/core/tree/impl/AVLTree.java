@@ -2,34 +2,44 @@ package com.majortom.algorithms.core.tree.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.majortom.algorithms.core.interfaces.BalancedTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
+import com.majortom.algorithms.core.tree.BaseBalancedTree;
+import com.majortom.algorithms.core.tree.node.AVLTreeNode;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 
-public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
+/**
+ * AVL 树实现
+ * 专注于平衡因子的计算与旋转逻辑的触发
+ */
+public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
+
+    @Override
+    protected TreeNode<T> createNode(T data) {
+        return new AVLTreeNode<>(data);
+    }
 
     @Override
     public void put(T val) {
         root = doPut(val, root);
-        this.currentHighlight = null;
-        sync(this, null, null);
+        syncTree(null, null);
     }
 
     private TreeNode<T> doPut(T data, TreeNode<T> node) {
         if (node == null) {
             actionCount++;
-            return new TreeNode<>(data);
+            return createNode(data);
         }
 
-        // 查找埋点
         compareCount++;
-        this.currentHighlight = node;
-        sync(this, node, null);
+        syncTree(node, null);
 
         int cmp = data.compareTo(node.data);
+        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
+
         if (cmp < 0)
-            node.left = doPut(data, node.left);
+            bNode.left = (BinaryTreeNode<T>) doPut(data, bNode.left);
         else if (cmp > 0)
-            node.right = doPut(data, node.right);
+            bNode.right = (BinaryTreeNode<T>) doPut(data, bNode.right);
         else
             return node;
 
@@ -39,9 +49,9 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
 
     @Override
     public void remove(T val) {
-        root = doRemove(val, root);
-        this.currentHighlight = null;
-        sync(this, null, null);
+        // 只有在入口处将根节点强转一次
+        root = doRemove(val, (BinaryTreeNode<T>) root);
+        syncTree(null, null);
     }
 
     private TreeNode<T> doRemove(T val, TreeNode<T> node) {
@@ -49,23 +59,24 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
             return null;
 
         compareCount++;
-        this.currentHighlight = node;
-        sync(this, node, null);
+        syncTree(node, null);
 
         int cmp = val.compareTo(node.data);
+        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
+
         if (cmp < 0) {
-            node.left = doRemove(val, node.left);
+            bNode.left = (BinaryTreeNode<T>) doRemove(val, bNode.left);
         } else if (cmp > 0) {
-            node.right = doRemove(val, node.right);
+            bNode.right = (BinaryTreeNode<T>) doRemove(val, bNode.right);
         } else {
             actionCount++;
-            if (node.left == null || node.right == null) {
-                node = (node.left != null) ? node.left : node.right;
+            if (bNode.left == null || bNode.right == null) {
+                node = (bNode.left != null) ? bNode.left : bNode.right;
             } else {
-                TreeNode<T> successor = findMin(node.right);
+                TreeNode<T> successor = findMin(bNode.right);
                 node.data = successor.data;
-                sync(this, node, successor);
-                node.right = doRemove(successor.data, node.right);
+                syncTree(node, successor);
+                bNode.right = (BinaryTreeNode<T>) doRemove(successor.data, bNode.right);
             }
         }
 
@@ -77,34 +88,39 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
 
     private TreeNode<T> rebalance(TreeNode<T> node) {
         int balance = getBalance(node);
+        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
 
         // LL
-        if (balance > 1 && getBalance(node.left) >= 0) {
-            return rightRotation(node); // 调用父类重构后的旋转
+        if (balance > 1 && getBalance(bNode.left) >= 0) {
+            return rightRotation(node);
         }
         // RR
-        if (balance < -1 && getBalance(node.right) <= 0) {
+        if (balance < -1 && getBalance(bNode.right) <= 0) {
             return leftRotation(node);
         }
         // LR
-        if (balance > 1 && getBalance(node.left) < 0) {
+        if (balance > 1 && getBalance(bNode.left) < 0) {
             return leftRightRotation(node);
         }
         // RL
-        if (balance < -1 && getBalance(node.right) > 0) {
+        if (balance < -1 && getBalance(bNode.right) > 0) {
             return rightLeftRotation(node);
         }
         return node;
     }
 
     private int getBalance(TreeNode<T> node) {
-        return node == null ? 0 : height(node.left) - height(node.right);
+        if (!(node instanceof BinaryTreeNode))
+            return 0;
+        BinaryTreeNode<T> bn = (BinaryTreeNode<T>) node;
+        return height(bn.left) - height(bn.right);
     }
 
     private TreeNode<T> findMin(TreeNode<T> node) {
-        while (node.left != null)
-            node = node.left;
-        return node;
+        BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
+        while (current.left != null)
+            current = (BinaryTreeNode<T>) current.left;
+        return current;
     }
 
     @Override
@@ -112,13 +128,13 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
         TreeNode<T> current = root;
         while (current != null) {
             compareCount++;
-            this.currentHighlight = current;
-            sync(this, current, null);
+            syncTree(current, null);
             int cmp = val.compareTo(current.data);
+            BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) current;
             if (cmp < 0)
-                current = current.left;
+                current = bNode.left;
             else if (cmp > 0)
-                current = current.right;
+                current = bNode.right;
             else
                 return current;
         }
@@ -127,33 +143,11 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
 
     @Override
     public void traverse() {
-    }
-
-    @Override
-    public int size() {
-        return root == null ? 0 : root.subTreeCount;
-    }
-
-    @Override
-    public int height() {
-        return height(root);
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return root == null;
-    }
-
-    @Override
-    public void clear() {
-        root = null;
-        resetStatistics();
-        sync(this, null, null);
+        // 实现遍历逻辑
     }
 
     @Override
     public List<T> toList() {
-        // TODO Auto-generated method stub
         List<T> result = new ArrayList<>();
         inOrder(root, result);
         return result;
@@ -162,8 +156,9 @@ public class AVLTree<T extends Comparable<T>> extends BalancedTree<T> {
     private void inOrder(TreeNode<T> node, List<T> list) {
         if (node == null)
             return;
-        inOrder(node.left, list);
+        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
+        inOrder(bNode.left, list);
         list.add(node.data);
-        inOrder(node.right, list);
+        inOrder(bNode.right, list);
     }
 }

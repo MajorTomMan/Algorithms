@@ -9,16 +9,16 @@ package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.core.basic.LinkedList;
 import com.majortom.algorithms.core.interfaces.Queue;
-import com.majortom.algorithms.core.tree.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 
 public class 二叉树的层序遍历{
     public static void main(String[] args) {
 
     }
-    public static Integer[] levelOrder(TreeNode<Integer> root,int size){
+    public static Integer[] levelOrder(BinaryTreeNode<Integer> root,int size){
         // root节点不为空的情况下将root加入队列,然后弹出root
         // 若其还有左右子树,则加入队列中,可一定保证其层次的完整遍历
-        Queue<TreeNode<Integer>> queue = new LinkedList<>();
+        Queue<BinaryTreeNode<Integer>> queue = new LinkedList<>();
         if(root==null){
             return null;
         }
@@ -28,7 +28,7 @@ public class 二叉树的层序遍历{
         Integer[] temp=new Integer[size+1];
         int i=0;
         while(!queue.isEmpty()){
-            TreeNode<Integer> node=queue.poll();
+            BinaryTreeNode<Integer> node=queue.poll();
             temp[i]=node.data.intValue();
             if(node.left!=null){
                 queue.add(node.left);

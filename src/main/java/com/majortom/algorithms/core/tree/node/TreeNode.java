@@ -1,36 +1,32 @@
-
 package com.majortom.algorithms.core.tree.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class TreeNode<T> {
+/**
+ * 树节点抽象基类
+ * 封装了算法运行所需的通用元数据及可视化状态
+ */
+public abstract class TreeNode<T> {
+   // 节点存储的核心数据
    public T data;
-   public int height;
-   public int subTreeCount;
 
-   // 核心：二叉多叉共存
-   public TreeNode<T> left; // 针对二叉树算法
-   public TreeNode<T> right; // 针对二叉树算法
-   public List<TreeNode<T>> children = new ArrayList<>(); // 针对多叉树算法
+   // --- 算法元数据 ---
+   public int height = 1; // 节点高度
+   public int subTreeCount = 1; // 以当前节点为根的子树节点总数
+   public int status = 0; // 状态位：用于存储平衡因子、颜色(红/黑)等算法特定值
+
+   // --- 可视化状态 ---
+   public double x, y; // UI 坐标位置
+   public boolean isHighlighted; // 高亮标记，用于展示当前操作路径或焦点
 
    public TreeNode(T data) {
       this.data = data;
-      this.height = 1;
-      this.subTreeCount = 1;
    }
 
-   // 辅助方法：统一获取所有子节点（绘制时用）
-   public List<TreeNode<T>> getAllChildren() {
-      if (children != null && !children.isEmpty())
-         return children;
-
-      // 如果 children 为空，尝试组合 left 和 right
-      List<TreeNode<T>> list = new ArrayList<>();
-      if (left != null)
-         list.add(left);
-      if (right != null)
-         list.add(right);
-      return list;
-   }
+   /**
+    * 获取当前节点的所有子节点
+    * 用于统一树的遍历、坐标计算及 UI 渲染逻辑
+    * * @return 子节点列表
+    */
+   public abstract List<? extends TreeNode<T>> getChildren();
 }

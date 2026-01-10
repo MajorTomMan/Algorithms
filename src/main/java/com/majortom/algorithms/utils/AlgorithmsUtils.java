@@ -1,18 +1,15 @@
 package com.majortom.algorithms.utils;
 
-import java.util.Random;
-
+import java.util.*;
 import com.majortom.algorithms.core.basic.node.ListNode;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.graph.node.Vertex;
 import com.majortom.algorithms.core.tree.node.TreeNode;
-
-import java.util.Arrays;
-import java.util.List;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 
 /**
- * 算法实验室工具类 v2.0
- * 涵盖：随机生成、类型转换、状态校验、性能监测
+ * 算法实验室工具类 v2.1
+ * 适配：重构后的 TreeNode 体系及可视化元数据维护
  */
 public abstract class AlgorithmsUtils {
     private static final Random random = new Random();
@@ -22,11 +19,16 @@ public abstract class AlgorithmsUtils {
     private static final String CHARACTERS = UPPER_CASE + LOWER_CASE + NUMBERS;
 
     /**
-     * 生成随机 Integer 数组
-     * 
-     * @param cap 长度
-     * @param max 最大值(不含)
+     * 内部工具类：提供一个具体的二叉节点实现，用于静态树的构建
      */
+    private static class SimpleBinaryNode<T> extends BinaryTreeNode<T> {
+        public SimpleBinaryNode(T data) {
+            super(data);
+        }
+    }
+
+    // --- 数组工具 ---
+
     public static Integer[] randomArray(int cap, int max) {
         Integer[] arr = new Integer[cap];
         for (int i = 0; i < cap; i++) {
@@ -35,11 +37,6 @@ public abstract class AlgorithmsUtils {
         return arr;
     }
 
-    /**
-     * 生成近乎有序的数组 (适合测试插入排序等算法的敏感度)
-     * 
-     * @param swapTimes 随机交换的次数，次数越少越有序
-     */
     public static Integer[] nearlySortedArray(int cap, int swapTimes) {
         Integer[] arr = new Integer[cap];
         for (int i = 0; i < cap; i++)
@@ -50,9 +47,6 @@ public abstract class AlgorithmsUtils {
         return arr;
     }
 
-    /**
-     * 生成完全倒序的数组
-     */
     public static Integer[] reversedArray(int cap) {
         Integer[] arr = new Integer[cap];
         for (int i = 0; i < cap; i++) {
@@ -61,9 +55,6 @@ public abstract class AlgorithmsUtils {
         return arr;
     }
 
-    /**
-     * 将包装类数组 Integer[] 转为基本类型 int[] (可视化渲染通常需要这个)
-     */
     public static int[] toPrimitive(Integer[] arr) {
         if (arr == null)
             return null;
@@ -73,16 +64,10 @@ public abstract class AlgorithmsUtils {
         return res;
     }
 
-    /**
-     * 浅拷贝数组（生成快照）
-     */
     public static Integer[] copy(Integer[] arr) {
         return arr == null ? null : arr.clone();
     }
 
-    /**
-     * 泛用交换方法
-     */
     public static <T> void swap(T[] arr, int i, int j) {
         if (i == j)
             return;
@@ -91,9 +76,6 @@ public abstract class AlgorithmsUtils {
         arr[j] = temp;
     }
 
-    /**
-     * 校验是否有序 (泛型版)
-     */
     public static <T extends Comparable<T>> boolean isSorted(T[] arr) {
         for (int i = 0; i < arr.length - 1; i++) {
             if (arr[i].compareTo(arr[i + 1]) > 0)
@@ -119,52 +101,11 @@ public abstract class AlgorithmsUtils {
     }
 
     public static Integer randomNum(int max, int step) {
-
         return random.nextInt(max) + step;
-
     }
 
-    /**
-     * 极简秒表计时器
-     */
-    public static class Stopwatch {
-        private final long start;
+    // --- 链表工具 ---
 
-        public Stopwatch() {
-            start = System.currentTimeMillis();
-        }
-
-        public double elapsedTime() {
-            long now = System.currentTimeMillis();
-            return (now - start) / 1000.0;
-        }
-    }
-
-    /**
-     * 打印二维图（邻接矩阵）并对齐
-     */
-    public static void printMatrix(Integer[][] matrix) {
-        for (Integer[] row : matrix) {
-            System.out.print("[");
-            for (int j = 0; j < row.length; j++) {
-                System.out.printf("%3d", row[j]);
-                if (j < row.length - 1)
-                    System.out.print(",");
-            }
-            System.out.println("]");
-        }
-    }
-
-    /**
-     * 打印普通数组
-     */
-    public static void display(Object[] arr) {
-        System.out.println(Arrays.toString(arr));
-    }
-
-    /**
-     * 根据数组构建单链表 (递归实现)
-     */
     public static <T> ListNode<T> buildLinkedList(T[] nums) {
         return buildLinkedListInternal(nums, 0);
     }
@@ -177,9 +118,6 @@ public abstract class AlgorithmsUtils {
         return node;
     }
 
-    /**
-     * 打印链表结构： 1 -> 2 -> 3 -> null
-     */
     public static <T> void printList(ListNode<T> head) {
         ListNode<T> curr = head;
         while (curr != null) {
@@ -189,88 +127,115 @@ public abstract class AlgorithmsUtils {
         System.out.println("null");
     }
 
-    /**
-     * 根据有序数组构建平衡二叉搜索树 (BST) - 单节点版
-     */
-    public static <T extends Comparable<T>> TreeNode<T> buildBST(T[] data) {
+    // --- 树工具 (核心适配) ---
+
+    public static <T extends Comparable<T>> BinaryTreeNode<T> buildBST(T[] data) {
         if (data == null || data.length == 0)
             return null;
-        // 确保数组有序，才能构建出 BST
         Arrays.sort(data);
         return buildBSTInternal(data, 0, data.length - 1);
     }
 
-    private static <T extends Comparable<T>> TreeNode<T> buildBSTInternal(T[] data, int start, int end) {
+    private static <T extends Comparable<T>> BinaryTreeNode<T> buildBSTInternal(T[] data, int start, int end) {
         if (start > end)
             return null;
-
         int mid = start + (end - start) / 2;
-        TreeNode<T> node = new TreeNode<>(data[mid]);
 
+        BinaryTreeNode<T> node = new SimpleBinaryNode<>(data[mid]);
         node.left = buildBSTInternal(data, start, mid - 1);
         node.right = buildBSTInternal(data, mid + 1, end);
+
+        // 关键：构建后刷新高度和规模，否则可视化画布无法分层
+        refreshNodeMetrics(node);
         return node;
     }
 
     /**
-     * 层序遍历构建二叉树
-     * 输入：[1, 2, 3, null, 5]
-     * 构建出以 1 为根，左孩子 2，右孩子 3，2 的右孩子为 5 的树
+     * 层序遍历构建二叉树 [1, 2, 3, null, 5]
      */
     public static <T> TreeNode<T> buildTreeByLevel(T[] arr) {
         if (arr == null || arr.length == 0 || arr[0] == null)
             return null;
 
-        TreeNode<T> root = new TreeNode<>(arr[0]);
-        java.util.Queue<TreeNode<T>> queue = new java.util.LinkedList<>();
+        BinaryTreeNode<T> root = new SimpleBinaryNode<>(arr[0]);
+        Queue<BinaryTreeNode<T>> queue = new LinkedList<>();
         queue.add(root);
 
         int i = 1;
         while (!queue.isEmpty() && i < arr.length) {
-            TreeNode<T> curr = queue.poll();
+            BinaryTreeNode<T> curr = queue.poll();
 
-            // 处理左孩子
             if (i < arr.length && arr[i] != null) {
-                curr.left = new TreeNode<>(arr[i]);
+                curr.left = new SimpleBinaryNode<>(arr[i]);
                 queue.add(curr.left);
             }
             i++;
 
-            // 处理右孩子
             if (i < arr.length && arr[i] != null) {
-                curr.right = new TreeNode<>(arr[i]);
+                curr.right = new SimpleBinaryNode<>(arr[i]);
                 queue.add(curr.right);
             }
             i++;
+
+            // 这里通常需要全量刷新，层序构建较难单点维护高度，建议最后统一处理或在循环内局部刷新
+            refreshNodeMetrics(curr);
         }
+        // 对于层序构建，最好从根部递归刷新一次确保全局高度正确
+        refreshGlobalMetrics(root);
         return root;
     }
 
     /**
-     * 构建随机邻接矩阵 (带权图)
-     * 
-     * @param n       节点数
-     * @param density 边密度 (0.0 - 1.0)
+     * 局部刷新节点的 height 和 subTreeCount
      */
+    private static <T> void refreshNodeMetrics(BinaryTreeNode<T> node) {
+        if (node == null)
+            return;
+        int hL = (node.left == null) ? 0 : node.left.height;
+        int hR = (node.right == null) ? 0 : node.right.height;
+        int sL = (node.left == null) ? 0 : node.left.subTreeCount;
+        int sR = (node.right == null) ? 0 : node.right.subTreeCount;
+
+        node.height = 1 + Math.max(hL, hR);
+        node.subTreeCount = 1 + sL + sR;
+    }
+
+    /**
+     * 递归全局刷新树的元数据
+     */
+    private static <T> int refreshGlobalMetrics(TreeNode<T> node) {
+        if (node == null)
+            return 0;
+        int maxH = 0;
+        int totalS = 1;
+        for (TreeNode<T> child : node.getChildren()) {
+            if (child != null) {
+                maxH = Math.max(maxH, refreshGlobalMetrics(child));
+                totalS += child.subTreeCount;
+            }
+        }
+        node.height = 1 + maxH;
+        node.subTreeCount = totalS;
+        return node.height;
+    }
+
+    // --- 图与迷宫工具 ---
+
     public static Integer[][] buildGraph(int n, double density) {
         Integer[][] matrix = new Integer[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (i == j) {
-                    matrix[i][j] = 0; // 自环为0
-                } else if (random.nextDouble() < density) {
-                    matrix[i][j] = random.nextInt(10) + 1; // 随机权重
-                } else {
-                    matrix[i][j] = null; // 无边连接
-                }
+                if (i == j)
+                    matrix[i][j] = 0;
+                else if (random.nextDouble() < density)
+                    matrix[i][j] = random.nextInt(10) + 1;
+                else
+                    matrix[i][j] = null;
             }
         }
         return matrix;
     }
 
-    /**
-     * 构建随机迷宫 (0为路, 1为墙)
-     */
     public static int[][] buildMaze(int rows, int cols, double wallProbability) {
         int[][] maze = new int[rows][cols];
         for (int i = 0; i < rows; i++) {
@@ -278,53 +243,54 @@ public abstract class AlgorithmsUtils {
                 maze[i][j] = (random.nextDouble() < wallProbability) ? 1 : 0;
             }
         }
-        maze[0][0] = 0; // 起点必通
-        maze[rows - 1][cols - 1] = 0; // 终点必通
+        maze[0][0] = 0;
+        maze[rows - 1][cols - 1] = 0;
         return maze;
     }
 
-    /**
-     * 快速构建随机图数据
-     * * @param graph 图实例 (DirectedGraph 或 UndirectedGraph)
-     * 
-     * @param nodeCount 节点数量 (例如 5, 26)
-     * @param edgeCount 边数量
-     * @param isAlpha   是否使用字母作为节点数据 (true 则 A, B, C...; false 则 0, 1, 2...)
-     */
     @SuppressWarnings("unchecked")
     public static <V> void buildRandomGraph(BaseGraph<V> graph, int nodeCount, int edgeCount, boolean isAlpha) {
-        // 1. 生成并添加顶点
         for (int i = 0; i < nodeCount; i++) {
-            V data;
-            if (isAlpha && i < 26) {
-                data = (V) String.valueOf((char) ('A' + i));
-            } else {
-                data = (V) Integer.valueOf(i);
-            }
+            V data = isAlpha && i < 26 ? (V) String.valueOf((char) ('A' + i)) : (V) Integer.valueOf(i);
             graph.addVertex(new Vertex<>(data));
         }
-
-        // 2. 随机生成边
         List<Vertex<V>> vertices = graph.getVertices();
         if (vertices.size() < 2)
             return;
-
         int actualEdges = 0;
         while (actualEdges < edgeCount) {
-            int fromIdx = random.nextInt(nodeCount);
-            int toIdx = random.nextInt(nodeCount);
-
-            // 避免自环（如果你允许自环可以删掉这个判断）
-            if (fromIdx == toIdx)
+            int f = random.nextInt(nodeCount);
+            int t = random.nextInt(nodeCount);
+            if (f == t)
                 continue;
-
-            V fromData = vertices.get(fromIdx).getData();
-            V toData = vertices.get(toIdx).getData();
-
-            // 调用 BaseGraph 的抽象接口 addEdge
-            // 如果是 UndirectedGraph，它会自动连两条；如果是 DirectedGraph，连一条
-            graph.addEdge(fromData, toData, random.nextInt(10) + 1);
+            graph.addEdge(vertices.get(f).getData(), vertices.get(t).getData(), random.nextInt(10) + 1);
             actualEdges++;
         }
+    }
+
+    // --- 辅助类 ---
+
+    public static class Stopwatch {
+        private final long start = System.currentTimeMillis();
+
+        public double elapsedTime() {
+            return (System.currentTimeMillis() - start) / 1000.0;
+        }
+    }
+
+    public static void printMatrix(Integer[][] matrix) {
+        for (Integer[] row : matrix) {
+            System.out.print("[");
+            for (int j = 0; j < row.length; j++) {
+                System.out.printf("%3d", row[j]);
+                if (j < row.length - 1)
+                    System.out.print(",");
+            }
+            System.out.println("]");
+        }
+    }
+
+    public static void display(Object[] arr) {
+        System.out.println(Arrays.toString(arr));
     }
 }

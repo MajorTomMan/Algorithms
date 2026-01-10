@@ -7,18 +7,18 @@
  */
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import com.majortom.algorithms.core.tree.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 树的子结构 {
     public static void main(String[] args) {
-        TreeNode<Integer> tree_a = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
-        TreeNode<Integer> tree_b = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> tree_a = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> tree_b = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         System.out.println(isSubStructure(tree_a, tree_b));
     }
 
     // 先检查A和B共同的子树根节点,然后递归判断子树结构
-    public static boolean isSubStructure(TreeNode<Integer> A, TreeNode<Integer> B) {
+    public static boolean isSubStructure(BinaryTreeNode<Integer> A, BinaryTreeNode<Integer> B) {
         if (A == null || B == null) {
             return false;
         }
@@ -34,7 +34,7 @@ public class 树的子结构 {
      * 若A为null 则代表该子树不是A中子树,
      * 返回false
      */
-    public static boolean checkSubTree(TreeNode<Integer> a, TreeNode<Integer> b) {
+    public static boolean checkSubTree(BinaryTreeNode<Integer> a, BinaryTreeNode<Integer> b) {
         if (b == null) {
             return true;
         }

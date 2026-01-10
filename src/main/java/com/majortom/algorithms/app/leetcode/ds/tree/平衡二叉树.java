@@ -7,20 +7,20 @@
  */
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import com.majortom.algorithms.core.tree.node.TreeNode;
+import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 
 public class 平衡二叉树 {
     public static void main(String[] args) {
-        TreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         isBalanced(root);
     }
 
-    public static boolean isBalanced(TreeNode<Integer> root) {
+    public static boolean isBalanced(BinaryTreeNode<Integer> root) {
         return height(root) != -1;
     }
 
-    public static int height(TreeNode<Integer> node) {
+    public static int height(BinaryTreeNode<Integer> node) {
         if (node == null) {
             return 0;
         }
