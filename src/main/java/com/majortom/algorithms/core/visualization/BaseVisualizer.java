@@ -1,133 +1,165 @@
-
 package com.majortom.algorithms.core.visualization;
 
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.application.Platform;
+import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 
 /**
- * 通用可视化画布基类
- * 丢弃 JPanel，使用 JavaFX Region 作为容器，Canvas 作为绘图组件
- * * @param <T> 可视化数据的类型
+ * 视觉呈现组件基类
+ * 职责：管理 Canvas 生命周期，提供跨线程 UI 刷新保障及基础绘图工具。
+ * * @param <T> 数据模型泛型，对应算法操作的实体对象
  */
-public abstract class BaseVisualizer<T> extends Region {
+public abstract class BaseVisualizer<T> extends StackPane {
 
-    // 响应式属性：数据源
-    protected final ObjectProperty<T> data = new SimpleObjectProperty<>();
-    // 响应式属性：当前活跃/选中的元素（例如排序中正在比较的两个下标）
-    protected final ObjectProperty<Object> activeA = new SimpleObjectProperty<>();
-    protected final ObjectProperty<Object> activeB = new SimpleObjectProperty<>();
+    protected Canvas canvas;
+    protected GraphicsContext gc;
+    private T lastData;
+    private Object lastA;
+    private Object lastB;
+    /** 默认绘图颜色配置 */
+    protected Color highlightColor = Color.web("#7E57C2");
+    protected Color baseColor = Color.web("#CFD8DC");
+    protected Color backgroundColor = Color.web("#0A0A0E");
 
-    // 绘图核心组件
-    protected final Canvas canvas = new Canvas();
+    public BaseVisualizer() {
+        this.canvas = new Canvas();
+        this.gc = canvas.getGraphicsContext2D();
 
-    // 基础配置
-    protected double cellSize;
-    protected final double padding = 20.0;
+        // 绑定画布到容器
+        this.getChildren().add(canvas);
+
+        // 监听容器尺寸变化
+        this.widthProperty().addListener((obs, oldVal, newVal) -> resize());
+        this.heightProperty().addListener((obs, oldVal, newVal) -> resize());
+        this.widthProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
+        this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
+    }
 
     /**
-     * 构造函数
+     * 响应式调整画布尺寸
+     */
+    protected void resize() {
+        canvas.setWidth(getWidth());
+        canvas.setHeight(getHeight());
+        clear();
+        lastData = null;
+        lastA = null;
+        lastB = null;
+    }
+
+    /**
+     * 清空画布并填充背景色
+     */
+    public void clear() {
+        gc.setFill(backgroundColor);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+    }
+
+    /**
+     * 统一绘制入口：由算法同步钩子触发
+     * 内部封装 Platform.runLater 以确保线程安全
+     * * @param data 算法当前持有的数据实体
      * 
-     * @param initialData 初始数据
+     * @param a 主操作焦点对象
+     * @param b 次操作焦点对象
      */
-    public BaseVisualizer(T initialData) {
-        // 1. 初始化数据
-        this.data.set(initialData);
-
-        // 2. 将 Canvas 添加到 Region 的子节点列表中
-        getChildren().add(canvas);
-
-        // 3. 建立画布与容器的大小绑定：画布随容器自动缩放
-        canvas.widthProperty().bind(this.widthProperty());
-        canvas.heightProperty().bind(this.heightProperty());
-
-        // 4. 注册监听器：当尺寸、数据或状态改变时，自动触发重绘
-        canvas.widthProperty().addListener((obs, oldVal, newVal) -> handleRedraw());
-        canvas.heightProperty().addListener((obs, oldVal, newVal) -> handleRedraw());
-        data.addListener((obs, oldVal, newVal) -> handleRedraw());
-        activeA.addListener((obs, oldVal, newVal) -> handleRedraw());
-        activeB.addListener((obs, oldVal, newVal) -> handleRedraw());
-
-        // 5. 设置初始重绘
-        handleRedraw();
-    }
-
-    /**
-     * 更新数据和活跃状态的统一入口
-     * 调用此方法会自动通过属性监听器触发 handleRedraw()
-     */
-    public void updateState(T newData, Object a, Object b) {
-        this.data.set(newData);
-        this.activeA.set(a);
-        this.activeB.set(b);
-    }
-
-    /**
-     * 重绘调度逻辑
-     */
-    private void handleRedraw() {
-        double width = canvas.getWidth();
-        double height = canvas.getHeight();
-
-        // 过滤无效的绘图请求
-        if (width <= 0 || height <= 0 || data.get() == null) {
-            return;
+    public final void render(T data, Object a, Object b) {
+        this.lastData = data;
+        this.lastA = a;
+        this.lastB = b;
+        if (Platform.isFxApplicationThread()) {
+            draw(data, a, b);
+        } else {
+            Platform.runLater(() -> draw(data, a, b));
         }
-
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-
-        // 1. 清除当前画布内容（等同于 Swing 的 super.paintComponent）
-        gc.clearRect(0, 0, width, height);
-
-        // 2. 计算缩放比例或布局参数
-        onMeasure(width, height);
-
-        // 3. 执行具体的绘图渲染
-        draw(gc, width, height);
     }
 
     /**
-     * 子类实现：计算绘图所需的比例、单元格大小等坐标信息
-     * 
-     * @param width  当前画布宽度
-     * @param height 当前画布高度
+     * 渲染重载：仅传数据
      */
-    protected abstract void onMeasure(double width, double height);
+    public final void render(T data) {
+        render(data, null, null);
+    }
 
     /**
-     * 子类实现：具体的绘图指令
-     * 
-     * @param gc     JavaFX 绘图上下文 (替代了 Graphics2D)
-     * @param width  画布宽度
-     * @param height 画布高度
+     * 渲染重载：传数据和主焦点
      */
-    protected abstract void draw(GraphicsContext gc, double width, double height);
-
-    // --- Getter & Setter ---
-
-    public T getData() {
-        return data.get();
+    public final void render(T data, Object a) {
+        render(data, a, null);
     }
 
-    public void setData(T data) {
-        this.data.set(data);
+    /**
+     * 抽象绘制逻辑，由各子类根据具体数据结构实现
+     * * @param data 数据实体
+     * 
+     * @param a 焦点 A
+     * @param b 焦点 B
+     */
+    protected abstract void draw(T data, Object a, Object b);
+
+    // --- 绘图辅助工具 ---
+
+    /**
+     * 绘制居中文字
+     * * @param x 中心横坐标
+     * 
+     * @param y     中心纵坐标
+     * @param text  文本内容
+     * @param color 颜色
+     * @param font  字体
+     */
+    protected void drawCenteredText(double x, double y, String text, Color color, Font font) {
+        gc.save();
+        gc.setFill(color);
+        gc.setFont(font);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.fillText(text, x, y);
+        gc.restore();
     }
 
-    public Object getActiveA() {
-        return activeA.get();
+    /**
+     * 获取绘图上下文
+     */
+    public GraphicsContext getGraphicsContext() {
+        return gc;
     }
 
-    public void setActiveA(Object a) {
-        this.activeA.set(a);
+    /**
+     * 获取基础颜色（供子类调用）
+     */
+    protected Color getBaseColor() {
+        return baseColor;
     }
 
-    public Object getActiveB() {
-        return activeB.get();
+    /**
+     * 获取高亮颜色（供子类调用）
+     */
+    protected Color getHighlightColor() {
+        return highlightColor;
     }
 
-    public void setActiveB(Object b) {
-        this.activeB.set(b);
+    /**
+     * 核心：重绘当前快照
+     * 当外部容器（如 MainController 里的 StackPane）尺寸变化时调用
+     */
+    public void drawCurrent() {
+        if (lastData != null) {
+            // 重绘必须在 FX 线程执行
+            if (Platform.isFxApplicationThread()) {
+                clear(); // 先刷背景
+                draw(lastData, lastA, lastB);
+            } else {
+                Platform.runLater(() -> {
+                    clear();
+                    draw(lastData, lastA, lastB);
+                });
+            }
+        }
     }
 }

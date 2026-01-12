@@ -1,125 +1,125 @@
 package com.majortom.algorithms.core.visualization.impl.visualizer;
 
-import com.majortom.algorithms.core.graph.BaseGraph;
-import com.majortom.algorithms.core.graph.node.Edge;
-import com.majortom.algorithms.core.graph.node.Vertex;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
-
-import javafx.geometry.VPos;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextAlignment;
-import java.util.Collection;
+import javafx.application.Platform;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.Node;
+import org.graphstream.ui.fx_viewer.FxViewPanel;
+import org.graphstream.ui.fx_viewer.FxViewer;
 
 /**
- * 图算法可视化画布 (JavaFX Canvas 实现)
- * 职责：
- * 1. 绘制边（Edges）和权重。
- * 2. 绘制节点（Vertex）主体、高亮发光效果。
- * 3. 绘制节点文本，确保处于最顶层。
+ * 图算法可视化器
+ * 职责：适配 GraphStream 的 JavaFX 视图，通过 CSS 样式表实现霓虹视觉效果，
+ * 并根据算法反馈更新节点状态。
  */
-public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
+public class GraphVisualizer extends BaseVisualizer<Graph> {
 
-    private static final double RADIUS = 20.0;
+    private FxViewer viewer;
+    private FxViewPanel viewPanel;
+    private Graph internalGraph;
 
-    // 定义配色（推荐后续通过配置文件或 CSS 变量动态读取）
-    private final Color ACCENT_COLOR = Color.web("#E06C75"); // 红色高亮
-    private final Color VISITED_COLOR = Color.web("#98C379"); // 绿色访问
-    private final Color DEFAULT_NODE_COLOR = Color.web("#5C6370"); // 灰色默认
-    private final Color EDGE_COLOR = Color.rgb(171, 178, 191, 0.4); // 半透明边线
+    public GraphVisualizer() {
+        // 1. 指定 GraphStream 使用 JavaFX 渲染引擎
+        System.setProperty("org.graphstream.ui", "javafx");
 
-    public GraphVisualizer(BaseGraph<V> data) {
-        super(data);
+        // 初始状态下不持有特定的 Graph 引用，由第一次 draw 传入或由 Controller 注入
+        // 此时仅作为容器准备
     }
 
+    /**
+     * 实现渲染钩子
+     * 
+     * @param data 传入的 GraphStream 图实例
+     * @param a    当前操作的主节点 ID (String)
+     * @param b    关联操作的辅助节点 ID (String)
+     */
     @Override
-    protected void onMeasure(double width, double height) {
-        // 布局通常由 GraphUtils.autoLayout 完成，此处仅保留扩展位
-    }
-
-    @Override
-    protected void draw(GraphicsContext gc, double width, double height) {
-        BaseGraph<V> graph = data.get();
-        if (graph == null)
+    protected void draw(Graph data, Object a, Object b) {
+        if (data == null)
             return;
 
-        Collection<Vertex<V>> vertices = graph.getVertices();
-
-        // --- 第一步：绘制所有的边 ---
-        drawEdges(gc, vertices);
-
-        // --- 第二步：绘制节点主体 ---
-        for (Vertex<V> v : vertices) {
-            drawVertexBody(gc, v);
+        // 首次运行或图实例切换时初始化 Viewer
+        if (internalGraph != data) {
+            this.internalGraph = data;
+            initializeViewer();
         }
 
-        // --- 第三步：最后统一绘制文字（确保在顶层） ---
-        drawVertexText(gc, vertices);
-    }
+        // 修改节点样式属于 UI 更新范畴
+        Platform.runLater(() -> {
+            // 清除旧的高亮状态
+            data.nodes().forEach(n -> n.removeAttribute("ui.class"));
 
-    private void drawEdges(GraphicsContext gc, Collection<Vertex<V>> vertices) {
-        gc.setLineWidth(1.5);
-        gc.setStroke(EDGE_COLOR);
-        gc.setFont(Font.font("JetBrains Mono", 12));
-        gc.setFill(Color.web("#ABB2BF", 0.6)); // 权重文字颜色
-
-        for (Vertex<V> v : vertices) {
-            double x1 = v.getX();
-            double y1 = v.getY();
-
-            for (Edge<V> edge : v.getEdges()) {
-                Vertex<V> dest = edge.getDest();
-                double x2 = dest.getX();
-                double y2 = dest.getY();
-
-                // 绘制边线
-                gc.strokeLine(x1, y1, x2, y2);
-
-                // 如果有权重，绘制权重文字
-                if (edge.getWeight() != 0) {
-                    double midX = (x1 + x2) / 2;
-                    double midY = (y1 + y2) / 2;
-                    gc.fillText(String.valueOf(edge.getWeight()), midX, midY);
-                }
+            // 设置主焦点样式 (如: START_VIOLET 效果)
+            if (a instanceof String nodeId) {
+                Node nodeA = data.getNode(nodeId);
+                if (nodeA != null)
+                    nodeA.setAttribute("ui.class", "highlight");
             }
-        }
+
+            // 设置副焦点样式 (如: NEON_BLUE 效果)
+            if (b instanceof String nodeId) {
+                Node nodeB = data.getNode(nodeId);
+                if (nodeB != null)
+                    nodeB.setAttribute("ui.class", "secondary");
+            }
+        });
     }
 
-    private void drawVertexBody(GraphicsContext gc, Vertex<V> v) {
-        double x = v.getX();
-        double y = v.getY();
+    private void initializeViewer() {
+        Platform.runLater(() -> {
+            // 应用霓虹样式表
+            internalGraph.setAttribute("ui.stylesheet", getNeonStyleSheet());
+            internalGraph.setAttribute("ui.antialias");
 
-        // 1. 绘制高亮外发光 (Focus 效果)
-        if (v == activeA.get() || v == activeB.get()) {
-            gc.setFill(ACCENT_COLOR.deriveColor(0, 1, 1, 0.3)); // 30% 不透明度
-            gc.fillOval(x - RADIUS - 6, y - RADIUS - 6, (RADIUS + 6) * 2, (RADIUS + 6) * 2);
-            gc.setFill(ACCENT_COLOR);
-        } else if (v.isVisited()) {
-            gc.setFill(VISITED_COLOR);
-        } else {
-            gc.setFill(DEFAULT_NODE_COLOR);
-        }
+            this.viewer = new FxViewer(internalGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+            this.viewer.enableAutoLayout();
 
-        // 2. 填充节点圆饼
-        gc.fillOval(x - RADIUS, y - RADIUS, RADIUS * 2, RADIUS * 2);
+            // 获取 FxViewPanel 并挂载到 StackPane
+            this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
-        // 3. 绘制节点边框
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(2.0);
-        gc.strokeOval(x - RADIUS, y - RADIUS, RADIUS * 2, RADIUS * 2);
+            // 清除 BaseVisualizer 默认生成的画布
+            this.getChildren().clear();
+            this.getChildren().add(viewPanel);
+        });
     }
 
-    private void drawVertexText(GraphicsContext gc, Collection<Vertex<V>> vertices) {
-        gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("JetBrains Mono", FontWeight.BOLD, 14));
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.setTextBaseline(VPos.CENTER);
+    /**
+     * 对齐全局视觉风格的样式定义
+     */
+    private String getNeonStyleSheet() {
+        return "graph { fill-color: #0A0A0E; padding: 60px; }" +
+                "node { " +
+                "   size: 26px; " +
+                "   fill-color: #CFD8DC; " + // CRYSTAL_WHITE 基调
+                "   text-size: 14px; " +
+                "   text-color: #0A0A0E; " +
+                "   stroke-mode: plain; " +
+                "   stroke-color: #455A64; " +
+                "   stroke-width: 1px; " +
+                "}" +
+                "node.highlight { " +
+                "   fill-color: #7E57C2; " + // START_VIOLET
+                "   stroke-color: #FFFFFF; " +
+                "   stroke-width: 2px; " +
+                "   shadow-mode: gradient-radial; " +
+                "   shadow-color: rgba(126, 87, 194, 0.5), rgba(10, 10, 14, 0); " +
+                "   shadow-width: 15px; shadow-offset: 0px; " +
+                "}" +
+                "node.secondary { " +
+                "   fill-color: #00A0FF; " + // NEON_BLUE
+                "}" +
+                "edge { " +
+                "   fill-color: #455A64; " +
+                "   width: 2px; " +
+                "   arrow-size: 10px, 4px; " +
+                "}";
+    }
 
-        for (Vertex<V> v : vertices) {
-            String txt = String.valueOf(v.getData());
-            gc.fillText(txt, v.getX(), v.getY());
+    @Override
+    public void clear() {
+        super.clear();
+        if (internalGraph != null) {
+            internalGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
         }
     }
 }

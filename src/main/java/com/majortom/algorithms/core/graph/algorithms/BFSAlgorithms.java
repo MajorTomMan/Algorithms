@@ -2,43 +2,61 @@ package com.majortom.algorithms.core.graph.algorithms;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.graph.BaseGraphAlgorithms;
-import com.majortom.algorithms.core.graph.node.Vertex;
 
-import com.majortom.algorithms.core.graph.node.Edge;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.Node;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * 广度优先搜索 (BFS) 算法实现
+ * 适配 GraphStream 数据模型，通过节点 ID 进行拓扑遍历
+ */
 public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
 
     @Override
-    public void run(BaseGraph<V> graph, Vertex<V> start) {
-        // 1. 初始化：重置统计数据和所有节点的访问状态
-        graph.resetGraphNodes();
+    public void run(BaseGraph<V> graph, String startNodeId) {
+        // 1. 初始化：重置统计数据与图中所有元素的视觉状态
+        graph.resetGraphState();
+
+        // 获取 GraphStream 核心实例
+        Graph g = graph.getGraph();
+        Node startNode = g.getNode(startNodeId);
+
+        if (startNode == null)
+            return;
 
         // 2. 准备队列
-        Queue<Vertex<V>> queue = new LinkedList<>();
+        Queue<Node> queue = new LinkedList<>();
 
-        // 3. 处理起点
-        queue.add(start);
-        graph.visit(start); // 这个方法会自动 sync 刷新 UI
+        // 3. 处理起始节点
+        queue.add(startNode);
+        graph.visit(startNodeId); // 内部触发 sync，将节点标记为 highlight
 
         while (!queue.isEmpty()) {
-            Vertex<V> curr = queue.poll();
+            Node curr = queue.poll();
 
-            // 遍历当前节点的所有邻居
-            for (Edge<V> edge : curr.getEdges()) {
-                Vertex<V> neighbor = edge.getDest();
+            // 4. 遍历当前节点的邻居
+            // GraphStream 会根据图的有向/无向属性自动返回正确的邻居集合
+            curr.neighborNodes().forEach(neighbor -> {
+                String neighborId = neighbor.getId();
 
-                // 即使节点访问过，我们也“探测”一下这条边
-                // trace 会增加比较计数并触发 UI 上的连线高亮
-                graph.trace(curr, neighbor);
+                // 探测边：增加比较计数并触发 UI 渲染
+                graph.trace(curr.getId(), neighborId);
 
-                if (!neighbor.isVisited()) {
-                    // 标记并加入队列
-                    graph.visit(neighbor);
+                // 检查节点是否已访问（通过自定义属性 visited 判断）
+                if (!neighbor.hasAttribute("visited")) {
+                    // 标记访问、入队
+                    graph.visit(neighborId);
                     queue.add(neighbor);
                 }
-            }
+            });
         }
+    }
+
+    @Override
+    public void run(Graph data) {
+        // TODO Auto-generated method stub
+        
     }
 }

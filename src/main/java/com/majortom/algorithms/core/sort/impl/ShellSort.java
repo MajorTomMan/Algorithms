@@ -1,27 +1,14 @@
 package com.majortom.algorithms.core.sort.impl;
 
 import com.majortom.algorithms.core.sort.BaseSort;
+import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 
-public class ShellSort extends BaseSort {
+public class ShellSort <T extends Comparable<T>> extends BaseSortAlgorithms<T> {
 
     @Override
-    public void sort(int[] data) {
+    public void sort(BaseSort<T> sortEntity) {
         // TODO Auto-generated method stub
-        int N = data.length;
-        // TODO Auto-generated method stub
-
-        int h = 1;
-        while (h < N / 3) { // 影响因子 递增数列
-            h = 3 * h + 1;
-        }
-        while (h >= 1) {
-            for (int i = h; i < N; i++) {
-                for (int j = i; j >= h && less(data, data[j], data[j - h]); j -= h) {
-                    swap(data, j, j - h);
-                    sync(data, j, j - h);
-                }
-            }
-            h = h / 3;
-        }
+        throw new UnsupportedOperationException("Unimplemented method 'sort'");
     }
+    
 }

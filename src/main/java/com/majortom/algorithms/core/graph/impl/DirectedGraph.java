@@ -1,27 +1,35 @@
 package com.majortom.algorithms.core.graph.impl;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
-import com.majortom.algorithms.core.graph.node.Vertex;
+import org.graphstream.graph.Edge;
+import org.graphstream.graph.Graph;
 
 /**
- * 有向图的具体实现
+ * 有向图数据实现
+ * 职责：维护具有方向性的拓扑连接
  */
 public class DirectedGraph<V> extends BaseGraph<V> {
 
-    /**
-     * 实现基类的抽象加边方法
-     * 在有向图中，仅建立从 from 到 to 的单向引用
-     */
-    @Override
-    public void addEdge(V from, V to, int weight) {
-        Vertex<V> u = findVertex(from);
-        Vertex<V> v = findVertex(to);
+    public DirectedGraph(String id) {
+        super(id);
+    }
 
-        if (u != null && v != null) {
-            u.addEdge(v, weight);
-        } else {
-            System.err.println("警告：尝试连接不存在的顶点 " + from + " -> " + to);
+    @Override
+    public void addEdge(String fromId, String toId, int weight) {
+        String edgeId = String.format("%s->%s", fromId, toId);
+        if (graph.getEdge(edgeId) == null) {
+            // 第三个参数 true 表示该边为有向边
+            Edge e = graph.addEdge(edgeId, fromId, toId, true);
+            e.setAttribute("weight", weight);
+            e.setAttribute("ui.label", String.valueOf(weight));
+
+            // 为有向图定制箭头样式
+            e.setAttribute("ui.style", "arrow-shape: arrow; arrow-size: 10px, 5px;");
         }
     }
 
+    @Override
+    public void run(Graph data) {
+        // TODO Auto-generated method stub
+    }
 }

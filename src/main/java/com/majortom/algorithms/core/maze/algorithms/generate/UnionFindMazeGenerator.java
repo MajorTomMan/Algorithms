@@ -12,7 +12,7 @@ import java.util.List;
 import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
 
 /**
- * 基于并查集的迷宫生成算法（Kruskal's Algorithm 变体）
+ * 基于并查集的迷宫生成算法（Kruskal's Algorithms 变体）
  * 特点：生成的迷宫分支非常均匀，没有明显的“生长中心”。
  */
 public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
