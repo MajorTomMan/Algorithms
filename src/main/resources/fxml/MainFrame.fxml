@@ -2,58 +2,49 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
-<BorderPane xmlns="http://javafx.com/javafx"
-    xmlns:fx="http://javafx.com/fxml"
-    fx:controller="com.majortom.algorithms.core.visualization.MainController"
-    prefHeight="800.0" prefWidth="1200.0"
-    style="-fx-background-color: #0A0A0E;">
+<BorderPane xmlns="http://javafx.com/javafx" 
+            xmlns:fx="http://javafx.com/fxml" 
+            fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
+            prefHeight="800.0" prefWidth="1200.0"
+            style="-fx-background-color: #0A0A0E;">
+
     <left>
-        <VBox spacing="15" prefWidth="250"
-            style="-fx-background-color: #121218; -fx-border-color: #252525; -fx-border-width: 0 1 0 0;">
-            <padding>
-                <Insets top="20" right="15" bottom="20" left="15" />
-            </padding>
-            <Label text="DATA MONITOR" style="-fx-text-fill: #5C5C5C; -fx-font-weight: bold;" />
-            <Separator prefWidth="200" style="-fx-opacity: 0.2;" />
-
-            <VBox fx:id="sideBarDataBox" spacing="10">
-                <Label fx:id="statsLabel" text="Waiting..."
-                    style="-fx-text-fill: #00A0FF; -fx-font-family: 'Monospaced';" />
-                <TextArea fx:id="logArea" editable="false" wrapText="true"
-                    VBox.vgrow="ALWAYS"
-                    style="-fx-control-inner-background: #0A0A0E; -fx-text-fill: #888888;" />
-            </VBox>
+        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #121218; -fx-min-width: 250;">
+            <Label text="LABORATORY" style="-fx-text-fill: #565656; -fx-font-weight: bold;"/>
+            
+            <Button text="Sorting Algorithms" onAction="#switchToSortModule" maxWidth="Infinity"/>
+            <Button text="Maze Generation" onAction="#switchToMazeModule" maxWidth="Infinity"/>
+            
+            <Separator style="-fx-opacity: 0.2;"/>
+            
+            <Label text="STATISTICS" style="-fx-text-fill: #565656;"/>
+            <Label fx:id="statsLabel" text="System Ready" style="-fx-text-fill: #00FF9C; -fx-font-family: 'Consolas';"/>
+            
+            <Label text="SYSTEM LOG" style="-fx-text-fill: #565656;"/>
+            <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" 
+                      style="-fx-control-inner-background: #050507; -fx-text-fill: #888; -fx-font-family: 'Consolas';"/>
         </VBox>
     </left>
 
     <center>
-        <StackPane fx:id="visualizationContainer"
-            style="-fx-background-color: black;">
-        </StackPane>
+        <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;"/>
     </center>
 
     <bottom>
-        <HBox spacing="25" alignment="CENTER" prefHeight="80"
-            style="-fx-background-color: #121218; -fx-border-color: #252525; -fx-border-width: 1 0 0 0;">
-            <padding>
-                <Insets left="20" right="20" />
-            </padding>
-
-            <HBox spacing="10" alignment="CENTER">
-                <Button fx:id="startBtn" text="START" styleClass="accent" />
+        <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 15; -fx-background-color: #121218;">
+            <HBox spacing="10">
+                <Button fx:id="startBtn" text="START" style="-fx-background-color: #00FF9C; -fx-text-fill: black;"/>
                 <Button fx:id="pauseBtn" text="PAUSE" />
                 <Button fx:id="resetBtn" text="RESET" />
             </HBox>
-
-            <VBox alignment="CENTER" spacing="5">
-                <Label text="ANIMATION DELAY (MS)"
-                    style="-fx-text-fill: #5C5C5C; -fx-font-size: 10px;" />
-                <Slider fx:id="delaySlider" min="0" max="1000" value="50" prefWidth="200" />
+            
+            <VBox spacing="5">
+                <Label text="ANIMATION DELAY (MS)" style="-fx-text-fill: white; -fx-font-size: 10;"/>
+                <Slider fx:id="delaySlider" min="0" max="500" value="50" showTickLabels="true"/>
             </VBox>
 
-            <HBox fx:id="customControlBox" spacing="10" alignment="CENTER" />
+            <HBox fx:id="customControlBox" spacing="10" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS" />
         </HBox>
     </bottom>
 

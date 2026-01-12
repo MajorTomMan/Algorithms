@@ -19,9 +19,16 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<int[][]> {
         int rows = grid.length;
         int cols = grid[0].length;
 
-        // 计算单元格步进尺寸
-        double cellW = getWidth() / cols;
-        double cellH = getHeight() / rows;
+        // 获取画布实际尺寸，如果布局还没完成，尝试使用 Pref 尺寸或保底
+        double width = canvas.getWidth() > 0 ? canvas.getWidth() : getPrefWidth();
+        double height = canvas.getHeight() > 0 ? canvas.getHeight() : getPrefHeight();
+
+        // 如果还是 0（说明是刚启动），暂时不画，等待下一次 resize 触发重绘
+        if (width <= 0 || height <= 0)
+            return;
+
+        double cellW = width / cols;
+        double cellH = height / rows;
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {

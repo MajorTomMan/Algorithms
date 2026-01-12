@@ -14,7 +14,7 @@ public class BFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
     public void run(int[][] data) {
         if (mazeEntity == null)
             return;
-
+        mazeEntity.initial();
         ArrayMaze maze = (ArrayMaze) mazeEntity;
         maze.initial(); // 清空迷宫为全墙
 

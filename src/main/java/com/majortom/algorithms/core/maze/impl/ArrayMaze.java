@@ -1,26 +1,22 @@
 package com.majortom.algorithms.core.maze.impl;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
+import com.majortom.algorithms.core.maze.constants.MazeConstant;
+
 import java.util.Arrays;
 import java.util.Random;
 
 public class ArrayMaze extends BaseMaze<int[][]> {
-    private final int rows;
-    private final int cols;
 
     public ArrayMaze(int rows, int cols) {
-        this.rows = rows;
-        this.cols = cols;
+        super(rows, cols);
         this.data = new int[rows][cols];
-        initial();
     }
 
     @Override
     public void initial() {
-        for (int i = 0; i < rows; i++) {
-            Arrays.fill(this.data[i], 1); // 1 代表墙
-        }
-        resetStatistics();
+        initialSilent();
+        // 关键点：初始化后发送一次全图信号，让 UI 刷出满墙背景
         this.sync(data, null, null);
     }
 
@@ -47,10 +43,9 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         return cols;
     }
 
+    @Override
     public int getCell(int r, int c) {
-        if (isOverBorder(r, c))
-            return 1;
-        return data[r][c];
+        return isOverBorder(r, c) ? MazeConstant.WALL : data[r][c];
     }
 
     @Override
@@ -74,5 +69,13 @@ public class ArrayMaze extends BaseMaze<int[][]> {
 
         setCellState(startR, startC, 3, false);
         setCellState(endR, endC, 5, false);
+    }
+
+    @Override
+    public void initialSilent() {
+        for (int i = 0; i < rows; i++) {
+            Arrays.fill(this.data[i], MazeConstant.WALL); // 默认填充为墙
+        }
+        resetStatistics();
     }
 }

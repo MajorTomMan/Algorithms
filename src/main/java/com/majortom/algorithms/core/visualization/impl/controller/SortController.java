@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.impl.window;
+package com.majortom.algorithms.core.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.sort.BaseSort;

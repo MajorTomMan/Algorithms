@@ -80,7 +80,7 @@ public abstract class BaseController<T> implements Initializable {
         Platform.runLater(() -> {
             try {
                 if (visualizer != null) {
-                    visualizer.draw(data, a, b);
+                    visualizer.render(data, a, b);
                 }
                 updateUIComponents(compareCount, actionCount);
             } finally {
@@ -125,8 +125,8 @@ public abstract class BaseController<T> implements Initializable {
 
         isRunning = true;
         isPaused = false;
-        renderSemaphore.drainPermits(); // 清空历史信号
-
+        renderSemaphore.drainPermits();
+        renderSemaphore.release();
         // 注入环境监听器
         algorithm.setEnvironment(this::onSync, this::onStep);
 

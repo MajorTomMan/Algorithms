@@ -1,11 +1,9 @@
-package com.majortom.algorithms.core.visualization.main;
+package com.majortom.algorithms.core.visualization.impl.controller;
 
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import com.majortom.algorithms.core.visualization.impl.visualizer.HistogramSortVisualizer;
 import com.majortom.algorithms.core.visualization.impl.visualizer.SquareMazeVisualizer;
-import com.majortom.algorithms.core.visualization.impl.window.MazeController;
-import com.majortom.algorithms.core.visualization.impl.window.SortController;
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
@@ -116,11 +114,14 @@ public class MainController {
     public void switchToMazeModule() {
         // 初始化 51x51 规模的数组迷宫实体
         BaseMaze<int[][]> mazeEntity = new ArrayMaze(51, 51);
-
+        BFSMazeGenerator generator = new BFSMazeGenerator();
+        generator.setMazeEntity(mazeEntity);
+        // 3. 创建视觉实现 (Renderer)
+        SquareMazeVisualizer visualizer = new SquareMazeVisualizer();
         MazeController<int[][]> mazeCtrl = new MazeController<>(
-                new BFSMazeGenerator(),
+                generator,
                 mazeEntity,
-                new SquareMazeVisualizer());
+                visualizer);
 
         loadSubController(mazeCtrl);
         logArea.appendText("Module: Maze generation module loaded successfully.\n");

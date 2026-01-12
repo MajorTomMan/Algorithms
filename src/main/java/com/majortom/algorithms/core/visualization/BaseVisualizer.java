@@ -46,10 +46,6 @@ public abstract class BaseVisualizer<T> extends StackPane {
     protected void resize() {
         canvas.setWidth(getWidth());
         canvas.setHeight(getHeight());
-        clear();
-        lastData = null;
-        lastA = null;
-        lastB = null;
     }
 
     /**
