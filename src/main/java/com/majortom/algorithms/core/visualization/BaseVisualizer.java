@@ -54,6 +54,10 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
+    public void render(S structure) {
+        render(structure, null, null);
+    }
+
     /**
      * 统一绘制入口
      * 此方法由 BaseController 调用，运行在 JavaFX 线程。

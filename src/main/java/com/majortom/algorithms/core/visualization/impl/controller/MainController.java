@@ -20,12 +20,15 @@ import com.majortom.algorithms.core.sort.BaseSort;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.Property;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -34,7 +37,7 @@ import java.util.ResourceBundle;
  * 主界面控制器
  * 职责：负责模块导航切换、子控制器生命周期管理、全局UI组件分发。
  */
-public class MainController {
+public class MainController implements Initializable {
 
     @FXML
     private StackPane visualizationContainer;
@@ -55,14 +58,7 @@ public class MainController {
     private Button startBtn, pauseBtn, resetBtn;
 
     private BaseController<?> currentSubController;
-
-    @FXML
-    public void initialize() {
-        setupI18n();
-        setupGlobalActions();
-        switchToSortModule(); // 初始模块
-        logArea.appendText("System: Lab Initialized.\n");
-    }
+    private ResourceBundle resources;
 
     private void setupI18n() {
         // 🚩 修复点：既然绑定了 I18N，后续就绝对不能再用 pauseBtn.setText()
@@ -160,13 +156,20 @@ public class MainController {
         ArrayMaze maze = new ArrayMaze(51, 51);
         BFSMazeGenerator gen = new BFSMazeGenerator();
         gen.setMazeEntity(maze);
-        loadSubController(new MazeController<Integer>(gen, maze, new SquareMazeVisualizer()));
+        SquareMazeVisualizer visualizer = new SquareMazeVisualizer();
+        loadSubController(new MazeController<int[][]>(maze, gen, visualizer));
     }
 
     @FXML
     public void switchToTreeModule() {
         BaseTree<Integer> tree = new BaseTree<>();
-        loadSubController(new TreeController<>(tree, new AVLTree<>()));
+        AVLTree<Integer> algorithms = new AVLTree<>();
+        Integer[] array = AlgorithmsUtils.randomArray(23, 12);
+        for (Integer integer : array) {
+            algorithms.put(tree, integer);
+        }
+
+        loadSubController(new TreeController<>(tree, algorithms));
     }
 
     @FXML
@@ -177,7 +180,39 @@ public class MainController {
     }
 
     // 辅助方法，用于刷新按钮绑定
-    private javafx.beans.property.Property<Number> delayMsPropertyForBinding() {
+    private Property<Number> delayMsPropertyForBinding() {
         return delaySlider.valueProperty();
+    }
+
+    @FXML
+    private void toggleLanguage() {
+        Locale currentLocale = I18N.getLocale();
+
+        // 翻转语言状态
+        Locale newLocale = (currentLocale.getLanguage().equals("zh"))
+                ? Locale.ENGLISH
+                : Locale.CHINESE;
+
+        // 更新 I18N 的 Property，这会自动触发所有 createStringBinding 的 UI 刷新
+        I18N.setLocale(newLocale);
+
+        if (logArea != null) {
+            String msg = (newLocale == Locale.CHINESE) ? "系统：语言已切换为中文" : "System: Language switched to English";
+            logArea.appendText(msg + "\n");
+        }
+    }
+
+    @FXML
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        // TODO Auto-generated method stub
+        if (resources != null) {
+            this.resources = resources;
+            I18N.setLocale(resources.getLocale());
+        }
+        setupI18n();
+        setupGlobalActions();
+        switchToSortModule(); // 初始模块
+        logArea.appendText("System: Lab Initialized.\n");
     }
 }

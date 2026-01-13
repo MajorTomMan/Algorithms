@@ -5,10 +5,14 @@ import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.BaseTreeAlgorithms;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.impl.visualizer.TreeVisualizer;
+import com.majortom.algorithms.core.visualization.international.I18N;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 import java.io.IOException;
@@ -27,6 +31,12 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     private final BaseTreeAlgorithms<T> treeAlgorithms;
     private Node customControlPane;
 
+    @FXML
+    private Label inputLabel;
+    @FXML
+    private Button insertBtn;
+    @FXML
+    private Button randomBtn;
     @FXML
     private TextField inputField;
 
@@ -48,9 +58,11 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/TreeControls.fxml"));
-            loader.setResources(ResourceBundle.getBundle("language.language"));
+            loader.setResources(I18N.getBundle());
             loader.setController(this);
             this.customControlPane = loader.load();
+
+            setupI18n();
         } catch (IOException e) {
             System.err.println("[Error] Tree FXML load failed.");
         }
@@ -148,5 +160,26 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     private T parseValue(String s) {
         // 默认为 Integer，可根据实际需求扩展
         return (T) Integer.valueOf(s);
+    }
+
+    @Override
+    protected void setupI18n() {
+        // TODO Auto-generated method stub
+        if (inputLabel != null) {
+            inputLabel.textProperty().bind(I18N.createStringBinding("ctrl.tree.val"));
+        }
+
+        // 2. 按钮文字绑定
+        if (insertBtn != null) {
+            insertBtn.textProperty().bind(I18N.createStringBinding("btn.tree.insert"));
+        }
+        if (randomBtn != null) {
+            randomBtn.textProperty().bind(I18N.createStringBinding("btn.tree.random"));
+        }
+
+        // 3. 输入框提示文字绑定 (让细节更利落)
+        if (inputField != null) {
+            inputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.tree.prompt"));
+        }
     }
 }

@@ -12,34 +12,40 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javafx.version>23.0.2</javafx.version>
+        <javafx.version>21</javafx.version>
         <atlantafx.version>2.0.1</atlantafx.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
-            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
-            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
             <version>${javafx.version}</version>
-            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-base</artifactId>
             <version>${javafx.version}</version>
-            <classifier>${os.detected.name}</classifier>
         </dependency>
 
         <dependency>
@@ -73,6 +79,8 @@
             <groupId>edu.princeton.cs</groupId>
             <artifactId>algs4</artifactId>
             <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/algs4.jar</systemPath>
         </dependency>
 
         <dependency>
@@ -84,14 +92,6 @@
     </dependencies>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>1.7.1</version>
-            </extension>
-        </extensions>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -102,7 +102,6 @@
                     <target>21</target>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -113,11 +112,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <repositories>
-        <repository>
-            <id>project-local-repo</id>
-            <url>file://${project.basedir}/libs</url>
-        </repository>
-    </repositories>
 </project>

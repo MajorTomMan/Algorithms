@@ -5,6 +5,7 @@ import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
+import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -24,7 +25,12 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
     private final BaseSortAlgorithms<T> algorithm;
     private BaseSort<T> sortData;
     private Node customControlPane;
-
+    @FXML
+    private Label sizeLabel;
+    @FXML
+    private Button genBtn;
+    @FXML
+    private Button sortBtn;
     @FXML
     private Slider sizeSlider;
 
@@ -39,10 +45,13 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SortControls.fxml"));
-            loader.setResources(ResourceBundle.getBundle("language.language"));
+            loader.setResources(I18N.getBundle());
             loader.setController(this);
             this.customControlPane = loader.load();
+            setupI18n();
+
         } catch (IOException e) {
+            System.err.println("[Critical] Failed to load SortControls.fxml: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -117,6 +126,20 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
         if (sortData != null) {
             sortData.reset(); // 清除最后的红色/紫色高亮
             visualizer.render(sortData, null, null);
+        }
+    }
+
+    @Override
+    protected void setupI18n() {
+        // TODO Auto-generated method stub
+        if (sizeLabel != null) {
+            sizeLabel.textProperty().bind(I18N.createStringBinding("ctrl.sort.size"));
+        }
+        if (genBtn != null) {
+            genBtn.textProperty().bind(I18N.createStringBinding("btn.sort.gen"));
+        }
+        if (sortBtn != null) {
+            sortBtn.textProperty().bind(I18N.createStringBinding("btn.sort.run"));
         }
     }
 }

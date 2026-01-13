@@ -5,6 +5,8 @@ import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.graph.BaseGraphAlgorithms;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.impl.visualizer.GraphVisualizer;
+import com.majortom.algorithms.core.visualization.international.I18N;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -29,6 +31,12 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
     @FXML
     private TextField nodeInputField;
+    @FXML
+    private Label startNodeLabel; // 对应 FXML 中的 %ctrl.graph.start_id
+    @FXML
+    private Button runBtn; // 对应 FXML 中的 %btn.graph.run
+    @FXML
+    private Button resetBtn; // 对应 FXML 中的 %btn.reset
 
     /**
      * 构造函数
@@ -46,10 +54,13 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GraphControls.fxml"));
-            // 考虑你提到的 2026 年环境，确保资源路径与模块化兼容
-            loader.setResources(ResourceBundle.getBundle("language.language"));
+
+            loader.setResources(I18N.getBundle());
             loader.setController(this);
             this.customControlPane = loader.load();
+
+            setupI18n();
+
         } catch (IOException e) {
             System.err.println("[Error] GraphControls.fxml load failed: " + e.getMessage());
         }
@@ -126,5 +137,28 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
     protected void onAlgorithmFinished() {
         super.onAlgorithmFinished();
         // 可以在这里执行一些收尾的视觉效果，比如全图闪烁一下
+    }
+
+    @Override
+    protected void setupI18n() {
+        // 1. 标签文本绑定：控制“起点ID”文字
+        if (startNodeLabel != null) {
+            startNodeLabel.textProperty().bind(I18N.createStringBinding("ctrl.graph.start_id"));
+        }
+
+        // 2. 输入框提示词绑定：让用户知道该输什么（如 "输入节点 A"）
+        if (nodeInputField != null) {
+            nodeInputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.graph.prompt"));
+        }
+
+        // 3. 执行按钮绑定：点击“运行”或“Run”
+        if (runBtn != null) {
+            runBtn.textProperty().bind(I18N.createStringBinding("btn.graph.run"));
+        }
+
+        // 4. 重置按钮绑定：统一全局的“重置”字样
+        if (resetBtn != null) {
+            resetBtn.textProperty().bind(I18N.createStringBinding("btn.reset"));
+        }
     }
 }

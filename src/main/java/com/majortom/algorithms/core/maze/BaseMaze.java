@@ -90,4 +90,8 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
     public int getCols() {
         return cols;
     }
+
+    public void setGenerated(boolean isGenerated) {
+        this.isGenerated = isGenerated;
+    }
 }
