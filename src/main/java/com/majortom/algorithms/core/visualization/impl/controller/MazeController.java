@@ -9,6 +9,7 @@ import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
+import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -92,9 +93,15 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
                 // 确保迷宫尺寸为奇数，这对某些生成算法（如 DFS/Prim）很重要
                 int oddSize = (val % 2 == 0) ? val + 1 : val;
                 sizeValueLabel.setText(oddSize + "x" + oddSize);
+                if (!AlgorithmThreadManager.isRunning()) {
+                    refreshMazeRealtime(newVal.intValue());
+                }
             });
         }
-
+        if (sizeSlider != null) {
+            sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            });
+        }
         // 监听容器宽度，确保在窗口缩放时迷宫能自适应渲染
         this.visualizer.widthProperty().addListener((obs, oldV, newV) -> {
             if (newV.doubleValue() > 0 && mazeEntity != null) {
@@ -104,6 +111,28 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
 
         // 初始静默初始化，不产生步进动画
         mazeEntity.initialSilent();
+    }
+
+    /**
+     * 实时刷新迷宫（跳过动画，直接出结果）
+     */
+    private void refreshMazeRealtime(int size) {
+        // 确保奇数
+        int oddSize = (size % 2 == 0) ? size + 1 : size;
+
+        // 停止并清理之前的任务
+        stopAlgorithm();
+
+        // 创建新迷宫并静默初始化（清空为全墙或全路）
+        @SuppressWarnings("unchecked")
+        BaseMaze<T> newMaze = (BaseMaze<T>) new ArrayMaze(oddSize, oddSize);
+        this.mazeEntity = newMaze;
+        this.mazeEntity.initialSilent();
+
+        // 🚩 关键：立即渲染空白网格，实现“变大变小”的视觉反馈
+        if (this.visualizer != null) {
+            this.visualizer.render(mazeEntity, null, null);
+        }
     }
 
     @FXML
@@ -148,23 +177,33 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
 
     @FXML
     public void handleSolve() {
-        stopAlgorithm();
+        // 🚩 1. 物理切断：这会触发 ThreadManager 内部 Worker 线程抛出 InterruptedException
+        // 从而让生成算法的循环瞬间崩塌退出
+        AlgorithmThreadManager.stopAll();
 
-        // 寻路前先在生成的迷宫中随机生成起点和终点
-        mazeEntity.pickRandomPoints();
+        // 🚩 2. 原地开始寻路
+        // 此时生成算法留下的 mazeEntity 状态就是“当前状态”，我们直接在上面跑寻路
+        if (mazeEntity != null) {
+            // 清除临时的高亮（比如生成算法正在探索的绿色点），但不重置墙壁
+            mazeEntity.clearVisualStates();
 
-        String selected = solverSelector.getValue();
-        if ("A* Search".equals(selected)) {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new AStarMazePathfinder();
-        } else if ("DFS Solver".equals(selected)) {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new DFSMazePathfinder();
-        } else {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
-        }
+            // 寻路必须有起点和终点，直接在现有的“路”里随机挑两个点
+            mazeEntity.pickRandomPointsOnAvailablePaths();
 
-        if (this.mazeSolver != null) {
-            this.mazeSolver.setMazeEntity(mazeEntity);
-            startAlgorithm(mazeSolver, mazeEntity);
+            // 获取寻路算法实例
+            String selected = solverSelector.getValue();
+            BaseMazeAlgorithms<T> solver = "A* Search".equals(selected)
+                    ? (BaseMazeAlgorithms<T>) new AStarMazePathfinder()
+                    : (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
+
+            AlgorithmThreadManager.run(() -> {
+                solver.setMazeEntity(mazeEntity);
+                solver.run(mazeEntity);
+            });
+
+            if (logArea != null) {
+                logArea.appendText("System: Pathfinding force-started on current maze state.\n");
+            }
         }
     }
 
@@ -209,7 +248,6 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
         if (resetBtn != null)
             resetBtn.textProperty().bind(I18N.createStringBinding("btn.reset"));
 
-        // 🚩 核心难点：ComboBox 的翻译
         setupComboBoxI18n();
     }
 

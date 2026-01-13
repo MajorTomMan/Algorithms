@@ -8,7 +8,7 @@ import java.util.PriorityQueue;
 import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
 
 /**
- * A* 寻路算法 (利落重构版)
+ * A* 寻路算法
  * 职责：利用曼哈顿距离作为启发函数，在极夜背景下寻找最短路径。
  * 适配说明：单泛型重构，完全解耦具体的 ArrayMaze 实现。
  */

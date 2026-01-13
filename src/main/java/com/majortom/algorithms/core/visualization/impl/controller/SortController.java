@@ -6,6 +6,7 @@ import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
+import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -59,6 +60,14 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
+        if (sizeSlider != null) {
+            sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                // 只有当算法没在运行时才自动生成，避免冲突
+                if (!AlgorithmThreadManager.isRunning()) {
+                    handleGenerate();
+                }
+            });
+        }
         // 初始化时生成第一组随机数据
         handleGenerate();
     }

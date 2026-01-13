@@ -94,4 +94,8 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
     public void setGenerated(boolean isGenerated) {
         this.isGenerated = isGenerated;
     }
+
+    public abstract void clearVisualStates();
+
+    public abstract void pickRandomPointsOnAvailablePaths();
 }

@@ -58,29 +58,27 @@ public class AlgorithmThreadManager {
      * 核心同步逻辑：计算线程在这里等待 UI 线程绘制完成
      */
     public static void syncAndWait(Runnable renderTask) {
+        if (Thread.currentThread().isInterrupted())
+            return;
         // 🚩 1. 检查暂停状态（如果暂停，acquire 会阻塞算法线程）
         checkStepStatus();
 
-        // 🚩 2. 发起 UI 渲染请求
         Platform.runLater(() -> {
             try {
                 renderTask.run();
             } finally {
-                // 绘制完成后释放信号量，告知计算线程可以继续了
                 renderLock.release();
             }
         });
 
-        // 🚩 3. 算法线程阻塞，等待 UI 渲染完成回执
         try {
-            // 设置 5 秒超时是为了防止 UI 挂死导致算法线程永久僵死
             if (renderLock.tryAcquire(5, TimeUnit.SECONDS)) {
-                // 物理降频：在这一帧结束后休息一会儿
                 long sleepTime = Math.max(1, currentDelay);
                 Thread.sleep(sleepTime);
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // 保持中断标志，让算法逻辑感知
+            renderLock.release();
+            Thread.currentThread().interrupt();
         }
     }
 
