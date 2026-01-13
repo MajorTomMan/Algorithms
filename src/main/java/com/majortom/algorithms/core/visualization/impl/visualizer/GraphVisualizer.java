@@ -64,54 +64,28 @@ public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
         if (gsGraph == null)
             return;
 
-        gsGraph.setAttribute("ui.stylesheet", getNeonStyleSheet());
+        // 🚩 核心：加载外部 CSS 文件
+        try {
+            // 使用 ClassLoader 加载资源路径
+            String stylesheet = getClass().getResource("/style/graph.css").toExternalForm();
+            gsGraph.setAttribute("ui.stylesheet", "url('" + stylesheet + "')");
+        } catch (NullPointerException e) {
+            System.err.println("[Error] 样式文件加载失败，请检查路径: /style/graph_style.css");
+            // 如果文件找不到，可以回退到默认样式，避免界面崩掉
+        }
+
         gsGraph.setAttribute("ui.antialias");
 
         this.viewer = new FxViewer(gsGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
         this.viewer.enableAutoLayout();
         this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
-        // 🚩 修正：不要用 setAll，而是按层级添加
-        // 基层是 GraphStream 的视图，顶层是我们的 Canvas（用于绘制高亮、文字等动画效果）
         this.getChildren().clear();
         this.getChildren().addAll(viewPanel, canvas);
-
-        // 确保 Canvas 透明，否则会挡住下面的图
-        canvas.setMouseTransparent(true); // 让鼠标点击穿透到图上
+        canvas.setMouseTransparent(true);
 
         viewPanel.prefWidthProperty().bind(this.widthProperty());
         viewPanel.prefHeightProperty().bind(this.heightProperty());
-    }
-
-    /**
-     * 定义与你气质相符的“极夜霓虹”样式表
-     */
-    private String getNeonStyleSheet() {
-        return "graph { fill-color: #0A0A0E; padding: 50px; }" +
-                "node { " +
-                "   size: 28px; " +
-                "   fill-color: #CFD8DC; " + // 基础冷灰
-                "   text-size: 15px; " +
-                "   text-color: #CFD8DC; " +
-                "   text-offset: 0, 30; " +
-                "   stroke-mode: plain; " +
-                "   stroke-color: #455A64; " +
-                "   stroke-width: 1px; " +
-                "}" +
-                "node.highlight { " +
-                "   fill-color: #7E57C2; " + // 忧郁紫
-                "   stroke-color: #FFFFFF; " +
-                "   stroke-width: 2px; " +
-                "   size: 32px; " +
-                "}" +
-                "node.secondary { " +
-                "   fill-color: #00A0FF; " + // 专注蓝
-                "   size: 28px; " +
-                "}" +
-                "edge { " +
-                "   fill-color: #455A64; " +
-                "   size: 2px; " +
-                "}";
     }
 
     @Override

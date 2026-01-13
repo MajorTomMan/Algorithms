@@ -1,0 +1,158 @@
+/* ==========================================================================
+   1. 全局底色与根布局 (The Abyss)
+   ========================================================================== */
+.root-pane {
+    -fx-background-color: #0A0A0E;
+}
+
+/* 侧边栏：采用更深邃的色调，并增加右侧边界感 */
+.dark-panel {
+    -fx-background-color: #0F0F14;
+    -fx-padding: 30 15;
+    -fx-border-color: transparent #1E1E26 transparent transparent;
+    -fx-border-width: 1;
+}
+
+/* 底部控制栏：轻微悬浮感 */
+.control-bar {
+    -fx-background-color: #0A0A0E;
+    -fx-padding: 15 25;
+    -fx-border-color: #1E1E26 transparent transparent transparent;
+    -fx-border-width: 1;
+}
+
+/* ==========================================================================
+   2. 文本与排版 (Typography)
+   ========================================================================== */
+/* 模块大标题：极简、拉开字间距 */
+.section-title {
+    -fx-text-fill: #4A4A52;
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-letter-spacing: 2px;
+    -fx-padding: 0 0 15 10;
+}
+
+.control-label {
+    -fx-text-fill: #5C5C5C;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.status-text {
+    -fx-text-fill: #00FF9C;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 12px;
+}
+
+/* ==========================================================================
+   3. 核心交互组件 (Components)
+   ========================================================================== */
+/* 极夜输入框 */
+.dark-textfield {
+    -fx-background-color: #121218;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #333333;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-padding: 5 10;
+    -fx-prompt-text-fill: #444444;
+}
+.dark-textfield:focused {
+    -fx-border-color: #00A0FF;
+}
+
+/* 控制台：像黑客帝国一样的纯净 */
+.log-area {
+    -fx-control-inner-background: #050507;
+    -fx-text-fill: #888888;
+    -fx-font-family: "Consolas";
+    -fx-border-color: #1E1E26;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+/* ==========================================================================
+   4. 按钮进化体系 (The Button System)
+   ========================================================================== */
+/* 侧边栏按钮：去掉边框，改用左侧状态条 */
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #888888;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 20;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-background-radius: 0 8 8 0;
+}
+.menu-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: transparent transparent transparent #00FF9C;
+    -fx-border-width: 0 0 0 3;
+}
+
+/* 主运行按钮：霓虹绿 */
+.btn-primary {
+    -fx-background-color: #00FF9C;
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+.btn-primary:hover {
+    -fx-background-color: #00DB86;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 255, 156, 0.3), 10, 0, 0, 0);
+}
+
+/* 蓝色功能按钮 (排序/图论) */
+.btn-run-blue {
+    -fx-background-color: transparent;
+    -fx-border-color: #00A0FF;
+    -fx-text-fill: #00A0FF;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.btn-run-blue:hover {
+    -fx-background-color: rgba(0, 160, 255, 0.1);
+}
+
+/* 语言切换：胶囊贴纸风格 */
+.btn-lang-switch {
+    -fx-background-color: rgba(30, 30, 38, 0.6);
+    -fx-background-radius: 20;
+    -fx-border-color: rgba(255, 255, 255, 0.1);
+    -fx-border-radius: 20;
+    -fx-text-fill: #666666;
+    -fx-font-size: 10px;
+    -fx-padding: 5 15;
+    -fx-cursor: hand;
+}
+.btn-lang-switch:hover {
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #00FF9C;
+}
+
+/* ==========================================================================
+   5. 模块特有元素 (Module Decorations)
+   ========================================================================== */
+.btn-solve-pink {
+    -fx-background-color: rgba(255, 0, 150, 0.05);
+    -fx-border-color: #FF0096;
+    -fx-text-fill: #FF0096;
+    -fx-font-weight: bold;
+}
+
+.btn-insert-purple {
+    -fx-background-color: transparent;
+    -fx-border-color: #A050FF;
+    -fx-text-fill: #A050FF;
+    -fx-font-weight: bold;
+}
+
+.slider .thumb {
+    -fx-background-color: #444444;
+}
+.slider:hover .thumb {
+    -fx-background-color: #00A0FF;
+}

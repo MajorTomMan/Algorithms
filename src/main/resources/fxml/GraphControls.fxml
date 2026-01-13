@@ -4,13 +4,9 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="CENTER_LEFT" spacing="15">
-  <Label fx:id="startNodeLabel" text="%ctrl.graph.start_id"
-          style="-fx-text-fill: #5C5C5C; -fx-font-size: 11px; -fx-font-weight: bold;" />
-  <TextField fx:id="nodeInputField" promptText="e.g. A, 1, or V1" prefWidth="120"
-          style="-fx-background-color: #121218; -fx-text-fill: white; -fx-border-color: #333333;" />
-  <Button fx:id="runBtn" text="%btn.graph.run" onAction="#handleAlgorithmStart"
-          style="-fx-background-color: transparent; -fx-border-color: #00FFCC; -fx-text-fill: #00FFCC;" />
-  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset"
-          style="-fx-background-color: transparent; -fx-border-color: #5C5C5C; -fx-text-fill: #888888;" />
+      alignment="CENTER_LEFT" spacing="15" stylesheets="@../style/ui_theme.css">
+  <Label fx:id="startNodeLabel" text="%ctrl.graph.start_id" styleClass="control-label"/>
+  <TextField fx:id="nodeInputField" promptText="%ctrl.graph.prompt" prefWidth="120" styleClass="dark-textfield"/>
+  <Button fx:id="runBtn" text="%btn.graph.run" onAction="#handleAlgorithmStart" styleClass="btn-run-neon"/>
+  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset" styleClass="btn-reset-muted"/>
 </HBox>

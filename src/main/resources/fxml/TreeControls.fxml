@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="CENTER_LEFT" spacing="15">
-
-    <Label fx:id="inputLabel" text="%ctrl.tree.val"
-        style="-fx-text-fill: #5C5C5C; -fx-font-size: 11px; -fx-font-weight: bold;" />
-
-    <TextField fx:id="inputField" promptText="e.g. 50,30,80" prefWidth="180"
-        style="-fx-background-color: #121218; -fx-text-fill: white; -fx-border-color: #333333;" />
-
-    <Button fx:id="insertBtn" text="%btn.tree.insert" onAction="#handleInsert"
-        style="-fx-background-color: transparent; -fx-border-color: #A050FF; -fx-text-fill: #A050FF; -fx-cursor: hand;" />
-
-    <Button fx:id="randomBtn" text="%btn.tree.random" onAction="#handleRandom"
-        style="-fx-background-color: transparent; -fx-border-color: #5C5C5C; -fx-text-fill: #888888; -fx-cursor: hand;" />
+      alignment="CENTER_LEFT" spacing="15"
+      style="-fx-padding: 5 0; -fx-background-color: transparent;"
+      stylesheets="@../style/ui_theme.css">
+  <Label fx:id="inputLabel" text="%ctrl.tree.val" styleClass="control-label"/>
+  <TextField fx:id="inputField" promptText="%ctrl.tree.prompt" prefWidth="180" 
+                 styleClass="dark-textfield" />
+  <Button fx:id="insertBtn" text="%btn.tree.insert" onAction="#handleInsert"
+              styleClass="btn-insert-purple" />
+  <Button fx:id="randomBtn" text="%btn.tree.random" onAction="#handleRandom"
+              styleClass="btn-reset-muted" />
 </HBox>

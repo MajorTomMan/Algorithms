@@ -3,59 +3,42 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx"
-    xmlns:fx="http://javafx.com/fxml"
-    fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
-    prefHeight="800.0" prefWidth="1200.0"
-    style="-fx-background-color: #0A0A0E;">
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
+            prefHeight="800.0" prefWidth="1200.0"
+            styleClass="root-pane" stylesheets="@../style/ui_theme.css">
+  <left>
+    <VBox spacing="15" styleClass="dark-panel" minWidth="250">
+      <Label fx:id="menuTitleLabel" text="%menu.lab" styleClass="section-title"/>
+      <Button fx:id="sortBtn" text="%menu.sort" onAction="#switchToSortModule" maxWidth="Infinity" styleClass="menu-button"/>
+      <Button fx:id="mazeBtn" text="%menu.maze" onAction="#switchToMazeModule" maxWidth="Infinity" styleClass="menu-button"/>
+      <Button fx:id="treeBtn" text="%menu.tree" onAction="#switchToTreeModule" maxWidth="Infinity" styleClass="menu-button"/>
+      <Button fx:id="graphBtn" text="%menu.graph" onAction="#switchToGraphModule" maxWidth="Infinity" styleClass="menu-button"/>
+      <Separator style="-fx-opacity: 0.2;"/>
+      <Label fx:id="statsTitleLabel" text="%side.stats" styleClass="section-title"/>
+      <Label fx:id="statsLabel" text="%side.ready" styleClass="status-text"/>
+      <Label fx:id="logTitleLabel" text="%side.log" styleClass="section-title"/>
+      <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" styleClass="log-area"/>
+      <Button text="EN / 中文" onAction="#toggleLanguage" maxWidth="Infinity" styleClass="menu-button"/>
+    </VBox>
+  </left>
 
-    <left>
-        <VBox spacing="15"
-            style="-fx-padding: 20; -fx-background-color: #121218; -fx-min-width: 250;">
-            <Label fx:id="menuTitleLabel" text="算法实验室"
-                style="-fx-text-fill: #565656; -fx-font-weight: bold; -fx-font-size: 14;" />
+  <center>
+    <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;"/>
+  </center>
 
-            <Button fx:id="sortBtn" text="排序算法演示" onAction="#switchToSortModule" maxWidth="Infinity" />
-            <Button fx:id="mazeBtn" text="随机迷宫生成" onAction="#switchToMazeModule" maxWidth="Infinity" />
-            <Button fx:id="treeBtn" text="树形结构动态" onAction="#switchToTreeModule" maxWidth="Infinity" />
-            <Button fx:id="graphBtn" text="图论算法可视化" onAction="#switchToGraphModule" maxWidth="Infinity" />
-
-            <Separator style="-fx-opacity: 0.2;" />
-
-            <Label fx:id="statsTitleLabel" text="实时统计" style="-fx-text-fill: #565656;" />
-            <Label fx:id="statsLabel" text="系统就绪"
-                style="-fx-text-fill: #00FF9C; -fx-font-family: 'Consolas';" />
-
-            <Label fx:id="logTitleLabel" text="控制台日志" style="-fx-text-fill: #565656;" />
-            <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false"
-                style="-fx-control-inner-background: #050507; -fx-text-fill: #888; -fx-font-family: 'Consolas';" />
-            
-            <Button text="EN / 中文" onAction="#toggleLanguage" maxWidth="Infinity" 
-                    style="-fx-background-color: #1E1E26; -fx-text-fill: #AAA;"/>
-        </VBox>
-    </left>
-
-    <center>
-        <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;" />
-    </center>
-
-    <bottom>
-        <HBox spacing="20" alignment="CENTER_LEFT"
-            style="-fx-padding: 15; -fx-background-color: #121218;">
-            <HBox spacing="10">
-                <Button fx:id="startBtn" text="开始执行"
-                    style="-fx-background-color: #00FF9C; -fx-text-fill: black; -fx-font-weight: bold;" />
-                <Button fx:id="pauseBtn" text="暂停" />
-                <Button fx:id="resetBtn" text="重置" />
-            </HBox>
-
-            <VBox spacing="5">
-                <Label fx:id="delayLabel" text="动画延迟 (毫秒)" style="-fx-text-fill: white; -fx-font-size: 10;" />
-                <Slider fx:id="delaySlider" min="0" max="500" value="50" showTickLabels="true" />
-            </VBox>
-
-            <HBox fx:id="customControlBox" spacing="10" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS" />
-        </HBox>
-    </bottom>
-
+  <bottom>
+    <HBox spacing="20" alignment="CENTER_LEFT" styleClass="dark-panel" style="-fx-padding: 15;">
+      <HBox spacing="10">
+        <Button fx:id="startBtn" text="%btn.start" styleClass="btn-primary"/>
+        <Button fx:id="pauseBtn" text="%btn.pause" styleClass="menu-button"/>
+        <Button fx:id="resetBtn" text="%btn.reset" styleClass="menu-button"/>
+      </HBox>
+      <VBox spacing="5">
+        <Label fx:id="delayLabel" text="%bottom.delay" style="-fx-text-fill: white; -fx-font-size: 10;"/>
+        <Slider fx:id="delaySlider" min="0" max="500" value="50" showTickLabels="true"/>
+      </VBox>
+      <HBox fx:id="customControlBox" spacing="10" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS"/>
+    </HBox>
+  </bottom>
 </BorderPane>

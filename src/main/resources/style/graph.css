@@ -1,0 +1,37 @@
+/* Graph Global Style */
+graph { 
+    fill-color: #0A0A0E; 
+    padding: 50px; 
+}
+
+/* Base Node Style */
+node {
+    size: 28px;
+    fill-color: #CFD8DC;
+    text-size: 15px;
+    text-color: #CFD8DC;
+    text-offset: 0, 30;
+    stroke-mode: plain;
+    stroke-color: #455A64;
+    stroke-width: 1px;
+}
+
+/* Visited/Active Node */
+node.highlight {
+    fill-color: #7E57C2;
+    stroke-color: #FFFFFF;
+    stroke-width: 2px;
+    size: 32px;
+}
+
+/* Neighbors/Frontier Node */
+node.secondary {
+    fill-color: #00A0FF;
+    size: 28px;
+}
+
+/* Edge Style */
+edge {
+    fill-color: #455A64;
+    size: 2px;
+}
