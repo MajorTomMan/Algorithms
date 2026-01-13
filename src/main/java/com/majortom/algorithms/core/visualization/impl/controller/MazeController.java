@@ -196,16 +196,12 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
 
     @Override
     protected void setupI18n() {
-        // 绑定静态标签
-        // 注意：建议给 FXML 里的那些 Label 加上 fx:id
         if (mazeDensityLabel != null)
             mazeDensityLabel.textProperty().bind(I18N.createStringBinding("ctrl.maze.density"));
         if (mazeGenTitleLabel != null)
             mazeGenTitleLabel.textProperty().bind(I18N.createStringBinding("ctrl.maze.gen_title"));
         if (mazeSolveTitleLabel != null)
             mazeSolveTitleLabel.textProperty().bind(I18N.createStringBinding("ctrl.maze.solve_title"));
-
-        // 绑定按钮
         if (generateBtn != null)
             generateBtn.textProperty().bind(I18N.createStringBinding("btn.maze.build"));
         if (solveBtn != null)

@@ -46,6 +46,11 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
     }
 
+    public BaseVisualizer(S initialData) {
+        this(); 
+        this.lastData = initialData; 
+    }
+
     /**
      * 清空画布并填充背景色
      */

@@ -23,63 +23,62 @@ public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
         // 设置 GS 渲染引擎为 JavaFX
         System.setProperty("org.graphstream.ui", "javafx");
         this.gsGraph = baseGraph.getGraph();
-        
+
         // 初始渲染：由于 Viewer 初始化较慢，放入 Platform.runLater
         Platform.runLater(this::initializeViewer);
     }
 
-    /**
-     * 实现渲染钩子
-     * 由 BaseController 触发，运行在 JavaFX 线程。
-     */
     @Override
     protected void draw(BaseGraph<V> data, Object a, Object b) {
-        if (data == null || gsGraph == null) return;
+        if (data == null || gsGraph == null)
+            return;
+
+        // 🚩 关键：删掉全场清理代码
+        // gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class")); <- 删掉这行
 
         try {
-            // 🚩 1. 清理上一帧的高亮状态
-            gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
-            gsGraph.edges().forEach(e -> e.removeAttribute("ui.class"));
-
-            // 🚩 2. 处理当前焦点节点 A (通常是正在访问的节点)
+            // 🚩 2. 处理当前正在处理的节点 A (保持紫色 highlight)
             if (a instanceof String nodeId) {
                 Node nodeA = gsGraph.getNode(nodeId);
-                if (nodeA != null) nodeA.setAttribute("ui.class", "highlight");
+                if (nodeA != null) {
+                    nodeA.setAttribute("ui.class", "highlight");
+                }
             }
 
-            // 🚩 3. 处理次要焦点 B (通常是路径或父节点)
+            // 🚩 3. 处理已探索过的路径或关联节点 B (专注蓝 secondary)
             if (b instanceof String nodeId) {
                 Node nodeB = gsGraph.getNode(nodeId);
-                if (nodeB != null) nodeB.setAttribute("ui.class", "secondary");
+                if (nodeB != null) {
+                    nodeB.setAttribute("ui.class", "secondary");
+                }
             }
 
-            // GraphStream 的 CSS 应用是异步的，此处微调 sleep 确保渲染完成
-            // 这种写法在 AlgorithmThreadManager 的管控下是安全的
+            // 注意：因为不再全场清空，变紫的点会一直保持紫色，直到你手动点击“重置”
             Thread.sleep(1);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void initializeViewer() {
-        if (gsGraph == null) return;
+        if (gsGraph == null)
+            return;
 
-        // 设置全局霓虹色风格
         gsGraph.setAttribute("ui.stylesheet", getNeonStyleSheet());
         gsGraph.setAttribute("ui.antialias");
 
-        // 初始化 Viewer
         this.viewer = new FxViewer(gsGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
         this.viewer.enableAutoLayout();
-        
-        // 获取视图面板
         this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
-        // 🚩 修正：直接加入到当前的 StackPane 中，利用 StackPane 的自动填充特性
-        this.getChildren().setAll(viewPanel);
-        
-        // 让 viewPanel 的大小绑定到本组件
+        // 🚩 修正：不要用 setAll，而是按层级添加
+        // 基层是 GraphStream 的视图，顶层是我们的 Canvas（用于绘制高亮、文字等动画效果）
+        this.getChildren().clear();
+        this.getChildren().addAll(viewPanel, canvas);
+
+        // 确保 Canvas 透明，否则会挡住下面的图
+        canvas.setMouseTransparent(true); // 让鼠标点击穿透到图上
+
         viewPanel.prefWidthProperty().bind(this.widthProperty());
         viewPanel.prefHeightProperty().bind(this.heightProperty());
     }
@@ -89,30 +88,30 @@ public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
      */
     private String getNeonStyleSheet() {
         return "graph { fill-color: #0A0A0E; padding: 50px; }" +
-               "node { " +
-               "   size: 28px; " +
-               "   fill-color: #CFD8DC; " + // 基础冷灰
-               "   text-size: 15px; " +
-               "   text-color: #CFD8DC; " +
-               "   text-offset: 0, 30; " +
-               "   stroke-mode: plain; " +
-               "   stroke-color: #455A64; " +
-               "   stroke-width: 1px; " +
-               "}" +
-               "node.highlight { " +
-               "   fill-color: #7E57C2; " + // 忧郁紫
-               "   stroke-color: #FFFFFF; " +
-               "   stroke-width: 2px; " +
-               "   size: 32px; " +
-               "}" +
-               "node.secondary { " +
-               "   fill-color: #00A0FF; " + // 专注蓝
-               "   size: 28px; " +
-               "}" +
-               "edge { " +
-               "   fill-color: #455A64; " +
-               "   size: 2px; " +
-               "}";
+                "node { " +
+                "   size: 28px; " +
+                "   fill-color: #CFD8DC; " + // 基础冷灰
+                "   text-size: 15px; " +
+                "   text-color: #CFD8DC; " +
+                "   text-offset: 0, 30; " +
+                "   stroke-mode: plain; " +
+                "   stroke-color: #455A64; " +
+                "   stroke-width: 1px; " +
+                "}" +
+                "node.highlight { " +
+                "   fill-color: #7E57C2; " + // 忧郁紫
+                "   stroke-color: #FFFFFF; " +
+                "   stroke-width: 2px; " +
+                "   size: 32px; " +
+                "}" +
+                "node.secondary { " +
+                "   fill-color: #00A0FF; " + // 专注蓝
+                "   size: 28px; " +
+                "}" +
+                "edge { " +
+                "   fill-color: #455A64; " +
+                "   size: 2px; " +
+                "}";
     }
 
     @Override

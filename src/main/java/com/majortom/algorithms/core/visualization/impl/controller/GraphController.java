@@ -49,6 +49,9 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
         super(new GraphVisualizer<>(graphData));
         this.algorithm = algorithm;
         loadFXMLControls();
+        if (graphData != null) {
+            visualizer.render(graphData);
+        }
     }
 
     private void loadFXMLControls() {
@@ -78,7 +81,6 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
     @Override
     public void handleAlgorithmStart() {
-        // 🚩 这里的 visualizer.getLastData() 获取的就是构造时传入的 BaseGraph 实例
         if (visualizer.getLastData() != null) {
             startAlgorithm(algorithm, visualizer.getLastData());
         }
@@ -111,10 +113,8 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
         // 2. 验证合法性（检查 GraphStream 节点是否存在）
         if (startNodeId.isEmpty() || data.getGraph().getNode(startNodeId) == null) {
-            Platform.runLater(() -> {
-                if (logArea != null)
-                    logArea.appendText("System Error: Node [" + startNodeId + "] not found.\n");
-            });
+            if (logArea != null)
+                logArea.appendText("System Error: Node [" + startNodeId + "] not found.\n");
             return;
         }
 
@@ -141,24 +141,13 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
     @Override
     protected void setupI18n() {
-        // 1. 标签文本绑定：控制“起点ID”文字
-        if (startNodeLabel != null) {
+        if (startNodeLabel != null)
             startNodeLabel.textProperty().bind(I18N.createStringBinding("ctrl.graph.start_id"));
-        }
-
-        // 2. 输入框提示词绑定：让用户知道该输什么（如 "输入节点 A"）
-        if (nodeInputField != null) {
-            nodeInputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.graph.prompt"));
-        }
-
-        // 3. 执行按钮绑定：点击“运行”或“Run”
-        if (runBtn != null) {
+        if (runBtn != null)
             runBtn.textProperty().bind(I18N.createStringBinding("btn.graph.run"));
-        }
-
-        // 4. 重置按钮绑定：统一全局的“重置”字样
-        if (resetBtn != null) {
+        if (resetBtn != null)
             resetBtn.textProperty().bind(I18N.createStringBinding("btn.reset"));
-        }
+        if (nodeInputField != null)
+            nodeInputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.graph.prompt"));
     }
 }

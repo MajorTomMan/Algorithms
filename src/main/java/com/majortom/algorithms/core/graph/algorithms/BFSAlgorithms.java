@@ -16,35 +16,36 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
 
     @Override
     public void run(BaseGraph<V> graph, String startNodeId) {
-        // 1. 初始化：重置统计数据与图中所有元素的视觉状态
         graph.resetGraphState();
-
-        // 获取 GraphStream 核心实例
         Graph g = graph.getGraph();
         Node startNode = g.getNode(startNodeId);
 
         if (startNode == null)
             return;
 
-        // 2. 准备队列
         Queue<Node> queue = new LinkedList<>();
 
-        // 3. 处理起始节点
+        // 🚩 1. 标记起点并入队
+        // 确保 visit 方法逻辑：第一次访问返回 true，重复访问返回 false
+        graph.visit(startNodeId);
         queue.add(startNode);
-        graph.visit(startNodeId); // 内部触发 sync，将节点标记为 highlight
 
         while (!queue.isEmpty()) {
             Node curr = queue.poll();
+            String currId = curr.getId();
 
-            // 4. 遍历当前节点的邻居
-            // GraphStream 会根据图的有向/无向属性自动返回正确的邻居集合
+            // 🚩 2. 遍历邻居
             curr.neighborNodes().forEach(neighbor -> {
                 String neighborId = neighbor.getId();
-                graph.trace(curr.getId(), neighborId);
 
-                if (!graph.visit(neighborId)) {
-                    graph.visit(neighborId);
+                // 记录路径追踪（视觉上连线高亮）
+                graph.trace(currId, neighborId);
+
+                // 🚩 3. 关键修正：尝试访问邻居
+                // 只有当该节点从未被访问过时，才将其加入队列
+                if (graph.visit(neighborId)) {
                     queue.add(neighbor);
+                    sync(graph, currId, neighborId);
                 }
             });
         }
