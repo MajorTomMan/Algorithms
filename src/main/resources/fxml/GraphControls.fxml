@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      alignment="CENTER_LEFT" spacing="15" stylesheets="@../style/ui_theme.css">
+  <Label fx:id="startNodeLabel" text="%ctrl.graph.start_id" styleClass="control-label"/>
+  <TextField fx:id="nodeInputField" promptText="%ctrl.graph.prompt" prefWidth="120" styleClass="dark-textfield"/>
+  <Button fx:id="runBtn" text="%btn.graph.run" onAction="#handleAlgorithmStart" styleClass="btn-run-neon"/>
+  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset" styleClass="btn-reset-muted"/>
+</HBox>

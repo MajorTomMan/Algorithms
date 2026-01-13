@@ -248,23 +248,66 @@ public abstract class AlgorithmsUtils {
         return maze;
     }
 
+    /**
+     * 适配重构后的 BaseGraph 体系
+     * 职责：通过 BaseGraph 暴露的接口构建随机图，并确保 ID 与数据的一致性
+     */
     @SuppressWarnings("unchecked")
+
     public static <V> void buildRandomGraph(BaseGraph<V> graph, int nodeCount, int edgeCount, boolean isAlpha) {
+        // 1. 重置图状态与统计数据
+        graph.resetGraphState();
+        // 如果 BaseGraph 还没有 clear 逻辑，建议在 BaseGraph 中补充 graph.clear()
+
+        // 存储生成的 ID 列表，用于后续随机连接边
+        List<String> nodeIds = new ArrayList<>();
+
+        // 2. 构建节点
         for (int i = 0; i < nodeCount; i++) {
-            V data = isAlpha && i < 26 ? (V) String.valueOf((char) ('A' + i)) : (V) Integer.valueOf(i);
-            graph.addVertex(new Vertex<>(data));
+            String id;
+            V data;
+
+            if (isAlpha && i < 26) {
+                id = String.valueOf((char) ('A' + i));
+            } else {
+                id = String.valueOf(i);
+            }
+
+            // 假设业务数据 data 与 ID 保持一致，或者是某种泛型转化
+            data = (V) id;
+
+            nodeIds.add(id);
+            // 适配 BaseGraph.addVertex(String id, V data)
+            graph.addVertex(id, data);
         }
-        List<Vertex<V>> vertices = graph.getVertices();
-        if (vertices.size() < 2)
+
+        // 3. 构建边
+        if (nodeIds.size() < 2)
             return;
+
         int actualEdges = 0;
-        while (actualEdges < edgeCount) {
-            int f = random.nextInt(nodeCount);
-            int t = random.nextInt(nodeCount);
-            if (f == t)
+        int maxAttempts = edgeCount * 3; // 适当放宽尝试次数
+        int attempts = 0;
+
+        while (actualEdges < edgeCount && attempts < maxAttempts) {
+            attempts++;
+            int fIdx = random.nextInt(nodeCount);
+            int tIdx = random.nextInt(nodeCount);
+
+            if (fIdx == tIdx)
                 continue;
-            graph.addEdge(vertices.get(f).getData(), vertices.get(t).getData(), random.nextInt(10) + 1);
-            actualEdges++;
+
+            String fromId = nodeIds.get(fIdx);
+            String toId = nodeIds.get(tIdx);
+
+            try {
+                int weight = random.nextInt(10) + 1;
+                // 适配 BaseGraph.addEdge(String fromId, String toId, int weight)
+                graph.addEdge(fromId, toId, weight);
+                actualEdges++;
+            } catch (Exception e) {
+                // 捕获 GraphStream 可能抛出的重复边异常 (IdAlreadyInUseException 等)
+            }
         }
     }
 

@@ -1,89 +1,89 @@
 package com.majortom.algorithms.core.tree;
 
-import com.majortom.algorithms.core.base.BaseAlgorithm;
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.tree.node.TreeNode;
-import java.util.List;
 
 /**
- * 树算法的抽象基类
+ * 树的数据实体类
+ * 职责：维护根节点引用，并记录当前高亮状态。
  * 
+ * @param <T> 树节点中存储的数据类型
  */
-public abstract class BaseTree<T> extends BaseAlgorithm<BaseTree<T>> {
-    // 根节点，现在支持任何继承自 TreeNode 的子类实例
+public class BaseTree<T> extends BaseStructure<TreeNode<T>> {
+
     protected TreeNode<T> root;
 
-    // 当前操作焦点（可视化标记）
+    // 当前操作焦点：算法当前扫描或修改的节点
     protected TreeNode<T> currentHighlight;
 
-    // --- 核心同步适配 ---
-
-    /**
-     * 子类调用此方法同步树的状态到 UI
-     * 利用新 TreeNode 的 isHighlighted 属性进行状态标记
-     */
-    protected void syncTree(TreeNode<T> activeNode, TreeNode<T> secondaryNode) {
-        // 先清除旧的高亮状态（如果需要全局唯一高亮）
-        if (this.currentHighlight != null) {
-            this.currentHighlight.isHighlighted = false;
-        }
-
-        this.currentHighlight = activeNode;
-
-        if (activeNode != null) {
-            activeNode.isHighlighted = true;
-        }
-
-        // 执行 BaseAlgorithm 的快照同步
-        sync(this, activeNode, secondaryNode);
+    public BaseTree() {
+        this.root = null;
     }
 
-    // --- 基础属性访问与通用实现 ---
+    /**
+     * 实现 BaseStructure 契约：返回根节点作为核心数据模型
+     */
+    @Override
+    public TreeNode<T> getData() {
+        return root;
+    }
+
+    /**
+     * 实现 BaseStructure 契约：重置统计与高亮状态
+     */
+    @Override
+    public void reset() {
+        this.actionCount = 0;
+        this.compareCount = 0;
+        this.currentHighlight = null;
+    }
+
+    /**
+     * 原子操作：高亮并统计一次节点访问（比较）
+     */
+    public void focusNode(TreeNode<T> node) {
+        this.currentHighlight = node;
+        incrementCompare();
+    }
+
+    /**
+     * 原子操作：标记一次结构变更（插入、删除、旋转）
+     */
+    public void modifyStructure(TreeNode<T> newRoot) {
+        this.root = newRoot;
+        incrementAction();
+    }
+
+    // --- 树结构属性 ---
 
     public TreeNode<T> getRoot() {
         return root;
+    }
+
+    public void setRoot(TreeNode<T> root) {
+        this.root = root;
     }
 
     public TreeNode<T> getCurrentHighlight() {
         return currentHighlight;
     }
 
-    /**
-     * 利用 TreeNode 预留的 subTreeCount 属性，Size 的获取变得极其简单且统一
-     */
     public int size() {
         return root == null ? 0 : root.subTreeCount;
     }
 
-    /**
-     * 利用 TreeNode 预留的 height 属性
-     */
     public int height() {
         return root == null ? 0 : root.height;
     }
+
 
     public boolean isEmpty() {
         return root == null;
     }
 
-    /**
-     * 统一定义清理逻辑
-     */
     public void clear() {
         root = null;
         currentHighlight = null;
-        resetStatistics();
-        sync(this, null, null);
+        reset();
     }
-
-    // --- 抽象业务接口 ---
-
-    public abstract void put(T val);
-
-    public abstract void remove(T val);
-
-    public abstract TreeNode<T> search(T val);
-
-    public abstract void traverse();
-
-    public abstract List<T> toList();
 }

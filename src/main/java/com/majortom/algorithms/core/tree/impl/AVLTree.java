@@ -1,15 +1,14 @@
 package com.majortom.algorithms.core.tree.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.core.tree.BaseBalancedTree;
+import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.AVLTreeNode;
 import com.majortom.algorithms.core.tree.node.BinaryTreeNode;
+import com.majortom.algorithms.core.tree.node.TreeNode;
 
 /**
- * AVL 树实现
- * 专注于平衡因子的计算与旋转逻辑的触发
+ * AVL 树具体实现
+ * 适配说明：完全对接 BaseTree 的原子操作，实现统计自治，优化了类型强转。
  */
 public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
 
@@ -18,147 +17,137 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
         return new AVLTreeNode<>(data);
     }
 
+    // --- 外部接口实现 ---
+
     @Override
-    public void put(T val) {
-        root = doPut(val, root);
-        syncTree(null, null);
+    public void put(BaseTree<T> tree, T val) {
+        tree.setRoot(doPut(tree, (BinaryTreeNode<T>) tree.getRoot(), val));
+        syncTree(tree, null, null);
     }
 
-    private TreeNode<T> doPut(T data, TreeNode<T> node) {
+    @Override
+    public void remove(BaseTree<T> tree, T val) {
+        tree.setRoot(doRemove(tree, (BinaryTreeNode<T>) tree.getRoot(), val));
+        syncTree(tree, null, null);
+    }
+
+    @Override
+    public TreeNode<T> search(BaseTree<T> tree, T val) {
+        return doSearch(tree, (BinaryTreeNode<T>) tree.getRoot(), val);
+    }
+
+    // --- 内部递归逻辑 ---
+
+    private BinaryTreeNode<T> doPut(BaseTree<T> tree, BinaryTreeNode<T> node, T data) {
         if (node == null) {
-            actionCount++;
-            return createNode(data);
+            // 🚩 自动增加 actionCount 并发射信号
+            tree.modifyStructure(null);
+            return (BinaryTreeNode<T>) createNode(data);
         }
 
-        compareCount++;
-        syncTree(node, null);
+        // 🚩 自动处理 compareCount 并高亮扫描路径
+        syncTree(tree, node, null);
 
         int cmp = data.compareTo(node.data);
-        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
-
-        if (cmp < 0)
-            bNode.left = (BinaryTreeNode<T>) doPut(data, bNode.left);
-        else if (cmp > 0)
-            bNode.right = (BinaryTreeNode<T>) doPut(data, bNode.right);
-        else
+        if (cmp < 0) {
+            node.left = doPut(tree, (BinaryTreeNode<T>) node.left, data);
+        } else if (cmp > 0) {
+            node.right = doPut(tree, (BinaryTreeNode<T>) node.right, data);
+        } else {
             return node;
+        }
 
         updateMetrics(node);
-        return rebalance(node);
+        return rebalance(tree, node);
     }
 
-    @Override
-    public void remove(T val) {
-        // 只有在入口处将根节点强转一次
-        root = doRemove(val, (BinaryTreeNode<T>) root);
-        syncTree(null, null);
-    }
-
-    private TreeNode<T> doRemove(T val, TreeNode<T> node) {
+    private BinaryTreeNode<T> doRemove(BaseTree<T> tree, BinaryTreeNode<T> node, T val) {
         if (node == null)
             return null;
 
-        compareCount++;
-        syncTree(node, null);
+        syncTree(tree, node, null);
 
         int cmp = val.compareTo(node.data);
-        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
-
         if (cmp < 0) {
-            bNode.left = (BinaryTreeNode<T>) doRemove(val, bNode.left);
+            node.left = doRemove(tree, (BinaryTreeNode<T>) node.left, val);
         } else if (cmp > 0) {
-            bNode.right = (BinaryTreeNode<T>) doRemove(val, bNode.right);
+            node.right = doRemove(tree, (BinaryTreeNode<T>) node.right, val);
         } else {
-            actionCount++;
-            if (bNode.left == null || bNode.right == null) {
-                node = (bNode.left != null) ? bNode.left : bNode.right;
+            tree.modifyStructure(tree.getRoot()); // 标记一次结构变更
+
+            if (node.left == null || node.right == null) {
+                node = (node.left != null) ? (BinaryTreeNode<T>) node.left : (BinaryTreeNode<T>) node.right;
             } else {
-                TreeNode<T> successor = findMin(bNode.right);
+                BinaryTreeNode<T> successor = (BinaryTreeNode<T>) findMin(tree, node.right);
                 node.data = successor.data;
-                syncTree(node, successor);
-                bNode.right = (BinaryTreeNode<T>) doRemove(successor.data, bNode.right);
+                syncTree(tree, node, successor);
+                node.right = doRemove(tree, (BinaryTreeNode<T>) node.right, successor.data);
             }
         }
 
         if (node == null)
             return null;
         updateMetrics(node);
-        return rebalance(node);
+        return rebalance(tree, node);
     }
 
-    private TreeNode<T> rebalance(TreeNode<T> node) {
-        int balance = getBalance(node);
-        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
+    private BinaryTreeNode<T> doSearch(BaseTree<T> tree, BinaryTreeNode<T> node, T val) {
+        if (node == null)
+            return null;
 
-        // LL
-        if (balance > 1 && getBalance(bNode.left) >= 0) {
-            return rightRotation(node);
+        syncTree(tree, node, null);
+
+        int cmp = val.compareTo(node.data);
+        if (cmp == 0)
+            return node;
+
+        return cmp < 0 ? doSearch(tree, (BinaryTreeNode<T>) node.left, val)
+                : doSearch(tree, (BinaryTreeNode<T>) node.right, val);
+    }
+
+    // --- 平衡判定与重整 ---
+
+    private BinaryTreeNode<T> rebalance(BaseTree<T> tree, BinaryTreeNode<T> node) {
+        int balance = getBalance(node);
+
+        // LL Case
+        if (balance > 1 && getBalance(node.left) >= 0) {
+            return rightRotation(tree, node);
         }
-        // RR
-        if (balance < -1 && getBalance(bNode.right) <= 0) {
-            return leftRotation(node);
+        // RR Case
+        if (balance < -1 && getBalance(node.right) <= 0) {
+            return leftRotation(tree, node);
         }
-        // LR
-        if (balance > 1 && getBalance(bNode.left) < 0) {
-            return leftRightRotation(node);
+        // LR Case
+        if (balance > 1 && getBalance(node.left) < 0) {
+            return leftRightRotation(tree, node);
         }
-        // RL
-        if (balance < -1 && getBalance(bNode.right) > 0) {
-            return rightLeftRotation(node);
+        // RL Case
+        if (balance < -1 && getBalance(node.right) > 0) {
+            return rightLeftRotation(tree, node);
         }
+
         return node;
     }
 
     private int getBalance(TreeNode<T> node) {
-        if (!(node instanceof BinaryTreeNode))
+        if (node == null)
             return 0;
         BinaryTreeNode<T> bn = (BinaryTreeNode<T>) node;
         return height(bn.left) - height(bn.right);
     }
 
-    private TreeNode<T> findMin(TreeNode<T> node) {
+    private TreeNode<T> findMin(BaseTree<T> tree, TreeNode<T> node) {
         BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
-        while (current.left != null)
+        while (current.left != null) {
+            syncTree(tree, current, null);
             current = (BinaryTreeNode<T>) current.left;
+        }
         return current;
     }
 
     @Override
-    public TreeNode<T> search(T val) {
-        TreeNode<T> current = root;
-        while (current != null) {
-            compareCount++;
-            syncTree(current, null);
-            int cmp = val.compareTo(current.data);
-            BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) current;
-            if (cmp < 0)
-                current = bNode.left;
-            else if (cmp > 0)
-                current = bNode.right;
-            else
-                return current;
-        }
-        return null;
-    }
-
-    @Override
-    public void traverse() {
-        // 实现遍历逻辑
-    }
-
-    @Override
-    public List<T> toList() {
-        List<T> result = new ArrayList<>();
-        inOrder(root, result);
-        return result;
-    }
-
-    private void inOrder(TreeNode<T> node, List<T> list) {
-        if (node == null)
-            return;
-        BinaryTreeNode<T> bNode = (BinaryTreeNode<T>) node;
-        inOrder(bNode.left, list);
-        list.add(node.data);
-        inOrder(bNode.right, list);
+    public void traverse(BaseTree<T> tree) {
+        // 实现层序遍历
     }
 }

@@ -1,25 +1,73 @@
 package com.majortom.algorithms.core.sort;
 
-import com.majortom.algorithms.core.base.BaseAlgorithm;
+import com.majortom.algorithms.core.base.BaseStructure;
 
-public abstract class BaseSort extends BaseAlgorithm<int[]> {
+/**
+ * 排序数据实体类
+ * 职责：持有待排序数组，并记录当前 UI 高亮状态。
+ * * @param <T> 必须是可比较的类型（如 Integer, Double）
+ */
+public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
 
-    public abstract void sort(int[] arr);
+    private T[] data;
 
-    protected void swap(int[] arr, int i, int j) {
-        if (i == j)
-            return;
-        int temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
+    // 当前正在操作的索引（例如：绿色高亮表示交换，红色高亮表示比较）
+    private int activeIndex = -1;
+    private int compareIndex = -1;
 
-        actionCount++; // 统一使用 actionCount
-        sync(arr, i, j); // 传入数组和当前的两个焦点索引
+    public BaseSort(T[] data) {
+        this.data = data;
     }
 
-    protected boolean less(int[] arr, int i, int j) {
-        compareCount++; // 统一使用 compareCount
-        sync(arr, i, j); // 比较时也同步一下，让 UI 亮起这两个柱子
-        return arr[i] < arr[j];
+    /**
+     * 实现 BaseStructure 方法：返回底层原始数组
+     */
+    @Override
+    public T[] getData() {
+        return data;
     }
+
+    /**
+     * 实现 BaseStructure 方法：重置统计数据与 UI 状态
+     */
+    @Override
+    public void reset() {
+        this.actionCount = 0;
+        this.compareCount = 0;
+        this.activeIndex = -1;
+        this.compareIndex = -1;
+    }
+
+    // --- 排序专用原子操作（带同步暗示） ---
+
+    public int compare(int i, int j) {
+        incrementCompare();
+        this.compareIndex = i;
+        this.activeIndex = j;
+        return data[i].compareTo(data[j]);
+    }
+
+    public void swap(int i, int j) {
+        incrementAction();
+        this.activeIndex = i;
+        this.compareIndex = j;
+        T temp = data[i];
+        data[i] = data[j];
+        data[j] = temp;
+    }
+
+    // --- 基础属性 ---
+
+    public int size() {
+        return data == null ? 0 : data.length;
+    }
+
+    public int getActiveIndex() {
+        return activeIndex;
+    }
+
+    public int getCompareIndex() {
+        return compareIndex;
+    }
+
 }

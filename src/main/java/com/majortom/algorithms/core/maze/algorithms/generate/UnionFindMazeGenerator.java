@@ -2,79 +2,83 @@ package com.majortom.algorithms.core.maze.algorithms.generate;
 
 import com.majortom.algorithms.core.basic.UnionFind;
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.maze.strategies.MazeGeneratorStrategy;
+import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeConstant;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
-
 /**
- * 基于并查集的迷宫生成算法（Kruskal's Algorithm 变体）
- * 特点：生成的迷宫分支非常均匀，没有明显的“生长中心”。
+ * 基于并查集的迷宫生成算法 (Kruskal's Algorithm)
+ * 职责：利用并查集维护连通分量，生成全局随机、无环的完美迷宫。
+ * 适配说明：单泛型重构，对齐 BaseMazeAlgorithms<int[][]>。
  */
-public class UnionFindMazeGenerator implements MazeGeneratorStrategy<int[][]> {
+public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
 
     private UnionFind uf;
 
-    /**
-     * 实现策略接口的 generate 方法
-     * * @param baseMaze 传入的迷宫容器
-     */
     @Override
-    public void generate(BaseMaze<int[][]> baseMaze) {
-        // 1. 类型转换：确保我们可以调用 ArrayMaze 特有的 getRows/getCols
-        ArrayMaze maze = (ArrayMaze) baseMaze;
+    public void run(BaseMaze<int[][]> maze) {
+        if (maze == null)
+            return;
+
+        // 1. 初始化迷宫：重置为全墙
+        maze.initial();
+
         int rows = maze.getRows();
         int cols = maze.getCols();
 
-        // 2. 初始化并查集，大小为所有格子的映射总数
+        // 2. 初始化并查集：大小为迷宫总格数
         uf = new UnionFind(rows * cols);
 
         // 3. 准备待选墙列表
         List<int[]> walls = new ArrayList<>();
 
-        // 遍历内部网格（跳过最外层边界）
+        // 4. 预处理：将所有奇数格设为“路点”，偶数交叉点存为“待选墙”
+        // 这一步决定了迷宫的格点结构
         for (int r = 1; r < rows - 1; r++) {
             for (int c = 1; c < cols - 1; c++) {
-                // 情况 A：奇数行/奇数列 —— 它们是初始的“孤岛”路点
+                // 初始路点：奇数行且奇数列 (isAction 为 false，静态初始化不产生动画)
                 if (r % 2 != 0 && c % 2 != 0) {
-                    // 设为路 (ROAD)，初始化时不计入操作步数统计
-                    maze.setCellState(r, c, ROAD, false);
+                    maze.setCellState(r, c, MazeConstant.ROAD, false);
                 }
-                // 情况 B：潜在的墙（坐标为一奇一偶）
+                // 潜在的墙：跨接在两个路点之间的格子（一奇一偶）
                 else if ((r % 2 == 0 && c % 2 != 0) || (r % 2 != 0 && c % 2 == 0)) {
                     walls.add(new int[] { r, c });
                 }
             }
         }
 
-        // 4. 核心：打乱墙的顺序，实现随机迷宫生成
+        // 5. 乱序：打乱墙的顺序，这是 Kruskal 生成随机性的核心
         Collections.shuffle(walls);
 
-        // 5. 遍历墙，尝试连通两个区域
+        // 6. 核心遍历：尝试合并连通分量
         for (int[] w : walls) {
             int wr = w[0], wc = w[1];
             int p1, p2;
 
             if (wr % 2 == 0) {
-                // 偶数行墙：连接上方 (wr-1, wc) 和 下方 (wr+1, wc)
+                // 纵向墙：尝试连接 上 (wr-1) 和 下 (wr+1) 两个格点的 ID
                 p1 = (wr - 1) * cols + wc;
                 p2 = (wr + 1) * cols + wc;
             } else {
-                // 奇数行墙（必为偶数列）：连接左方 (wr, wc-1) 和 右方 (wr, wc+1)
+                // 横向墙：尝试连接 左 (wc-1) 和 右 (wc+1) 两个格点的 ID
                 p1 = wr * cols + (wc - 1);
                 p2 = wr * cols + (wc + 1);
             }
 
-            // 6. 使用并查集判断 p1 和 p2 是否已经连通
+            // 7. 核心逻辑：如果两个点在并查集中不连通
             if (!uf.connected(p1, p2)) {
                 uf.union(p1, p2);
-                // 拆墙：设为通路 (ROAD)，并标记为一次“动作”以触发 UI 刷新
-                maze.setCellState(wr, wc, ROAD, true);
+
+                // 🚩 关键：打通墙壁，isAction 为 true 触发视觉同步
+                // UI 上会看到随机分布的墙壁逐渐消失，直到整棵生成树完成
+                maze.setCellState(wr, wc, MazeConstant.ROAD, true);
             }
         }
+
+        // 标记生成完成，通知 UI 模块（如显示生成耗时、解锁寻路按钮等）
+        maze.setGenerated(true);
     }
 }

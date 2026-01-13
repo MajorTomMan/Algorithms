@@ -16,3 +16,4 @@ public interface SyncListener<T> {
      */
     void onSync(T data, Object a, Object b, int compareCount, int actionCount);
 }
+

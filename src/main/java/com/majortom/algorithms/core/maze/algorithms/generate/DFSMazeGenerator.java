@@ -1,27 +1,23 @@
 package com.majortom.algorithms.core.maze.algorithms.generate;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.maze.strategies.MazeGeneratorStrategy;
+import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeConstant;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+import java.util.Random;
 
 /**
- * 深度优先搜索 (DFS) 迷宫生成策略
- * 特点：路径深邃、长路径多，具有极强的探险感。
+ * 深度优先搜索 (DFS) 迷宫生成策略 (利落重构版)
+ * 职责：基于递归回溯算法生成长廊型迷宫。
+ * 适配说明：泛型已对齐 BaseMaze<int[][]>，消除对具体实现类的依赖。
  */
-public class DFSMazeGenerator implements MazeGeneratorStrategy<int[][]> {
+public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
 
-    // 步长与偏移常量
     private static final int STEP = 2;
-    private static final int MID_OFFSET = 1;
+    private final Random random = new Random();
 
-    // 方向向量定义：{rowOffset, colOffset}
-    private static final int[][] DIRECTIONS = {
+    // 方向向量定义（使用数组，减少包装开销）
+    private final int[][] directions = {
             { -STEP, 0 }, // 上
             { STEP, 0 }, // 下
             { 0, -STEP }, // 左
@@ -29,44 +25,59 @@ public class DFSMazeGenerator implements MazeGeneratorStrategy<int[][]> {
     };
 
     @Override
-    public void generate(BaseMaze<int[][]> baseMaze) {
-        // 1. 强转为 ArrayMaze 以使用具体方法
-        ArrayMaze maze = (ArrayMaze) baseMaze;
+    public void run(BaseMaze<int[][]> maze) {
+        if (maze == null)
+            return;
 
-        // 2. 初始起点通常设为 (1, 1)
+        // 1. 初始化迷宫状态（全墙）
+        maze.initial();
+
+        // 2. 确保起点 (1, 1) 是路
+        maze.setCellState(1, 1, MazeConstant.ROAD, true);
+
+        // 3. 开始递归搜索生成
         dfs(maze, 1, 1);
+
+        // 标记生成完成
+        maze.setGenerated(true);
+    }
+
+    private void dfs(BaseMaze<int[][]> maze, int r, int c) {
+        // 🚩 局部洗牌算法：避免在递归中频繁创建 List 对象，提高内存效率
+        int[] indexOrder = { 0, 1, 2, 3 };
+        shuffleArray(indexOrder);
+
+        for (int i : indexOrder) {
+            int[] dir = directions[i];
+            int nextR = r + dir[0];
+            int nextC = c + dir[1];
+
+            // 检查目标点是否在边界内，且是否还是“墙”
+            if (!maze.isOverBorder(nextR, nextC) && maze.getCell(nextR, nextC) == MazeConstant.WALL) {
+
+                // 1. 打通当前点与目标点之间的墙
+                int midR = r + dir[0] / 2;
+                int midC = c + dir[1] / 2;
+                maze.setCellState(midR, midC, MazeConstant.ROAD, true);
+
+                // 2. 打通目标点
+                maze.setCellState(nextR, nextC, MazeConstant.ROAD, true);
+
+                // 3. 递归进入下一个点
+                dfs(maze, nextR, nextC);
+            }
+        }
     }
 
     /**
-     * DFS 核心递归逻辑
+     * 简单的 Fisher-Yates 洗牌，确保递归深度的随机性
      */
-    private void dfs(ArrayMaze maze, int r, int c) {
-        // 1. 将当前单元格设为路 (ROAD)
-        maze.setCellState(r, c, ROAD, true);
-
-        // 2. 准备并随机化方向索引
-        Integer[] dirIndexes = { 0, 1, 2, 3 };
-        List<Integer> dirList = Arrays.asList(dirIndexes);
-        Collections.shuffle(dirList);
-
-        for (int index : dirList) {
-            int[] d = DIRECTIONS[index];
-            int nextR = r + d[0];
-            int nextC = c + d[1];
-
-            // 3. 边界检查及未访问状态确认（WALL 代表未访问过）
-            if (!maze.isOverBorder(nextR, nextC) && maze.getCell(nextR, nextC) == WALL) {
-
-                // 4. 计算并打通两个路点之间的“墙”
-                // 根据偏移方向确定中间墙的坐标
-                int midR = r + (d[0] == 0 ? 0 : d[0] / STEP * MID_OFFSET);
-                int midC = c + (d[1] == 0 ? 0 : d[1] / STEP * MID_OFFSET);
-
-                maze.setCellState(midR, midC, ROAD, true);
-
-                // 5. 递归探索
-                dfs(maze, nextR, nextC);
-            }
+    private void shuffleArray(int[] array) {
+        for (int i = array.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
         }
     }
 }
