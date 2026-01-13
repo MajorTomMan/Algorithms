@@ -10,16 +10,14 @@ import java.util.List;
 
 /**
  * 深度优先搜索 (DFS) 迷宫生成策略
- * 特点：路径深邃、长路径多，分叉相对较少
+ * 适配说明：通过 BaseMazeAlgorithms<int[][], ArrayMaze> 实现类型全通透，消除强转。
  */
-public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
+public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][], ArrayMaze> {
 
-    // 步长为2（跳过中间的墙），偏移量为1（打通中间的墙）
     private static final int STEP = 2;
-    private static final int MID_OFFSET = 1;
 
     // 方向向量定义
-    private static final List<int[]> DIRECTIONS = Arrays.asList(
+    private final List<int[]> directions = Arrays.asList(
             new int[] { -STEP, 0 }, // 上
             new int[] { STEP, 0 }, // 下
             new int[] { 0, -STEP }, // 左
@@ -27,30 +25,35 @@ public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
     );
 
     @Override
-    public void run(int[][] data) {
-        if (mazeEntity == null)
-            return;
+    public void run(ArrayMaze maze) {
+        // 1. 初始化迷宫状态（全墙）
+        maze.initial();
 
-        // 1. 确保起点 (1, 1) 是路
-        // 参数说明：行, 列, 类型, 是否计入 action (触发节流)
-        mazeEntity.setCellState(1, 1, MazeConstant.ROAD, true);
+        // 2. 确保起点 (1, 1) 是路
+        // 🚩 这里的 maze 直接就是 ArrayMaze 类型，不需要强转
+        maze.setCellState(1, 1, MazeConstant.ROAD, true);
 
-        // 2. 开始递归搜索
-        dfs((ArrayMaze) mazeEntity, 1, 1);
+        // 3. 开始递归搜索
+        dfs(maze, 1, 1);
+
+        maze.setGenerated(true);
     }
 
-    /**
-     * DFS 核心递归逻辑
-     */
     private void dfs(ArrayMaze maze, int r, int c) {
         // 随机打乱方向，确保迷宫的随机性
-        Collections.shuffle(DIRECTIONS);
+        Collections.shuffle(directions);
 
-        for (int[] dir : DIRECTIONS) {
+        // 🚩 注意：为了避免递归中共享同一个打乱后的 directions，
+        // 建议在这里 copy 一份或者每次循环克隆，虽然目前 static 引用在单线程下能跑，
+        // 但为了严谨，我们直接用局部变量的思想。
+        List<int[]> currentDirs = Arrays.asList(directions.toArray(new int[0][]));
+        Collections.shuffle(currentDirs);
+
+        for (int[] dir : currentDirs) {
             int nextR = r + dir[0];
             int nextC = c + dir[1];
 
-            // 检查目标点是否在边界内，且是否还是“墙” (即未访问过)
+            // 检查目标点是否在边界内，且是否还是“墙”
             if (!maze.isOverBorder(nextR, nextC) && maze.getCell(nextR, nextC) == MazeConstant.WALL) {
 
                 // 1. 打通中间的墙

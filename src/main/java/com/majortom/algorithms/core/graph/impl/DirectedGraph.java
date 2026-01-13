@@ -2,7 +2,6 @@ package com.majortom.algorithms.core.graph.impl;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
 import org.graphstream.graph.Edge;
-import org.graphstream.graph.Graph;
 
 /**
  * 有向图数据实现
@@ -22,14 +21,21 @@ public class DirectedGraph<V> extends BaseGraph<V> {
             Edge e = graph.addEdge(edgeId, fromId, toId, true);
             e.setAttribute("weight", weight);
             e.setAttribute("ui.label", String.valueOf(weight));
-
-            // 为有向图定制箭头样式
-            e.setAttribute("ui.style", "arrow-shape: arrow; arrow-size: 10px, 5px;");
+            // 💡 提示：具体的箭头颜色建议统一放在 GraphVisualizer 的 StyleSheet 里
+            // 这样这里只负责逻辑逻辑，不负责 UI 细节
         }
     }
 
+    /**
+     * 实现 BaseStructure 要求的抽象方法
+     */
     @Override
-    public void run(Graph data) {
-        // TODO Auto-generated method stub
+    public V getData() {
+        return null; // 图作为整体容器，通常不返回单一数据项
+    }
+
+    @Override
+    public void reset() {
+        super.reset(); // 调用 BaseGraph.resetGraphState()
     }
 }

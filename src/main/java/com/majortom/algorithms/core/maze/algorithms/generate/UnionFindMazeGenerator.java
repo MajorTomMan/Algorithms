@@ -10,20 +10,18 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 基于并查集的迷宫生成算法（Kruskal's Algorithm）
- * 特点：生成的迷宫分支非常均匀，没有明显的生长中心，视觉上比 DFS 更细碎。
+ * 基于并查集的迷宫生成算法 (Kruskal's Algorithm)
+ * 适配说明：通过双泛型约束实现类型安全，利用 BaseStructure 自动同步 UI。
  */
-public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
+public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][], ArrayMaze> {
 
     private UnionFind uf;
 
     @Override
-    public void run(int[][] data) {
-        // 1. 核心上下文检查
-        if (mazeEntity == null)
-            return;
+    public void run(ArrayMaze maze) {
+        // 1. 初始化迷宫：重置为全墙
+        maze.initial();
 
-        ArrayMaze maze = (ArrayMaze) mazeEntity;
         int rows = maze.getRows();
         int cols = maze.getCols();
 
@@ -33,10 +31,10 @@ public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
         // 3. 准备待选墙列表
         List<int[]> walls = new ArrayList<>();
 
-        // 4. 预处理：将所有奇数格作为初始“孤岛”
+        // 4. 预处理：将所有奇数格设为“路点”，偶数交叉点存为“待选墙”
         for (int r = 1; r < rows - 1; r++) {
             for (int c = 1; c < cols - 1; c++) {
-                // 初始路点：奇数行且奇数列
+                // 初始路点：奇数行且奇数列（这里 isAction 为 false，不产生步进动画）
                 if (r % 2 != 0 && c % 2 != 0) {
                     maze.setCellState(r, c, MazeConstant.ROAD, false);
                 }
@@ -47,10 +45,10 @@ public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
             }
         }
 
-        // 5. 乱序墙列表：这是 Kruskal 算法随机性的来源
+        // 5. 乱序：决定迷宫生成的随机性
         Collections.shuffle(walls);
 
-        // 6. 遍历墙，尝试合并集合
+        // 6. 核心遍历：尝试打通墙壁
         for (int[] w : walls) {
             int wr = w[0], wc = w[1];
             int p1, p2;
@@ -65,12 +63,16 @@ public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
                 p2 = wr * cols + (wc + 1);
             }
 
-            // 7. 核心逻辑：如果不连通，则打通这面墙
+            // 7. 核心逻辑：如果不连通，则合并并打通
             if (!uf.connected(p1, p2)) {
                 uf.union(p1, p2);
-                // 设为路并触发 UI 同步（这里开启 Action 计数，产生动画效果）
+
+                // 💡 关键点：isAction 设为 true，这样每次打通墙都会触发 SyncListener
+                // 并产生一次 Thread.sleep 或等待 UI 信号，形成完美的生成动画
                 maze.setCellState(wr, wc, MazeConstant.ROAD, true);
             }
         }
+
+        maze.setGenerated(true);
     }
 }

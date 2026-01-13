@@ -56,6 +56,8 @@ public class AlgorithmVisualizerLauncher extends Application {
     public static void launch(String[] args) {
         // 部分操作系统（如 macOS）可能需要指定此属性以优化 GraphStream 性能
         System.setProperty("prism.lcdtext", "false");
+        // 修复Ubuntu 显卡过来驱动失效导致界面卡死的问题
+        System.setProperty("prism.order", "sw");
         Application.launch(AlgorithmVisualizerLauncher.class, args);
     }
 }

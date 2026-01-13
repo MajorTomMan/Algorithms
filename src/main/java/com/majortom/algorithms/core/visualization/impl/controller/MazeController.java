@@ -8,7 +8,6 @@ import com.majortom.algorithms.core.maze.algorithms.pathfinding.*;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -19,11 +18,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class MazeController<T> extends BaseController<T> {
+/**
+ * 迷宫算法控制器 (重构版)
+ * 职责：管理迷宫生成与寻路的策略切换。
+ * 🚩 修正：泛型对齐为 BaseMaze<T>，确保符合 BaseStructure 约束
+ */
+public class MazeController<T> extends BaseController<BaseMaze<T>> {
 
-    private BaseMazeAlgorithms<T> mazeGenerator;
-    private BaseMazeAlgorithms<T> mazeSolver;
+    private BaseMazeAlgorithms<T, BaseMaze<T>> mazeGenerator;
+    private BaseMazeAlgorithms<T, BaseMaze<T>> mazeSolver;
     private BaseMaze<T> mazeEntity;
+
+    // 🚩 修正：视觉组件也需对齐泛型
     private final BaseMazeVisualizer<T> mazeVisualizer;
 
     @FXML
@@ -40,6 +46,8 @@ public class MazeController<T> extends BaseController<T> {
     public MazeController(BaseMazeAlgorithms<T> generator,
             BaseMaze<T> mazeEntity,
             BaseMazeVisualizer<T> visualizer) {
+        // 🚩 修正：super 调用，第一个参数不需要传 null，BaseController 已经重构
+        super(visualizer);
         this.mazeGenerator = generator;
         this.mazeEntity = mazeEntity;
         this.mazeVisualizer = visualizer;
@@ -49,18 +57,18 @@ public class MazeController<T> extends BaseController<T> {
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MazeControls.fxml"));
+            loader.setResources(ResourceBundle.getBundle("language.language"));
             loader.setController(this);
             this.customControlPane = loader.load();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("[Error] Maze FXML load failed.");
         }
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        this.visualizer = this.mazeVisualizer;
+        super.initialize(location, resources);
 
-        // 1. 滑动条联动
         if (sizeSlider != null) {
             sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
                 int val = newVal.intValue();
@@ -69,40 +77,30 @@ public class MazeController<T> extends BaseController<T> {
             });
         }
 
-        // 2. 解决黑屏：监听 Canvas 尺寸，就绪后立即渲染首帧
+        // 🚩 修正：使用 getLastData() 保证一致性
         this.visualizer.widthProperty().addListener((obs, oldV, newV) -> {
             if (newV.doubleValue() > 0 && mazeEntity != null) {
-                Platform.runLater(() -> this.visualizer.render(mazeEntity.getData(), null, null));
+                this.visualizer.render(mazeEntity, null, null);
             }
         });
 
         mazeEntity.initialSilent();
-        syncArchitecture();
-    }
-
-    private void syncArchitecture() {
-        if (mazeGenerator != null && mazeEntity != null) {
-            mazeGenerator.setEnvironment(this::onSync, this::onStep);
-            mazeGenerator.setMazeEntity(mazeEntity);
-        }
-        if (mazeSolver != null) {
-            mazeSolver.setEnvironment(this::onSync, this::onStep);
-            mazeSolver.setMazeEntity(mazeEntity);
-        }
     }
 
     @FXML
     public void handleReset() {
         stopAlgorithm();
-        // 根据当前 Slider 值重新生成迷宫矩阵
-        int currentSize = Integer.parseInt(sizeValueLabel.getText().split("x")[0]);
-        this.mazeEntity = (BaseMaze<T>) new ArrayMaze(currentSize, currentSize);
 
+        int currentSize = Integer.parseInt(sizeValueLabel.getText().split("x")[0]);
+        // 🚩 修正：确保新生成的实体也被正确引用
+        this.mazeEntity = (BaseMaze<T>) new ArrayMaze(currentSize, currentSize);
         mazeEntity.initialSilent();
-        syncArchitecture();
-        this.visualizer.render(mazeEntity.getData(), null, null);
-        if (logArea != null)
+
+        this.visualizer.render(mazeEntity, null, null);
+
+        if (logArea != null) {
             logArea.appendText("System: Grid reset to " + currentSize + "\n");
+        }
     }
 
     @FXML
@@ -110,38 +108,39 @@ public class MazeController<T> extends BaseController<T> {
         stopAlgorithm();
         mazeEntity.initialSilent();
 
-        // 策略路由
         String selected = algoSelector.getValue();
         if ("Randomized BFS".equals(selected)) {
-            this.mazeGenerator = (BaseMazeAlgorithms<T>) new BFSMazeGenerator();
+            this.mazeGenerator = new BFSMazeGenerator();
         } else if ("Recursive Backtracker".equals(selected)) {
-            this.mazeGenerator = (BaseMazeAlgorithms<T>) new DFSMazeGenerator();
+            this.mazeGenerator = new DFSMazeGenerator();
         } else if ("Prim's Algorithm".equals(selected)) {
-            this.mazeGenerator = (BaseMazeAlgorithms<T>) new UnionFindMazeGenerator();
+            this.mazeGenerator = new UnionFindMazeGenerator();
         }
 
-        syncArchitecture();
-        if (logArea != null)
-            logArea.appendText("System: Generating [" + selected + "]\n");
-        startAlgorithm(mazeGenerator, mazeEntity.getData());
+        this.mazeGenerator.setMazeEntity(mazeEntity);
+
+        // 🚩 修正：传入实体对象 mazeEntity
+        startAlgorithm(mazeGenerator, mazeEntity);
     }
 
     @FXML
     public void handleSolve() {
         stopAlgorithm();
-        mazeEntity.pickRandomPoints(); // 放置起点终点
+        mazeEntity.pickRandomPoints();
 
         String selected = solverSelector.getValue();
         if ("A* Search".equals(selected)) {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new AStarMazePathfinder();
+            this.mazeSolver = new AStarMazePathfinder();
         } else if ("DFS Solver".equals(selected)) {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new DFSMazePathfinder();
+            this.mazeSolver = new DFSMazePathfinder();
         } else {
-            this.mazeSolver = (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
+            this.mazeSolver = new BFSMazePathfinder();
         }
 
-        syncArchitecture();
-        startAlgorithm(mazeSolver, mazeEntity.getData());
+        this.mazeSolver.setMazeEntity(mazeEntity);
+
+        // 🚩 修正：传入实体对象 mazeEntity
+        startAlgorithm(mazeSolver, mazeEntity);
     }
 
     @Override
@@ -150,15 +149,17 @@ public class MazeController<T> extends BaseController<T> {
     }
 
     @Override
-    protected void executeAlgorithm(BaseAlgorithms<T> alg, T data) {
+    protected void executeAlgorithm(BaseAlgorithms<BaseMaze<T>> alg, BaseMaze<T> data) {
+        // 🚩 修正：现在数据是实体，算法运行直接调用即可
         alg.run(data);
     }
 
     @Override
     protected void updateUIComponents(int compareCount, int actionCount) {
         if (statsLabel != null) {
-            Platform.runLater(() -> statsLabel.setText(
-                    String.format("VISITED: %d\nOPS: %d", actionCount, compareCount)));
+            // 🚩 解决 Bound Property 报错：确保 statsLabel 没有在 FXML 被绑定
+            statsLabel.setText(String.format("VISITED: %d\nSCALE: %s",
+                    actionCount, sizeValueLabel.getText()));
         }
     }
 

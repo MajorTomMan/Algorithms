@@ -2,7 +2,6 @@ package com.majortom.algorithms.core.graph.impl;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
 import org.graphstream.graph.Edge;
-import org.graphstream.graph.Graph;
 
 /**
  * 无向图数据实现
@@ -12,17 +11,16 @@ public class UndirectedGraph<V> extends BaseGraph<V> {
 
     public UndirectedGraph(String id) {
         super(id);
-        // 显式配置图属性，告知渲染引擎处理为无向模式
+        // 配置全局渲染属性
         this.graph.setAttribute("ui.quality");
         this.graph.setAttribute("ui.antialias");
     }
 
     @Override
     public void addEdge(String fromId, String toId, int weight) {
-        // 预防重复添加相同 ID 的边
-        String edgeId = String.format("%s_%s", fromId, toId);
-        if (graph.getEdge(edgeId) == null && graph.getEdge(toId + "_" + fromId) == null) {
-            // 第三个参数 false 表示该边为无向边
+        // 排序 ID 确保无向边的唯一性，你的这个 ID 逻辑非常利落，保留。
+        String edgeId = fromId.compareTo(toId) < 0 ? fromId + "_" + toId : toId + "_" + fromId;
+        if (graph.getEdge(edgeId) == null) {
             Edge e = graph.addEdge(edgeId, fromId, toId, false);
             e.setAttribute("weight", weight);
             e.setAttribute("ui.label", String.valueOf(weight));
@@ -30,7 +28,12 @@ public class UndirectedGraph<V> extends BaseGraph<V> {
     }
 
     @Override
-    public void run(Graph data) {
-        // TODO Auto-generated method stub
+    public V getData() {
+        return null;
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
     }
 }

@@ -1,214 +1,203 @@
 package com.majortom.algorithms.core.visualization;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
-import com.majortom.algorithms.core.graph.BaseGraphAlgorithms;
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Region;
-import javafx.scene.Node;
+
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 算法可视化控制器基类
- * 职责：连接算法逻辑与 UI 呈现，管理执行节奏与线程同步
- * * @param <T> 数据结构类型（如 int[], int[][], BaseTree 等）
+ * 职责：连接 UI 线程与算法执行线程，统筹动画节奏与数据同步。
+ * * @param <S> 结构类型，必须继承自 BaseStructure，确保与 BaseAlgorithms 的泛型约束对齐
  */
-public abstract class BaseController<T> implements Initializable {
+public abstract class BaseController<S extends BaseStructure<?>> implements Initializable {
 
-    // --- 核心同步锁 ---
-    // 用于确保“算法步进”必须等待“UI渲染”完成后才能继续
-    private final Semaphore renderSemaphore = new Semaphore(0);
-
-    // --- 动画状态控制 (响应式属性) ---
+    // --- 动画状态控制 ---
+    // 采用 DoubleProperty 方便与 JavaFX Slider 进行双向绑定
     protected final DoubleProperty delayMs = new SimpleDoubleProperty(50.0);
-    protected volatile boolean isPaused = false;
-    protected volatile boolean isRunning = false;
 
-    // --- 视觉组件引用 ---
-    protected BaseVisualizer<T> visualizer;
-
+    // --- 视觉组件引用 (由子类通过 @FXML 或 setUIReferences 注入) ---
+    protected BaseVisualizer<S> visualizer;
     protected Label statsLabel;
     protected TextArea logArea;
     protected Slider delaySlider;
 
     /**
-     * 添加此构造函数以支持依赖注入
+     * 默认构造函数
      */
-    public BaseController(BaseAlgorithms<T> algorithm, BaseVisualizer<T> visualizer) {
-        // 将注入的组件保存到基类成员中
-        this.visualizer = visualizer;
-        // 注意：算法逻辑可以保存在基类，也可以由子类持有
+    public BaseController() {
     }
 
-    public BaseController() {
-
+    /**
+     * 带 Visualizer 的构造函数
+     */
+    public BaseController(BaseVisualizer<S> visualizer) {
+        this.visualizer = visualizer;
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // 初始化滑块绑定逻辑
         if (delaySlider != null) {
+            // 建立双向绑定：Slider 的滑动会实时改变 delayMs 属性
             this.delayMs.bind(delaySlider.valueProperty());
-        }
-    }
 
-    /**
-     * 提供给外部获取该控制器的 UI 根节点
-     */
-    public Region getView() {
-        return visualizer;
+            // 监听 delayMs 属性变化，实时更新算法线程的休眠时间
+            delayMs.addListener((obs, oldVal, newVal) -> AlgorithmThreadManager.setDelay(newVal.longValue()));
+
+            // 执行初始同步，确保管理器拿到滑块的初始值
+            AlgorithmThreadManager.setDelay(delayMs.longValue());
+        }
     }
 
     /**
      * 实现 SyncListener 接口逻辑：处理数据快照同步
-     * 运行在算法线程中
+     * 职责：在算法线程调用此方法时，阻塞算法线程，并在 UI 线程完成渲染后释放。
+     * * @param structure 数据结构实体
+     * 
+     * @param a            正在操作的元素 A (如索引或节点)
+     * @param b            正在操作的元素 B (如对比对象)
+     * @param compareCount 实时比较计数
+     * @param actionCount  实时操作计数
      */
-    protected void onSync(T data, Object a, Object b, int compareCount, int actionCount) {
-        // 定义渲染完成后的回调
-        Runnable renderCompleteCallback = () -> renderSemaphore.release();
-
-        // 将渲染任务提交至 JavaFX Application Thread
-        Platform.runLater(() -> {
-            try {
-                if (visualizer != null) {
-                    visualizer.render(data, a, b);
-                }
-                updateUIComponents(compareCount, actionCount);
-            } finally {
-                // 无论渲染成功与否，都释放信号量，避免算法线程永久阻塞
-                renderCompleteCallback.run();
+    protected void onSync(S structure, Object a, Object b, int compareCount, int actionCount) {
+        // 核心阻塞机制：确保渲染完成前算法不会继续跑
+        AlgorithmThreadManager.syncAndWait(() -> {
+            // 以下逻辑运行在 JavaFX Application Thread
+            if (visualizer != null) {
+                // 调用具体的 Canvas 或 SVG 绘图引擎
+                visualizer.render(structure, a, b);
             }
+            // 更新状态栏文字
+            updateUIComponents(compareCount, actionCount);
         });
     }
 
     /**
-     * 实现 StepListener 接口逻辑：控制算法执行节奏
-     * 运行在算法线程中
+     * 实现 StepListener 接口逻辑：处理算法步进节奏
+     * 职责：检查当前算法是否处于暂停状态或是否已被中断。
      */
     protected void onStep() {
-        try {
-            // 1. 处理暂停逻辑
-            while (isPaused && isRunning) {
-                Thread.sleep(100);
-            }
-
-            // 2. 核心握手：等待 UI 渲染完成的信号
-            // 设置 5 秒超时，防止 UI 异常导致后台线程死锁
-            boolean rendered = renderSemaphore.tryAcquire(5, TimeUnit.SECONDS);
-
-            // 3. 节流延迟：根据 delayMs 调整速度
-            long sleepTime = (long) delayMs.get();
-            if (sleepTime > 0) {
-                Thread.sleep(sleepTime);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // 由管理器统一检查中断标志位和暂停锁
+        AlgorithmThreadManager.checkStepStatus();
     }
 
     /**
      * 启动/重启算法执行
+     * * @param algorithm 具体的算法实例
+     * 
+     * @param data 待操作的数据实体
      */
-    public void startAlgorithm(BaseAlgorithms<T> algorithm, T data) {
-        if (isRunning) {
-            stopAlgorithm();
-        }
+    public void startAlgorithm(BaseAlgorithms<S> algorithm, S data) {
+        // 1. 若当前有任务正在运行，强制停止并清理现场
+        stopAlgorithm();
 
-        isRunning = true;
-        isPaused = false;
-        renderSemaphore.drainPermits();
-        renderSemaphore.release();
-        // 注入环境监听器
+        // 2. 将控制器的回调注入算法环境
+        // 这里的 this::onSync 能够完美匹配是因为泛型约束 S 已经对齐
         algorithm.setEnvironment(this::onSync, this::onStep);
 
-        // 提交至后台线程池执行，避免卡死界面
+        // 3. 提交任务到独立算法线程池
         AlgorithmThreadManager.run(() -> {
             try {
+                // 调用具体的执行钩子（如 alg.run 或 alg.sort）
                 executeAlgorithm(algorithm, data);
             } catch (Exception e) {
+                // 捕获异常并反馈到 UI
                 handleAlgorithmError(e);
             } finally {
-                isRunning = false;
+                // 无论成功失败，在结束时重置状态并通知子类
                 Platform.runLater(this::onAlgorithmFinished);
             }
         });
     }
 
     /**
-     * 强制停止当前运行的算法
+     * 强制停止当前运行的算法线程
      */
     public void stopAlgorithm() {
-        isRunning = false;
-        isPaused = false;
         AlgorithmThreadManager.stopAll();
-        renderSemaphore.release(); // 强行解开阻塞
     }
-
-    // --- 子类必须实现的业务逻辑 ---
-    /**
-     * 子类重写：提供自己特有的控制按钮
-     * 这些按钮会被 MainFrame 放入 customControlBox
-     */
-    public abstract List<Node> getCustomControls();
 
     /**
-     * 算法执行的统一入口
-     * 由 MainController 的 START 按钮触发
+     * 切换暂停/恢复状态
      */
-    public abstract void handleAlgorithmStart();
-
-    /** 具体算法的启动逻辑 */
-    protected abstract void executeAlgorithm(BaseAlgorithms<T> algorithm, T data);
-
-    /** UI 统计数据（如比较次数）的更新逻辑 */
-    protected abstract void updateUIComponents(int compareCount, int actionCount);
-
-    // --- 可选重写的钩子 ---
-
-    protected void handleAlgorithmError(Exception e) {
-        e.printStackTrace();
+    public void togglePause() {
+        if (AlgorithmThreadManager.isPaused()) {
+            AlgorithmThreadManager.resume();
+        } else {
+            AlgorithmThreadManager.pause();
+        }
     }
 
-    protected void onAlgorithmFinished() {
-        // 算法正常结束后的 UI 处理
+    // --- 属性访问与注入 ---
+
+    public Region getView() {
+        return (Region) visualizer;
     }
 
-    // --- 通用属性访问 ---
-    public DoubleProperty delayMsProperty() {
-        return delayMs;
+    public BaseVisualizer<S> getVisualizer() {
+        return visualizer;
     }
 
-    public void setPaused(boolean paused) {
-        this.isPaused = paused;
+    /**
+     * 由具体子类 Controller 调用，注入 FXML 控件引用
+     */
+    public void setUIReferences(Label statsLabel, TextArea logArea, Slider delaySlider) {
+        this.statsLabel = statsLabel;
+        this.logArea = logArea;
+        this.delaySlider = delaySlider;
+        // 注入后重新触发一遍初始化绑定
+        initialize(null, null);
+    }
+
+    public boolean isRunning() {
+        return AlgorithmThreadManager.isRunning();
     }
 
     public boolean isPaused() {
-        return isPaused;
+        return AlgorithmThreadManager.isPaused();
     }
 
-    /**
-     * 注入全局 UI 引用，供子控制器更新日志和状态
-     */
-    public void setUIReferences(Label statsLabel, TextArea logArea) {
-        this.statsLabel = statsLabel;
-        this.logArea = logArea;
+    // --- 子类具体实现钩子 ---
+
+    /** 具体算法的启动逻辑，通常调用 algorithm.run(data) 或 sort(data) */
+    protected abstract void executeAlgorithm(BaseAlgorithms<S> algorithm, S data);
+
+    /** 更新 UI 面板上的比较次数、操作次数、时间等信息 */
+    protected abstract void updateUIComponents(int compareCount, int actionCount);
+
+    /** 获取每个算法特有的 UI 控件列表（如“随机生成”、“重置”按钮） */
+    public abstract List<Node> getCustomControls();
+
+    /** 按钮触发器：处理启动逻辑，通常调用 startAlgorithm */
+    public abstract void handleAlgorithmStart();
+
+    // --- 可选重写钩子 ---
+
+    protected void handleAlgorithmError(Exception e) {
+        e.printStackTrace();
+        Platform.runLater(() -> {
+            if (logArea != null) {
+                logArea.appendText("❌ Algorithm Error: " + e.getLocalizedMessage() + "\n");
+            }
+        });
     }
 
-    /**
-     * 获取当前控制器的视觉呈现组件
-     * 注意：由于你在基类中定义的是 protected BaseVisualizer<T> visualizer;
-     * 所以需要一个 getter 暴露给 MainController。
-     */
-    public BaseVisualizer<T> getVisualizer() {
-        return visualizer;
+    protected void onAlgorithmFinished() {
+        if (logArea != null) {
+            logArea.appendText("✅ System: Algorithm execution completed.\n");
+        }
     }
 }

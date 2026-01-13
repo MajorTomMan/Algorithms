@@ -1,6 +1,7 @@
 package com.majortom.algorithms.core.graph;
 
-import com.majortom.algorithms.core.base.BaseAlgorithms;
+import com.majortom.algorithms.core.base.BaseStructure;
+
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
@@ -10,7 +11,7 @@ import org.graphstream.graph.implementations.SingleGraph;
  * 图算法数据基类
  * 职责：作为 GraphStream Graph 的包装器，提供符合业务逻辑的算法同步接口
  */
-public abstract class BaseGraph<V> extends BaseAlgorithms<Graph> {
+public abstract class BaseGraph<V> extends BaseStructure<V> {
 
     protected Graph graph;
 
@@ -39,16 +40,24 @@ public abstract class BaseGraph<V> extends BaseAlgorithms<Graph> {
     // --- 可视化同步接口 ---
 
     /**
-     * 标记节点访问状态并同步
+     * 标记节点访问状态
+     * 
+     * @return 如果是首次访问返回 true，否则返回 false
      */
-    public void visit(String nodeId) {
+    public boolean visit(String nodeId) {
         Node n = graph.getNode(nodeId);
-        if (n != null) {
+        if (n != null && !n.hasAttribute("visited")) {
             n.setAttribute("visited", true);
             n.setAttribute("ui.class", "highlight");
-            actionCount++;
-            sync(graph, nodeId, null);
+            incrementAction(); // 使用基类方法
+            return true;
         }
+        return false;
+    }
+
+    public boolean isVisited(String nodeId) {
+        Node n = graph.getNode(nodeId);
+        return n != null && n.hasAttribute("visited");
     }
 
     /**
@@ -56,7 +65,6 @@ public abstract class BaseGraph<V> extends BaseAlgorithms<Graph> {
      */
     public void trace(String fromId, String toId) {
         compareCount++;
-        sync(graph, fromId, toId);
     }
 
     /**
@@ -70,10 +78,15 @@ public abstract class BaseGraph<V> extends BaseAlgorithms<Graph> {
         if (e != null) {
             e.setAttribute("ui.class", "active-edge");
             actionCount++;
-            sync(graph, fromId, toId);
         }
     }
 
+    @Override
+    public void reset() {
+        resetGraphState();
+        this.compareCount = 0;
+        this.actionCount = 0;
+    }
     // --- 状态重置 ---
 
     public void resetGraphState() {
@@ -82,7 +95,6 @@ public abstract class BaseGraph<V> extends BaseAlgorithms<Graph> {
             n.removeAttribute("ui.class");
         });
         graph.edges().forEach(e -> e.removeAttribute("ui.class"));
-        resetStatistics();
     }
 
     public Graph getGraph() {

@@ -4,46 +4,50 @@ import com.majortom.algorithms.core.base.BaseAlgorithms;
 
 /**
  * 排序算法基类
- * 泛型 T 表示数组元素的类型，BaseSort<T> 是算法操作的实体对象
+ * 职责：定义排序算法的通用比较与交换接口，统筹 UI 同步与统计。
+ * 
+ * @param <T> 数组元素的类型（需实现 Comparable）
  */
 public abstract class BaseSortAlgorithms<T extends Comparable<T>> extends BaseAlgorithms<BaseSort<T>> {
 
     @Override
     public void run(BaseSort<T> sortEntity) {
+        // 执行前重置实体的统计状态
+        sortEntity.reset();
         this.sort(sortEntity);
     }
 
+    /**
+     * 由具体排序算法（Bubble, Quick, Merge）实现
+     */
     public abstract void sort(BaseSort<T> sortEntity);
 
     /**
-     * 泛型交换逻辑
+     * 统一的交换接口
+     * 
      */
     protected void swap(BaseSort<T> sortEntity, int i, int j) {
         if (i == j)
             return;
 
-        T[] arr = sortEntity.getData();
-        T temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
+        // 实体内部完成数据交换、统计增加、状态更新
+        sortEntity.swap(i, j);
 
-        actionCount++;
-        // 设置高亮并同步
-        sortEntity.setActiveIndex(i);
-        sortEntity.setCompareIndex(j);
+        // 发射同步信号给 UI 线程
         sync(sortEntity, i, j);
     }
 
     /**
-     * 泛型比较逻辑
+     * 统一的比较接口 (i 是否小于 j)
+     * 
      */
     protected boolean less(BaseSort<T> sortEntity, int i, int j) {
-        compareCount++;
-        sortEntity.setActiveIndex(i);
-        sortEntity.setCompareIndex(j);
+        // 实体内部记录比较次数并更新高亮索引
+        int result = sortEntity.compare(i, j);
+
+        // 发射同步信号（渲染比较时的红蓝高亮）
         sync(sortEntity, i, j);
 
-        T[] arr = sortEntity.getData();
-        return arr[i].compareTo(arr[j]) < 0;
+        return result < 0;
     }
 }

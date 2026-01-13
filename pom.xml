@@ -21,21 +21,25 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${os.detected.name}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-base</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${os.detected.name}</classifier>
         </dependency>
 
         <dependency>
@@ -43,19 +47,12 @@
             <artifactId>atlantafx-base</artifactId>
             <version>${atlantafx.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.github.mkpaz/atlantafx-styles -->
         <dependency>
             <groupId>io.github.mkpaz</groupId>
             <artifactId>atlantafx-styles</artifactId>
             <version>2.1.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.github.mkpaz/atlantafx-parent -->
-        <dependency>
-            <groupId>io.github.mkpaz</groupId>
-            <artifactId>atlantafx-parent</artifactId>
-            <version>2.1.0</version>
-            <type>pom</type>
-        </dependency>
+
         <dependency>
             <groupId>org.graphstream</groupId>
             <artifactId>gs-core</artifactId>
@@ -87,6 +84,14 @@
     </dependencies>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.1</version>
+            </extension>
+        </extensions>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -102,18 +107,9 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
-                <executions>
-                    <execution>
-                        <id>default-cli</id>
-                        <configuration>
-                            <mainClass>com.majortom.algorithms.AlgorithmsAPP</mainClass>
-                            <options>
-                                <option>--add-modules</option>
-                                <option>javafx.controls,javafx.fxml</option>
-                            </options>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <mainClass>com.majortom.algorithms.App</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>

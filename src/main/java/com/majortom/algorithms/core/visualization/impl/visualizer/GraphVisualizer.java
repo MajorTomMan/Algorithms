@@ -1,5 +1,6 @@
 package com.majortom.algorithms.core.visualization.impl.visualizer;
 
+import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import javafx.application.Platform;
 import org.graphstream.graph.Graph;
@@ -8,118 +9,117 @@ import org.graphstream.ui.fx_viewer.FxViewPanel;
 import org.graphstream.ui.fx_viewer.FxViewer;
 
 /**
- * 图算法可视化器
- * 职责：适配 GraphStream 的 JavaFX 视图，通过 CSS 样式表实现霓虹视觉效果，
- * 并根据算法反馈更新节点状态。
+ * 图算法可视化器 (重构版)
+ * 职责：适配 GraphStream 引擎，将 BaseGraph 的状态映射到视觉层面。
+ * * @param <V> 节点存储的数据类型
  */
-public class GraphVisualizer extends BaseVisualizer<Graph> {
+public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
 
     private FxViewer viewer;
     private FxViewPanel viewPanel;
-    private Graph internalGraph;
+    private final Graph gsGraph; // 内部引用的 GraphStream 对象
 
-    public GraphVisualizer() {
-        // 1. 指定 GraphStream 使用 JavaFX 渲染引擎
+    public GraphVisualizer(BaseGraph<V> baseGraph) {
+        // 设置 GS 渲染引擎为 JavaFX
         System.setProperty("org.graphstream.ui", "javafx");
-
-        // 初始状态下不持有特定的 Graph 引用，由第一次 draw 传入或由 Controller 注入
-        // 此时仅作为容器准备
+        this.gsGraph = baseGraph.getGraph();
+        
+        // 初始渲染：由于 Viewer 初始化较慢，放入 Platform.runLater
+        Platform.runLater(this::initializeViewer);
     }
 
     /**
      * 实现渲染钩子
-     * 
-     * @param data 传入的 GraphStream 图实例
-     * @param a    当前操作的主节点 ID (String)
-     * @param b    关联操作的辅助节点 ID (String)
+     * 由 BaseController 触发，运行在 JavaFX 线程。
      */
     @Override
-    protected void draw(Graph data, Object a, Object b) {
-        if (data == null)
-            return;
+    protected void draw(BaseGraph<V> data, Object a, Object b) {
+        if (data == null || gsGraph == null) return;
 
-        // 首次运行或图实例切换时初始化 Viewer
-        if (internalGraph != data) {
-            this.internalGraph = data;
-            initializeViewer();
-        }
+        try {
+            // 🚩 1. 清理上一帧的高亮状态
+            gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
+            gsGraph.edges().forEach(e -> e.removeAttribute("ui.class"));
 
-        // 修改节点样式属于 UI 更新范畴
-        Platform.runLater(() -> {
-            // 清除旧的高亮状态
-            data.nodes().forEach(n -> n.removeAttribute("ui.class"));
-
-            // 设置主焦点样式 (如: START_VIOLET 效果)
+            // 🚩 2. 处理当前焦点节点 A (通常是正在访问的节点)
             if (a instanceof String nodeId) {
-                Node nodeA = data.getNode(nodeId);
-                if (nodeA != null)
-                    nodeA.setAttribute("ui.class", "highlight");
+                Node nodeA = gsGraph.getNode(nodeId);
+                if (nodeA != null) nodeA.setAttribute("ui.class", "highlight");
             }
 
-            // 设置副焦点样式 (如: NEON_BLUE 效果)
+            // 🚩 3. 处理次要焦点 B (通常是路径或父节点)
             if (b instanceof String nodeId) {
-                Node nodeB = data.getNode(nodeId);
-                if (nodeB != null)
-                    nodeB.setAttribute("ui.class", "secondary");
+                Node nodeB = gsGraph.getNode(nodeId);
+                if (nodeB != null) nodeB.setAttribute("ui.class", "secondary");
             }
-        });
+
+            // GraphStream 的 CSS 应用是异步的，此处微调 sleep 确保渲染完成
+            // 这种写法在 AlgorithmThreadManager 的管控下是安全的
+            Thread.sleep(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void initializeViewer() {
-        Platform.runLater(() -> {
-            // 应用霓虹样式表
-            internalGraph.setAttribute("ui.stylesheet", getNeonStyleSheet());
-            internalGraph.setAttribute("ui.antialias");
+        if (gsGraph == null) return;
 
-            this.viewer = new FxViewer(internalGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-            this.viewer.enableAutoLayout();
+        // 设置全局霓虹色风格
+        gsGraph.setAttribute("ui.stylesheet", getNeonStyleSheet());
+        gsGraph.setAttribute("ui.antialias");
 
-            // 获取 FxViewPanel 并挂载到 StackPane
-            this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
+        // 初始化 Viewer
+        this.viewer = new FxViewer(gsGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+        this.viewer.enableAutoLayout();
+        
+        // 获取视图面板
+        this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
-            // 清除 BaseVisualizer 默认生成的画布
-            this.getChildren().clear();
-            this.getChildren().add(viewPanel);
-        });
+        // 🚩 修正：直接加入到当前的 StackPane 中，利用 StackPane 的自动填充特性
+        this.getChildren().setAll(viewPanel);
+        
+        // 让 viewPanel 的大小绑定到本组件
+        viewPanel.prefWidthProperty().bind(this.widthProperty());
+        viewPanel.prefHeightProperty().bind(this.heightProperty());
     }
 
     /**
-     * 对齐全局视觉风格的样式定义
+     * 定义与你气质相符的“极夜霓虹”样式表
      */
     private String getNeonStyleSheet() {
-        return "graph { fill-color: #0A0A0E; padding: 60px; }" +
-                "node { " +
-                "   size: 26px; " +
-                "   fill-color: #CFD8DC; " + // CRYSTAL_WHITE 基调
-                "   text-size: 14px; " +
-                "   text-color: #0A0A0E; " +
-                "   stroke-mode: plain; " +
-                "   stroke-color: #455A64; " +
-                "   stroke-width: 1px; " +
-                "}" +
-                "node.highlight { " +
-                "   fill-color: #7E57C2; " + // START_VIOLET
-                "   stroke-color: #FFFFFF; " +
-                "   stroke-width: 2px; " +
-                "   shadow-mode: gradient-radial; " +
-                "   shadow-color: rgba(126, 87, 194, 0.5), rgba(10, 10, 14, 0); " +
-                "   shadow-width: 15px; shadow-offset: 0px; " +
-                "}" +
-                "node.secondary { " +
-                "   fill-color: #00A0FF; " + // NEON_BLUE
-                "}" +
-                "edge { " +
-                "   fill-color: #455A64; " +
-                "   width: 2px; " +
-                "   arrow-size: 10px, 4px; " +
-                "}";
+        return "graph { fill-color: #0A0A0E; padding: 50px; }" +
+               "node { " +
+               "   size: 28px; " +
+               "   fill-color: #CFD8DC; " + // 基础冷灰
+               "   text-size: 15px; " +
+               "   text-color: #CFD8DC; " +
+               "   text-offset: 0, 30; " +
+               "   stroke-mode: plain; " +
+               "   stroke-color: #455A64; " +
+               "   stroke-width: 1px; " +
+               "}" +
+               "node.highlight { " +
+               "   fill-color: #7E57C2; " + // 忧郁紫
+               "   stroke-color: #FFFFFF; " +
+               "   stroke-width: 2px; " +
+               "   size: 32px; " +
+               "}" +
+               "node.secondary { " +
+               "   fill-color: #00A0FF; " + // 专注蓝
+               "   size: 28px; " +
+               "}" +
+               "edge { " +
+               "   fill-color: #455A64; " +
+               "   size: 2px; " +
+               "}";
     }
 
     @Override
     public void clear() {
-        super.clear();
-        if (internalGraph != null) {
-            internalGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
+        if (gsGraph != null) {
+            gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
+            gsGraph.edges().forEach(e -> e.removeAttribute("ui.class"));
         }
     }
 }

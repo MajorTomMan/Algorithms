@@ -1,18 +1,17 @@
 package com.majortom.algorithms.core.sort;
 
-import com.majortom.algorithms.core.base.BaseAlgorithms;
+import com.majortom.algorithms.core.base.BaseStructure;
 
 /**
  * 排序数据实体类
- * 职责：持有待排序数组及当前操作的状态（如高亮索引）
- * 
- * @param <T> 必须是可比较的类型
+ * 职责：持有待排序数组，并记录当前 UI 高亮状态。
+ * * @param <T> 必须是可比较的类型（如 Integer, Double）
  */
-public class BaseSort<T extends Comparable<T>> extends BaseAlgorithms<BaseSort<T>> {
+public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
 
     private T[] data;
 
-    // 当前正在操作（比较/交换）的索引，用于 UI 高亮
+    // 当前正在操作的索引（例如：绿色高亮表示交换，红色高亮表示比较）
     private int activeIndex = -1;
     private int compareIndex = -1;
 
@@ -20,42 +19,55 @@ public class BaseSort<T extends Comparable<T>> extends BaseAlgorithms<BaseSort<T
         this.data = data;
     }
 
-    // --- Getters & Setters ---
+    /**
+     * 实现 BaseStructure 方法：返回底层原始数组
+     */
+    @Override
     public T[] getData() {
         return data;
     }
 
-    public void setData(T[] data) {
-        this.data = data;
+    /**
+     * 实现 BaseStructure 方法：重置统计数据与 UI 状态
+     */
+    @Override
+    public void reset() {
+        this.actionCount = 0;
+        this.compareCount = 0;
+        this.activeIndex = -1;
+        this.compareIndex = -1;
+    }
+
+    // --- 排序专用原子操作（带同步暗示） ---
+
+    public int compare(int i, int j) {
+        incrementCompare();
+        this.compareIndex = i;
+        this.activeIndex = j;
+        return data[i].compareTo(data[j]);
+    }
+
+    public void swap(int i, int j) {
+        incrementAction();
+        this.activeIndex = i;
+        this.compareIndex = j;
+        T temp = data[i];
+        data[i] = data[j];
+        data[j] = temp;
+    }
+
+    // --- 基础属性 ---
+
+    public int size() {
+        return data == null ? 0 : data.length;
     }
 
     public int getActiveIndex() {
         return activeIndex;
     }
 
-    public void setActiveIndex(int activeIndex) {
-        this.activeIndex = activeIndex;
-    }
-
     public int getCompareIndex() {
         return compareIndex;
     }
 
-    public void setCompareIndex(int compareIndex) {
-        this.compareIndex = compareIndex;
-    }
-
-    public int size() {
-        return data == null ? 0 : data.length;
-    }
-
-    public void clearStatus() {
-        this.activeIndex = -1;
-        this.compareIndex = -1;
-    }
-
-    @Override
-    public void run(BaseSort<T> data) {
-        // TODO Auto-generated method stub
-    }
 }

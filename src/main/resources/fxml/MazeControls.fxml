@@ -6,62 +6,73 @@
 <?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 
-<HBox xmlns="http://javafx.com/javafx" 
-      xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="20" 
-      style="-fx-background-color: #0A0A0E; -fx-padding: 10 20 10 20; -fx-border-color: #1E1E26; -fx-border-width: 1 0 0 0;">
+<HBox xmlns="http://javafx.com/javafx"
+  xmlns:fx="http://javafx.com/fxml"
+  alignment="CENTER_LEFT" spacing="20"
+  style="-fx-background-color: #0A0A0E; -fx-padding: 10 20 10 20; -fx-border-color: #1E1E26; -fx-border-width: 1 0 0 0;">
+
   <VBox spacing="4" alignment="CENTER_LEFT">
-    <Label text="GRID DENSITY" style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold; -fx-letter-spacing: 1px;"/>
+    <Label text="%ctrl.maze.density"
+      style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold; -fx-letter-spacing: 1px;" />
     <HBox spacing="10" alignment="CENTER_LEFT">
-      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="150" 
-                          showTickMarks="false" snapToTicks="true" majorTickUnit="2" 
-                          style="-fx-cursor: hand;"/>
-      <Label fx:id="sizeValueLabel" text="51x51" style="-fx-text-fill: #00A0FF; -fx-font-family: 'Consolas'; -fx-font-size: 11px;"/>
+      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="150"
+        showTickMarks="false" snapToTicks="true" majorTickUnit="2"
+        style="-fx-cursor: hand;" />
+      <Label fx:id="sizeValueLabel" text="51x51"
+        style="-fx-text-fill: #00A0FF; -fx-font-family: 'Consolas'; -fx-font-size: 11px;" />
     </HBox>
   </VBox>
-  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;"/>
+
+  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;" />
+
   <VBox spacing="4">
-    <Label text="STRUCTURE GENERATOR" style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold;"/>
+    <Label text="%ctrl.maze.gen_title"
+      style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold;" />
     <HBox spacing="10">
       <ComboBox fx:id="algoSelector" prefWidth="160"
-                            style="-fx-background-color: #121218; -fx-border-color: #333333; -fx-text-fill: white; -fx-font-size: 12px;">
+        style="-fx-background-color: #121218; -fx-border-color: #333333; -fx-text-fill: white; -fx-font-size: 12px;">
         <items>
           <FXCollections fx:factory="observableArrayList">
-            <String fx:value="Randomized BFS"/>
-            <String fx:value="Recursive Backtracker"/>
-            <String fx:value="Prim's Algorithm"/>
+            <String fx:value="Randomized BFS" />
+            <String fx:value="Recursive Backtracker" />
+            <String fx:value="Prim's Algorithm" />
           </FXCollections>
         </items>
         <value>
-          <String fx:value="Randomized BFS"/>
+          <String fx:value="Randomized BFS" />
         </value>
       </ComboBox>
-      <Button text="BUILD" onAction="#handleGenerate"
-                          style="-fx-background-color: rgba(0, 160, 255, 0.1); -fx-border-color: #00A0FF; -fx-text-fill: #00A0FF; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 15;"/>
+      <Button text="%btn.maze.build" onAction="#handleGenerate"
+        style="-fx-background-color: rgba(0, 160, 255, 0.1); -fx-border-color: #00A0FF; -fx-text-fill: #00A0FF; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 15;" />
     </HBox>
   </VBox>
-  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;"/>
+
+  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;" />
+
   <VBox spacing="4">
-    <Label text="PATHFINDER" style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold;"/>
+    <Label text="%ctrl.maze.solve_title"
+      style="-fx-text-fill: #666666; -fx-font-size: 10px; -fx-font-weight: bold;" />
     <HBox spacing="10">
       <ComboBox fx:id="solverSelector" prefWidth="130"
-                            style="-fx-background-color: #121218; -fx-border-color: #333333; -fx-text-fill: white; -fx-font-size: 12px;">
+        style="-fx-background-color: #121218; -fx-border-color: #333333; -fx-text-fill: white; -fx-font-size: 12px;">
         <items>
           <FXCollections fx:factory="observableArrayList">
-            <String fx:value="A* Search"/>
-            <String fx:value="Dijkstra"/>
-            <String fx:value="DFS Solver"/>
+            <String fx:value="A* Search" />
+            <String fx:value="Dijkstra" />
+            <String fx:value="DFS Solver" />
           </FXCollections>
         </items>
         <value>
-          <String fx:value="A* Search"/>
+          <String fx:value="A* Search" />
         </value>
       </ComboBox>
-      <Button text="SOLVE" onAction="#handleSolve"
-                          style="-fx-background-color: rgba(255, 0, 150, 0.1); -fx-border-color: #FF0096; -fx-text-fill: #FF0096; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 15;"/>
+      <Button text="%btn.maze.solve" onAction="#handleSolve"
+        style="-fx-background-color: rgba(255, 0, 150, 0.1); -fx-border-color: #FF0096; -fx-text-fill: #FF0096; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 15;" />
     </HBox>
   </VBox>
-  <Region HBox.hgrow="ALWAYS"/>
-  <Button text="RESET" onAction="#handleReset"
-              style="-fx-background-color: transparent; -fx-border-color: #5C5C5C; -fx-text-fill: #888888; -fx-cursor: hand; -fx-font-size: 11px;"/>
+
+  <Region HBox.hgrow="ALWAYS" />
+
+  <Button text="%btn.reset" onAction="#handleReset"
+    style="-fx-background-color: transparent; -fx-border-color: #5C5C5C; -fx-text-fill: #888888; -fx-cursor: hand; -fx-font-size: 11px;" />
 </HBox>

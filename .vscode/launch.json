@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run Maze Project",
+      "request": "launch",
+      "mainClass": "com.majortom.algorithms.App",
+      "vmArgs": ["-Dprism.order=sw", "-Dprism.verbose=true"]
+    }
+  ]
+}

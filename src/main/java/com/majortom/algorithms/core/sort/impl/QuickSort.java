@@ -5,51 +5,52 @@ import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 
 /**
  * 快速排序实现
- * 适配实验室可视化架构：通过 less 和 swap 触发同步信号
+ * 适配说明：完全基于 BaseSortAlgorithms 的 less/swap，实现自动统计与步进动画。
  */
 public class QuickSort<T extends Comparable<T>> extends BaseSortAlgorithms<T> {
 
     @Override
     public void sort(BaseSort<T> sortEntity) {
-        if (sortEntity == null || sortEntity.getData() == null)
+        if (sortEntity == null || sortEntity.getData() == null) {
             return;
+        }
 
-        T[] arr = sortEntity.getData();
-        quickSort(sortEntity, 0, arr.length - 1);
+        // 1. 开始递归排序
+        quickSort(sortEntity, 0, sortEntity.size() - 1);
 
-        // 排序完成后，清除高亮焦点
-        sortEntity.setActiveIndex(-1);
-        sortEntity.setCompareIndex(-1);
+        // 2. 排序完成后，利落地清除所有高亮焦点并最后同步一次
+        sortEntity.reset(); // 或者使用 sortEntity.clearStatus();
         sync(sortEntity, -1, -1);
     }
 
     private void quickSort(BaseSort<T> sortEntity, int low, int high) {
+        // 检查线程中断，确保 UI 能够随时停止算法
+        if (Thread.currentThread().isInterrupted())
+            return;
+
         if (low < high) {
-            // 获取分区索引
             int p = partition(sortEntity, low, high);
 
-            // 递归排序左半部分
             quickSort(sortEntity, low, p - 1);
-            // 递归排序右半部分
             quickSort(sortEntity, p + 1, high);
         }
     }
 
     private int partition(BaseSort<T> sortEntity, int low, int high) {
-        // 选择最右侧元素作为基准点 (Pivot)
-        // 也可以在这里加入随机选择基准点的逻辑
+        // 🚩 这里可以微调一下：将 high (Pivot) 的索引告知实体
+        // 这样在 UI 上可以给 Pivot 一个特殊的颜色区分
         int i = low;
 
         for (int j = low; j < high; j++) {
-            // 使用基类 less 方法：会自动触发比较计数和 UI 高亮
+            // less() 内部会处理 compareCount++ 并高亮 j 和 high
             if (less(sortEntity, j, high)) {
-                // 使用基类 swap 方法：会自动触发操作计数和 UI 动画同步
+                // swap() 内部会处理 actionCount++ 并高亮 i 和 j
                 swap(sortEntity, i, j);
                 i++;
             }
         }
 
-        // 最后将基准点交换到正确的位置
+        // 将基准点交换到中间
         swap(sortEntity, i, high);
         return i;
     }

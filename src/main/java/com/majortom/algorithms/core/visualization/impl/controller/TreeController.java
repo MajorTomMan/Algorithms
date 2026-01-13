@@ -9,8 +9,6 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import java.io.IOException;
@@ -20,31 +18,28 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * 树结构算法控制器 (FXML 适配版)
- * 职责：绑定 TreeControls.fxml，协调 Tree 数据实体与 Algorithms 算法逻辑。
+ * 树结构算法控制器
+ * 职责：协调 Tree 数据实体与 AVL/BST 算法逻辑，支持动态插入与可视化呈现。
  */
 public class TreeController<T extends Comparable<T>> extends BaseController<BaseTree<T>> {
 
-    // 1. 分离数据与逻辑：treeData 是容器，treeAlgorithms 是操作者
     private final BaseTree<T> treeData;
     private final BaseTreeAlgorithms<T> treeAlgorithms;
-
     private Node customControlPane;
 
-    @FXML
-    private Label sideStatsLabel;
-    @FXML
-    private TextArea sideLogArea;
     @FXML
     private TextField inputField;
 
     /**
      * 构造函数
      * 
-     * @param treeData  传入数据容器实体
-     * @param algorithm 传入具体的算法逻辑实现
+     * @param treeData  数据容器实体（如 AVL 树的数据承载体）
+     * @param algorithm 具体的算法实现（如 AVLTree 的 put/remove 逻辑）
      */
     public TreeController(BaseTree<T> treeData, BaseTreeAlgorithms<T> algorithm) {
+        // 🚩 修正：现在 super 仅接收 visualizer。
+        // TreeVisualizer 内部会根据 BaseTree 的 root 进行坐标计算和绘制。
+        super(new TreeVisualizer<T>());
         this.treeData = treeData;
         this.treeAlgorithms = algorithm;
         loadFXMLControls();
@@ -53,22 +48,22 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/TreeControls.fxml"));
+            loader.setResources(ResourceBundle.getBundle("language.language"));
             loader.setController(this);
             this.customControlPane = loader.load();
         } catch (IOException e) {
-            System.err.println("[Error] Failed to load TreeControls.fxml: " + e.getMessage());
+            System.err.println("[Error] Tree FXML load failed.");
         }
-    }
-
-    public void setUIReferences(Label statsLabel, TextArea logArea) {
-        this.sideStatsLabel = statsLabel;
-        this.sideLogArea = logArea;
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 初始化视觉呈现组件，它应该观察 treeData
-        this.visualizer = new TreeVisualizer<T>();
+        super.initialize(location, resources);
+
+        // 初始空树绘制
+        if (visualizer != null && treeData != null) {
+            visualizer.render(treeData);
+        }
     }
 
     @Override
@@ -76,12 +71,9 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         return Collections.singletonList(customControlPane);
     }
 
-    // --- FXML 动作处理 ---
-
     @FXML
     private void handleInsert() {
-        // 关键改动：执行者是 treeAlgorithms，操作的数据对象是 treeData
-        startAlgorithm(treeAlgorithms, treeData);
+        handleAlgorithmStart();
     }
 
     @FXML
@@ -90,7 +82,16 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         inputField.setText(String.valueOf(randomVal));
     }
 
-    // --- 算法逻辑执行钩子 ---
+    @FXML
+    private void handleReset() {
+        stopAlgorithm();
+        if (treeData != null) {
+            treeData.clear();
+            visualizer.render(treeData);
+        }
+        if (logArea != null)
+            logArea.clear();
+    }
 
     @Override
     protected void executeAlgorithm(BaseAlgorithms<BaseTree<T>> alg, BaseTree<T> tree) {
@@ -98,27 +99,30 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         if (input == null || input.trim().isEmpty())
             return;
 
-        // 此时 alg 其实就是 treeAlgorithms，tree 其实就是 treeData
+        // 🚩 修正：基于 BaseController 的 S extends BaseStructure 契约进行调用
         if (alg instanceof BaseTreeAlgorithms) {
             BaseTreeAlgorithms<T> targetAlg = (BaseTreeAlgorithms<T>) alg;
 
             String[] values = input.split("[,，]");
             for (String valStr : values) {
-                if (!isRunning)
+                // 🚩 检查 Manager 状态，确保能被 stopAlgorithm() 瞬间中断
+                if (!isRunning())
                     break;
 
                 try {
                     T val = parseValue(valStr.trim());
-                    // 核心调用：使用算法逻辑去操作树实体
+                    // 执行插入：AVLTree 内部会调用 syncTree 触发 UI 渲染
                     targetAlg.put(tree, val);
 
-                    if (sideLogArea != null) {
-                        Platform.runLater(() -> sideLogArea.appendText("Successfully inserted: " + val + "\n"));
-                    }
+                    Platform.runLater(() -> {
+                        if (logArea != null)
+                            logArea.appendText("Inserted Node: " + val + "\n");
+                    });
                 } catch (Exception e) {
-                    if (sideLogArea != null) {
-                        Platform.runLater(() -> sideLogArea.appendText("Error: Invalid input " + valStr + "\n"));
-                    }
+                    Platform.runLater(() -> {
+                        if (logArea != null)
+                            logArea.appendText("Error parsing: " + valStr + "\n");
+                    });
                 }
             }
         }
@@ -126,22 +130,23 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
 
     @Override
     protected void updateUIComponents(int compareCount, int actionCount) {
-        // 统计信息现在从 treeData 实体中获取
-        if (sideStatsLabel != null && treeData != null) {
-            Platform.runLater(() -> sideStatsLabel.setText(
-                    String.format("Size: %d\nHeight: %d\nActions: %d",
-                            treeData.size(), treeData.height(), actionCount)));
+        // 🚩 此时已在 UI 线程，利用 treeData 内部的统计量更新面板
+        if (statsLabel != null && treeData != null) {
+            statsLabel.setText(String.format("Size: %d | Height: %d\nSteps: %d",
+                    treeData.size(), treeData.height(), actionCount));
+        }
+    }
+
+    @Override
+    public void handleAlgorithmStart() {
+        if (treeData != null && treeAlgorithms != null) {
+            startAlgorithm(treeAlgorithms, treeData);
         }
     }
 
     @SuppressWarnings("unchecked")
     private T parseValue(String s) {
+        // 默认为 Integer，可根据实际需求扩展
         return (T) Integer.valueOf(s);
-    }
-
-    @Override
-    public void handleAlgorithmStart() {
-        // TODO Auto-generated method stub
-        startAlgorithm(treeAlgorithms, treeData);
     }
 }

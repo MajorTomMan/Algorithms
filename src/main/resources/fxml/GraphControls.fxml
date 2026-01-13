@@ -5,13 +5,15 @@
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     alignment="CENTER_LEFT" spacing="15">
 
-    <Label text="START NODE ID:"
+    <Label text="%ctrl.graph.start_id"
         style="-fx-text-fill: #5C5C5C; -fx-font-size: 11px; -fx-font-weight: bold;" />
+
     <TextField fx:id="nodeInputField" promptText="e.g. A, 1, or V1" prefWidth="120"
         style="-fx-background-color: #121218; -fx-text-fill: white; -fx-border-color: #333333;" />
 
-    <Button text="RUN" onAction="#handleRunAlgorithm"
+    <Button text="%btn.graph.run" onAction="#handleAlgorithmStart"
         style="-fx-background-color: transparent; -fx-border-color: #00FFCC; -fx-text-fill: #00FFCC;" />
-    <Button text="RESET" onAction="#handleReset"
+
+    <Button text="%btn.reset" onAction="#handleReset"
         style="-fx-background-color: transparent; -fx-border-color: #5C5C5C; -fx-text-fill: #888888;" />
 </HBox>

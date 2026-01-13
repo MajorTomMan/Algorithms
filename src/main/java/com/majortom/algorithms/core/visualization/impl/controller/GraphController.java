@@ -10,7 +10,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import org.graphstream.graph.Graph;
 
 import java.io.IOException;
 import java.net.URL;
@@ -19,30 +18,36 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * 图算法控制器
- * 职责：适配 BaseGraph 实体与特定图算法，处理起点选择与 GraphStream 状态同步。
+ * 图算法控制器 (重构版)
+ * 职责：适配 BaseGraph 实体，处理起点选择，并确保 GraphStream 渲染与算法步进同步。
+ * * @param <V> 节点存储的数据类型
  */
-public class GraphController<V> extends BaseController<Graph> {
+public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
-    private final BaseGraphAlgorithms<V> algorithm; // 具体的算法逻辑（如 BFS, DFS）
-    private final BaseGraph<V> graphData; // 图数据实体封装
+    private final BaseGraphAlgorithms<V> algorithm;
     private Node customControlPane;
-
-    private Label sideStatsLabel;
-    private TextArea sideLogArea;
 
     @FXML
     private TextField nodeInputField;
 
+    /**
+     * 构造函数
+     * 
+     * @param algorithm 具体的图算法逻辑（如 BFS, Dijkstra）
+     * @param graphData 图数据实体容器
+     */
     public GraphController(BaseGraphAlgorithms<V> algorithm, BaseGraph<V> graphData) {
+        // 🚩 修正：泛型对齐为 BaseGraph<V>，它是 BaseStructure 的子类
+        super(new GraphVisualizer<>(graphData));
         this.algorithm = algorithm;
-        this.graphData = graphData;
         loadFXMLControls();
     }
 
     private void loadFXMLControls() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GraphControls.fxml"));
+            // 考虑你提到的 2026 年环境，确保资源路径与模块化兼容
+            loader.setResources(ResourceBundle.getBundle("language.language"));
             loader.setController(this);
             this.customControlPane = loader.load();
         } catch (IOException e) {
@@ -50,15 +55,9 @@ public class GraphController<V> extends BaseController<Graph> {
         }
     }
 
-    public void setUIReferences(Label statsLabel, TextArea logArea) {
-        this.sideStatsLabel = statsLabel;
-        this.sideLogArea = logArea;
-    }
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 初始化视觉呈现组件
-        this.visualizer = new GraphVisualizer();
+        super.initialize(location, resources);
     }
 
     @Override
@@ -66,70 +65,66 @@ public class GraphController<V> extends BaseController<Graph> {
         return Collections.singletonList(customControlPane);
     }
 
-    @FXML
-    private void handleRunAlgorithm() {
-        // 启动算法流程。注意：这里传的是 GraphStream 的 Graph 实例
-        startAlgorithm(algorithm, graphData.getGraph());
+    @Override
+    public void handleAlgorithmStart() {
+        // 🚩 这里的 visualizer.getLastData() 获取的就是构造时传入的 BaseGraph 实例
+        if (visualizer.getLastData() != null) {
+            startAlgorithm(algorithm, visualizer.getLastData());
+        }
     }
 
     @FXML
     private void handleReset() {
-        // 重置 UI 样式，这属于数据实体的清理逻辑
-        Graph g = graphData.getGraph();
-        g.nodes().forEach(n -> n.removeAttribute("ui.class"));
-        g.edges().forEach(e -> e.removeAttribute("ui.class"));
+        stopAlgorithm();
 
-        if (sideLogArea != null)
-            sideLogArea.clear();
-        if (sideStatsLabel != null)
-            sideStatsLabel.setText("Status: Ready");
+        BaseGraph<V> g = visualizer.getLastData();
+        if (g != null) {
+            g.reset(); // 利用基类 reset 清理统计量
+            // 清理 GraphStream 特有的样式属性
+            g.getGraph().nodes().forEach(n -> n.removeAttribute("ui.class"));
+            g.getGraph().edges().forEach(e -> e.removeAttribute("ui.class"));
+        }
+
+        if (logArea != null)
+            logArea.clear();
+        if (statsLabel != null)
+            statsLabel.setText("Status: Ready");
     }
 
     // --- 算法执行逻辑适配 ---
 
     @Override
-    protected void executeAlgorithm(BaseAlgorithms<Graph> alg, Graph graph) {
+    protected void executeAlgorithm(BaseAlgorithms<BaseGraph<V>> alg, BaseGraph<V> data) {
+        // 1. 获取 UI 输入
         String startNodeId = nodeInputField.getText().trim();
 
-        // 1. 验证输入合法性
-        if (startNodeId.isEmpty() || graph.getNode(startNodeId) == null) {
-            if (sideLogArea != null) {
-                Platform.runLater(
-                        () -> sideLogArea.appendText("System Error: Starting Node [" + startNodeId + "] not found.\n"));
-            }
+        // 2. 验证合法性（检查 GraphStream 节点是否存在）
+        if (startNodeId.isEmpty() || data.getGraph().getNode(startNodeId) == null) {
+            Platform.runLater(() -> {
+                if (logArea != null)
+                    logArea.appendText("System Error: Node [" + startNodeId + "] not found.\n");
+            });
             return;
         }
 
-        // 2. 核心桥接逻辑
-        // 尽管 BaseAlgorithms 要求实现 run(Graph)，但图算法需要 BaseGraph 和 StartID。
+        // 3. 执行算法
+        // 由于 BaseGraphAlgorithms 继承了 BaseAlgorithms<BaseGraph<V>>
+        // 且它必须实现 run(BaseGraph<V> data, String startId)
         if (alg instanceof BaseGraphAlgorithms) {
-            BaseGraphAlgorithms<V> graphAlg = (BaseGraphAlgorithms<V>) alg;
-
-            // 这里不调用 alg.run(graph)，而是调用图算法特有的 run(BaseGraph, String)
-            // 这种设计允许我们在 Controller 层拦截 UI 参数并注入给算法
-            graphAlg.run(graphData, startNodeId);
+            ((BaseGraphAlgorithms<V>) alg).run(data, startNodeId);
         }
     }
 
     @Override
     protected void updateUIComponents(int compareCount, int actionCount) {
-        if (sideStatsLabel != null) {
-            Platform.runLater(() -> sideStatsLabel.setText(
-                    String.format("Current Focus: %s\nStep Count: %d",
-                            nodeInputField.getText(), actionCount)));
+        if (statsLabel != null) {
+            statsLabel.setText(String.format("Steps: %d | Compares: %d", actionCount, compareCount));
         }
     }
 
     @Override
     protected void onAlgorithmFinished() {
-        if (sideLogArea != null) {
-            Platform.runLater(() -> sideLogArea.appendText("System: Graph traversal complete.\n"));
-        }
-    }
-
-    @Override
-    public void handleAlgorithmStart() {
-        // TODO Auto-generated method stub
-        handleRunAlgorithm();
+        super.onAlgorithmFinished();
+        // 可以在这里执行一些收尾的视觉效果，比如全图闪烁一下
     }
 }

@@ -40,13 +40,9 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
             // GraphStream 会根据图的有向/无向属性自动返回正确的邻居集合
             curr.neighborNodes().forEach(neighbor -> {
                 String neighborId = neighbor.getId();
-
-                // 探测边：增加比较计数并触发 UI 渲染
                 graph.trace(curr.getId(), neighborId);
 
-                // 检查节点是否已访问（通过自定义属性 visited 判断）
-                if (!neighbor.hasAttribute("visited")) {
-                    // 标记访问、入队
+                if (!graph.visit(neighborId)) {
                     graph.visit(neighborId);
                     queue.add(neighbor);
                 }
@@ -55,8 +51,8 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
     }
 
     @Override
-    public void run(Graph data) {
+    public void run(BaseGraph<V> structure) {
         // TODO Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Unimplemented method 'run'");
     }
 }

@@ -12,7 +12,7 @@ import com.majortom.algorithms.core.base.BaseAlgorithms;
  * 3. 屏蔽底层 GraphStream 的复杂性，提供统一的算法入口。
  * * @param <V> 业务数据的类型（如存储在 Node 属性中的自定义对象）
  */
-public abstract class BaseGraphAlgorithms<V> extends BaseAlgorithms<Graph> {
+public abstract class BaseGraphAlgorithms<V> extends BaseAlgorithms<BaseGraph<V>> {
 
     /**
      * 执行算法的核心入口

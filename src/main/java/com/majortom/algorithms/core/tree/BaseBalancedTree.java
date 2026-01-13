@@ -5,15 +5,12 @@ import com.majortom.algorithms.core.tree.node.TreeNode;
 
 /**
  * 平衡树算法基类
- * 职责：提供旋转等底层工具，不持有数据，通过参数操作 BaseTree。
+ * 职责：提供旋转等底层工具。
+ * 适配说明：通过 BaseTree 的原子操作触发统计，减少显式强转。
  */
 public abstract class BaseBalancedTree<T extends Comparable<T>> extends BaseTreeAlgorithms<T> {
 
-    // 算法执行入口
-    public abstract void run(BaseTree<T> tree);
-
-    protected abstract TreeNode<T> createNode(T data);
-
+    
     protected int height(TreeNode<T> node) {
         return node == null ? 0 : node.height;
     }
@@ -24,8 +21,10 @@ public abstract class BaseBalancedTree<T extends Comparable<T>> extends BaseTree
     protected void updateMetrics(TreeNode<T> node) {
         if (node == null)
             return;
+
         int h = 0;
         int count = 1;
+        // 这里的 getChildren() 保证了通用性，无论是二叉树还是多叉树都能自适应
         for (TreeNode<T> child : node.getChildren()) {
             if (child != null) {
                 h = Math.max(h, child.height);
@@ -37,64 +36,60 @@ public abstract class BaseBalancedTree<T extends Comparable<T>> extends BaseTree
     }
 
     /**
-     * 左旋转
+     * 左旋转 (Left Rotation)
      */
-    protected TreeNode<T> leftRotation(BaseTree<T> tree, TreeNode<T> node) {
-        if (!(node instanceof BinaryTreeNode) || ((BinaryTreeNode<T>) node).right == null)
+    protected BinaryTreeNode<T> leftRotation(BaseTree<T> tree, BinaryTreeNode<T> node) {
+        if (node == null || node.right == null)
             return node;
 
-        actionCount++;
-        BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
-        BinaryTreeNode<T> rightChild = (BinaryTreeNode<T>) current.right;
+        // 触发一次结构变更统计
+        tree.modifyStructure(tree.getRoot());
 
-        current.right = rightChild.left;
-        rightChild.left = current;
+        BinaryTreeNode<T> rightChild = (BinaryTreeNode<T>) node.right;
+        node.right = rightChild.left;
+        rightChild.left = node;
 
-        updateMetrics(current);
+        updateMetrics(node);
         updateMetrics(rightChild);
 
-        syncTree(tree, rightChild, current); // 同步旋转后的状态
+        // 同步状态：让 Visualizer 知道这两个节点的位置发生了突变
+        sync(tree, rightChild, node);
         return rightChild;
     }
 
     /**
-     * 右旋转
+     * 右旋转 (Right Rotation)
      */
-    protected TreeNode<T> rightRotation(BaseTree<T> tree, TreeNode<T> node) {
-        if (!(node instanceof BinaryTreeNode) || ((BinaryTreeNode<T>) node).left == null)
+    protected BinaryTreeNode<T> rightRotation(BaseTree<T> tree, BinaryTreeNode<T> node) {
+        if (node == null || node.left == null)
             return node;
 
-        actionCount++;
-        BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
-        BinaryTreeNode<T> leftChild = (BinaryTreeNode<T>) current.left;
+        tree.modifyStructure(tree.getRoot());
 
-        current.left = leftChild.right;
-        leftChild.right = current;
+        BinaryTreeNode<T> leftChild = (BinaryTreeNode<T>) node.left;
+        node.left = leftChild.right;
+        leftChild.right = node;
 
-        updateMetrics(current);
+        updateMetrics(node);
         updateMetrics(leftChild);
 
-        syncTree(tree, leftChild, current);
+        sync(tree, leftChild, node);
         return leftChild;
     }
 
-    protected TreeNode<T> leftRightRotation(BaseTree<T> tree, TreeNode<T> node) {
-        if (node instanceof BinaryTreeNode) {
-            BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
-            current.left = (BinaryTreeNode<T>) leftRotation(tree, current.left);
-            return rightRotation(tree, current);
-        }
-        return node;
+    protected BinaryTreeNode<T> leftRightRotation(BaseTree<T> tree, BinaryTreeNode<T> node) {
+        node.left = leftRotation(tree, (BinaryTreeNode<T>) node.left);
+        return rightRotation(tree, node);
     }
 
-    protected TreeNode<T> rightLeftRotation(BaseTree<T> tree, TreeNode<T> node) {
-        if (node instanceof BinaryTreeNode) {
-            BinaryTreeNode<T> current = (BinaryTreeNode<T>) node;
-            current.right = (BinaryTreeNode<T>) rightRotation(tree, current.right);
-            return leftRotation(tree, current);
-        }
-        return node;
+    protected BinaryTreeNode<T> rightLeftRotation(BaseTree<T> tree, BinaryTreeNode<T> node) {
+        node.right = rightRotation(tree, (BinaryTreeNode<T>) node.right);
+        return leftRotation(tree, node);
     }
+
+    // --- 抽象接口 ---
+
+    protected abstract TreeNode<T> createNode(T data);
 
     public abstract void put(BaseTree<T> tree, T val);
 
