@@ -23,12 +23,14 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
         double canvasW = canvas.getWidth();
         double canvasH = canvas.getHeight();
         double paddingSide = 40.0;
-        double paddingBottom = 50.0;
+        // 增加底部留白，为数值显示预留空间 (从 50 增加到 70)
+        double paddingBottom = 70.0;
 
         double barW = (canvasW - 2 * paddingSide) / n;
-        double maxAvailableH = canvasH - paddingBottom - 40.0;
+        // 顶部也预留一点空间
+        double maxAvailableH = canvasH - paddingBottom - 60.0;
         double maxVal = getMaxValue(data);
-        double scale = maxAvailableH / maxVal;
+        double scale = maxVal == 0 ? 1 : maxAvailableH / maxVal;
 
         for (int i = 0; i < n; i++) {
             double val = Double.parseDouble(data[i].toString());
@@ -36,42 +38,51 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
             double x = paddingSide + i * barW;
             double y = canvasH - paddingBottom - h;
 
-            // --- 状态判定逻辑 ---
-            Color barColor = RAN_RED; // 默认：红色 (太郎)
+            // --- 状态判定逻辑 (保持乱美学色彩体系) ---
+            Color barColor = RAN_RED;
 
-            // 比较状态：黄色 (三郎)
             if (Objects.equals(i, a) || Objects.equals(i, b)) {
-                barColor = RAN_GOLD;
+                barColor = RAN_GOLD; // 比较状态：三郎黄
             }
 
-            // 活跃/移动状态：蓝色 (次郎)
             if (i == sortData.getActiveIndex()) {
-                barColor = RAN_BLUE;
+                barColor = RAN_BLUE; // 活跃状态：次郎蓝
             }
 
-            // 交换瞬态判定 (若 a, b 同时存在通常代表交换)
-            if (a != null && b != null && (Objects.equals(i, a) || Objects.equals(i, b))) {
-                // 可以在交换时使用骨白增强反馈，若不需要则维持黄色
-                //barColor = BONE_WHITE;
-            }
-
-            renderHardBar(x, y, barW, h, barColor);
+            // 绘制柱体及下方数值
+            renderHardBar(x, y, barW, h, barColor, data[i].toString());
         }
     }
 
-    private void renderHardBar(double x, double y, double w, double h, Color color) {
-        double gap = w > 4 ? 1.0 : 0.2;
+    private void renderHardBar(double x, double y, double w, double h, Color color, String valueText) {
+        double gap = w > 4 ? 1.5 : 0.2;
         double actualW = Math.max(0.5, w - gap);
 
-        // 填充硬边色块
+        // 1. 填充硬边色块
         gc.setFill(color);
         gc.fillRect(x, y, actualW, h);
 
-        // 顶部骨白细线
+        // 2. 顶部骨白细线 (增强轮廓感)
         if (w > 6) {
-            gc.setStroke(BONE_WHITE.deriveColor(0, 1, 1, 0.5));
-            gc.setLineWidth(1.0);
+            gc.setStroke(BONE_WHITE.deriveColor(0, 1, 1, 0.6));
+            gc.setLineWidth(1.2);
             gc.strokeLine(x, y, x + actualW, y);
+        }
+
+        // 3. 绘制下方数值 - 极致对比度处理
+        if (w > 12) { // 只有宽度足够时才显示文字，避免拥挤
+            gc.setFill(BONE_WHITE);
+            // 动态字体大小：根据柱宽微调，最大 12px，最小 9px
+            double fontSize = Math.min(12, Math.max(9, w * 0.6));
+            gc.setFont(javafx.scene.text.Font.font("Consolas", fontSize));
+
+            // 计算文字居中位置
+            javafx.scene.text.Text textNode = new javafx.scene.text.Text(valueText);
+            textNode.setFont(gc.getFont());
+            double textWidth = textNode.getLayoutBounds().getWidth();
+
+            // 在柱子下方 15 像素处绘制
+            gc.fillText(valueText, x + (actualW - textWidth) / 2, y + h + 20);
         }
     }
 }

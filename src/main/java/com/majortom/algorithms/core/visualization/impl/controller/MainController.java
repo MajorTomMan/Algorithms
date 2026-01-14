@@ -11,6 +11,7 @@ import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
 import com.majortom.algorithms.core.graph.impl.DirectedGraph;
 import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
+import com.majortom.algorithms.core.sort.impl.InsertionSort;
 import com.majortom.algorithms.core.sort.impl.QuickSort;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.impl.AVLTree;
@@ -95,8 +96,6 @@ public class MainController implements Initializable {
         logArea.appendText("System: Lab Initialized.\n");
     }
 
-    // --- 以下保持原逻辑不变 ---
-
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("menu.lab"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("side.stats"));
@@ -163,7 +162,12 @@ public class MainController implements Initializable {
 
     @FXML
     public void switchToSortModule() {
-        loadSubController(new SortController<Integer>(new QuickSort<>(), new HistogramSortVisualizer<>()));
+        // QuickSort<Integer> algorithms = new QuickSort<>();
+        InsertionSort<Integer> algorithms = new InsertionSort<>();
+        HistogramSortVisualizer<Integer> visualizer = new HistogramSortVisualizer<>();
+        SortController<Integer> sortController = new SortController<Integer>(algorithms,
+                visualizer);
+        loadSubController(sortController);
     }
 
     @FXML
