@@ -1,12 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="15" stylesheets="@../style/ui_theme.css">
-  <Label fx:id="startNodeLabel" text="%ctrl.graph.start_id" styleClass="control-label"/>
-  <TextField fx:id="nodeInputField" promptText="%ctrl.graph.prompt" prefWidth="120" styleClass="dark-textfield"/>
-  <Button fx:id="runBtn" text="%btn.graph.run" onAction="#handleAlgorithmStart" styleClass="btn-run-neon"/>
-  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset" styleClass="btn-reset-muted"/>
+  alignment="CENTER_LEFT" spacing="15"
+  style="-fx-min-height: 80px; -fx-padding: 0 5;"
+  stylesheets="@../style/ui_theme.css">
+
+  <HBox spacing="8" alignment="CENTER_LEFT"
+    style="-fx-background-color: rgba(255,255,255,0.03); -fx-padding: 8 12; -fx-background-radius: 4;">
+    <TextField fx:id="nodeInputField" prefWidth="80" minWidth="80" styleClass="dark-textfield" />
+    <Button fx:id="addBtn" onAction="#handleAddNode" styleClass="btn-ran-purple" prefWidth="65"
+      minWidth="65" />
+    <Button fx:id="deleteBtn" onAction="#handleDeleteNode" styleClass="btn-ran-red" prefWidth="65"
+      minWidth="65" />
+  </HBox>
+
+  <HBox spacing="6" alignment="CENTER_LEFT">
+    <Label fx:id="edgeIdLabel" text="%ctrl.graph.edge_id" styleClass="control-label" />
+    <TextField fx:id="fromNodeField" prefWidth="55" minWidth="55" styleClass="dark-textfield"
+      promptText="Src" />
+    <Label text="→" style="-fx-text-fill: #666666; -fx-font-weight: bold;" />
+    <TextField fx:id="toNodeField" prefWidth="55" minWidth="55" styleClass="dark-textfield"
+      promptText="Dest" />
+    <TextField fx:id="weightField" prefWidth="45" minWidth="45" styleClass="dark-textfield"
+      promptText="W" />
+    <Button fx:id="linkBtn" onAction="#handleLink" styleClass="btn-ran-gold" prefWidth="85"
+      minWidth="85" />
+  </HBox>
+
+  <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 10;">
+    <Button fx:id="runBtn" onAction="#handleAlgorithmStart"
+      styleClass="btn-ran-blue" prefWidth="120" minWidth="120"
+      style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+  </HBox>
+
 </HBox>

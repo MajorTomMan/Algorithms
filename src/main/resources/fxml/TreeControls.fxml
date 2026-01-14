@@ -4,14 +4,23 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="15"
-      style="-fx-padding: 5 0; -fx-background-color: transparent;"
-      stylesheets="@../style/ui_theme.css">
-  <Label fx:id="inputLabel" text="%ctrl.tree.val" styleClass="control-label"/>
-  <TextField fx:id="inputField" promptText="%ctrl.tree.prompt" prefWidth="180" 
-                 styleClass="dark-textfield" />
-  <Button fx:id="insertBtn" text="%btn.tree.insert" onAction="#handleInsert"
-              styleClass="btn-insert-purple" />
-  <Button fx:id="randomBtn" text="%btn.tree.random" onAction="#handleRandom"
-              styleClass="btn-reset-muted" />
+    alignment="CENTER_LEFT" spacing="20"
+    stylesheets="@../style/ui_theme.css">
+
+    <Label fx:id="inputLabel" text="%ctrl.tree.val" styleClass="control-label" />
+
+    <TextField fx:id="inputField" promptText="%ctrl.tree.prompt" prefWidth="180"
+        styleClass="dark-textfield" />
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="insertBtn" text="%btn.tree.insert" onAction="#handleInsert"
+            styleClass="btn-ran-blue" />
+
+        <Button fx:id="deleteBtn" text="%btn.tree.delete" onAction="#handleDelete"
+            styleClass="btn-ran-red" />
+
+        <Button fx:id="randomBtn" text="%btn.tree.random" onAction="#handleRandom"
+            styleClass="btn-ran-gold" />
+    </HBox>
+
 </HBox>

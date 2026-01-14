@@ -21,37 +21,28 @@ public class BFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
         if (maze == null)
             return;
 
-        // 1. 初始化：清理迷宫为全墙状态
         maze.initial();
-
         List<int[]> walls = new ArrayList<>();
-
-        // 2. 选取起点 (1,1)，设为路并加入周围的候选墙
-        // 使用 MazeConstant 增强代码可读性
         maze.setCellState(1, 1, MazeConstant.ROAD, true);
         addWalls(maze, 1, 1, walls);
 
-        // 3. 核心迭代：随机 Prim 逻辑
         while (!walls.isEmpty()) {
-            // 随机抽取一根候选墙，这种随机性决定了迷宫的自然分支感
+
+            sync(maze, null, null);
+
             int index = random.nextInt(walls.size());
             int[] w = walls.remove(index);
 
-            int midR = w[0], midC = w[1]; // 中间墙点
-            int tarR = w[2], tarC = w[3]; // 墙对面的目标探测点
+            int midR = w[0], midC = w[1];
+            int tarR = w[2], tarC = w[3];
 
-            // 🚩 关键逻辑：如果目标点还是墙，说明这片区域尚未被联通
             if (maze.getCell(tarR, tarC) == MazeConstant.WALL) {
-                // 打通路径：中间点和目标点都设为 ROAD
                 maze.setCellState(midR, midC, MazeConstant.ROAD, true);
                 maze.setCellState(tarR, tarC, MazeConstant.ROAD, true);
-
-                // 将新打通的路点周围的墙加入候选列表
                 addWalls(maze, tarR, tarC, walls);
             }
         }
 
-        // 标记生成完成，通知 UI 线程
         maze.setGenerated(true);
     }
 

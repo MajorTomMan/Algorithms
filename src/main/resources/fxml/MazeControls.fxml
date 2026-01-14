@@ -1,36 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="20" styleClass="dark-panel" 
-      style="-fx-padding: 10 20; -fx-border-width: 1 0 0 0; -fx-border-color: #1E1E26;"
-      stylesheets="@../style/ui_theme.css">
+  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;">
+
   <VBox spacing="4" alignment="CENTER_LEFT">
-    <Label fx:id="densityLabel" text="%ctrl.maze.density" styleClass="maze-label"/>
-    <HBox spacing="10" alignment="CENTER_LEFT">
-      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="150"
-                          showTickMarks="false" snapToTicks="true" majorTickUnit="2" />
-      <Label fx:id="sizeValueLabel" text="51x51" styleClass="size-value"/>
+    <Label fx:id="densityLabel" styleClass="control-label" />
+    <HBox spacing="8" alignment="CENTER_LEFT">
+      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="120" />
+      <Label fx:id="sizeValueLabel" text="51x51" styleClass="size-value-highlight" />
     </HBox>
   </VBox>
-  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;"/>
-  <VBox spacing="4">
-    <Label fx:id="genTitleLabel" text="%ctrl.maze.gen_title" styleClass="maze-label"/>
-    <HBox spacing="10">
-      <ComboBox fx:id="algoSelector" prefWidth="160" styleClass="dark-combo-box"/>
-      <Button fx:id="buildBtn" text="%btn.maze.build" onAction="#handleGenerate" styleClass="btn-build-cyan"/>
+
+  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
+    <Label fx:id="genTitleLabel" styleClass="control-label" />
+    <HBox spacing="8" alignment="CENTER_LEFT">
+      <ComboBox fx:id="algoSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
+      <Button fx:id="buildBtn" onAction="#handleGenerate" styleClass="btn-neon-cyan" />
     </HBox>
   </VBox>
-  <Separator orientation="VERTICAL" prefHeight="30" style="-fx-opacity: 0.1;"/>
-  <VBox spacing="4">
-    <Label fx:id="solveTitleLabel" text="%ctrl.maze.solve_title" styleClass="maze-label"/>
-    <HBox spacing="10">
-      <ComboBox fx:id="solverSelector" prefWidth="130" styleClass="dark-combo-box"/>
-      <Button fx:id="solveBtn" text="%btn.maze.solve" onAction="#handleSolve" styleClass="btn-solve-pink"/>
+
+  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
+    <Label fx:id="solveTitleLabel" styleClass="control-label" />
+    <HBox spacing="8" alignment="CENTER_LEFT">
+      <ComboBox fx:id="solverSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
+      <Button fx:id="solveBtn" onAction="#handleSolve" styleClass="btn-neon-pink" />
     </HBox>
   </VBox>
-  <Region HBox.hgrow="ALWAYS"/>
-  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset" styleClass="btn-reset-muted"/>
+
 </HBox>

@@ -4,14 +4,19 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="15" 
-      style="-fx-padding: 5 0; -fx-background-color: transparent;"
-      stylesheets="@../style/ui_theme.css">
-  <Label fx:id="sizeLabel" text="%ctrl.sort.size" styleClass="control-label"/>
-  <Slider fx:id="sizeSlider" min="5" max="100" value="20" prefWidth="120"/>
-  <Separator orientation="VERTICAL" prefHeight="20" style="-fx-opacity: 0.2;"/>
-  <Button fx:id="genBtn" text="%btn.sort.gen" onAction="#handleGenerate" 
-              styleClass="btn-gen-muted" />
-  <Button fx:id="sortBtn" text="%btn.sort.run" onAction="#handleSort" 
-              styleClass="btn-run-blue" />
+    alignment="CENTER_LEFT" spacing="20"
+    stylesheets="@../style/ui_theme.css">
+
+    <Label fx:id="sizeLabel" text="%ctrl.sort.size" styleClass="control-label" />
+
+    <Slider fx:id="sizeSlider" min="5" max="100" value="20" prefWidth="140" />
+
+    <Separator orientation="VERTICAL" prefHeight="25" styleClass="subtle-divider" />
+
+    <Button fx:id="genBtn" text="%btn.sort.gen" onAction="#handleGenerate"
+        styleClass="btn-ran-gold" />
+
+    <Button fx:id="sortBtn" text="%btn.sort.run" onAction="#handleSort"
+        styleClass="btn-run-neon" />
+
 </HBox>

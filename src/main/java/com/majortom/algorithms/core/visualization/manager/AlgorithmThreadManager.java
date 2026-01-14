@@ -60,7 +60,6 @@ public class AlgorithmThreadManager {
     public static void syncAndWait(Runnable renderTask) {
         if (Thread.currentThread().isInterrupted())
             return;
-        // 🚩 1. 检查暂停状态（如果暂停，acquire 会阻塞算法线程）
         checkStepStatus();
 
         Platform.runLater(() -> {
@@ -88,8 +87,8 @@ public class AlgorithmThreadManager {
      */
     public static void checkStepStatus() {
         try {
-            pauseLock.acquire(); // 如果被 pause() 了，这里会挂起
-            pauseLock.release(); // 拿到后立刻归还，确保后续逻辑通畅
+            pauseLock.acquire();
+            pauseLock.release(); 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -101,10 +100,8 @@ public class AlgorithmThreadManager {
 
     public static void run(Runnable task, Runnable onFinished) {
         stopAll();
-
-        // 🚩 启动前置清理
-        renderLock.drainPermits(); // 清空残留信号
-        resume(); // 确保启动时不是暂停状态
+        renderLock.drainPermits(); 
+        resume(); 
 
         currentTask = executor.submit(() -> {
             try {
@@ -131,10 +128,22 @@ public class AlgorithmThreadManager {
      */
     public static void stopAll() {
         if (currentTask != null) {
-            currentTask.cancel(true); // 发送中断信号
+            currentTask.cancel(true);
         }
-        // 🚩 唤醒所有可能的阻塞点
         renderLock.release();
         resume();
+    }
+
+    /**
+     * 在 UI 线程安全地更新状态信息
+     * 
+     * @param action 具体的 UI 更新逻辑
+     */
+    public static void postStatus(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 }

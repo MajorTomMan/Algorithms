@@ -25,8 +25,6 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
 
         Queue<Node> queue = new LinkedList<>();
 
-        // 🚩 1. 标记起点并入队
-        // 确保 visit 方法逻辑：第一次访问返回 true，重复访问返回 false
         graph.visit(startNodeId);
         queue.add(startNode);
 
@@ -34,15 +32,10 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
             Node curr = queue.poll();
             String currId = curr.getId();
 
-            // 🚩 2. 遍历邻居
             curr.neighborNodes().forEach(neighbor -> {
                 String neighborId = neighbor.getId();
-
-                // 记录路径追踪（视觉上连线高亮）
                 graph.trace(currId, neighborId);
 
-                // 🚩 3. 关键修正：尝试访问邻居
-                // 只有当该节点从未被访问过时，才将其加入队列
                 if (graph.visit(neighborId)) {
                     queue.add(neighbor);
                     sync(graph, currId, neighborId);
@@ -56,4 +49,5 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'run'");
     }
+
 }
