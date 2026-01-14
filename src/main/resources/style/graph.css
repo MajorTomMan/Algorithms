@@ -1,37 +1,35 @@
-/* Graph Global Style */
-graph { 
-    fill-color: #0A0A0E; 
-    padding: 50px; 
+graph {
+    fill-color: #0D0D0F;
+    padding: 60px;
 }
 
-/* Base Node Style */
 node {
-    size: 28px;
-    fill-color: #CFD8DC;
-    text-size: 15px;
-    text-color: #CFD8DC;
-    text-offset: 0, 30;
-    stroke-mode: plain;
-    stroke-color: #455A64;
-    stroke-width: 1px;
-}
-
-/* Visited/Active Node */
-node.highlight {
-    fill-color: #7E57C2;
-    stroke-color: #FFFFFF;
-    stroke-width: 2px;
     size: 32px;
+    fill-color: #B40000;
+    stroke-mode: plain;
+    stroke-color: #F0F0E6;
+    stroke-width: 2px;
+    text-size: 16px;
+    text-color: #F0F0E6;
+    text-alignment: at-right;
+    text-offset: 8px, 0px;
 }
 
-/* Neighbors/Frontier Node */
+node.highlight {
+    fill-color: #0078FF;
+    size: 45px;
+    stroke-width: 4px;
+    stroke-color: #FFFFFF;
+}
+
 node.secondary {
-    fill-color: #00A0FF;
-    size: 28px;
+    fill-color: #DCB400;
+    size: 38px;
+    stroke-width: 3px;
 }
 
-/* Edge Style */
 edge {
-    fill-color: #455A64;
-    size: 2px;
+    fill-color: #3C3C46;
+    size: 6px;
+    arrow-size: 15px, 10px;
 }

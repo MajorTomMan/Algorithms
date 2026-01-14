@@ -4,9 +4,29 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER_LEFT" spacing="15" stylesheets="@../style/ui_theme.css">
-  <Label fx:id="startNodeLabel" text="%ctrl.graph.start_id" styleClass="control-label"/>
-  <TextField fx:id="nodeInputField" promptText="%ctrl.graph.prompt" prefWidth="120" styleClass="dark-textfield"/>
-  <Button fx:id="runBtn" text="%btn.graph.run" onAction="#handleAlgorithmStart" styleClass="btn-run-neon"/>
-  <Button fx:id="resetBtn" text="%btn.reset" onAction="#handleReset" styleClass="btn-reset-muted"/>
+  alignment="CENTER_LEFT" spacing="15" stylesheets="@../style/ui_theme.css">
+
+  <HBox spacing="8" alignment="CENTER_LEFT">
+    <Label fx:id="startNodeLabel" styleClass="control-label" />
+    <TextField fx:id="nodeInputField" prefWidth="60" styleClass="dark-textfield" />
+  </HBox>
+
+  <Separator orientation="VERTICAL" prefHeight="20" styleClass="dark-separator" />
+
+  <HBox spacing="8" alignment="CENTER_LEFT">
+    <Label text="Link:" styleClass="control-label" />
+    <TextField fx:id="fromNodeField" promptText="From" prefWidth="50" styleClass="dark-textfield" />
+    <Label text="→" styleClass="control-label" style="-fx-text-fill: #666666;" />
+    <TextField fx:id="toNodeField" promptText="To" prefWidth="50" styleClass="dark-textfield" />
+    <TextField fx:id="weightField" promptText="W" prefWidth="40" styleClass="dark-textfield" />
+    <Button fx:id="linkBtn" onAction="#handleLink" text="+" styleClass="btn-reset-muted" />
+  </HBox>
+
+  <Separator orientation="VERTICAL" prefHeight="20" styleClass="dark-separator" />
+
+  <HBox spacing="10" alignment="CENTER_LEFT">
+    <Button fx:id="runBtn" onAction="#handleAlgorithmStart" styleClass="btn-ran-blue" />
+    <Button fx:id="addBtn" onAction="#handleAddNode" styleClass="btn-reset-muted" />
+    <Button fx:id="deleteBtn" onAction="#handleDeleteNode" styleClass="btn-ran-red" />
+  </HBox>
 </HBox>

@@ -29,21 +29,16 @@ public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
         if (maze == null)
             return;
 
-        // 1. 初始化迷宫状态（全墙）
         maze.initial();
-
-        // 2. 确保起点 (1, 1) 是路
         maze.setCellState(1, 1, MazeConstant.ROAD, true);
-
-        // 3. 开始递归搜索生成
         dfs(maze, 1, 1);
 
-        // 标记生成完成
         maze.setGenerated(true);
     }
 
     private void dfs(BaseMaze<int[][]> maze, int r, int c) {
-        // 🚩 局部洗牌算法：避免在递归中频繁创建 List 对象，提高内存效率
+        sync(maze, r, c);
+
         int[] indexOrder = { 0, 1, 2, 3 };
         shuffleArray(indexOrder);
 
@@ -52,18 +47,12 @@ public class DFSMazeGenerator extends BaseMazeAlgorithms<int[][]> {
             int nextR = r + dir[0];
             int nextC = c + dir[1];
 
-            // 检查目标点是否在边界内，且是否还是“墙”
             if (!maze.isOverBorder(nextR, nextC) && maze.getCell(nextR, nextC) == MazeConstant.WALL) {
-
-                // 1. 打通当前点与目标点之间的墙
                 int midR = r + dir[0] / 2;
                 int midC = c + dir[1] / 2;
+
                 maze.setCellState(midR, midC, MazeConstant.ROAD, true);
-
-                // 2. 打通目标点
                 maze.setCellState(nextR, nextC, MazeConstant.ROAD, true);
-
-                // 3. 递归进入下一个点
                 dfs(maze, nextR, nextC);
             }
         }

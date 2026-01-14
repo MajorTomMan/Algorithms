@@ -8,17 +8,13 @@ import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
+import com.majortom.algorithms.core.graph.impl.DirectedGraph;
 import com.majortom.algorithms.core.graph.impl.UndirectedGraph;
-import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 import com.majortom.algorithms.core.sort.impl.QuickSort;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.impl.AVLTree;
-import com.majortom.algorithms.core.sort.BaseSort;
-
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.Property;
 import javafx.fxml.FXML;
@@ -61,7 +57,6 @@ public class MainController implements Initializable {
     private ResourceBundle resources;
 
     private void setupI18n() {
-        // 🚩 修复点：既然绑定了 I18N，后续就绝对不能再用 pauseBtn.setText()
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("menu.lab"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("side.stats"));
         logTitleLabel.textProperty().bind(I18N.createStringBinding("side.log"));
@@ -73,16 +68,12 @@ public class MainController implements Initializable {
         resetBtn.textProperty().bind(I18N.createStringBinding("btn.reset"));
         delayLabel.textProperty().bind(I18N.createStringBinding("bottom.delay"));
 
-        // 暂停按钮使用高级绑定，自动根据 Manager 的状态切换文字
         if (pauseBtn != null) {
             pauseBtn.textProperty().bind(Bindings.createStringBinding(() -> {
                 ResourceBundle bundle = I18N.getBundle();
-                // 🚩 统一询问管理器，而不是看子控制器
                 boolean paused = AlgorithmThreadManager.isPaused();
                 return bundle.getString(paused ? "btn.resume" : "btn.pause");
             }, I18N.localeProperty(), delayMsPropertyForBinding()));
-            // 注意：这里 delayMsPropertyForBinding 只是为了触发刷新，
-            // 建议在 Manager 里增加一个 pauseStatusProperty 进行监听
         }
     }
 
@@ -95,7 +86,6 @@ public class MainController implements Initializable {
         pauseBtn.setOnAction(e -> {
             if (currentSubController != null) {
                 currentSubController.togglePause();
-                // 🚩 删除了手动 setText，由 I18N 绑定自动感知状态并刷新
                 logArea.appendText(AlgorithmThreadManager.isPaused() ? "Command: PAUSED\n" : "Command: RESUMED\n");
             }
         });
@@ -114,26 +104,23 @@ public class MainController implements Initializable {
      * 加载子模块的核心逻辑
      */
     private void loadSubController(BaseController<?> newController) {
-        // 1. 停止一切后台任务
         AlgorithmThreadManager.stopAll();
 
-        // 2. 清理舞台
         visualizationContainer.getChildren().clear();
         customControlBox.getChildren().clear();
 
-        // 3. 注入全局引用 (增加 Slider 注入)
         newController.setUIReferences(statsLabel, logArea, delaySlider);
 
         // 4. 挂载画布
         BaseVisualizer<?> viz = newController.getVisualizer();
         if (viz != null) {
+            viz.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            viz.setMinSize(0, 0);
             visualizationContainer.getChildren().add(viz);
-            // 🚩 利用 Region 的特性让画布铺满
             viz.prefWidthProperty().bind(visualizationContainer.widthProperty());
             viz.prefHeightProperty().bind(visualizationContainer.heightProperty());
+            viz.requestLayout();
         }
-
-        // 5. 挂载自定义控件
         List<Node> subControls = newController.getCustomControls();
         if (subControls != null) {
             customControlBox.getChildren().addAll(subControls);
@@ -174,7 +161,7 @@ public class MainController implements Initializable {
 
     @FXML
     public void switchToGraphModule() {
-        UndirectedGraph<String> graph = new UndirectedGraph<>("A");
+        DirectedGraph<Integer> graph = new DirectedGraph<>("A");
         AlgorithmsUtils.buildRandomGraph(graph, 15, 20, true);
         loadSubController(new GraphController<>(new BFSAlgorithms<>(), graph));
     }

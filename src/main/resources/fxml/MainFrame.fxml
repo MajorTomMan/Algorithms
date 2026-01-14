@@ -4,41 +4,53 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
-            prefHeight="800.0" prefWidth="1200.0"
-            styleClass="root-pane" stylesheets="@../style/ui_theme.css">
+  fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
+  prefHeight="800.0" prefWidth="1200.0"
+  styleClass="root-pane" stylesheets="@../style/ui_theme.css">
   <left>
-    <VBox spacing="15" styleClass="dark-panel" minWidth="250">
-      <Label fx:id="menuTitleLabel" text="%menu.lab" styleClass="section-title"/>
-      <Button fx:id="sortBtn" text="%menu.sort" onAction="#switchToSortModule" maxWidth="Infinity" styleClass="menu-button"/>
-      <Button fx:id="mazeBtn" text="%menu.maze" onAction="#switchToMazeModule" maxWidth="Infinity" styleClass="menu-button"/>
-      <Button fx:id="treeBtn" text="%menu.tree" onAction="#switchToTreeModule" maxWidth="Infinity" styleClass="menu-button"/>
-      <Button fx:id="graphBtn" text="%menu.graph" onAction="#switchToGraphModule" maxWidth="Infinity" styleClass="menu-button"/>
-      <Separator style="-fx-opacity: 0.2;"/>
-      <Label fx:id="statsTitleLabel" text="%side.stats" styleClass="section-title"/>
-      <Label fx:id="statsLabel" text="%side.ready" styleClass="status-text"/>
-      <Label fx:id="logTitleLabel" text="%side.log" styleClass="section-title"/>
-      <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" styleClass="log-area"/>
-      <Button text="EN / 中文" onAction="#toggleLanguage" maxWidth="Infinity" styleClass="menu-button"/>
+    <VBox spacing="15" styleClass="dark-panel" minWidth="280">
+      <Label fx:id="menuTitleLabel" text="%menu.lab" styleClass="section-title" />
+      <Button fx:id="sortBtn" text="%menu.sort" onAction="#switchToSortModule" maxWidth="Infinity"
+        styleClass="menu-button" />
+      <Button fx:id="mazeBtn" text="%menu.maze" onAction="#switchToMazeModule" maxWidth="Infinity"
+        styleClass="menu-button" />
+      <Button fx:id="treeBtn" text="%menu.tree" onAction="#switchToTreeModule" maxWidth="Infinity"
+        styleClass="menu-button" />
+      <Button fx:id="graphBtn" text="%menu.graph" onAction="#switchToGraphModule"
+        maxWidth="Infinity" styleClass="menu-button" />
+
+      <Separator style="-fx-opacity: 0.1;" />
+
+      <Label fx:id="statsTitleLabel" text="%side.stats" styleClass="section-title" />
+      <Label fx:id="statsLabel" text="%side.ready" styleClass="status-text" />
+
+      <Label fx:id="logTitleLabel" text="%side.log" styleClass="section-title" />
+      <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" styleClass="log-area"
+        wrapText="true" />
+
+      <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
+        maxWidth="Infinity" styleClass="menu-button" />
     </VBox>
   </left>
 
   <center>
-    <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;"/>
+    <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;" />
   </center>
 
   <bottom>
-    <HBox spacing="20" alignment="CENTER_LEFT" styleClass="dark-panel" style="-fx-padding: 15;">
-      <HBox spacing="10">
-        <Button fx:id="startBtn" text="%btn.start" styleClass="btn-primary"/>
-        <Button fx:id="pauseBtn" text="%btn.pause" styleClass="menu-button"/>
-        <Button fx:id="resetBtn" text="%btn.reset" styleClass="menu-button"/>
+    <HBox spacing="25" alignment="CENTER_LEFT" styleClass="control-bar-refined">
+      <HBox spacing="12">
+        <Button fx:id="startBtn" text="%btn.start" styleClass="btn-primary" />
+        <Button fx:id="pauseBtn" text="%btn.pause" styleClass="btn-reset-minimal" />
+        <Button fx:id="resetBtn" text="%btn.reset" styleClass="btn-reset-minimal" />
       </HBox>
-      <VBox spacing="5">
-        <Label fx:id="delayLabel" text="%bottom.delay" style="-fx-text-fill: white; -fx-font-size: 10;"/>
-        <Slider fx:id="delaySlider" min="0" max="500" value="50" showTickLabels="true"/>
+
+      <VBox spacing="5" alignment="CENTER_LEFT">
+        <Label fx:id="delayLabel" text="%bottom.delay" styleClass="control-label" />
+        <Slider fx:id="delaySlider" min="0" max="500" value="50" prefWidth="180" />
       </VBox>
-      <HBox fx:id="customControlBox" spacing="10" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS"/>
+
+      <HBox fx:id="customControlBox" spacing="15" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS" />
     </HBox>
   </bottom>
 </BorderPane>

@@ -9,35 +9,30 @@ import org.graphstream.ui.fx_viewer.FxViewPanel;
 import org.graphstream.ui.fx_viewer.FxViewer;
 
 /**
- * 图算法可视化器 (重构版)
- * 职责：适配 GraphStream 引擎，将 BaseGraph 的状态映射到视觉层面。
- * * @param <V> 节点存储的数据类型
+ * 图算法可视化器 - 适配《乱》色彩体系
+ * 映射规则：
+ * a: 当前处理节点 -> highlight (次郎蓝)
+ * b: 已探索/邻居节点 -> secondary (三郎黄)
+ * 默认节点/边 -> 红色 (太郎红)
  */
 public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
 
     private FxViewer viewer;
     private FxViewPanel viewPanel;
-    private final Graph gsGraph; // 内部引用的 GraphStream 对象
+    private final Graph gsGraph;
 
     public GraphVisualizer(BaseGraph<V> baseGraph) {
-        // 设置 GS 渲染引擎为 JavaFX
         System.setProperty("org.graphstream.ui", "javafx");
         this.gsGraph = baseGraph.getGraph();
-
-        // 初始渲染：由于 Viewer 初始化较慢，放入 Platform.runLater
         Platform.runLater(this::initializeViewer);
     }
 
     @Override
     protected void draw(BaseGraph<V> data, Object a, Object b) {
-        if (data == null || gsGraph == null)
-            return;
-
-        // 🚩 关键：删掉全场清理代码
-        // gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class")); <- 删掉这行
+        if (data == null || gsGraph == null) return;
 
         try {
-            // 🚩 2. 处理当前正在处理的节点 A (保持紫色 highlight)
+            // 1. 处理当前核心节点 (Active Node) -> 次郎蓝
             if (a instanceof String nodeId) {
                 Node nodeA = gsGraph.getNode(nodeId);
                 if (nodeA != null) {
@@ -45,39 +40,32 @@ public class GraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
                 }
             }
 
-            // 🚩 3. 处理已探索过的路径或关联节点 B (专注蓝 secondary)
+            // 2. 处理关联节点 (Neighbor Node) -> 三郎黄
             if (b instanceof String nodeId) {
                 Node nodeB = gsGraph.getNode(nodeId);
                 if (nodeB != null) {
                     nodeB.setAttribute("ui.class", "secondary");
                 }
             }
-
-            // 注意：因为不再全场清空，变紫的点会一直保持紫色，直到你手动点击“重置”
-            Thread.sleep(1);
         } catch (Exception e) {
-            e.printStackTrace();
+            // 处理并发状态下的微小异常
         }
     }
 
     private void initializeViewer() {
-        if (gsGraph == null)
-            return;
+        if (gsGraph == null) return;
 
-        // 🚩 核心：加载外部 CSS 文件
+        // 加载符合《乱》美学的样式表
         try {
-            // 使用 ClassLoader 加载资源路径
             String stylesheet = getClass().getResource("/style/graph.css").toExternalForm();
             gsGraph.setAttribute("ui.stylesheet", "url('" + stylesheet + "')");
-        } catch (NullPointerException e) {
-            System.err.println("[Error] 样式文件加载失败，请检查路径: /style/graph_style.css");
-            // 如果文件找不到，可以回退到默认样式，避免界面崩掉
+        } catch (Exception e) {
+            System.err.println("[Error] 样式文件加载失败");
         }
 
         gsGraph.setAttribute("ui.antialias");
-
         this.viewer = new FxViewer(gsGraph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-        this.viewer.enableAutoLayout();
+        this.viewer.enableAutoLayout(); 
         this.viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
         this.getChildren().clear();

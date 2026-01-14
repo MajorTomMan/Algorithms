@@ -40,12 +40,10 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
 
     private BinaryTreeNode<T> doPut(BaseTree<T> tree, BinaryTreeNode<T> node, T data) {
         if (node == null) {
-            // 🚩 自动增加 actionCount 并发射信号
             tree.modifyStructure(null);
             return (BinaryTreeNode<T>) createNode(data);
         }
 
-        // 🚩 自动处理 compareCount 并高亮扫描路径
         syncTree(tree, node, null);
 
         int cmp = data.compareTo(node.data);

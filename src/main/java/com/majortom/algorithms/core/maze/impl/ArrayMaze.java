@@ -2,7 +2,11 @@ package com.majortom.algorithms.core.maze.impl;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -21,7 +25,6 @@ public class ArrayMaze extends BaseMaze<int[][]> {
     @Override
     public void initial() {
         initialSilent();
-        // 🚩 修正同步：通知监听器，数据已重置（通常用于刷新 Canvas 背景）
         if (syncListener != null) {
             syncListener.onSync(this, -1, -1, 0, 0);
         }
@@ -36,7 +39,6 @@ public class ArrayMaze extends BaseMaze<int[][]> {
 
     @Override
     public int getCell(int r, int c) {
-        // 边界保护：越界视为墙，避免寻路算法抛出 ArrayIndexOutOfBoundsException
         return isOverBorder(r, c) ? MazeConstant.WALL : data[r][c];
     }
 
@@ -64,7 +66,6 @@ public class ArrayMaze extends BaseMaze<int[][]> {
             endC = rand.nextInt(cols);
         } while (getCell(endR, endC) != MazeConstant.ROAD || (endR == startR && endC == startC));
 
-        // 🚩 使用常量代替硬编码数字：3->START, 5->END
         setCellState(startR, startC, MazeConstant.START, false);
         setCellState(endR, endC, MazeConstant.END, false);
     }
@@ -75,7 +76,7 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         for (int i = 0; i < rows; i++) {
             Arrays.fill(this.data[i], MazeConstant.WALL);
         }
-        // 重置 BaseStructure 中的统计量
+
         this.compareCount = 0;
         this.actionCount = 0;
     }
@@ -98,48 +99,31 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 int state = data[i][j];
-                // 🚩 只要不是墙，且不是起点终点，都统一还原为普通的路
-                // 这样能清除生成算法留下的“已访问”、“正在访问”等临时颜色
                 if (state != MazeConstant.WALL && state != MazeConstant.START && state != MazeConstant.END) {
                     data[i][j] = MazeConstant.ROAD;
                 }
             }
         }
-        // 💡 记得重置统计量，让寻路算法重新计算“已访问节点”
         this.actionCount = 0;
     }
 
     @Override
     public void pickRandomPointsOnAvailablePaths() {
-        // 1. 搜集当前地图上所有已经是 ROAD 的坐标
-        java.util.List<int[]> availablePaths = new java.util.ArrayList<>();
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (data[i][j] == MazeConstant.ROAD) {
-                    availablePaths.add(new int[] { i, j });
-                }
+        List<int[]> roads = new ArrayList<>();
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (data[r][c] == MazeConstant.ROAD)
+                    roads.add(new int[] { r, c });
             }
         }
-
-        // 2. 如果路太少（比如刚开始生成就点了寻路），则直接调用原有的逻辑或退出
-        if (availablePaths.size() < 2) {
-            System.err.println("System: Not enough paths to pick points.");
+        if (roads.size() < 2)
             return;
-        }
 
-        // 3. 随机抽取两个不重复的索引
-        Random rand = new Random();
-        int startIndex = rand.nextInt(availablePaths.size());
-        int endIndex;
-        do {
-            endIndex = rand.nextInt(availablePaths.size());
-        } while (startIndex == endIndex);
+        Collections.shuffle(roads); // 只有在后台线程这么干才不卡
+        int[] s = roads.get(0);
+        int[] e = roads.get(1);
 
-        int[] startPos = availablePaths.get(startIndex);
-        int[] endPos = availablePaths.get(endIndex);
-
-        // 4. 设置状态，这里 false 表示不需要步进动画，瞬间设置完成
-        setCellState(startPos[0], startPos[1], MazeConstant.START, false);
-        setCellState(endPos[0], endPos[1], MazeConstant.END, false);
+        setCellState(s[0], s[1], MazeConstant.START, false);
+        setCellState(e[0], e[1], MazeConstant.END, false);
     }
 }

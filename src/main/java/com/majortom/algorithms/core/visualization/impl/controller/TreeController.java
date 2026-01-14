@@ -6,6 +6,7 @@ import com.majortom.algorithms.core.tree.BaseTreeAlgorithms;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
+import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -14,25 +15,28 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
-/**
- * 树结构算法控制器
- * 职责：协调 Tree 数据实体与 AVL/BST 算法逻辑，支持动态插入与可视化呈现。
- */
 public class TreeController<T extends Comparable<T>> extends BaseController<BaseTree<T>> {
 
     private final BaseTree<T> treeData;
     private final BaseTreeAlgorithms<T> treeAlgorithms;
     private Node customControlPane;
 
+    private enum Mode {
+        INSERT, DELETE
+    }
+
+    private Mode currentMode = Mode.INSERT;
+
     @FXML
     private Label inputLabel;
+    @FXML
+    private Button deleteBtn;
     @FXML
     private Button insertBtn;
     @FXML
@@ -40,15 +44,7 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     @FXML
     private TextField inputField;
 
-    /**
-     * 构造函数
-     * 
-     * @param treeData  数据容器实体（如 AVL 树的数据承载体）
-     * @param algorithm 具体的算法实现（如 AVLTree 的 put/remove 逻辑）
-     */
     public TreeController(BaseTree<T> treeData, BaseTreeAlgorithms<T> algorithm) {
-        // 🚩 修正：现在 super 仅接收 visualizer。
-        // TreeVisualizer 内部会根据 BaseTree 的 root 进行坐标计算和绘制。
         super(new TreeVisualizer<T>());
         this.treeData = treeData;
         this.treeAlgorithms = algorithm;
@@ -61,18 +57,15 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
             loader.setResources(I18N.getBundle());
             loader.setController(this);
             this.customControlPane = loader.load();
-
             setupI18n();
         } catch (IOException e) {
-            System.err.println("[Error] Tree FXML load failed.");
+            System.err.println("FXML load failed.");
         }
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
-
-        // 初始空树绘制
         if (visualizer != null && treeData != null) {
             visualizer.render(treeData);
         }
@@ -85,6 +78,13 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
 
     @FXML
     private void handleInsert() {
+        this.currentMode = Mode.INSERT;
+        handleAlgorithmStart();
+    }
+
+    @FXML
+    private void handleDelete() {
+        this.currentMode = Mode.DELETE;
         handleAlgorithmStart();
     }
 
@@ -108,45 +108,37 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     @Override
     protected void executeAlgorithm(BaseAlgorithms<BaseTree<T>> alg, BaseTree<T> tree) {
         String input = inputField.getText();
-        if (input == null || input.trim().isEmpty())
+        if (input == null || input.trim().isEmpty() || !(alg instanceof BaseTreeAlgorithms)) {
             return;
+        }
 
-        // 🚩 修正：基于 BaseController 的 S extends BaseStructure 契约进行调用
-        if (alg instanceof BaseTreeAlgorithms) {
-            BaseTreeAlgorithms<T> targetAlg = (BaseTreeAlgorithms<T>) alg;
+        BaseTreeAlgorithms<T> targetAlg = (BaseTreeAlgorithms<T>) alg;
+        String[] values = input.split("[,，]");
 
-            String[] values = input.split("[,，]");
-            for (String valStr : values) {
-                // 🚩 检查 Manager 状态，确保能被 stopAlgorithm() 瞬间中断
-                if (!isRunning())
-                    break;
-
-                try {
-                    T val = parseValue(valStr.trim());
-                    // 执行插入：AVLTree 内部会调用 syncTree 触发 UI 渲染
+        for (String valStr : values) {
+            if (!isRunning())
+                break;
+            try {
+                T val = parseValue(valStr.trim());
+                if (currentMode == Mode.INSERT) {
                     targetAlg.put(tree, val);
-
-                    Platform.runLater(() -> {
-                        if (logArea != null)
-                            logArea.appendText("Inserted Node: " + val + "\n");
-                    });
-                } catch (Exception e) {
-                    Platform.runLater(() -> {
-                        if (logArea != null)
-                            logArea.appendText("Error parsing: " + valStr + "\n");
-                    });
+                    logUpdate("Inserted: " + val);
+                } else {
+                    targetAlg.remove(tree, val);
+                    logUpdate("Removed: " + val);
                 }
+            } catch (Exception e) {
+                logUpdate("Error processing: " + valStr);
             }
         }
     }
 
-    @Override
-    protected void updateUIComponents(int compareCount, int actionCount) {
-        // 🚩 此时已在 UI 线程，利用 treeData 内部的统计量更新面板
-        if (statsLabel != null && treeData != null) {
-            statsLabel.setText(String.format("Size: %d | Height: %d\nSteps: %d",
-                    treeData.size(), treeData.height(), actionCount));
-        }
+    private void logUpdate(String message) {
+        AlgorithmThreadManager.postStatus(() -> {
+            if (logArea != null) {
+                logArea.appendText(message + "\n");
+            }
+        });
     }
 
     @Override
@@ -158,28 +150,28 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
 
     @SuppressWarnings("unchecked")
     private T parseValue(String s) {
-        // 默认为 Integer，可根据实际需求扩展
         return (T) Integer.valueOf(s);
     }
 
     @Override
     protected void setupI18n() {
-        // TODO Auto-generated method stub
-        if (inputLabel != null) {
+        if (inputLabel != null)
             inputLabel.textProperty().bind(I18N.createStringBinding("ctrl.tree.val"));
-        }
-
-        // 2. 按钮文字绑定
-        if (insertBtn != null) {
+        if (insertBtn != null)
             insertBtn.textProperty().bind(I18N.createStringBinding("btn.tree.insert"));
-        }
-        if (randomBtn != null) {
+        if (randomBtn != null)
             randomBtn.textProperty().bind(I18N.createStringBinding("btn.tree.random"));
-        }
-
-        // 3. 输入框提示文字绑定 (让细节更利落)
-        if (inputField != null) {
+        if (deleteBtn != null)
+            deleteBtn.textProperty().bind(I18N.createStringBinding("btn.tree.delete"));
+        if (inputField != null)
             inputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.tree.prompt"));
+    }
+
+    @Override
+    protected void updateUIComponents(int compareCount, int actionCount) {
+        if (statsLabel != null && treeData != null) {
+            statsLabel.setText(String.format("Size: %d | Height: %d\nSteps: %d",
+                    treeData.size(), treeData.height(), actionCount));
         }
     }
 }

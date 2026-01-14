@@ -4,13 +4,12 @@ import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
 import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.RadialGradient;
-import javafx.scene.paint.Stop;
 
 /**
- * 方形网格迷宫可视化器
- * 职责：执行标准二维数组的坐标映射与霓虹单元格渲染。
+ * 迷宫可视化器 - 参考黑泽明《乱》配色
+ * 红色：墙体 (太郎)
+ * 蓝色：当前路径 (次郎)
+ * 黄色：回溯路径 (三郎)
  */
 public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> {
 
@@ -20,73 +19,51 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         if (grid == null)
             return;
 
-        int rows = mazeEntity.getRows();
-        int cols = mazeEntity.getCols();
+        double cellW = canvas.getWidth() / mazeEntity.getCols();
+        double cellH = canvas.getHeight() / mazeEntity.getRows();
 
-        double width = canvas.getWidth();
-        double height = canvas.getHeight();
-        if (width <= 0 || height <= 0)
-            return;
-
-        double cellW = width / cols;
-        double cellH = height / rows;
-
-        // 遍历网格进行绘制
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
+        for (int r = 0; r < mazeEntity.getRows(); r++) {
+            for (int c = 0; c < mazeEntity.getCols(); c++) {
                 int type = grid[r][c];
-                // 优化：ROAD 类型作为背景不重复绘制，提升性能
+                // 仅渲染非通路部分
                 if (type != MazeConstant.ROAD) {
-                    renderSquareCell(r, c, cellW, cellH, type);
+                    renderRanCell(r, c, cellW, cellH, type);
                 }
             }
         }
+        drawFocus(a, b, cellW, cellH);
     }
 
-    private void renderSquareCell(int r, int c, double w, double h, int type) {
+    private void renderRanCell(int r, int c, double w, double h, int type) {
         double x = c * w;
         double y = r * h;
-        Color targetColor;
-        boolean hasGlow = false;
 
-        // 建立逻辑类型与霓虹色的映射
-        switch (type) {
-            case MazeConstant.WALL -> targetColor = NEON_RED;
-            case MazeConstant.PATH -> {
-                targetColor = NEON_BLUE;
-                hasGlow = true;
-            }
-            case MazeConstant.BACKTRACK -> {
-                targetColor = NEON_GOLD;
-                hasGlow = true;
-            }
-            case MazeConstant.START -> targetColor = START_VIOLET;
-            case MazeConstant.END -> targetColor = NEON_PINK;
-            default -> targetColor = CRYSTAL_WHITE;
+        if (type == MazeConstant.WALL) {
+            gc.setFill(RAN_RED);
+            gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
+            return;
         }
 
-        // --- 层级 1：扩散光晕 (营造氛围感) ---
-        if (hasGlow && w > 8) {
-            RadialGradient glow = new RadialGradient(0, 0, x + w / 2, y + h / 2, w * 1.5,
-                    false, CycleMethod.NO_CYCLE,
-                    new Stop(0, targetColor.deriveColor(0, 1, 1, 0.3)),
-                    new Stop(1, Color.TRANSPARENT));
-            gc.setFill(glow);
-            gc.fillRect(x - w / 2, y - h / 2, w * 2, h * 2);
-        }
+        Color targetColor = switch (type) {
+            case MazeConstant.PATH -> RAN_BLUE;
+            case MazeConstant.BACKTRACK -> RAN_GOLD;
+            case MazeConstant.START, MazeConstant.END -> BONE_WHITE;
+            default -> Color.TRANSPARENT;
+        };
 
-        // --- 层级 2：核心霓虹色块 ---
         gc.setFill(targetColor);
-        double arc = Math.min(w, h) * 0.3; // 圆角增加柔和感
-        // 留出 0.5 像素的 Margin 营造电子元件间隔感
-        gc.fillRoundRect(x + 0.5, y + 0.5, w - 1, h - 1, arc, arc);
+        gc.fillRect(x + 1, y + 1, w - 2, h - 2);
+    }
 
-        // --- 层级 3：亮芯绘制 (模拟冷阴极管效果) ---
-        if (type != MazeConstant.WALL && w > 6) {
-            gc.setStroke(CRYSTAL_WHITE);
-            gc.setLineWidth(Math.max(0.5, w * 0.1));
-            double padding = w * 0.2;
-            gc.strokeRoundRect(x + padding, y + padding, w - padding * 2, h - padding * 2, arc * 0.5, arc * 0.5);
+    @Override
+    protected void drawFocus(Object a, Object b, double w, double h) {
+        if (a instanceof Integer r && b instanceof Integer c) {
+            double x = c * w;
+            double y = r * h;
+            // 蓝色硬边框作为当前扫描焦点
+            gc.setStroke(RAN_BLUE);
+            gc.setLineWidth(2.5);
+            gc.strokeRect(x + 1, y + 1, w - 2, h - 2);
         }
     }
 }
