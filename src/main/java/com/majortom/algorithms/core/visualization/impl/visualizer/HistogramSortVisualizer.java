@@ -52,7 +52,7 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
             // 交换瞬态判定 (若 a, b 同时存在通常代表交换)
             if (a != null && b != null && (Objects.equals(i, a) || Objects.equals(i, b))) {
                 // 可以在交换时使用骨白增强反馈，若不需要则维持黄色
-                barColor = BONE_WHITE;
+                //barColor = BONE_WHITE;
             }
 
             renderHardBar(x, y, barW, h, barColor);

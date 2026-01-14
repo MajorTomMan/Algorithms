@@ -10,6 +10,7 @@ import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.utils.EffectUtils;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -88,7 +89,9 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
             loader.setController(this);
             this.customControlPane = loader.load();
         } catch (IOException e) {
-            System.err.println("[Error] Maze FXML load failed.");
+            System.err.println("[Error] Maze FXML load failed. ");
+            System.err.println("error:"+e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -121,6 +124,13 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
 
         // 初始静默初始化，不产生步进动画
         mazeEntity.initialSilent();
+
+        if (buildBtn != null) {
+            EffectUtils.applyDynamicEffect(buildBtn);
+        }
+        if (solveBtn != null) {
+            EffectUtils.applyDynamicEffect(solveBtn);
+        }
     }
 
     /**
@@ -129,17 +139,11 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
     private void refreshMazeRealtime(int size) {
         // 确保奇数
         int oddSize = (size % 2 == 0) ? size + 1 : size;
-
-        // 停止并清理之前的任务
         stopAlgorithm();
-
-        // 创建新迷宫并静默初始化（清空为全墙或全路）
         @SuppressWarnings("unchecked")
         BaseMaze<T> newMaze = (BaseMaze<T>) new ArrayMaze(oddSize, oddSize);
         this.mazeEntity = newMaze;
         this.mazeEntity.initialSilent();
-
-        // 🚩 关键：立即渲染空白网格，实现“变大变小”的视觉反馈
         if (this.visualizer != null) {
             this.visualizer.render(mazeEntity, null, null);
         }

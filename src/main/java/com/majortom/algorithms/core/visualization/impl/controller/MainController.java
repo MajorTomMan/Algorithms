@@ -9,12 +9,12 @@ import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
 import com.majortom.algorithms.core.graph.impl.DirectedGraph;
-import com.majortom.algorithms.core.graph.impl.UndirectedGraph;
 import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.core.sort.impl.QuickSort;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.impl.AVLTree;
+import com.majortom.algorithms.utils.EffectUtils; // 导入工具类
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.Property;
 import javafx.fxml.FXML;
@@ -29,17 +29,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-/**
- * 主界面控制器
- * 职责：负责模块导航切换、子控制器生命周期管理、全局UI组件分发。
- */
 public class MainController implements Initializable {
 
     @FXML
     private StackPane visualizationContainer;
     @FXML
     private HBox customControlBox;
-
     @FXML
     private Label menuTitleLabel, statsTitleLabel, logTitleLabel, statsLabel;
     @FXML
@@ -52,9 +47,55 @@ public class MainController implements Initializable {
     private Label delayLabel;
     @FXML
     private Button startBtn, pauseBtn, resetBtn;
+    @FXML
+    private Button langBtn; // 确保 FXML 中有这个 ID
 
     private BaseController<?> currentSubController;
     private ResourceBundle resources;
+
+    /**
+     * 批量为所有按钮应用动态特效
+     */
+    private void applyEffectsToAllButtons() {
+        // 导航栏按钮
+        EffectUtils.applyDynamicEffect(sortBtn);
+        EffectUtils.applyDynamicEffect(mazeBtn);
+        EffectUtils.applyDynamicEffect(treeBtn);
+        EffectUtils.applyDynamicEffect(graphBtn);
+
+        // 控制台按钮
+        EffectUtils.applyDynamicEffect(startBtn);
+        EffectUtils.applyDynamicEffect(resetBtn);
+        if (pauseBtn != null)
+            EffectUtils.applyDynamicEffect(pauseBtn);
+        if (langBtn != null)
+            EffectUtils.applyDynamicEffect(langBtn);
+    }
+
+    @FXML
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        if (resources != null) {
+            this.resources = resources;
+            I18N.setLocale(resources.getLocale());
+        }
+
+        // 1. 设置国际化绑定
+        setupI18n();
+
+        // 2. 设置全局按钮行为
+        setupGlobalActions();
+
+        // 3. 应用动态呼吸灯特效 (划过呼吸，点完即消失)
+        applyEffectsToAllButtons();
+
+        // 4. 初始模块加载
+        switchToSortModule();
+
+        logArea.appendText("System: Lab Initialized.\n");
+    }
+
+    // --- 以下保持原逻辑不变 ---
 
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("menu.lab"));
@@ -73,7 +114,7 @@ public class MainController implements Initializable {
                 ResourceBundle bundle = I18N.getBundle();
                 boolean paused = AlgorithmThreadManager.isPaused();
                 return bundle.getString(paused ? "btn.resume" : "btn.pause");
-            }, I18N.localeProperty(), delayMsPropertyForBinding()));
+            }, I18N.localeProperty(), delaySlider.valueProperty()));
         }
     }
 
@@ -82,14 +123,12 @@ public class MainController implements Initializable {
             if (currentSubController != null)
                 currentSubController.handleAlgorithmStart();
         });
-
         pauseBtn.setOnAction(e -> {
             if (currentSubController != null) {
                 currentSubController.togglePause();
                 logArea.appendText(AlgorithmThreadManager.isPaused() ? "Command: PAUSED\n" : "Command: RESUMED\n");
             }
         });
-
         resetBtn.setOnAction(e -> {
             if (currentSubController != null) {
                 currentSubController.stopAlgorithm();
@@ -100,18 +139,12 @@ public class MainController implements Initializable {
         });
     }
 
-    /**
-     * 加载子模块的核心逻辑
-     */
     private void loadSubController(BaseController<?> newController) {
         AlgorithmThreadManager.stopAll();
-
         visualizationContainer.getChildren().clear();
         customControlBox.getChildren().clear();
-
         newController.setUIReferences(statsLabel, logArea, delaySlider);
 
-        // 4. 挂载画布
         BaseVisualizer<?> viz = newController.getVisualizer();
         if (viz != null) {
             viz.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -125,17 +158,12 @@ public class MainController implements Initializable {
         if (subControls != null) {
             customControlBox.getChildren().addAll(subControls);
         }
-
         this.currentSubController = newController;
     }
 
-    // --- 模块切换方法 (保持你的逻辑) ---
-
     @FXML
     public void switchToSortModule() {
-        loadSubController(new SortController<Integer>(
-                new QuickSort<Integer>(),
-                new HistogramSortVisualizer<Integer>()));
+        loadSubController(new SortController<Integer>(new QuickSort<>(), new HistogramSortVisualizer<>()));
     }
 
     @FXML
@@ -143,8 +171,7 @@ public class MainController implements Initializable {
         ArrayMaze maze = new ArrayMaze(51, 51);
         BFSMazeGenerator gen = new BFSMazeGenerator();
         gen.setMazeEntity(maze);
-        SquareMazeVisualizer visualizer = new SquareMazeVisualizer();
-        loadSubController(new MazeController<int[][]>(maze, gen, visualizer));
+        loadSubController(new MazeController<>(maze, gen, new SquareMazeVisualizer()));
     }
 
     @FXML
@@ -152,10 +179,8 @@ public class MainController implements Initializable {
         BaseTree<Integer> tree = new BaseTree<>();
         AVLTree<Integer> algorithms = new AVLTree<>();
         Integer[] array = AlgorithmsUtils.randomArray(23, 12);
-        for (Integer integer : array) {
-            algorithms.put(tree, integer);
-        }
-
+        for (Integer i : array)
+            algorithms.put(tree, i);
         loadSubController(new TreeController<>(tree, algorithms));
     }
 
@@ -166,40 +191,12 @@ public class MainController implements Initializable {
         loadSubController(new GraphController<>(new BFSAlgorithms<>(), graph));
     }
 
-    // 辅助方法，用于刷新按钮绑定
-    private Property<Number> delayMsPropertyForBinding() {
-        return delaySlider.valueProperty();
-    }
-
     @FXML
     private void toggleLanguage() {
-        Locale currentLocale = I18N.getLocale();
-
-        // 翻转语言状态
-        Locale newLocale = (currentLocale.getLanguage().equals("zh"))
-                ? Locale.ENGLISH
-                : Locale.CHINESE;
-
-        // 更新 I18N 的 Property，这会自动触发所有 createStringBinding 的 UI 刷新
+        Locale newLocale = (I18N.getLocale().getLanguage().equals("zh")) ? Locale.ENGLISH : Locale.CHINESE;
         I18N.setLocale(newLocale);
-
         if (logArea != null) {
-            String msg = (newLocale == Locale.CHINESE) ? "系统：语言已切换为中文" : "System: Language switched to English";
-            logArea.appendText(msg + "\n");
+            logArea.appendText(((newLocale == Locale.CHINESE) ? "系统：语言已切换" : "System: Language switched") + "\n");
         }
-    }
-
-    @FXML
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // TODO Auto-generated method stub
-        if (resources != null) {
-            this.resources = resources;
-            I18N.setLocale(resources.getLocale());
-        }
-        setupI18n();
-        setupGlobalActions();
-        switchToSortModule(); // 初始模块
-        logArea.appendText("System: Lab Initialized.\n");
     }
 }

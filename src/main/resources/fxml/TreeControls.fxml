@@ -20,7 +20,7 @@
             styleClass="btn-ran-red" />
 
         <Button fx:id="randomBtn" text="%btn.tree.random" onAction="#handleRandom"
-            styleClass="btn-reset-muted" />
+            styleClass="btn-ran-gold" />
     </HBox>
 
 </HBox>

@@ -8,7 +8,7 @@
   prefHeight="800.0" prefWidth="1200.0"
   styleClass="root-pane" stylesheets="@../style/ui_theme.css">
   <left>
-    <VBox spacing="15" styleClass="dark-panel" minWidth="280">
+    <VBox spacing="15" styleClass="dark-panel" minWidth="280" alignment="TOP_CENTER">
       <Label fx:id="menuTitleLabel" text="%menu.lab" styleClass="section-title" />
       <Button fx:id="sortBtn" text="%menu.sort" onAction="#switchToSortModule" maxWidth="Infinity"
         styleClass="menu-button" />
@@ -38,16 +38,16 @@
   </center>
 
   <bottom>
-    <HBox spacing="25" alignment="CENTER_LEFT" styleClass="control-bar-refined">
-      <HBox spacing="12">
+    <HBox spacing="20" alignment="CENTER_LEFT" styleClass="control-bar-refined">
+      <HBox spacing="12" alignment="CENTER_LEFT">
         <Button fx:id="startBtn" text="%btn.start" styleClass="btn-primary" />
-        <Button fx:id="pauseBtn" text="%btn.pause" styleClass="btn-reset-minimal" />
-        <Button fx:id="resetBtn" text="%btn.reset" styleClass="btn-reset-minimal" />
+        <Button fx:id="pauseBtn" text="%btn.pause" styleClass="btn-ran-gold" />
+        <Button fx:id="resetBtn" text="%btn.reset" styleClass="btn-ran-gold" />
       </HBox>
 
       <VBox spacing="5" alignment="CENTER_LEFT">
         <Label fx:id="delayLabel" text="%bottom.delay" styleClass="control-label" />
-        <Slider fx:id="delaySlider" min="0" max="500" value="50" prefWidth="180" />
+        <Slider fx:id="delaySlider" min="0" max="500" value="50" prefWidth="120" maxWidth="120" />
       </VBox>
 
       <HBox fx:id="customControlBox" spacing="15" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS" />

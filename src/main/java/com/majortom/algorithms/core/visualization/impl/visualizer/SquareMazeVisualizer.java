@@ -13,22 +13,25 @@ import javafx.scene.paint.Color;
  */
 public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> {
 
+    // SquareMazeVisualizer.java
+
     @Override
     protected void drawMaze(BaseMaze<int[][]> mazeEntity, Object a, Object b) {
         int[][] grid = mazeEntity.getData();
         if (grid == null)
             return;
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        double cellW = canvas.getWidth() / mazeEntity.getCols();
-        double cellH = canvas.getHeight() / mazeEntity.getRows();
+        double canvasW = canvas.getWidth();
+        double canvasH = canvas.getHeight();
+
+        double cellW = canvasW / mazeEntity.getCols();
+        double cellH = canvasH / mazeEntity.getRows();
 
         for (int r = 0; r < mazeEntity.getRows(); r++) {
             for (int c = 0; c < mazeEntity.getCols(); c++) {
                 int type = grid[r][c];
-                // 仅渲染非通路部分
-                if (type != MazeConstant.ROAD) {
-                    renderRanCell(r, c, cellW, cellH, type);
-                }
+                renderRanCell(r, c, cellW, cellH, type);
             }
         }
         drawFocus(a, b, cellW, cellH);

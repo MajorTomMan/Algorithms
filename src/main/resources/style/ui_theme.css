@@ -1,290 +1,152 @@
 /* =========================================================
- * [0] 全局色彩变量｜黑泽明《乱》终极阵营
+ * [0] 核心调色盘 - 极致黑白与“乱”美学对比
  * ======================================================= */
 .root {
-    -fx-base-bg:    #0D0D0F;
-    -fx-panel-bg:   #151518;
-
-    -fx-ran-red:    #FF0000;
-    -fx-ran-blue:   #00A2FF;
-    -fx-ran-gold:   #FFD700;
-    -fx-ran-purple: #D140FF;
-    -fx-ran-gray:   #E0E0E0;
-
-    -fx-bone-white: #F0F0E6;
+    -fx-base-bg:    #000000; /* 纯黑底色 */
+    -fx-panel-bg:   #0D0D0F;
+    
+    -fx-ran-red:    #FF0000; /* 毁灭/重置/迷宫 */
+    -fx-ran-blue:   #00A2FF; /* 运行/逻辑/排序 */
+    -fx-ran-gold:   #FFD700; /* 暂停/变数/树 */
+    -fx-ran-purple: #D140FF; /* 诞生/节点/图 */
+    -fx-ran-cyan:   #00FFCC; /* 语言/冷静 */
+    
     -fx-pure-white: #FFFFFF;
-
     -fx-background-color: -fx-base-bg;
 }
 
 /* =========================================================
- * [1] 基础容器 & 通用按钮
+ * [1] 布局容器修复 - 锁定 80px 修复视觉位移
  * ======================================================= */
+.control-bar-refined {
+    -fx-background-color: #050505;
+    -fx-min-height: 80px; 
+    -fx-max-height: 80px;
+    -fx-padding: 0 15;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-color: #333333 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* 侧边栏整体 */
 .dark-panel {
     -fx-background-color: -fx-panel-bg;
-    -fx-border-color: transparent -fx-ran-red transparent transparent;
-    -fx-border-width: 0 2 0 0;
-    -fx-padding: 25 15;
-    -fx-spacing: 15;
-}
-
-.button, .menu-button {
-    -fx-background-color: rgba(255,255,255,0.04);
-    -fx-font-family: "Consolas";
-    -fx-padding: 12 15;
-    -fx-border-width: 2;
-    -fx-background-radius: 0;
-    -fx-text-fill: -fx-bone-white;
+    -fx-border-color: transparent #333333 transparent transparent;
+    -fx-border-width: 0 1 0 0;
 }
 
 /* =========================================================
- * [2] 阵营按钮（唯一真源）
+ * [2] 侧边栏标题与状态居中 (修复 image_d3adec)
  * ======================================================= */
 
-/* 蓝｜运行 / 开始 */
-.btn-ran-blue, #runBtn, #startBtn {
-    -fx-border-color: -fx-ran-blue;
-    -fx-text-fill:   -fx-ran-blue;
-    -fx-background-color: rgba(0,162,255,0.1);
-}
-
-/* 金｜插入 / 调整 */
-.btn-ran-gold, #insertBtn, #linkBtn {
-    -fx-border-color: -fx-ran-gold;
-    -fx-text-fill:   -fx-ran-gold;
-    -fx-background-color: rgba(255,215,0,0.1);
-}
-
-/* 红｜删除 / 重置 */
-.btn-ran-red, #deleteBtn, #resetBtn {
-    -fx-border-color: -fx-ran-red;
-    -fx-text-fill:   -fx-ran-red;
-    -fx-background-color: rgba(255,0,0,0.1);
-}
-
-/* 灰｜静默操作 */
-.btn-muted, #addBtn, #randomBtn {
-    -fx-border-color: #AAAAAA;
-    -fx-text-fill:   #EEEEEE;
-}
-
-/* 紫｜语言 */
-#langBtn {
-    -fx-border-color: -fx-ran-purple;
-    -fx-text-fill:   -fx-ran-purple;
-    -fx-font-weight: bold;
-}
-
-/* =========================================================
- * [3] 输入组件
- * ======================================================= */
-.dark-textfield {
-    -fx-background-color: #1A1A1E;
-    -fx-text-fill: white;
-    -fx-border-color: #555558;
-    -fx-border-width: 1.2;
-    -fx-font-family: "Consolas";
-    -fx-prompt-text-fill: #888888;
-}
-
-.dark-textfield:focused {
-    -fx-border-color: -fx-ran-blue;
-    -fx-effect: dropshadow(gaussian, rgba(0,162,255,0.5), 10, 0, 0, 0);
-}
-
-/* =========================================================
- * [4] Slider / Label / Separator
- * ======================================================= */
-.slider .bar { -fx-background-color: -fx-ran-red; }
-
-.control-label {
-    -fx-text-fill: #D0D0D0;
-    -fx-font-weight: bold;
-}
-
-.dark-separator {
-    -fx-background-color: #555555;
-    -fx-opacity: 0.6;
-}
-
-/* =========================================================
- * [5] Hover / Pressed 统一交互
- * ======================================================= */
-.button:hover {
-    -fx-text-fill: white;
-    -fx-background-color: rgba(255,255,255,0.15);
-}
-
-.btn-ran-blue:hover  { -fx-effect: dropshadow(gaussian, -fx-ran-blue, 15, 0, 0, 0); }
-.btn-ran-gold:hover  { -fx-effect: dropshadow(gaussian, -fx-ran-gold, 15, 0, 0, 0); }
-.btn-ran-red:hover   { -fx-effect: dropshadow(gaussian, -fx-ran-red,  15, 0, 0, 0); }
-
-#langBtn:hover {
-    -fx-background-color: rgba(209,64,255,0.25);
-    -fx-text-fill: white;
-}
-/* --- 模块常驻阵营锚点（不可被 class 替代） --- */
-#sortBtn  { -fx-border-color: -fx-ran-blue;  -fx-text-fill: -fx-ran-blue;  }
-#mazeBtn  { -fx-border-color: -fx-ran-red;   -fx-text-fill: -fx-ran-red;   }
-#treeBtn  { -fx-border-color: -fx-ran-gold;  -fx-text-fill: -fx-ran-gold;  }
-#graphBtn { -fx-border-color: -fx-ran-gray;  -fx-text-fill: -fx-ran-gray;  }
-
-/* --- 霓虹功能按钮（功能 > 阵营，必须独立） --- */
-.btn-neon-cyan {
-    -fx-border-color: #00F2FF;
-    -fx-text-fill: #00F2FF;
-}
-
-.btn-run-neon {
-    -fx-border-color: #00FF44;
-    -fx-text-fill: #00FF44;
-}
-
-.btn-neon-pink {
-    -fx-border-color: #FF00E5;
-    -fx-text-fill: #FF00E5;
-}
-
-/* --- Slider：太郎红准星 --- */
-.slider .track {
-    -fx-background-color: #252528;
-    -fx-pref-height: 6;
-}
-.slider .thumb {
-    -fx-background-color: -fx-ran-red;
-    -fx-background-radius: 0;
-    -fx-pref-width: 14;
-    -fx-pref-height: 22;
-    -fx-border-color: white;
-    -fx-border-width: 1.5;
-}
-.slider .thumb:hover {
-    -fx-scale-x: 1.2;
-    -fx-scale-y: 1.2;
-    -fx-effect: dropshadow(gaussian, white, 8, 0, 0, 0);
-}
-
-/* --- 信息层文本（不可合并） --- */
+/* 对应 menuTitleLabel, statsTitleLabel, logTitleLabel */
 .section-title {
-    -fx-text-fill: -fx-pure-white;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Microsoft YaHei", "Consolas";
     -fx-font-weight: bold;
-    -fx-alignment: CENTER;
-}
-
-.status-text {
-    -fx-text-fill: #00FFCC;
-    -fx-font-family: "Consolas";
-    -fx-alignment: CENTER;
-}
-
-.log-area {
-    -fx-control-inner-background: #08080A;
-    -fx-text-fill: #00FF44;
-    -fx-font-family: "Consolas";
-}
-
-.size-value-highlight {
-    -fx-text-fill: -fx-ran-gold;
-    -fx-font-weight: bold;
-}
-
-/* --- [1] 按钮与文字：强制居中（双层） --- */
-.button,
-.menu-button {
+    -fx-font-size: 15px;
+    -fx-padding: 15 0 5 0;
+    -fx-maxWidth: Infinity; /* 撑满宽度以实现水平居中 */
     -fx-alignment: CENTER;
     -fx-text-alignment: CENTER;
 }
 
-/* 容器内按钮居中（VBox / HBox 常用） */
-.dark-panel .button,
+/* 对应 statsLabel (系统就绪等) */
+.status-text {
+    -fx-text-fill: #00FF66; /* 状态绿，极致对比 */
+    -fx-font-family: "Consolas", "Microsoft YaHei";
+    -fx-font-size: 13px;
+    -fx-padding: 5 0;
+    -fx-maxWidth: Infinity;
+    -fx-alignment: CENTER;
+    -fx-text-alignment: CENTER;
+}
+
+/* =========================================================
+ * [3] 按钮体系 - 彻底解决文字显示不全 (修复 image_d32329)
+ * ======================================================= */
+.button, .menu-button {
+    -fx-background-color: #000000;
+    -fx-background-radius: 0;
+    -fx-border-width: 2; 
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Consolas", "Microsoft YaHei";
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    
+    /* 核心修复：放宽 min-width 适配中文加粗，padding 提供呼吸感 */
+    -fx-min-width: 100px; 
+    -fx-padding: 6 20; 
+    -fx-alignment: CENTER;
+    -fx-text-overrun: CLIP;
+    -fx-ellipsis-string: "";
+}
+
+.button:hover, .menu-button:hover { 
+    -fx-background-color: rgba(255,255,255,0.15); 
+    -fx-scale-x: 1.03;
+}
+
+/* 侧边栏大按钮专用宽度 */
 .dark-panel .menu-button {
-    -fx-max-width: Infinity;
+    -fx-min-width: 240px;
+    -fx-max-width: 250px;
 }
 
-/* --- [2] 呼吸灯动画定义 --- */
-@keyframes breathe-blue {
-    0%   { -fx-effect: dropshadow(gaussian, rgba(0,162,255,0.15), 6, 0, 0, 0); }
-    50%  { -fx-effect: dropshadow(gaussian, rgba(0,162,255,0.45), 12, 0, 0, 0); }
-    100% { -fx-effect: dropshadow(gaussian, rgba(0,162,255,0.15), 6, 0, 0, 0); }
+/* --- 专项颜色分类 --- */
+#startBtn, #runBtn, #buildBtn, #insertBtn, #sortBtn, .btn-ran-blue { -fx-border-color: -fx-ran-blue; -fx-text-fill: -fx-ran-blue; }
+#pauseBtn, #randomBtn, #solveBtn, #linkBtn, #treeBtn, .btn-ran-gold { -fx-border-color: -fx-ran-gold; -fx-text-fill: -fx-ran-gold; }
+#resetBtn, #deleteBtn, #mazeBtn, .btn-ran-red { -fx-border-color: -fx-ran-red; -fx-text-fill: -fx-ran-red; }
+#addBtn, #graphBtn, .btn-ran-purple { -fx-border-color: -fx-ran-purple; -fx-text-fill: -fx-ran-purple; }
+
+/* 语言切换：冷冽青 */
+#langBtn { 
+    -fx-border-color: -fx-ran-cyan; 
+    -fx-text-fill: -fx-ran-cyan; 
+    -fx-background-color: rgba(0, 255, 204, 0.05);
 }
 
-@keyframes breathe-red {
-    0%   { -fx-effect: dropshadow(gaussian, rgba(255,0,0,0.15), 6, 0, 0, 0); }
-    50%  { -fx-effect: dropshadow(gaussian, rgba(255,0,0,0.45), 12, 0, 0, 0); }
-    100% { -fx-effect: dropshadow(gaussian, rgba(255,0,0,0.15), 6, 0, 0, 0); }
+/* =========================================================
+ * [4] 输入组件与标签 - 解决文本太暗问题
+ * ======================================================= */
+.dark-textfield {
+    -fx-background-color: #000000;
+    -fx-border-color: #FFFFFF; 
+    -fx-border-width: 2;
+    -fx-text-fill: #FFFFFF;    
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-alignment: CENTER;
+    -fx-min-width: 75px;
+    -fx-prompt-text-fill: #BBBBBB; /* 增强提示文字亮度 */
 }
 
-@keyframes breathe-gold {
-    0%   { -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.18), 6, 0, 0, 0); }
-    50%  { -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.5),  14, 0, 0, 0); }
-    100% { -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.18), 6, 0, 0, 0); }
+.dark-textfield:focused { -fx-border-color: -fx-ran-cyan; }
+
+/* 普通提示标签 */
+.control-label {
+    -fx-text-fill: #FFFFFF; 
+    -fx-font-size: 13px;
+    -fx-font-family: "Consolas", "Microsoft YaHei";
+    -fx-font-weight: bold;
 }
 
-/* --- [3] 呼吸灯注入（非 hover / 非 pressed） --- */
-.btn-ran-blue:not(:hover):not(:pressed) {
-    -fx-animation: breathe-blue 2.4s infinite ease-in-out;
+/* =========================================================
+ * [5] 滑动条与日志
+ * ======================================================= */
+.slider .thumb {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 0;
+    -fx-border-color: -fx-ran-red;
+    -fx-border-width: 2;
 }
 
-.btn-ran-red:not(:hover):not(:pressed) {
-    -fx-animation: breathe-red 2.4s infinite ease-in-out;
-}
-
-.btn-ran-gold:not(:hover):not(:pressed) {
-    -fx-animation: breathe-gold 2.6s infinite ease-in-out;
-}
-
-#runBtn:not(:hover),
-#startBtn:not(:hover) {
-    -fx-animation: breathe-blue 2.4s infinite ease-in-out;
-}
-
-#deleteBtn:not(:hover),
-#resetBtn:not(:hover) {
-    -fx-animation: breathe-red 2.4s infinite ease-in-out;
-}
-
-#insertBtn:not(:hover),
-#linkBtn:not(:hover) {
-    -fx-animation: breathe-gold 2.6s infinite ease-in-out;
-}
-
-
-/* --- 蓝阵营：选中 --- */
-.btn-ran-blue:focused,
-#runBtn:focused,
-#startBtn:focused {
-    -fx-background-color: -fx-ran-blue;
-    -fx-text-fill: white;              /* 不覆盖文字，反差增强 */
-    -fx-effect: dropshadow(gaussian, rgba(0,162,255,0.6), 18, 0, 0, 0);
-}
-
-/* --- 金阵营：选中 --- */
-.btn-ran-gold:focused,
-#insertBtn:focused,
-#linkBtn:focused {
-    -fx-background-color: -fx-ran-gold;
-    -fx-text-fill: #000000;             /* 金底必须黑字，电影级对比 */
-    -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.7), 20, 0, 0, 0);
-}
-
-/* --- 红阵营：选中 --- */
-.btn-ran-red:focused,
-#deleteBtn:focused,
-#resetBtn:focused {
-    -fx-background-color: -fx-ran-red;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(255,0,0,0.6), 18, 0, 0, 0);
-}
-
-/* --- 紫阵营：语言按钮选中 --- */
-#langBtn:focused {
-    -fx-background-color: -fx-ran-purple;
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(209,64,255,0.7), 20, 0, 0, 0);
-}
-
-/* --- 选中态优先级规则 --- */
-/* hover 仍然可以爆发，但 focus 是“底态填充” */
-.button:focused:hover {
-    -fx-background-color: inherit;
+.log-area {
+    -fx-control-inner-background: #000000;
+    -fx-text-fill: #00FF00;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 12px;
+    -fx-border-color: #333333;
 }

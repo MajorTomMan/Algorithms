@@ -8,14 +8,17 @@ import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.utils.EffectUtils;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.ResourceBundle;
 
 public class GraphController<V> extends BaseController<BaseGraph<V>> {
 
@@ -31,8 +34,6 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
     @FXML
     private TextField weightField; // 权重
 
-    @FXML
-    private Label startNodeLabel;
     @FXML
     private Button runBtn, addBtn, deleteBtn, linkBtn;
 
@@ -54,6 +55,16 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
         } catch (IOException e) {
             System.err.println("[Error] GraphControls load failed: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        // TODO Auto-generated method stub
+        super.initialize(location, resources);
+        EffectUtils.applyDynamicEffect(runBtn);
+        EffectUtils.applyDynamicEffect(addBtn);
+        EffectUtils.applyDynamicEffect(deleteBtn);
+        EffectUtils.applyDynamicEffect(linkBtn);
     }
 
     @Override
@@ -193,8 +204,6 @@ public class GraphController<V> extends BaseController<BaseGraph<V>> {
     @Override
     protected void setupI18n() {
         // 1. 节点控制部分
-        if (startNodeLabel != null)
-            startNodeLabel.textProperty().bind(I18N.createStringBinding("ctrl.graph.start_id"));
         if (nodeInputField != null)
             nodeInputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.graph.prompt"));
 

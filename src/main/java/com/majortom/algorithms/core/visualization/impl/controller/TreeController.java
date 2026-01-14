@@ -7,6 +7,7 @@ import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.utils.EffectUtils;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -69,6 +70,9 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         if (visualizer != null && treeData != null) {
             visualizer.render(treeData);
         }
+        EffectUtils.applyDynamicEffect(deleteBtn);
+        EffectUtils.applyDynamicEffect(insertBtn);
+        EffectUtils.applyDynamicEffect(randomBtn);
     }
 
     @Override

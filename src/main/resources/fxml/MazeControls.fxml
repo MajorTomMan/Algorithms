@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  alignment="CENTER_LEFT" spacing="15">
+  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;">
 
   <VBox spacing="4" alignment="CENTER_LEFT">
     <Label fx:id="densityLabel" styleClass="control-label" />
@@ -13,22 +13,18 @@
     </HBox>
   </VBox>
 
-  <Separator orientation="VERTICAL" prefHeight="20" style="-fx-opacity: 0.1;" />
-
-  <VBox spacing="4" alignment="CENTER_LEFT">
+  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
     <Label fx:id="genTitleLabel" styleClass="control-label" />
     <HBox spacing="8" alignment="CENTER_LEFT">
-      <ComboBox fx:id="algoSelector" minWidth="155" prefWidth="155" styleClass="dark-combo-box" />
+      <ComboBox fx:id="algoSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
       <Button fx:id="buildBtn" onAction="#handleGenerate" styleClass="btn-neon-cyan" />
     </HBox>
   </VBox>
 
-  <Separator orientation="VERTICAL" prefHeight="20" style="-fx-opacity: 0.1;" />
-
-  <VBox spacing="4" alignment="CENTER_LEFT">
+  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
     <Label fx:id="solveTitleLabel" styleClass="control-label" />
     <HBox spacing="8" alignment="CENTER_LEFT">
-      <ComboBox fx:id="solverSelector" minWidth="125" prefWidth="125" styleClass="dark-combo-box" />
+      <ComboBox fx:id="solverSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
       <Button fx:id="solveBtn" onAction="#handleSolve" styleClass="btn-neon-pink" />
     </HBox>
   </VBox>

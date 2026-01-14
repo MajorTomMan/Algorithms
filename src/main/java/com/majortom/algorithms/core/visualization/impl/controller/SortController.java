@@ -8,6 +8,8 @@ import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
+import com.majortom.algorithms.utils.EffectUtils;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -36,8 +38,6 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
     private Slider sizeSlider;
 
     public SortController(BaseSortAlgorithms<T> algorithm, BaseVisualizer<BaseSort<T>> visualizer) {
-        // 🚩 修正：现在基类构造函数只接收 visualizer。
-        // Algorithm 会在 startAlgorithm 时被注入。
         super(visualizer);
         this.algorithm = algorithm;
         loadFXMLControls();
@@ -70,6 +70,8 @@ public class SortController<T extends Comparable<T>> extends BaseController<Base
         }
         // 初始化时生成第一组随机数据
         handleGenerate();
+        EffectUtils.applyDynamicEffect(genBtn);
+        EffectUtils.applyDynamicEffect(sortBtn);
     }
 
     @Override

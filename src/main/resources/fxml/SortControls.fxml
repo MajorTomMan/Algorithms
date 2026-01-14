@@ -14,7 +14,7 @@
     <Separator orientation="VERTICAL" prefHeight="25" styleClass="subtle-divider" />
 
     <Button fx:id="genBtn" text="%btn.sort.gen" onAction="#handleGenerate"
-        styleClass="btn-neon-cyan" />
+        styleClass="btn-ran-gold" />
 
     <Button fx:id="sortBtn" text="%btn.sort.run" onAction="#handleSort"
         styleClass="btn-run-neon" />
