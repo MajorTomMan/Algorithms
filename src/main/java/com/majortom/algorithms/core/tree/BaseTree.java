@@ -28,13 +28,10 @@ public class BaseTree<T> extends BaseStructure<TreeNode<T>> {
         return root;
     }
 
-    /**
-     * 实现 BaseStructure 契约：重置统计与高亮状态
-     */
     @Override
-    public void reset() {
-        this.actionCount = 0;
-        this.compareCount = 0;
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
         this.currentHighlight = null;
     }
 
@@ -76,14 +73,14 @@ public class BaseTree<T> extends BaseStructure<TreeNode<T>> {
         return root == null ? 0 : root.height;
     }
 
-
     public boolean isEmpty() {
         return root == null;
     }
 
+    @Override
     public void clear() {
         root = null;
         currentHighlight = null;
-        reset();
+        resetStatistics();
     }
 }

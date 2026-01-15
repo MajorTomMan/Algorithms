@@ -27,13 +27,10 @@ public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
         return data;
     }
 
-    /**
-     * 实现 BaseStructure 方法：重置统计数据与 UI 状态
-     */
     @Override
-    public void reset() {
-        this.actionCount = 0;
-        this.compareCount = 0;
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
         this.activeIndex = -1;
         this.compareIndex = -1;
     }
@@ -68,6 +65,12 @@ public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
 
     public int getCompareIndex() {
         return compareIndex;
+    }
+
+    @Override
+    public void clear() {
+        // TODO Auto-generated method stub
+        
     }
 
 }

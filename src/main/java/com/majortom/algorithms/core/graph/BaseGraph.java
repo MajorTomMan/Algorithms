@@ -82,10 +82,11 @@ public abstract class BaseGraph<V> extends BaseStructure<V> {
     }
 
     @Override
-    public void reset() {
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
+
         resetGraphState();
-        this.compareCount = 0;
-        this.actionCount = 0;
     }
     // --- 状态重置 ---
 
@@ -99,5 +100,16 @@ public abstract class BaseGraph<V> extends BaseStructure<V> {
 
     public Graph getGraph() {
         return graph;
+    }
+
+    @Override
+    public void clear() {
+        // 调用 GraphStream 的底层清空方法，移除所有点、边及其属性
+        if (this.graph != null) {
+            this.graph.clear();
+            // 重新设置必要的全局渲染属性
+            this.graph.setAttribute("ui.quality");
+            this.graph.setAttribute("ui.antialias");
+        }
     }
 }

@@ -126,4 +126,10 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         setCellState(s[0], s[1], MazeConstant.START, false);
         setCellState(e[0], e[1], MazeConstant.END, false);
     }
+
+    @Override
+    public void clear() {
+        // TODO Auto-generated method stub
+        initial();
+    }
 }

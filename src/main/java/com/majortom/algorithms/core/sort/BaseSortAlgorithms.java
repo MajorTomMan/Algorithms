@@ -13,7 +13,7 @@ public abstract class BaseSortAlgorithms<T extends Comparable<T>> extends BaseAl
     @Override
     public void run(BaseSort<T> sortEntity) {
         // 执行前重置实体的统计状态
-        sortEntity.reset();
+        sortEntity.resetStatistics();
         this.sort(sortEntity);
     }
 

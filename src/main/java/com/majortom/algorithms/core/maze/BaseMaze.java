@@ -61,10 +61,10 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
     }
 
     @Override
-    public void reset() {
-        this.actionCount = 0;
-        this.compareCount = 0;
-        initialSilent(); // 静默重置数据
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
+        initialSilent();
     }
 
     // --- 抽象方法保持不变 ---
