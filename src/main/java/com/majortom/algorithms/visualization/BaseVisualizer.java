@@ -61,7 +61,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
-        AlgorithmThreadManager.run(this::drawCurrent);
+        Platform.runLater(this::drawCurrent);
     }
 
     /**

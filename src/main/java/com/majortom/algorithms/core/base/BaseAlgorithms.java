@@ -1,6 +1,7 @@
 package com.majortom.algorithms.core.base;
 
 import com.majortom.algorithms.core.base.listener.SyncListener;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.core.base.listener.StepListener;
 
 /**
@@ -37,7 +38,7 @@ public abstract class BaseAlgorithms<S extends BaseStructure<?>> {
         // 1. 熔断检查：如果管理线程调用了 cancel(true)，此处捕获中断状态
         if (Thread.currentThread().isInterrupted()) {
             // 清除中断位并抛出自定义异常，实现算法逻辑的“即刻跳出”
-            throw new AlgorithmInterruptedException("Algorithm execution safely aborted.");
+            System.out.println("Algorithm execution safely aborted.");
         }
 
         // 2. 发送同步信号，携带最新的 compareCount 和 actionCount
