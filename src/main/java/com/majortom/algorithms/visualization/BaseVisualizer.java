@@ -1,6 +1,8 @@
 package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.core.base.BaseStructure;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+
 import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -59,9 +61,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
-
-        // 切换至 JavaFX UI 线程执行重绘
-        Platform.runLater(this::drawCurrent);
+        AlgorithmThreadManager.run(this::drawCurrent);
     }
 
     /**

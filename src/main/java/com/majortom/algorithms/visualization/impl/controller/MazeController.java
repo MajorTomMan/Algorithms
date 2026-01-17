@@ -75,6 +75,7 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
         }
 
         EffectUtils.applyDynamicEffect(buildBtn, solveBtn);
+        visualizer.render(mazeEntity);
     }
 
     /**

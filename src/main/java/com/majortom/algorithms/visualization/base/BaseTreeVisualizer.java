@@ -57,10 +57,10 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
      * 核心渲染流程：清屏 -> 应用变换 -> 递归绘制
      */
     private void renderFrame() {
+        // 1. 无论有没有数据，每一帧都先清屏
+        clear();
         if (treeInstance == null || treeInstance.getRoot() == null)
             return;
-
-        clear(); // 使用基类 RAN_BLACK
         gc.save();
         gc.translate(autoOffsetX, autoOffsetY);
         gc.scale(autoScale, autoScale);

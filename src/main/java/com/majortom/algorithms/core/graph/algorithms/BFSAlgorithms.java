@@ -16,7 +16,7 @@ public class BFSAlgorithms<V> extends BaseGraphAlgorithms<V> {
 
     @Override
     public void run(BaseGraph<V> graph, String startNodeId) {
-        graph.resetGraphState();
+        graph.resetStatistics();
         Graph g = graph.getGraph();
         Node startNode = g.getNode(startNodeId);
 
