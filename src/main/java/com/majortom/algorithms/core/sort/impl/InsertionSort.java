@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.sort.alg;
+package com.majortom.algorithms.core.sort.impl;
 
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;

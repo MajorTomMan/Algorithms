@@ -3,7 +3,7 @@ package com.majortom.algorithms.core.visualization.impl.controller;
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
-import com.majortom.algorithms.core.sort.impl.ArraySortEntity;
+import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
@@ -11,22 +11,23 @@ import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.utils.EffectUtils;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 
+import java.io.IOException;
 import java.net.URL;
-import java.util.ResourceBundle;
+import java.util.*;
 
 /**
- * 排序算法模块控制器
- * 职责：连接排序逻辑与可视化渲染，管理随机数据的生成与统计反馈。
+ * 排序算法控制器
+ * 职责：连接排序逻辑与柱状图渲染。
  */
-public class SortController<T extends Comparable<T>> extends BaseModuleController<BaseSort<T>> {
+public class SortController<T extends Comparable<T>> extends BaseController<BaseSort<T>> {
 
     private final BaseSortAlgorithms<T> algorithm;
     private BaseSort<T> sortData;
-
+    private Node customControlPane;
     @FXML
     private Label sizeLabel;
     @FXML
@@ -37,33 +38,47 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
     private Slider sizeSlider;
 
     public SortController(BaseSortAlgorithms<T> algorithm, BaseVisualizer<BaseSort<T>> visualizer) {
-        // 自动完成 FXML 挂载
-        super(visualizer, "/fxml/SortControls.fxml");
+        super(visualizer);
         this.algorithm = algorithm;
+        loadFXMLControls();
+    }
+
+    private void loadFXMLControls() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SortControls.fxml"));
+            loader.setResources(I18N.getBundle());
+            loader.setController(this);
+            this.customControlPane = loader.load();
+            setupI18n();
+
+        } catch (IOException e) {
+            System.err.println("[Critical] Failed to load SortControls.fxml: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
-
-        // 监听滑块：仅在算法空闲时自动调整数组规模
         if (sizeSlider != null) {
             sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                // 只有当算法没在运行时才自动生成，避免冲突
                 if (!AlgorithmThreadManager.isRunning()) {
                     handleGenerate();
                 }
             });
         }
-
-        EffectUtils.applyDynamicEffect(genBtn, sortBtn);
-
-        // 首次载入时初始化数据
+        // 初始化时生成第一组随机数据
         handleGenerate();
+        EffectUtils.applyDynamicEffect(genBtn);
+        EffectUtils.applyDynamicEffect(sortBtn);
     }
 
-    /**
-     * UI 事件：生成新的随机数据
-     */
+    @Override
+    public List<Node> getCustomControls() {
+        return Collections.singletonList(customControlPane);
+    }
+
     @FXML
     @SuppressWarnings("unchecked")
     private void handleGenerate() {
@@ -71,74 +86,63 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
 
         int size = (sizeSlider != null) ? (int) sizeSlider.getValue() : 50;
 
-        // 生成随机数组并注入实体
+        // 🚩 这里通过 Utils 生成 Integer 数组并强转，适配 BaseSort 的泛型 T
         Integer[] array = AlgorithmsUtils.randomArray(size, 100);
-        this.sortData = new ArraySortEntity<>((T[]) array);
+        this.sortData = new BaseSort<>((T[]) array);
 
-        // 静态渲染初始状态
+        // 静态渲染首帧
         if (visualizer != null) {
             visualizer.render(sortData, null, null);
         }
 
-        logI18n("System: Data initialized with size %d", size);
-    }
-
-    /**
-     * 实现基类钩子：响应全局 Start 按钮
-     */
-    @Override
-    public void handleAlgorithmStart() {
-        if (sortData != null && algorithm != null) {
-            startAlgorithm(algorithm, sortData);
+        if (logArea != null) {
+            logArea.appendText(String.format("System: Created %d elements.\n", size));
         }
     }
 
-    /**
-     * 算法核心执行路径
-     */
+    @FXML
+    private void handleSort() {
+        handleAlgorithmStart();
+    }
+
+    @Override
+    public void handleAlgorithmStart() {
+        if (sortData == null)
+            return;
+        // 🚩 直接将当前生成的 sortData 扔进引擎
+        startAlgorithm(algorithm, sortData);
+    }
+
     @Override
     protected void executeAlgorithm(BaseAlgorithms<BaseSort<T>> alg, BaseSort<T> entity) {
+        // 🚩 类型窄化：由于 S 已经被约束为 BaseSort<T>，这里可以直接强转调用
         if (alg instanceof BaseSortAlgorithms) {
             ((BaseSortAlgorithms<T>) alg).sort(entity);
         }
     }
 
-    /**
-     * 格式化统计信息：显示规模、交换/移动次数及比较次数
-     */
     @Override
-    protected String formatStatsMessage() {
-        if (sortData == null)
-            return "Size: 0";
-
-        String sK = I18N.getBundle().getString("stats.action"); // 交换/赋值次数
-        String cK = I18N.getBundle().getString("stats.compare"); // 比较次数
-
-        return String.format("Size: %d | %s: %d | %s: %d",
-                sortData.size(), sK, stats.actionCount, cK, stats.compareCount);
+    protected void updateUIComponents(int compareCount, int actionCount) {
+        // 🚩 解决 Bound Value 报错的终点：
+        // 只要 statsLabel 没在 FXML 里 bind 过 text 属性，setText 就是安全的。
+        if (statsLabel != null && sortData != null) {
+            statsLabel.setText(String.format("Size: %d\nCompares: %d\nSwaps: %d",
+                    sortData.size(), compareCount, actionCount));
+        }
     }
 
     @Override
     protected void onAlgorithmFinished() {
         super.onAlgorithmFinished();
         if (sortData != null) {
-            // 清理渲染残留的高亮状态（如比较色、交换色）
-            sortData.resetAll();
+            sortData.reset(); // 清除最后的红色/紫色高亮
             visualizer.render(sortData, null, null);
         }
-        logI18n("side.finished");
-    }
-
-    /**
-     * 实现基类的重置钩子：对应全局 Reset 按钮
-     */
-    @Override
-    protected void onResetData() {
-        handleGenerate();
     }
 
     @Override
     protected void setupI18n() {
+        // TODO Auto-generated method stub
         if (sizeLabel != null) {
             sizeLabel.textProperty().bind(I18N.createStringBinding("ctrl.sort.size"));
         }
@@ -148,10 +152,5 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
         if (sortBtn != null) {
             sortBtn.textProperty().bind(I18N.createStringBinding("btn.sort.run"));
         }
-    }
-
-    @FXML
-    public void handleSort() {
-        handleAlgorithmStart();
     }
 }

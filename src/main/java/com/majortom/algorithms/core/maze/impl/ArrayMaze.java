@@ -126,26 +126,4 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         setCellState(s[0], s[1], MazeConstant.START, false);
         setCellState(e[0], e[1], MazeConstant.END, false);
     }
-
-    @Override
-    public void clear() {
-        // TODO Auto-generated method stub
-        initial();
-    }
-
-    @Override
-    public BaseMaze<int[][]> copy() {
-        // 1. 创建相同规模的新实例
-        ArrayMaze copyMaze = new ArrayMaze(this.rows, this.cols);
-
-        // 2. 深度拷贝二维数组（克隆内存矩阵）
-        for (int i = 0; i < rows; i++) {
-            System.arraycopy(this.data[i], 0, copyMaze.data[i], 0, cols);
-        }
-
-        // 3. 同步业务状态位与统计量
-        this.copyStateTo(copyMaze);
-
-        return copyMaze;
-    }
 }

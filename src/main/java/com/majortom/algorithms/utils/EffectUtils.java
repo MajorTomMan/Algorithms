@@ -7,107 +7,75 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.util.Duration;
 
-/**
- * 视觉特效工具类
- * 职责：动态适配按钮视觉反馈，提供呼吸灯效果。
- */
 public class EffectUtils {
 
-    /**
-     * 批量应用动态效果
-     */
-    public static void applyDynamicEffect(Button... buttons) {
-        for (Button button : buttons) {
-            if (button != null) {
-                applyToSingle(button);
-            }
-        }
-    }
-
-    private static void applyToSingle(Button button) {
-        // 1. 配置呼吸动画
+    public static void applyDynamicEffect(Button button) {
+        // 1. 创建呼吸动画
         FadeTransition breathe = new FadeTransition(Duration.seconds(0.8), button);
-        breathe.setFromValue(1.0);
-        breathe.setToValue(0.5); // 稍微变淡，不影响文字读取
+        breathe.setFromValue(0.4);
+        breathe.setToValue(1.0);
         breathe.setCycleCount(Animation.INDEFINITE);
         breathe.setAutoReverse(true);
 
-        // 2. 划过状态监听
-        button.hoverProperty().addListener((obs, wasHover, isHover) -> {
+        // 2. 监听划过状态 (Hover)
+        button.hoverProperty().addListener((obs, old, isHover) -> {
             if (isHover) {
-                activateEffect(button, breathe);
-            } else {
-                deactivateEffect(button, breathe);
+                String hexColor = getHexFromButton(button);
+                // 设置背景色并开始呼吸
+                button.setStyle("-fx-background-color: " + hexColor + "; -fx-text-fill: white;");
+                breathe.play();
+            } else if (!button.isPressed()) {
+                resetButton(button, breathe);
             }
         });
 
-        // 3. 点击状态监听
-        button.pressedProperty().addListener((obs, wasPressed, isPressed) -> {
+        // 3. 监听点击状态 (Pressed)
+        button.pressedProperty().addListener((obs, old, isPressed) -> {
             if (isPressed) {
-                breathe.setRate(2.0); // 点击时加快呼吸节奏
+                String hexColor = getHexFromButton(button);
+                button.setStyle("-fx-background-color: " + hexColor + "; -fx-text-fill: white;");
+                breathe.play();
             } else {
-                breathe.setRate(1.0);
-                if (!button.isHover()) {
-                    deactivateEffect(button, breathe);
-                }
+                // 松开瞬间效果消失
+                resetButton(button, breathe);
             }
         });
 
-        // 4. 失去焦点时强制重置
+        // 4. 监听焦点 (Focused) - 确保点击完成后没有任何残留效果
         button.focusedProperty().addListener((obs, old, isFocused) -> {
-            if (!isFocused && !button.isHover()) {
-                deactivateEffect(button, breathe);
-            }
+            resetButton(button, breathe);
         });
-    }
-
-    private static void activateEffect(Button btn, FadeTransition anim) {
-        // 动态获取当前按钮的视觉颜色作为高亮基准
-        String highlightColor = getDynamicColor(btn);
-
-        // 使用内联样式动态设置高亮，同时保持文字清晰
-        btn.setStyle(String.format("-fx-background-color: %s; -fx-cursor: hand;", highlightColor));
-        anim.play();
-    }
-
-    private static void deactivateEffect(Button btn, FadeTransition anim) {
-        anim.stop();
-        btn.setOpacity(1.0);
-        btn.setStyle(""); // 回归 CSS 定义的原始样式
     }
 
     /**
-     * 动态取色逻辑：优先取边框色，其次取背景色，最后保底
+     * 安全地从按钮中提取颜色
      */
-    private static String getDynamicColor(Button button) {
-        // 尝试获取背景颜色
-        Paint fill = button.getBackground() != null && !button.getBackground().getFills().isEmpty()
-                ? button.getBackground().getFills().get(0).getFill()
-                : null;
-
-        // 尝试获取边框颜色
-        Paint stroke = button.getBorder() != null && !button.getBorder().getStrokes().isEmpty()
-                ? button.getBorder().getStrokes().get(0).getTopStroke()
-                : null;
-
-        Paint target = (stroke instanceof Color) ? stroke : fill;
-
-        if (target instanceof Color) {
-            return toRGBCode((Color) target);
+    private static String getHexFromButton(Button button) {
+        try {
+            // 尝试从 Border 读取颜色
+            if (button.getBorder() != null && !button.getBorder().getStrokes().isEmpty()) {
+                Paint borderPaint = button.getBorder().getStrokes().get(0).getTopStroke();
+                if (borderPaint instanceof Color) {
+                    return toRGBCode((Color) borderPaint);
+                }
+            }
+        } catch (Exception e) {
+            // 如果读取失败（例如 CSS 还没加载完），根据 ClassName 走硬编码保底
+            String classes = button.getStyleClass().toString();
+            if (classes.contains("btn-ran-blue"))
+                return "#00A2FF";
+            if (classes.contains("btn-ran-red"))
+                return "#FF0000";
+            if (classes.contains("btn-ran-gold"))
+                return "#FFD700";
         }
-
-        // 如果动态获取失败（如初始化未完成），尝试从 StyleClass 解析常用色值
-        return resolveFromClass(button.getStyleClass().toString());
+        return "#555555"; // 最终保底灰色
     }
 
-    private static String resolveFromClass(String styleClass) {
-        if (styleClass.contains("primary") || styleClass.contains("blue"))
-            return "#00A2FF";
-        if (styleClass.contains("gold") || styleClass.contains("warning"))
-            return "#FFD700";
-        if (styleClass.contains("red") || styleClass.contains("danger"))
-            return "#FF4B4B";
-        return "#666666"; // 中立灰
+    private static void resetButton(Button btn, FadeTransition anim) {
+        anim.stop();
+        btn.setOpacity(1.0);
+        btn.setStyle(""); // 清空内联样式，回归 CSS 定义
     }
 
     private static String toRGBCode(Color color) {

@@ -61,10 +61,10 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
     }
 
     @Override
-    public void resetStatistics() {
-        // TODO Auto-generated method stub
-        super.resetStatistics();
-        initialSilent();
+    public void reset() {
+        this.actionCount = 0;
+        this.compareCount = 0;
+        initialSilent(); // 静默重置数据
     }
 
     // --- 抽象方法保持不变 ---
@@ -94,23 +94,6 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
     public void setGenerated(boolean isGenerated) {
         this.isGenerated = isGenerated;
     }
-
-    public boolean isGenerated() {
-        return isGenerated;
-    }
-
-    /**
-     * 内部拷贝逻辑辅助方法
-     * 职责：将统计数据和状态位同步到副本
-     */
-    protected void copyStateTo(BaseMaze<T> target) {
-        target.isGenerated = this.isGenerated;
-        target.actionCount = this.actionCount;
-        target.compareCount = this.compareCount;
-    }
-
-    @Override
-    public abstract BaseMaze<T> copy();
 
     public abstract void clearVisualStates();
 

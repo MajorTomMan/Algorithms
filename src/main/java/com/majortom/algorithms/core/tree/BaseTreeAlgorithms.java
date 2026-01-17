@@ -9,14 +9,15 @@ import com.majortom.algorithms.core.tree.node.TreeNode;
  * 
  * @param <T> 树节点存储的数据类型
  */
-public abstract class BaseTreeAlgorithms<T extends Comparable<T>> extends BaseAlgorithms<BaseTree<T>> {
+public abstract class BaseTreeAlgorithms<T> extends BaseAlgorithms<BaseTree<T>> {
 
     /**
-     * 同步树的状态到 UI
+     * 🚩 同步树的状态到 UI
      * 职责：将算法当前的焦点节点更新到实体，并触发 UI 渲染信号。
      */
     protected void syncTree(BaseTree<T> tree, TreeNode<T> activeNode, TreeNode<T> secondaryNode) {
         // 1. 利用实体的 focusNode 自动处理高亮更新和 compareCount 计数
+        // 这体现了“统计自治”：算法只管指向谁，实体管好计数和状态
         if (activeNode != null) {
             tree.focusNode(activeNode);
         }
@@ -59,6 +60,6 @@ public abstract class BaseTreeAlgorithms<T extends Comparable<T>> extends BaseAl
     @Override
     public void run(BaseTree<T> structure) {
         // TODO Auto-generated method stub
-
+        
     }
 }

@@ -39,7 +39,6 @@ public abstract class BaseMazeAlgorithms<T> extends BaseAlgorithms<BaseMaze<T>> 
         }
     }
 
-
     @Override
     public abstract void run(BaseMaze<T> data);
 }

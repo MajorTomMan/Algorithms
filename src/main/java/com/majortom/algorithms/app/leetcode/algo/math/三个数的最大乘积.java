@@ -1,8 +1,12 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class 三个数的最大乘积 {
