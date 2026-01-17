@@ -4,28 +4,23 @@ import com.majortom.algorithms.core.base.BaseStructure;
 import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.effect.Glow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 
 /**
  * 视觉呈现组件基类
+ * 承载《乱》高饱和色彩体系与核心渲染调度
  */
 public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPane {
 
-    // --- 《乱》核心审美色彩体系 ---
-    // 基础色
-    public static final Color RAN_BLACK = Color.rgb(5, 5, 8); // 极夜黑/底色
-    public static final Color RAN_WHITE = Color.rgb(240, 240, 230); // 骨白/文字/起点
-
-    // 角色色（太郎、次郎、三郎）
-    public static final Color RAN_RED = Color.rgb(180, 0, 0); // 太郎红：墙体/冲突
-    public static final Color RAN_BLUE = Color.rgb(0, 120, 255); // 次郎蓝：路径/核心焦点
-    public static final Color RAN_YELLOW = Color.rgb(240, 190, 0); // 三郎黄：邻居/已探索
-
-    // 辅助色
-    public static final Color RAN_PINK = Color.rgb(255, 50, 120); // 枫叶粉：特殊标记
-    public static final Color RAN_VIOLET = Color.rgb(130, 70, 200); // 忧郁紫：回溯/深度
-    public static final Color RAN_GOLD = Color.rgb(220, 180, 0); // 暮金：终点/高亮
+    // --- 《乱》极致饱和色彩体系 ---
+    public static final Color RAN_BLACK = Color.rgb(5, 5, 8); // 极夜黑
+    public static final Color RAN_WHITE = Color.rgb(255, 255, 245); // 骨白
+    public static final Color RAN_RED = Color.rgb(220, 0, 0); // 太郎红
+    public static final Color RAN_BLUE = Color.rgb(0, 100, 255); // 次郎蓝
+    public static final Color RAN_YELLOW = Color.rgb(255, 215, 0); // 三郎黄
+    public static final Color RAN_VIOLET = Color.rgb(150, 0, 255); // 深紫
 
     protected final Canvas canvas;
     protected final GraphicsContext gc;
@@ -34,10 +29,8 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     private Object lastA;
     private Object lastB;
 
-    /** 兼容性配置 - 将原有变量指向新的体系 */
-    protected Color highlightColor = RAN_BLUE;
-    protected Color baseColor = Color.web("#CFD8DC");
-    protected Color backgroundColor = RAN_BLACK;
+    // 默认高亮效果
+    protected final Glow highIntensityGlow = new Glow(0.8);
 
     public BaseVisualizer() {
         this.canvas = new Canvas();
@@ -47,57 +40,94 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
 
-        // 监听尺寸变化，确保缩放时画面不消失
         this.widthProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
         this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
     }
 
     /**
-     * 外部调用核心入口：由控制器在算法同步点调用
+     * 渲染调度：确保 UI 更新在正确线程
      */
     public final void render(S data, Object a, Object b) {
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
-
-        // 切换至 JavaFX UI 线程执行重绘
         Platform.runLater(this::drawCurrent);
     }
 
-    /**
-     * 快捷重载：仅更新数据结构
-     */
     public final void render(S data) {
         render(data, null, null);
     }
 
-    /**
-     * 调度重绘逻辑
-     */
     protected void drawCurrent() {
         if (lastData == null) {
             clear();
             return;
         }
-        // 执行具体的子类绘制逻辑
         draw(lastData, lastA, lastB);
     }
 
     /**
-     * 清空画布，使用《乱》的极夜黑
+     * 清空画布，重置为极夜黑
      */
     public void clear() {
+        gc.setEffect(null);
         gc.setFill(RAN_BLACK);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
     /**
-     * 子类必须实现：具体的算法渲染逻辑
+     * 辅助方法：获取针对高饱和色彩的家纹/线条颜色
+     * 逻辑：根据背景饱和度自动计算对比色
      */
+    protected Color getContrastStrokeColor(Color background) {
+        if (background.equals(RAN_WHITE))
+            return RAN_BLACK;
+        if (background.equals(RAN_VIOLET))
+            return RAN_WHITE.deriveColor(0, 0.5, 1, 0.8);
+        // 对于红、蓝、黄，返回极深色以模拟“刻痕”感
+        return Color.rgb(10, 0, 0, 0.85);
+    }
+
+    /**
+     * 辅助方法：应用《乱》的视觉特效
+     */
+    protected void applyFocusEffect() {
+        gc.save();
+        gc.setEffect(highIntensityGlow);
+    }
+
+    protected void releaseEffect() {
+        gc.restore();
+    }
+
     protected abstract void draw(S data, Object a, Object b);
 
-    // 获取当前缓存的数据，用于辅助逻辑
     public S getLastData() {
         return lastData;
+    }
+
+    /**
+     * 核心符号学逻辑：统一家纹绘制
+     */
+    protected void drawClanMon(double mx, double my, double size, Color clanColor, Color strokeColor) {
+        gc.setStroke(strokeColor);
+        gc.setLineWidth(Math.max(1.2, size * 0.15));
+
+        if (clanColor.equals(RAN_RED)) {
+            // 大郎：圆
+            gc.strokeOval(mx - size / 2, my - size / 2, size, size);
+        } else if (clanColor.equals(RAN_BLUE)) {
+            // 二郎：一文字横线 
+            gc.strokeLine(mx - size * 0.45, my, mx + size * 0.45, my);
+        } else if (clanColor.equals(RAN_YELLOW)) {
+            // 三郎：三角 
+            double h = size * 0.866;
+            gc.strokePolygon(
+                    new double[] { mx, mx - size / 2, mx + size / 2 },
+                    new double[] { my - h / 2, my + h / 2, my + h / 2 }, 3);
+        } else {
+            // 其他状态默认圆环
+            gc.strokeOval(mx - size / 2, my - size / 2, size, size);
+        }
     }
 }

@@ -65,7 +65,10 @@ public class GraphController<V> extends BaseModuleController<BaseGraph<V>> {
     public void handleAlgorithmStart() {
         BaseGraph<V> currentData = visualizer.getLastData();
         if (currentData != null && algorithm != null) {
-            startAlgorithm(algorithm, currentData);
+            if (!AlgorithmThreadManager.isRunning()) {
+                startAlgorithm(algorithm, currentData);
+            }
+
         }
     }
 
@@ -181,7 +184,7 @@ public class GraphController<V> extends BaseModuleController<BaseGraph<V>> {
     protected void onResetData() {
         BaseGraph<V> g = visualizer.getLastData();
         if (g != null) {
-            g.resetGraphState();
+            g.resetStatistics();
             g.getGraph().nodes().forEach(n -> {
                 n.removeAttribute("ui.class");
                 n.setAttribute("ui.label", n.getId());

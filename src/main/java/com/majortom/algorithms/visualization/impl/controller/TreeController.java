@@ -82,7 +82,10 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
     @Override
     public void handleAlgorithmStart() {
         if (treeData != null && treeAlgorithms != null) {
-            startAlgorithm(treeAlgorithms, treeData);
+            if (!AlgorithmThreadManager.isRunning()) {
+                startAlgorithm(treeAlgorithms, treeData);
+            }
+
         }
     }
 
@@ -97,7 +100,6 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
             return;
         }
 
-        @SuppressWarnings("unchecked")
         BaseTreeAlgorithms<T> targetAlg = (BaseTreeAlgorithms<T>) alg;
         // 支持中英文逗号解析
         String[] values = input.split("[,，]");
@@ -139,9 +141,11 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
      */
     @Override
     protected void onResetData() {
+        AlgorithmThreadManager.stopAll();
+
         if (treeData != null) {
-            treeData.clear();
-            visualizer.render(treeData);
+            treeData.resetStatistics();
+            visualizer.render(treeData, null, null);
             appendLog("Tree structure cleared.");
         }
     }

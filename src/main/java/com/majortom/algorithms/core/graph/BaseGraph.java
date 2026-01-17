@@ -90,7 +90,7 @@ public abstract class BaseGraph<V> extends BaseStructure<V> {
     }
     // --- 状态重置 ---
 
-    public void resetGraphState() {
+    protected void resetGraphState() {
         graph.nodes().forEach(n -> {
             n.removeAttribute("visited");
             n.removeAttribute("ui.class");

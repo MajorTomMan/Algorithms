@@ -110,16 +110,21 @@ public class ArrayMaze extends BaseMaze<int[][]> {
     @Override
     public void pickRandomPointsOnAvailablePaths() {
         List<int[]> roads = new ArrayList<>();
+
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                if (data[r][c] == MazeConstant.ROAD)
+                int currentState = data[r][c];
+                if (currentState != MazeConstant.WALL) {
+                    data[r][c] = MazeConstant.ROAD;
                     roads.add(new int[] { r, c });
+                }
             }
         }
+
         if (roads.size() < 2)
             return;
 
-        Collections.shuffle(roads); // 只有在后台线程这么干才不卡
+        Collections.shuffle(roads);
         int[] s = roads.get(0);
         int[] e = roads.get(1);
 

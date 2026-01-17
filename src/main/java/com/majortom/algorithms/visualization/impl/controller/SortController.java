@@ -89,7 +89,9 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
     @Override
     public void handleAlgorithmStart() {
         if (sortData != null && algorithm != null) {
-            startAlgorithm(algorithm, sortData);
+            if (!AlgorithmThreadManager.isRunning()) {
+                startAlgorithm(algorithm, sortData);
+            }
         }
     }
 

@@ -256,7 +256,7 @@ public abstract class AlgorithmsUtils {
 
     public static <V> void buildRandomGraph(BaseGraph<V> graph, int nodeCount, int edgeCount, boolean isAlpha) {
         // 1. 重置图状态与统计数据
-        graph.resetGraphState();
+        graph.resetStatistics();
         // 如果 BaseGraph 还没有 clear 逻辑，建议在 BaseGraph 中补充 graph.clear()
 
         // 存储生成的 ID 列表，用于后续随机连接边
