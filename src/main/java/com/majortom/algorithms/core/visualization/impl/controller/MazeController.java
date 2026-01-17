@@ -6,7 +6,6 @@ import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
 import com.majortom.algorithms.core.maze.algorithms.generate.*;
 import com.majortom.algorithms.core.maze.algorithms.pathfinding.*;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
@@ -16,232 +15,160 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 
-import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
  * 迷宫算法控制器
- * 职责：统筹迷宫的生成与寻路逻辑，并管理状态回滚。
+ * 职责：管理迷宫生成与寻路的策略切换，处理尺寸动态调整与可视化渲染同步。
  */
-public class MazeController<T> extends BaseController<BaseMaze<T>> {
+public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
 
-    private BaseMazeAlgorithms<T> mazeGenerator;
+    private BaseMazeAlgorithms<T> currentAlgorithm;
     private BaseMaze<T> mazeEntity;
-    private Node customControlPane;
 
     @FXML
     private Slider sizeSlider;
     @FXML
-    private Label sizeValueLabel, densityLabel, genTitleLabel, solveTitleLabel;
+    private Label sizeValueLabel;
     @FXML
-    private ComboBox<String> algoSelector, solverSelector;
+    private ComboBox<String> algoSelector;
+    @FXML
+    private ComboBox<String> solverSelector;
+    @FXML
+    private Label densityLabel, genTitleLabel, solveTitleLabel;
     @FXML
     private Button buildBtn, solveBtn;
 
     public MazeController(BaseMaze<T> mazeEntity,
             BaseMazeAlgorithms<T> generator,
             BaseMazeVisualizer<BaseMaze<T>> visualizer) {
-        super(visualizer);
+        super(visualizer, "/fxml/MazeControls.fxml");
         this.mazeEntity = mazeEntity;
-        this.mazeGenerator = generator;
-        loadFXMLControls();
-    }
-
-    private void loadFXMLControls() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MazeControls.fxml"));
-            loader.setResources(I18N.getBundle()); // 使用统一的 I18N
-            loader.setController(this);
-            this.customControlPane = loader.load();
-        } catch (IOException e) {
-            System.err.println("[Error] Maze FXML load failed: " + e.getMessage());
-        }
+        this.currentAlgorithm = generator;
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
-        setupI18n();
 
+        // 1. 尺寸变更逻辑：实时更新网格规模
         if (sizeSlider != null) {
             sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-                int oddSize = (newVal.intValue() % 2 == 0) ? newVal.intValue() + 1 : newVal.intValue();
+                int val = newVal.intValue();
+                int oddSize = (val % 2 == 0) ? val + 1 : val;
                 sizeValueLabel.setText(oddSize + "x" + oddSize);
+
                 if (!AlgorithmThreadManager.isRunning()) {
-                    refreshMazeRealtime(newVal.intValue());
+                    updateMazeSize(oddSize);
                 }
             });
         }
 
-        mazeEntity.initialSilent();
-        EffectUtils.applyDynamicEffect(buildBtn);
-        EffectUtils.applyDynamicEffect(solveBtn);
-    }
-
-    // --- 实现 BaseController 核心动作接口 ---
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void handleStartAction() {
-        // 统一入口：点击底部 Start 按钮，执行“生成 + 寻路”全流程
+        // 2. 初始数据状态
         if (mazeEntity != null) {
-            // 1. 停止当前所有动作并重置状态
-            stopAlgorithm();
             mazeEntity.initialSilent();
-
-            // 2. 准备生成器
-            int genIndex = algoSelector.getSelectionModel().getSelectedIndex();
-            this.mazeGenerator = switch (genIndex) {
-                case 1 -> (BaseMazeAlgorithms<T>) new DFSMazeGenerator();
-                case 2 -> (BaseMazeAlgorithms<T>) new UnionFindMazeGenerator();
-                default -> (BaseMazeAlgorithms<T>) new BFSMazeGenerator();
-            };
-            this.mazeGenerator.setMazeEntity(mazeEntity);
-
-            // 3. 提交任务（父类会自动创建 originalData 快照）
-            startAlgorithm(mazeGenerator, mazeEntity);
         }
+
+        EffectUtils.applyDynamicEffect(buildBtn, solveBtn);
     }
 
+    /**
+     * 响应全局 Start 按钮：默认执行生成逻辑
+     */
     @Override
-    public void handleResetAction() {
-        stopAlgorithm();
-
-        // 逻辑：如果存在生成前的快照（即空白迷宫），则回滚到空白状态
-        if (originalData != null) {
-            BaseMaze<T> restored = (BaseMaze<T>) originalData.copy();
-            updateCurrentDataReference(restored);
-            visualizer.render(mazeEntity, null, null);
-            updateUIComponents(0, 0);
-        } else {
-            // 无快照时，执行静默初始化（还原为全墙或全空）
-            mazeEntity.initialSilent();
-            visualizer.render(mazeEntity, null, null);
-        }
-
-        if (logArea != null) {
-            logArea.clear();
-            logArea.appendText("System: Maze reset to initial state.\n");
-        }
+    public void handleAlgorithmStart() {
+        handleGenerate();
     }
 
-    // --- 业务逻辑处理 ---
-
-    @SuppressWarnings("unchecked")
+    /**
+     * UI 事件：处理迷宫生成请求
+     */
     @FXML
     public void handleGenerate() {
         stopAlgorithm();
         mazeEntity.initialSilent();
 
-        // 根据选择器更新生成器算法
         int index = algoSelector.getSelectionModel().getSelectedIndex();
-        this.mazeGenerator = switch (index) {
+        // 策略切换
+        this.currentAlgorithm = switch (index) {
             case 1 -> (BaseMazeAlgorithms<T>) new DFSMazeGenerator();
             case 2 -> (BaseMazeAlgorithms<T>) new UnionFindMazeGenerator();
             default -> (BaseMazeAlgorithms<T>) new BFSMazeGenerator();
         };
 
-        this.mazeGenerator.setMazeEntity(mazeEntity);
-        // startAlgorithm 内部会自动调用 data.copy() 保存快照
-        startAlgorithm(mazeGenerator, mazeEntity);
+        if (this.currentAlgorithm != null) {
+            this.currentAlgorithm.setMazeEntity(mazeEntity);
+            startAlgorithm(currentAlgorithm, mazeEntity);
+        }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * UI 事件：处理寻路请求
+     */
     @FXML
     public void handleSolve() {
-        // 寻路属于特殊动作，不作为 handleStartAction，但仍需受控
-        if (!mazeEntity.isGenerated()) {
-            logArea.appendText("Warning: Please build maze first.\n");
-            return;
-        }
 
         stopAlgorithm();
-        mazeEntity.clearVisualStates();
-        mazeEntity.pickRandomPointsOnAvailablePaths();
-        visualizer.render(mazeEntity, null, null);
+        AlgorithmThreadManager.run(() -> {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException ignored) {
+            }
 
-        int index = solverSelector.getSelectionModel().getSelectedIndex();
-        BaseMazeAlgorithms<T> solver = (index == 0)
-                ? (BaseMazeAlgorithms<T>) new AStarMazePathfinder()
-                : (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
+            if (mazeEntity != null) {
+                mazeEntity.setGenerated(true);
+                mazeEntity.clearVisualStates();
+                mazeEntity.pickRandomPointsOnAvailablePaths();
 
-        solver.setMazeEntity(mazeEntity);
-        // 执行寻路算法
-        startAlgorithm(solver, mazeEntity);
+                Platform.runLater(() -> {
+                    this.visualizer.render(mazeEntity, null, null);
+                    logArea.appendText("System: Snapshot prepared. Starting solver...\n");
+                });
+
+                int index = solverSelector.getSelectionModel().getSelectedIndex();
+                BaseMazeAlgorithms<T> solver = (index == 0)
+                        ? (BaseMazeAlgorithms<T>) new AStarMazePathfinder()
+                        : (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
+
+                solver.setMazeEntity(mazeEntity);
+                solver.execute(mazeEntity);
+            }
+        });
     }
 
     @Override
     protected void executeAlgorithm(BaseAlgorithms<BaseMaze<T>> alg, BaseMaze<T> data) {
         if (alg instanceof BaseMazeAlgorithms) {
-            // 第一阶段：执行生成
             ((BaseMazeAlgorithms<T>) alg).execute(data);
-
-            // 第二阶段：生成结束后，自动无缝进入寻路
-            if (mazeEntity.isGenerated()) {
-                autoSwitchToSolver(data);
-            }
         }
     }
 
-    /**
-     * 自动切换至寻路算法的私有逻辑
-     */
-    @SuppressWarnings("unchecked")
-    private void autoSwitchToSolver(BaseMaze<T> data) {
-        // 1. 准备工作：设置生成完成标志，清理视觉状态，选取随机点
-        data.setGenerated(true);
-        data.clearVisualStates();
-        data.pickRandomPointsOnAvailablePaths();
-
-        // 渲染一帧初始状态（起点/终点）
-        AlgorithmThreadManager.postStatus(() -> {
-            visualizer.render(data, null, null);
-            logArea.appendText("System: Generation finished. Auto-starting solver...\n");
-        });
-
-        int solveIndex = solverSelector.getSelectionModel().getSelectedIndex();
-        BaseMazeAlgorithms<T> solver = (solveIndex == 0)
-                ? (BaseMazeAlgorithms<T>) new AStarMazePathfinder()
-                : (BaseMazeAlgorithms<T>) new BFSMazePathfinder();
-
-        solver.setMazeEntity(data);
-        solver.execute(data);
-    }
-
-    @Override
-    protected void updateCurrentDataReference(BaseMaze<T> restoredData) {
-        this.mazeEntity = restoredData;
-    }
-
-    private void refreshMazeRealtime(int size) {
-        int oddSize = (size % 2 == 0) ? size + 1 : size;
+    private void updateMazeSize(int oddSize) {
         stopAlgorithm();
+        // 重新实例化数据结构
         this.mazeEntity = (BaseMaze<T>) new ArrayMaze(oddSize, oddSize);
         this.mazeEntity.initialSilent();
         visualizer.render(mazeEntity, null, null);
-        this.originalData = null; // 尺寸变了，清除旧快照
     }
 
-    // --- 辅助与 I18N ---
+    @Override
+    protected String formatStatsMessage() {
+        String mode = (currentAlgorithm instanceof BaseMazeAlgorithms) ? "Pathfinding" : "Generation";
+        return String.format("[%s]\nVisited: %d | Scale: %dx%d",
+                mode, stats.actionCount, mazeEntity.getCols(), mazeEntity.getRows());
+    }
 
     @Override
-    protected void updateUIComponents(int compareCount, int actionCount) {
-        if (statsLabel != null) {
-            statsLabel.setText(String.format("VISITED: %d\nSCALE: %s",
-                    actionCount, sizeValueLabel.getText()));
+    protected void onResetData() {
+        if (mazeEntity != null) {
+            mazeEntity.initialSilent();
+            visualizer.render(mazeEntity, null, null);
+            appendLog("Maze reset to initial state.");
         }
-    }
-
-    @Override
-    public List<Node> getCustomControls() {
-        return (customControlPane != null) ? Collections.singletonList(customControlPane) : Collections.emptyList();
     }
 
     @Override
@@ -251,31 +178,19 @@ public class MazeController<T> extends BaseController<BaseMaze<T>> {
         solveTitleLabel.textProperty().bind(I18N.createStringBinding("ctrl.maze.solve_title"));
         buildBtn.textProperty().bind(I18N.createStringBinding("btn.maze.build"));
         solveBtn.textProperty().bind(I18N.createStringBinding("btn.maze.solve"));
-        setupComboBoxI18n();
+
+        // ComboBox 数据源绑定
+        bindComboBox(algoSelector, List.of("maze.algo.bfs", "maze.algo.dfs", "maze.algo.prim"));
+        bindComboBox(solverSelector, List.of("maze.solver.astar", "maze.solver.dfs"));
     }
 
-    private void setupComboBoxI18n() {
-        List<String> genKeys = List.of("maze.algo.bfs", "maze.algo.dfs", "maze.algo.prim");
-        algoSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+    private void bindComboBox(ComboBox<String> comboBox, List<String> keys) {
+        comboBox.itemsProperty().bind(Bindings.createObjectBinding(() -> {
             ObservableList<String> list = FXCollections.observableArrayList();
-            for (String key : genKeys)
-                list.add(I18N.getBundle().getString(key));
+            keys.forEach(key -> list.add(I18N.getBundle().getString(key)));
             return list;
         }, I18N.localeProperty()));
 
-        List<String> solverKeys = List.of("maze.solver.astar", "maze.solver.dfs");
-        solverSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            ObservableList<String> list = FXCollections.observableArrayList();
-            for (String key : solverKeys)
-                list.add(I18N.getBundle().getString(key));
-            return list;
-        }, I18N.localeProperty()));
-
-        Platform.runLater(() -> {
-            algoSelector.getSelectionModel().selectFirst();
-            solverSelector.getSelectionModel().selectFirst();
-        });
+        Platform.runLater(() -> comboBox.getSelectionModel().selectFirst());
     }
-
-    
 }

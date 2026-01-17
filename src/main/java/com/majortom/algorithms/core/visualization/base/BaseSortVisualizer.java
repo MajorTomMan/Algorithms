@@ -2,76 +2,66 @@ package com.majortom.algorithms.core.visualization.base;
 
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import java.util.Arrays;
+import javafx.scene.paint.Color;
+
+import java.util.Objects;
 
 /**
- * 排序视觉呈现基类
- * 职责：
- * 1. 提供数组高度到画布坐标的缩放映射逻辑。
- * 2. 统一排序柱状图的布局规范（留白、间距）。
- * 3. 继承父类《乱》配色体系，保持 UI 风格一致性。
+ * 排序算法可视化基类
+ * 职责：计算数据比例、维护颜色状态机、定义排序渲染生命周期
  */
 public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVisualizer<BaseSort<T>> {
 
     @Override
-    protected void draw(BaseSort<T> sortData, Object a, Object b) {
-        T[] data = sortData.getData();
-        if (data == null || data.length == 0)
+    protected void draw(BaseSort<T> data, Object a, Object b) {
+        clear();
+        if (data == null || data.getData() == null)
             return;
-
-        // 1. 获取度量基准
-        double maxVal = getMaxValue(data);
-
-        // 2. 计算布局参数
-        double paddingSide = 40.0;
-        double paddingBottom = 70.0; // 为下方数值预留空间
-        double paddingTop = 40.0; // 顶部留白
-
-        double availableW = canvas.getWidth() - 2 * paddingSide;
-        double availableH = canvas.getHeight() - paddingBottom - paddingTop;
-
-        // 3. 计算缩放因子 (Scale Factor)
-        double scale = maxVal <= 0 ? 1 : availableH / maxVal;
-        double barW = availableW / data.length;
-
-        // 4. 执行具体渲染 (交给子类如 HistogramSortVisualizer 实现)
-        drawSortContent(sortData, a, b, barW, scale, paddingSide, paddingBottom);
+        drawSortContent(data, a, b);
     }
 
     /**
-     * 子类实现具体的绘制形态
-     * 
-     * @param barW         单个柱体的最大宽度（含间距）
-     * @param scale        垂直缩放比例系数
-     * @param offsetLeft   左侧起始偏移量
-     * @param offsetBottom 底部起始偏移量
+     * 子类实现具体的绘制形态（柱状图、点图等）
      */
-    protected abstract void drawSortContent(BaseSort<T> sortData, Object a, Object b,
-            double barW, double scale,
-            double offsetLeft, double offsetBottom);
+    protected abstract void drawSortContent(BaseSort<T> sortData, Object a, Object b);
 
     /**
-     * 高性能最大值获取逻辑
+     * 通用色彩决策引擎 - 适配《乱》配色体系
+     * 
+     * @param index    当前遍历到的索引
+     * @param sortData 排序数据模型
+     * @param a        外部传入的比较参数A
+     * @param b        外部传入的比较参数B
+     */
+    protected Color getRanColor(int index, BaseSort<T> sortData, Object a, Object b) {
+        // 1. 活跃状态（读写指针）：次郎蓝
+        if (index == sortData.getActiveIndex()) {
+            return RAN_BLUE;
+        }
+        // 2. 比较/交互状态：三郎黄（原代码中的 GOLD）
+        if (Objects.equals(index, a) || Objects.equals(index, b)) {
+            return RAN_YELLOW;
+        }
+        // 3. 默认状态：太郎红
+        return RAN_RED;
+    }
+
+    /**
+     * 获取数据中的最大值，用于归一化高度计算
      */
     protected double getMaxValue(T[] data) {
-        return Arrays.stream(data)
-                .mapToDouble(item -> {
-                    try {
-                        return Double.parseDouble(item.toString());
-                    } catch (Exception e) {
-                        return 0.0;
-                    }
-                })
-                .max()
-                .orElse(1.0);
-    }
-
-    /**
-     * 通用柱体绘制工具
-     */
-    protected void drawBar(double x, double y, double w, double h, javafx.scene.paint.Color color) {
-        double gap = w > 4 ? 1.5 : 0.2; // 窄柱体自动减小间距
-        gc.setFill(color);
-        gc.fillRect(x, y, Math.max(0.5, w - gap), h);
+        double max = 0;
+        for (T item : data) {
+            if (item == null)
+                continue;
+            try {
+                double val = Double.parseDouble(item.toString());
+                if (val > max)
+                    max = val;
+            } catch (NumberFormatException e) {
+                // 忽略非数值类型
+            }
+        }
+        return max;
     }
 }
