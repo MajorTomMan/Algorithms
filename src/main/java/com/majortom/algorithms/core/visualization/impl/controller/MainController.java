@@ -1,5 +1,13 @@
 package com.majortom.algorithms.core.visualization.impl.controller;
 
+import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
+import com.majortom.algorithms.core.graph.impl.DirectedGraph;
+import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
+import com.majortom.algorithms.core.maze.impl.ArrayMaze;
+import com.majortom.algorithms.core.sort.alg.InsertionSort;
+import com.majortom.algorithms.core.tree.BaseTree;
+import com.majortom.algorithms.core.tree.alg.AVLTreeAlgorithms;
+import com.majortom.algorithms.core.tree.impl.AVLTreeEntity;
 import com.majortom.algorithms.core.visualization.BaseController;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import com.majortom.algorithms.core.visualization.impl.visualizer.HistogramSortVisualizer;
@@ -7,29 +15,22 @@ import com.majortom.algorithms.core.visualization.impl.visualizer.SquareMazeVisu
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
-import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
-import com.majortom.algorithms.core.graph.impl.DirectedGraph;
-import com.majortom.algorithms.core.maze.algorithms.generate.BFSMazeGenerator;
-import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.sort.impl.InsertionSort;
-import com.majortom.algorithms.core.sort.impl.QuickSort;
-import com.majortom.algorithms.core.tree.BaseTree;
-import com.majortom.algorithms.core.tree.impl.AVLTree;
-import com.majortom.algorithms.utils.EffectUtils; // 导入工具类
+import com.majortom.algorithms.utils.EffectUtils;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.Property;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 
 import java.net.URL;
-import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+/**
+ * 主界面控制器
+ * 职责：负责全局容器管理、模块切换、语言切换以及顶层控制逻辑。
+ */
 public class MainController implements Initializable {
 
     @FXML
@@ -37,65 +38,39 @@ public class MainController implements Initializable {
     @FXML
     private HBox customControlBox;
     @FXML
-    private Label menuTitleLabel, statsTitleLabel, logTitleLabel, statsLabel;
+    private Label menuTitleLabel, statsTitleLabel, logTitleLabel, statsLabel, delayLabel;
     @FXML
     private TextArea logArea;
     @FXML
     private Button sortBtn, mazeBtn, treeBtn, graphBtn;
     @FXML
+    private Button startBtn, pauseBtn, resetBtn, langBtn;
+    @FXML
     private Slider delaySlider;
-    @FXML
-    private Label delayLabel;
-    @FXML
-    private Button startBtn, pauseBtn, resetBtn;
-    @FXML
-    private Button langBtn; // 确保 FXML 中有这个 ID
 
     private BaseController<?> currentSubController;
-    private ResourceBundle resources;
 
-    /**
-     * 批量为所有按钮应用动态特效
-     */
-    private void applyEffectsToAllButtons() {
-        // 导航栏按钮
-        EffectUtils.applyDynamicEffect(sortBtn);
-        EffectUtils.applyDynamicEffect(mazeBtn);
-        EffectUtils.applyDynamicEffect(treeBtn);
-        EffectUtils.applyDynamicEffect(graphBtn);
-
-        // 控制台按钮
-        EffectUtils.applyDynamicEffect(startBtn);
-        EffectUtils.applyDynamicEffect(resetBtn);
-        if (pauseBtn != null)
-            EffectUtils.applyDynamicEffect(pauseBtn);
-        if (langBtn != null)
-            EffectUtils.applyDynamicEffect(langBtn);
-    }
-
-    @FXML
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // 1. 初始化国际化上下文
         if (resources != null) {
-            this.resources = resources;
             I18N.setLocale(resources.getLocale());
         }
 
-        // 1. 设置国际化绑定
+        // 2. 绑定 UI 文本与特效
         setupI18n();
-
-        // 2. 设置全局按钮行为
         setupGlobalActions();
+        EffectUtils.applyDynamicEffect(sortBtn, mazeBtn, treeBtn, graphBtn, startBtn, resetBtn, pauseBtn, langBtn);
 
-        // 3. 应用动态呼吸灯特效 (划过呼吸，点完即消失)
-        applyEffectsToAllButtons();
-
-        // 4. 初始模块加载
+        // 3. 默认启动排序模块
         switchToSortModule();
 
-        logArea.appendText("System: Lab Initialized.\n");
+        appendSystemLog("Lab Initialized.");
     }
 
+    /**
+     * 设置全局国际化绑定
+     */
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("menu.lab"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("side.stats"));
@@ -110,64 +85,69 @@ public class MainController implements Initializable {
 
         if (pauseBtn != null) {
             pauseBtn.textProperty().bind(Bindings.createStringBinding(() -> {
-                ResourceBundle bundle = I18N.getBundle();
                 boolean paused = AlgorithmThreadManager.isPaused();
-                return bundle.getString(paused ? "btn.resume" : "btn.pause");
-            }, I18N.localeProperty(), delaySlider.valueProperty()));
+                return I18N.getBundle().getString(paused ? "btn.resume" : "btn.pause");
+            }, I18N.localeProperty()));
         }
     }
 
+    /**
+     * 设置全局操作按钮行为
+     */
     private void setupGlobalActions() {
         startBtn.setOnAction(e -> {
             if (currentSubController != null)
                 currentSubController.handleAlgorithmStart();
         });
+
         pauseBtn.setOnAction(e -> {
             if (currentSubController != null) {
                 currentSubController.togglePause();
-                logArea.appendText(AlgorithmThreadManager.isPaused() ? "Command: PAUSED\n" : "Command: RESUMED\n");
+                appendSystemLog(AlgorithmThreadManager.isPaused() ? "Command: PAUSED" : "Command: RESUMED");
             }
         });
+
         resetBtn.setOnAction(e -> {
-            if (currentSubController != null) {
-                currentSubController.stopAlgorithm();
-                currentSubController.getVisualizer().clear();
-                logArea.clear();
-                logArea.appendText("System: Module reset.\n");
+            if (currentSubController instanceof BaseModuleController) {
+                // 利用重构后的 resetModule 清理子模块内部状态
+                ((BaseModuleController<?>) currentSubController).resetModule();
+                appendSystemLog("Module reset.");
             }
         });
     }
 
+    /**
+     * 核心加载逻辑：注入容器并挂载自定义面板
+     */
     private void loadSubController(BaseController<?> newController) {
+        // 1. 停止当前运行的所有任务
         AlgorithmThreadManager.stopAll();
+
+        // 2. 清理 UI 容器
         visualizationContainer.getChildren().clear();
         customControlBox.getChildren().clear();
-        newController.setUIReferences(statsLabel, logArea, delaySlider);
 
+        // 3. 建立引用与绑定
+        newController.setUIReferences(statsLabel, logArea, delaySlider, customControlBox, startBtn, pauseBtn, resetBtn);
+        this.currentSubController = newController;
+
+        // 4. 挂载可视化画布
         BaseVisualizer<?> viz = newController.getVisualizer();
         if (viz != null) {
-            viz.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            viz.setMinSize(0, 0);
-            visualizationContainer.getChildren().add(viz);
             viz.prefWidthProperty().bind(visualizationContainer.widthProperty());
             viz.prefHeightProperty().bind(visualizationContainer.heightProperty());
-            viz.requestLayout();
+            visualizationContainer.getChildren().add(viz);
         }
-        List<Node> subControls = newController.getCustomControls();
-        if (subControls != null) {
-            customControlBox.getChildren().addAll(subControls);
-        }
-        this.currentSubController = newController;
+
+        // 5. 触发自定义控件挂载
+        newController.setupCustomControls(customControlBox);
     }
 
     @FXML
     public void switchToSortModule() {
-        // QuickSort<Integer> algorithms = new QuickSort<>();
-        InsertionSort<Integer> algorithms = new InsertionSort<>();
+        InsertionSort<Integer> sort = new InsertionSort<>();
         HistogramSortVisualizer<Integer> visualizer = new HistogramSortVisualizer<>();
-        SortController<Integer> sortController = new SortController<Integer>(algorithms,
-                visualizer);
-        loadSubController(sortController);
+        loadSubController(new SortController<>(sort, visualizer));
     }
 
     @FXML
@@ -180,18 +160,21 @@ public class MainController implements Initializable {
 
     @FXML
     public void switchToTreeModule() {
-        BaseTree<Integer> tree = new BaseTree<>();
-        AVLTree<Integer> algorithms = new AVLTree<>();
-        Integer[] array = AlgorithmsUtils.randomArray(23, 12);
-        for (Integer i : array)
+        BaseTree<Integer> tree = new AVLTreeEntity<>();
+        AVLTreeAlgorithms<Integer> algorithms = new AVLTreeAlgorithms<>();
+        // 初始数据填充
+        Integer[] array = AlgorithmsUtils.randomArray(15, 100);
+        for (Integer i : array) {
             algorithms.put(tree, i);
+        }
+
         loadSubController(new TreeController<>(tree, algorithms));
     }
 
     @FXML
     public void switchToGraphModule() {
         DirectedGraph<Integer> graph = new DirectedGraph<>("A");
-        AlgorithmsUtils.buildRandomGraph(graph, 15, 20, true);
+        AlgorithmsUtils.buildRandomGraph(graph, 10, 15, true);
         loadSubController(new GraphController<>(new BFSAlgorithms<>(), graph));
     }
 
@@ -199,8 +182,11 @@ public class MainController implements Initializable {
     private void toggleLanguage() {
         Locale newLocale = (I18N.getLocale().getLanguage().equals("zh")) ? Locale.ENGLISH : Locale.CHINESE;
         I18N.setLocale(newLocale);
-        if (logArea != null) {
-            logArea.appendText(((newLocale == Locale.CHINESE) ? "系统：语言已切换" : "System: Language switched") + "\n");
-        }
+        appendSystemLog(newLocale == Locale.CHINESE ? "系统：语言已切换" : "System: Language switched");
+    }
+
+    private void appendSystemLog(String msg) {
+        if (logArea != null)
+            logArea.appendText("System: " + msg + "\n");
     }
 }

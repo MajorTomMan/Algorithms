@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.tree.impl;
+package com.majortom.algorithms.core.tree.alg;
 
 import com.majortom.algorithms.core.tree.BaseBalancedTree;
 import com.majortom.algorithms.core.tree.BaseTree;
@@ -8,9 +8,13 @@ import com.majortom.algorithms.core.tree.node.TreeNode;
 
 /**
  * AVL 树具体实现
- * 适配说明：完全对接 BaseTree 的原子操作，实现统计自治，优化了类型强转。
+ * 适配说明：
+ * 1. 实现了 BaseTree 的三个抽象钩子以支持通用深拷贝。
+ * 2. 修正了插入时的结构变更标记逻辑。
  */
-public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
+public class AVLTreeAlgorithms<T extends Comparable<T>> extends BaseBalancedTree<T> {
+
+    // --- 基础工厂方法 ---
 
     @Override
     protected TreeNode<T> createNode(T data) {
@@ -40,7 +44,8 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
 
     private BinaryTreeNode<T> doPut(BaseTree<T> tree, BinaryTreeNode<T> node, T data) {
         if (node == null) {
-            tree.modifyStructure(null);
+            // 修正：插入新节点才是真正的结构变更，标记一次 Action
+            tree.modifyStructure(tree.getRoot());
             return (BinaryTreeNode<T>) createNode(data);
         }
 
@@ -52,7 +57,7 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
         } else if (cmp > 0) {
             node.right = doPut(tree, (BinaryTreeNode<T>) node.right, data);
         } else {
-            return node;
+            return node; // 已存在，不处理
         }
 
         updateMetrics(node);
@@ -71,7 +76,8 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
         } else if (cmp > 0) {
             node.right = doRemove(tree, (BinaryTreeNode<T>) node.right, val);
         } else {
-            tree.modifyStructure(tree.getRoot()); // 标记一次结构变更
+            // 命中删除目标，标记结构变更
+            tree.modifyStructure(tree.getRoot());
 
             if (node.left == null || node.right == null) {
                 node = (node.left != null) ? (BinaryTreeNode<T>) node.left : (BinaryTreeNode<T>) node.right;
@@ -146,6 +152,7 @@ public class AVLTree<T extends Comparable<T>> extends BaseBalancedTree<T> {
 
     @Override
     public void traverse(BaseTree<T> tree) {
-        // 实现层序遍历
+        // 实现层序遍历或中序遍历
     }
+
 }

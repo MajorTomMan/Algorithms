@@ -6,64 +6,56 @@ import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
 import javafx.scene.paint.Color;
 
 /**
- * 迷宫可视化器 - 参考黑泽明《乱》配色
- * 红色：墙体 (太郎)
- * 蓝色：当前路径 (次郎)
- * 黄色：回溯路径 (三郎)
+ * 矩形网格迷宫可视化器
  */
 public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> {
 
-    // SquareMazeVisualizer.java
-
     @Override
-    protected void drawMaze(BaseMaze<int[][]> mazeEntity, Object a, Object b) {
+    protected void drawMaze(BaseMaze<int[][]> mazeEntity, Object a, Object b, double cellW, double cellH) {
         int[][] grid = mazeEntity.getData();
         if (grid == null)
             return;
-        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
-        double canvasW = canvas.getWidth();
-        double canvasH = canvas.getHeight();
-
-        double cellW = canvasW / mazeEntity.getCols();
-        double cellH = canvasH / mazeEntity.getRows();
 
         for (int r = 0; r < mazeEntity.getRows(); r++) {
             for (int c = 0; c < mazeEntity.getCols(); c++) {
-                int type = grid[r][c];
-                renderRanCell(r, c, cellW, cellH, type);
+                renderRanCell(r, c, cellW, cellH, grid[r][c]);
             }
         }
-        drawFocus(a, b, cellW, cellH);
     }
 
     private void renderRanCell(int r, int c, double w, double h, int type) {
-        double x = c * w;
-        double y = r * h;
+        double x = getX(c, w);
+        double y = getY(r, h);
 
+        // 墙体逻辑：太郎红，硬边缘
         if (type == MazeConstant.WALL) {
             gc.setFill(RAN_RED);
             gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
             return;
         }
 
+        // 路径逻辑：采用 switch 映射色彩体系
         Color targetColor = switch (type) {
-            case MazeConstant.PATH -> RAN_BLUE;
-            case MazeConstant.BACKTRACK -> RAN_GOLD;
-            case MazeConstant.START, MazeConstant.END -> BONE_WHITE;
+            case MazeConstant.PATH -> RAN_BLUE; // 次郎蓝
+            case MazeConstant.BACKTRACK -> RAN_GOLD; // 暮金/回溯
+            case MazeConstant.START, MazeConstant.END -> RAN_WHITE; // 骨白
             default -> Color.TRANSPARENT;
         };
 
-        gc.setFill(targetColor);
-        gc.fillRect(x + 1, y + 1, w - 2, h - 2);
+        if (targetColor != Color.TRANSPARENT) {
+            gc.setFill(targetColor);
+            // 内部填充略微收缩，留出网格感
+            gc.fillRect(x + 1, y + 1, w - 2, h - 2);
+        }
     }
 
     @Override
     protected void drawFocus(Object a, Object b, double w, double h) {
         if (a instanceof Integer r && b instanceof Integer c) {
-            double x = c * w;
-            double y = r * h;
-            // 蓝色硬边框作为当前扫描焦点
+            double x = getX(c, w);
+            double y = getY(r, h);
+
+            // 蓝色强对比线框，代表当前的“主将”指针
             gc.setStroke(RAN_BLUE);
             gc.setLineWidth(2.5);
             gc.strokeRect(x + 1, y + 1, w - 2, h - 2);

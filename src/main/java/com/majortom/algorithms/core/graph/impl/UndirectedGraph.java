@@ -1,5 +1,6 @@
 package com.majortom.algorithms.core.graph.impl;
 
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import org.graphstream.graph.Edge;
 
@@ -18,7 +19,7 @@ public class UndirectedGraph<V> extends BaseGraph<V> {
 
     @Override
     public void addEdge(String fromId, String toId, int weight) {
-        // 排序 ID 确保无向边的唯一性，你的这个 ID 逻辑非常利落，保留。
+        // 排序 ID 确保无向边的唯一性
         String edgeId = fromId.compareTo(toId) < 0 ? fromId + "_" + toId : toId + "_" + fromId;
         if (graph.getEdge(edgeId) == null) {
             Edge e = graph.addEdge(edgeId, fromId, toId, false);
@@ -33,7 +34,20 @@ public class UndirectedGraph<V> extends BaseGraph<V> {
     }
 
     @Override
-    public void reset() {
-        super.reset();
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
     }
+
+    @Override
+    public void clear() {
+        // TODO Auto-generated method stub
+        super.clear();
+    }
+
+    @Override
+    protected BaseGraph<V> createEmptyInstance(String id) {
+        return new UndirectedGraph<>(id);
+    }
+
 }

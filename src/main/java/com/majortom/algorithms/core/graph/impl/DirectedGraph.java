@@ -1,5 +1,6 @@
 package com.majortom.algorithms.core.graph.impl;
 
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import org.graphstream.graph.Edge;
 
@@ -35,7 +36,20 @@ public class DirectedGraph<V> extends BaseGraph<V> {
     }
 
     @Override
-    public void reset() {
-        super.reset(); // 调用 BaseGraph.resetGraphState()
+    public void resetStatistics() {
+        // TODO Auto-generated method stub
+        super.resetStatistics();
+    }
+
+    @Override
+    public void clear() {
+        // TODO Auto-generated method stub
+        super.clear();
+    }
+
+    @Override
+    protected BaseGraph<V> createEmptyInstance(String id) {
+        // TODO Auto-generated method stub
+        return new DirectedGraph<>(id);
     }
 }

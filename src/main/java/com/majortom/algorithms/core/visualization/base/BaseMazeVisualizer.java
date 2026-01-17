@@ -4,31 +4,47 @@ import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
 import javafx.scene.paint.Color;
 
+/**
+ * 迷宫算法可视化基类
+ */
 public abstract class BaseMazeVisualizer<S extends BaseMaze<?>> extends BaseVisualizer<S> {
-
-    // --- 《乱》核心三原色体系 ---
-    protected static final Color BG_DEEP = Color.rgb(5, 5, 8);
-    protected static final Color RAN_YELLOW = Color.rgb(240, 190, 0);
-    // 核心色值定义
-    protected final Color RAN_RED = Color.rgb(180, 0, 0); // 红色：墙体
-    protected final Color RAN_BLUE = Color.rgb(0, 120, 255); // 蓝色：路径
-    protected final Color RAN_GOLD = Color.rgb(220, 180, 0); // 黄色：回溯
-    protected final Color BONE_WHITE = Color.rgb(240, 240, 230); // 骨白：焦点/起点
-    protected static final Color RAN_PINK = Color.rgb(255, 50, 120);
-    protected static final Color RAN_VIOLET = Color.rgb(130, 70, 200);
 
     @Override
     protected void draw(S data, Object a, Object b) {
-        clear();
-        gc.setFill(BG_DEEP);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        clear(); // 使用 BaseVisualizer 的极夜黑清空
 
         if (data == null)
             return;
-        drawMaze(data, a, b);
+
+        // 计算基础单元格尺寸
+        double cellW = canvas.getWidth() / data.getCols();
+        double cellH = canvas.getHeight() / data.getRows();
+
+        drawMaze(data, a, b, cellW, cellH);
+        drawFocus(a, b, cellW, cellH);
     }
 
-    protected abstract void drawMaze(S data, Object a, Object b);
+    /**
+     * 核心绘制逻辑，交给具体形状实现类（如 Square, Hexagon）
+     */
+    protected abstract void drawMaze(S mazeEntity, Object a, Object b, double cellW, double cellH);
 
+    /**
+     * 获取单元格的屏幕坐标 X
+     */
+    protected double getX(int col, double cellW) {
+        return col * cellW;
+    }
+
+    /**
+     * 获取单元格的屏幕坐标 Y
+     */
+    protected double getY(int row, double cellH) {
+        return row * cellH;
+    }
+
+    /**
+     * 焦点绘制由子类实现，以适配不同形状的焦点框
+     */
     protected abstract void drawFocus(Object a, Object b, double w, double h);
 }
