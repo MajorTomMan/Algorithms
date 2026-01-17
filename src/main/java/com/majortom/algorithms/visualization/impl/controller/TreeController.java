@@ -82,7 +82,10 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
     @Override
     public void handleAlgorithmStart() {
         if (treeData != null && treeAlgorithms != null) {
-            startAlgorithm(treeAlgorithms, treeData);
+            if (!AlgorithmThreadManager.isRunning()) {
+                startAlgorithm(treeAlgorithms, treeData);
+            }
+
         }
     }
 

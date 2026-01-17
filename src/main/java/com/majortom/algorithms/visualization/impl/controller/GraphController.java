@@ -65,7 +65,10 @@ public class GraphController<V> extends BaseModuleController<BaseGraph<V>> {
     public void handleAlgorithmStart() {
         BaseGraph<V> currentData = visualizer.getLastData();
         if (currentData != null && algorithm != null) {
-            startAlgorithm(algorithm, currentData);
+            if (!AlgorithmThreadManager.isRunning()) {
+                startAlgorithm(algorithm, currentData);
+            }
+
         }
     }
 

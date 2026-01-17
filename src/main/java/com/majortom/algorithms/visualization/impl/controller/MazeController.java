@@ -83,7 +83,10 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
      */
     @Override
     public void handleAlgorithmStart() {
-        handleGenerate();
+        if (!AlgorithmThreadManager.isRunning()) {
+            handleGenerate();
+        }
+
     }
 
     /**
@@ -113,14 +116,10 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
      */
     @FXML
     public void handleSolve() {
-
-        stopAlgorithm();
+        if (AlgorithmThreadManager.isRunning()) {
+            return;
+        }
         AlgorithmThreadManager.run(() -> {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException ignored) {
-            }
-
             if (mazeEntity != null) {
                 mazeEntity.setGenerated(true);
                 mazeEntity.clearVisualStates();
