@@ -2,36 +2,42 @@ package com.majortom.algorithms.core.visualization;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.base.BaseStructure;
+import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.visualization.impl.controller.BaseModuleController;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.core.visualization.stat.AlgorithmStats;
+
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
 /**
  * 算法可视化控制器基类
- * 职责：统筹 UI 线程渲染与算法执行线程的同步。
- * * @param <S> 结构类型，继承自 BaseStructure
+ * 职责：定义标准化的统计接口、日志接口、线程同步生命周期，并接管全局按钮逻辑。
  */
 public abstract class BaseController<S extends BaseStructure<?>> implements Initializable {
 
-    // --- 动画状态 ---
     protected final DoubleProperty delayMs = new SimpleDoubleProperty(50.0);
+    protected AlgorithmStats stats = new AlgorithmStats();
 
-    // --- 核心引用 ---
-    protected BaseVisualizer<S> visualizer;
+    // --- 核心 UI 引用 (由 MainController 注入) ---
+    protected final BaseVisualizer<S> visualizer;
     protected Label statsLabel;
     protected TextArea logArea;
     protected Slider delaySlider;
-    protected S originalData;
+    protected HBox customControlBox;
+
+    // --- 全局控制按钮 (对齐 Main.fxml) ---
+    protected Button startBtn;
+    protected Button pauseBtn;
+    protected Button resetBtn;
 
     public BaseController(BaseVisualizer<S> visualizer) {
         this.visualizer = visualizer;
@@ -39,52 +45,44 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        if (delaySlider != null) {
-            this.delayMs.bind(delaySlider.valueProperty());
-            delayMs.addListener((obs, oldVal, newVal) -> AlgorithmThreadManager.setDelay(newVal.longValue()));
-            AlgorithmThreadManager.setDelay(delayMs.longValue());
-        }
+        setupI18n();
     }
 
-    // --- 核心动作接口：由子类实现具体业务逻辑 ---
+    // --- 核心 API 接口 ---
 
     /**
-     * 响应开始按钮 (startBtn)
+     * 核心同步钩子：算法线程调用。
      */
-    public abstract void handleStartAction();
+    protected final void onSync(S structure, Object a, Object b, int compareCount, int actionCount) {
+        this.stats.compareCount = compareCount;
+        this.stats.actionCount = actionCount;
 
-    /**
-     * 响应暂停/恢复按钮 (pauseBtn)
-     */
-    public void handlePauseAction() {
-        if (AlgorithmThreadManager.isPaused()) {
-            AlgorithmThreadManager.resume();
-        } else {
-            AlgorithmThreadManager.pause();
-        }
+        AlgorithmThreadManager.syncAndWait(() -> {
+            if (visualizer != null) {
+                visualizer.render(structure, a, b);
+            }
+            refreshStatsDisplay();
+        });
     }
 
     /**
-     * 响应重置按钮 (resetBtn)
-     * 子类需在此处理特定清理逻辑（如 GraphStream 样式、Maze 随机点等）
+     * 步进检查：用于响应暂停和停止信号。
      */
-    public abstract void handleResetAction();
-
-    // --- 算法执行辅助方法 ---
+    protected final void onStep() {
+        AlgorithmThreadManager.checkStepStatus();
+    }
 
     /**
-     * 提交算法任务到线程池，并自动生成初始数据快照
+     * 启动算法模板方法。
      */
-    @SuppressWarnings("unchecked")
-    protected void startAlgorithm(BaseAlgorithms<S> algorithm, S data) {
+    public final void startAlgorithm(BaseAlgorithms<S> algorithm, S data) {
         stopAlgorithm();
-
-        // 执行前备份当前数据状态
-        if (data != null) {
-            this.originalData = (S) data.copy();
-        }
+        resetStats();
 
         algorithm.setEnvironment(this::onSync, this::onStep);
+
+        stats.startTime = System.currentTimeMillis();
+        appendLog("Algorithm started: " + algorithm.getClass().getSimpleName());
 
         AlgorithmThreadManager.run(() -> {
             try {
@@ -92,6 +90,7 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
             } catch (Exception e) {
                 handleAlgorithmError(e);
             } finally {
+                stats.endTime = System.currentTimeMillis();
                 Platform.runLater(this::onAlgorithmFinished);
             }
         });
@@ -101,70 +100,118 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         AlgorithmThreadManager.stopAll();
     }
 
-    // --- 同步钩子 ---
-
-    protected void onSync(S structure, Object a, Object b, int compareCount, int actionCount) {
-        AlgorithmThreadManager.syncAndWait(() -> {
-            if (visualizer != null) {
-                visualizer.render(structure, a, b);
-            }
-            updateUIComponents(compareCount, actionCount);
-        });
+    public void togglePause() {
+        if (AlgorithmThreadManager.isPaused()) {
+            AlgorithmThreadManager.resume();
+        } else {
+            AlgorithmThreadManager.pause();
+        }
     }
 
-    protected void onStep() {
-        AlgorithmThreadManager.checkStepStatus();
+    // --- 内部逻辑与辅助方法 ---
+
+    private void resetStats() {
+        this.stats = new AlgorithmStats();
     }
 
-    // --- UI 注入与状态查询 ---
-
-    public void setUIReferences(Label statsLabel, TextArea logArea, Slider delaySlider) {
-        this.statsLabel = statsLabel;
-        this.logArea = logArea;
-        this.delaySlider = delaySlider;
-        this.initialize(null, null);
+    protected final void appendLog(String message) {
+        if (logArea != null) {
+            Platform.runLater(
+                    () -> logArea.appendText(String.format("[%tT] %s%n", System.currentTimeMillis(), message)));
+        }
     }
 
-    public BaseVisualizer<S> getVisualizer() {
-        return visualizer;
+    protected void refreshStatsDisplay() {
+        if (statsLabel != null) {
+            statsLabel.setText(formatStatsMessage());
+        }
     }
 
-    // --- 抽象钩子 ---
+    /**
+     * 初始化全局控制按钮的行为
+     */
+    private void setupGlobalButtonActions() {
+        if (startBtn != null) {
+            startBtn.setOnAction(e -> handleAlgorithmStart());
+        }
+        if (pauseBtn != null) {
+            pauseBtn.setOnAction(e -> togglePause());
+        }
+        if (resetBtn != null) {
+            resetBtn.setOnAction(e -> {
+                stopAlgorithm();
+                ((BaseModuleController<S>) this).resetModule();
+            });
+        }
+    }
+
+    // --- 抽象钩子方法 ---
+
+    protected abstract String formatStatsMessage();
+
+    public abstract void setupCustomControls(HBox container);
 
     protected abstract void setupI18n();
 
     protected abstract void executeAlgorithm(BaseAlgorithms<S> algorithm, S data);
 
-    protected abstract void updateUIComponents(int compareCount, int actionCount);
+    public abstract void handleAlgorithmStart();
 
-    public abstract List<Node> getCustomControls();
+    protected void onAlgorithmFinished() {
+        appendLog(String.format("Finished. Duration: %dms", stats.getDuration()));
+    }
 
-    /**
-     * 钩子方法：用于在数据回滚后更新子类内部的具体引用
-     */
-    protected abstract void updateCurrentDataReference(S restoredData);
-
-    // --- 默认回调行为 ---
-
-    /**
-     * 算法发生错误时的处理回调
-     */
     protected void handleAlgorithmError(Exception e) {
-        AlgorithmThreadManager.postStatus(() -> {
-            if (logArea != null) {
-                logArea.appendText("Error: " + e.getMessage() + "\n");
-            }
-        });
+        appendLog("Runtime Error: " + e.getMessage());
+        e.printStackTrace();
+    }
+
+    // --- 生命周期管理与引用注入 ---
+
+    /**
+     * 由 MainController 调用，完成 UI 体系的整体依赖注入。
+     */
+    public final void setUIReferences(
+            Label statsLabel,
+            TextArea logArea,
+            Slider delaySlider,
+            HBox customBox,
+            Button startBtn,
+            Button pauseBtn,
+            Button resetBtn) {
+        this.statsLabel = statsLabel;
+        this.logArea = logArea;
+        this.delaySlider = delaySlider;
+        this.customControlBox = customBox;
+        this.startBtn = startBtn;
+        this.pauseBtn = pauseBtn;
+        this.resetBtn = resetBtn;
+
+        // 1. 绑定滑块
+        if (this.delaySlider != null) {
+            this.delayMs.bind(this.delaySlider.valueProperty());
+            this.delayMs.addListener((obs, oldVal, newVal) -> AlgorithmThreadManager.setDelay(newVal.longValue()));
+            AlgorithmThreadManager.setDelay(delayMs.longValue());
+        }
+
+        // 2. 绑定按钮行为
+        setupGlobalButtonActions();
+
+        // 3. 触发初始化逻辑
+        this.initialize(null, null);
+    }
+
+    public final BaseVisualizer<S> getVisualizer() {
+        return visualizer;
     }
 
     /**
-     * 算法正常结束时的处理回调
+     * 安全地获取可视化视图根节点，用于 MainController 布局插入。
      */
-    protected void onAlgorithmFinished() {
-        AlgorithmThreadManager.postStatus(() -> {
-            if (logArea != null) {
-                logArea.appendText("Execution completed.\n");
-            }
-        });
+    public final Region getVisualizerView() {
+        if (visualizer instanceof Region) {
+            return (Region) visualizer;
+        }
+        throw new IllegalStateException("Visualizer must extend Region for layout integration.");
     }
 }

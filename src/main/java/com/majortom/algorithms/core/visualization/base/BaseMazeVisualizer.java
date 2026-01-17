@@ -2,62 +2,49 @@ package com.majortom.algorithms.core.visualization.base;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
+import javafx.scene.paint.Color;
 
 /**
- * 迷宫视觉呈现基类
- * 职责：
- * 1. 统一迷宫网格的单位计算逻辑。
- * 2. 映射迷宫状态至《乱》配色方案：墙体(红)、路径(蓝)、回溯(黄)。
+ * 迷宫算法可视化基类
  */
 public abstract class BaseMazeVisualizer<S extends BaseMaze<?>> extends BaseVisualizer<S> {
 
     @Override
-    protected void draw(S maze, Object a, Object b) {
-        // 1. 获取迷宫维度
-        int rows = maze.getRows();
-        int cols = maze.getCols();
+    protected void draw(S data, Object a, Object b) {
+        clear(); // 使用 BaseVisualizer 的极夜黑清空
 
-        // 2. 计算自适应单元格尺寸
-        double cellW = canvas.getWidth() / cols;
-        double cellH = canvas.getHeight() / rows;
+        if (data == null)
+            return;
 
-        // 3. 执行具体的迷宫阵列绘制
-        drawMazeGrid(maze, cellW, cellH);
+        // 计算基础单元格尺寸
+        double cellW = canvas.getWidth() / data.getCols();
+        double cellH = canvas.getHeight() / data.getRows();
 
-        // 4. 执行焦点（当前扫描位置）绘制
-        if (a != null && b != null) {
-            drawFocus(a, b, cellW, cellH);
-        }
+        drawMaze(data, a, b, cellW, cellH);
+        drawFocus(a, b, cellW, cellH);
     }
 
     /**
-     * 子类需实现：遍历数据矩阵并调用渲染单元格
+     * 核心绘制逻辑，交给具体形状实现类（如 Square, Hexagon）
      */
-    protected abstract void drawMazeGrid(S maze, double cellW, double cellH);
+    protected abstract void drawMaze(S mazeEntity, Object a, Object b, double cellW, double cellH);
 
     /**
-     * 子类需实现：绘制当前的搜索焦点
-     * 
-     * @param a 通常为行坐标 (Integer)
-     * @param b 通常为列坐标 (Integer)
+     * 获取单元格的屏幕坐标 X
      */
-    protected abstract void drawFocus(Object a, Object b, double cellW, double cellH);
-
-    /**
-     * 通用工具：绘制一个标准的网格单元
-     */
-    protected void renderCell(double r, double c, double w, double h, javafx.scene.paint.Color color,
-            boolean isHardEdge) {
-        double x = c * w;
-        double y = r * h;
-
-        gc.setFill(color);
-        if (isHardEdge) {
-            // 墙体使用硬边，增强结构感
-            gc.fillRect(x, y, w, h);
-        } else {
-            // 路径或节点使用微量内缩，产生网格感
-            gc.fillRect(x + 1, y + 1, w - 2, h - 2);
-        }
+    protected double getX(int col, double cellW) {
+        return col * cellW;
     }
+
+    /**
+     * 获取单元格的屏幕坐标 Y
+     */
+    protected double getY(int row, double cellH) {
+        return row * cellH;
+    }
+
+    /**
+     * 焦点绘制由子类实现，以适配不同形状的焦点框
+     */
+    protected abstract void drawFocus(Object a, Object b, double w, double h);
 }

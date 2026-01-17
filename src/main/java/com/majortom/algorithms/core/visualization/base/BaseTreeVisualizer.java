@@ -3,82 +3,89 @@ package com.majortom.algorithms.core.visualization.base;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
+import javafx.animation.AnimationTimer;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 树结构视觉呈现基类 - 负责布局计算、坐标转换与动画同步
+ * 树算法可视化基类
+ * 职责：管理节点动画平滑过渡 (LERP)、画布自动缩放与居中
  */
 public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVisualizer<BaseTree<T>> {
 
-    protected static final double NODE_RADIUS = 26.0;
-    protected static final double LEVEL_HEIGHT = 115.0;
-    protected static final double NODE_GAP = 85.0;
+    // 动画常量
+    protected static final double LERP_FACTOR = 0.18;
 
-    // --- 动画位置映射：存放在基类，确保所有树算法共享平滑移动逻辑 ---
+    // 布局与动画映射
     protected final Map<TreeNode<T>, Point> currentPosMap = new ConcurrentHashMap<>();
     protected final Map<TreeNode<T>, Point> targetPosMap = new ConcurrentHashMap<>();
+
+    protected BaseTree<T> treeInstance;
+    protected Object focusA;
 
     protected double autoScale = 1.0;
     protected double autoOffsetX = 0;
     protected double autoOffsetY = 80;
 
+    public BaseTreeVisualizer() {
+        // 启动统一的动画计时器
+        new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                updateAnimationPositions();
+                renderFrame();
+            }
+        }.start();
+    }
+
     @Override
     protected void draw(BaseTree<T> tree, Object a, Object b) {
-        if (tree == null || tree.getRoot() == null)
+        if (tree == null || tree.getRoot() == null) {
+            this.treeInstance = null;
             return;
-
-        // 1. 使用局部 Map 进行布局计算（双缓冲思想，防止计算过程中的 NPE）
-        Map<TreeNode<T>, Point> nextLayout = new HashMap<>();
-        double rawW = calculateLayoutRecursively(tree.getRoot(), 0, 0, nextLayout);
-
-        // 2. 计算缩放与居中
-        calculateTransform(nextLayout, rawW);
-
-        // 3. 线程安全地更新目标位置
-        targetPosMap.putAll(nextLayout);
-        targetPosMap.keySet().retainAll(nextLayout.keySet());
-
-        // 4. 初始化新节点的起始坐标
-        nextLayout.forEach((node, p) -> currentPosMap.putIfAbsent(node, new Point(p.x, p.y)));
-    }
-
-    private double calculateLayoutRecursively(TreeNode<T> node, double xOffset, double y,
-            Map<TreeNode<T>, Point> layout) {
-        if (node == null)
-            return 0;
-        var children = node.getChildren();
-        if (children == null || children.isEmpty()) {
-            layout.put(node, new Point(xOffset + NODE_GAP / 2, y));
-            return NODE_GAP;
         }
-        double totalW = 0;
-        for (var child : children) {
-            totalW += calculateLayoutRecursively(child, xOffset + totalW, y + LEVEL_HEIGHT, layout);
-        }
-        // 防御性：确保子节点坐标已存入，避免 NPE
-        if (layout.containsKey(children.get(0)) && layout.containsKey(children.get(children.size() - 1))) {
-            double px = (layout.get(children.get(0)).x + layout.get(children.get(children.size() - 1)).x) / 2;
-            layout.put(node, new Point(px, y));
-        }
-        return totalW;
-    }
+        this.treeInstance = tree;
+        this.focusA = a;
 
-    private void calculateTransform(Map<TreeNode<T>, Point> layout, double rawW) {
-        double rawH = layout.values().stream().mapToDouble(p -> p.y).max().orElse(0);
-        double availableW = canvas.getWidth() * 0.92;
-        double availableH = canvas.getHeight() * 0.85;
-
-        autoScale = Math.min(availableW / rawW, availableH / (rawH + 150));
-        autoOffsetX = (canvas.getWidth() - rawW * autoScale) / 2;
-        autoOffsetY = 85 * autoScale;
+        // 触发布局计算（由子类实现具体算法：如递归排列、分层排列）
+        updateLayout(tree);
     }
 
     /**
-     * 定义坐标点内部类
+     * 核心渲染流程：清屏 -> 应用变换 -> 递归绘制
      */
+    private void renderFrame() {
+        if (treeInstance == null || treeInstance.getRoot() == null)
+            return;
+
+        clear(); // 使用基类 RAN_BLACK
+        gc.save();
+        gc.translate(autoOffsetX, autoOffsetY);
+        gc.scale(autoScale, autoScale);
+
+        renderTreeRecursive(treeInstance.getRoot());
+
+        gc.restore();
+    }
+
+    protected abstract void updateLayout(BaseTree<T> tree);
+
+    protected abstract void renderTreeRecursive(TreeNode<T> node);
+
+    /**
+     * 更新节点位置，实现平滑移动
+     */
+    private void updateAnimationPositions() {
+        targetPosMap.forEach((node, target) -> {
+            Point current = currentPosMap.getOrDefault(node, target);
+            currentPosMap.put(node, new Point(
+                    current.x + (target.x - current.x) * LERP_FACTOR,
+                    current.y + (target.y - current.y) * LERP_FACTOR));
+        });
+        currentPosMap.keySet().removeIf(node -> !targetPosMap.containsKey(node));
+    }
+
     protected static class Point {
         public double x, y;
 
