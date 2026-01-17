@@ -1,7 +1,8 @@
-package com.majortom.algorithms.core.visualization.base;
+package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+
 import javafx.application.Platform;
 import org.graphstream.graph.Graph;
 import org.graphstream.ui.fx_viewer.FxViewPanel;

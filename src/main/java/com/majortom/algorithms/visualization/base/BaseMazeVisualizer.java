@@ -1,8 +1,8 @@
-package com.majortom.algorithms.core.visualization.base;
+package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import javafx.scene.paint.Color;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+
 
 /**
  * 迷宫算法可视化基类

@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.international;
+package com.majortom.algorithms.visualization.international;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;

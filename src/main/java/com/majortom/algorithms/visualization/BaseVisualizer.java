@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization;
+package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.core.base.BaseStructure;
 import javafx.application.Platform;

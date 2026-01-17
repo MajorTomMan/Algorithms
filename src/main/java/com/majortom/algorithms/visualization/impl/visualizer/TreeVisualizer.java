@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.impl.visualizer;
+package com.majortom.algorithms.visualization.impl.visualizer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
-import com.majortom.algorithms.core.visualization.base.BaseTreeVisualizer;
+import com.majortom.algorithms.visualization.base.BaseTreeVisualizer;
 
 import javafx.geometry.VPos;
 import javafx.scene.paint.Color;

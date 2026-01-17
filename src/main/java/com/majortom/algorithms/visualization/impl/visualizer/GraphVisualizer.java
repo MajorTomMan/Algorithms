@@ -1,7 +1,8 @@
-package com.majortom.algorithms.core.visualization.impl.visualizer;
+package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
-import com.majortom.algorithms.core.visualization.base.BaseGraphVisualizer;
+import com.majortom.algorithms.visualization.base.BaseGraphVisualizer;
+
 import org.graphstream.graph.Node;
 
 /**

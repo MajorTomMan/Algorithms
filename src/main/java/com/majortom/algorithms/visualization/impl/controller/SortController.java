@@ -1,14 +1,14 @@
-package com.majortom.algorithms.core.visualization.impl.controller;
+package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 import com.majortom.algorithms.core.sort.impl.ArraySortEntity;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import com.majortom.algorithms.core.visualization.international.I18N;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;

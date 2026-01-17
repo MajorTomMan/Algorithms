@@ -1,8 +1,9 @@
-package com.majortom.algorithms.core.visualization.base;
+package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+
 import javafx.animation.AnimationTimer;
 
 import java.util.Map;

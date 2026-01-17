@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.stat;
+package com.majortom.algorithms.visualization.stat;
 
 public class AlgorithmStats {
     public long startTime;
