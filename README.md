@@ -105,7 +105,7 @@ Algorithms Visualizer 项目文档
 
 ```txt
 src/main/java
-├── com.xxx.algorithms
+├── com.majortom.algorithms
 │ ├── App // 程序入口
 │ ├── core // 核心逻辑层
 │ │ ├── BaseStructure // 数据结构抽象 + 统计
