@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  fx:controller="com.majortom.algorithms.core.visualization.impl.controller.MainController"
+  fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
   prefHeight="800.0" prefWidth="1200.0"
   styleClass="root-pane" stylesheets="@../style/ui_theme.css">
   <left>

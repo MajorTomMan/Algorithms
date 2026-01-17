@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.launcher;
+package com.majortom.algorithms.visualization.launcher;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 
 import atlantafx.base.theme.PrimerDark;
 

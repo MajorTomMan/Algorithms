@@ -1,8 +1,9 @@
-package com.majortom.algorithms.core.visualization.impl.visualizer;
+package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
-import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
+import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
+
 import javafx.scene.paint.Color;
 
 /**

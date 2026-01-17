@@ -1,13 +1,14 @@
-package com.majortom.algorithms.core.visualization.impl.controller;
+package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.graph.BaseGraphAlgorithms;
 import com.majortom.algorithms.core.graph.impl.DirectedGraph;
-import com.majortom.algorithms.core.visualization.impl.visualizer.GraphVisualizer;
-import com.majortom.algorithms.core.visualization.international.I18N;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;

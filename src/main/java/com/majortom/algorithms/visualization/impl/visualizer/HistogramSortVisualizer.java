@@ -1,7 +1,8 @@
-package com.majortom.algorithms.core.visualization.impl.visualizer;
+package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.sort.BaseSort;
-import com.majortom.algorithms.core.visualization.base.BaseSortVisualizer;
+import com.majortom.algorithms.visualization.base.BaseSortVisualizer;
+
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 

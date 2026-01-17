@@ -1,10 +1,11 @@
-package com.majortom.algorithms.core.visualization.impl.controller;
+package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseStructure;
-import com.majortom.algorithms.core.visualization.BaseController;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import com.majortom.algorithms.core.visualization.international.I18N;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.visualization.BaseController;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;

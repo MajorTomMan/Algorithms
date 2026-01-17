@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.impl.controller;
+package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.graph.algorithms.BFSAlgorithms;
 import com.majortom.algorithms.core.graph.impl.DirectedGraph;
@@ -8,14 +8,15 @@ import com.majortom.algorithms.core.sort.alg.InsertionSort;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.alg.AVLTreeAlgorithms;
 import com.majortom.algorithms.core.tree.impl.AVLTreeEntity;
-import com.majortom.algorithms.core.visualization.BaseController;
-import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import com.majortom.algorithms.core.visualization.impl.visualizer.HistogramSortVisualizer;
-import com.majortom.algorithms.core.visualization.impl.visualizer.SquareMazeVisualizer;
-import com.majortom.algorithms.core.visualization.international.I18N;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.BaseController;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.HistogramSortVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.SquareMazeVisualizer;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

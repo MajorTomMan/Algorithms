@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.impl.controller;
+package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.maze.BaseMaze;
@@ -6,10 +6,11 @@ import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
 import com.majortom.algorithms.core.maze.algorithms.generate.*;
 import com.majortom.algorithms.core.maze.algorithms.pathfinding.*;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
-import com.majortom.algorithms.core.visualization.base.BaseMazeVisualizer;
-import com.majortom.algorithms.core.visualization.international.I18N;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;

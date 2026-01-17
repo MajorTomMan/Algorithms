@@ -1,11 +1,11 @@
-package com.majortom.algorithms.core.visualization;
+package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
-import com.majortom.algorithms.core.visualization.impl.controller.BaseModuleController;
-import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
-import com.majortom.algorithms.core.visualization.stat.AlgorithmStats;
+import com.majortom.algorithms.visualization.impl.controller.BaseModuleController;
+import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
+import com.majortom.algorithms.visualization.stat.AlgorithmStats;
 
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;

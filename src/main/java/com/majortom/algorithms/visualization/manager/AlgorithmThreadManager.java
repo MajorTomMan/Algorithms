@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.visualization.manager;
+package com.majortom.algorithms.visualization.manager;
 
 import javafx.application.Platform;
 import java.util.concurrent.*;
