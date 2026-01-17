@@ -229,7 +229,7 @@ src/main/resources
 构建与启动步骤：
 
 1. 克隆仓库（请替换为实际地址）
-   git clone git@github.com:MajorTomMan/Algorithms.git
+   git clone https://github.com/MajorTomMan/Algorithms.git
    cd Algorithms
 
 2. 编译打包
