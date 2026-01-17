@@ -2,33 +2,62 @@ package com.majortom.algorithms.core.visualization.base;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.visualization.BaseVisualizer;
-import javafx.scene.paint.Color;
 
+/**
+ * 迷宫视觉呈现基类
+ * 职责：
+ * 1. 统一迷宫网格的单位计算逻辑。
+ * 2. 映射迷宫状态至《乱》配色方案：墙体(红)、路径(蓝)、回溯(黄)。
+ */
 public abstract class BaseMazeVisualizer<S extends BaseMaze<?>> extends BaseVisualizer<S> {
 
-    // --- 《乱》核心三原色体系 ---
-    protected static final Color BG_DEEP = Color.rgb(5, 5, 8);
-    protected static final Color RAN_YELLOW = Color.rgb(240, 190, 0);
-    // 核心色值定义
-    protected final Color RAN_RED = Color.rgb(180, 0, 0); // 红色：墙体
-    protected final Color RAN_BLUE = Color.rgb(0, 120, 255); // 蓝色：路径
-    protected final Color RAN_GOLD = Color.rgb(220, 180, 0); // 黄色：回溯
-    protected final Color BONE_WHITE = Color.rgb(240, 240, 230); // 骨白：焦点/起点
-    protected static final Color RAN_PINK = Color.rgb(255, 50, 120);
-    protected static final Color RAN_VIOLET = Color.rgb(130, 70, 200);
-
     @Override
-    protected void draw(S data, Object a, Object b) {
-        clear();
-        gc.setFill(BG_DEEP);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+    protected void draw(S maze, Object a, Object b) {
+        // 1. 获取迷宫维度
+        int rows = maze.getRows();
+        int cols = maze.getCols();
 
-        if (data == null)
-            return;
-        drawMaze(data, a, b);
+        // 2. 计算自适应单元格尺寸
+        double cellW = canvas.getWidth() / cols;
+        double cellH = canvas.getHeight() / rows;
+
+        // 3. 执行具体的迷宫阵列绘制
+        drawMazeGrid(maze, cellW, cellH);
+
+        // 4. 执行焦点（当前扫描位置）绘制
+        if (a != null && b != null) {
+            drawFocus(a, b, cellW, cellH);
+        }
     }
 
-    protected abstract void drawMaze(S data, Object a, Object b);
+    /**
+     * 子类需实现：遍历数据矩阵并调用渲染单元格
+     */
+    protected abstract void drawMazeGrid(S maze, double cellW, double cellH);
 
-    protected abstract void drawFocus(Object a, Object b, double w, double h);
+    /**
+     * 子类需实现：绘制当前的搜索焦点
+     * 
+     * @param a 通常为行坐标 (Integer)
+     * @param b 通常为列坐标 (Integer)
+     */
+    protected abstract void drawFocus(Object a, Object b, double cellW, double cellH);
+
+    /**
+     * 通用工具：绘制一个标准的网格单元
+     */
+    protected void renderCell(double r, double c, double w, double h, javafx.scene.paint.Color color,
+            boolean isHardEdge) {
+        double x = c * w;
+        double y = r * h;
+
+        gc.setFill(color);
+        if (isHardEdge) {
+            // 墙体使用硬边，增强结构感
+            gc.fillRect(x, y, w, h);
+        } else {
+            // 路径或节点使用微量内缩，产生网格感
+            gc.fillRect(x + 1, y + 1, w - 2, h - 2);
+        }
+    }
 }

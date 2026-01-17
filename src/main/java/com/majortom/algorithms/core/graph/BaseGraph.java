@@ -112,4 +112,41 @@ public abstract class BaseGraph<V> extends BaseStructure<V> {
             this.graph.setAttribute("ui.antialias");
         }
     }
+
+    @Override
+    public BaseStructure<V> copy() {
+        // 1. 调用子类实现的钩子，确保“血统”正确
+        BaseGraph<V> copyGraph = (BaseGraph<V>) createEmptyInstance(this.graph.getId() + "_copy");
+
+        // 2. 通用逻辑：拷贝节点及坐标（父类处理）
+        this.graph.nodes().forEach(oldNode -> {
+            Node newNode = copyGraph.getGraph().addNode(oldNode.getId());
+            oldNode.attributeKeys().forEach(k -> newNode.setAttribute(k, oldNode.getAttribute(k)));
+        });
+
+        // 3. 差异逻辑：调用子类的 addEdge（子类处理）
+        this.graph.edges().forEach(oldEdge -> {
+            String from = oldEdge.getSourceNode().getId();
+            String to = oldEdge.getTargetNode().getId();
+            int weight = oldEdge.hasAttribute("weight") ? (int) oldEdge.getAttribute("weight") : 1;
+
+            // 这里会根据子类是 Undirected 还是 Directed 执行不同的逻辑
+            copyGraph.addEdge(from, to, weight);
+
+            // 补偿边属性（如高亮色）
+            Edge newEdge = copyGraph.getGraph().getEdge(oldEdge.getId());
+            if (newEdge != null) {
+                oldEdge.attributeKeys().forEach(k -> newEdge.setAttribute(k, oldEdge.getAttribute(k)));
+            }
+        });
+
+        copyGraph.actionCount = this.actionCount;
+        copyGraph.compareCount = this.compareCount;
+        return copyGraph;
+    }
+
+    /**
+     * 抽象钩子：由子类返回自身的具体实例（如 return new DirectedGraph(id)）
+     */
+    protected abstract BaseGraph<V> createEmptyInstance(String id);
 }

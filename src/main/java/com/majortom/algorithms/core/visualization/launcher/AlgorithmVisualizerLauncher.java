@@ -27,7 +27,7 @@ public class AlgorithmVisualizerLauncher extends Application {
         try {
             // 1. 加载主界面 FXML
             ResourceBundle bundle = ResourceBundle.getBundle("language.language", Locale.getDefault());
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainFrame.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainControls.fxml"));
             loader.setResources(bundle);
             Parent root = loader.load();
             // 2. 创建场景并应用深色赛博风格

@@ -8,23 +8,26 @@ import com.majortom.algorithms.core.visualization.impl.visualizer.TreeVisualizer
 import com.majortom.algorithms.core.visualization.international.I18N;
 import com.majortom.algorithms.core.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.utils.EffectUtils;
-
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
+/**
+ * 树结构算法控制器
+ * 职责：连接 AVLTreeEntity (数据) 与 AVLTreeAlgorithms (算法)。
+ */
 public class TreeController<T extends Comparable<T>> extends BaseController<BaseTree<T>> {
 
-    private final BaseTree<T> treeData;
+    private BaseTree<T> treeData;
     private final BaseTreeAlgorithms<T> treeAlgorithms;
     private Node customControlPane;
 
@@ -37,11 +40,7 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     @FXML
     private Label inputLabel;
     @FXML
-    private Button deleteBtn;
-    @FXML
-    private Button insertBtn;
-    @FXML
-    private Button randomBtn;
+    private Button deleteBtn, insertBtn, randomBtn;
     @FXML
     private TextField inputField;
 
@@ -58,17 +57,17 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
             loader.setResources(I18N.getBundle());
             loader.setController(this);
             this.customControlPane = loader.load();
-            setupI18n();
         } catch (IOException e) {
-            System.err.println("FXML load failed.");
+            System.err.println("FXML load failed: " + e.getMessage());
         }
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
+        setupI18n();
         if (visualizer != null && treeData != null) {
-            visualizer.render(treeData);
+            visualizer.render(treeData, null, null);
         }
         EffectUtils.applyDynamicEffect(deleteBtn);
         EffectUtils.applyDynamicEffect(insertBtn);
@@ -76,20 +75,47 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
     }
 
     @Override
-    public List<Node> getCustomControls() {
-        return Collections.singletonList(customControlPane);
+    public void handleStartAction() {
+        if (treeData != null && treeAlgorithms != null) {
+            // 在开始新算法前，确保原数据已备份（BaseController 逻辑）
+            startAlgorithm(treeAlgorithms, treeData);
+        }
+    }
+
+    @Override
+    public void handleResetAction() {
+        stopAlgorithm();
+
+        if (originalData != null) {
+            // 核心修复：从快照克隆一份全新的 Entity，确保状态完全回滚
+            BaseTree<T> restored = (BaseTree<T>) originalData.copy();
+            updateCurrentDataReference(restored);
+
+            // 重置统计数据并在 UI 上反映
+            this.treeData.resetStatistics();
+            visualizer.render(this.treeData, null, null);
+            updateUIComponents(0, 0);
+        } else {
+            treeData.clear();
+            visualizer.render(treeData, null, null);
+        }
+
+        if (logArea != null) {
+            logArea.clear();
+            logArea.appendText("System: Tree state restored.\n");
+        }
     }
 
     @FXML
     private void handleInsert() {
         this.currentMode = Mode.INSERT;
-        handleAlgorithmStart();
+        handleStartAction();
     }
 
     @FXML
     private void handleDelete() {
         this.currentMode = Mode.DELETE;
-        handleAlgorithmStart();
+        handleStartAction();
     }
 
     @FXML
@@ -98,29 +124,17 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         inputField.setText(String.valueOf(randomVal));
     }
 
-    @FXML
-    private void handleReset() {
-        stopAlgorithm();
-        if (treeData != null) {
-            treeData.clear();
-            visualizer.render(treeData);
-        }
-        if (logArea != null)
-            logArea.clear();
-    }
-
     @Override
     protected void executeAlgorithm(BaseAlgorithms<BaseTree<T>> alg, BaseTree<T> tree) {
         String input = inputField.getText();
-        if (input == null || input.trim().isEmpty() || !(alg instanceof BaseTreeAlgorithms)) {
+        if (input == null || input.trim().isEmpty() || !(alg instanceof BaseTreeAlgorithms))
             return;
-        }
 
         BaseTreeAlgorithms<T> targetAlg = (BaseTreeAlgorithms<T>) alg;
         String[] values = input.split("[,，]");
 
         for (String valStr : values) {
-            if (!isRunning())
+            if (!AlgorithmThreadManager.isRunning())
                 break;
             try {
                 T val = parseValue(valStr.trim());
@@ -137,24 +151,38 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
         }
     }
 
-    private void logUpdate(String message) {
-        AlgorithmThreadManager.postStatus(() -> {
-            if (logArea != null) {
-                logArea.appendText(message + "\n");
-            }
-        });
+    @Override
+    protected void updateCurrentDataReference(BaseTree<T> restoredData) {
+        // 更新 Controller 持有的引用，确保后续操作针对的是回滚后的新实例
+        this.treeData = restoredData;
     }
 
     @Override
-    public void handleAlgorithmStart() {
-        if (treeData != null && treeAlgorithms != null) {
-            startAlgorithm(treeAlgorithms, treeData);
+    protected void updateUIComponents(int compareCount, int actionCount) {
+        if (statsLabel != null && treeData != null) {
+            // 除了步骤数，实时展示树的规模与高度，增加专业感
+            String stats = String.format("Size: %d | Height: %d\nSteps: %d | Compares: %d",
+                    treeData.size(), treeData.height(), actionCount, compareCount);
+            statsLabel.setText(stats);
         }
+    }
+
+    private void logUpdate(String message) {
+        AlgorithmThreadManager.postStatus(() -> {
+            if (logArea != null)
+                logArea.appendText(message + "\n");
+        });
     }
 
     @SuppressWarnings("unchecked")
     private T parseValue(String s) {
+        // 这里可以根据 T 的实际类型进行动态转换
         return (T) Integer.valueOf(s);
+    }
+
+    @Override
+    public List<Node> getCustomControls() {
+        return Collections.singletonList(customControlPane);
     }
 
     @Override
@@ -169,13 +197,5 @@ public class TreeController<T extends Comparable<T>> extends BaseController<Base
             deleteBtn.textProperty().bind(I18N.createStringBinding("btn.tree.delete"));
         if (inputField != null)
             inputField.promptTextProperty().bind(I18N.createStringBinding("ctrl.tree.prompt"));
-    }
-
-    @Override
-    protected void updateUIComponents(int compareCount, int actionCount) {
-        if (statsLabel != null && treeData != null) {
-            statsLabel.setText(String.format("Size: %d | Height: %d\nSteps: %d",
-                    treeData.size(), treeData.height(), actionCount));
-        }
     }
 }

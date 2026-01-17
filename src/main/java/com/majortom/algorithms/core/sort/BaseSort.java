@@ -7,7 +7,7 @@ import com.majortom.algorithms.core.base.BaseStructure;
  * 职责：持有待排序数组，并记录当前 UI 高亮状态。
  * * @param <T> 必须是可比较的类型（如 Integer, Double）
  */
-public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
+public abstract class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
 
     private T[] data;
 
@@ -71,6 +71,12 @@ public class BaseSort<T extends Comparable<T>> extends BaseStructure<T[]> {
     public void clear() {
         // TODO Auto-generated method stub
         
+    }
+
+    @Override
+    public BaseStructure<T[]> copy() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'copy'");
     }
 
 }

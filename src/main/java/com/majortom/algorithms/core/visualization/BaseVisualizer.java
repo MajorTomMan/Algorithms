@@ -8,118 +8,139 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 /**
  * 视觉呈现组件基类
- * 职责：管理 Canvas 生命周期，提供基础绘图工具，并响应数据结构的实时变化。
- * * @param <S> 结构类型，必须继承自 BaseStructure
+ * 职责：
+ * 1. 统筹 JavaFX Canvas 生命周期与响应式布局。
+ * 2. 固化黑泽明《乱》配色体系。
+ * 3. 维护数据快照，支持窗口缩放时的实时重绘。
+ * * @param <S> 结构类型，继承自 BaseStructure
  */
 public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPane {
 
     protected final Canvas canvas;
     protected final GraphicsContext gc;
 
-    // 缓存最后一次渲染的数据，用于响应窗口尺寸变化时的重绘
+    // --- 渲染快照 (用于窗口重绘) ---
     private S lastData;
     private Object lastA;
     private Object lastB;
 
-    /** 默认绘图颜色配置 - 保持你一贯的深色调审美 */
-    protected Color highlightColor = Color.web("#7E57C2"); // 忧郁紫
-    protected Color baseColor = Color.web("#CFD8DC"); // 冷灰色
-    protected Color backgroundColor = Color.web("#0A0A0E"); // 极夜黑
+    // --- 黑泽明《乱》配色体系 (Ran Aesthetics) ---
+    protected static final Color RAN_RED = Color.rgb(180, 0, 0); // 太郎：稳固、墙体、常规节点
+    protected static final Color RAN_BLUE = Color.rgb(0, 120, 255); // 次郎：行动、路径、活跃焦点
+    protected static final Color RAN_GOLD = Color.rgb(220, 180, 0); // 三郎：变动、回溯、比较/关联
+    protected static final Color BONE_WHITE = Color.rgb(240, 240, 230); // 骨白：核心文字、高亮轮廓
+    protected static final Color ARMOR_BLACK = Color.rgb(10, 10, 12); // 铠甲黑：背景底色
+    protected static final Color IRON_GRAY = Color.rgb(60, 60, 70); // 铁灰：次要装饰、连线
 
     public BaseVisualizer() {
         this.canvas = new Canvas();
         this.gc = canvas.getGraphicsContext2D();
 
-        // 将 Canvas 放入 StackPane 容器
+        // 布局绑定：使 Canvas 随父容器 StackPane 自动伸缩
         this.getChildren().add(canvas);
-
-        // 🚩 核心逻辑：Canvas 本身不具备自增长性，必须绑定到父容器的宽高
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
 
-        // 监听宽高变化：当窗口缩放时触发自动重绘
+        // 监听尺寸变化：当窗口被拉伸时，利用快照重新触发绘制
         this.widthProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
         this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
     }
 
-    public BaseVisualizer(S initialData) {
-        this(); 
-        this.lastData = initialData; 
-    }
-
     /**
-     * 清空画布并填充背景色
-     */
-    public void clear() {
-        gc.setFill(backgroundColor);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-    }
-
-    public void render(S structure) {
-        render(structure, null, null);
-    }
-
-    /**
-     * 统一绘制入口
-     * 此方法由 BaseController 调用，运行在 JavaFX 线程。
+     * 统一渲染入口
+     * 职责：记录数据快照并调度到 UI 线程执行。
+     * * @param data 当前数据结构状态
+     * 
+     * @param a 活跃焦点 (Primary Focus)
+     * @param b 辅助焦点 (Secondary Focus)
      */
     public final void render(S data, Object a, Object b) {
-        // 更新快照数据
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
 
-        // 执行渲染逻辑
-        draw(data, a, b);
+        if (Platform.isFxApplicationThread()) {
+            executeRedraw(data, a, b);
+        } else {
+            Platform.runLater(() -> executeRedraw(data, a, b));
+        }
     }
 
     /**
-     * 抽象绘制逻辑，由各子类根据具体数据结构实现（如 QuickSortVisualizer）
+     * 执行实际重绘逻辑
+     */
+    public void executeRedraw(S data, Object a, Object b) {
+        clearCanvas();
+        if (data != null) {
+            draw(data, a, b);
+        }
+    }
+
+    /**
+     * 抽象绘制逻辑：由具体的子类实现
      */
     protected abstract void draw(S data, Object a, Object b);
 
     /**
-     * 重绘当前快照
-     * 用于非算法触发的场景（如缩放窗口、页面切换）
+     * 自动重绘当前状态
+     * 用于响应 UI 线程发起的非算法性更新（如窗口缩放）。
      */
     public void drawCurrent() {
         if (lastData != null) {
-            // 确保在 JavaFX UI 线程执行
             if (Platform.isFxApplicationThread()) {
-                draw(lastData, lastA, lastB);
+                executeRedraw(lastData, lastA, lastB);
             } else {
-                Platform.runLater(() -> draw(lastData, lastA, lastB));
+                Platform.runLater(() -> executeRedraw(lastData, lastA, lastB));
             }
         }
     }
 
-    // --- 绘图辅助工具 ---
+    /**
+     * 清空画布并填充极夜背景色
+     */
+    public void clearCanvas() {
+        gc.setFill(ARMOR_BLACK);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+    }
+
+    // --- 绘图辅助工具 (子类通用) ---
 
     /**
-     * 绘制居中文字
+     * 绘制具有《乱》风格的居中文字
      */
-    protected void drawCenteredText(double x, double y, String text, Color color, Font font) {
+    protected void drawText(String text, double x, double y, Color color, double fontSize, boolean bold) {
         gc.save();
         gc.setFill(color);
-        gc.setFont(font);
+        gc.setFont(Font.font("Consolas", bold ? FontWeight.BOLD : FontWeight.NORMAL, fontSize));
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
         gc.fillText(text, x, y);
         gc.restore();
     }
 
-    // --- Getter & Setter ---
-
-    public GraphicsContext getGraphicsContext() {
-        return gc;
+    /**
+     * 绘制带阴影的光晕效果 (用于增强活跃节点的视觉表现)
+     */
+    protected void drawGlow(double x, double y, double radius, Color color) {
+        gc.save();
+        gc.setFill(color.deriveColor(0, 1, 1, 0.2));
+        gc.fillOval(x - radius - 5, y - radius - 5, (radius + 5) * 2, (radius + 5) * 2);
+        gc.restore();
     }
+
+    // --- Getter 接口 ---
 
     public S getLastData() {
         return lastData;
+    }
+
+    public GraphicsContext getGraphicsContext() {
+        return gc;
     }
 
     public Canvas getCanvas() {

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.core.graph.impl;
 
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import org.graphstream.graph.Edge;
 
@@ -43,4 +44,10 @@ public class UndirectedGraph<V> extends BaseGraph<V> {
         // TODO Auto-generated method stub
         super.clear();
     }
+
+    @Override
+    protected BaseGraph<V> createEmptyInstance(String id) {
+        return new UndirectedGraph<>(id);
+    }
+
 }

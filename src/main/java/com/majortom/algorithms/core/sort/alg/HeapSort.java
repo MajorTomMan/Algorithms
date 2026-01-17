@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.sort.impl;
+package com.majortom.algorithms.core.sort.alg;
 
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
@@ -35,12 +35,13 @@ public class HeapSort<T extends Comparable<T>> extends BaseSortAlgorithms<T> {
             largest = r;
         }
 
-        // 如果发现最大值不是父节点，执行交换并“追责到底”
+        // 如果发现最大值不是父节点，执行交换
         if (largest != i) {
             swap(sortEntity, i, largest);
             // 关键：递归处理受影响的子树
             heapify(sortEntity, n, largest);
         }
     }
+
 
 }

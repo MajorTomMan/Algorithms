@@ -95,6 +95,23 @@ public abstract class BaseMaze<T> extends BaseStructure<T> {
         this.isGenerated = isGenerated;
     }
 
+    public boolean isGenerated() {
+        return isGenerated;
+    }
+
+    /**
+     * 内部拷贝逻辑辅助方法
+     * 职责：将统计数据和状态位同步到副本
+     */
+    protected void copyStateTo(BaseMaze<T> target) {
+        target.isGenerated = this.isGenerated;
+        target.actionCount = this.actionCount;
+        target.compareCount = this.compareCount;
+    }
+
+    @Override
+    public abstract BaseMaze<T> copy();
+
     public abstract void clearVisualStates();
 
     public abstract void pickRandomPointsOnAvailablePaths();
