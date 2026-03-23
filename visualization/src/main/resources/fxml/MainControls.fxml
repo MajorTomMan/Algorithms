@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
+  prefHeight="800.0" prefWidth="1200.0"
+  styleClass="root-pane" stylesheets="@../style/ui_theme.css">
+  <left>
+    <VBox spacing="15" styleClass="dark-panel" minWidth="280" alignment="TOP_CENTER">
+      <Label fx:id="menuTitleLabel" styleClass="section-title" />
+      <VBox fx:id="moduleMenuBox" spacing="10" fillWidth="true" />
+
+      <Separator style="-fx-opacity: 0.1;" />
+
+      <Label fx:id="statsTitleLabel" styleClass="section-title" />
+      <Label fx:id="statsLabel" styleClass="status-text" />
+
+      <Label fx:id="logTitleLabel" styleClass="section-title" />
+      <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" styleClass="log-area"
+        wrapText="true" />
+
+      <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
+        maxWidth="Infinity" styleClass="menu-button" />
+    </VBox>
+  </left>
+
+  <center>
+    <StackPane fx:id="visualizationContainer" style="-fx-padding: 10;" />
+  </center>
+
+  <bottom>
+    <HBox spacing="20" alignment="CENTER_LEFT" styleClass="control-bar-refined">
+      <HBox spacing="12" alignment="CENTER_LEFT">
+        <Button fx:id="startBtn" styleClass="btn-primary" />
+        <Button fx:id="pauseBtn" styleClass="btn-ran-gold" />
+        <Button fx:id="resetBtn" styleClass="btn-ran-gold" />
+        <Button fx:id="replayBtn" styleClass="btn-ran-blue" />
+        <Button fx:id="exportBtn" styleClass="btn-ran-gold" />
+        <Button fx:id="compareBtn" styleClass="btn-ran-red" />
+      </HBox>
+
+      <VBox spacing="5" alignment="CENTER_LEFT">
+        <Label fx:id="delayLabel" styleClass="control-label" />
+        <Slider fx:id="delaySlider" min="0" max="500" value="50" prefWidth="120" maxWidth="120" />
+      </VBox>
+
+      <VBox spacing="5" alignment="CENTER_LEFT">
+        <Label fx:id="timelineLabel" styleClass="control-label" />
+        <Slider fx:id="timelineSlider" min="0" max="1" value="0" prefWidth="140" maxWidth="140" />
+      </VBox>
+
+      <HBox fx:id="customControlBox" spacing="15" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS" />
+    </HBox>
+  </bottom>
+</BorderPane>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+    alignment="CENTER_LEFT" spacing="20"
+    stylesheets="@../style/ui_theme.css">
+
+    <Label fx:id="inputLabel" styleClass="control-label" />
+
+    <TextField fx:id="inputField" prefWidth="180"
+        styleClass="dark-textfield" />
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="insertBtn" onAction="#handleInsert"
+            styleClass="btn-ran-blue" />
+
+        <Button fx:id="deleteBtn" onAction="#handleDelete"
+            styleClass="btn-ran-red" />
+
+        <Button fx:id="randomBtn" onAction="#handleRandom"
+            styleClass="btn-ran-gold" />
+    </HBox>
+
+</HBox>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+    alignment="CENTER_LEFT" spacing="20"
+    stylesheets="@../style/ui_theme.css">
+
+    <Label fx:id="sizeLabel" styleClass="control-label" />
+
+    <Slider fx:id="sizeSlider" min="5" max="100" value="20" prefWidth="140" />
+
+    <ComboBox fx:id="algorithmSelector" prefWidth="150" styleClass="dark-combo-box" />
+
+    <Separator orientation="VERTICAL" prefHeight="25" styleClass="subtle-divider" />
+
+    <Button fx:id="genBtn" onAction="#handleGenerate"
+        styleClass="btn-ran-gold" />
+
+    <Button fx:id="sortBtn" onAction="#handleSort"
+        styleClass="btn-run-neon" />
+
+</HBox>
