@@ -2,7 +2,6 @@ package com.majortom.algorithms.visualization.launcher;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -29,15 +28,15 @@ public class AlgorithmVisualizerLauncher extends Application {
             ResourceBundle bundle = ResourceBundle.getBundle("language.language", Locale.getDefault());
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainControls.fxml"));
             loader.setResources(bundle);
-            Parent root = loader.load();
-            // 2. 创建场景并应用深色赛博风格
-            // 这里将背景设为你在 BaseMazeVisualizer 中定义的 BG_DEEP 色调
-            Scene scene = new Scene(root, 1280, 800);
+            // 2. 创建整界面等比缩放的场景
+            Scene scene = ResponsiveStageScaler.createScene(loader.load(), 1280, 800);
             scene.setFill(Color.web("#0A0A0E"));
 
             // 3. 配置窗口属性
             primaryStage.setTitle("Algorithms");
             primaryStage.setScene(scene);
+            primaryStage.setMinWidth(960);
+            primaryStage.setMinHeight(640);
 
             // 4. 优雅退出：确保程序关闭时停止所有后台算法线程
             primaryStage.setOnCloseRequest(event -> {

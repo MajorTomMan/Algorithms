@@ -3,10 +3,20 @@
   "configurations": [
     {
       "type": "java",
+      "name": "LauncherMain",
+      "request": "launch",
+      "mainClass": "com.majortom.algorithms.launcher.LauncherMain",
+      "projectName": "algorithms-launcher"
+    },
+    {
+      "type": "java",
       "name": "Run Maze Project",
       "request": "launch",
       "mainClass": "com.majortom.algorithms.App",
-      "vmArgs": ["-Dprism.order=sw", "-Dprism.verbose=true"]
+      "vmArgs": [
+        "-Dprism.order=sw",
+        "-Dprism.verbose=true"
+      ]
     }
   ]
 }

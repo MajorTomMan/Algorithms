@@ -1,18 +1,9 @@
 /* =========================================================
  * [0] 核心调色盘 - 极致黑白与“乱”美学对比
  * ======================================================= */
-.root {
-  -fx-base-bg: #000000; /* 纯黑底色 */
-  -fx-panel-bg: #0d0d0f;
-
-  -fx-ran-red: #ff0000; /* 毁灭/重置/迷宫 */
-  -fx-ran-blue: #00a2ff; /* 运行/逻辑/排序 */
-  -fx-ran-gold: #ffd700; /* 暂停/变数/树 */
-  -fx-ran-purple: #d140ff; /* 诞生/节点/图 */
-  -fx-ran-cyan: #00ffcc; /* 语言/冷静 */
-
-  -fx-pure-white: #ffffff;
-  -fx-background-color: -fx-base-bg;
+.root,
+.root-pane {
+  -fx-background-color: #000000;
 }
 
 /* =========================================================
@@ -30,7 +21,7 @@
 
 /* 侧边栏整体 */
 .dark-panel {
-  -fx-background-color: -fx-panel-bg;
+  -fx-background-color: #0d0d0f;
   -fx-border-color: transparent #333333 transparent transparent;
   -fx-border-width: 0 1 0 0;
 }
@@ -103,8 +94,8 @@
 #insertBtn,
 #sortBtn,
 .btn-ran-blue {
-  -fx-border-color: -fx-ran-blue;
-  -fx-text-fill: -fx-ran-blue;
+  -fx-border-color: #00a2ff;
+  -fx-text-fill: #00a2ff;
 }
 #pauseBtn,
 #randomBtn,
@@ -112,27 +103,27 @@
 #linkBtn,
 #treeBtn,
 .btn-ran-gold {
-  -fx-border-color: -fx-ran-gold;
-  -fx-text-fill: -fx-ran-gold;
+  -fx-border-color: #ffd700;
+  -fx-text-fill: #ffd700;
 }
 #resetBtn,
 #deleteBtn,
 #mazeBtn,
 .btn-ran-red {
-  -fx-border-color: -fx-ran-red;
-  -fx-text-fill: -fx-ran-red;
+  -fx-border-color: #ff0000;
+  -fx-text-fill: #ff0000;
 }
 #addBtn,
 #graphBtn,
 .btn-ran-purple {
-  -fx-border-color: -fx-ran-purple;
-  -fx-text-fill: -fx-ran-purple;
+  -fx-border-color: #d140ff;
+  -fx-text-fill: #d140ff;
 }
 
 /* 语言切换：冷冽青 */
 #langBtn {
-  -fx-border-color: -fx-ran-cyan;
-  -fx-text-fill: -fx-ran-cyan;
+  -fx-border-color: #00ffcc;
+  -fx-text-fill: #00ffcc;
   -fx-background-color: rgba(0, 255, 204, 0.05);
 }
 
@@ -153,7 +144,7 @@
 }
 
 .dark-textfield:focused {
-  -fx-border-color: -fx-ran-cyan;
+  -fx-border-color: #00ffcc;
 }
 
 /* 普通提示标签 */
@@ -170,7 +161,7 @@
 .slider .thumb {
   -fx-background-color: #ffffff;
   -fx-background-radius: 0;
-  -fx-border-color: -fx-ran-red;
+  -fx-border-color: #ff0000;
   -fx-border-width: 2;
 }
 
@@ -180,4 +171,85 @@
   -fx-font-family: "Consolas";
   -fx-font-size: 12px;
   -fx-border-color: #333333;
+}
+
+/* =========================================================
+ * [6] 重构后补回的组件样式桥接
+ * ======================================================= */
+.btn-primary,
+.btn-run-neon {
+  -fx-border-color: #00a2ff;
+  -fx-text-fill: #00a2ff;
+}
+
+.btn-neon-cyan {
+  -fx-border-color: #00ffcc;
+  -fx-text-fill: #00ffcc;
+  -fx-background-color: rgba(0, 255, 204, 0.06);
+}
+
+.btn-neon-pink {
+  -fx-border-color: #d140ff;
+  -fx-text-fill: #ff7af6;
+  -fx-background-color: rgba(209, 64, 255, 0.06);
+}
+
+.module-button:selected,
+.module-button:hover {
+  -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.btn-ran-blue:selected,
+.btn-ran-blue:hover {
+  -fx-effect: dropshadow(gaussian, rgba(0, 162, 255, 0.3), 12, 0.2, 0, 0);
+}
+
+.btn-ran-gold:selected,
+.btn-ran-gold:hover {
+  -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.3), 12, 0.2, 0, 0);
+}
+
+.btn-ran-red:selected,
+.btn-ran-red:hover {
+  -fx-effect: dropshadow(gaussian, rgba(255, 0, 0, 0.28), 12, 0.2, 0, 0);
+}
+
+.btn-ran-purple:selected,
+.btn-ran-purple:hover {
+  -fx-effect: dropshadow(gaussian, rgba(209, 64, 255, 0.3), 12, 0.2, 0, 0);
+}
+
+.dark-combo-box {
+  -fx-background-color: #000000;
+  -fx-border-color: #ffffff;
+  -fx-border-width: 2;
+  -fx-background-radius: 0;
+  -fx-border-radius: 0;
+}
+
+.dark-combo-box .list-cell,
+.dark-combo-box .text {
+  -fx-text-fill: #ffffff;
+  -fx-font-family: "Consolas", "Microsoft YaHei";
+  -fx-font-weight: bold;
+}
+
+.dark-combo-box .arrow-button {
+  -fx-background-color: #111111;
+}
+
+.dark-combo-box .arrow {
+  -fx-background-color: #00ffcc;
+}
+
+.subtle-divider {
+  -fx-opacity: 0.25;
+  -fx-background-color: #666666;
+}
+
+.size-value-highlight {
+  -fx-text-fill: #00ffcc;
+  -fx-font-family: "Consolas", "Microsoft YaHei";
+  -fx-font-weight: bold;
+  -fx-font-size: 13px;
 }

@@ -38,12 +38,6 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
             Supplier<BaseSortAlgorithms<T>> factory) {
     }
 
-    private final List<SortOption<T>> sortOptions = List.of(
-            new SortOption<>("insertion-sort", "algorithm.sort.insertion", InsertionSort::new),
-            new SortOption<>("selection-sort", "algorithm.sort.selection", SelectionSort::new),
-            new SortOption<>("quick-sort", "algorithm.sort.quick", QuickSort::new),
-            new SortOption<>("heap-sort", "algorithm.sort.heap", HeapSort::new));
-
     private BaseSort<T> sortData;
     private T[] sourceData;
 
@@ -160,9 +154,10 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
 
     @Override
     protected String executionAlgorithmId(BaseAlgorithms<BaseSort<T>> algorithm) {
+        List<SortOption<T>> options = sortOptions();
         int index = algorithmSelector == null ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
-        if (index >= 0 && index < sortOptions.size()) {
-            return sortOptions.get(index).algorithmId();
+        if (index >= 0 && index < options.size()) {
+            return options.get(index).algorithmId();
         }
         return super.executionAlgorithmId(algorithm);
     }
@@ -178,11 +173,12 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
     }
 
     private BaseSortAlgorithms<T> selectedAlgorithm() {
+        List<SortOption<T>> options = sortOptions();
         int index = (algorithmSelector == null) ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
-        if (index < 0 || index >= sortOptions.size()) {
+        if (index < 0 || index >= options.size()) {
             index = 0;
         }
-        return sortOptions.get(index).factory().get();
+        return options.get(index).factory().get();
     }
 
     private void bindAlgorithmSelector() {
@@ -192,10 +188,18 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
 
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
             ObservableList<String> labels = FXCollections.observableArrayList();
-            sortOptions.forEach(option -> labels.add(I18N.text(option.labelKey())));
+            sortOptions().forEach(option -> labels.add(I18N.text(option.labelKey())));
             return labels;
         }, I18N.localeProperty()));
 
         Platform.runLater(() -> algorithmSelector.getSelectionModel().selectFirst());
+    }
+
+    private List<SortOption<T>> sortOptions() {
+        return List.of(
+                new SortOption<>("insertion-sort", "algorithm.sort.insertion", InsertionSort::new),
+                new SortOption<>("selection-sort", "algorithm.sort.selection", SelectionSort::new),
+                new SortOption<>("quick-sort", "algorithm.sort.quick", QuickSort::new),
+                new SortOption<>("heap-sort", "algorithm.sort.heap", HeapSort::new));
     }
 }
