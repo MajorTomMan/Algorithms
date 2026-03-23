@@ -3,7 +3,8 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;">
+  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;"
+  stylesheets="@../style/ui_theme.css">
 
   <VBox spacing="4" alignment="CENTER_LEFT">
     <Label fx:id="densityLabel" styleClass="control-label" />

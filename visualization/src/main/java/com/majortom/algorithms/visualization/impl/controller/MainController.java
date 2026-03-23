@@ -114,6 +114,8 @@ public class MainController implements Initializable {
             Button button = new Button();
             button.setMaxWidth(Double.MAX_VALUE);
             button.getStyleClass().add("menu-button");
+            button.getStyleClass().add("module-button");
+            button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
             button.textProperty().bind(I18N.createStringBinding(definition.labelKey()));
             button.setOnAction(event -> switchToModule(definition));
             moduleMenuBox.getChildren().add(button);
@@ -172,5 +174,15 @@ public class MainController implements Initializable {
         if (logArea != null) {
             logArea.appendText("System: " + msg + "\n");
         }
+    }
+
+    private String moduleAccentStyleClass(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> "btn-ran-blue";
+            case "maze" -> "btn-ran-red";
+            case "tree" -> "btn-ran-gold";
+            case "graph" -> "btn-ran-purple";
+            default -> "btn-ran-blue";
+        };
     }
 }
