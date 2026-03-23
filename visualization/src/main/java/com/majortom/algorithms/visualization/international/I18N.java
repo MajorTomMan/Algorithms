@@ -1,0 +1,53 @@
+package com.majortom.algorithms.visualization.international;
+
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.StringBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import java.util.Locale;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+
+public class I18N {
+    private static final ObjectProperty<Locale> locale = new SimpleObjectProperty<>(Locale.CHINESE);
+
+    public static ObjectProperty<Locale> localeProperty() {
+        return locale;
+    }
+
+    public static Locale getLocale() {
+        return locale.get();
+    }
+
+    public static void setLocale(Locale newLocale) {
+        locale.set(newLocale);
+    }
+
+    /**
+     * 获取当前语言包
+     */
+    public static ResourceBundle getBundle() {
+        return ResourceBundle.getBundle("language.language", locale.get());
+    }
+
+    public static String text(String key, Object... args) {
+        try {
+            String pattern = getBundle().getString(key);
+            return (args == null || args.length == 0) ? pattern : String.format(pattern, args);
+        } catch (MissingResourceException e) {
+            return key;
+        }
+    }
+
+    /**
+     * 创建一个动态绑定的字符串对象
+     * 
+     * @param key 资源文件中的键
+     * @return 随语言变化自动更新的 StringBinding
+     */
+    public static StringBinding createStringBinding(String key) {
+        return Bindings.createStringBinding(
+                () -> text(key),
+                locale);
+    }
+}
