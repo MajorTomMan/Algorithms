@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "LinkedList",
+      "request": "launch",
+      "mainClass": "com.majortom.algorithms.core.basic.LinkedList",
+      "projectName": "algorithms-core"
+    },
+    {
+      "type": "java",
       "name": "LauncherMain",
       "request": "launch",
       "mainClass": "com.majortom.algorithms.launcher.LauncherMain",
