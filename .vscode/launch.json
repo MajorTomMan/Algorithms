@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Game",
+      "request": "launch",
+      "mainClass": "com.majortom.algorithms.app.snake.Game",
+      "projectName": "algorithms-sandbox"
+    },
+    {
+      "type": "java",
       "name": "LinkedList",
       "request": "launch",
       "mainClass": "com.majortom.algorithms.core.basic.LinkedList",

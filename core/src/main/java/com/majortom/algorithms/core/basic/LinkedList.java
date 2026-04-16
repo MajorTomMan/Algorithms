@@ -367,4 +367,16 @@ public class LinkedList<T> implements Queue<T>, Stack<T> {
 
         return result;
     }
+
+    public ListNode<T> getHead() {
+        return head;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public ListNode<T> getTail() {
+        return tail;
+    }
 }
