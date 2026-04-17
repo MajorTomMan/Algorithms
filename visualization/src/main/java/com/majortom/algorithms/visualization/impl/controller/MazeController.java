@@ -62,10 +62,9 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
 
         // 1. 尺寸变更逻辑：实时更新网格规模
         if (sizeSlider != null) {
+            updateSizeValueLabel(sizeSlider.getValue());
             sizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-                int val = newVal.intValue();
-                int oddSize = (val % 2 == 0) ? val + 1 : val;
-                sizeValueLabel.setText(oddSize + "x" + oddSize);
+                int oddSize = updateSizeValueLabel(newVal.doubleValue());
 
                 if (!AlgorithmThreadManager.isRunning()) {
                     updateMazeSize(oddSize);
@@ -80,6 +79,7 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
 
         EffectUtils.applyDynamicEffect(buildBtn, solveBtn);
         visualizer.render(mazeEntity);
+        refreshStatsDisplay();
     }
 
     /**
@@ -162,6 +162,7 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
         this.mazeEntity = (BaseMaze<T>) new ArrayMaze(oddSize, oddSize);
         this.mazeEntity.initialSilent();
         visualizer.render(mazeEntity, null, null);
+        refreshStatsDisplay();
     }
 
     @Override
@@ -178,8 +179,18 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
         if (mazeEntity != null) {
             mazeEntity.initialSilent();
             visualizer.render(mazeEntity, null, null);
+            refreshStatsDisplay();
             appendLog(I18N.text("message.maze.reset"));
         }
+    }
+
+    private int updateSizeValueLabel(double rawSize) {
+        int val = (int) rawSize;
+        int oddSize = (val % 2 == 0) ? val + 1 : val;
+        if (sizeValueLabel != null) {
+            sizeValueLabel.setText(oddSize + "x" + oddSize);
+        }
+        return oddSize;
     }
 
     @Override

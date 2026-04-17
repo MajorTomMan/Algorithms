@@ -11,6 +11,7 @@ import com.majortom.algorithms.core.runtime.ExecutionException;
 import com.majortom.algorithms.core.runtime.ExecutionFrame;
 import com.majortom.algorithms.core.runtime.ExecutionRecord;
 import com.majortom.algorithms.core.runtime.ExecutionStatsSnapshot;
+import com.majortom.algorithms.core.runtime.ExecutionTimeline;
 import com.majortom.algorithms.visualization.impl.controller.BaseModuleController;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 
@@ -92,18 +93,23 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
 
     public final void startAlgorithm(BaseAlgorithms<S> algorithm, S data) {
         stopAlgorithm();
-        stopReplay();
+        clearExecutionState();
         resetStats();
 
         String inputSignature = executionInputSignature(data);
-        this.executionContext = new ExecutionContext<>(
+        final ExecutionContext<S> context = new ExecutionContext<>(
                 moduleId(),
                 executionAlgorithmId(algorithm),
                 inputSignature,
                 new ExecutionControl<>() {
                     @Override
                     public void acceptFrame(ExecutionFrame<S> frame, boolean awaitStep) {
-                        Runnable task = () -> renderFrame(frame);
+                        Runnable task = () -> {
+                            if (executionContext == null) {
+                                return;
+                            }
+                            renderFrame(frame);
+                        };
                         if (awaitStep) {
                             AlgorithmThreadManager.syncAndWait(task);
                         } else {
@@ -121,8 +127,9 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
                         return AlgorithmThreadManager.getDelay();
                     }
                 });
+        this.executionContext = context;
 
-        algorithm.setExecutionContext(executionContext);
+        algorithm.setExecutionContext(context);
 
         appendLog("Started: " + executionAlgorithmId(algorithm));
 
@@ -139,7 +146,8 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
                 handleAlgorithmError(e);
             }
         }, () -> {
-            this.lastExecution = executionContext.finish();
+            this.lastExecution = context.finish();
+            this.executionContext = null;
             EXECUTION_ARCHIVE.add(lastExecution);
             this.stats = lastExecution.summary();
             refreshStatsDisplay();
@@ -149,6 +157,7 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
     }
 
     public void stopAlgorithm() {
+        stopReplay();
         AlgorithmThreadManager.stopAll();
     }
 
@@ -227,7 +236,8 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
             return;
         }
 
-        List<ExecutionRecord<? extends BaseStructure<?>>> candidates = EXECUTION_ARCHIVE.comparableRecords(lastExecution);
+        List<ExecutionRecord<? extends BaseStructure<?>>> candidates = EXECUTION_ARCHIVE
+                .comparableRecords(lastExecution);
         if (candidates.isEmpty()) {
             appendLog("No comparable executions found for the same input.");
             return;
@@ -277,19 +287,44 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         if (timelineSlider != null) {
             timelineSlider.setDisable(!hasExecutionData());
             updatingTimelineSlider = true;
-            timelineSlider.setValue(0.0);
+            timelineSlider.setValue(hasExecutionData() ? 1.0 : 0.0);
             updatingTimelineSlider = false;
         }
     }
 
     private void syncTimelineSlider(ExecutionFrame<S> frame) {
-        if (timelineSlider == null || !hasExecutionData()) {
+        if (timelineSlider == null) {
             return;
         }
-        int size = Math.max(1, lastExecution.timeline().size());
+        int size = Math.max(1, currentTimelineSize());
         updatingTimelineSlider = true;
         timelineSlider.setValue(size == 1 ? 0.0 : (double) frame.index() / (double) (size - 1));
+        timelineSlider.setDisable(AlgorithmThreadManager.isRunning() || !hasExecutionData());
         updatingTimelineSlider = false;
+    }
+
+    private void clearExecutionState() {
+        stopReplay();
+        executionContext = null;
+        lastExecution = null;
+        if (timelineSlider != null) {
+            timelineSlider.setDisable(true);
+            updatingTimelineSlider = true;
+            timelineSlider.setValue(0.0);
+            updatingTimelineSlider = false;
+        }
+    }
+
+    private int currentTimelineSize() {
+        ExecutionTimeline<S> timeline = currentTimeline();
+        return timeline == null ? 0 : timeline.size();
+    }
+
+    private ExecutionTimeline<S> currentTimeline() {
+        if (executionContext != null && !executionContext.timeline().isEmpty()) {
+            return executionContext.timeline();
+        }
+        return lastExecution == null ? null : lastExecution.timeline();
     }
 
     private Map<String, Object> buildExecutionExportPayload() {
@@ -338,7 +373,8 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
 
     protected final void appendLog(String message) {
         if (logArea != null) {
-            Platform.runLater(() -> logArea.appendText(String.format("[%tT] %s%n", System.currentTimeMillis(), message)));
+            Platform.runLater(
+                    () -> logArea.appendText(String.format("[%tT] %s%n", System.currentTimeMillis(), message)));
         }
     }
 
@@ -362,6 +398,7 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         if (resetBtn != null) {
             resetBtn.setOnAction(e -> {
                 stopAlgorithm();
+                clearExecutionState();
                 ((BaseModuleController<S>) this).resetModule();
             });
         }
@@ -438,7 +475,9 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         if (this.timelineSlider != null) {
             this.timelineSlider.setDisable(true);
             this.timelineSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-                if (!updatingTimelineSlider && this.timelineSlider.isValueChanging()) {
+                if (!updatingTimelineSlider
+                        && !AlgorithmThreadManager.isRunning()
+                        && this.timelineSlider.isValueChanging()) {
                     seekTimeline(newVal.doubleValue());
                 }
             });
