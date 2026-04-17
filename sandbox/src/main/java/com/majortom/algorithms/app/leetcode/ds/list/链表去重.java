@@ -10,7 +10,7 @@ public class 链表去重 {
     public static void main(String[] args) {
         Integer[] randomArray = AlgorithmsUtils.randomArray(100, 10);
         ListNode<Integer> head = AlgorithmsUtils.buildLinkedList(randomArray);
-        LinkedList<Integer> list = new LinkedList<>(head);
+        LinkedList<Integer> list = new LinkedList<>();
         list.sort();
         list.foreach((i) -> {
             System.out.print(i + ",");

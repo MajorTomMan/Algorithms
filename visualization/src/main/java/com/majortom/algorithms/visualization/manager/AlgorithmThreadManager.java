@@ -1,6 +1,8 @@
 package com.majortom.algorithms.visualization.manager;
 
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -27,6 +29,7 @@ public class AlgorithmThreadManager {
 
     private static volatile long currentDelay = 50;
     private static volatile boolean isPaused = false;
+    private static final ReadOnlyBooleanWrapper pausedProperty = new ReadOnlyBooleanWrapper(false);
 
     public static void setDelay(long delay) {
         currentDelay = delay;
@@ -43,6 +46,7 @@ public class AlgorithmThreadManager {
         if (!isPaused) {
             pauseLock.tryAcquire();
             isPaused = true;
+            updatePausedProperty(true);
         }
     }
 
@@ -53,11 +57,16 @@ public class AlgorithmThreadManager {
         if (isPaused) {
             pauseLock.release();
             isPaused = false;
+            updatePausedProperty(false);
         }
     }
 
     public static boolean isPaused() {
         return isPaused;
+    }
+
+    public static ReadOnlyBooleanProperty pausedProperty() {
+        return pausedProperty.getReadOnlyProperty();
     }
 
     /**
@@ -155,5 +164,9 @@ public class AlgorithmThreadManager {
         } else {
             Platform.runLater(action);
         }
+    }
+
+    private static void updatePausedProperty(boolean paused) {
+        postStatus(() -> pausedProperty.set(paused));
     }
 }

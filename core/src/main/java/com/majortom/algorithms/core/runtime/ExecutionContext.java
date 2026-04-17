@@ -72,6 +72,10 @@ public class ExecutionContext<S extends BaseStructure<?>> {
         return stats.snapshot();
     }
 
+    public ExecutionTimeline<S> timeline() {
+        return timeline;
+    }
+
     public ExecutionRecord<S> finish() {
         stats.markEnded();
         return new ExecutionRecord<>(

@@ -103,7 +103,7 @@ public class MainController implements Initializable {
         pauseBtn.textProperty().bind(Bindings.createStringBinding(() -> {
             boolean paused = AlgorithmThreadManager.isPaused();
             return I18N.text(paused ? "action.execution.resume" : "action.execution.pause");
-        }, I18N.localeProperty()));
+        }, I18N.localeProperty(), AlgorithmThreadManager.pausedProperty()));
     }
 
     private void setupModuleMenu() {
