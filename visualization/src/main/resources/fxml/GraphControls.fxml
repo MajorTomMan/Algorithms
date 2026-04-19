@@ -30,7 +30,7 @@
   </HBox>
 
   <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 10;">
-    <Button fx:id="runBtn" onAction="#handleAlgorithmStart"
+    <Button fx:id="runBtn" onAction="#handleRun"
       styleClass="btn-ran-blue" prefWidth="120" minWidth="120"
       style="-fx-font-weight: bold; -fx-font-size: 13px;" />
   </HBox>

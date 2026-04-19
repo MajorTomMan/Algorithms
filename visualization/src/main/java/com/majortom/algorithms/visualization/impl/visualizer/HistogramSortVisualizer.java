@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.sort.BaseSort;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseSortVisualizer;
 import javafx.animation.AnimationTimer;
 import javafx.scene.paint.Color;
@@ -18,6 +19,9 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
     private AnimationTimer dynamicWind;
     private BaseSort<T> lastSortData;
     private Object lastA, lastB;
+    private long accentUntilMillis;
+    private String activeAlgorithmId = "";
+    private int pendingArraySize = 0;
 
     public HistogramSortVisualizer() {
         dynamicWind = new AnimationTimer() {
@@ -30,6 +34,45 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
             }
         };
         dynamicWind.start();
+    }
+
+    @Override
+    protected void resumeAmbientAnimation() {
+        if (dynamicWind != null) {
+            dynamicWind.start();
+        }
+    }
+
+    @Override
+    protected void pauseAmbientAnimation() {
+        if (dynamicWind != null) {
+            dynamicWind.stop();
+        }
+    }
+
+    @Override
+    protected void resetSortVisualizationState() {
+        waveTimer = 0;
+        lastSortData = null;
+        lastA = null;
+        lastB = null;
+        accentUntilMillis = 0L;
+        activeAlgorithmId = "";
+        pendingArraySize = 0;
+    }
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        accentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+        Object algorithmId = event.metadata().get("algorithmId");
+        if (algorithmId instanceof String value) {
+            activeAlgorithmId = value;
+        }
+        Object size = event.metadata().get("size");
+        if (size instanceof Integer value) {
+            pendingArraySize = value;
+        }
     }
 
     @Override
@@ -68,6 +111,8 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
 
             renderCompactClanFlag(x, horizonY, barW, h, statusColor, isFocused, i);
         }
+
+        drawSortAccent(canvasW, canvasH);
     }
 
     private void renderCompactClanFlag(double x, double horizonY, double w, double h, Color color, boolean isFocused,
@@ -119,5 +164,26 @@ public class HistogramSortVisualizer<T extends Comparable<T>> extends BaseSortVi
             gc.strokeOval(poleX - 4, topY - 4, 8, 8);
             gc.setEffect(null);
         }
+    }
+
+    private void drawSortAccent(double canvasW, double canvasH) {
+        if (System.currentTimeMillis() >= accentUntilMillis) {
+            return;
+        }
+
+        gc.save();
+        gc.setGlobalAlpha(Math.max(0.0, Math.min(1.0, (accentUntilMillis - System.currentTimeMillis()) / (double) FEEDBACK_DURATION_MS)));
+        gc.setStroke(RAN_GOLD);
+        gc.setLineWidth(2.0);
+        gc.strokeLine(28, canvasH - 78, canvasW - 28, canvasH - 78);
+
+        if (!activeAlgorithmId.isBlank()) {
+            gc.setFill(RAN_GHOST_WHITE);
+            gc.fillRoundRect(canvasW - 220, canvasH - 66, 190, 38, 14, 14);
+            gc.setFill(RAN_BLACK);
+            gc.setFont(javafx.scene.text.Font.font("Consolas", javafx.scene.text.FontWeight.BOLD, 13));
+            gc.fillText(activeAlgorithmId + " | n=" + pendingArraySize, canvasW - 206, canvasH - 42);
+        }
+        gc.restore();
     }
 }

@@ -3,6 +3,8 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
@@ -129,10 +131,16 @@ public class MainController implements Initializable {
 
     private void switchToModule(AlgorithmModuleDefinition definition) {
         loadSubController(definition.controllerFactory().get());
+        if (currentSubController != null) {
+            currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
+        }
         moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
     }
 
     private void loadSubController(BaseController<?> newController) {
+        if (currentSubController != null) {
+            currentSubController.dispatchVisualizerDetached();
+        }
         AlgorithmThreadManager.stopAll();
 
         visualizationContainer.getChildren().clear();
@@ -152,6 +160,7 @@ public class MainController implements Initializable {
                 compareBtn);
 
         this.currentSubController = newController;
+        this.currentSubController.dispatchVisualizerAttached();
 
         BaseVisualizer<?> visualizer = newController.getVisualizer();
         if (visualizer != null) {
@@ -165,6 +174,9 @@ public class MainController implements Initializable {
 
     @FXML
     private void toggleLanguage() {
+        if (currentSubController != null) {
+            currentSubController.dispatchVisualizerEvent(mainEvent(VisualizationActionType.LANGUAGE_TOGGLE));
+        }
         Locale newLocale = I18N.getLocale().getLanguage().equals("zh") ? Locale.ENGLISH : Locale.CHINESE;
         I18N.setLocale(newLocale);
         appendSystemLog(I18N.text("message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
@@ -184,5 +196,25 @@ public class MainController implements Initializable {
             case "graph" -> "btn-ran-purple";
             default -> "btn-ran-blue";
         };
+    }
+
+    private VisualizationActionType moduleSwitchAction(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> VisualizationActionType.MODULE_SORT;
+            case "maze" -> VisualizationActionType.MODULE_MAZE;
+            case "tree" -> VisualizationActionType.MODULE_TREE;
+            case "graph" -> VisualizationActionType.MODULE_GRAPH;
+            default -> VisualizationActionType.MODULE_SORT;
+        };
+    }
+
+    private VisualizationEvent mainEvent(VisualizationActionType actionType) {
+        String moduleId = (currentSubController == null) ? "unknown" : currentSubController.getModuleId();
+        return VisualizationEvent.of(
+                actionType,
+                moduleId,
+                getClass().getSimpleName(),
+                AlgorithmThreadManager.isRunning(),
+                AlgorithmThreadManager.isPaused());
     }
 }

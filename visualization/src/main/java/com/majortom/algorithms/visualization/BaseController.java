@@ -378,6 +378,74 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
+    public final void dispatchVisualizerAction(VisualizationActionType actionType) {
+        dispatchVisualizerEvent(buildVisualizationEvent(actionType, Map.of()));
+    }
+
+    public final void dispatchVisualizerAction(VisualizationActionType actionType, Map<String, Object> metadata) {
+        dispatchVisualizerEvent(buildVisualizationEvent(actionType, metadata));
+    }
+
+    public final void dispatchVisualizerEvent(VisualizationEvent event) {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onControlAction(event);
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerReset() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = visualizer::onVisualizationReset;
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerAttached() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onModuleAttached(moduleId());
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerDetached() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onModuleDetached(moduleId());
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    private VisualizationEvent buildVisualizationEvent(
+            VisualizationActionType actionType,
+            Map<String, Object> metadata) {
+        return VisualizationEvent.of(
+                actionType,
+                moduleId(),
+                getClass().getSimpleName(),
+                AlgorithmThreadManager.isRunning(),
+                AlgorithmThreadManager.isPaused(),
+                metadata);
+    }
+
     protected void refreshStatsDisplay() {
         if (statsLabel != null) {
             statsLabel.setText(formatStatsMessage());
@@ -390,26 +458,44 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
 
     private void setupGlobalButtonActions() {
         if (startBtn != null) {
-            startBtn.setOnAction(e -> handleAlgorithmStart());
+            startBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_START);
+                handleAlgorithmStart();
+            });
         }
         if (pauseBtn != null) {
-            pauseBtn.setOnAction(e -> togglePause());
+            pauseBtn.setOnAction(e -> {
+                dispatchVisualizerAction(AlgorithmThreadManager.isPaused()
+                        ? VisualizationActionType.EXECUTION_RESUME
+                        : VisualizationActionType.EXECUTION_PAUSE);
+                togglePause();
+            });
         }
         if (resetBtn != null) {
             resetBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_RESET);
                 stopAlgorithm();
                 clearExecutionState();
                 ((BaseModuleController<S>) this).resetModule();
             });
         }
         if (replayBtn != null) {
-            replayBtn.setOnAction(e -> toggleReplay());
+            replayBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_REPLAY);
+                toggleReplay();
+            });
         }
         if (exportBtn != null) {
-            exportBtn.setOnAction(e -> exportExecution());
+            exportBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_EXPORT);
+                exportExecution();
+            });
         }
         if (compareBtn != null) {
-            compareBtn.setOnAction(e -> compareExecutions());
+            compareBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_COMPARE);
+                compareExecutions();
+            });
         }
     }
 
@@ -489,6 +575,10 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
 
     public final BaseVisualizer<S> getVisualizer() {
         return visualizer;
+    }
+
+    public final String getModuleId() {
+        return moduleId();
     }
 
     public final Region getVisualizerView() {

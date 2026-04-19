@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.base.BaseAlgorithms;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.BaseTreeAlgorithms;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
@@ -14,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -59,12 +61,18 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
 
     @FXML
     private void handleInsert() {
+        dispatchVisualizerAction(VisualizationActionType.TREE_INSERT, Map.of(
+                "input", safeInputValue(),
+                "mode", "insert"));
         this.currentMode = Mode.INSERT;
         handleAlgorithmStart();
     }
 
     @FXML
     private void handleDelete() {
+        dispatchVisualizerAction(VisualizationActionType.TREE_DELETE, Map.of(
+                "input", safeInputValue(),
+                "mode", "delete"));
         this.currentMode = Mode.DELETE;
         handleAlgorithmStart();
     }
@@ -73,6 +81,8 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
     private void handleRandom() {
         int randomVal = (int) (Math.random() * 100);
         inputField.setText(String.valueOf(randomVal));
+        dispatchVisualizerAction(VisualizationActionType.TREE_RANDOM, Map.of(
+                "value", randomVal));
     }
 
     /**
@@ -175,5 +185,9 @@ public class TreeController<T extends Comparable<T>> extends BaseModuleControlle
     @Override
     protected String moduleId() {
         return "tree";
+    }
+
+    private String safeInputValue() {
+        return inputField == null || inputField.getText() == null ? "" : inputField.getText().trim();
     }
 }

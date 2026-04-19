@@ -3,6 +3,8 @@ package com.majortom.algorithms.visualization.base;
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 
 import javafx.animation.AnimationTimer;
 
@@ -24,20 +26,24 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
 
     protected BaseTree<T> treeInstance;
     protected Object focusA;
+    protected Object focusB;
 
     protected double autoScale = 1.0;
     protected double autoOffsetX = 0;
     protected double autoOffsetY = 80;
+    private final AnimationTimer frameTimer;
+    private boolean animationRunning;
 
     public BaseTreeVisualizer() {
         // 启动统一的动画计时器
-        new AnimationTimer() {
+        this.frameTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 updateAnimationPositions();
                 renderFrame();
             }
-        }.start();
+        };
+        resumeTreeAnimation();
     }
 
     @Override
@@ -48,6 +54,7 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
         }
         this.treeInstance = tree;
         this.focusA = a;
+        this.focusB = b;
 
         // 触发布局计算（由子类实现具体算法：如递归排列、分层排列）
         updateLayout(tree);
@@ -68,11 +75,68 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
         renderTreeRecursive(treeInstance.getRoot());
 
         gc.restore();
+        drawTransientFeedbackOverlay();
     }
 
     protected abstract void updateLayout(BaseTree<T> tree);
 
     protected abstract void renderTreeRecursive(TreeNode<T> node);
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        VisualizationActionType actionType = event.actionType();
+        switch (actionType) {
+            case EXECUTION_PAUSE -> pauseTreeAnimation();
+            case EXECUTION_RESUME, EXECUTION_START, TREE_INSERT, TREE_DELETE, TREE_RANDOM -> resumeTreeAnimation();
+            case EXECUTION_RESET -> resetTreeVisualizationState();
+            default -> {
+            }
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        resetTreeVisualizationState();
+        clear();
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        resumeTreeAnimation();
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        pauseTreeAnimation();
+        resetTreeVisualizationState();
+        clear();
+    }
+
+    protected final void resumeTreeAnimation() {
+        if (!animationRunning) {
+            frameTimer.start();
+            animationRunning = true;
+        }
+    }
+
+    protected final void pauseTreeAnimation() {
+        if (animationRunning) {
+            frameTimer.stop();
+            animationRunning = false;
+        }
+    }
+
+    protected void resetTreeVisualizationState() {
+        treeInstance = null;
+        focusA = null;
+        focusB = null;
+        currentPosMap.clear();
+        targetPosMap.clear();
+        autoScale = 1.0;
+        autoOffsetX = 0;
+        autoOffsetY = 80;
+    }
 
     /**
      * 更新节点位置，实现平滑移动

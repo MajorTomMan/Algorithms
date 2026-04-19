@@ -2,6 +2,8 @@ package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 
 import javafx.scene.paint.Color;
 
@@ -19,12 +21,65 @@ public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVi
         if (data == null || data.getData() == null)
             return;
         drawSortContent(data, a, b);
+        drawTransientFeedbackOverlay();
     }
 
     /**
      * 子类实现具体的绘制形态（柱状图、点图等）
      */
     protected abstract void drawSortContent(BaseSort<T> sortData, Object a, Object b);
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        VisualizationActionType actionType = event.actionType();
+        switch (actionType) {
+            case EXECUTION_PAUSE -> pauseAmbientAnimation();
+            case EXECUTION_RESUME, EXECUTION_START, SORT_GENERATE, SORT_RUN -> resumeAmbientAnimation();
+            case EXECUTION_RESET -> resetSortVisualizationState();
+            default -> {
+            }
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        resetSortVisualizationState();
+        clear();
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        resumeAmbientAnimation();
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        pauseAmbientAnimation();
+        resetSortVisualizationState();
+        clear();
+    }
+
+    /**
+     * 恢复排序可视化中的环境动画。
+     * 默认留空，由存在动画的子类按需覆写。
+     */
+    protected void resumeAmbientAnimation() {
+    }
+
+    /**
+     * 暂停排序可视化中的环境动画。
+     * 默认留空，由存在动画的子类按需覆写。
+     */
+    protected void pauseAmbientAnimation() {
+    }
+
+    /**
+     * 清理排序可视化的瞬时状态，如缓存的聚焦索引或动画相位。
+     * 默认留空，由具体子类按需覆写。
+     */
+    protected void resetSortVisualizationState() {
+    }
 
     /**
      * 通用色彩决策引擎 - 适配《乱》配色体系

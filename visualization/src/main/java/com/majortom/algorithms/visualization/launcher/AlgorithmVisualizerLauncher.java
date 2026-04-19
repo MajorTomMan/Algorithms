@@ -20,6 +20,9 @@ import atlantafx.base.theme.PrimerDark;
  */
 public class AlgorithmVisualizerLauncher extends Application {
 
+    private static final double DESIGN_WIDTH = 1280;
+    private static final double DESIGN_HEIGHT = 800;
+
     @Override
     public void start(Stage primaryStage) {
         Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
@@ -29,14 +32,14 @@ public class AlgorithmVisualizerLauncher extends Application {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainControls.fxml"));
             loader.setResources(bundle);
             // 2. 创建整界面等比缩放的场景
-            Scene scene = ResponsiveStageScaler.createScene(loader.load(), 1280, 800);
+            Scene scene = ResponsiveStageScaler.createScene(loader.load(), DESIGN_WIDTH, DESIGN_HEIGHT);
             scene.setFill(Color.web("#0A0A0E"));
 
             // 3. 配置窗口属性
             primaryStage.setTitle("Algorithms");
             primaryStage.setScene(scene);
-            primaryStage.setMinWidth(960);
-            primaryStage.setMinHeight(640);
+            primaryStage.setMinWidth(760);
+            primaryStage.setMinHeight(520);
 
             // 4. 优雅退出：确保程序关闭时停止所有后台算法线程
             primaryStage.setOnCloseRequest(event -> {

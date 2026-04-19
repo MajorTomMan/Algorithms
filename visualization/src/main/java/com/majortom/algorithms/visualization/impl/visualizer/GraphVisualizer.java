@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseGraphVisualizer;
 
 import org.graphstream.graph.Node;
@@ -10,6 +11,8 @@ import org.graphstream.graph.Node;
  * 风格：基于《乱》色彩体系进行节点着色
  */
 public class GraphVisualizer<V> extends BaseGraphVisualizer<V> {
+
+    private long accentUntilMillis;
 
     public GraphVisualizer(BaseGraph<V> baseGraph) {
         super(baseGraph);
@@ -42,5 +45,38 @@ public class GraphVisualizer<V> extends BaseGraphVisualizer<V> {
         } catch (Exception e) {
             // 针对 GraphStream 并发修改的静默处理
         }
+
+        drawAccentFrame();
+        drawTransientFeedbackOverlay();
+    }
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        accentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        accentUntilMillis = 0L;
+        super.onVisualizationReset();
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        accentUntilMillis = 0L;
+        super.onModuleDetached(moduleId);
+    }
+
+    private void drawAccentFrame() {
+        if (System.currentTimeMillis() >= accentUntilMillis) {
+            return;
+        }
+        gc.save();
+        gc.setGlobalAlpha(Math.max(0.0, Math.min(1.0, (accentUntilMillis - System.currentTimeMillis()) / (double) FEEDBACK_DURATION_MS)));
+        gc.setStroke(RAN_CYAN);
+        gc.setLineWidth(2.5);
+        gc.strokeRoundRect(12, 12, Math.max(0, canvas.getWidth() - 24), Math.max(0, canvas.getHeight() - 24), 18, 18);
+        gc.restore();
     }
 }
