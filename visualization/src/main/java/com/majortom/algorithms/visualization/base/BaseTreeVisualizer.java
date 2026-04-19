@@ -33,6 +33,7 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
     protected double autoOffsetY = 80;
     private final AnimationTimer frameTimer;
     private boolean animationRunning;
+    private boolean treeAnimationRequested = true;
 
     public BaseTreeVisualizer() {
         // 启动统一的动画计时器
@@ -87,8 +88,8 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
         super.onControlAction(event);
         VisualizationActionType actionType = event.actionType();
         switch (actionType) {
-            case EXECUTION_PAUSE -> pauseTreeAnimation();
-            case EXECUTION_RESUME, EXECUTION_START, TREE_INSERT, TREE_DELETE, TREE_RANDOM -> resumeTreeAnimation();
+            case EXECUTION_PAUSE -> setTreeAnimationRequested(false);
+            case EXECUTION_RESUME, EXECUTION_START, TREE_INSERT, TREE_DELETE, TREE_RANDOM -> setTreeAnimationRequested(true);
             case EXECUTION_RESET -> resetTreeVisualizationState();
             default -> {
             }
@@ -103,14 +104,23 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
 
     @Override
     public void onModuleAttached(String moduleId) {
-        resumeTreeAnimation();
+        setTreeAnimationRequested(true);
     }
 
     @Override
     public void onModuleDetached(String moduleId) {
-        pauseTreeAnimation();
+        setTreeAnimationRequested(false);
         resetTreeVisualizationState();
         clear();
+    }
+
+    @Override
+    protected void onResizeStateChanged(boolean resizing) {
+        if (resizing) {
+            pauseTreeAnimation();
+        } else if (treeAnimationRequested) {
+            resumeTreeAnimation();
+        }
     }
 
     protected final void resumeTreeAnimation() {
@@ -124,6 +134,17 @@ public abstract class BaseTreeVisualizer<T extends Comparable<T>> extends BaseVi
         if (animationRunning) {
             frameTimer.stop();
             animationRunning = false;
+        }
+    }
+
+    private void setTreeAnimationRequested(boolean requested) {
+        treeAnimationRequested = requested;
+        if (requested) {
+            if (!isResizeInProgress()) {
+                resumeTreeAnimation();
+            }
+        } else {
+            pauseTreeAnimation();
         }
     }
 

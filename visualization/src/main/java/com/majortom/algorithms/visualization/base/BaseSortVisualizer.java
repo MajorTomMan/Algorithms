@@ -15,6 +15,8 @@ import java.util.Objects;
  */
 public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVisualizer<BaseSort<T>> {
 
+    private boolean ambientAnimationRequested = true;
+
     @Override
     protected void draw(BaseSort<T> data, Object a, Object b) {
         clear();
@@ -34,8 +36,8 @@ public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVi
         super.onControlAction(event);
         VisualizationActionType actionType = event.actionType();
         switch (actionType) {
-            case EXECUTION_PAUSE -> pauseAmbientAnimation();
-            case EXECUTION_RESUME, EXECUTION_START, SORT_GENERATE, SORT_RUN -> resumeAmbientAnimation();
+            case EXECUTION_PAUSE -> setAmbientAnimationRequested(false);
+            case EXECUTION_RESUME, EXECUTION_START, SORT_GENERATE, SORT_RUN -> setAmbientAnimationRequested(true);
             case EXECUTION_RESET -> resetSortVisualizationState();
             default -> {
             }
@@ -50,14 +52,34 @@ public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVi
 
     @Override
     public void onModuleAttached(String moduleId) {
-        resumeAmbientAnimation();
+        setAmbientAnimationRequested(true);
     }
 
     @Override
     public void onModuleDetached(String moduleId) {
-        pauseAmbientAnimation();
+        setAmbientAnimationRequested(false);
         resetSortVisualizationState();
         clear();
+    }
+
+    @Override
+    protected void onResizeStateChanged(boolean resizing) {
+        if (resizing) {
+            pauseAmbientAnimation();
+        } else if (ambientAnimationRequested) {
+            resumeAmbientAnimation();
+        }
+    }
+
+    private void setAmbientAnimationRequested(boolean requested) {
+        ambientAnimationRequested = requested;
+        if (requested) {
+            if (!isResizeInProgress()) {
+                resumeAmbientAnimation();
+            }
+        } else {
+            pauseAmbientAnimation();
+        }
     }
 
     /**

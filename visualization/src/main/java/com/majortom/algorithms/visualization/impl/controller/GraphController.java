@@ -13,6 +13,7 @@ import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 
 import java.net.URL;
 import java.util.Map;
@@ -210,14 +211,22 @@ public class GraphController<V> extends BaseModuleController<BaseGraph<V>> {
 
     @Override
     protected void setupI18n() {
-        if (nodeInputField != null)
-            nodeInputField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.node"));
-        if (fromNodeField != null)
-            fromNodeField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.from"));
-        if (toNodeField != null)
-            toNodeField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.to"));
-        if (weightField != null)
-            weightField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.weight"));
+        if (nodeInputField != null) {
+            nodeInputField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.node.short"));
+            bindTooltip(nodeInputField, "prompt.graph.node");
+        }
+        if (fromNodeField != null) {
+            fromNodeField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.from.short"));
+            bindTooltip(fromNodeField, "prompt.graph.from");
+        }
+        if (toNodeField != null) {
+            toNodeField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.to.short"));
+            bindTooltip(toNodeField, "prompt.graph.to");
+        }
+        if (weightField != null) {
+            weightField.promptTextProperty().bind(I18N.createStringBinding("prompt.graph.weight.short"));
+            bindTooltip(weightField, "prompt.graph.weight");
+        }
 
         if (linkBtn != null)
             linkBtn.textProperty().bind(I18N.createStringBinding("action.graph.link"));
@@ -227,6 +236,15 @@ public class GraphController<V> extends BaseModuleController<BaseGraph<V>> {
             addBtn.textProperty().bind(I18N.createStringBinding("action.graph.add"));
         if (deleteBtn != null)
             deleteBtn.textProperty().bind(I18N.createStringBinding("action.graph.delete"));
+    }
+
+    private void bindTooltip(TextField textField, String key) {
+        Tooltip tooltip = textField.getTooltip();
+        if (tooltip == null) {
+            tooltip = new Tooltip();
+            textField.setTooltip(tooltip);
+        }
+        tooltip.textProperty().bind(I18N.createStringBinding(key));
     }
 
     @Override

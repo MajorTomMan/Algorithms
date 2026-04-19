@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization;
 import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -13,6 +14,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 /**
  * 视觉呈现组件基类
@@ -64,21 +66,28 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     private Object lastB;
     private String transientFeedbackLabel;
     private long transientFeedbackUntilMillis;
+    private boolean renderQueued;
+    private boolean resizeInProgress;
+    private final PauseTransition resizeSettleTransition;
 
     // 默认高亮效果
     protected final Glow highIntensityGlow = new Glow(0.8);
     protected static final long FEEDBACK_DURATION_MS = 1200L;
+    protected static final double RESIZE_SETTLE_MS = 140.0;
 
     public BaseVisualizer() {
         this.canvas = new Canvas();
         this.gc = canvas.getGraphicsContext2D();
         this.getChildren().add(canvas);
 
+        this.resizeSettleTransition = new PauseTransition(Duration.millis(RESIZE_SETTLE_MS));
+        this.resizeSettleTransition.setOnFinished(event -> handleResizeSettled());
+
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
 
-        this.widthProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
-        this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
+        this.widthProperty().addListener((obs, oldVal, newVal) -> handleSizeInvalidated());
+        this.heightProperty().addListener((obs, oldVal, newVal) -> handleSizeInvalidated());
     }
 
     /**
@@ -88,11 +97,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
-        if (Platform.isFxApplicationThread()) {
-            drawCurrent();
-        } else {
-            Platform.runLater(this::drawCurrent);
-        }
+        requestRender();
     }
 
     public final void render(S data) {
@@ -105,6 +110,35 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
             return;
         }
         draw(lastData, lastA, lastB);
+    }
+
+    protected final void requestRender() {
+        if (renderQueued) {
+            return;
+        }
+        renderQueued = true;
+
+        Runnable renderTask = () -> {
+            renderQueued = false;
+            drawCurrent();
+        };
+
+        Platform.runLater(renderTask);
+    }
+
+    private void handleSizeInvalidated() {
+        if (!resizeInProgress) {
+            resizeInProgress = true;
+            onResizeStateChanged(true);
+        }
+        resizeSettleTransition.playFromStart();
+        requestRender();
+    }
+
+    private void handleResizeSettled() {
+        resizeInProgress = false;
+        onResizeStateChanged(false);
+        requestRender();
     }
 
     /**
@@ -177,6 +211,17 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
      */
     public void onModuleDetached(String moduleId) {
         clearTransientFeedback();
+    }
+
+    /**
+     * 尺寸连续变化时的状态通知。
+     * 默认留空，存在环境动画的可视化可在此临时降载。
+     */
+    protected void onResizeStateChanged(boolean resizing) {
+    }
+
+    protected final boolean isResizeInProgress() {
+        return resizeInProgress;
     }
 
     protected final void showTransientFeedback(VisualizationEvent event) {

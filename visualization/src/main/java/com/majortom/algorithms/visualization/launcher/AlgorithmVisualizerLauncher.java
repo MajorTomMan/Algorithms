@@ -20,8 +20,8 @@ import atlantafx.base.theme.PrimerDark;
  */
 public class AlgorithmVisualizerLauncher extends Application {
 
-    private static final double DESIGN_WIDTH = 1280;
-    private static final double DESIGN_HEIGHT = 800;
+    private static final double DESIGN_WIDTH = 1520;
+    private static final double DESIGN_HEIGHT = 900;
 
     @Override
     public void start(Stage primaryStage) {
@@ -38,8 +38,14 @@ public class AlgorithmVisualizerLauncher extends Application {
             // 3. 配置窗口属性
             primaryStage.setTitle("Algorithms");
             primaryStage.setScene(scene);
-            primaryStage.setMinWidth(760);
-            primaryStage.setMinHeight(520);
+            primaryStage.setWidth(DESIGN_WIDTH);
+            primaryStage.setHeight(DESIGN_HEIGHT);
+            primaryStage.setMinWidth(DESIGN_WIDTH);
+            primaryStage.setMinHeight(DESIGN_HEIGHT);
+            primaryStage.setMaxWidth(DESIGN_WIDTH);
+            primaryStage.setMaxHeight(DESIGN_HEIGHT);
+            primaryStage.setResizable(false);
+            primaryStage.centerOnScreen();
 
             // 4. 优雅退出：确保程序关闭时停止所有后台算法线程
             primaryStage.setOnCloseRequest(event -> {

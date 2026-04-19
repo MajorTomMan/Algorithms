@@ -3,36 +3,35 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  alignment="CENTER_LEFT" spacing="15"
+  alignment="CENTER_LEFT" spacing="10"
   style="-fx-min-height: 80px; -fx-padding: 0 5;"
   stylesheets="@../style/ui_theme.css">
 
-  <HBox spacing="8" alignment="CENTER_LEFT"
-    style="-fx-background-color: rgba(255,255,255,0.03); -fx-padding: 8 12; -fx-background-radius: 4;">
-    <TextField fx:id="nodeInputField" prefWidth="80" minWidth="80" styleClass="dark-textfield" />
-    <Button fx:id="addBtn" onAction="#handleAddNode" styleClass="btn-ran-purple" prefWidth="65"
-      minWidth="65" />
-    <Button fx:id="deleteBtn" onAction="#handleDeleteNode" styleClass="btn-ran-red" prefWidth="65"
-      minWidth="65" />
+  <HBox spacing="6" alignment="CENTER_LEFT"
+    style="-fx-background-color: rgba(255,255,255,0.03); -fx-padding: 6 8; -fx-background-radius: 4;">
+    <TextField fx:id="nodeInputField" prefWidth="62" minWidth="62" styleClass="dark-textfield compact-textfield" />
+    <Button fx:id="addBtn" onAction="#handleAddNode" styleClass="btn-ran-purple compact-button" prefWidth="56"
+      minWidth="56" />
+    <Button fx:id="deleteBtn" onAction="#handleDeleteNode" styleClass="btn-ran-red compact-button" prefWidth="56"
+      minWidth="56" />
   </HBox>
 
-  <HBox spacing="6" alignment="CENTER_LEFT">
-    <Label fx:id="edgeIdLabel" styleClass="control-label" text="Link" />
-    <TextField fx:id="fromNodeField" prefWidth="55" minWidth="55" styleClass="dark-textfield"
+  <HBox spacing="4" alignment="CENTER_LEFT">
+    <TextField fx:id="fromNodeField" prefWidth="42" minWidth="42" styleClass="dark-textfield compact-textfield"
       promptText="Src" />
     <Label text="→" style="-fx-text-fill: #666666; -fx-font-weight: bold;" />
-    <TextField fx:id="toNodeField" prefWidth="55" minWidth="55" styleClass="dark-textfield"
+    <TextField fx:id="toNodeField" prefWidth="42" minWidth="42" styleClass="dark-textfield compact-textfield"
       promptText="Dest" />
-    <TextField fx:id="weightField" prefWidth="45" minWidth="45" styleClass="dark-textfield"
+    <TextField fx:id="weightField" prefWidth="38" minWidth="38" styleClass="dark-textfield compact-textfield"
       promptText="W" />
-    <Button fx:id="linkBtn" onAction="#handleLink" styleClass="btn-ran-gold" prefWidth="85"
-      minWidth="85" />
+    <Button fx:id="linkBtn" onAction="#handleLink" styleClass="btn-ran-gold compact-button" prefWidth="68"
+      minWidth="68" />
   </HBox>
 
-  <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 10;">
+  <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 4;">
     <Button fx:id="runBtn" onAction="#handleRun"
-      styleClass="btn-ran-blue" prefWidth="120" minWidth="120"
-      style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+      styleClass="btn-ran-blue compact-button" prefWidth="96" minWidth="96"
+      style="-fx-font-weight: bold; -fx-font-size: 12px;" />
   </HBox>
 
 </HBox>
