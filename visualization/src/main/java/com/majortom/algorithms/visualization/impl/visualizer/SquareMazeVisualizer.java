@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 import java.util.LinkedList;
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
 import javafx.scene.paint.Color;
 
@@ -12,6 +13,8 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
     private static final int MAX_ARMY_SIZE = 6;
     private int lastTerrain = MazeConstant.ROAD;
     private long skirmishStartTime = 0;
+    private long operationAccentUntilMillis = 0L;
+    private String operationLabel = "";
 
     @Override
     protected void drawMaze(BaseMaze<int[][]> mazeEntity, Object a, Object b, double cellW, double cellH) {
@@ -23,6 +26,7 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
                 renderRanCell(r, c, cellW, cellH, grid[r][c]);
             }
         }
+        drawOperationAccent(cellW, cellH);
     }
 
     private void renderRanCell(int r, int c, double w, double h, int type) {
@@ -131,6 +135,44 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         gc.setLineWidth(3.0);
         gc.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
 
+        gc.restore();
+    }
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        operationAccentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+        Object rows = event.metadata().get("rows");
+        Object cols = event.metadata().get("cols");
+        if (rows instanceof Integer rowCount && cols instanceof Integer colCount) {
+            operationLabel = rowCount + "x" + colCount;
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        operationAccentUntilMillis = 0L;
+        operationLabel = "";
+        super.onVisualizationReset();
+    }
+
+    private void drawOperationAccent(double cellW, double cellH) {
+        if (System.currentTimeMillis() >= operationAccentUntilMillis) {
+            return;
+        }
+
+        gc.save();
+        gc.setGlobalAlpha(Math.max(0.0, Math.min(1.0, (operationAccentUntilMillis - System.currentTimeMillis()) / (double) FEEDBACK_DURATION_MS)));
+        gc.setStroke(RAN_GOLD);
+        gc.setLineWidth(2.4);
+        gc.strokeRoundRect(10, 10, Math.max(0, canvas.getWidth() - 20), Math.max(0, canvas.getHeight() - 20), 20, 20);
+
+        if (!operationLabel.isBlank()) {
+            gc.setFill(RAN_BLACK.deriveColor(0, 1, 1, 0.78));
+            gc.fillRoundRect(canvas.getWidth() - 118, 18, 96, 32, 12, 12);
+            gc.setFill(RAN_GOLD);
+            gc.fillText(operationLabel, canvas.getWidth() - 98, 39);
+        }
         gc.restore();
     }
 

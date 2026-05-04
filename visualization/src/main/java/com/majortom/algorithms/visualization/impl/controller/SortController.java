@@ -11,6 +11,7 @@ import com.majortom.algorithms.core.sort.impl.ArraySortEntity;
 import com.majortom.algorithms.utils.AlgorithmsUtils;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 
@@ -27,6 +28,7 @@ import javafx.scene.control.Slider;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
@@ -76,9 +78,12 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
     @FXML
     @SuppressWarnings("unchecked")
     private void handleGenerate() {
+        int size = (sizeSlider != null) ? (int) sizeSlider.getValue() : 50;
+        dispatchVisualizerAction(VisualizationActionType.SORT_GENERATE, Map.of(
+                "size", size,
+                "algorithmId", selectedAlgorithmId()));
         stopAlgorithm();
 
-        int size = (sizeSlider != null) ? (int) sizeSlider.getValue() : 50;
         Integer[] array = AlgorithmsUtils.randomArray(size, 100);
         this.sourceData = (T[]) array;
         this.sortData = new ArraySortEntity<>((T[]) array.clone());
@@ -169,6 +174,9 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
 
     @FXML
     public void handleSort() {
+        dispatchVisualizerAction(VisualizationActionType.SORT_RUN, Map.of(
+                "size", sourceData == null ? 0 : sourceData.length,
+                "algorithmId", selectedAlgorithmId()));
         handleAlgorithmStart();
     }
 
@@ -179,6 +187,15 @@ public class SortController<T extends Comparable<T>> extends BaseModuleControlle
             index = 0;
         }
         return options.get(index).factory().get();
+    }
+
+    private String selectedAlgorithmId() {
+        List<SortOption<T>> options = sortOptions();
+        int index = (algorithmSelector == null) ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
+        if (index < 0 || index >= options.size()) {
+            index = 0;
+        }
+        return options.get(index).algorithmId();
     }
 
     private void bindAlgorithmSelector() {

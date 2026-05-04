@@ -13,7 +13,7 @@
   -fx-background-color: #050505;
   -fx-min-height: 80px;
   -fx-max-height: 80px;
-  -fx-padding: 0 15;
+  -fx-padding: 0 10;
   -fx-alignment: CENTER_LEFT;
   -fx-border-color: #333333 transparent transparent transparent;
   -fx-border-width: 1 0 0 0;
@@ -24,6 +24,7 @@
   -fx-background-color: #0d0d0f;
   -fx-border-color: transparent #333333 transparent transparent;
   -fx-border-width: 0 1 0 0;
+  -fx-padding: 0 0 16 0;
 }
 
 /* =========================================================
@@ -68,8 +69,8 @@
   -fx-cursor: hand;
 
   /* 核心修复：放宽 min-width 适配中文加粗，padding 提供呼吸感 */
-  -fx-min-width: 100px;
-  -fx-padding: 6 20;
+  -fx-min-width: 86px;
+  -fx-padding: 6 14;
   -fx-alignment: CENTER;
   -fx-text-overrun: CLIP;
   -fx-ellipsis-string: "";
@@ -83,8 +84,8 @@
 
 /* 侧边栏大按钮专用宽度 */
 .dark-panel .menu-button {
-  -fx-min-width: 240px;
-  -fx-max-width: 250px;
+  -fx-min-width: 205px;
+  -fx-max-width: 215px;
 }
 
 /* --- 专项颜色分类 --- */
@@ -147,6 +148,11 @@
   -fx-border-color: #00ffcc;
 }
 
+.compact-textfield {
+  -fx-font-size: 12px;
+  -fx-padding: 4 8;
+}
+
 /* 普通提示标签 */
 .control-label {
   -fx-text-fill: #ffffff;
@@ -192,6 +198,12 @@
   -fx-border-color: #d140ff;
   -fx-text-fill: #ff7af6;
   -fx-background-color: rgba(209, 64, 255, 0.06);
+}
+
+.compact-button {
+  -fx-min-width: 56px;
+  -fx-padding: 5 10;
+  -fx-font-size: 12px;
 }
 
 .module-button:selected,

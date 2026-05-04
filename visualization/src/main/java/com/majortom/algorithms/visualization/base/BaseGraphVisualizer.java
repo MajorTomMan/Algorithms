@@ -2,6 +2,8 @@ package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 
 import javafx.application.Platform;
 import org.graphstream.graph.Graph;
@@ -78,6 +80,37 @@ public abstract class BaseGraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>
         if (gsGraph != null) {
             gsGraph.nodes().forEach(n -> n.removeAttribute("ui.class"));
             gsGraph.edges().forEach(e -> e.removeAttribute("ui.class"));
+        }
+    }
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        if (event.actionType() == VisualizationActionType.EXECUTION_RESET) {
+            clear();
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        clear();
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        clear();
+        if (viewer != null) {
+            try {
+                viewer.disableAutoLayout();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        if (viewer != null) {
+            setupLayout();
         }
     }
 }

@@ -7,6 +7,7 @@ import com.majortom.algorithms.core.maze.algorithms.generate.*;
 import com.majortom.algorithms.core.maze.algorithms.pathfinding.*;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
@@ -19,6 +20,7 @@ import javafx.scene.control.*;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -98,11 +100,15 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
      */
     @FXML
     public void handleGenerate() {
+        int index = algoSelector.getSelectionModel().getSelectedIndex();
+        dispatchVisualizerAction(VisualizationActionType.MAZE_BUILD, Map.of(
+                "rows", mazeEntity == null ? 0 : mazeEntity.getRows(),
+                "cols", mazeEntity == null ? 0 : mazeEntity.getCols(),
+                "algorithmId", generatorAlgorithmId(index)));
         stopAlgorithm();
         mazeEntity.initialSilent();
         currentMode = MazeMode.GENERATION;
 
-        int index = algoSelector.getSelectionModel().getSelectedIndex();
         // 策略切换
         this.currentAlgorithm = switch (index) {
             case 1 -> (BaseMazeAlgorithms<T>) new DFSMazeGenerator();
@@ -128,13 +134,18 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
             return;
         }
 
+        int index = solverSelector.getSelectionModel().getSelectedIndex();
+        dispatchVisualizerAction(VisualizationActionType.MAZE_SOLVE, Map.of(
+                "rows", mazeEntity.getRows(),
+                "cols", mazeEntity.getCols(),
+                "solverId", solverAlgorithmId(index)));
+
         mazeEntity.setGenerated(true);
         mazeEntity.clearVisualStates();
         mazeEntity.pickRandomPointsOnAvailablePaths();
         visualizer.render(mazeEntity, null, null);
         appendLog(I18N.text("message.maze.snapshot_ready"));
 
-        int index = solverSelector.getSelectionModel().getSelectedIndex();
         BaseMazeAlgorithms<T> solver = switch (index) {
             case 1 -> (BaseMazeAlgorithms<T>) new DFSMazePathfinder();
             default -> (BaseMazeAlgorithms<T>) new AStarMazePathfinder();
@@ -219,5 +230,20 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<T>> {
     @Override
     protected String moduleId() {
         return "maze";
+    }
+
+    private String generatorAlgorithmId(int index) {
+        return switch (index) {
+            case 1 -> "dfs-maze-generator";
+            case 2 -> "union-find-maze-generator";
+            default -> "bfs-maze-generator";
+        };
+    }
+
+    private String solverAlgorithmId(int index) {
+        return switch (index) {
+            case 1 -> "dfs-maze-pathfinder";
+            default -> "astar-maze-pathfinder";
+        };
     }
 }

@@ -5,10 +5,10 @@
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
   fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
-  prefHeight="800.0" prefWidth="1200.0"
+  prefHeight="900.0" prefWidth="1520.0"
   styleClass="root-pane" stylesheets="@../style/ui_theme.css">
   <left>
-    <VBox spacing="15" styleClass="dark-panel" minWidth="280" alignment="TOP_CENTER">
+    <VBox spacing="15" styleClass="dark-panel" minWidth="300" prefWidth="300" alignment="TOP_CENTER">
       <Label fx:id="menuTitleLabel" styleClass="section-title" />
       <VBox fx:id="moduleMenuBox" spacing="10" fillWidth="true" />
 

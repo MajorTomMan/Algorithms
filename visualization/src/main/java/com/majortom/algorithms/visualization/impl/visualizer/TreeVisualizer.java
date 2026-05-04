@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import com.majortom.algorithms.core.tree.BaseTree;
 import com.majortom.algorithms.core.tree.node.TreeNode;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseTreeVisualizer;
 
 import javafx.geometry.VPos;
@@ -20,6 +21,8 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
     private static final double NODE_RADIUS = 26.0;
     private static final double BASE_LEVEL_HEIGHT = 115.0;
     private static final double BASE_NODE_GAP = 85.0;
+    private long accentUntilMillis;
+    private TreeNode<T> retainedFocus;
 
     @Override
     protected void updateLayout(BaseTree<T> tree) {
@@ -90,28 +93,42 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
     }
 
     private void renderEdge(Point parent, Point child, TreeNode<T> childNode) {
-        TreeNode<T> treeFocus = treeInstance.getCurrentHighlight();
-        boolean isPathToFocus = (childNode == treeFocus
-                || (treeFocus != null && Objects.equals(childNode.data, treeFocus.data)));
+        TreeNode<T> treeFocus = resolveFocus();
+        TreeNode<T> secondaryFocus = resolveSecondaryFocus();
+        boolean isPathToFocus = isSameNode(childNode, treeFocus);
+        boolean isFocusChild = isSameNode(childNode, secondaryFocus);
+        int ancestorDistance = ancestorDistance(childNode, treeFocus);
+        boolean isDirectParentEdge = ancestorDistance == 1;
+        boolean isAncestorEdge = ancestorDistance > 1;
 
         if (isPathToFocus) {
             gc.setStroke(RAN_BLUE);
             gc.setLineWidth(4.0 / autoScale);
+        } else if (isFocusChild) {
+            gc.setStroke(RAN_YELLOW.deriveColor(0, 1, 0.9, 0.9));
+            gc.setLineWidth(3.4 / autoScale);
+        } else if (isDirectParentEdge) {
+            gc.setStroke(RAN_RED.deriveColor(0, 1, 0.95, 0.95));
+            gc.setLineWidth(3.2 / autoScale);
+        } else if (isAncestorEdge) {
+            gc.setStroke(RAN_RED.deriveColor(0, 1, 0.75, 0.75));
+            gc.setLineWidth(2.8 / autoScale);
         } else {
-            // 父节点到父节点用红色，叶子节点用黄色，增加对比度
-            Color edgeColor = childNode.isLeaf() ? RAN_YELLOW.deriveColor(0, 1, 0.8, 0.5)
-                    : RAN_RED.deriveColor(0, 1, 0.8, 0.6);
-            gc.setStroke(edgeColor);
-            gc.setLineWidth(2.5 / autoScale);
+            gc.setStroke(RAN_SLATE.deriveColor(0, 1, 0.9, 0.4));
+            gc.setLineWidth(2.2 / autoScale);
         }
         gc.strokeLine(parent.x, parent.y, child.x, child.y);
     }
 
     private void drawRanNode(TreeNode<T> node, double x, double y) {
-        TreeNode<T> focus = treeInstance.getCurrentHighlight();
+        TreeNode<T> focus = resolveFocus();
+        TreeNode<T> secondaryFocus = resolveSecondaryFocus();
         boolean isLeaf = node.isLeaf();
-        boolean isActive = (node == focus) || (focus != null && Objects.equals(node.data, focus.data))
-                || (Objects.equals(node.data, focusA));
+        boolean isActive = isSameNode(node, focus);
+        boolean isFocusChild = isSameNode(node, secondaryFocus);
+        int ancestorDistance = ancestorDistance(node, focus);
+        boolean isDirectParent = ancestorDistance == 1;
+        boolean isAncestor = ancestorDistance > 1;
 
         // 颜色分配逻辑：恢复深色填充与发光
         Color strokeColor;
@@ -122,13 +139,25 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
             strokeColor = RAN_BLUE;
             fillColor = Color.rgb(0, 45, 90); // 深蓝甲胄感
             glowColor = RAN_BLUE;
-        } else if (!isLeaf) {
-            strokeColor = RAN_RED;
-            fillColor = Color.rgb(45, 10, 10); // 深红城墙感
-            glowColor = RAN_RED.deriveColor(0, 1, 1, 0.25);
-        } else {
+        } else if (isFocusChild) {
             strokeColor = RAN_YELLOW;
-            fillColor = Color.rgb(25, 25, 30); // 极夜黑
+            fillColor = Color.rgb(70, 52, 8);
+            glowColor = RAN_YELLOW.deriveColor(0, 1, 1, 0.18);
+        } else if (isDirectParent) {
+            strokeColor = RAN_RED;
+            fillColor = Color.rgb(58, 12, 12);
+            glowColor = RAN_RED.deriveColor(0, 1, 1, 0.28);
+        } else if (isAncestor) {
+            strokeColor = RAN_RED.deriveColor(0, 1, 0.82, 0.9);
+            fillColor = Color.rgb(42, 12, 12);
+            glowColor = RAN_RED.deriveColor(0, 1, 0.9, 0.16);
+        } else if (!isLeaf) {
+            strokeColor = RAN_SLATE;
+            fillColor = Color.rgb(28, 28, 32);
+            glowColor = null;
+        } else {
+            strokeColor = RAN_SILVER.deriveColor(0, 1, 0.9, 0.65);
+            fillColor = Color.rgb(22, 22, 26);
         }
 
         // 1. 绘制光晕 (Glow Effect)
@@ -150,5 +179,106 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
         gc.fillText(String.valueOf(node.data), x, y);
+    }
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        accentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+    }
+
+    @Override
+    protected void resetTreeVisualizationState() {
+        super.resetTreeVisualizationState();
+        accentUntilMillis = 0L;
+        retainedFocus = null;
+    }
+
+    private TreeNode<T> resolveFocus() {
+        if (focusA instanceof TreeNode<?> activeNode) {
+            @SuppressWarnings("unchecked")
+            TreeNode<T> typedNode = (TreeNode<T>) activeNode;
+            retainedFocus = typedNode;
+        } else if (focusA != null) {
+            TreeNode<T> resolvedNode = findNodeByData(treeInstance == null ? null : treeInstance.getRoot(), focusA);
+            if (resolvedNode != null) {
+                retainedFocus = resolvedNode;
+            }
+        }
+        if (treeInstance == null) {
+            return retainedFocus;
+        }
+        TreeNode<T> liveFocus = treeInstance.getCurrentHighlight();
+        if (liveFocus != null) {
+            retainedFocus = liveFocus;
+        }
+        return retainedFocus;
+    }
+
+    private TreeNode<T> resolveSecondaryFocus() {
+        if (focusB instanceof TreeNode<?> secondaryNode) {
+            @SuppressWarnings("unchecked")
+            TreeNode<T> typedNode = (TreeNode<T>) secondaryNode;
+            return typedNode;
+        }
+        if (focusB != null && treeInstance != null) {
+            return findNodeByData(treeInstance.getRoot(), focusB);
+        }
+        return null;
+    }
+
+    private int ancestorDistance(TreeNode<T> node, TreeNode<T> focus) {
+        if (node == null || focus == null || treeInstance == null || treeInstance.getRoot() == null) {
+            return -1;
+        }
+        if (isSameNode(node, focus)) {
+            return 0;
+        }
+        return distanceToFocus(node, focus);
+    }
+
+    private int distanceToFocus(TreeNode<T> current, TreeNode<T> focus) {
+        if (current == null || current.getChildren() == null) {
+            return -1;
+        }
+        for (TreeNode<T> child : current.getChildren()) {
+            if (child == null) {
+                continue;
+            }
+            if (isSameNode(child, focus)) {
+                return 1;
+            }
+            int nestedDistance = distanceToFocus(child, focus);
+            if (nestedDistance > 0) {
+                return nestedDistance + 1;
+            }
+        }
+        return -1;
+    }
+
+    private boolean isSameNode(TreeNode<T> left, TreeNode<T> right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return left == right || Objects.equals(left.data, right.data);
+    }
+
+    private TreeNode<T> findNodeByData(TreeNode<T> current, Object value) {
+        if (current == null) {
+            return null;
+        }
+        if (Objects.equals(current.data, value)) {
+            return current;
+        }
+        if (current.getChildren() == null) {
+            return null;
+        }
+        for (TreeNode<T> child : current.getChildren()) {
+            TreeNode<T> result = findNodeByData(child, value);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
     }
 }

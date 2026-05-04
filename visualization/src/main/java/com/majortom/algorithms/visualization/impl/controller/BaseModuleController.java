@@ -117,6 +117,7 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
             if (statsLabel != null)
                 statsLabel.setText(I18N.text("status.system.ready"));
             onResetData();
+            dispatchVisualizerReset();
         });
     }
 
