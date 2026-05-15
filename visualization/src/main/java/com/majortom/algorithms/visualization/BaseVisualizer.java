@@ -47,7 +47,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     public static final Color RAN_CYAN = Color.rgb(100, 220, 255); // 荧蓝
     public static final Color RAN_BLOOD_VIVID = Color.rgb(255, 40, 40); // 鲜红
     public static final Color RAN_EMERALD = Color.rgb(0, 200, 100); // 翠绿
-    public static final Color RAN_AMBER = Color.rgb(255, 160, 0); // 琥珀 
+    public static final Color RAN_AMBER = Color.rgb(255, 160, 0); // 琥珀
     public static final Color RAN_GHOST_WHITE = Color.rgb(200, 220, 255, 0.4); // 幽灵白
 
     public static final Color RAN_ENEMY_GREEN = Color.rgb(0, 70, 40); // 诡绿
@@ -302,7 +302,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     /**
      * 核心符号学逻辑：统一家纹绘制
      * * @param mx 中心点X
-     * 
+     *
      * @param my          中心点Y
      * @param size        家纹大小
      * @param type        MazeConstant 中定义的单元格类型

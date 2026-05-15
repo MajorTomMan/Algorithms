@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="CENTER_LEFT" spacing="20"
+    alignment="CENTER_LEFT" spacing="14"
     stylesheets="@../style/ui_theme.css">
 
-    <Label fx:id="sizeLabel" styleClass="control-label" />
+    <VBox spacing="4" alignment="CENTER_LEFT">
+        <Label fx:id="structureLabel" styleClass="control-label" />
+        <ComboBox fx:id="structureSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
+    </VBox>
 
-    <Slider fx:id="sizeSlider" min="5" max="100" value="20" prefWidth="140" />
+    <VBox spacing="4" alignment="CENTER_LEFT">
+        <Label fx:id="algorithmLabel" styleClass="control-label" />
+        <ComboBox fx:id="algorithmSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
+    </VBox>
 
-    <ComboBox fx:id="algorithmSelector" prefWidth="150" styleClass="dark-combo-box" />
-
-    <Separator orientation="VERTICAL" prefHeight="25" styleClass="subtle-divider" />
-
-    <Button fx:id="genBtn" onAction="#handleGenerate"
-        styleClass="btn-ran-gold" />
-
-    <Button fx:id="sortBtn" onAction="#handleSort"
-        styleClass="btn-run-neon" />
+    <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 18 0 0 0;">
+        <Button fx:id="sortBtn" onAction="#handleSort" styleClass="btn-run-neon compact-button" />
+        <Button fx:id="operationBtn" onAction="#openSortOperationDialog"
+            styleClass="btn-ran-gold compact-button" />
+    </HBox>
 
 </HBox>

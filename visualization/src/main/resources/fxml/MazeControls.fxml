@@ -3,31 +3,33 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;"
+  alignment="CENTER_LEFT" spacing="14" style="-fx-min-height: 80px; -fx-padding: 0 10;"
   stylesheets="@../style/ui_theme.css">
 
   <VBox spacing="4" alignment="CENTER_LEFT">
-    <Label fx:id="densityLabel" styleClass="control-label" />
+    <Label fx:id="structureTitleLabel" styleClass="control-label" />
+    <ComboBox fx:id="structureSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
+  </VBox>
+
+  <VBox spacing="4" alignment="CENTER_LEFT">
+    <Label fx:id="generatorTitleLabel" styleClass="control-label" />
     <HBox spacing="8" alignment="CENTER_LEFT">
-      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="120" />
-      <Label fx:id="sizeValueLabel" text="51x51" styleClass="size-value-highlight" />
+      <ComboBox fx:id="generatorSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
+      <Button fx:id="buildBtn" onAction="#handleGenerate" styleClass="btn-neon-cyan compact-button" />
     </HBox>
   </VBox>
 
-  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
-    <Label fx:id="genTitleLabel" styleClass="control-label" />
+  <VBox spacing="4" alignment="CENTER_LEFT">
+    <Label fx:id="pathfinderTitleLabel" styleClass="control-label" />
     <HBox spacing="8" alignment="CENTER_LEFT">
-      <ComboBox fx:id="algoSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
-      <Button fx:id="buildBtn" onAction="#handleGenerate" styleClass="btn-neon-cyan" />
+      <ComboBox fx:id="pathfinderSelector" minWidth="130" prefWidth="130" styleClass="dark-combo-box" />
+      <Button fx:id="solveBtn" onAction="#handleSolve" styleClass="btn-neon-pink compact-button" />
     </HBox>
   </VBox>
 
-  <VBox spacing="4" alignment="CENTER_LEFT" style="-fx-padding: 0 0 0 15;">
-    <Label fx:id="solveTitleLabel" styleClass="control-label" />
-    <HBox spacing="8" alignment="CENTER_LEFT">
-      <ComboBox fx:id="solverSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
-      <Button fx:id="solveBtn" onAction="#handleSolve" styleClass="btn-neon-pink" />
-    </HBox>
-  </VBox>
+  <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 18 0 0 0;">
+    <Button fx:id="operationBtn" onAction="#openMazeOperationDialog"
+      styleClass="btn-ran-gold compact-button" />
+  </HBox>
 
 </HBox>

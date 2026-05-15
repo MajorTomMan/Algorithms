@@ -13,17 +13,23 @@ import javafx.scene.layout.HBox;
 import java.io.IOException;
 
 /**
- * 模块控制器基类
- * 职责：
- * 1. 自动加载模块专属的 FXML 控制面板
- * 2. 统一管理线程安全的国际化日志 (logI18n)
- * 3. 规范化性能统计信息的展示格式
+ * 模块控制器基类。
+ *
+ * <p>它在 {@link BaseController} 的通用执行能力之上，增加模块专属 FXML 控制面板加载、
+ * 国际化日志输出和默认统计文案。排序、树、图、迷宫控制器都可以继承它。</p>
+ *
+ * @param <S> 当前模块的数据结构类型
  */
 public abstract class BaseModuleController<S extends BaseStructure<?>> extends BaseController<S> {
 
+    /**
+     * 模块自定义控制面板节点。
+     */
     protected Node controlPanel; // 对应的自定义控制面板组件
 
     /**
+     * 创建模块控制器并加载专属控制面板。
+     *
      * @param visualizer 对应的可视化器
      * @param fxmlPath   自定义控制面板的 FXML 路径 (如 "/fxml/GraphControls.fxml")
      */
@@ -33,7 +39,9 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
     }
 
     /**
-     * 加载 FXML 控制面板并设置 Controller 为当前类
+     * 加载 FXML 控制面板并设置 Controller 为当前类。
+     *
+     * @param fxmlPath FXML 资源路径
      */
     private void loadControlPanel(String fxmlPath) {
         if (fxmlPath == null || fxmlPath.isEmpty())
@@ -51,7 +59,9 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
     }
 
     /**
-     * 实现父类 API：将自定义控件注入主界面底栏
+     * 将自定义控件注入主界面底栏。
+     *
+     * @param container 主界面底栏容器
      */
     @Override
     public void setupCustomControls(HBox container) {
@@ -62,7 +72,7 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
     }
 
     /**
-     * 线程安全的国际化日志输出
+     * 线程安全的国际化日志输出。
      * 
      * @param key  I18N 资源文件中的 Key
      * @param args 格式化参数
@@ -76,7 +86,7 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
     }
 
     /**
-     * 统一实现统计信息刷新逻辑
+     * 线程安全地刷新统计信息。
      */
     @Override
     protected void refreshStatsDisplay() {
@@ -88,8 +98,9 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
     }
 
     /**
-     * 默认的统计信息格式：操作数 + 比较数
-     * 子类如需显示耗时或特定指标，可重写此方法
+     * 默认统计信息格式。
+     *
+     * @return 操作数和比较数文本
      */
     @Override
     protected String formatStatsMessage() {
@@ -102,12 +113,19 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
         }
     }
 
+    /**
+     * 格式化单个国际化指标。
+     *
+     * @param key 国际化 key
+     * @param value 指标值
+     * @return 格式化后的文本
+     */
     protected final String formatMetric(String key, int value) {
         return I18N.text(key, value);
     }
 
     /**
-     * 模块清理逻辑：停止算法并清空日志
+     * 重置模块运行状态和日志。
      */
     public void resetModule() {
         stopAlgorithm();
@@ -117,12 +135,11 @@ public abstract class BaseModuleController<S extends BaseStructure<?>> extends B
             if (statsLabel != null)
                 statsLabel.setText(I18N.text("status.system.ready"));
             onResetData();
-            dispatchVisualizerReset();
         });
     }
 
     /**
-     * 子类实现：重置数据结构本身的状态
+     * 子类实现：重置数据结构本身的状态。
      */
     protected abstract void onResetData();
 }

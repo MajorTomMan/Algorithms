@@ -3,6 +3,13 @@ package com.majortom.algorithms.core.sort.alg;
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 
+/**
+ * 选择排序实现。
+ *
+ * <p>通过 {@link #swap(BaseSort, int, int)} 接入排序基类的统计和可视化同步。</p>
+ *
+ * @param <T> 元素类型
+ */
 public class SelectionSort<T extends Comparable<T>> extends BaseSortAlgorithms<T> {
     /*
      * 选择排序思路：
@@ -11,6 +18,11 @@ public class SelectionSort<T extends Comparable<T>> extends BaseSortAlgorithms<T
      * 3. 标记：通过比较，不断更新最小值（minest）及其索引（minIndex）。
      * 4. 归位：每轮搜索结束后，将找到的最小值与当前 i 位置的元素进行交换。
      * 5. 结果：每一轮外层循环都能确定一个位置的最终正确元素。
+     */
+    /**
+     * 对数组执行选择排序。
+     *
+     * @param sortEntity 排序结构
      */
     @Override
     public void sort(BaseSort<T> sortEntity) {
