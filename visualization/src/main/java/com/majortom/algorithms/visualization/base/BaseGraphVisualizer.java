@@ -9,15 +9,36 @@ import org.graphstream.ui.fx_viewer.FxViewPanel;
 import org.graphstream.ui.fx_viewer.FxViewer;
 
 /**
- * 图算法可视化抽象基类
- * 职责：集成 GraphStream 渲染引擎，管理 ViewPanel 布局与样式表加载
+ * 图算法可视化抽象基类。
+ *
+ * <p>图模块使用 GraphStream 自己的 JavaFX 面板渲染节点和边，因此这个类负责把
+ * GraphStream 的 {@link FxViewer} 嵌入项目统一的 {@link BaseVisualizer} 布局中。
+ * Canvas 会作为透明叠加层保留，未来可用于绘制额外提示。</p>
+ *
+ * @param <V> 图节点业务数据类型
  */
 public abstract class BaseGraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>> {
 
+    /**
+     * GraphStream JavaFX viewer。
+     */
     protected FxViewer viewer;
+
+    /**
+     * GraphStream 的 JavaFX 视图面板。
+     */
     protected FxViewPanel viewPanel;
+
+    /**
+     * 被渲染的 GraphStream 图实例。
+     */
     protected final Graph gsGraph;
 
+    /**
+     * 创建图可视化组件。
+     *
+     * @param baseGraph 图结构包装器
+     */
     public BaseGraphVisualizer(BaseGraph<V> baseGraph) {
         System.setProperty("org.graphstream.ui", "javafx");
         this.gsGraph = baseGraph.getGraph();
@@ -25,6 +46,9 @@ public abstract class BaseGraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>
         Platform.runLater(this::initializeGraphEngine);
     }
 
+    /**
+     * 初始化 GraphStream 渲染引擎。
+     */
     private void initializeGraphEngine() {
         if (gsGraph == null)
             return;
@@ -61,18 +85,25 @@ public abstract class BaseGraphVisualizer<V> extends BaseVisualizer<BaseGraph<V>
     }
 
     /**
-     * 子类需提供 CSS 样式文件路径
+     * 子类提供 GraphStream CSS 样式文件路径。
+     *
+     * @return classpath 下的样式文件路径
      */
     protected abstract String getStyleSheetPath();
 
     /**
-     * 布局设置，默认为开启自动布局，子类可重写以固定位置
+     * 配置 GraphStream 布局策略。
+     *
+     * <p>默认开启自动布局，子类可以重写以固定节点位置。</p>
      */
     protected void setupLayout() {
         if (viewer != null)
             viewer.enableAutoLayout();
     }
 
+    /**
+     * 清除图上的可视化状态。
+     */
     @Override
     public void clear() {
         if (gsGraph != null) {

@@ -3,8 +3,20 @@ package com.majortom.algorithms.core.sort.alg;
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.core.sort.BaseSortAlgorithms;
 
+/**
+ * 堆排序实现。
+ *
+ * <p>通过排序基类的 {@link #swap(BaseSort, int, int)} 同步交换动作到执行时间轴。</p>
+ *
+ * @param <T> 元素类型
+ */
 public class HeapSort<T extends Comparable<T>> extends BaseSortAlgorithms<T> {
 
+    /**
+     * 执行堆排序。
+     *
+     * @param sortEntity 排序结构
+     */
     @Override
     public void sort(BaseSort<T> sortEntity) {
         // TODO Auto-generated method stub
@@ -19,6 +31,9 @@ public class HeapSort<T extends Comparable<T>> extends BaseSortAlgorithms<T> {
         }
     }
 
+    /**
+     * 调整以 i 为根的子树，使其满足最大堆性质。
+     */
     private void heapify(BaseSort<T> sortEntity, int n, int i) {
         T[] data = sortEntity.getData();
         int largest = i; // 先假设父节点是最大的

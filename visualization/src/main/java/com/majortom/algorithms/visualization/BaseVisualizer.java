@@ -11,8 +11,17 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 
 /**
- * 视觉呈现组件基类
- * 承载《乱》高饱和色彩体系与核心渲染调度
+ * 可视化渲染组件基类。
+ *
+ * <p>所有具体 Visualizer 都继承这个类，复用同一个 {@link Canvas}、
+ * {@link GraphicsContext}、响应式尺寸监听和线程安全渲染入口。
+ * 控制器拿到 {@code ExecutionFrame.snapshot()} 后，会调用
+ * {@link #render(BaseStructure, Object, Object)} 把结构和焦点交给这里。</p>
+ *
+ * <p>本类只负责“如何安全地调度绘制”和“提供统一视觉语言”。
+ * 具体结构如何画，由子类实现 {@link #draw(BaseStructure, Object, Object)}。</p>
+ *
+ * @param <S> 可被此组件渲染的数据结构类型
  */
 public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPane {
 
@@ -55,13 +64,33 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     protected final Canvas canvas;
     protected final GraphicsContext gc;
 
+    /**
+     * 最近一次渲染的数据结构。
+     * <p>窗口大小变化时会用它重绘当前画面，避免 resize 后画布为空。</p>
+     */
     private S lastData;
+
+    /**
+     * 最近一次渲染的第一个焦点对象。
+     */
     private Object lastA;
+
+    /**
+     * 最近一次渲染的第二个焦点对象。
+     */
     private Object lastB;
 
-    // 默认高亮效果
+    /**
+     * 默认高亮效果，子类在绘制当前操作对象时可以复用。
+     */
     protected final Glow highIntensityGlow = new Glow(0.8);
 
+    /**
+     * 创建可视化组件并完成 Canvas 绑定。
+     *
+     * <p>Canvas 宽高绑定到当前 StackPane，尺寸变化时自动调用
+     * {@link #drawCurrent()} 重绘最后一帧。</p>
+     */
     public BaseVisualizer() {
         this.canvas = new Canvas();
         this.gc = canvas.getGraphicsContext2D();
@@ -75,7 +104,15 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     }
 
     /**
-     * 渲染调度：确保 UI 更新在正确线程
+     * 渲染一帧结构快照。
+     *
+     * <p>这个方法可以从算法 worker 线程或 JavaFX UI 线程调用。
+     * 如果当前不在 UI 线程，会自动通过 {@link Platform#runLater(Runnable)}
+     * 切回 JavaFX Application Thread，避免直接跨线程操作 Canvas。</p>
+     *
+     * @param data 需要绘制的结构快照
+     * @param a 第一个高亮焦点
+     * @param b 第二个高亮焦点
      */
     public final void render(S data, Object a, Object b) {
         this.lastData = data;
@@ -88,10 +125,21 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         }
     }
 
+    /**
+     * 渲染一帧没有焦点高亮的结构快照。
+     *
+     * @param data 需要绘制的结构快照
+     */
     public final void render(S data) {
         render(data, null, null);
     }
 
+    /**
+     * 重绘最近一帧。
+     *
+     * <p>窗口 resize、首次渲染或显式刷新都会走这里。没有数据时清空画布，
+     * 有数据时委托给子类 {@link #draw(BaseStructure, Object, Object)}。</p>
+     */
     protected void drawCurrent() {
         if (lastData == null) {
             clear();
@@ -112,6 +160,9 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     /**
      * 辅助方法：获取针对高饱和色彩的家纹/线条颜色
      * 逻辑：根据背景饱和度自动计算对比色
+     *
+     * @param background 背景色
+     * @return 适合画在该背景上的刻痕/描边色
      */
     protected Color getContrastStrokeColor(Color background) {
         if (background.equals(RAN_WHITE))
@@ -130,20 +181,40 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         gc.setEffect(highIntensityGlow);
     }
 
+    /**
+     * 释放最近一次 {@link #applyFocusEffect()} 保存的绘图状态。
+     */
     protected void releaseEffect() {
         gc.restore();
     }
 
+    /**
+     * 子类实现的实际绘制逻辑。
+     *
+     * <p>这里一定运行在 JavaFX UI 线程中，子类可以安全地使用 {@link #gc} 操作 Canvas。</p>
+     *
+     * @param data 当前结构快照
+     * @param a 第一个焦点对象
+     * @param b 第二个焦点对象
+     */
     protected abstract void draw(S data, Object a, Object b);
 
+    /**
+     * 获取最近一次渲染的数据结构。
+     *
+     * @return 最近一帧结构快照，可能为空
+     */
     public S getLastData() {
         return lastData;
     }
 
     /**
-     * 核心符号学逻辑：统一家纹绘制
-     * * @param mx 中心点X
-     * 
+     * 按迷宫单元格类型绘制统一家纹符号。
+     *
+     * <p>迷宫和图迷宫可视化会复用它，把不同状态映射到统一视觉符号，
+     * 例如路径、回溯、墙、起点和终点。</p>
+     *
+     * @param mx 中心点 X
      * @param my          中心点Y
      * @param size        家纹大小
      * @param type        MazeConstant 中定义的单元格类型
@@ -188,7 +259,16 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     }
 
     /**
-     * 核心符号学逻辑：统一家纹绘制
+     * 按阵营颜色绘制统一家纹符号。
+     *
+     * <p>排序、树或图的可视化如果只知道颜色而不知道迷宫单元格类型，
+     * 可以使用这个重载保持同一套视觉语言。</p>
+     *
+     * @param mx 中心点 X
+     * @param my 中心点 Y
+     * @param size 家纹大小
+     * @param clanColor 代表状态或阵营的主色
+     * @param strokeColor 线条颜色
      */
     protected void drawClanMon(double mx, double my, double size, Color clanColor, Color strokeColor) {
         gc.setStroke(strokeColor);

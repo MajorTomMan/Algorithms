@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="CENTER_LEFT" spacing="20"
+    alignment="CENTER_LEFT" spacing="14"
     stylesheets="@../style/ui_theme.css">
 
-    <Label fx:id="inputLabel" styleClass="control-label" />
+    <VBox spacing="4" alignment="CENTER_LEFT">
+        <Label fx:id="structureLabel" styleClass="control-label" />
+        <ComboBox fx:id="structureSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
+    </VBox>
 
-    <TextField fx:id="inputField" prefWidth="180"
-        styleClass="dark-textfield" />
+    <VBox spacing="4" alignment="CENTER_LEFT">
+        <Label fx:id="algorithmLabel" styleClass="control-label" />
+        <ComboBox fx:id="algorithmSelector" minWidth="130" prefWidth="130" styleClass="dark-combo-box" />
+    </VBox>
 
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <Button fx:id="insertBtn" onAction="#handleInsert"
-            styleClass="btn-ran-blue" />
-
-        <Button fx:id="deleteBtn" onAction="#handleDelete"
-            styleClass="btn-ran-red" />
-
-        <Button fx:id="randomBtn" onAction="#handleRandom"
-            styleClass="btn-ran-gold" />
+    <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 18 0 0 0;">
+        <Button fx:id="operationBtn" onAction="#openTreeOperationDialog"
+            styleClass="btn-ran-gold compact-button" />
     </HBox>
 
 </HBox>

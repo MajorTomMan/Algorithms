@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+  alignment="CENTER_LEFT" spacing="20" style="-fx-min-height: 80px; -fx-padding: 0 10;"
+  stylesheets="@../style/ui_theme.css">
+
+  <VBox spacing="4" alignment="CENTER_LEFT">
+    <Label fx:id="densityLabel" styleClass="control-label" />
+    <HBox spacing="8" alignment="CENTER_LEFT">
+      <Slider fx:id="sizeSlider" min="11" max="99" value="51" prefWidth="120" />
+      <Label fx:id="sizeValueLabel" text="51x51" styleClass="size-value-highlight" />
+    </HBox>
+  </VBox>
+
+</HBox>

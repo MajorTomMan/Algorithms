@@ -1,24 +1,23 @@
 package com.majortom.algorithms.core.graph;
 
-import org.graphstream.graph.Graph;
-
 import com.majortom.algorithms.core.base.BaseAlgorithms;
 
 /**
- * 图算法逻辑基类
- * 职责：
- * 1. 接收 BaseGraph 包装器作为操作目标。
- * 2. 统筹算法执行过程中的统计数据记录与 UI 同步。
- * 3. 屏蔽底层 GraphStream 的复杂性，提供统一的算法入口。
- * * @param <V> 业务数据的类型（如存储在 Node 属性中的自定义对象）
+ * 图算法逻辑基类。
+ *
+ * <p>具体图算法通过 {@link BaseGraph} 操作 GraphStream 图，同时继承
+ * {@link BaseAlgorithms} 的执行同步能力。算法在访问节点或确认边后调用 sync，
+ * 可视化层就能收到包含节点/边高亮状态的图快照。</p>
+ *
+ * @param <V> 业务数据类型，例如存储在节点属性中的自定义对象
  */
 public abstract class BaseGraphAlgorithms<V> extends BaseAlgorithms<BaseGraph<V>> {
 
     /**
-     * 执行算法的核心入口
-     * * @param graphData 业务图包装器，内部持有具体的 Graph 实例。
-     * 
-     * @param startNodeId 起始节点的唯一标识符（ID）。
+     * 从指定节点开始执行图算法。
+     *
+     * @param graphData 业务图包装器，内部持有 GraphStream 图实例
+     * @param startNodeId 起始节点 ID
      */
     public abstract void run(BaseGraph<V> graphData, String startNodeId);
 

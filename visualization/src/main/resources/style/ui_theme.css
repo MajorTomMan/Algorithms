@@ -81,6 +81,12 @@
   -fx-scale-x: 1.03;
 }
 
+.compact-button {
+  -fx-min-width: 82px;
+  -fx-pref-width: 92px;
+  -fx-padding: 6 10;
+}
+
 /* 侧边栏大按钮专用宽度 */
 .dark-panel .menu-button {
   -fx-min-width: 240px;
@@ -252,4 +258,51 @@
   -fx-font-family: "Consolas", "Microsoft YaHei";
   -fx-font-weight: bold;
   -fx-font-size: 13px;
+}
+
+.dialog-pane {
+  -fx-background-color: #050505;
+}
+
+.dialog-pane .label {
+  -fx-text-fill: #ffffff;
+  -fx-font-family: "Consolas", "Microsoft YaHei";
+  -fx-font-weight: bold;
+}
+
+.operation-dialog-pane {
+  -fx-background-color: #050505;
+  -fx-border-color: #333333;
+  -fx-border-width: 1;
+  -fx-padding: 18;
+}
+
+.operation-dialog-content {
+  -fx-min-width: 500px;
+  -fx-padding: 12;
+}
+
+.dialog-form-section {
+  -fx-background-color: rgba(255, 255, 255, 0.035);
+  -fx-background-radius: 6;
+  -fx-padding: 14;
+  -fx-border-color: rgba(255, 255, 255, 0.12);
+  -fx-border-radius: 6;
+}
+
+.dialog-section-title {
+  -fx-text-fill: #00ffcc;
+  -fx-font-size: 14px;
+}
+
+.dialog-input {
+  -fx-min-width: 180px;
+  -fx-pref-height: 38px;
+  -fx-font-size: 14px;
+  -fx-alignment: CENTER_LEFT;
+}
+
+.dialog-action-row {
+  -fx-alignment: CENTER_RIGHT;
+  -fx-padding: 4 0 0 0;
 }

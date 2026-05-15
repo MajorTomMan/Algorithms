@@ -7,33 +7,54 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 树结构数据基类
- * 职责：
- * 1. 维护树的根节点引用。
- * 2. 提供通用的深拷贝（Copy）模板逻辑，支持算法状态回滚。
- * 3. 抽象节点创建与挂载钩子，适配不同分支数的树种。
- * * @param <T> 存储的数据类型（需具备可比性）
+ * 树结构数据基类。
+ *
+ * <p>它维护树根、当前高亮节点和通用深拷贝模板。具体树种只需要实现创建空树、
+ * 创建节点和挂载子节点三个钩子，就能被执行层快照、树算法和树可视化复用。</p>
+ *
+ * @param <T> 存储的数据类型
  */
 public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<TreeNode<T>> {
 
+    /**
+     * 树根节点。
+     */
     protected TreeNode<T> root;
-    // 当前操作焦点：算法当前扫描或修改的节点
+
+    /**
+     * 当前操作焦点：算法当前扫描或修改的节点。
+     */
     protected TreeNode<T> currentHighlight;
 
+    /**
+     * 创建空树。
+     */
     public BaseTree() {
         this.root = null;
     }
 
+    /**
+     * 获取根节点。
+     *
+     * @return 根节点
+     */
     public TreeNode<T> getRoot() {
         return root;
     }
 
+    /**
+     * 设置根节点。
+     *
+     * @param root 新根节点
+     */
     public void setRoot(TreeNode<T> root) {
         this.root = root;
     }
 
     /**
-     * 原子操作：高亮并统计一次节点访问（比较）
+     * 高亮并统计一次节点访问。
+     *
+     * @param node 当前访问节点
      */
     public void focusNode(TreeNode<T> node) {
         this.currentHighlight = node;
@@ -41,7 +62,9 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
     }
 
     /**
-     * 原子操作：标记一次结构变更（插入、删除、旋转）
+     * 标记一次结构变更。
+     *
+     * @param newRoot 变更后的根节点
      */
     public void modifyStructure(TreeNode<T> newRoot) {
         this.root = newRoot;
@@ -49,8 +72,9 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
     }
 
     /**
-     * 实现 BaseStructure 的深拷贝接口
-     * 策略：递归拓扑拷贝 + 元数据同步
+     * 创建树快照。
+     *
+     * @return 当前树结构的深拷贝
      */
     @Override
     public BaseStructure<TreeNode<T>> copy() {
@@ -70,8 +94,10 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
     }
 
     /**
-     * 泛用型递归拷贝逻辑
-     * 职责：利用 TreeNode 的 getChildren 接口，不依赖具体的 left/right 字段
+     * 递归拷贝节点及子树。
+     *
+     * @param source 源节点
+     * @return 拷贝出的节点
      */
     private TreeNode<T> recursiveCopy(TreeNode<T> source) {
         if (source == null)
@@ -98,37 +124,51 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
         return target;
     }
 
-    // --- 供子类实现的抽象钩子 (Template Methods) ---
-
     /**
-     * 创建一个同类型的空树容器
+     * 创建同类型空树容器。
+     *
+     * @return 空树
      */
     protected abstract BaseTree<T> createEmptyTree();
 
     /**
-     * 创建一个具体的节点实例（如 AVLTreeNode）
+     * 创建具体节点实例。
+     *
+     * @param data 节点数据
+     * @return 新节点
      */
     protected abstract TreeNode<T> createNodeInstance(T data);
 
     /**
-     * 将克隆出的子节点列表挂载到父节点上
-     * 对于二叉树：约定 children.get(0) 是左，get(1) 是右
+     * 将克隆出的子节点列表挂载到父节点上。
+     *
+     * @param parent 父节点
+     * @param children 子节点列表
      */
     protected abstract void linkChildren(TreeNode<T> parent, List<TreeNode<T>> children);
 
-    // --- 基础维护方法 ---
-
+    /**
+     * 获取树根作为底层数据。
+     *
+     * @return 根节点
+     */
     @Override
     public TreeNode<T> getData() {
         return root;
     }
 
+    /**
+     * 重置统计和当前高亮。
+     */
     @Override
     public void resetStatistics() {
         super.resetStatistics();
         this.currentHighlight = null;
     }
 
+    /**
+     * 清空树结构和统计。
+     */
     @Override
     public void clear() {
         this.root = null;
@@ -136,24 +176,38 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
         this.currentHighlight = null;
     }
 
+    /**
+     * 获取当前高亮节点。
+     *
+     * @return 当前高亮节点
+     */
     public TreeNode<T> getCurrentHighlight() {
         return currentHighlight;
     }
 
     /**
-     * 获取树的总高度
+     * 获取树高度。
+     *
+     * @return 树高度
      */
     public int height() {
         return root == null ? 0 : root.height;
     }
 
     /**
-     * 获取树的节点总数
+     * 获取树节点总数。
+     *
+     * @return 节点总数
      */
     public int size() {
         return root == null ? 0 : root.subTreeCount;
     }
 
+    /**
+     * 判断树是否为空。
+     *
+     * @return 没有根节点时返回 true
+     */
     public boolean isEmpty() {
         return root == null;
     }

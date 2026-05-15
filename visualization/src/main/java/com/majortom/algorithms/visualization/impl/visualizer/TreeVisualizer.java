@@ -15,12 +15,23 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
+/**
+ * 树结构可视化器。
+ *
+ * <p>它在 {@link BaseTreeVisualizer} 的动画框架上实现具体布局、边绘制和节点绘制。
+ * 树算法同步焦点节点后，这里会通过颜色和光晕显示当前访问位置。</p>
+ *
+ * @param <T> 树节点数据类型
+ */
 public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<T> {
 
     private static final double NODE_RADIUS = 26.0;
     private static final double BASE_LEVEL_HEIGHT = 115.0;
     private static final double BASE_NODE_GAP = 85.0;
 
+    /**
+     * 计算树节点目标布局。
+     */
     @Override
     protected void updateLayout(BaseTree<T> tree) {
         if (tree == null || tree.getRoot() == null)
@@ -43,6 +54,9 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
         nextLayout.forEach((node, p) -> currentPosMap.putIfAbsent(node, new Point(p.x, p.y)));
     }
 
+    /**
+     * 递归计算节点布局宽度和坐标。
+     */
     private double calculateLayoutRecursively(TreeNode<T> node, double xOffset, double y,
             Map<TreeNode<T>, Point> layout) {
         if (node == null)
@@ -71,6 +85,9 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
         return totalW;
     }
 
+    /**
+     * 递归绘制树节点及其子边。
+     */
     @Override
     protected void renderTreeRecursive(TreeNode<T> node) {
         Point p = currentPosMap.get(node);
@@ -89,6 +106,9 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
         drawRanNode(node, p.x, p.y);
     }
 
+    /**
+     * 绘制父子节点之间的连线。
+     */
     private void renderEdge(Point parent, Point child, TreeNode<T> childNode) {
         TreeNode<T> treeFocus = treeInstance.getCurrentHighlight();
         boolean isPathToFocus = (childNode == treeFocus
@@ -107,6 +127,9 @@ public class TreeVisualizer<T extends Comparable<T>> extends BaseTreeVisualizer<
         gc.strokeLine(parent.x, parent.y, child.x, child.y);
     }
 
+    /**
+     * 绘制单个树节点。
+     */
     private void drawRanNode(TreeNode<T> node, double x, double y) {
         TreeNode<T> focus = treeInstance.getCurrentHighlight();
         boolean isLeaf = node.isLeaf();

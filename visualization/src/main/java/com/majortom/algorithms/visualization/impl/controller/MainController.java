@@ -26,6 +26,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+/**
+ * 主界面控制器。
+ *
+ * <p>它负责装配全局 UI：模块菜单、可视化容器、统计面板、日志面板和全局执行按钮。
+ * 具体算法逻辑不在这里执行，而是通过 {@link ModuleRegistry} 创建当前模块的
+ * {@link BaseController} 子控制器，再把共享控件注入进去。</p>
+ */
 public class MainController implements Initializable {
 
     @FXML
@@ -71,6 +78,12 @@ public class MainController implements Initializable {
     private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
     private final Map<String, Button> moduleButtons = new LinkedHashMap<>();
 
+    /**
+     * JavaFX 初始化入口。
+     *
+     * @param location FXML 地址
+     * @param resources 国际化资源
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         if (resources != null) {
@@ -88,6 +101,9 @@ public class MainController implements Initializable {
         appendSystemLog(I18N.text("message.system.initialized"));
     }
 
+    /**
+     * 绑定主界面固定文案和暂停按钮动态文案。
+     */
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.stats"));
@@ -106,6 +122,9 @@ public class MainController implements Initializable {
         }, I18N.localeProperty(), AlgorithmThreadManager.pausedProperty()));
     }
 
+    /**
+     * 根据模块注册表创建左侧模块菜单。
+     */
     private void setupModuleMenu() {
         moduleMenuBox.getChildren().clear();
         moduleButtons.clear();
@@ -123,15 +142,28 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * 给主界面按钮安装统一动效。
+     */
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(startBtn, pauseBtn, resetBtn, replayBtn, exportBtn, compareBtn, langBtn);
     }
 
+    /**
+     * 切换到指定模块。
+     *
+     * @param definition 模块定义
+     */
     private void switchToModule(AlgorithmModuleDefinition definition) {
         loadSubController(definition.controllerFactory().get());
         moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
     }
 
+    /**
+     * 加载子控制器并接入可视化区域。
+     *
+     * @param newController 新模块控制器
+     */
     private void loadSubController(BaseController<?> newController) {
         AlgorithmThreadManager.stopAll();
 
@@ -163,6 +195,9 @@ public class MainController implements Initializable {
         newController.setupCustomControls(customControlBox);
     }
 
+    /**
+     * 切换界面语言。
+     */
     @FXML
     private void toggleLanguage() {
         Locale newLocale = I18N.getLocale().getLanguage().equals("zh") ? Locale.ENGLISH : Locale.CHINESE;
@@ -170,12 +205,23 @@ public class MainController implements Initializable {
         appendSystemLog(I18N.text("message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
     }
 
+    /**
+     * 向系统日志追加文本。
+     *
+     * @param msg 日志文本
+     */
     private void appendSystemLog(String msg) {
         if (logArea != null) {
             logArea.appendText("System: " + msg + "\n");
         }
     }
 
+    /**
+     * 根据模块 ID 选择菜单按钮强调色。
+     *
+     * @param moduleId 模块 ID
+     * @return CSS class 名称
+     */
     private String moduleAccentStyleClass(String moduleId) {
         return switch (moduleId) {
             case "sort" -> "btn-ran-blue";
