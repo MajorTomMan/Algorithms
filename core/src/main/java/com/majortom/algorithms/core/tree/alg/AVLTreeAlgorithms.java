@@ -49,14 +49,15 @@ public class AVLTreeAlgorithms<T extends Comparable<T>> extends BaseBalancedTree
             return (BinaryTreeNode<T>) createNode(data);
         }
 
-        syncTree(tree, node, null);
-
         int cmp = data.compareTo(node.data);
         if (cmp < 0) {
+            syncTree(tree, node, node.left);
             node.left = doPut(tree, (BinaryTreeNode<T>) node.left, data);
         } else if (cmp > 0) {
+            syncTree(tree, node, node.right);
             node.right = doPut(tree, (BinaryTreeNode<T>) node.right, data);
         } else {
+            syncTree(tree, node, null);
             return node; // 已存在，不处理
         }
 
@@ -68,14 +69,15 @@ public class AVLTreeAlgorithms<T extends Comparable<T>> extends BaseBalancedTree
         if (node == null)
             return null;
 
-        syncTree(tree, node, null);
-
         int cmp = val.compareTo(node.data);
         if (cmp < 0) {
+            syncTree(tree, node, node.left);
             node.left = doRemove(tree, (BinaryTreeNode<T>) node.left, val);
         } else if (cmp > 0) {
+            syncTree(tree, node, node.right);
             node.right = doRemove(tree, (BinaryTreeNode<T>) node.right, val);
         } else {
+            syncTree(tree, node, null);
             // 命中删除目标，标记结构变更
             tree.modifyStructure(tree.getRoot());
 
@@ -99,14 +101,19 @@ public class AVLTreeAlgorithms<T extends Comparable<T>> extends BaseBalancedTree
         if (node == null)
             return null;
 
-        syncTree(tree, node, null);
-
         int cmp = val.compareTo(node.data);
-        if (cmp == 0)
+        if (cmp == 0) {
+            syncTree(tree, node, null);
             return node;
+        }
 
-        return cmp < 0 ? doSearch(tree, (BinaryTreeNode<T>) node.left, val)
-                : doSearch(tree, (BinaryTreeNode<T>) node.right, val);
+        if (cmp < 0) {
+            syncTree(tree, node, node.left);
+            return doSearch(tree, (BinaryTreeNode<T>) node.left, val);
+        }
+
+        syncTree(tree, node, node.right);
+        return doSearch(tree, (BinaryTreeNode<T>) node.right, val);
     }
 
     // --- 平衡判定与重整 ---

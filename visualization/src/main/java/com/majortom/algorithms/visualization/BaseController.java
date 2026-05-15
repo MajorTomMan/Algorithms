@@ -42,13 +42,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
- * 算法可视化控制器基类。
- *
- * <p>它是 UI 控件、算法对象、执行上下文和可视化组件之间的中枢。
- * 子类只需要提供模块 ID、算法启动方式、统计文案和模块专属控件；
- * 本基类统一处理运行、停止、暂停、回放、导出、比较和全局按钮绑定。</p>
- *
- * @param <S> 当前模块渲染的数据结构类型
+ * 算法可视化控制器基类
+ * 职责：定义统一的执行上下文、统计展示、回放、导出与比较能力。
  */
 public abstract class BaseController<S extends BaseStructure<?>> implements Initializable {
 
@@ -82,22 +77,11 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         this.visualizer = visualizer;
     }
 
-    /**
-     * JavaFX 初始化入口。
-     *
-     * @param location FXML 地址
-     * @param resources 国际化资源
-     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupI18n();
     }
 
-    /**
-     * 将执行帧渲染到当前模块。
-     *
-     * @param frame 执行上下文生成的帧
-     */
     protected final void renderFrame(ExecutionFrame<S> frame) {
         this.stats = frame.stats();
         if (visualizer != null) {
@@ -107,15 +91,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         syncTimelineSlider(frame);
     }
 
-    /**
-     * 启动一次算法执行。
-     *
-     * <p>这里创建 {@link ExecutionContext}，把 {@link ExecutionControl} 适配到
-     * {@link AlgorithmThreadManager}，然后把算法放到 worker 线程中执行。</p>
-     *
-     * @param algorithm 算法实例
-     * @param data 数据结构实例
-     */
     public final void startAlgorithm(BaseAlgorithms<S> algorithm, S data) {
         stopAlgorithm();
         clearExecutionState();
@@ -181,17 +156,11 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         });
     }
 
-    /**
-     * 停止当前算法并停止回放。
-     */
     public void stopAlgorithm() {
         stopReplay();
         AlgorithmThreadManager.stopAll();
     }
 
-    /**
-     * 切换暂停/恢复状态。
-     */
     public void togglePause() {
         if (AlgorithmThreadManager.isPaused()) {
             AlgorithmThreadManager.resume();
@@ -200,9 +169,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 切换执行记录回放。
-     */
     public void toggleReplay() {
         if (!hasExecutionData() || AlgorithmThreadManager.isRunning()) {
             return;
@@ -225,11 +191,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         replayTimeline.play();
     }
 
-    /**
-     * 跳转到执行时间轴的指定进度。
-     *
-     * @param progress 0 到 1 之间的进度值
-     */
     public void seekTimeline(double progress) {
         if (!hasExecutionData()) {
             return;
@@ -246,18 +207,10 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         renderFrame(lastExecution.timeline().get(index));
     }
 
-    /**
-     * 判断是否已有可回放、导出或比较的执行记录。
-     *
-     * @return 有执行记录且时间轴非空时返回 true
-     */
     public boolean hasExecutionData() {
         return lastExecution != null && !lastExecution.timeline().isEmpty();
     }
 
-    /**
-     * 导出最近一次执行记录。
-     */
     public void exportExecution() {
         if (!hasExecutionData()) {
             appendLog("Nothing to export.");
@@ -277,9 +230,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 与历史同模块、同输入记录做统计比较。
-     */
     public void compareExecutions() {
         if (!hasExecutionData()) {
             appendLog("No execution data available for comparison.");
@@ -315,11 +265,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         renderFrame(lastExecution.timeline().get(nextIndex));
     }
 
-    /**
-     * 根据时间轴滑块计算当前帧序号。
-     *
-     * @return 当前帧序号
-     */
     private int currentTimelineIndex() {
         if (!hasExecutionData() || timelineSlider == null) {
             return 0;
@@ -331,9 +276,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         return (int) Math.round(timelineSlider.getValue() * (size - 1));
     }
 
-    /**
-     * 停止当前回放动画。
-     */
     private void stopReplay() {
         if (replayTimeline != null) {
             replayTimeline.stop();
@@ -341,9 +283,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 算法完成后启用并定位时间轴控件。
-     */
     private void prepareTimelineControls() {
         if (timelineSlider != null) {
             timelineSlider.setDisable(!hasExecutionData());
@@ -353,11 +292,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 根据正在渲染的帧同步时间轴滑块。
-     *
-     * @param frame 当前渲染帧
-     */
     private void syncTimelineSlider(ExecutionFrame<S> frame) {
         if (timelineSlider == null) {
             return;
@@ -369,9 +303,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         updatingTimelineSlider = false;
     }
 
-    /**
-     * 清除当前执行上下文和最近执行记录。
-     */
     private void clearExecutionState() {
         stopReplay();
         executionContext = null;
@@ -384,21 +315,11 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 获取当前可用时间轴长度。
-     *
-     * @return 时间轴帧数
-     */
     private int currentTimelineSize() {
         ExecutionTimeline<S> timeline = currentTimeline();
         return timeline == null ? 0 : timeline.size();
     }
 
-    /**
-     * 获取当前运行中或最近完成的时间轴。
-     *
-     * @return 时间轴；没有数据时返回 null
-     */
     private ExecutionTimeline<S> currentTimeline() {
         if (executionContext != null && !executionContext.timeline().isEmpty()) {
             return executionContext.timeline();
@@ -406,11 +327,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         return lastExecution == null ? null : lastExecution.timeline();
     }
 
-    /**
-     * 构造导出 JSON 的顶层载荷。
-     *
-     * @return 可由 Jackson 序列化的导出数据
-     */
     private Map<String, Object> buildExecutionExportPayload() {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("moduleId", lastExecution.moduleId());
@@ -435,12 +351,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         return payload;
     }
 
-    /**
-     * 构造统计快照导出载荷。
-     *
-     * @param stats 统计快照
-     * @return 导出 map
-     */
     private Map<String, Object> statsPayload(ExecutionStatsSnapshot stats) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("durationMillis", stats.durationMillis());
@@ -451,12 +361,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         return payload;
     }
 
-    /**
-     * 把执行记录格式化为比较日志中的一行。
-     *
-     * @param record 执行记录
-     * @return 日志文本
-     */
     private String describeRecord(ExecutionRecord<? extends BaseStructure<?>> record) {
         return String.format(
                 "%s | duration=%dms | frames=%d | actions=%d | compares=%d",
@@ -467,11 +371,6 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
                 record.summary().compareCount());
     }
 
-    /**
-     * 向日志区域追加一行带时间戳的文本。
-     *
-     * @param message 日志文本
-     */
     protected final void appendLog(String message) {
         if (logArea != null) {
             Platform.runLater(
@@ -479,132 +378,156 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         }
     }
 
-    /**
-     * 刷新统计展示。
-     */
+    public final void dispatchVisualizerAction(VisualizationActionType actionType) {
+        dispatchVisualizerEvent(buildVisualizationEvent(actionType, Map.of()));
+    }
+
+    public final void dispatchVisualizerAction(VisualizationActionType actionType, Map<String, Object> metadata) {
+        dispatchVisualizerEvent(buildVisualizationEvent(actionType, metadata));
+    }
+
+    public final void dispatchVisualizerEvent(VisualizationEvent event) {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onControlAction(event);
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerReset() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = visualizer::onVisualizationReset;
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerAttached() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onModuleAttached(moduleId());
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    public final void dispatchVisualizerDetached() {
+        if (visualizer == null) {
+            return;
+        }
+        Runnable task = () -> visualizer.onModuleDetached(moduleId());
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
+    }
+
+    private VisualizationEvent buildVisualizationEvent(
+            VisualizationActionType actionType,
+            Map<String, Object> metadata) {
+        return VisualizationEvent.of(
+                actionType,
+                moduleId(),
+                getClass().getSimpleName(),
+                AlgorithmThreadManager.isRunning(),
+                AlgorithmThreadManager.isPaused(),
+                metadata);
+    }
+
     protected void refreshStatsDisplay() {
         if (statsLabel != null) {
             statsLabel.setText(formatStatsMessage());
         }
     }
 
-    /**
-     * 重置当前统计快照。
-     */
     private void resetStats() {
         this.stats = ExecutionStatsSnapshot.empty();
     }
 
-    /**
-     * 绑定主界面全局按钮行为。
-     */
     private void setupGlobalButtonActions() {
         if (startBtn != null) {
-            startBtn.setOnAction(e -> handleAlgorithmStart());
+            startBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_START);
+                handleAlgorithmStart();
+            });
         }
         if (pauseBtn != null) {
-            pauseBtn.setOnAction(e -> togglePause());
+            pauseBtn.setOnAction(e -> {
+                dispatchVisualizerAction(AlgorithmThreadManager.isPaused()
+                        ? VisualizationActionType.EXECUTION_RESUME
+                        : VisualizationActionType.EXECUTION_PAUSE);
+                togglePause();
+            });
         }
         if (resetBtn != null) {
             resetBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_RESET);
                 stopAlgorithm();
                 clearExecutionState();
                 ((BaseModuleController<S>) this).resetModule();
             });
         }
         if (replayBtn != null) {
-            replayBtn.setOnAction(e -> toggleReplay());
+            replayBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_REPLAY);
+                toggleReplay();
+            });
         }
         if (exportBtn != null) {
-            exportBtn.setOnAction(e -> exportExecution());
+            exportBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_EXPORT);
+                exportExecution();
+            });
         }
         if (compareBtn != null) {
-            compareBtn.setOnAction(e -> compareExecutions());
+            compareBtn.setOnAction(e -> {
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_COMPARE);
+                compareExecutions();
+            });
         }
     }
 
-    /**
-     * 获取执行记录中的算法 ID。
-     *
-     * @param algorithm 算法实例
-     * @return 算法 ID
-     */
     protected String executionAlgorithmId(BaseAlgorithms<S> algorithm) {
         return algorithm.getClass().getSimpleName();
     }
 
-    /**
-     * 根据输入结构生成执行输入签名。
-     *
-     * @param data 输入结构
-     * @return 输入签名
-     */
     protected String executionInputSignature(S data) {
         return StructureSnapshotSerializer.signatureFor((BaseStructure<?>) data.copy());
     }
 
-    /**
-     * 当前模块 ID。
-     *
-     * @return 模块 ID
-     */
     protected abstract String moduleId();
 
-    /**
-     * 格式化统计展示文本。
-     *
-     * @return 统计文本
-     */
     protected abstract String formatStatsMessage();
 
-    /**
-     * 将模块自定义控件安装到主界面底栏。
-     *
-     * @param container 主界面自定义控件容器
-     */
     public abstract void setupCustomControls(HBox container);
 
-    /**
-     * 绑定模块国际化文案。
-     */
     protected abstract void setupI18n();
 
-    /**
-     * 执行具体算法。
-     *
-     * @param algorithm 算法实例
-     * @param data 数据结构
-     */
     protected abstract void executeAlgorithm(BaseAlgorithms<S> algorithm, S data);
 
-    /**
-     * 主界面点击开始按钮时调用。
-     */
     public abstract void handleAlgorithmStart();
 
-    /**
-     * 算法自然结束后的回调。
-     */
     protected void onAlgorithmFinished() {
         appendLog(String.format("Finished. Duration: %dms", stats.durationMillis()));
     }
 
-    /**
-     * 处理算法运行异常。
-     *
-     * @param e 异常对象
-     */
     protected void handleAlgorithmError(Exception e) {
         appendLog("Runtime Error: " + e.getMessage());
         e.printStackTrace();
     }
 
-    /**
-     * 注入主界面共享 UI 控件。
-     *
-     * <p>主控制器切换模块时调用它，把统计面板、日志、全局按钮、速度滑块和时间轴滑块
-     * 传给当前模块控制器。</p>
-     */
     public final void setUIReferences(
             Label statsLabel,
             TextArea logArea,
@@ -650,20 +573,14 @@ public abstract class BaseController<S extends BaseStructure<?>> implements Init
         this.initialize(null, null);
     }
 
-    /**
-     * 获取当前模块可视化组件。
-     *
-     * @return 可视化组件
-     */
     public final BaseVisualizer<S> getVisualizer() {
         return visualizer;
     }
 
-    /**
-     * 获取可加入 JavaFX 布局树的可视化区域。
-     *
-     * @return 可视化 Region
-     */
+    public final String getModuleId() {
+        return moduleId();
+    }
+
     public final Region getVisualizerView() {
         if (visualizer instanceof Region region) {
             return region;

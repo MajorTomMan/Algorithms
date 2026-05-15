@@ -3,25 +3,22 @@ package com.majortom.algorithms.visualization;
 import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.Glow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 /**
- * 可视化渲染组件基类。
- *
- * <p>所有具体 Visualizer 都继承这个类，复用同一个 {@link Canvas}、
- * {@link GraphicsContext}、响应式尺寸监听和线程安全渲染入口。
- * 控制器拿到 {@code ExecutionFrame.snapshot()} 后，会调用
- * {@link #render(BaseStructure, Object, Object)} 把结构和焦点交给这里。</p>
- *
- * <p>本类只负责“如何安全地调度绘制”和“提供统一视觉语言”。
- * 具体结构如何画，由子类实现 {@link #draw(BaseStructure, Object, Object)}。</p>
- *
- * @param <S> 可被此组件渲染的数据结构类型
+ * 视觉呈现组件基类
+ * 承载《乱》高饱和色彩体系与核心渲染调度
  */
 public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPane {
 
@@ -50,7 +47,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     public static final Color RAN_CYAN = Color.rgb(100, 220, 255); // 荧蓝
     public static final Color RAN_BLOOD_VIVID = Color.rgb(255, 40, 40); // 鲜红
     public static final Color RAN_EMERALD = Color.rgb(0, 200, 100); // 翠绿
-    public static final Color RAN_AMBER = Color.rgb(255, 160, 0); // 琥珀 
+    public static final Color RAN_AMBER = Color.rgb(255, 160, 0); // 琥珀
     public static final Color RAN_GHOST_WHITE = Color.rgb(200, 220, 255, 0.4); // 幽灵白
 
     public static final Color RAN_ENEMY_GREEN = Color.rgb(0, 70, 40); // 诡绿
@@ -64,88 +61,84 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     protected final Canvas canvas;
     protected final GraphicsContext gc;
 
-    /**
-     * 最近一次渲染的数据结构。
-     * <p>窗口大小变化时会用它重绘当前画面，避免 resize 后画布为空。</p>
-     */
     private S lastData;
-
-    /**
-     * 最近一次渲染的第一个焦点对象。
-     */
     private Object lastA;
-
-    /**
-     * 最近一次渲染的第二个焦点对象。
-     */
     private Object lastB;
+    private String transientFeedbackLabel;
+    private long transientFeedbackUntilMillis;
+    private boolean renderQueued;
+    private boolean resizeInProgress;
+    private final PauseTransition resizeSettleTransition;
 
-    /**
-     * 默认高亮效果，子类在绘制当前操作对象时可以复用。
-     */
+    // 默认高亮效果
     protected final Glow highIntensityGlow = new Glow(0.8);
+    protected static final long FEEDBACK_DURATION_MS = 1200L;
+    protected static final double RESIZE_SETTLE_MS = 140.0;
 
-    /**
-     * 创建可视化组件并完成 Canvas 绑定。
-     *
-     * <p>Canvas 宽高绑定到当前 StackPane，尺寸变化时自动调用
-     * {@link #drawCurrent()} 重绘最后一帧。</p>
-     */
     public BaseVisualizer() {
         this.canvas = new Canvas();
         this.gc = canvas.getGraphicsContext2D();
         this.getChildren().add(canvas);
 
+        this.resizeSettleTransition = new PauseTransition(Duration.millis(RESIZE_SETTLE_MS));
+        this.resizeSettleTransition.setOnFinished(event -> handleResizeSettled());
+
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
 
-        this.widthProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
-        this.heightProperty().addListener((obs, oldVal, newVal) -> drawCurrent());
+        this.widthProperty().addListener((obs, oldVal, newVal) -> handleSizeInvalidated());
+        this.heightProperty().addListener((obs, oldVal, newVal) -> handleSizeInvalidated());
     }
 
     /**
-     * 渲染一帧结构快照。
-     *
-     * <p>这个方法可以从算法 worker 线程或 JavaFX UI 线程调用。
-     * 如果当前不在 UI 线程，会自动通过 {@link Platform#runLater(Runnable)}
-     * 切回 JavaFX Application Thread，避免直接跨线程操作 Canvas。</p>
-     *
-     * @param data 需要绘制的结构快照
-     * @param a 第一个高亮焦点
-     * @param b 第二个高亮焦点
+     * 渲染调度：确保 UI 更新在正确线程
      */
     public final void render(S data, Object a, Object b) {
         this.lastData = data;
         this.lastA = a;
         this.lastB = b;
-        if (Platform.isFxApplicationThread()) {
-            drawCurrent();
-        } else {
-            Platform.runLater(this::drawCurrent);
-        }
+        requestRender();
     }
 
-    /**
-     * 渲染一帧没有焦点高亮的结构快照。
-     *
-     * @param data 需要绘制的结构快照
-     */
     public final void render(S data) {
         render(data, null, null);
     }
 
-    /**
-     * 重绘最近一帧。
-     *
-     * <p>窗口 resize、首次渲染或显式刷新都会走这里。没有数据时清空画布，
-     * 有数据时委托给子类 {@link #draw(BaseStructure, Object, Object)}。</p>
-     */
     protected void drawCurrent() {
         if (lastData == null) {
             clear();
             return;
         }
         draw(lastData, lastA, lastB);
+    }
+
+    protected final void requestRender() {
+        if (renderQueued) {
+            return;
+        }
+        renderQueued = true;
+
+        Runnable renderTask = () -> {
+            renderQueued = false;
+            drawCurrent();
+        };
+
+        Platform.runLater(renderTask);
+    }
+
+    private void handleSizeInvalidated() {
+        if (!resizeInProgress) {
+            resizeInProgress = true;
+            onResizeStateChanged(true);
+        }
+        resizeSettleTransition.playFromStart();
+        requestRender();
+    }
+
+    private void handleResizeSettled() {
+        resizeInProgress = false;
+        onResizeStateChanged(false);
+        requestRender();
     }
 
     /**
@@ -160,9 +153,6 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     /**
      * 辅助方法：获取针对高饱和色彩的家纹/线条颜色
      * 逻辑：根据背景饱和度自动计算对比色
-     *
-     * @param background 背景色
-     * @return 适合画在该背景上的刻痕/描边色
      */
     protected Color getContrastStrokeColor(Color background) {
         if (background.equals(RAN_WHITE))
@@ -181,40 +171,138 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         gc.setEffect(highIntensityGlow);
     }
 
-    /**
-     * 释放最近一次 {@link #applyFocusEffect()} 保存的绘图状态。
-     */
     protected void releaseEffect() {
         gc.restore();
     }
 
-    /**
-     * 子类实现的实际绘制逻辑。
-     *
-     * <p>这里一定运行在 JavaFX UI 线程中，子类可以安全地使用 {@link #gc} 操作 Canvas。</p>
-     *
-     * @param data 当前结构快照
-     * @param a 第一个焦点对象
-     * @param b 第二个焦点对象
-     */
     protected abstract void draw(S data, Object a, Object b);
 
-    /**
-     * 获取最近一次渲染的数据结构。
-     *
-     * @return 最近一帧结构快照，可能为空
-     */
     public S getLastData() {
         return lastData;
     }
 
     /**
-     * 按迷宫单元格类型绘制统一家纹符号。
+     * 控制器按钮联动入口。
+     * 默认留空，由具体可视化按需覆写。
+     */
+    public void onControlAction(VisualizationEvent event) {
+        showTransientFeedback(event);
+    }
+
+    /**
+     * 重置后的可视化清理钩子。
+     * 默认只清空画布，子类可在此停止动画、清空缓存、重置局部状态。
+     */
+    public void onVisualizationReset() {
+        clearTransientFeedback();
+        clear();
+    }
+
+    /**
+     * 模块被挂载到主界面时触发。
+     * 默认留空，子类可在此恢复动画、重建监听器或刷新局部缓存。
+     */
+    public void onModuleAttached(String moduleId) {
+    }
+
+    /**
+     * 模块从主界面卸载时触发。
+     * 默认留空，子类可在此停止动画、释放资源并断开监听器。
+     */
+    public void onModuleDetached(String moduleId) {
+        clearTransientFeedback();
+    }
+
+    /**
+     * 尺寸连续变化时的状态通知。
+     * 默认留空，存在环境动画的可视化可在此临时降载。
+     */
+    protected void onResizeStateChanged(boolean resizing) {
+    }
+
+    protected final boolean isResizeInProgress() {
+        return resizeInProgress;
+    }
+
+    protected final void showTransientFeedback(VisualizationEvent event) {
+        this.transientFeedbackLabel = describeEvent(event);
+        this.transientFeedbackUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+    }
+
+    protected final void clearTransientFeedback() {
+        this.transientFeedbackLabel = null;
+        this.transientFeedbackUntilMillis = 0L;
+    }
+
+    protected final boolean hasTransientFeedback() {
+        return transientFeedbackLabel != null && System.currentTimeMillis() < transientFeedbackUntilMillis;
+    }
+
+    protected final double getTransientFeedbackOpacity() {
+        long remaining = transientFeedbackUntilMillis - System.currentTimeMillis();
+        if (remaining <= 0) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(1.0, remaining / (double) FEEDBACK_DURATION_MS));
+    }
+
+    protected final void drawTransientFeedbackOverlay() {
+        if (!hasTransientFeedback()) {
+            return;
+        }
+
+        double x = 18;
+        double y = 16;
+        double width = 178;
+        double height = 34;
+
+        gc.save();
+        gc.setGlobalAlpha(getTransientFeedbackOpacity());
+        gc.setFill(RAN_BLACK.deriveColor(0, 1, 1, 0.82));
+        gc.fillRoundRect(x, y, width, height, 14, 14);
+        gc.setStroke(RAN_GOLD.deriveColor(0, 1, 1, 0.9));
+        gc.setLineWidth(1.5);
+        gc.strokeRoundRect(x, y, width, height, 14, 14);
+        gc.setFill(RAN_WHITE);
+        gc.setFont(Font.font("Consolas", FontWeight.BOLD, 14));
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setTextBaseline(VPos.CENTER);
+        gc.fillText(transientFeedbackLabel, x + 14, y + height / 2);
+        gc.restore();
+    }
+
+    protected String describeEvent(VisualizationEvent event) {
+        return switch (event.actionType()) {
+            case EXECUTION_START -> "RUN";
+            case EXECUTION_PAUSE -> "PAUSE";
+            case EXECUTION_RESUME -> "RESUME";
+            case EXECUTION_RESET -> "RESET";
+            case EXECUTION_REPLAY -> "REPLAY";
+            case EXECUTION_EXPORT -> "EXPORT";
+            case EXECUTION_COMPARE -> "COMPARE";
+            case MODULE_SORT -> "SORT MODE";
+            case MODULE_MAZE -> "MAZE MODE";
+            case MODULE_TREE -> "TREE MODE";
+            case MODULE_GRAPH -> "GRAPH MODE";
+            case LANGUAGE_TOGGLE -> "LANGUAGE";
+            case SORT_GENERATE -> "NEW ARRAY";
+            case SORT_RUN -> "SORT";
+            case MAZE_BUILD -> "BUILD";
+            case MAZE_SOLVE -> "SOLVE";
+            case TREE_INSERT -> "INSERT";
+            case TREE_DELETE -> "DELETE";
+            case TREE_RANDOM -> "RANDOM";
+            case GRAPH_RUN -> "TRAVERSE";
+            case GRAPH_ADD_NODE -> "ADD NODE";
+            case GRAPH_DELETE_NODE -> "DELETE NODE";
+            case GRAPH_LINK -> "LINK";
+        };
+    }
+
+    /**
+     * 核心符号学逻辑：统一家纹绘制
+     * * @param mx 中心点X
      *
-     * <p>迷宫和图迷宫可视化会复用它，把不同状态映射到统一视觉符号，
-     * 例如路径、回溯、墙、起点和终点。</p>
-     *
-     * @param mx 中心点 X
      * @param my          中心点Y
      * @param size        家纹大小
      * @param type        MazeConstant 中定义的单元格类型
@@ -259,16 +347,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
     }
 
     /**
-     * 按阵营颜色绘制统一家纹符号。
-     *
-     * <p>排序、树或图的可视化如果只知道颜色而不知道迷宫单元格类型，
-     * 可以使用这个重载保持同一套视觉语言。</p>
-     *
-     * @param mx 中心点 X
-     * @param my 中心点 Y
-     * @param size 家纹大小
-     * @param clanColor 代表状态或阵营的主色
-     * @param strokeColor 线条颜色
+     * 核心符号学逻辑：统一家纹绘制
      */
     protected void drawClanMon(double mx, double my, double size, Color clanColor, Color strokeColor) {
         gc.setStroke(strokeColor);

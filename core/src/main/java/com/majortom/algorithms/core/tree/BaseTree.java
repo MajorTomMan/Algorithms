@@ -4,7 +4,9 @@ import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.tree.node.TreeNode;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 树结构数据基类。
@@ -80,10 +82,15 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
     public BaseStructure<TreeNode<T>> copy() {
         // 1. 调用子类钩子创建具体的树容器实例（如 AVLTree）
         BaseTree<T> newTree = createEmptyTree();
+        Map<TreeNode<T>, TreeNode<T>> nodeMapping = new IdentityHashMap<>();
 
         // 2. 递归执行深度拓扑拷贝
         if (this.root != null) {
-            newTree.setRoot(recursiveCopy(this.root));
+            newTree.setRoot(recursiveCopy(this.root, nodeMapping));
+        }
+
+        if (this.currentHighlight != null) {
+            newTree.currentHighlight = nodeMapping.get(this.currentHighlight);
         }
 
         // 3. 同步算法统计信息
@@ -99,12 +106,13 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
      * @param source 源节点
      * @return 拷贝出的节点
      */
-    private TreeNode<T> recursiveCopy(TreeNode<T> source) {
+    private TreeNode<T> recursiveCopy(TreeNode<T> source, Map<TreeNode<T>, TreeNode<T>> nodeMapping) {
         if (source == null)
             return null;
 
         // A. 创建新节点实例并同步通用元数据
         TreeNode<T> target = createNodeInstance(source.data);
+        nodeMapping.put(source, target);
         target.height = source.height;
         target.status = source.status;
         target.subTreeCount = source.subTreeCount;
@@ -114,7 +122,7 @@ public abstract class BaseTree<T extends Comparable<T>> extends BaseStructure<Tr
         if (sourceChildren != null && !sourceChildren.isEmpty()) {
             List<TreeNode<T>> clonedChildren = new ArrayList<>();
             for (TreeNode<T> child : sourceChildren) {
-                clonedChildren.add(recursiveCopy(child));
+                clonedChildren.add(recursiveCopy(child, nodeMapping));
             }
 
             // C. 调用子类钩子完成子节点挂载

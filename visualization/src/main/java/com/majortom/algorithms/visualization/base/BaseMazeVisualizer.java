@@ -2,6 +2,8 @@ package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 
 
 /**
@@ -34,6 +36,7 @@ public abstract class BaseMazeVisualizer<S extends BaseMaze<?>> extends BaseVisu
 
         drawMaze(data, a, b, cellW, cellH);
         drawFocus(a, b, cellW, cellH);
+        drawTransientFeedbackOverlay();
     }
 
     /**
@@ -46,6 +49,24 @@ public abstract class BaseMazeVisualizer<S extends BaseMaze<?>> extends BaseVisu
      * @param cellH 单元格高度
      */
     protected abstract void drawMaze(S mazeEntity, Object a, Object b, double cellW, double cellH);
+
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        if (event.actionType() == VisualizationActionType.EXECUTION_RESET) {
+            clear();
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        clear();
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        clear();
+    }
 
     /**
      * 获取单元格左上角屏幕 X 坐标。

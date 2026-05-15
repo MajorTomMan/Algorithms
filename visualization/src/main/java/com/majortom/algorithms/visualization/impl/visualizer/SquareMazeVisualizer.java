@@ -3,25 +3,19 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 import java.util.LinkedList;
 import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
 import javafx.scene.paint.Color;
 
-/**
- * 方格迷宫可视化器。
- *
- * <p>它把 {@link BaseMaze} 的 int[][] 状态渲染为方形网格，并叠加当前寻路焦点、
- * 行军队列、旗帜和破墙火花等视觉效果。</p>
- */
 public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> {
 
     private final LinkedList<int[]> armyQueue = new LinkedList<>();
     private static final int MAX_ARMY_SIZE = 6;
     private int lastTerrain = MazeConstant.ROAD;
     private long skirmishStartTime = 0;
+    private long operationAccentUntilMillis = 0L;
+    private String operationLabel = "";
 
-    /**
-     * 绘制迷宫主体网格。
-     */
     @Override
     protected void drawMaze(BaseMaze<int[][]> mazeEntity, Object a, Object b, double cellW, double cellH) {
         int[][] grid = mazeEntity.getData();
@@ -32,11 +26,9 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
                 renderRanCell(r, c, cellW, cellH, grid[r][c]);
             }
         }
+        drawOperationAccent(cellW, cellH);
     }
 
-    /**
-     * 绘制单个迷宫格子。
-     */
     private void renderRanCell(int r, int c, double w, double h, int type) {
         double x = getX(c, w);
         double y = getY(r, h);
@@ -78,9 +70,7 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         }
     }
 
-    /**
-     * 绘制当前焦点士兵和行军轨迹。
-     */
+    // --- 修复：保持与父类抽象方法签名一致 ---
     @Override
     protected void drawFocus(Object currA, Object currB, double w, double h) {
         if (!(currA instanceof Integer r && currB instanceof Integer c))
@@ -148,9 +138,44 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         gc.restore();
     }
 
-    /**
-     * 绘制当前焦点位置的头盔符号。
-     */
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        operationAccentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
+        Object rows = event.metadata().get("rows");
+        Object cols = event.metadata().get("cols");
+        if (rows instanceof Integer rowCount && cols instanceof Integer colCount) {
+            operationLabel = rowCount + "x" + colCount;
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        operationAccentUntilMillis = 0L;
+        operationLabel = "";
+        super.onVisualizationReset();
+    }
+
+    private void drawOperationAccent(double cellW, double cellH) {
+        if (System.currentTimeMillis() >= operationAccentUntilMillis) {
+            return;
+        }
+
+        gc.save();
+        gc.setGlobalAlpha(Math.max(0.0, Math.min(1.0, (operationAccentUntilMillis - System.currentTimeMillis()) / (double) FEEDBACK_DURATION_MS)));
+        gc.setStroke(RAN_GOLD);
+        gc.setLineWidth(2.4);
+        gc.strokeRoundRect(10, 10, Math.max(0, canvas.getWidth() - 20), Math.max(0, canvas.getHeight() - 20), 20, 20);
+
+        if (!operationLabel.isBlank()) {
+            gc.setFill(RAN_BLACK.deriveColor(0, 1, 1, 0.78));
+            gc.fillRoundRect(canvas.getWidth() - 118, 18, 96, 32, 12, 12);
+            gc.setFill(RAN_GOLD);
+            gc.fillText(operationLabel, canvas.getWidth() - 98, 39);
+        }
+        gc.restore();
+    }
+
     private void drawKabuto(double cx, double cy, double w, double h, Color baseColor) {
         double s = Math.min(w, h) * 0.85;
         gc.setFill(RAN_BLACK.deriveColor(0, 1, 0.25, 1.0));
@@ -197,9 +222,6 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         gc.fillOval(rightHornX - 2, rightHornY - 2, 4, 4);
     }
 
-    /**
-     * 绘制行军队列中的旗帜。
-     */
     private void renderArmyFlag(double x, double y, double w, double h, int idx) {
         double poleX = x + w * 0.75;
         // 增加摇摆幅度，使其更灵动
@@ -234,9 +256,6 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
                 new double[] { y + h * 0.1, y + h * 0.4, y + h * 0.7 }, 3);
     }
 
-    /**
-     * 绘制破墙或遭遇阻挡时的火花。
-     */
     private void drawCombatSparks(double cx, double cy, double w, double h, long now) {
         gc.setStroke(RAN_GOLD);
         gc.setLineWidth(2.0);

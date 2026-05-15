@@ -2,53 +2,114 @@ package com.majortom.algorithms.visualization.base;
 
 import com.majortom.algorithms.core.sort.BaseSort;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
 
 import javafx.scene.paint.Color;
 
 import java.util.Objects;
 
 /**
- * 排序算法可视化基类。
- *
- * <p>它接收 {@link BaseSort} 快照，负责清屏、空数据保护和排序通用颜色决策。
- * 具体柱状图或点图形态由子类在 {@link #drawSortContent(BaseSort, Object, Object)} 中实现。</p>
- *
- * @param <T> 排序元素类型
+ * 排序算法可视化基类
+ * 职责：计算数据比例、维护颜色状态机、定义排序渲染生命周期
  */
 public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVisualizer<BaseSort<T>> {
 
-    /**
-     * 绘制排序结构。
-     *
-     * @param data 排序结构快照
-     * @param a 第一个焦点索引
-     * @param b 第二个焦点索引
-     */
+    private boolean ambientAnimationRequested = true;
+
     @Override
     protected void draw(BaseSort<T> data, Object a, Object b) {
         clear();
         if (data == null || data.getData() == null)
             return;
         drawSortContent(data, a, b);
+        drawTransientFeedbackOverlay();
     }
 
     /**
-     * 子类实现具体绘制形态。
-     *
-     * @param sortData 排序结构快照
-     * @param a 第一个焦点索引
-     * @param b 第二个焦点索引
+     * 子类实现具体的绘制形态（柱状图、点图等）
      */
     protected abstract void drawSortContent(BaseSort<T> sortData, Object a, Object b);
 
+    @Override
+    public void onControlAction(VisualizationEvent event) {
+        super.onControlAction(event);
+        VisualizationActionType actionType = event.actionType();
+        switch (actionType) {
+            case EXECUTION_PAUSE -> setAmbientAnimationRequested(false);
+            case EXECUTION_RESUME, EXECUTION_START, SORT_GENERATE, SORT_RUN -> setAmbientAnimationRequested(true);
+            case EXECUTION_RESET -> resetSortVisualizationState();
+            default -> {
+            }
+        }
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        resetSortVisualizationState();
+        clear();
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        setAmbientAnimationRequested(true);
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        setAmbientAnimationRequested(false);
+        resetSortVisualizationState();
+        clear();
+    }
+
+    @Override
+    protected void onResizeStateChanged(boolean resizing) {
+        if (resizing) {
+            pauseAmbientAnimation();
+        } else if (ambientAnimationRequested) {
+            resumeAmbientAnimation();
+        }
+    }
+
+    private void setAmbientAnimationRequested(boolean requested) {
+        ambientAnimationRequested = requested;
+        if (requested) {
+            if (!isResizeInProgress()) {
+                resumeAmbientAnimation();
+            }
+        } else {
+            pauseAmbientAnimation();
+        }
+    }
+
     /**
-     * 排序状态颜色决策。
+     * 恢复排序可视化中的环境动画。
+     * 默认留空，由存在动画的子类按需覆写。
+     */
+    protected void resumeAmbientAnimation() {
+    }
+
+    /**
+     * 暂停排序可视化中的环境动画。
+     * 默认留空，由存在动画的子类按需覆写。
+     */
+    protected void pauseAmbientAnimation() {
+    }
+
+    /**
+     * 清理排序可视化的瞬时状态，如缓存的聚焦索引或动画相位。
+     * 默认留空，由具体子类按需覆写。
+     */
+    protected void resetSortVisualizationState() {
+    }
+
+    /**
+     * 通用色彩决策引擎 - 适配《乱》配色体系
      * 
      * @param index    当前遍历到的索引
      * @param sortData 排序数据模型
      * @param a        外部传入的比较参数A
      * @param b        外部传入的比较参数B
-     * @return 当前索引对应的颜色
      */
     protected Color getRanColor(int index, BaseSort<T> sortData, Object a, Object b) {
         // 1. 活跃状态（读写指针）：次郎蓝
@@ -64,10 +125,7 @@ public abstract class BaseSortVisualizer<T extends Comparable<T>> extends BaseVi
     }
 
     /**
-     * 获取数据中的最大值，用于归一化高度计算。
-     *
-     * @param data 排序数组
-     * @return 可解析出的最大数值
+     * 获取数据中的最大值，用于归一化高度计算
      */
     protected double getMaxValue(T[] data) {
         double max = 0;
