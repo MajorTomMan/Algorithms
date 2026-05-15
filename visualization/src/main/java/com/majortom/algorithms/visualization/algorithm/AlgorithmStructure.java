@@ -5,6 +5,9 @@ package com.majortom.algorithms.visualization.algorithm;
  *
  * <p>它用于避免把某个算法错误地展示到不兼容的数据结构上。例如二维数组迷宫算法
  * 只能操作 {@code ArrayMaze}，不能在图迷宫结构下直接复用。</p>
+ *
+ * <p>它回答的是“算法吃什么数据结构”。控制器会把当前 UI 选择的结构转换成这个枚举，
+ * 再和 {@link AlgorithmFamily} 一起去注册表筛选算法。</p>
  */
 public enum AlgorithmStructure {
 
