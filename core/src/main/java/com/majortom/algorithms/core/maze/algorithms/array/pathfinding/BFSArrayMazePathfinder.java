@@ -1,23 +1,22 @@
-package com.majortom.algorithms.core.maze.algorithms.pathfinding;
+package com.majortom.algorithms.core.maze.algorithms.array.pathfinding;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.maze.BaseArrayMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeDirections;
 
-import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+import static com.majortom.algorithms.core.maze.constants.MazeCellType.*;
 
 /**
  * 广度优先搜索 (BFS) 寻路算法 (利落重构版)
  * 职责：通过逐层扫描寻找从起点到终点的理论最短路径。
  */
-public class BFSMazePathfinder extends BaseMazeAlgorithms<int[][]> {
+public class BFSArrayMazePathfinder extends BaseArrayMazeAlgorithms<int[][]> {
 
     private boolean[][] visited;
     private Node[][] parent;
-    private final int[][] neighbors = { { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } };
-
     private record Node(int r, int c) {
     }
 
@@ -60,7 +59,7 @@ public class BFSMazePathfinder extends BaseMazeAlgorithms<int[][]> {
                 return;
             }
 
-            for (int[] dir : neighbors) {
+            for (int[] dir : MazeDirections.CARDINAL_DIRECTIONS) {
                 int nextR = node.r + dir[0];
                 int nextC = node.c + dir[1];
 

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
+import com.majortom.algorithms.core.maze.BaseGraphMazeAlgorithms;
 import com.majortom.algorithms.core.maze.impl.GraphMaze;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphMazeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -102,15 +103,19 @@ public class GraphMazeController extends BaseModuleController<GraphMaze> {
     /**
      * 执行图迷宫算法。
      *
-     * <p>这里暂时留空，因为图迷宫生成器和寻路器还没有注册进主链路。
-     * 后续接入时，这里应该调用图迷宫算法的安全执行入口，并让执行上下文把每一步同步到可视化层。</p>
+     * <p>这里是图迷宫控制器和图迷宫算法基类的接线点。
+     * 控制器不关心 DFS、BFS 还是别的图算法，它只负责把当前结构交给
+     * {@link BaseGraphMazeAlgorithms}，再让执行上下文把步骤送进时间轴和可视化层。</p>
      *
      * @param algorithm 待执行的图迷宫算法
      * @param data 图迷宫数据结构
      */
     @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected void executeAlgorithm(BaseAlgorithms<GraphMaze> algorithm, GraphMaze data) {
-        // Reserved for future BaseGraphMazeAlgorithms implementations.
+        if (algorithm instanceof BaseGraphMazeAlgorithms) {
+            ((BaseGraphMazeAlgorithms) algorithm).execute(data);
+        }
     }
 
     /**
@@ -132,6 +137,8 @@ public class GraphMazeController extends BaseModuleController<GraphMaze> {
 
     /**
      * 重置图迷宫数据。
+     *
+     * <p>这里既要重建结构，也要刷新画面和统计栏，保证 UI 上看到的是一个真正干净的起点。</p>
      */
     @Override
     protected void onResetData() {
@@ -145,6 +152,8 @@ public class GraphMazeController extends BaseModuleController<GraphMaze> {
 
     /**
      * 绑定图迷宫模块文案。
+     *
+     * <p>图迷宫当前控件较少，所以这里只需要维护尺寸相关标签的国际化绑定。</p>
      */
     @Override
     protected void setupI18n() {
@@ -155,6 +164,8 @@ public class GraphMazeController extends BaseModuleController<GraphMaze> {
 
     /**
      * 获取模块 ID。
+     *
+     * <p>这个 ID 会进入执行记录、模块注册和日志链路，保持稳定比“名字是否好听”更重要。</p>
      */
     @Override
     protected String moduleId() {

@@ -17,7 +17,9 @@ import atlantafx.base.theme.PrimerDark;
 /**
  * 算法可视化实验室 JavaFX 启动入口。
  *
- * <p>它负责初始化主题、加载主 FXML、创建响应式 Scene，并在窗口关闭时停止后台算法线程。</p>
+ * <p>
+ * 它负责初始化主题、加载主 FXML、创建响应式 Scene，并在窗口关闭时停止后台算法线程。
+ * </p>
  */
 public class AlgorithmVisualizerLauncher extends Application {
 

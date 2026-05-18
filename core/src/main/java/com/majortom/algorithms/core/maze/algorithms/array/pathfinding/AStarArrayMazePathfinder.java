@@ -1,18 +1,19 @@
-package com.majortom.algorithms.core.maze.algorithms.pathfinding;
+package com.majortom.algorithms.core.maze.algorithms.array.pathfinding;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.maze.BaseArrayMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeDirections;
 
 import java.util.PriorityQueue;
 
-import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+import static com.majortom.algorithms.core.maze.constants.MazeCellType.*;
 
 /**
  * A* 寻路算法
  * 职责：利用曼哈顿距离作为启发函数，在极夜背景下寻找最短路径。
  * 适配说明：单泛型重构，完全解耦具体的 ArrayMaze 实现。
  */
-public class AStarMazePathfinder extends BaseMazeAlgorithms<int[][]> {
+public class AStarArrayMazePathfinder extends BaseArrayMazeAlgorithms<int[][]> {
 
     // A* 专用的节点记录
     private record Node(int r, int c, int g, int f) {
@@ -20,8 +21,6 @@ public class AStarMazePathfinder extends BaseMazeAlgorithms<int[][]> {
 
     private Node[][] parentMap;
     private boolean[][] visited;
-    private final int[][] neighbors = { { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } };
-
     @Override
     public void run(BaseMaze<int[][]> maze) {
         if (maze == null)
@@ -67,7 +66,7 @@ public class AStarMazePathfinder extends BaseMazeAlgorithms<int[][]> {
                 maze.setCellState(curr.r, curr.c, PATH, true);
             }
 
-            for (int[] dir : neighbors) {
+            for (int[] dir : MazeDirections.CARDINAL_DIRECTIONS) {
                 int nr = curr.r + dir[0];
                 int nc = curr.c + dir[1];
 

@@ -1,8 +1,11 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.base.BaseAlgorithms;
+import com.majortom.algorithms.core.base.BaseStructure;
+import com.majortom.algorithms.core.maze.BaseGraphMazeAlgorithms;
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
+import com.majortom.algorithms.core.maze.BaseArrayMazeAlgorithms;
+import com.majortom.algorithms.core.maze.algorithms.array.generate.BFSArrayMazeGenerator;
 import com.majortom.algorithms.core.maze.impl.ArrayMaze;
 import com.majortom.algorithms.core.maze.impl.GraphMaze;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -10,7 +13,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmDescriptor;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmFamily;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmRegistry;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmStructure;
-import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.MazeModuleVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.manager.AlgorithmThreadManager;
 
@@ -37,29 +40,24 @@ import java.util.ResourceBundle;
 /**
  * 迷宫模块控制器。
  *
- * <p>底栏保持“结构 + 算法 + 运行 + 操作”的统一形态，尺寸等低频配置放入操作弹窗。
- * 这样迷宫模块不会因为多个算法下拉和多个按钮把默认底栏挤爆。</p>
+ * <p>这个控制器统一管理“迷宫模块”下的两种结构：二维数组迷宫和图结构迷宫。
+ * 结构切换仍然发生在同一个模块的下拉框里，但算法和数据结构本身已经分离成各自独立的实现链。</p>
  *
- * @param <T> 迷宫底层数据类型
+ * <p>也就是说，用户看到的是一个统一的迷宫入口；控制器内部则会根据当前结构，
+ * 把操作分发给数组迷宫或图迷宫的独立结构与算法。</p>
  */
-public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
+public class MazeController extends BaseModuleController<BaseStructure<?>> {
 
-    /**
-     * 当前迷宫运行模式。
-     */
     private enum MazeMode {
         GENERATION, SOLVING
     }
 
-    /**
-     * 当前迷宫底层结构。
-     */
     private enum MazeStructure {
         ARRAY, GRAPH
     }
 
-    private BaseMazeAlgorithms<T> currentAlgorithm;
-    private BaseMaze<?> mazeEntity;
+    private BaseStructure<?> mazeEntity;
+    private BaseAlgorithms<?> currentAlgorithm;
     private MazeMode currentMode;
     private MazeStructure currentStructure;
     private String currentAlgorithmId;
@@ -84,16 +82,7 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
     @FXML
     private Button operationBtn;
 
-    /**
-     * 创建迷宫控制器。
-     *
-     * @param mazeEntity 迷宫实体
-     * @param generator 默认生成算法；保留构造签名兼容模块注册，实际算法下拉由注册表驱动
-     * @param visualizer 迷宫可视化器
-     */
-    public MazeController(BaseMaze<T> mazeEntity,
-            BaseMazeAlgorithms<T> generator,
-            BaseMazeVisualizer<BaseMaze<?>> visualizer) {
+    public MazeController(ArrayMaze mazeEntity, BFSArrayMazeGenerator generator, MazeModuleVisualizer visualizer) {
         super(visualizer, "/fxml/MazeControls.fxml");
         ensureControllerState();
         this.mazeEntity = mazeEntity;
@@ -101,9 +90,6 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         renderInitialMaze();
     }
 
-    /**
-     * 初始化结构下拉、算法下拉和初始画面。
-     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         ensureControllerState();
@@ -120,9 +106,6 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         }
     }
 
-    /**
-     * 全局 Start 按钮默认运行当前选中的迷宫算法。
-     */
     @Override
     public void handleAlgorithmStart() {
         if (!AlgorithmThreadManager.isRunning()) {
@@ -130,35 +113,26 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         }
     }
 
-    /**
-     * UI 事件：运行当前选中的生成算法。
-     */
     @FXML
     public void handleGenerate() {
         runGenerator(selectedAlgorithmDescriptor(AlgorithmFamily.MAZE_GENERATOR, generatorSelector));
     }
 
-    /**
-     * UI 事件：运行当前选中的求解算法。
-     */
     @FXML
     public void handleSolve() {
         runPathfinder(selectedAlgorithmDescriptor(AlgorithmFamily.MAZE_PATHFINDER, pathfinderSelector));
     }
 
-    /**
-     * 打开迷宫操作弹窗。
-     */
     @FXML
     private void openMazeOperationDialog() {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle(I18N.text("dialog.maze.title"));
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
 
-        Label valueLabel = new Label(mazeEntity.getRows() + "x" + mazeEntity.getCols());
+        Label valueLabel = new Label(rowsOf(mazeEntity) + "x" + colsOf(mazeEntity));
         valueLabel.getStyleClass().add("size-value-highlight");
 
-        Slider sizeSlider = new Slider(11, 99, mazeEntity.getRows());
+        Slider sizeSlider = new Slider(11, 99, rowsOf(mazeEntity));
         sizeSlider.setShowTickLabels(true);
         sizeSlider.setShowTickMarks(true);
         sizeSlider.setMajorTickUnit(22);
@@ -173,15 +147,13 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         applyButton.setOnAction(event -> updateMazeSize(normalizeOddSize(sizeSlider.getValue())));
 
         HBox sizeRow = new HBox(12, sizeSlider, valueLabel);
-
         VBox sizeSection = new VBox(10,
                 new Label(I18N.text("label.maze.size")),
                 sizeRow,
                 new HBox(10, applyButton));
         sizeSection.getStyleClass().add("dialog-form-section");
 
-        VBox content = new VBox(12,
-                sizeSection);
+        VBox content = new VBox(12, sizeSection);
         content.getStyleClass().add("operation-dialog-content");
 
         dialog.getDialogPane().setContent(content);
@@ -192,20 +164,18 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         dialog.showAndWait();
     }
 
-    /**
-     * 执行迷宫算法。
-     */
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    protected void executeAlgorithm(BaseAlgorithms<BaseMaze<?>> alg, BaseMaze<?> data) {
-        if (alg instanceof BaseMazeAlgorithms) {
-            ((BaseMazeAlgorithms<T>) (BaseMazeAlgorithms) alg).execute(arrayMazeEntity());
+    protected void executeAlgorithm(BaseAlgorithms<BaseStructure<?>> alg, BaseStructure<?> data) {
+        if (alg instanceof BaseArrayMazeAlgorithms && data instanceof BaseMaze<?> maze) {
+            ((BaseArrayMazeAlgorithms) alg).execute(maze);
+            return;
+        }
+        if (alg instanceof BaseGraphMazeAlgorithms && data instanceof GraphMaze graphMaze) {
+            ((BaseGraphMazeAlgorithms) alg).execute(graphMaze);
         }
     }
 
-    /**
-     * 格式化迷宫统计信息。
-     */
     @Override
     protected String formatStatsMessage() {
         ensureControllerState();
@@ -213,31 +183,26 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         String structureKey = currentStructure == MazeStructure.GRAPH
                 ? "label.maze.structure.graph"
                 : "label.maze.structure.array";
-        int cols = mazeEntity == null ? 0 : mazeEntity.getCols();
-        int rows = mazeEntity == null ? 0 : mazeEntity.getRows();
         return String.format("%s | %s | %s | %s",
                 I18N.text("stats.maze.structure", I18N.text(structureKey)),
                 I18N.text("stats.maze.mode", mode),
                 formatMetric("stats.action", stats.actionCount()),
-                I18N.text("stats.maze.scale", cols, rows));
+                I18N.text("stats.maze.scale", colsOf(mazeEntity), rowsOf(mazeEntity)));
     }
 
-    /**
-     * 重置当前迷宫。
-     */
     @Override
     protected void onResetData() {
-        if (mazeEntity != null) {
-            mazeEntity.initialSilent();
-            visualizer.render(mazeEntity, null, null);
-            refreshStatsDisplay();
-            appendLog(I18N.text("message.maze.reset"));
+        if (mazeEntity == null) {
+            return;
         }
+        initializeStructureSilently(mazeEntity);
+        visualizer.render(mazeEntity, null, null);
+        refreshStatsDisplay();
+        appendLog(I18N.text(currentStructure == MazeStructure.GRAPH
+                ? "message.graph_maze.reset"
+                : "message.maze.reset"));
     }
 
-    /**
-     * 绑定迷宫模块文案。
-     */
     @Override
     protected void setupI18n() {
         if (structureTitleLabel != null) {
@@ -260,102 +225,70 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         }
     }
 
-    /**
-     * 获取模块 ID。
-     */
     @Override
     protected String moduleId() {
         return "maze";
     }
 
-    /**
-     * 使用注册表中的稳定算法 ID 写入执行记录。
-     */
     @Override
-    protected String executionAlgorithmId(BaseAlgorithms<BaseMaze<?>> algorithm) {
+    protected String executionAlgorithmId(BaseAlgorithms<BaseStructure<?>> algorithm) {
         return currentAlgorithmId == null ? super.executionAlgorithmId(algorithm) : currentAlgorithmId;
     }
 
-    /**
-     * 执行生成算法。
-     */
     private void runGenerator(AlgorithmDescriptor descriptor) {
         if (descriptor == null) {
-            appendLog(I18N.text("message.graph_maze.algorithm_reserved"));
+            appendLog(I18N.text(currentStructure == MazeStructure.GRAPH
+                    ? "message.graph_maze.algorithm_reserved"
+                    : "message.maze.reset"));
             return;
         }
 
         stopAlgorithm();
-        mazeEntity.initialSilent();
+        initializeStructureSilently(mazeEntity);
         currentMode = MazeMode.GENERATION;
+        currentAlgorithm = descriptor.create();
+        currentAlgorithmId = descriptor.id();
 
-        this.currentAlgorithm = createMazeAlgorithm(descriptor);
-
-        if (this.currentAlgorithm == null) {
-            visualizer.render(mazeEntity, null, null);
-            refreshStatsDisplay();
-            appendLog(I18N.text("message.graph_maze.ready"));
-            return;
-        }
-
-        this.currentAlgorithm.setMazeEntity(arrayMazeEntity());
-        startArrayMazeAlgorithm(currentAlgorithm, arrayMazeEntity());
+        bindAlgorithmToCurrentStructure(currentAlgorithm, mazeEntity);
+        startCurrentAlgorithm(currentAlgorithm, mazeEntity);
     }
 
-    /**
-     * 执行求解算法。
-     */
     private void runPathfinder(AlgorithmDescriptor descriptor) {
         if (AlgorithmThreadManager.isRunning() || mazeEntity == null) {
             return;
         }
-
         if (descriptor == null) {
-            appendLog(I18N.text("message.graph_maze.algorithm_reserved"));
+            appendLog(I18N.text(currentStructure == MazeStructure.GRAPH
+                    ? "message.graph_maze.algorithm_reserved"
+                    : "message.maze.reset"));
             return;
         }
 
-        BaseMazeAlgorithms<T> solver = createMazeAlgorithm(descriptor);
+        currentAlgorithm = descriptor.create();
+        currentAlgorithmId = descriptor.id();
 
-        if (solver == null) {
-            appendLog(I18N.text("message.graph_maze.algorithm_reserved"));
-            return;
-        }
-
-        mazeEntity.setGenerated(true);
-        mazeEntity.clearVisualStates();
-        mazeEntity.pickRandomPointsOnAvailablePaths();
+        prepareStructureForSolving(mazeEntity);
         visualizer.render(mazeEntity, null, null);
         appendLog(I18N.text("message.maze.snapshot_ready"));
 
         currentMode = MazeMode.SOLVING;
-        currentAlgorithm = solver;
-        currentAlgorithm.setMazeEntity(arrayMazeEntity());
-        startArrayMazeAlgorithm(currentAlgorithm, arrayMazeEntity());
+        bindAlgorithmToCurrentStructure(currentAlgorithm, mazeEntity);
+        startCurrentAlgorithm(currentAlgorithm, mazeEntity);
     }
 
-    /**
-     * 按尺寸重建当前结构类型的迷宫。
-     */
     private void updateMazeSize(int oddSize) {
         stopAlgorithm();
-        this.mazeEntity = createMazeEntity(oddSize);
-        this.mazeEntity.initialSilent();
+        mazeEntity = createMazeEntity(oddSize);
+        initializeStructureSilently(mazeEntity);
         visualizer.render(mazeEntity, null, null);
         refreshStatsDisplay();
     }
 
-    /**
-     * 把迷宫尺寸修正为奇数。
-     */
     private int normalizeOddSize(double rawSize) {
         int val = (int) rawSize;
         return (val % 2 == 0) ? val + 1 : val;
     }
 
-    /**
-     * 绑定结构下拉。
-     */
     private void bindStructureSelector() {
         ensureControllerState();
         if (structureSelector == null) {
@@ -376,12 +309,9 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
             switchStructure(newVal.intValue() == 1 ? MazeStructure.GRAPH : MazeStructure.ARRAY);
         });
 
-        Platform.runLater(() -> structureSelector.getSelectionModel().selectFirst());
+        Platform.runLater(() -> structureSelector.getSelectionModel().select(currentStructure == MazeStructure.GRAPH ? 1 : 0));
     }
 
-    /**
-     * 绑定算法下拉框到注册表查询结果。
-     */
     private void bindAlgorithmComboBox(ComboBox<String> comboBox, AlgorithmFamily family) {
         ensureControllerState();
         if (comboBox == null) {
@@ -411,9 +341,6 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         });
     }
 
-    /**
-     * 切换迷宫底层结构，并刷新当前可视化画面。
-     */
     private void switchStructure(MazeStructure structure) {
         ensureControllerState();
         if (structure == currentStructure || AlgorithmThreadManager.isRunning()) {
@@ -426,14 +353,9 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         currentMode = MazeMode.GENERATION;
         algorithmStructure.set(toAlgorithmStructure(structure));
 
-        if (mazeEntity == null) {
-            updateStructureControlState();
-            return;
-        }
-
-        int size = mazeEntity.getRows();
+        int size = rowsOf(mazeEntity);
         mazeEntity = createMazeEntity(size);
-        mazeEntity.initialSilent();
+        initializeStructureSilently(mazeEntity);
         visualizer.render(mazeEntity, null, null);
         updateStructureControlState();
         refreshStatsDisplay();
@@ -442,11 +364,7 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
                 : "message.maze.reset"));
     }
 
-    /**
-     * 根据结构类型启用或禁用算法控件。
-     */
     private void updateStructureControlState() {
-        ensureControllerState();
         boolean hasGenerators = !mazeOptions(AlgorithmFamily.MAZE_GENERATOR).isEmpty();
         boolean hasPathfinders = !mazeOptions(AlgorithmFamily.MAZE_PATHFINDER).isEmpty();
 
@@ -464,22 +382,10 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
         }
     }
 
-    /**
-     * 查询当前结构下指定用途的迷宫算法。
-     */
     private List<AlgorithmDescriptor> mazeOptions(AlgorithmFamily family) {
-        ensureControllerState();
         return AlgorithmRegistry.find(moduleId(), family, algorithmStructure.get());
     }
 
-    /**
-     * 确保 FXML 初始化期间也能安全访问控制器状态。
-     *
-     * <p>{@link BaseModuleController} 会在父类构造器中加载 FXML，JavaFX 随即调用
-     * {@link #initialize(URL, ResourceBundle)}。这发生在子类字段初始化器和构造器主体之前，
-     * 因此这里不用字段初始化器，而是通过懒初始化保证下拉绑定、结构切换和统计刷新都不会遇到
-     * 半初始化状态。</p>
-     */
     private void ensureControllerState() {
         if (currentMode == null) {
             currentMode = MazeMode.GENERATION;
@@ -488,26 +394,20 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
             currentStructure = MazeStructure.ARRAY;
         }
         if (algorithmStructure == null) {
-            algorithmStructure = new SimpleObjectProperty<>(toAlgorithmStructure(currentStructure));
+            algorithmStructure = new SimpleObjectProperty<>(AlgorithmStructure.ARRAY_MAZE);
         }
     }
 
-    /**
-     * 在构造参数可用后渲染初始迷宫。
-     */
     private void renderInitialMaze() {
         if (mazeEntity == null) {
             return;
         }
-        mazeEntity.initialSilent();
+        initializeStructureSilently(mazeEntity);
         visualizer.render(mazeEntity, null, null);
         updateStructureControlState();
         refreshStatsDisplay();
     }
 
-    /**
-     * 获取当前选中的算法描述。
-     */
     private AlgorithmDescriptor selectedAlgorithmDescriptor(AlgorithmFamily family, ComboBox<String> comboBox) {
         List<AlgorithmDescriptor> options = mazeOptions(family);
         int index = comboBox == null ? 0 : comboBox.getSelectionModel().getSelectedIndex();
@@ -516,50 +416,78 @@ public class MazeController<T> extends BaseModuleController<BaseMaze<?>> {
             currentAlgorithmId = null;
             return null;
         }
-
         return options.get(index);
     }
 
-    /**
-     * 创建当前选中的迷宫算法。
-     */
-    @SuppressWarnings("unchecked")
-    private BaseMazeAlgorithms<T> createMazeAlgorithm(AlgorithmDescriptor descriptor) {
-        currentAlgorithmId = descriptor.id();
-        return (BaseMazeAlgorithms<T>) descriptor.create();
-    }
-
-    /**
-     * 把 UI 结构枚举转换成注册表使用的结构分类。
-     */
     private AlgorithmStructure toAlgorithmStructure(MazeStructure structure) {
         return structure == MazeStructure.GRAPH
                 ? AlgorithmStructure.GRAPH_MAZE
                 : AlgorithmStructure.ARRAY_MAZE;
     }
 
-    /**
-     * 按当前结构类型创建迷宫实体。
-     */
-    private BaseMaze<?> createMazeEntity(int size) {
+    private BaseStructure<?> createMazeEntity(int size) {
         return currentStructure == MazeStructure.GRAPH
                 ? new GraphMaze(size, size)
                 : new ArrayMaze(size, size);
     }
 
-    /**
-     * 用于把当前迷宫安全地交给旧的二维数组迷宫算法。
-     */
-    @SuppressWarnings("unchecked")
-    private BaseMaze<T> arrayMazeEntity() {
-        return (BaseMaze<T>) mazeEntity;
+    private void initializeStructureSilently(BaseStructure<?> structure) {
+        if (structure instanceof BaseMaze<?> maze) {
+            maze.initialSilent();
+            return;
+        }
+        if (structure instanceof GraphMaze graphMaze) {
+            graphMaze.initialSilent();
+        }
     }
 
-    /**
-     * 使用受控泛型桥接启动二维数组迷宫算法。
-     */
+    private void prepareStructureForSolving(BaseStructure<?> structure) {
+        if (structure instanceof BaseMaze<?> maze) {
+            maze.setGenerated(true);
+            maze.clearVisualStates();
+            maze.pickRandomPointsOnAvailablePaths();
+            return;
+        }
+        if (structure instanceof GraphMaze graphMaze) {
+            graphMaze.setGenerated(true);
+            graphMaze.clearVisualStates();
+            graphMaze.pickRandomPointsOnAvailablePaths();
+        }
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void startArrayMazeAlgorithm(BaseMazeAlgorithms<T> algorithm, BaseMaze<T> data) {
-        startAlgorithm((BaseAlgorithms) algorithm, data);
+    private void bindAlgorithmToCurrentStructure(BaseAlgorithms<?> algorithm, BaseStructure<?> structure) {
+        if (algorithm instanceof BaseArrayMazeAlgorithms<?> mazeAlgorithm && structure instanceof BaseMaze<?> maze) {
+            ((BaseArrayMazeAlgorithms) mazeAlgorithm).setMazeEntity(maze);
+            return;
+        }
+        if (algorithm instanceof BaseGraphMazeAlgorithms<?> graphAlgorithm && structure instanceof GraphMaze graphMaze) {
+            ((BaseGraphMazeAlgorithms) graphAlgorithm).setMazeEntity(graphMaze);
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void startCurrentAlgorithm(BaseAlgorithms<?> algorithm, BaseStructure<?> structure) {
+        startAlgorithm((BaseAlgorithms) algorithm, structure);
+    }
+
+    private int rowsOf(BaseStructure<?> structure) {
+        if (structure instanceof BaseMaze<?> maze) {
+            return maze.getRows();
+        }
+        if (structure instanceof GraphMaze graphMaze) {
+            return graphMaze.getRows();
+        }
+        return 0;
+    }
+
+    private int colsOf(BaseStructure<?> structure) {
+        if (structure instanceof BaseMaze<?> maze) {
+            return maze.getCols();
+        }
+        if (structure instanceof GraphMaze graphMaze) {
+            return graphMaze.getCols();
+        }
+        return 0;
     }
 }

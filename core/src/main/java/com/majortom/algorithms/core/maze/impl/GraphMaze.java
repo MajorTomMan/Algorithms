@@ -1,9 +1,9 @@
 package com.majortom.algorithms.core.maze.impl;
 
+import com.majortom.algorithms.core.base.BaseStructure;
 import com.majortom.algorithms.core.graph.BaseGraph;
 import com.majortom.algorithms.core.graph.impl.UndirectedGraph;
-import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
 import com.majortom.algorithms.core.maze.structure.MazeCell;
 import com.majortom.algorithms.core.runtime.ExecutionContext;
 
@@ -17,21 +17,44 @@ import java.util.List;
 /**
  * 基于图结构的迷宫实现。
  *
- * <p>这个类把“迷宫”翻译成“图”：每个格子是一个 GraphStream 节点，两个相邻且可通行的格子之间
- * 用一条边连接。这样一来，迷宫生成和寻路就可以复用图算法的思维：节点代表位置，边代表可走的通道，
- * 边权和格子代价则可以继续扩展给 Dijkstra、A* 等带权寻路算法。</p>
+ * <p>这个类不再复用二维数组迷宫的抽象基类，而是把“图迷宫”视为独立结构：
+ * 算法层的主语是节点、边和邻接关系，可视化层如果需要方格画面，则读取节点上的布局坐标并自行投影。</p>
  *
- * <p>联动链路是本类最重要的设计点：算法修改格子状态时调用 {@link #setCellState(int, int, int, boolean)}，
- * 结构层会更新 {@link MazeCell}，再通过 {@link ExecutionContext} 产出执行帧，最后由可视化层读取快照并重绘。
- * 因此算法实现者通常只需要关心“访问哪个节点、连接哪条边、标记哪个格子”，不需要直接操作 UI。</p>
+ * <p>换句话说，图迷宫里真正定义“能不能走”的是边，而不是二维数组上的上下左右相邻关系。
+ * 坐标仍然保留在 {@link MazeCell} 中，但它们主要服务于展示和布局，不再驱动算法接口设计。</p>
  */
-public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
+public class GraphMaze extends BaseStructure<BaseGraph<MazeCell>> {
 
+    /**
+     * 图迷宫底层图模型。
+     *
+     * <p>这里保存的是真正决定连通关系的数据：节点代表位置，边代表可走通道。
+     * 迷宫算法应优先围绕这个图模型思考，而不是围绕二维数组相邻关系思考。</p>
+     */
+    private BaseGraph<MazeCell> data;
+    /**
+     * 可视化投影使用的总行数。
+     */
+    private final int rows;
+    /**
+     * 可视化投影使用的总列数。
+     */
+    private final int cols;
+    /**
+     * 当前图迷宫是否已经完成生成。
+     */
+    private boolean generated;
+    /**
+     * 图迷宫执行上下文。
+     *
+     * <p>结构层通过它把状态变化同步到执行帧和可视化层，
+     * 让图算法仍然可以沿用统一的播放、暂停和回放机制。</p>
+     */
+    private ExecutionContext<GraphMaze> executionContext;
     /**
      * 起点节点 ID。
      */
     private String startId;
-
     /**
      * 终点节点 ID。
      */
@@ -44,55 +67,49 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
      * @param cols 列数
      */
     public GraphMaze(int rows, int cols) {
-        super(rows, cols);
+        this.rows = rows;
+        this.cols = cols;
         this.data = new UndirectedGraph<>("graph-maze");
         initialSilent();
     }
 
     /**
-     * 接收图迷宫算法专用执行上下文。
+     * 接收图迷宫算法执行上下文。
      *
-     * <p>{@link BaseMaze} 的历史签名面向 {@code BaseMaze<T>}，而图迷宫控制器会创建
-     * {@code ExecutionContext<GraphMaze>}。这里做一次受控桥接，让图迷宫仍能复用
-     * {@link BaseMaze#setCellState(int, int, int, boolean)} 的自动同步能力。</p>
-     *
-     * <p>换句话说：算法层把“我走到了这个格子”告诉结构层；结构层通过上下文把这一步包装成执行帧；
-     * 可视化层再根据执行帧渲染画面。这段桥接代码就是为了让图迷宫也能插进同一条执行管线。</p>
+     * <p>参数上的泛型 {@code M} 用来兼容具体的图迷宫子类型，但结构层内部只保存
+     * {@code ExecutionContext<GraphMaze>}，因为同步给可视化和时间轴时，主语始终是当前图迷宫快照。</p>
      *
      * @param executionContext 图迷宫执行上下文
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void setGraphMazeExecutionContext(ExecutionContext<GraphMaze> executionContext) {
-        this.executionContext = (ExecutionContext) executionContext;
+    public <M extends GraphMaze> void setGraphMazeExecutionContext(ExecutionContext<M> executionContext) {
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        ExecutionContext<GraphMaze> casted = (ExecutionContext) executionContext;
+        this.executionContext = casted;
     }
 
     /**
      * 初始化迷宫并发出初始帧。
      *
-     * <p>这个方法适合“用户能看到变化”的初始化场景。它先静默重建图节点，再通过执行上下文发出一帧，
-     * 让控制器、时间轴和可视化器都能知道：新的图迷宫状态已经准备好了。</p>
+     * <p>这个方法适合“用户能看到新结构已经准备好”的场景。它会先重建图节点，
+     * 再主动发出一帧，让控制器、时间轴和可视化器同步进入新的初始状态。</p>
      */
-    @Override
     public void initial() {
         initialSilent();
-
         if (executionContext != null) {
-            executionContext.sync(this, -1, -1, "maze.initial", false);
+            executionContext.sync(this, null, null, "graph-maze.initial", false);
         }
     }
 
     /**
-     * 静默初始化全部格子节点。
+     * 静默初始化图迷宫。
      *
-     * <p>静默初始化只重置内存结构，不主动产帧。它常用于构造函数、快照复制和控制器内部重建，
-     * 避免在 UI 还没有准备好时触发渲染。</p>
+     * <p>静默初始化只重建内存结构，不主动产出执行帧。它通常用于构造函数、
+     * 快照复制和控制器内部重建，避免 UI 还没准备好时就触发渲染。</p>
      */
-    @Override
     public void initialSilent() {
-        this.isGenerated = false;
+        this.generated = false;
         this.startId = null;
         this.endId = null;
-
         data.clear();
 
         for (int r = 0; r < rows; r++) {
@@ -103,310 +120,294 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
 
         this.compareCount = 0;
         this.actionCount = 0;
+        this.timeElapsedMs = 0L;
+        this.extraMetrics.clear();
     }
 
     /**
-     * 更新指定格子的状态。
+     * 更新节点状态并自动同步执行帧。
      *
-     * <p>这是 {@link BaseMaze#setCellState(int, int, int, boolean)} 的底层落点。
-     * 上层负责统计和同步，本方法只负责把状态真正写入节点里的 {@link MazeCell}。</p>
+     * <p>这里是图迷宫结构层最核心的状态入口。算法层只需要说清楚“哪个节点变成什么状态”，
+     * 结构层就会负责三件事：写入节点数据、累计统计、把这一步同步到执行上下文。</p>
      *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @param type 新的迷宫单元格类型
+     * @param nodeId 目标节点 ID，表示这次变化作用在哪个图节点上
+     * @param type 新的格子状态，通常来自 {@link MazeCellType}
+     * @param isAction true 表示这是一次结构动作，false 表示访问/比较类操作
      */
-    @Override
-    protected void updateInternalData(int r, int c, int type) {
-        if (isOverBorder(r, c)) {
-            return;
-        }
-
-        MazeCell cell = getMazeCell(r, c);
-
-        if (cell != null) {
-            cell.setType(type);
-        }
-    }
-
-    /**
-     * 读取指定格子的状态。
-     *
-     * <p>越界或节点缺失时统一按墙处理，这能让算法在探索邻居时少写很多防御代码。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @return 单元格类型；不可访问位置返回 {@link MazeConstant#WALL}
-     */
-    @Override
-    public int getCell(int r, int c) {
-        if (isOverBorder(r, c)) {
-            return MazeConstant.WALL;
-        }
-
-        MazeCell cell = getMazeCell(r, c);
-
+    public void setCellState(String nodeId, int type, boolean isAction) {
+        MazeCell cell = getMazeCell(nodeId);
         if (cell == null) {
-            return MazeConstant.WALL;
-        }
-
-        return cell.getType();
-    }
-
-    /**
-     * 连接两个相邻格子，边权默认为 1。
-     *
-     * <p>在图迷宫里，“打通墙”不是删除数组里的墙，而是在两个节点之间建立边。
-     * 生成算法每连接一次，相当于为寻路算法新增一条可走通道。</p>
-     *
-     * @param r1 第一个格子行坐标
-     * @param c1 第一个格子列坐标
-     * @param r2 第二个格子行坐标
-     * @param c2 第二个格子列坐标
-     */
-    public void connect(int r1, int c1, int r2, int c2) {
-        connect(r1, c1, r2, c2, 1);
-    }
-
-    /**
-     * 连接两个相邻格子。
-     *
-     * <p>本方法会先校验坐标合法性、相邻性和权重，再把两端格子标记为道路并创建图边。
-     * 对算法教学来说，这一步可以理解成“把二维坐标上的通道，映射成图上的边”。</p>
-     *
-     * @param r1 第一个格子行坐标
-     * @param c1 第一个格子列坐标
-     * @param r2 第二个格子行坐标
-     * @param c2 第二个格子列坐标
-     * @param weight 边权重，必须为正数
-     * @throws IllegalArgumentException 两个格子不相邻，或权重不是正数时抛出
-     */
-    public void connect(int r1, int c1, int r2, int c2, int weight) {
-        if (isOverBorder(r1, c1) || isOverBorder(r2, c2)) {
             return;
         }
 
-        if (!isAdjacent(r1, c1, r2, c2)) {
+        cell.setType(type);
+        if (isAction) {
+            incrementAction();
+        } else {
+            incrementCompare();
+        }
+
+        if (executionContext != null) {
+            executionContext.sync(this, nodeId, null, null, isAction);
+        }
+    }
+
+    /**
+     * 按坐标更新节点状态。
+     *
+     * <p>这个重载主要给可视化兼容和少量布局相关操作使用。图算法更推荐直接传节点 ID。</p>
+     *
+     * @param r 节点所在布局行
+     * @param c 节点所在布局列
+     * @param type 新的格子状态
+     * @param isAction true 表示结构动作，false 表示访问/比较
+     */
+    public void setCellState(int r, int c, int type, boolean isAction) {
+        setCellState(id(r, c), type, isAction);
+    }
+
+    /**
+     * 获取图迷宫底层图结构。
+     *
+     * <p>执行层和快照导出会通过这个方法拿到底层数据。
+     * 这里返回的仍是图模型，而不是二维投影。</p>
+     */
+    @Override
+    public BaseGraph<MazeCell> getData() {
+        return data;
+    }
+
+    /**
+     * 获取可视化投影行数。
+     */
+    public int getRows() {
+        return rows;
+    }
+
+    /**
+     * 获取可视化投影列数。
+     */
+    public int getCols() {
+        return cols;
+    }
+
+    /**
+     * 判断当前图迷宫是否已经完成生成。
+     */
+    public boolean isGenerated() {
+        return generated;
+    }
+
+    /**
+     * 设置图迷宫生成状态。
+     *
+     * @param generated true 表示图迷宫已经准备好进入求解阶段
+     */
+    public void setGenerated(boolean generated) {
+        this.generated = generated;
+    }
+
+    /**
+     * 根据节点 ID 连接两个节点。
+     *
+     * <p>这是图迷宫生成器最常用的入口之一。教学上可以把它理解成：
+     * “把两个候选位置之间的潜在关系，正式变成一条可走通道”。</p>
+     *
+     * @param fromId 起点节点 ID，表示通道一端
+     * @param toId 终点节点 ID，表示通道另一端
+     */
+    public void connect(String fromId, String toId) {
+        connect(fromId, toId, 1);
+    }
+
+    /**
+     * 根据节点 ID 连接两个节点。
+     *
+     * <p>参数 {@code fromId/toId} 的意义不是“几何上的相邻格子”，而是“图中的两个候选节点”。
+     * 方法内部会再验证它们在当前布局里是否允许相邻，从而兼顾图语义和方格布局约束。</p>
+     *
+     * @param fromId 起点节点 ID
+     * @param toId 终点节点 ID
+     * @param weight 边权重，用于扩展带权迷宫或带权寻路教学
+     */
+    public void connect(String fromId, String toId, int weight) {
+        MazeCell from = getMazeCell(fromId);
+        MazeCell to = getMazeCell(toId);
+
+        if (from == null || to == null) {
+            return;
+        }
+        if (!isAdjacent(from, to)) {
             throw new IllegalArgumentException("Only adjacent cells can be connected.");
         }
-
         if (weight <= 0) {
             throw new IllegalArgumentException("weight must be positive.");
         }
 
-        markAsRoadIfWall(r1, c1);
-        markAsRoadIfWall(r2, c2);
-
-        data.addEdge(id(r1, c1), id(r2, c2), weight);
+        markAsRoadIfWall(fromId);
+        markAsRoadIfWall(toId);
+        data.addEdge(fromId, toId, weight);
     }
 
     /**
-     * 判断两个格子之间是否已经有边连接。
+     * 按坐标连接两个节点。
      *
-     * <p>生成器可以用它避免重复连边；寻路器可以用它判断两个相邻坐标是否真的可通行。</p>
-     *
-     * @param r1 第一个格子行坐标
-     * @param c1 第一个格子列坐标
-     * @param r2 第二个格子行坐标
-     * @param c2 第二个格子列坐标
-     * @return 已存在通道时返回 true
+     * <p>这个重载保留给基于布局的辅助逻辑使用。真正的图算法建议直接使用节点 ID 版本，
+     * 这样算法代码会更像“图搜索”，而不是“二维格子搜索”。</p>
      */
-    public boolean hasConnection(int r1, int c1, int r2, int c2) {
-        if (isOverBorder(r1, c1) || isOverBorder(r2, c2)) {
-            return false;
-        }
-
-        return getEdgeBetween(id(r1, c1), id(r2, c2)) != null;
+    public void connect(int r1, int c1, int r2, int c2) {
+        connect(id(r1, c1), id(r2, c2));
     }
 
     /**
-     * 获取两个格子之间的边权重。
+     * 判断两个节点之间是否已经有边连接。
      *
-     * <p>如果两个格子之间没有边，返回一个很大的代价，让带权算法自然地避开这条不存在的路。</p>
-     *
-     * @param r1 第一个格子行坐标
-     * @param c1 第一个格子列坐标
-     * @param r2 第二个格子行坐标
-     * @param c2 第二个格子列坐标
-     * @return 边权；不可达时返回 {@link Integer#MAX_VALUE}
+     * <p>生成算法可以用它避免重复连边；寻路算法可以用它验证“两个节点理论上相邻，
+     * 但当前迷宫里是否真的有路”。</p>
      */
-    public int getEdgeWeight(int r1, int c1, int r2, int c2) {
-        if (isOverBorder(r1, c1) || isOverBorder(r2, c2)) {
-            return Integer.MAX_VALUE;
-        }
+    public boolean hasConnection(String fromId, String toId) {
+        return getEdgeBetween(fromId, toId) != null;
+    }
 
-        Edge edge = getEdgeBetween(id(r1, c1), id(r2, c2));
-
+    /**
+     * 获取两个节点之间的边权重。
+     *
+     * <p>如果两点之间没有边，这里返回一个极大值，帮助带权算法把“没有通道”自然视为不可选路径。</p>
+     */
+    public int getEdgeWeight(String fromId, String toId) {
+        Edge edge = getEdgeBetween(fromId, toId);
         if (edge == null) {
             return Integer.MAX_VALUE;
         }
-
         Integer weight = (Integer) edge.getAttribute("weight");
         return weight == null ? 1 : weight;
     }
 
     /**
-     * 设置格子通行代价。
+     * 设置节点通行代价。
      *
-     * <p>边权描述“从 A 到 B 的通道成本”，格子代价描述“进入这个格子本身的成本”。
-     * 两者可以组合出更丰富的教学案例，例如泥地、陷阱、山地等不同地形。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @param cost 通行代价，必须为正数
-     * @throws IllegalArgumentException cost 不是正数时抛出
+     * <p>这里的代价描述“进入这个节点的成本”。它和边权一起使用时，
+     * 可以扩展出泥地、陷阱、山地等教学案例。</p>
      */
-    public void setCellCost(int r, int c, int cost) {
-        if (isOverBorder(r, c)) {
-            return;
-        }
-
+    public void setCellCost(String nodeId, int cost) {
         if (cost <= 0) {
             throw new IllegalArgumentException("cost must be positive.");
         }
 
-        MazeCell cell = getMazeCell(r, c);
-
+        MazeCell cell = getMazeCell(nodeId);
         if (cell != null) {
             cell.setCost(cost);
         }
     }
 
     /**
-     * 获取格子通行代价。
+     * 获取节点通行代价。
      *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @return 格子代价；越界或节点缺失时返回 {@link Integer#MAX_VALUE}
+     * @param nodeId 目标节点 ID
+     * @return 节点代价；节点不存在时返回极大值
      */
-    public int getCellCost(int r, int c) {
-        if (isOverBorder(r, c)) {
-            return Integer.MAX_VALUE;
-        }
-
-        MazeCell cell = getMazeCell(r, c);
-
-        if (cell == null) {
-            return Integer.MAX_VALUE;
-        }
-
-        return cell.getCost();
+    public int getCellCost(String nodeId) {
+        MazeCell cell = getMazeCell(nodeId);
+        return cell == null ? Integer.MAX_VALUE : cell.getCost();
     }
 
     /**
-     * 从可通行格子中随机选择起点和终点。
+     * 随机选择起点和终点。
      *
-     * <p>生成完成后，控制器或算法可以调用这个方法为寻路阶段准备输入。
-     * 方法只在道路、路径等非墙格子中选择，避免把起点或终点放进不可达位置。</p>
+     * <p>这里从所有可通行节点里随机挑选两个不同节点，并分别标记为起点和终点。
+     * 它通常发生在“迷宫已经生成完成，准备进入求解阶段”这个时机。</p>
      */
-    @Override
     public void pickRandomPoints() {
         clearStartAndEnd();
-
         List<MazeCell> cells = availableCells();
-
         if (cells.size() < 2) {
             return;
         }
 
         Collections.shuffle(cells);
-
-        MazeCell start = cells.get(0);
-        MazeCell end = cells.get(1);
-
-        setStart(start.getRow(), start.getCol());
-        setEnd(end.getRow(), end.getCol());
+        setStart(id(cells.get(0).getRow(), cells.get(0).getCol()));
+        setEnd(id(cells.get(1).getRow(), cells.get(1).getCol()));
     }
 
     /**
-     * 在可通行路径上随机选择起点和终点。
+     * 图迷宫里“可通行路径”和“可通行格子”等价。
      *
-     * <p>图迷宫里“可通行路径”和“可通行格子”在这里等价，因此直接复用 {@link #pickRandomPoints()}。
-     * 保留这个方法是为了和二维数组迷宫的统一接口对齐。</p>
+     * <p>二维数组迷宫里，这个方法通常强调“从路径格子中选点”；而图迷宫里，
+     * 一个节点只要不是墙，就可以看作落在可通行路径上，因此这里直接复用 {@link #pickRandomPoints()}。</p>
      */
-    @Override
     public void pickRandomPointsOnAvailablePaths() {
         pickRandomPoints();
     }
 
     /**
-     * 设置起点。
+     * 按节点 ID 设置起点。
      *
-     * <p>起点既是 {@link MazeCell} 的状态，也是图节点 ID。算法可以通过 {@link #getStartId()}
-     * 获得图算法入口；可视化器则通过格子类型把它画成起点样式。</p>
+     * <p>起点既是图搜索的入口，也是可视化里的特殊状态。设置时如果原节点还是墙，
+     * 会先把它转成道路，再标记为起点。</p>
      *
-     * @param r 行坐标
-     * @param c 列坐标
+     * @param startId 起点节点 ID
      */
-    public void setStart(int r, int c) {
-        if (isOverBorder(r, c)) {
+    public void setStart(String startId) {
+        MazeCell cell = getMazeCell(startId);
+        if (cell == null) {
             return;
         }
 
         clearOldStart();
-
-        this.startId = id(r, c);
-
-        markAsRoadIfWall(r, c);
-        setCellState(r, c, MazeConstant.START, false);
+        this.startId = startId;
+        markAsRoadIfWall(startId);
+        setCellState(startId, MazeCellType.START, false);
     }
 
     /**
-     * 设置终点。
+     * 按节点 ID 设置终点。
      *
-     * <p>终点和起点一样，同时服务图算法入口判断、执行帧快照和可视化标识。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
+     * @param endId 终点节点 ID
      */
-    public void setEnd(int r, int c) {
-        if (isOverBorder(r, c)) {
+    public void setEnd(String endId) {
+        MazeCell cell = getMazeCell(endId);
+        if (cell == null) {
             return;
         }
 
         clearOldEnd();
-
-        this.endId = id(r, c);
-
-        markAsRoadIfWall(r, c);
-        setCellState(r, c, MazeConstant.END, false);
+        this.endId = endId;
+        markAsRoadIfWall(endId);
+        setCellState(endId, MazeCellType.END, false);
     }
 
     /**
      * 清除寻路过程中的临时视觉状态。
      *
-     * <p>这个方法不会删除图节点和边，也不会清掉起点终点；它只把 PATH、DEADEND、BACKTRACK 等
-     * 寻路过程状态还原为 ROAD，并清理 GraphStream 上用于 UI 高亮的属性。这样同一个迷宫可以重复跑不同寻路算法。</p>
+     * <p>它不会删除图边，也不会把起点终点抹掉；它只负责把 PATH、DEADEND、BACKTRACK
+     * 这些求解过程状态还原为 ROAD，并清理 GraphStream 上的辅助高亮属性。</p>
      */
-    @Override
     public void clearVisualStates() {
         data.getGraph().nodes().forEach(node -> {
             MazeCell cell = getMazeCell(node.getId());
-
             if (cell == null) {
                 return;
             }
 
             int type = cell.getType();
-
-            if (type != MazeConstant.WALL &&
-                    type != MazeConstant.START &&
-                    type != MazeConstant.END) {
-                cell.setType(MazeConstant.ROAD);
+            if (type != MazeCellType.WALL
+                    && type != MazeCellType.START
+                    && type != MazeCellType.END) {
+                cell.setType(MazeCellType.ROAD);
             }
 
             node.removeAttribute("visited");
             node.removeAttribute("ui.class");
         });
 
-        data.getGraph().edges().forEach(edge -> {
-            edge.removeAttribute("ui.class");
-        });
-
+        data.getGraph().edges().forEach(edge -> edge.removeAttribute("ui.class"));
         this.actionCount = 0;
     }
 
     /**
-     * 清空并重新初始化迷宫。
+     * 清空图迷宫并重新初始化。
+     *
+     * <p>这里直接复用 {@link #initial()}，因为图迷宫的“清空”就是回到全节点、无通道、未生成的初始状态。</p>
      */
     @Override
     public void clear() {
@@ -414,24 +415,31 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
     }
 
     /**
-     * 创建图迷宫快照。
-     *
-     * @return 当前图迷宫的独立副本
+     * 重置统计并静默重建图迷宫。
      */
     @Override
-    public BaseMaze<BaseGraph<MazeCell>> copy() {
-        GraphMaze copy = new GraphMaze(this.rows, this.cols);
+    public void resetStatistics() {
+        super.resetStatistics();
+        initialSilent();
+    }
 
+    /**
+     * 创建图迷宫快照。
+     *
+     * <p>执行层会把这个快照写入时间轴，因此这里必须深拷贝节点状态、节点代价和已存在的边，
+     * 避免后续算法步骤污染历史帧。</p>
+     */
+    @Override
+    public GraphMaze copy() {
+        GraphMaze copy = new GraphMaze(this.rows, this.cols);
         copy.initialSilent();
 
         this.data.getGraph().nodes().forEach(oldNode -> {
             MazeCell oldCell = getMazeCell(oldNode.getId());
             MazeCell newCell = copy.getMazeCell(oldNode.getId());
-
             if (oldCell == null || newCell == null) {
                 return;
             }
-
             newCell.setType(oldCell.getType());
             newCell.setCost(oldCell.getCost());
         });
@@ -439,36 +447,34 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
         this.data.getGraph().edges().forEach(oldEdge -> {
             String fromId = oldEdge.getSourceNode().getId();
             String toId = oldEdge.getTargetNode().getId();
-
             Integer weight = (Integer) oldEdge.getAttribute("weight");
             copy.data.addEdge(fromId, toId, weight == null ? 1 : weight);
         });
 
         copy.startId = this.startId;
         copy.endId = this.endId;
-
-        this.copyStateTo(copy);
-
+        copy.generated = this.generated;
+        copy.actionCount = this.actionCount;
+        copy.compareCount = this.compareCount;
+        copy.timeElapsedMs = this.timeElapsedMs;
+        copy.extraMetrics.putAll(this.extraMetrics);
         return copy;
     }
 
     /**
-     * 将迷宫作为图结构暴露给图算法。
+     * 以图结构视角暴露当前迷宫。
      *
-     * @return 图结构包装器
+     * <p>图算法如果需要直接访问底层图 API，可以从这里取到包装器。</p>
      */
     public BaseGraph<MazeCell> asGraph() {
         return data;
     }
 
     /**
-     * 将行列坐标转换为节点 ID。
+     * 将布局坐标转换为节点 ID。
      *
-     * <p>图层只认识字符串节点 ID，迷宫层更自然地使用行列坐标。这个方法就是两种表示法之间的桥。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @return 形如 {@code row,col} 的节点 ID
+     * <p>坐标仍然保留在图迷宫里，但它的职责已经降级为“布局定位”。
+     * 这个方法的意义是把展示友好的行列坐标翻译成图算法真正使用的节点标识。</p>
      */
     public String id(int r, int c) {
         return r + "," + c;
@@ -489,163 +495,155 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
     }
 
     /**
-     * 按坐标获取迷宫单元格。
+     * 按节点 ID 读取节点中的迷宫业务数据。
+     *
+     * <p>返回的 {@link MazeCell} 同时携带布局坐标、状态和代价，因此它是图算法和可视化层之间的重要桥梁。</p>
+     */
+    public MazeCell getMazeCell(String id) {
+        Node node = data.getGraph().getNode(id);
+        if (node == null) {
+            return null;
+        }
+        return (MazeCell) node.getAttribute("data");
+    }
+
+    /**
+     * 按布局坐标读取迷宫节点。
+     *
+     * <p>这个重载主要服务可视化和少量布局辅助逻辑。图算法更推荐直接使用节点 ID 入口。</p>
      */
     public MazeCell getMazeCell(int r, int c) {
         if (isOverBorder(r, c)) {
             return null;
         }
-
         return getMazeCell(id(r, c));
     }
 
     /**
-     * 按节点 ID 获取迷宫单元格。
-     */
-    public MazeCell getMazeCell(String id) {
-        Node node = data.getGraph().getNode(id);
-
-        if (node == null) {
-            return null;
-        }
-
-        return (MazeCell) node.getAttribute("data");
-    }
-
-    /**
-     * 按图节点 ID 读取节点中的业务数据。
+     * 获取指定图节点的业务数据。
      *
-     * <p>这个方法是给图迷宫算法和可视化层预留的稳定入口，避免调用方直接依赖
-     * GraphStream 的属性名。</p>
-     *
-     * @param id 图节点 ID
-     * @return 节点对应的迷宫单元格；节点不存在时返回 null
+     * <p>这个名字强调“从图顶点读业务数据”，更适合图算法代码使用。</p>
      */
     public MazeCell getVertexData(String id) {
         return getMazeCell(id);
     }
 
     /**
-     * 获取指定坐标的邻接节点 ID。
-     *
-     * <p>返回的不是几何意义上的上下左右，而是图中已经连边的真实邻居，
-     * 因此它反映的是“当前迷宫里真正能走的下一步”。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @return 与该格子连通的节点 ID 列表
-     */
-    public List<String> getNeighborIds(int r, int c) {
-        if (isOverBorder(r, c)) {
-            return Collections.emptyList();
-        }
-
-        return getNeighborIds(id(r, c));
-    }
-
-    /**
      * 获取指定节点 ID 的邻接节点 ID。
      *
-     * <p>图算法通常从节点 ID 出发遍历，所以这个重载是 BFS、DFS、Dijkstra 一类算法的主要入口。</p>
-     *
-     * @param id 当前节点 ID
-     * @return 与该节点通过边相连的邻居 ID；节点不存在时返回空列表
+     * <p>这里返回的是“当前真的有边相连的邻居”，而不是几何意义上的上下左右潜在邻居。
+     * 所以它反映的是当前迷宫中真正可走的下一步。</p>
      */
     public List<String> getNeighborIds(String id) {
         Node node = data.getGraph().getNode(id);
-
         if (node == null) {
             return Collections.emptyList();
         }
 
         List<String> result = new ArrayList<>();
-
-        node.edges().forEach(edge -> {
-            Node opposite = edge.getOpposite(node);
-            result.add(opposite.getId());
-        });
-
+        node.edges().forEach(edge -> result.add(edge.getOpposite(node).getId()));
         return result;
     }
 
     /**
-     * 获取指定坐标的邻接单元格。
+     * 获取指定节点的邻接单元格。
      *
-     * <p>当算法更关心行列、类型或代价，而不是节点 ID 时，可以使用这个方法。</p>
-     *
-     * @param r 行坐标
-     * @param c 列坐标
-     * @return 相邻且已连通的迷宫单元格列表
+     * <p>如果算法比起节点 ID 更关心节点状态、代价或布局坐标，可以直接使用这个入口。</p>
      */
-    public List<MazeCell> getNeighbors(int r, int c) {
-        if (isOverBorder(r, c)) {
-            return Collections.emptyList();
-        }
-
+    public List<MazeCell> getNeighbors(String id) {
         List<MazeCell> result = new ArrayList<>();
-
-        for (String neighborId : getNeighborIds(r, c)) {
+        for (String neighborId : getNeighborIds(id)) {
             MazeCell cell = getMazeCell(neighborId);
-
             if (cell != null) {
                 result.add(cell);
             }
         }
-
         return result;
     }
 
     /**
-     * 获取所有可通行格子。
+     * 将图迷宫投影成二维状态网格，供方格可视化器使用。
      *
-     * <p>这个列表用于挑选起点和终点。它只关心格子状态，不检查图连通性；
-     * 如果后续希望保证起终点互相可达，可以在这里叠加连通分量判断。</p>
+     * <p>这份投影是给展示层看的，不是给算法层算邻接关系用的。
+     * 图迷宫真正的可通行关系仍然由边决定，而不是由这张二维网格决定。</p>
      */
-    private List<MazeCell> availableCells() {
-        List<MazeCell> result = new ArrayList<>();
+    public int[][] toCellTypeGrid() {
+        int[][] grid = new int[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                grid[r][c] = MazeCellType.WALL;
+            }
+        }
 
         data.getGraph().nodes().forEach(node -> {
             MazeCell cell = getMazeCell(node.getId());
+            if (cell != null && !isOverBorder(cell.getRow(), cell.getCol())) {
+                grid[cell.getRow()][cell.getCol()] = cell.getType();
+            }
+        });
+        return grid;
+    }
 
-            if (cell != null && cell.getType() != MazeConstant.WALL) {
+    /**
+     * 判断布局坐标是否越界。
+     *
+     * <p>它只用于布局合法性检查，不代表图搜索中的“节点存在性”判断。</p>
+     */
+    public boolean isOverBorder(int r, int c) {
+        return r < 0 || r >= rows || c < 0 || c >= cols;
+    }
+
+    /**
+     * 收集所有当前可通行的节点。
+     *
+     * <p>它常用于随机选择起点和终点。这里只看节点状态，不额外检查图连通分量。</p>
+     */
+    private List<MazeCell> availableCells() {
+        List<MazeCell> result = new ArrayList<>();
+        data.getGraph().nodes().forEach(node -> {
+            MazeCell cell = getMazeCell(node.getId());
+            if (cell != null && cell.getType() != MazeCellType.WALL) {
                 result.add(cell);
             }
         });
-
         return result;
     }
 
     /**
-     * 如果格子仍是墙，则标记为道路。
+     * 如果节点当前还是墙，则把它标记为道路。
+     *
+     * <p>这个小步骤能保证“设置起点/终点”或“连边打通通道”不会发生语义冲突：
+     * 先可通行，再谈特殊角色。</p>
      */
-    private void markAsRoadIfWall(int r, int c) {
-        MazeCell cell = getMazeCell(r, c);
-
-        if (cell != null && cell.getType() == MazeConstant.WALL) {
-            cell.setType(MazeConstant.ROAD);
+    private void markAsRoadIfWall(String id) {
+        MazeCell cell = getMazeCell(id);
+        if (cell != null && cell.getType() == MazeCellType.WALL) {
+            cell.setType(MazeCellType.ROAD);
         }
     }
 
     /**
-     * 判断两个坐标是否四方向相邻。
+     * 判断两个节点在布局坐标上是否四方向相邻。
+     *
+     * <p>虽然主接口已经改成图语义，但当前图迷宫仍然沿用方格布局，
+     * 所以连接两个节点前仍需要这层几何约束校验。</p>
      */
-    private boolean isAdjacent(int r1, int c1, int r2, int c2) {
-        int dr = Math.abs(r1 - r2);
-        int dc = Math.abs(c1 - c2);
-
+    private boolean isAdjacent(MazeCell a, MazeCell b) {
+        int dr = Math.abs(a.getRow() - b.getRow());
+        int dc = Math.abs(a.getCol() - b.getCol());
         return dr + dc == 1;
     }
 
     /**
      * 查询两个节点之间的边。
+     *
+     * <p>这是多个图语义方法的底层公共查询入口，例如“是否连通”和“边权是多少”。</p>
      */
     private Edge getEdgeBetween(String fromId, String toId) {
         Node from = data.getGraph().getNode(fromId);
-
         if (from == null || data.getGraph().getNode(toId) == null) {
             return null;
         }
-
         return from.edges()
                 .filter(edge -> edge.getOpposite(from).getId().equals(toId))
                 .findFirst()
@@ -653,7 +651,7 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
     }
 
     /**
-     * 清理现有起点和终点。
+     * 同时清理旧起点和旧终点。
      */
     private void clearStartAndEnd() {
         clearOldStart();
@@ -661,36 +659,30 @@ public class GraphMaze extends BaseMaze<BaseGraph<MazeCell>> {
     }
 
     /**
-     * 清理旧起点。
+     * 清理旧起点状态。
      */
     private void clearOldStart() {
         if (startId == null) {
             return;
         }
-
         MazeCell oldStart = getMazeCell(startId);
-
-        if (oldStart != null && oldStart.getType() == MazeConstant.START) {
-            oldStart.setType(MazeConstant.ROAD);
+        if (oldStart != null && oldStart.getType() == MazeCellType.START) {
+            oldStart.setType(MazeCellType.ROAD);
         }
-
         startId = null;
     }
 
     /**
-     * 清理旧终点。
+     * 清理旧终点状态。
      */
     private void clearOldEnd() {
         if (endId == null) {
             return;
         }
-
         MazeCell oldEnd = getMazeCell(endId);
-
-        if (oldEnd != null && oldEnd.getType() == MazeConstant.END) {
-            oldEnd.setType(MazeConstant.ROAD);
+        if (oldEnd != null && oldEnd.getType() == MazeCellType.END) {
+            oldEnd.setType(MazeCellType.ROAD);
         }
-
         endId = null;
     }
 }

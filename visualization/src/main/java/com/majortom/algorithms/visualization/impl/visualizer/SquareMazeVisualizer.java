@@ -2,7 +2,8 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 
 import java.util.LinkedList;
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
+import com.majortom.algorithms.core.maze.constants.MazeDefaults;
 import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.base.BaseMazeVisualizer;
 import javafx.scene.paint.Color;
@@ -11,7 +12,7 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
 
     private final LinkedList<int[]> armyQueue = new LinkedList<>();
     private static final int MAX_ARMY_SIZE = 6;
-    private int lastTerrain = MazeConstant.ROAD;
+    private int lastTerrain = MazeDefaults.DEFAULT_TERRAIN;
     private long skirmishStartTime = 0;
     private long operationAccentUntilMillis = 0L;
     private String operationLabel = "";
@@ -37,35 +38,35 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
         double monSize = Math.min(w, h) * 0.5;
 
         switch (type) {
-            case MazeConstant.WALL -> {
+            case MazeCellType.WALL -> {
                 gc.setFill(RAN_WALL_STONE);
                 gc.fillRect(x, y, w, h);
-                drawClanMon(cx, cy, monSize, MazeConstant.WALL, RAN_ENEMY_RUST.deriveColor(0, 1, 1, 0.5));
+                drawClanMon(cx, cy, monSize, MazeCellType.WALL, RAN_ENEMY_RUST.deriveColor(0, 1, 1, 0.5));
             }
-            case MazeConstant.START -> {
+            case MazeCellType.START -> {
                 gc.setFill(RAN_WHITE);
                 gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
-                drawClanMon(cx, cy, monSize * 1.2, MazeConstant.START, RAN_BLACK);
+                drawClanMon(cx, cy, monSize * 1.2, MazeCellType.START, RAN_BLACK);
             }
-            case MazeConstant.END -> {
+            case MazeCellType.END -> {
                 gc.setFill(RAN_VIOLET.saturate());
                 gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
-                drawClanMon(cx, cy, monSize * 1.2, MazeConstant.END, RAN_WHITE);
+                drawClanMon(cx, cy, monSize * 1.2, MazeCellType.END, RAN_WHITE);
             }
-            case MazeConstant.ROAD -> {
+            case MazeCellType.ROAD -> {
                 gc.setFill(RAN_BLUE.deriveColor(0, 1.2, 1.0, 0.45));
                 gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
-                drawClanMon(cx, cy, monSize * 1.2, MazeConstant.ROAD, RAN_BLUE.saturate());
+                drawClanMon(cx, cy, monSize * 1.2, MazeCellType.ROAD, RAN_BLUE.saturate());
             }
-            case MazeConstant.PATH -> {
+            case MazeCellType.PATH -> {
                 gc.setFill(RAN_RED.saturate());
                 gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
-                drawClanMon(cx, cy, monSize * 1.2, MazeConstant.PATH, Color.rgb(40, 0, 0, 0.95));
+                drawClanMon(cx, cy, monSize * 1.2, MazeCellType.PATH, Color.rgb(40, 0, 0, 0.95));
             }
-            case MazeConstant.BACKTRACK, MazeConstant.DEADEND -> {
+            case MazeCellType.BACKTRACK, MazeCellType.DEADEND -> {
                 gc.setFill(RAN_YELLOW.saturate());
                 gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
-                drawClanMon(cx, cy, monSize * 1.2, MazeConstant.BACKTRACK, Color.rgb(80, 50, 0, 0.9));
+                drawClanMon(cx, cy, monSize * 1.2, MazeCellType.BACKTRACK, Color.rgb(80, 50, 0, 0.9));
             }
         }
     }
@@ -85,10 +86,10 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
 
         int[][] grid = getLastData().getData();
         int currentTerrain = grid[r][c];
-        boolean isBreaching = (currentTerrain == MazeConstant.WALL);
+        boolean isBreaching = (currentTerrain == MazeCellType.WALL);
         long now = System.currentTimeMillis();
 
-        if (isBreaching && lastTerrain != MazeConstant.WALL) {
+        if (isBreaching && lastTerrain != MazeCellType.WALL) {
             skirmishStartTime = now;
         }
         lastTerrain = currentTerrain;
@@ -118,7 +119,7 @@ public class SquareMazeVisualizer extends BaseMazeVisualizer<BaseMaze<int[][]>> 
 
         applyFocusEffect();
 
-        boolean shaking = (currentTerrain == MazeConstant.WALL || currentTerrain == MazeConstant.BACKTRACK);
+        boolean shaking = (currentTerrain == MazeCellType.WALL || currentTerrain == MazeCellType.BACKTRACK);
         double wobble = shaking ? Math.sin(now * 0.05) * 1.5 : 0;
 
         Color kabutoBaseColor = isBreaching ? RAN_BLOOD_VIVID : RAN_BLUE;

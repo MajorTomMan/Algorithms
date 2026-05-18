@@ -1,109 +1,90 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
+import com.majortom.algorithms.core.base.BaseStructure;
+import com.majortom.algorithms.core.maze.BaseMaze;
 import com.majortom.algorithms.core.maze.constants.MazeCellType;
 import com.majortom.algorithms.core.maze.constants.MazeDefaults;
 import com.majortom.algorithms.core.maze.impl.GraphMaze;
 import com.majortom.algorithms.core.maze.structure.MazeCell;
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationActionType;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 
 import javafx.scene.paint.Color;
 
-/**
- * 图结构迷宫可视化器。
- *
- * <p>本类直接消费 {@link GraphMaze} 快照，而不再复用二维数组迷宫的可视化基类。
- * 渲染时它通过 {@link GraphMaze#toCellTypeGrid()} 取得二维投影，
- * 因此画面仍是方格迷宫，但算法层保持完整的图语义。</p>
- */
-public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
+import java.util.LinkedList;
 
-    /**
-     * 焦点轨迹最多保留的历史节点数。
-     */
+/**
+ * 迷宫模块统一可视化器。
+ *
+ * <p>它服务于同一个“迷宫”模块下的两种底层结构：二维数组迷宫和图结构迷宫。
+ * 对控制器来说，两种结构都交给这一层渲染；对可视化器来说，数组迷宫直接按格子读取状态，
+ * 图迷宫则先读取节点布局信息或二维投影，再画出同样的方格外观。</p>
+ *
+ * <p>这样做的目的是把“模块入口统一”和“底层结构独立”同时保住：
+ * 用户仍然在迷宫模块里切换结构，算法层却不需要再把图迷宫塞回二维迷宫抽象。</p>
+ */
+public class MazeModuleVisualizer extends BaseVisualizer<BaseStructure<?>> {
+
     private static final int MAX_ARMY_SIZE = 6;
 
-    /**
-     * 最近一段焦点轨迹。
-     *
-     * <p>图算法在执行时通常会同步“当前所在节点”，这里把这些节点暂存起来，
-     * 再渲染成一段连续的行军轨迹，帮助学习者看清算法不是瞬移，而是在图中逐步扩展。</p>
-     */
-    private final java.util.LinkedList<MazeCell> armyQueue = new java.util.LinkedList<>();
-    /**
-     * 最近一次焦点所在格子的地形类型。
-     */
+    private final LinkedList<int[]> armyQueue = new LinkedList<>();
     private int lastTerrain = MazeDefaults.DEFAULT_TERRAIN;
-    /**
-     * 最近一次破墙/受阻视觉反馈开始时间。
-     */
     private long skirmishStartTime = 0;
 
-    /**
-     * 绘制当前图迷宫快照。
-     *
-     * <p>虽然结构层已经完全改成图语义，但这里仍然会把它投影成二维方格画面。
-     * 这样用户看到的是熟悉的迷宫视觉，而算法内部仍然保持纯图思维。</p>
-     *
-     * @param data 当前图迷宫快照
-     * @param a 主焦点，通常是节点 ID 或 {@link MazeCell}
-     * @param b 副焦点，目前图迷宫里通常留空
-     */
     @Override
-    protected void draw(GraphMaze data, Object a, Object b) {
+    protected void draw(BaseStructure<?> data, Object a, Object b) {
         clear();
         if (data == null) {
             return;
         }
 
-        double cellW = canvas.getWidth() / data.getCols();
-        double cellH = canvas.getHeight() / data.getRows();
+        int rows = getRows(data);
+        int cols = getCols(data);
+        if (rows <= 0 || cols <= 0) {
+            return;
+        }
+
+        double cellW = canvas.getWidth() / cols;
+        double cellH = canvas.getHeight() / rows;
+
         drawMaze(data, cellW, cellH);
         drawFocus(data, a, b, cellW, cellH);
         drawTransientFeedbackOverlay();
     }
 
     /**
-     * 响应控制器动作。
-     *
-     * <p>这里主要处理重置类事件，避免旧画面残留在新迷宫上。</p>
+     * 根据结构类型绘制迷宫主体。
      */
-    @Override
-    public void onControlAction(VisualizationEvent event) {
-        super.onControlAction(event);
-        if (event.actionType() == VisualizationActionType.EXECUTION_RESET) {
-            clear();
+    private void drawMaze(BaseStructure<?> data, double cellW, double cellH) {
+        if (data instanceof BaseMaze<?> maze) {
+            drawArrayBackedMaze(maze, cellW, cellH);
+            return;
+        }
+        if (data instanceof GraphMaze graphMaze) {
+            drawGraphBackedMaze(graphMaze, cellW, cellH);
         }
     }
 
     /**
-     * 重置可视化局部状态。
+     * 绘制数组迷宫。
      */
-    @Override
-    public void onVisualizationReset() {
-        clear();
-    }
-
-    /**
-     * 模块卸载时清空画面。
-     */
-    @Override
-    public void onModuleDetached(String moduleId) {
-        clear();
-    }
-
-    /**
-     * 绘制图迷宫主体。
-     *
-     * <p>这里先拿到结构层提供的二维投影，再按方格方式渲染。
-     * 这一步明确体现了职责边界：结构层负责“从图到网格”的数据投影，
-     * 可视化层负责“从网格到画面”的视觉表达。</p>
-     */
-    private void drawMaze(GraphMaze maze, double cellW, double cellH) {
-        int[][] grid = maze.toCellTypeGrid();
+    private void drawArrayBackedMaze(BaseMaze<?> maze, double cellW, double cellH) {
         for (int r = 0; r < maze.getRows(); r++) {
             for (int c = 0; c < maze.getCols(); c++) {
+                renderRanCell(r, c, cellW, cellH, maze.getCell(r, c));
+            }
+        }
+    }
+
+    /**
+     * 绘制图迷宫。
+     *
+     * <p>图迷宫不会直接暴露数组式邻接关系，因此这里读取结构层提供的二维投影，
+     * 只把它当成展示数据使用。</p>
+     */
+    private void drawGraphBackedMaze(GraphMaze graphMaze, double cellW, double cellH) {
+        int[][] grid = graphMaze.toCellTypeGrid();
+        for (int r = 0; r < graphMaze.getRows(); r++) {
+            for (int c = 0; c < graphMaze.getCols(); c++) {
                 renderRanCell(r, c, cellW, cellH, grid[r][c]);
             }
         }
@@ -112,25 +93,26 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
     /**
      * 绘制当前算法焦点。
      *
-     * <p>图算法同步焦点时，推荐直接传节点 ID 或 {@link MazeCell}。
-     * 本方法会把它统一解析成迷宫节点，再绘制头盔、高亮和轨迹。</p>
+     * <p>数组迷宫通常传入行列坐标；图迷宫更推荐传节点 ID 或 {@link MazeCell}。
+     * 这里统一把它们转换成布局坐标，再复用相同的焦点视觉。</p>
      */
-    private void drawFocus(GraphMaze maze, Object currA, Object currB, double w, double h) {
-        MazeCell focus = resolveFocusCell(maze, currA, currB);
-        if (focus == null) {
+    private void drawFocus(BaseStructure<?> data, Object currA, Object currB, double w, double h) {
+        int[] position = resolveFocusPosition(data, currA, currB);
+        if (position == null || isOverBorder(data, position[0], position[1])) {
             return;
         }
 
-        if (armyQueue.isEmpty()
-                || armyQueue.getLast().getRow() != focus.getRow()
-                || armyQueue.getLast().getCol() != focus.getCol()) {
-            armyQueue.add(focus);
+        int r = position[0];
+        int c = position[1];
+
+        if (armyQueue.isEmpty() || armyQueue.getLast()[0] != r || armyQueue.getLast()[1] != c) {
+            armyQueue.add(new int[] { r, c });
             if (armyQueue.size() > MAX_ARMY_SIZE) {
                 armyQueue.removeFirst();
             }
         }
 
-        int currentTerrain = focus.getType();
+        int currentTerrain = terrainAt(data, r, c);
         boolean isBreaching = currentTerrain == MazeCellType.WALL;
         long now = System.currentTimeMillis();
 
@@ -139,8 +121,8 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
         }
         lastTerrain = currentTerrain;
 
-        double x = getX(focus.getCol(), w);
-        double y = getY(focus.getRow(), h);
+        double x = getX(c, w);
+        double y = getY(r, h);
         double cx = x + w / 2;
         double cy = y + h / 2;
 
@@ -152,8 +134,10 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
         double wobble = shaking ? Math.sin(now * 0.05) * 1.5 : 0;
         Color kabutoBaseColor = isBreaching ? RAN_BLOOD_VIVID : RAN_BLUE;
 
-        gc.setFill(isBreaching ? RAN_BLOOD_VIVID.deriveColor(0, 1, 1, 0.3) : RAN_CYAN.deriveColor(0, 1, 1, 0.3));
+        gc.setFill(isBreaching ? RAN_BLOOD_VIVID.deriveColor(0, 1, 1, 0.3)
+                : RAN_CYAN.deriveColor(0, 1, 1, 0.3));
         gc.fillOval(cx - w * 0.4, cy - h * 0.4, w * 0.8, h * 0.8);
+
         drawKabuto(cx + wobble, cy, w, h, kabutoBaseColor);
 
         if (isBreaching) {
@@ -167,30 +151,76 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
     }
 
     /**
-     * 把算法传来的焦点对象解析成可绘制的迷宫节点。
-     *
-     * <p>这是图算法和可视化器之间的“小翻译器”：算法可以按自己顺手的方式传焦点，
-     * 可视化器负责在这里把它统一成 {@link MazeCell}。</p>
+     * 把焦点参数统一解析成布局坐标。
      */
-    private MazeCell resolveFocusCell(GraphMaze maze, Object currA, Object currB) {
-        if (maze == null) {
-            return null;
+    private int[] resolveFocusPosition(BaseStructure<?> data, Object currA, Object currB) {
+        if (currA instanceof Integer r && currB instanceof Integer c) {
+            return new int[] { r, c };
         }
-        if (currA instanceof MazeCell cell) {
-            return cell;
+        if (currA instanceof int[] position && position.length >= 2) {
+            return new int[] { position[0], position[1] };
         }
-        if (currA instanceof String id) {
-            return maze.getMazeCell(id);
+        if (data instanceof GraphMaze graphMaze) {
+            if (currA instanceof MazeCell cell) {
+                return new int[] { cell.getRow(), cell.getCol() };
+            }
+            if (currA instanceof String id) {
+                MazeCell cell = graphMaze.getMazeCell(id);
+                if (cell != null) {
+                    return new int[] { cell.getRow(), cell.getCol() };
+                }
+            }
         }
         return null;
     }
 
     /**
-     * 绘制单个投影格子。
-     *
-     * <p>参数 {@code type} 来自图迷宫的二维投影，不直接来自二维数组结构。
-     * 因此这里画的是“图迷宫的方格外观”，而不是二维数组迷宫本体。</p>
+     * 读取指定布局坐标上的当前地形。
      */
+    private int terrainAt(BaseStructure<?> data, int r, int c) {
+        if (data instanceof BaseMaze<?> maze) {
+            return maze.getCell(r, c);
+        }
+        if (data instanceof GraphMaze graphMaze) {
+            MazeCell cell = graphMaze.getMazeCell(r, c);
+            return cell == null ? MazeCellType.WALL : cell.getType();
+        }
+        return MazeCellType.WALL;
+    }
+
+    /**
+     * 判断布局坐标是否越界。
+     */
+    private boolean isOverBorder(BaseStructure<?> data, int r, int c) {
+        if (data instanceof BaseMaze<?> maze) {
+            return maze.isOverBorder(r, c);
+        }
+        if (data instanceof GraphMaze graphMaze) {
+            return graphMaze.isOverBorder(r, c);
+        }
+        return true;
+    }
+
+    private int getRows(BaseStructure<?> data) {
+        if (data instanceof BaseMaze<?> maze) {
+            return maze.getRows();
+        }
+        if (data instanceof GraphMaze graphMaze) {
+            return graphMaze.getRows();
+        }
+        return 0;
+    }
+
+    private int getCols(BaseStructure<?> data) {
+        if (data instanceof BaseMaze<?> maze) {
+            return maze.getCols();
+        }
+        if (data instanceof GraphMaze graphMaze) {
+            return graphMaze.getCols();
+        }
+        return 0;
+    }
+
     private void renderRanCell(int r, int c, double w, double h, int type) {
         double x = getX(c, w);
         double y = getY(r, h);
@@ -230,25 +260,20 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
                 drawClanMon(cx, cy, monSize * 1.2, MazeCellType.BACKTRACK, Color.rgb(80, 50, 0, 0.9));
             }
             default -> {
-                gc.setFill(RAN_BLUE.deriveColor(0, 1, 1, 0.22));
-                gc.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
+                gc.setFill(RAN_WALL_STONE);
+                gc.fillRect(x, y, w, h);
             }
         }
     }
 
-    /**
-     * 绘制焦点轨迹。
-     *
-     * <p>这段轨迹不参与算法，只服务教学：它帮助用户把一串离散的执行帧看成连续的移动过程。</p>
-     */
     private void renderArmyQueue(double w, double h) {
         for (int i = 0; i < armyQueue.size() - 1; i++) {
-            MazeCell cell = armyQueue.get(i);
+            int[] pos = armyQueue.get(i);
             double alpha = 0.5 + ((double) i / armyQueue.size() * 0.5);
             gc.setGlobalAlpha(alpha);
 
-            double qX = getX(cell.getCol(), w);
-            double qY = getY(cell.getRow(), h);
+            double qX = getX(pos[1], w);
+            double qY = getY(pos[0], h);
             gc.setFill(RAN_CYAN.deriveColor(0, 1, 1, 0.2));
             gc.fillOval(qX + w * 0.2, qY + h * 0.2, w * 0.6, h * 0.6);
             renderArmyFlag(qX, qY, w, h, i);
@@ -256,23 +281,14 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
         gc.setGlobalAlpha(1.0);
     }
 
-    /**
-     * 根据列号计算方格左上角 X 坐标。
-     */
     private double getX(int col, double cellW) {
         return col * cellW;
     }
 
-    /**
-     * 根据行号计算方格左上角 Y 坐标。
-     */
     private double getY(int row, double cellH) {
         return row * cellH;
     }
 
-    /**
-     * 绘制焦点位置的头盔符号。
-     */
     private void drawKabuto(double cx, double cy, double w, double h, Color baseColor) {
         double s = Math.min(w, h) * 0.85;
         gc.setFill(RAN_BLACK.deriveColor(0, 1, 0.25, 1.0));
@@ -319,9 +335,6 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
         gc.fillOval(rightHornX - 2, rightHornY - 2, 4, 4);
     }
 
-    /**
-     * 绘制轨迹中的旗帜标记。
-     */
     private void renderArmyFlag(double x, double y, double w, double h, int idx) {
         double poleX = x + w * 0.75;
         double wave = Math.sin(System.currentTimeMillis() * 0.015 + idx) * (w * 0.15);
@@ -335,26 +348,39 @@ public class GraphMazeVisualizer extends BaseVisualizer<GraphMaze> {
                 new double[] { poleX + 2, poleX - w * 0.5 + wave + 2, poleX + 2 },
                 new double[] { y + h * 0.15 + 2, y + h * 0.4 + 2, y + h * 0.65 + 2 }, 3);
 
-        gc.setFill(RAN_RED.deriveColor(0, 1, 1, 0.85));
+        gc.setFill(RAN_CYAN.interpolate(RAN_WHITE, 0.5));
+        gc.setGlobalAlpha(1.0);
         gc.fillPolygon(
                 new double[] { poleX, poleX - w * 0.5 + wave, poleX },
-                new double[] { y + h * 0.15, y + h * 0.4, y + h * 0.65 }, 3);
+                new double[] { y + h * 0.1, y + h * 0.4, y + h * 0.7 }, 3);
+
+        gc.setStroke(RAN_GOLD);
+        gc.setLineWidth(1.0);
+        gc.strokePolygon(
+                new double[] { poleX, poleX - w * 0.5 + wave, poleX },
+                new double[] { y + h * 0.1, y + h * 0.4, y + h * 0.7 }, 3);
     }
 
-    /**
-     * 绘制破墙/受阻时的火花特效。
-     */
     private void drawCombatSparks(double cx, double cy, double w, double h, long now) {
         gc.setStroke(RAN_GOLD);
         gc.setLineWidth(2.0);
-        double radius = Math.min(w, h) * 0.4;
+        double skirmishDuration = (now - skirmishStartTime) / 1000.0;
+        double intensity = Math.max(0, 1.0 - skirmishDuration);
+
         for (int i = 0; i < 6; i++) {
-            double angle = now * 0.01 + i * Math.PI / 3;
-            double x1 = cx + Math.cos(angle) * radius * 0.5;
-            double y1 = cy + Math.sin(angle) * radius * 0.5;
-            double x2 = cx + Math.cos(angle) * radius;
-            double y2 = cy + Math.sin(angle) * radius;
-            gc.strokeLine(x1, y1, x2, y2);
+            double angle = (now * 0.6 + i * 60) % 360;
+            double rad = Math.toRadians(angle);
+            double len = w * (0.4 + intensity * 0.2) + Math.random() * 5;
+            gc.strokeLine(cx + Math.cos(rad) * w * 0.15, cy + Math.sin(rad) * h * 0.15,
+                    cx + Math.cos(rad) * len, cy + Math.sin(rad) * len);
+        }
+
+        gc.setFill(RAN_ENEMY_RUST);
+        for (int i = 0; i < 4; i++) {
+            double rx = cx + (Math.random() - 0.5) * w * 0.9;
+            double ry = cy + (Math.random() - 0.5) * h * 0.9;
+            double size = 2 + Math.random() * 1.5;
+            gc.fillOval(rx, ry, size, size);
         }
     }
 }

@@ -12,7 +12,7 @@ import com.majortom.algorithms.core.runtime.ExecutionContext;
  *
  * @param <T> 迷宫内部数据类型，例如 int[][] 或图结构
  */
-public abstract class BaseMazeAlgorithms<T> extends BaseAlgorithms<BaseMaze<T>> {
+public abstract class BaseArrayMazeAlgorithms<T> extends BaseAlgorithms<BaseMaze<T>> {
 
     /**
      * 当前算法绑定的迷宫实体。

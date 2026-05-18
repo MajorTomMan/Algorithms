@@ -1,7 +1,7 @@
 package com.majortom.algorithms.core.maze.impl;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +39,7 @@ public class ArrayMaze extends BaseMaze<int[][]> {
 
     @Override
     public int getCell(int r, int c) {
-        return isOverBorder(r, c) ? MazeConstant.WALL : data[r][c];
+        return isOverBorder(r, c) ? MazeCellType.WALL : data[r][c];
     }
 
     public void setGenerated(boolean generated) {
@@ -58,23 +58,23 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         do {
             startR = rand.nextInt(rows);
             startC = rand.nextInt(cols);
-        } while (getCell(startR, startC) != MazeConstant.ROAD);
+        } while (getCell(startR, startC) != MazeCellType.ROAD);
 
         // 寻找终点
         do {
             endR = rand.nextInt(rows);
             endC = rand.nextInt(cols);
-        } while (getCell(endR, endC) != MazeConstant.ROAD || (endR == startR && endC == startC));
+        } while (getCell(endR, endC) != MazeCellType.ROAD || (endR == startR && endC == startC));
 
-        setCellState(startR, startC, MazeConstant.START, false);
-        setCellState(endR, endC, MazeConstant.END, false);
+        setCellState(startR, startC, MazeCellType.START, false);
+        setCellState(endR, endC, MazeCellType.END, false);
     }
 
     @Override
     public void initialSilent() {
         this.isGenerated = false;
         for (int i = 0; i < rows; i++) {
-            Arrays.fill(this.data[i], MazeConstant.WALL);
+            Arrays.fill(this.data[i], MazeCellType.WALL);
         }
 
         this.compareCount = 0;
@@ -85,7 +85,7 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         int count = 0;
         for (int[] row : data) {
             for (int cell : row) {
-                if (cell == MazeConstant.ROAD)
+                if (cell == MazeCellType.ROAD)
                     count++;
                 if (count >= 2)
                     return true;
@@ -99,8 +99,8 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 int state = data[i][j];
-                if (state != MazeConstant.WALL && state != MazeConstant.START && state != MazeConstant.END) {
-                    data[i][j] = MazeConstant.ROAD;
+                if (state != MazeCellType.WALL && state != MazeCellType.START && state != MazeCellType.END) {
+                    data[i][j] = MazeCellType.ROAD;
                 }
             }
         }
@@ -114,8 +114,8 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 int currentState = data[r][c];
-                if (currentState != MazeConstant.WALL) {
-                    data[r][c] = MazeConstant.ROAD;
+                if (currentState != MazeCellType.WALL) {
+                    data[r][c] = MazeCellType.ROAD;
                     roads.add(new int[] { r, c });
                 }
             }
@@ -128,8 +128,8 @@ public class ArrayMaze extends BaseMaze<int[][]> {
         int[] s = roads.get(0);
         int[] e = roads.get(1);
 
-        setCellState(s[0], s[1], MazeConstant.START, false);
-        setCellState(e[0], e[1], MazeConstant.END, false);
+        setCellState(s[0], s[1], MazeCellType.START, false);
+        setCellState(e[0], e[1], MazeCellType.END, false);
     }
 
     @Override
