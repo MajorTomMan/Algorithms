@@ -1,6 +1,6 @@
 package com.majortom.algorithms.core.maze.structure;
 
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,9 +34,9 @@ public class MazeCell {
     /**
      * 单元格类型，默认是墙。
      *
-     * <p>类型值来自 {@link MazeConstant}。算法修改这个字段后，可视化器会根据类型绘制墙、道路、路径、起点或终点。</p>
+     * <p>类型值来自 {@link MazeCellType}。算法修改这个字段后，可视化器会根据类型绘制墙、道路、路径、起点或终点。</p>
      */
-    private int type = MazeConstant.WALL; // 默认是墙
+    private int type = MazeCellType.WALL; // 默认是墙
 
     /**
      * 通行代价，供 A*、Dijkstra 等带权寻路算法使用。

@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.core.base.BaseStructure;
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -305,7 +305,7 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
      *
      * @param my          中心点Y
      * @param size        家纹大小
-     * @param type        MazeConstant 中定义的单元格类型
+     * @param type        {@link MazeCellType} 中定义的单元格类型
      * @param strokeColor 线条颜色 (刻痕色)
      */
     protected void drawClanMon(double mx, double my, double size, int type, Color strokeColor) {
@@ -313,28 +313,28 @@ public abstract class BaseVisualizer<S extends BaseStructure<?>> extends StackPa
         gc.setLineWidth(Math.max(1.2, size * 0.15));
 
         switch (type) {
-            case MazeConstant.PATH -> {
+            case MazeCellType.PATH -> {
                 // 大郎红：正统圆
                 gc.strokeOval(mx - size / 2, my - size / 2, size, size);
             }
-            case MazeConstant.ROAD -> {
+            case MazeCellType.ROAD -> {
                 // 二郎蓝：一文字横线
                 gc.strokeLine(mx - size * 0.45, my, mx + size * 0.45, my);
             }
-            case MazeConstant.BACKTRACK, MazeConstant.DEADEND -> {
+            case MazeCellType.BACKTRACK, MazeCellType.DEADEND -> {
                 // 三郎黄：三角
                 double h = size * 0.866;
                 gc.strokePolygon(
                         new double[] { mx, mx - size / 2, mx + size / 2 },
                         new double[] { my - h / 2, my + h / 2, my + h / 2 }, 3);
             }
-            case MazeConstant.WALL -> {
+            case MazeCellType.WALL -> {
                 // 敌方墙壁：十字纹
                 double offset = size * 0.35;
                 gc.strokeLine(mx - offset, my - offset, mx + offset, my + offset);
                 gc.strokeLine(mx + offset, my - offset, mx - offset, my + offset);
             }
-            case MazeConstant.START, MazeConstant.END -> {
+            case MazeCellType.START, MazeCellType.END -> {
                 // 起止点：同心圆
                 gc.strokeOval(mx - size / 2, my - size / 2, size, size);
                 gc.strokeOval(mx - size / 4, my - size / 4, size / 2, size / 2);

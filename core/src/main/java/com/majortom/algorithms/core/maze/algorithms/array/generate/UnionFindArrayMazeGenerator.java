@@ -1,9 +1,9 @@
-package com.majortom.algorithms.core.maze.algorithms.generate;
+package com.majortom.algorithms.core.maze.algorithms.array.generate;
 
 import com.majortom.algorithms.core.basic.UnionFind;
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
-import com.majortom.algorithms.core.maze.constants.MazeConstant;
+import com.majortom.algorithms.core.maze.BaseArrayMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeCellType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 基于并查集的迷宫生成算法 (Kruskal's Algorithm)
  */
-public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
+public class UnionFindArrayMazeGenerator extends BaseArrayMazeAlgorithms<int[][]> {
 
     private UnionFind uf;
 
@@ -33,7 +33,7 @@ public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
         for (int r = 1; r < rows - 1; r++) {
             for (int c = 1; c < cols - 1; c++) {
                 if (r % 2 != 0 && c % 2 != 0) {
-                    maze.setCellState(r, c, MazeConstant.ROAD, false);
+                    maze.setCellState(r, c, MazeCellType.ROAD, false);
                 } else if ((r % 2 == 0 && c % 2 != 0) || (r % 2 != 0 && c % 2 == 0)) {
                     walls.add(new int[] { r, c });
                 }
@@ -60,7 +60,7 @@ public class UnionFindMazeGenerator extends BaseMazeAlgorithms<int[][]> {
 
             if (!uf.connected(p1, p2)) {
                 uf.union(p1, p2);
-                maze.setCellState(wr, wc, MazeConstant.ROAD, true);
+                maze.setCellState(wr, wc, MazeCellType.ROAD, true);
             }
         }
     }

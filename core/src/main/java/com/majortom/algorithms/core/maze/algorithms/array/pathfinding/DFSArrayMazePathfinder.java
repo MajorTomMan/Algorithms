@@ -1,17 +1,18 @@
-package com.majortom.algorithms.core.maze.algorithms.pathfinding;
+package com.majortom.algorithms.core.maze.algorithms.array.pathfinding;
 
 import com.majortom.algorithms.core.maze.BaseMaze;
-import com.majortom.algorithms.core.maze.BaseMazeAlgorithms;
-import static com.majortom.algorithms.core.maze.constants.MazeConstant.*;
+import com.majortom.algorithms.core.maze.BaseArrayMazeAlgorithms;
+import com.majortom.algorithms.core.maze.constants.MazeDirections;
+
+import static com.majortom.algorithms.core.maze.constants.MazeCellType.*;
 
 /**
  * 深度优先搜索 (DFS) 寻路算法 (利落重构版)
  * 职责：利用递归回溯实现路径探索。
  * 视觉特征：展示“盲目探索 -> 发现死路回退 -> 最终路径高亮”的完整过程。
  */
-public class DFSMazePathfinder extends BaseMazeAlgorithms<int[][]> {
+public class DFSArrayMazePathfinder extends BaseArrayMazeAlgorithms<int[][]> {
 
-    private final int[][] dirs = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
     private boolean found = false;
 
     @Override
@@ -69,7 +70,7 @@ public class DFSMazePathfinder extends BaseMazeAlgorithms<int[][]> {
             maze.setCellState(r, c, PATH, true);
         }
 
-        for (int[] d : dirs) {
+        for (int[] d : MazeDirections.CARDINAL_DIRECTIONS) {
             int nextR = r + d[0];
             int nextC = c + d[1];
 

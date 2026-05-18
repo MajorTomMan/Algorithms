@@ -31,9 +31,11 @@ import java.util.ResourceBundle;
 /**
  * 主界面控制器。
  *
- * <p>它负责装配全局 UI：模块菜单、可视化容器、统计面板、日志面板和全局执行按钮。
+ * <p>
+ * 它负责装配全局 UI：模块菜单、可视化容器、统计面板、日志面板和全局执行按钮。
  * 具体算法逻辑不在这里执行，而是通过 {@link ModuleRegistry} 创建当前模块的
- * {@link BaseController} 子控制器，再把共享控件注入进去。</p>
+ * {@link BaseController} 子控制器，再把共享控件注入进去。
+ * </p>
  */
 public class MainController implements Initializable {
 
@@ -83,7 +85,7 @@ public class MainController implements Initializable {
     /**
      * JavaFX 初始化入口。
      *
-     * @param location FXML 地址
+     * @param location  FXML 地址
      * @param resources 国际化资源
      */
     @Override
@@ -161,7 +163,8 @@ public class MainController implements Initializable {
         if (currentSubController != null) {
             currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
         }
-        moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
+        moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(
+                javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
     }
 
     /**
