@@ -6,7 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AlgorithmsServerApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(AlgorithmsServerApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(AlgorithmsServerApplication.class, args);
+	}
+
 }
