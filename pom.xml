@@ -11,9 +11,10 @@
 
     <modules>
         <module>core</module>
-        <module>visualization</module>
-        <module>sandbox</module>
-        <module>launcher</module>
+        <module>algorithms</module>
+        <module>client</module>
+        <module>server</module>
+        <module>other</module>
     </modules>
 
     <properties>
@@ -26,5 +27,18 @@
         <algs4.version>1.0.4</algs4.version>
         <jackson.version>2.17.2</jackson.version>
         <junit.version>5.10.2</junit.version>
+        <spring-boot.version>4.1.0</spring-boot.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

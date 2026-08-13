@@ -1,0 +1,290 @@
+package com.majortom.algorithms.visualization.impl.controller;
+
+import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.BaseController;
+import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.VisualizationActionType;
+import com.majortom.algorithms.visualization.VisualizationEvent;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
+import com.majortom.algorithms.visualization.module.ModuleRegistry;
+
+import javafx.beans.binding.Bindings;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+
+import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.ResourceBundle;
+
+/**
+ * 主界面控制器。
+ *
+ * <p>
+ * 它负责装配全局 UI：模块菜单、可视化容器、统计面板、日志面板和全局执行按钮。
+ * 具体算法逻辑不在这里执行，而是通过 {@link ModuleRegistry} 创建当前模块的
+ * {@link BaseController} 子控制器，再把共享控件注入进去。
+ * </p>
+ */
+public class MainController implements Initializable {
+
+    @FXML
+    private StackPane visualizationContainer;
+    @FXML
+    private HBox customControlBox;
+    @FXML
+    private VBox moduleMenuBox;
+    @FXML
+    private Label menuTitleLabel;
+    @FXML
+    private Label statsTitleLabel;
+    @FXML
+    private Label logTitleLabel;
+    @FXML
+    private Label statsLabel;
+    @FXML
+    private Label delayLabel;
+    @FXML
+    private Label timelineLabel;
+    @FXML
+    private TextArea logArea;
+    @FXML
+    private Button startBtn;
+    @FXML
+    private Button pauseBtn;
+    @FXML
+    private Button resetBtn;
+    @FXML
+    private Button replayBtn;
+    @FXML
+    private Button exportBtn;
+    @FXML
+    private Button compareBtn;
+    @FXML
+    private Button langBtn;
+    @FXML
+    private Slider delaySlider;
+    @FXML
+    private Slider timelineSlider;
+
+    private BaseController<?> currentSubController;
+    private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
+    private final Map<String, Button> moduleButtons = new LinkedHashMap<>();
+
+    /**
+     * JavaFX 初始化入口。
+     *
+     * @param location  FXML 地址
+     * @param resources 国际化资源
+     */
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        if (resources != null) {
+            I18N.setLocale(resources.getLocale());
+        }
+
+        setupI18n();
+        setupModuleMenu();
+        setupGlobalEffects();
+
+        if (!moduleDefinitions.isEmpty()) {
+            switchToModule(moduleDefinitions.getFirst());
+        }
+
+        appendSystemLog(I18N.text("message.system.initialized"));
+    }
+
+    /**
+     * 绑定主界面固定文案和暂停按钮动态文案。
+     */
+    private void setupI18n() {
+        menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
+        statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.stats"));
+        logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        startBtn.textProperty().bind(I18N.createStringBinding("action.execution.start"));
+        resetBtn.textProperty().bind(I18N.createStringBinding("action.execution.reset"));
+        replayBtn.textProperty().bind(I18N.createStringBinding("action.execution.replay"));
+        exportBtn.textProperty().bind(I18N.createStringBinding("action.execution.export"));
+        compareBtn.textProperty().bind(I18N.createStringBinding("action.execution.compare"));
+        delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
+        timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline"));
+
+        I18N.localeProperty().addListener((observable, oldValue, newValue) -> refreshPauseText());
+        refreshPauseText();
+    }
+
+    /**
+     * 根据模块注册表创建左侧模块菜单。
+     */
+    private void setupModuleMenu() {
+        moduleMenuBox.getChildren().clear();
+        moduleButtons.clear();
+
+        for (AlgorithmModuleDefinition definition : moduleDefinitions) {
+            Button button = new Button();
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.getStyleClass().add("menu-button");
+            button.getStyleClass().add("module-button");
+            button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
+            button.textProperty().bind(I18N.createStringBinding(definition.labelKey()));
+            button.setOnAction(event -> switchToModule(definition));
+            moduleMenuBox.getChildren().add(button);
+            moduleButtons.put(definition.id(), button);
+        }
+    }
+
+    /**
+     * 给主界面按钮安装统一动效。
+     */
+    private void setupGlobalEffects() {
+        EffectUtils.applyDynamicEffect(startBtn, pauseBtn, resetBtn, replayBtn, exportBtn, compareBtn, langBtn);
+    }
+
+    /**
+     * 切换到指定模块。
+     *
+     * @param definition 模块定义
+     */
+    private void switchToModule(AlgorithmModuleDefinition definition) {
+        loadSubController(definition.controllerFactory().get());
+        if (currentSubController != null) {
+            currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
+        }
+        moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(
+                javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
+    }
+
+    /**
+     * 加载子控制器并接入可视化区域。
+     *
+     * @param newController 新模块控制器
+     */
+    private void loadSubController(BaseController<?> newController) {
+        if (currentSubController != null) {
+            BaseVisualizer<?> previousVisualizer = currentSubController.getVisualizer();
+            if (previousVisualizer != null) {
+                previousVisualizer.prefWidthProperty().unbind();
+                previousVisualizer.prefHeightProperty().unbind();
+            }
+            currentSubController.dispatchVisualizerDetached();
+        }
+        visualizationContainer.getChildren().clear();
+        customControlBox.getChildren().clear();
+
+        newController.setUIReferences(
+                statsLabel,
+                logArea,
+                delaySlider,
+                timelineSlider,
+                customControlBox,
+                startBtn,
+                pauseBtn,
+                resetBtn,
+                replayBtn,
+                exportBtn,
+                compareBtn);
+
+        this.currentSubController = newController;
+        this.currentSubController.pausedProperty().addListener(
+                (observable, oldValue, newValue) -> refreshPauseText());
+        this.currentSubController.dispatchVisualizerAttached();
+
+        BaseVisualizer<?> visualizer = newController.getVisualizer();
+        if (visualizer != null) {
+            visualizer.prefWidthProperty().bind(visualizationContainer.widthProperty());
+            visualizer.prefHeightProperty().bind(visualizationContainer.heightProperty());
+            visualizationContainer.getChildren().add(visualizer);
+        }
+
+        newController.setupCustomControls(customControlBox);
+    }
+
+    /**
+     * 切换界面语言。
+     */
+    @FXML
+    private void toggleLanguage() {
+        if (currentSubController != null) {
+            currentSubController.dispatchVisualizerEvent(mainEvent(VisualizationActionType.LANGUAGE_TOGGLE));
+        }
+        Locale newLocale = Locale.CHINESE;
+        if (I18N.getLocale().getLanguage().equals("zh")) {
+            newLocale = Locale.ENGLISH;
+        }
+        I18N.setLocale(newLocale);
+        appendSystemLog(I18N.text("message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+    }
+
+    /**
+     * 向系统日志追加文本。
+     *
+     * @param msg 日志文本
+     */
+    private void appendSystemLog(String msg) {
+        if (logArea != null) {
+            logArea.appendText("System: " + msg + "\n");
+        }
+    }
+
+    /**
+     * 根据模块 ID 选择菜单按钮强调色。
+     *
+     * @param moduleId 模块 ID
+     * @return CSS class 名称
+     */
+    private String moduleAccentStyleClass(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> "btn-ran-blue";
+            case "maze" -> "btn-ran-red";
+            case "tree" -> "btn-ran-gold";
+            case "graph" -> "btn-ran-purple";
+            default -> "btn-ran-blue";
+        };
+    }
+
+    private VisualizationActionType moduleSwitchAction(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> VisualizationActionType.MODULE_SORT;
+            case "maze" -> VisualizationActionType.MODULE_MAZE;
+            case "tree" -> VisualizationActionType.MODULE_TREE;
+            case "graph" -> VisualizationActionType.MODULE_GRAPH;
+            default -> VisualizationActionType.MODULE_SORT;
+        };
+    }
+
+    private VisualizationEvent mainEvent(VisualizationActionType actionType) {
+        String moduleId = "unknown";
+        boolean running = false;
+        boolean paused = false;
+        if (currentSubController != null) {
+            moduleId = currentSubController.getModuleId();
+            running = currentSubController.isRunning();
+            paused = currentSubController.isPaused();
+        }
+        return VisualizationEvent.of(
+                actionType,
+                moduleId,
+                getClass().getSimpleName(),
+                running,
+                paused);
+    }
+
+    private void refreshPauseText() {
+        boolean paused = currentSubController != null && currentSubController.isPaused();
+        String key = "action.execution.pause";
+        if (paused) {
+            key = "action.execution.resume";
+        }
+        pauseBtn.setText(I18N.text(key));
+    }
+}

@@ -14,16 +14,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.graphstream</groupId>
-            <artifactId>gs-core</artifactId>
-            <version>${graphstream.version}</version>
-        </dependency>
-        <!-- Source: https://mvnrepository.com/artifact/org.projectlombok/lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.46</version>
-            <scope>compile</scope>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
