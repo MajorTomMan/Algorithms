@@ -58,6 +58,15 @@ public final class RecordingEventSink implements EventSink {
         return new ExecutionRecording(runId, algorithmId, state, statistics, events);
     }
 
+    /** Creates a snapshot with host timing and resource data supplied by the caller. */
+    public synchronized ExecutionRecording snapshot(ExecutionSummary summary) {
+        if (events.isEmpty()) {
+            throw new IllegalStateException("Cannot snapshot an empty execution recording");
+        }
+        Objects.requireNonNull(summary, "summary");
+        return new ExecutionRecording(runId, algorithmId, state, statistics, summary, events);
+    }
+
     private void validateEnvelope(ExecutionEvent event) {
         long expectedSequence = events.size();
         if (event.sequence() != expectedSequence) {

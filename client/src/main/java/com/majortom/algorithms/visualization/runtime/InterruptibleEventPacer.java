@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.runtime;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvent;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
@@ -15,6 +16,7 @@ final class InterruptibleEventPacer {
 
     private boolean paused;
     private boolean cancelled;
+    private long pacingElapsedNanos;
 
     InterruptibleEventPacer(LongSupplier delayMillisSupplier) {
         this.delayMillisSupplier = Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
@@ -45,9 +47,19 @@ final class InterruptibleEventPacer {
                     return;
                 }
                 long now = System.nanoTime();
-                remainingNanos -= Math.max(0L, now - previousTick);
+                long elapsedNanos = Math.max(0L, now - previousTick);
+                long consumedNanos = Math.min(elapsedNanos, remainingNanos);
+                pacingElapsedNanos = Math.addExact(pacingElapsedNanos, consumedNanos);
+                remainingNanos -= consumedNanos;
                 previousTick = now;
             }
+        }
+    }
+
+    /** Returns time spent waiting for configured event pacing, excluding pauses. */
+    Duration pacingDuration() {
+        synchronized (lock) {
+            return Duration.ofNanos(pacingElapsedNanos);
         }
     }
 

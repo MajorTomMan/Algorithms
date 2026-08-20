@@ -11,6 +11,7 @@ import com.majortom.algorithms.core.runtime.ExecutionEvent;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.Reduction;
 import com.majortom.algorithms.core.runtime.ReductionCursor;
+import com.majortom.algorithms.core.runtime.ResourceSampler;
 import javafx.application.Platform;
 
 import java.util.Objects;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /** Desktop lifecycle boundary for local algorithm execution. */
 public final class LocalAlgorithmExecution implements AutoCloseable {
@@ -28,6 +30,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
     private final DefaultAlgorithmRunner runner;
     private final Consumer<Runnable> dispatcher;
     private final int maximumEventCount;
+    private final Supplier<? extends ResourceSampler> resourceSamplerFactory;
     private final AtomicLong generation = new AtomicLong();
     private final Object lifecycleLock = new Object();
 
@@ -35,19 +38,35 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
     private ExecutionSession currentSession;
 
     public LocalAlgorithmExecution() {
-        this(new DefaultAlgorithmRunner(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT);
+        this(new DefaultAlgorithmRunner(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT,
+                LocalResourceSampler::new);
+    }
+
+    /** Creates a local execution boundary with a new sampler for each run. */
+    public LocalAlgorithmExecution(Supplier<? extends ResourceSampler> resourceSamplerFactory) {
+        this(new DefaultAlgorithmRunner(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT,
+                resourceSamplerFactory);
     }
 
     LocalAlgorithmExecution(DefaultAlgorithmRunner runner, Consumer<Runnable> dispatcher) {
-        this(runner, dispatcher, DEFAULT_MAXIMUM_EVENT_COUNT);
+        this(runner, dispatcher, DEFAULT_MAXIMUM_EVENT_COUNT, ResourceSampler::noop);
     }
 
     LocalAlgorithmExecution(
             DefaultAlgorithmRunner runner,
             Consumer<Runnable> dispatcher,
             int maximumEventCount) {
+        this(runner, dispatcher, maximumEventCount, ResourceSampler::noop);
+    }
+
+    LocalAlgorithmExecution(
+            DefaultAlgorithmRunner runner,
+            Consumer<Runnable> dispatcher,
+            int maximumEventCount,
+            Supplier<? extends ResourceSampler> resourceSamplerFactory) {
         this.runner = Objects.requireNonNull(runner, "runner");
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+        this.resourceSamplerFactory = Objects.requireNonNull(resourceSamplerFactory, "resourceSamplerFactory");
         if (maximumEventCount < 2) {
             throw new IllegalArgumentException("maximumEventCount must be at least 2");
         }
@@ -82,6 +101,8 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
             }
 
             DefaultExecutionControl executionControl = new DefaultExecutionControl();
+            ResourceSampler resourceSampler = Objects.requireNonNull(
+                    resourceSamplerFactory.get(), "resourceSamplerFactory result");
             BoundedExecutionEventStore authoritativeEvents = new BoundedExecutionEventStore(maximumEventCount);
             InterruptibleEventPacer pacer = new InterruptibleEventPacer(delayMillisSupplier);
             ReductionCursor<S> reductionCursor = new ReductionCursor<>(reducer);
@@ -102,6 +123,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
             EventSink eventSink = event -> {
                 authoritativeEvents.accept(event);
                 observerSink.accept(event);
+                sampleResourceUsage(resourceSampler);
                 pacer.awaitAfter(event);
             };
             ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
@@ -115,7 +137,8 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
                     authoritativeEvents,
                     observerSink,
                     pacer,
-                    executor);
+                    executor,
+                    resourceSampler);
             currentSession = session;
             session.start(() -> runWithEventLimit(invoker, input, eventSink, executionControl,
                     authoritativeEvents, observerSink));
@@ -149,6 +172,14 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
     private void requireOpen() {
         if (closed) {
             throw new IllegalStateException("Local algorithm execution is closed");
+        }
+    }
+
+    private void sampleResourceUsage(ResourceSampler resourceSampler) {
+        try {
+            resourceSampler.sample();
+        } catch (RuntimeException ignored) {
+            // Resource sampling is best effort and must not affect execution.
         }
     }
 

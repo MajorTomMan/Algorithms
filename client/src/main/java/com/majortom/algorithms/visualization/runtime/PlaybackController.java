@@ -32,6 +32,8 @@ public final class PlaybackController<S> implements AutoCloseable {
     private boolean closed;
     private ScheduledFuture<?> scheduledFrame;
     private RuntimeException failure;
+    private long playbackElapsedNanos;
+    private long playbackStartedAtNanos;
 
     public PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer) {
         this(reducer, stateConsumer, Platform::runLater, Duration.ofMillis(100L));
@@ -67,6 +69,8 @@ public final class PlaybackController<S> implements AutoCloseable {
             currentIndex = -1;
             playing = false;
             failure = null;
+            playbackElapsedNanos = 0L;
+            playbackStartedAtNanos = 0L;
             generation++;
         }
     }
@@ -78,6 +82,7 @@ public final class PlaybackController<S> implements AutoCloseable {
                 return;
             }
             playing = true;
+            playbackStartedAtNanos = System.nanoTime();
             generation++;
             scheduleFrame(generation, 0L);
         }
@@ -197,6 +202,20 @@ public final class PlaybackController<S> implements AutoCloseable {
         }
     }
 
+    /**
+     * Returns time spent actively scheduling replay frames since the last load.
+     * Pauses, seeks, and time spent before the first play are excluded.
+     */
+    public Duration playbackDuration() {
+        synchronized (lock) {
+            long elapsedNanos = playbackElapsedNanos;
+            if (playing) {
+                elapsedNanos = Math.addExact(elapsedNanos, elapsedPlaybackNanosLocked());
+            }
+            return Duration.ofNanos(elapsedNanos);
+        }
+    }
+
     public Optional<RuntimeException> failure() {
         synchronized (lock) {
             return Optional.ofNullable(failure);
@@ -208,6 +227,9 @@ public final class PlaybackController<S> implements AutoCloseable {
         synchronized (lock) {
             if (closed) {
                 return;
+            }
+            if (playing) {
+                accumulatePlaybackDurationLocked();
             }
             closed = true;
             playing = false;
@@ -239,6 +261,7 @@ public final class PlaybackController<S> implements AutoCloseable {
                 return;
             }
             if (!hasNextFrame()) {
+                accumulatePlaybackDurationLocked();
                 playing = false;
                 return;
             }
@@ -254,6 +277,7 @@ public final class PlaybackController<S> implements AutoCloseable {
                 return;
             }
             if (!hasNextFrame()) {
+                accumulatePlaybackDurationLocked();
                 playing = false;
                 return;
             }
@@ -289,6 +313,9 @@ public final class PlaybackController<S> implements AutoCloseable {
                 return;
             }
             failure = exception;
+            if (playing) {
+                accumulatePlaybackDurationLocked();
+            }
             playing = false;
             generation++;
             stopScheduledFrame();
@@ -299,6 +326,7 @@ public final class PlaybackController<S> implements AutoCloseable {
         if (!playing) {
             return;
         }
+        accumulatePlaybackDurationLocked();
         playing = false;
         generation++;
         stopScheduledFrame();
@@ -330,5 +358,21 @@ public final class PlaybackController<S> implements AutoCloseable {
         if (closed) {
             throw new IllegalStateException("Playback controller is closed");
         }
+    }
+
+    private void accumulatePlaybackDurationLocked() {
+        playbackElapsedNanos = Math.addExact(playbackElapsedNanos, elapsedPlaybackNanosLocked());
+        playbackStartedAtNanos = 0L;
+    }
+
+    private long elapsedPlaybackNanosLocked() {
+        if (playbackStartedAtNanos == 0L) {
+            return 0L;
+        }
+        long elapsedNanos = System.nanoTime() - playbackStartedAtNanos;
+        if (elapsedNanos < 0L) {
+            return 0L;
+        }
+        return elapsedNanos;
     }
 }

@@ -9,10 +9,14 @@ import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvent;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
+import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.library.catalog.ProviderCatalog;
 import com.majortom.algorithms.core.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
+import com.majortom.algorithms.core.runtime.ExecutionSummary;
+import com.majortom.algorithms.core.runtime.ExecutionTiming;
 import com.majortom.algorithms.visualization.impl.controller.BaseModuleController;
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.ExecutionSession;
 import com.majortom.algorithms.visualization.runtime.LocalAlgorithmExecution;
 import com.majortom.algorithms.visualization.runtime.PlaybackController;
@@ -36,12 +40,15 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -149,6 +156,7 @@ public abstract class BaseController<S> implements Initializable {
                 replayController.play();
                 paused.set(false);
             }
+            refreshStatsDisplay();
             return;
         }
         if (currentSession == null || !running.get()) {
@@ -170,6 +178,7 @@ public abstract class BaseController<S> implements Initializable {
         if (replayController.isPlaying()) {
             replayController.pause();
             paused.set(true);
+            refreshStatsDisplay();
             return;
         }
         if (replayController.currentIndex() + 1 >= replayController.frameCount()) {
@@ -180,6 +189,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         replayController.play();
         paused.set(false);
+        refreshStatsDisplay();
     }
 
     /** Advances one replay frame while leaving playback paused. */
@@ -192,6 +202,7 @@ public abstract class BaseController<S> implements Initializable {
         if (advanced) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
+        refreshStatsDisplay();
         return advanced;
     }
 
@@ -205,6 +216,7 @@ public abstract class BaseController<S> implements Initializable {
         if (rewound) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
+        refreshStatsDisplay();
         return rewound;
     }
 
@@ -285,8 +297,14 @@ public abstract class BaseController<S> implements Initializable {
         EventReducer<S> reducer = reducerFactory.get();
         ReducedEventTimeline<S> timeline = new ReducedEventTimeline<>(events, reducer);
         stats = timeline.statistics();
+        Duration eventSpan = stats.eventSpan();
+        ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
+                ExecutionTiming.of(
+                        eventSpan,
+                        session.totalDuration(),
+                        Optional.empty()));
         lastExecution = new ClientRunRecord<>(
-                moduleId(), algorithmId, inputSignature(input), events, stats);
+                moduleId(), algorithmId, inputSignature(input), events, summary);
         lastTimeline = timeline;
         replacePlaybackController(reducer, events);
         synchronized (EXECUTION_ARCHIVE) {
@@ -338,6 +356,7 @@ public abstract class BaseController<S> implements Initializable {
             PlaybackController<S> active = replayController;
             if (active != null) {
                 syncTimelineSlider(active.currentIndex(), active.frameCount());
+                refreshStatsDisplay();
             }
         });
         replayController.load(events);
@@ -402,6 +421,7 @@ public abstract class BaseController<S> implements Initializable {
         payload.put("algorithmId", lastExecution.algorithmId());
         payload.put("inputSignature", lastExecution.inputSignature());
         payload.put("stats", lastExecution.stats());
+        payload.put("summary", executionSummary());
         List<Map<String, Object>> eventItems = new ArrayList<>();
         for (ExecutionEvent event : lastExecution.events()) {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -417,10 +437,16 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private String describeRecord(ClientRunRecord<?> record) {
+        ExecutionSummary summary = record.summary();
+        ExecutionTiming timing = summary.timing();
         return String.format(
-                "%s | duration=%dms | events=%d | frames=%d | compares=%d",
-                record.algorithmId(), record.stats().duration().toMillis(), record.stats().totalEventCount(),
-                record.stats().visualFrameCount(), record.stats().metric("comparisons"));
+                "%s | event-span=%dms | total=%s | playback=%s | cpu=%s | memory=%s | events=%d | frames=%d | compares=%d",
+                record.algorithmId(), timing.eventSpan().toMillis(),
+                formatDuration(timing.totalDuration()), formatDuration(timing.playbackDuration()),
+                formatNanos(summary.resources().cpuTimeNanos()),
+                formatBytes(summary.resources().peakMemoryBytes()),
+                record.stats().totalEventCount(), record.stats().visualFrameCount(),
+                record.stats().metric("comparisons"));
     }
 
     private String inputSignature(AlgorithmInput input) {
@@ -506,7 +532,11 @@ public abstract class BaseController<S> implements Initializable {
 
     protected void refreshStatsDisplay() {
         if (statsLabel != null) {
-            statsLabel.setText(formatStatsMessage());
+            String message = formatStatsMessage();
+            if (lastExecution != null) {
+                message = message + " | " + formatSummaryMessage(executionSummary());
+            }
+            statsLabel.setText(message);
         }
     }
 
@@ -581,7 +611,8 @@ public abstract class BaseController<S> implements Initializable {
     public abstract void handleAlgorithmStart();
 
     protected void onAlgorithmFinished() {
-        appendLog(String.format("Finished. Duration: %dms", stats.duration().toMillis()));
+        appendLog(String.format("Finished. Event span: %dms", executionSummary()
+                .timing().eventSpan().toMillis()));
     }
 
     protected void handleAlgorithmError(Throwable error) {
@@ -637,6 +668,20 @@ public abstract class BaseController<S> implements Initializable {
         return visualizer;
     }
 
+    /** Returns the shared summary retained for the latest local execution. */
+    public final ExecutionSummary executionSummary() {
+        if (lastExecution == null) {
+            return ExecutionSummary.empty();
+        }
+        ExecutionSummary summary = lastExecution.summary();
+        if (replayController == null) {
+            return summary;
+        }
+        ExecutionTiming timing = summary.timing().withPlaybackDuration(
+                replayController.playbackDuration());
+        return summary.withTiming(timing);
+    }
+
     public final ReadOnlyBooleanProperty runningProperty() {
         return running;
     }
@@ -658,6 +703,52 @@ public abstract class BaseController<S> implements Initializable {
             String algorithmId,
             String inputSignature,
             List<ExecutionEvent> events,
-            ExecutionStatistics stats) {
+            ExecutionSummary summary) {
+
+        private ExecutionStatistics stats() {
+            return summary.statistics();
+        }
     }
+
+    private String formatSummaryMessage(ExecutionSummary summary) {
+        ExecutionTiming timing = summary.timing();
+        ResourceUsage resources = summary.resources();
+        return String.format(
+                "%s | %s | %s | %s | %s",
+                I18N.text("stats.event.span", timing.eventSpan().toMillis()),
+                I18N.text("stats.total.time", formatDuration(timing.totalDuration())),
+                I18N.text("stats.playback.time", formatDuration(timing.playbackDuration())),
+                I18N.text("stats.cpu.time", formatNanos(resources.cpuTimeNanos())),
+                I18N.text("stats.memory.peak", formatBytes(resources.peakMemoryBytes())));
+    }
+
+    private String formatDuration(Optional<Duration> duration) {
+        if (duration.isEmpty()) {
+            return I18N.text("stats.unavailable");
+        }
+        return duration.orElseThrow().toMillis() + "ms";
+    }
+
+    private String formatNanos(OptionalLong nanos) {
+        if (nanos.isEmpty()) {
+            return I18N.text("stats.unavailable");
+        }
+        return Duration.ofNanos(nanos.orElseThrow()).toMillis() + "ms";
+    }
+
+    private String formatBytes(OptionalLong bytes) {
+        if (bytes.isEmpty()) {
+            return I18N.text("stats.unavailable");
+        }
+        long value = bytes.orElseThrow();
+        if (value < 1024L) {
+            return value + "B";
+        }
+        long kilobytes = value / 1024L;
+        if (kilobytes < 1024L) {
+            return kilobytes + "KB";
+        }
+        return String.format("%.1fMB", kilobytes / 1024.0d);
+    }
+
 }

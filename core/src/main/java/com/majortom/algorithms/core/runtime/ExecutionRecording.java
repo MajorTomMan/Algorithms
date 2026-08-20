@@ -15,13 +15,28 @@ public record ExecutionRecording(
         String algorithmId,
         ExecutionRecordingState state,
         ExecutionStatistics statistics,
+        ExecutionSummary summary,
         List<ExecutionEvent> events) {
+
+    /** Creates a recording with event-derived timing and no host measurements. */
+    public ExecutionRecording(
+            String runId,
+            String algorithmId,
+            ExecutionRecordingState state,
+            ExecutionStatistics statistics,
+            List<ExecutionEvent> events) {
+        this(runId, algorithmId, state, statistics, ExecutionSummary.from(statistics), events);
+    }
 
     public ExecutionRecording {
         runId = requireText(runId, "runId");
         algorithmId = requireText(algorithmId, "algorithmId");
         state = Objects.requireNonNull(state, "state");
         statistics = Objects.requireNonNull(statistics, "statistics");
+        summary = Objects.requireNonNull(summary, "summary");
+        if (!statistics.equals(summary.statistics())) {
+            throw new IllegalArgumentException("Summary statistics must match recording statistics");
+        }
         events = List.copyOf(Objects.requireNonNull(events, "events"));
         if (events.isEmpty()) {
             throw new IllegalArgumentException("An execution recording requires at least one event");
@@ -33,6 +48,12 @@ public record ExecutionRecording(
     public void replay(EventSink eventSink) {
         Objects.requireNonNull(eventSink, "eventSink");
         events.forEach(eventSink::accept);
+    }
+
+    /** Returns a copy with host timing and resource measurements attached. */
+    public ExecutionRecording withSummary(ExecutionSummary value) {
+        Objects.requireNonNull(value, "summary");
+        return new ExecutionRecording(runId, algorithmId, state, statistics, value, events);
     }
 
     private static void validate(

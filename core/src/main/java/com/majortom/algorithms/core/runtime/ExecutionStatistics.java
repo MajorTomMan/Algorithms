@@ -7,7 +7,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Runtime-neutral execution and algorithm-domain statistics derived from events. */
+/**
+ * Runtime-neutral event statistics derived from one authoritative event stream.
+ *
+ * <p>{@link #duration()} and {@link #eventSpan()} are the timestamp span of the
+ * execution event stream. Host total execution and active replay time belong to
+ * {@link ExecutionTiming} and are intentionally not folded into this record.</p>
+ */
 public record ExecutionStatistics(
         long totalEventCount,
         long algorithmEventCount,
@@ -38,6 +44,31 @@ public record ExecutionStatistics(
             throw new IllegalArgumentException("duration must not be negative");
         }
         metrics = immutableMetrics(metrics);
+    }
+
+    /** Returns the timestamp span between run start and the terminal event. */
+    public Duration eventSpan() {
+        return duration;
+    }
+
+    /** Returns the number of non-lifecycle algorithm events. */
+    public long eventCount() {
+        return algorithmEventCount;
+    }
+
+    /** Returns the number of visible frames supplied by the consuming reducer. */
+    public long frameCount() {
+        return visualFrameCount;
+    }
+
+    /** Returns a named logical operation count, or zero when it is absent. */
+    public long operationCount(String name) {
+        return metric(name);
+    }
+
+    /** Builds the logical algorithm statistics represented by this event reduction. */
+    public AlgorithmStatistics algorithmStatistics() {
+        return AlgorithmStatistics.from(this);
     }
 
     /** Empty state used before the first event is reduced. */
