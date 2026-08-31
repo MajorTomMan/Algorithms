@@ -45,7 +45,7 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
     }
 
     @Override
-    protected void draw(IntegerSortViewState state, Object unusedA, Object unusedB) {
+    protected void draw(IntegerSortViewState state) {
         clear();
         if (state.values().isEmpty()) {
             stopWind();
@@ -283,7 +283,7 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
     }
 
     private void updateWindState() {
-        IntegerSortViewState state = getLastData();
+        IntegerSortViewState state = currentState();
         boolean hasData = state != null && !state.values().isEmpty();
         if (animationRequested && isModuleAttached() && !isResizeInProgress() && hasData && !isDisposed()) {
             startWind();

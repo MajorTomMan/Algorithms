@@ -124,7 +124,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
         Button apply = new Button(I18N.text("action.maze.apply_size"));
         OperationDialogTheme.addClasses(apply, "btn-ran-gold", "compact-button");
         apply.setOnAction(event -> {
-            stopAlgorithm();
+            invalidateExecutionForInputChange();
             size = normalizeOdd((int) slider.getValue());
             generatedMaze = null;
             solving = false;
@@ -145,7 +145,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     @Override
     protected void onAlgorithmFinished() {
         super.onAlgorithmFinished();
-        MazeViewState state = visualizer.getLastData();
+        MazeViewState state = latestViewState();
         if (!solving && structure == Structure.ARRAY && state != null
                 && state.entrance() != null && state.exit() != null) {
             generatedMaze = new GridMaze(
@@ -187,7 +187,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     }
 
     private void renderEmpty() {
-        visualizer.render(MazeViewState.empty(size, size, structure == Structure.GRAPH));
+        renderViewState(MazeViewState.empty(size, size, structure == Structure.GRAPH));
     }
 
     @Override
@@ -221,6 +221,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
             if (newValue.intValue() == 1) {
                 structure = Structure.GRAPH;
             }
+            invalidateExecutionForInputChange();
             generatedMaze = null;
             solving = false;
             renderEmpty();

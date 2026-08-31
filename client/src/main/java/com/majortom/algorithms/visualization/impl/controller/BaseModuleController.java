@@ -57,14 +57,9 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         return I18N.text(key, value);
     }
 
-    public final void resetModule() {
-        stopAlgorithm();
-        if (logArea != null) {
-            logArea.clear();
-        }
+    @Override
+    protected final void resetModuleState() {
         onResetData();
-        dispatchVisualizerReset();
-        refreshStatsDisplay();
     }
 
     protected abstract void onResetData();

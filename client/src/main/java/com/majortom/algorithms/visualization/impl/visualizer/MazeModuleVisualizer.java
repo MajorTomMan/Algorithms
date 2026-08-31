@@ -1,6 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
-import com.majortom.algorithms.core.maze.constants.MazeCellType;
+import com.majortom.algorithms.visualization.runtime.maze.MazeCellType;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.maze.GridPoint;
 import com.majortom.algorithms.visualization.BaseVisualizer;
@@ -44,7 +44,7 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
     }
 
     @Override
-    protected void draw(MazeViewState state, Object unusedA, Object unusedB) {
+    protected void draw(MazeViewState state) {
         clear();
         if (state.rows() < 1 || state.columns() < 1
                 || state.openCells().size() < state.rows() * state.columns()) {
@@ -166,7 +166,33 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
             if (terrain != MazeCellType.WALL) {
                 monSize *= 1.15d;
             }
-            drawClanMon(x + width / 2.0d, y + height / 2.0d, monSize, terrain, monStroke);
+            drawMazeClanMon(x + width / 2.0d, y + height / 2.0d, monSize, terrain, monStroke);
+        }
+    }
+
+    private void drawMazeClanMon(double mx, double my, double size, int type, Color strokeColor) {
+        gc.setStroke(strokeColor);
+        gc.setLineWidth(Math.max(1.2, size * 0.15));
+
+        switch (type) {
+            case MazeCellType.PATH -> gc.strokeOval(mx - size / 2, my - size / 2, size, size);
+            case MazeCellType.ROAD -> gc.strokeLine(mx - size * 0.45, my, mx + size * 0.45, my);
+            case MazeCellType.BACKTRACK, MazeCellType.DEADEND -> {
+                double height = size * 0.866;
+                gc.strokePolygon(
+                        new double[] {mx, mx - size / 2, mx + size / 2},
+                        new double[] {my - height / 2, my + height / 2, my + height / 2}, 3);
+            }
+            case MazeCellType.WALL -> {
+                double offset = size * 0.35;
+                gc.strokeLine(mx - offset, my - offset, mx + offset, my + offset);
+                gc.strokeLine(mx + offset, my - offset, mx - offset, my + offset);
+            }
+            case MazeCellType.START, MazeCellType.END -> {
+                gc.strokeOval(mx - size / 2, my - size / 2, size, size);
+                gc.strokeOval(mx - size / 4, my - size / 4, size / 2, size / 2);
+            }
+            default -> gc.strokeOval(mx - size / 2, my - size / 2, size, size);
         }
     }
 
@@ -384,7 +410,7 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
     }
 
     private void updateTimerState() {
-        MazeViewState state = getLastData();
+        MazeViewState state = currentState();
         boolean hasFocus = state != null && state.focus() != null;
         if (animationRequested && hasFocus && isModuleAttached() && !isResizeInProgress() && !isDisposed()) {
             startFocusTimer();

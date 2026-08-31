@@ -129,7 +129,7 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
 
     @Override
     protected void onAlgorithmFinished() {
-        AvlTreeViewState state = visualizer.getLastData();
+        AvlTreeViewState state = latestViewState();
         if (state != null) {
             values.clear();
             values.addAll(state.values());
@@ -140,7 +140,7 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
 
     @Override
     protected String formatStatsMessage() {
-        AvlTreeViewState state = visualizer.getLastData();
+        AvlTreeViewState state = latestViewState();
         int size = values.size();
         int height = 0;
         if (state != null && state.root() != null) {

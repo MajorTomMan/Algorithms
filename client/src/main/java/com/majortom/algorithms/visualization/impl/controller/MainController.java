@@ -5,6 +5,7 @@ import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.VisualizationEvent;
+import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
 import com.majortom.algorithms.visualization.module.ModuleRegistry;
@@ -181,7 +182,7 @@ public class MainController implements Initializable {
         visualizationContainer.getChildren().clear();
         customControlBox.getChildren().clear();
 
-        newController.setUIReferences(
+        newController.setUIReferences(new WorkbenchControls(
                 statsLabel,
                 logArea,
                 delaySlider,
@@ -192,7 +193,7 @@ public class MainController implements Initializable {
                 resetBtn,
                 replayBtn,
                 exportBtn,
-                compareBtn);
+                compareBtn));
 
         this.currentSubController = newController;
         this.currentSubController.pausedProperty().addListener(

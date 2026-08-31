@@ -130,14 +130,26 @@ public final class PlaybackController<S> implements AutoCloseable {
     /** Seeks to one visible frame and leaves playback paused. */
     public S seek(int frameIndex) {
         S state;
+        long expectedGeneration;
         synchronized (lock) {
             requireOpen();
             pauseLocked();
             ReducedEventTimeline<S> loadedTimeline = requireTimeline();
-            state = loadedTimeline.seek(frameIndex);
+            expectedGeneration = generation;
+            try {
+                state = loadedTimeline.seek(frameIndex);
+            } catch (RuntimeException exception) {
+                fail(expectedGeneration, exception);
+                throw exception;
+            }
             currentIndex = frameIndex;
         }
-        consumeState(state);
+        try {
+            consumeState(state);
+        } catch (RuntimeException exception) {
+            fail(expectedGeneration, exception);
+            throw exception;
+        }
         return state;
     }
 

@@ -54,7 +54,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     @Override
-    protected void draw(GraphViewState state, Object unusedA, Object unusedB) {
+    protected void draw(GraphViewState state) {
         if (graphDisposed) {
             return;
         }

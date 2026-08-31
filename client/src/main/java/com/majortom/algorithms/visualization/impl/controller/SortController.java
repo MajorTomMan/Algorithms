@@ -58,7 +58,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @FXML
     private void handleGenerate() {
-        stopAlgorithm();
+        invalidateExecutionForInputChange();
         generateData();
         renderSource();
         dispatchVisualizerAction(
@@ -76,7 +76,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     }
 
     private void renderSource() {
-        visualizer.render(IntegerSortViewState.source(sourceData));
+        renderViewState(IntegerSortViewState.source(sourceData));
     }
 
     @FXML

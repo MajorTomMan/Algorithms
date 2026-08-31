@@ -47,7 +47,7 @@ public final class TreeVisualizer extends BaseVisualizer<AvlTreeViewState> {
     }
 
     @Override
-    protected void draw(AvlTreeViewState nextState, Object unusedA, Object unusedB) {
+    protected void draw(AvlTreeViewState nextState) {
         state = nextState;
         if (nextState.root() == null) {
             currentPositions.clear();

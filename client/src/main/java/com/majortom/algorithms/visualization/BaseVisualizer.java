@@ -1,7 +1,5 @@
 package com.majortom.algorithms.visualization;
 
-import com.majortom.algorithms.core.maze.constants.MazeCellType;
-
 import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -63,8 +61,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
     protected final GraphicsContext gc;
 
     private S lastData;
-    private Object lastA;
-    private Object lastB;
     private String transientFeedbackLabel;
     private long transientFeedbackUntilMillis;
     private boolean renderQueued;
@@ -111,15 +107,9 @@ public abstract class BaseVisualizer<S> extends StackPane {
     /**
      * 渲染调度：确保 UI 更新在正确线程
      */
-    public final void render(S data, Object a, Object b) {
-        this.lastData = data;
-        this.lastA = a;
-        this.lastB = b;
-        requestRender();
-    }
-
     public final void render(S data) {
-        render(data, null, null);
+        this.lastData = data;
+        requestRender();
     }
 
     protected void drawCurrent() {
@@ -127,7 +117,7 @@ public abstract class BaseVisualizer<S> extends StackPane {
             clear();
             return;
         }
-        draw(lastData, lastA, lastB);
+        draw(lastData);
     }
 
     protected final void requestRender() {
@@ -199,9 +189,10 @@ public abstract class BaseVisualizer<S> extends StackPane {
         gc.restore();
     }
 
-    protected abstract void draw(S data, Object a, Object b);
+    protected abstract void draw(S data);
 
-    public S getLastData() {
+    /** Returns the last state supplied to this visualizer for animation internals. */
+    protected final S currentState() {
         return lastData;
     }
 
@@ -374,53 +365,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
             case GRAPH_DELETE_NODE -> "DELETE NODE";
             case GRAPH_LINK -> "LINK";
         };
-    }
-
-    /**
-     * 核心符号学逻辑：统一家纹绘制
-     * * @param mx 中心点X
-     *
-     * @param my          中心点Y
-     * @param size        家纹大小
-     * @param type        {@link MazeCellType} 中定义的单元格类型
-     * @param strokeColor 线条颜色 (刻痕色)
-     */
-    protected void drawClanMon(double mx, double my, double size, int type, Color strokeColor) {
-        gc.setStroke(strokeColor);
-        gc.setLineWidth(Math.max(1.2, size * 0.15));
-
-        switch (type) {
-            case MazeCellType.PATH -> {
-                // 大郎红：正统圆
-                gc.strokeOval(mx - size / 2, my - size / 2, size, size);
-            }
-            case MazeCellType.ROAD -> {
-                // 二郎蓝：一文字横线
-                gc.strokeLine(mx - size * 0.45, my, mx + size * 0.45, my);
-            }
-            case MazeCellType.BACKTRACK, MazeCellType.DEADEND -> {
-                // 三郎黄：三角
-                double h = size * 0.866;
-                gc.strokePolygon(
-                        new double[] { mx, mx - size / 2, mx + size / 2 },
-                        new double[] { my - h / 2, my + h / 2, my + h / 2 }, 3);
-            }
-            case MazeCellType.WALL -> {
-                // 敌方墙壁：十字纹
-                double offset = size * 0.35;
-                gc.strokeLine(mx - offset, my - offset, mx + offset, my + offset);
-                gc.strokeLine(mx + offset, my - offset, mx - offset, my + offset);
-            }
-            case MazeCellType.START, MazeCellType.END -> {
-                // 起止点：同心圆
-                gc.strokeOval(mx - size / 2, my - size / 2, size, size);
-                gc.strokeOval(mx - size / 4, my - size / 4, size / 2, size / 2);
-            }
-            default -> {
-                // 默认圆环
-                gc.strokeOval(mx - size / 2, my - size / 2, size, size);
-            }
-        }
     }
 
     /**

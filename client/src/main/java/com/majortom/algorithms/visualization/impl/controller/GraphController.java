@@ -126,6 +126,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         if (id == null || graph.nodes().contains(id)) return;
         List<Integer> nodes = new ArrayList<>(graph.nodes());
         nodes.add(id);
+        invalidateExecutionForInputChange();
         graph = new IntGraph(nodes, graph.edges());
         renderGraph();
         dispatchVisualizerAction(
@@ -142,6 +143,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         List<IntEdge> edges = graph.edges().stream()
                 .filter(edge -> edge.from() != id && edge.to() != id)
                 .toList();
+        invalidateExecutionForInputChange();
         graph = new IntGraph(nodes, edges);
         if (!nodes.contains(startNode) && !nodes.isEmpty()) startNode = nodes.getFirst();
         renderGraph();
@@ -160,7 +162,11 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         }
         List<IntEdge> edges = new ArrayList<>(graph.edges());
         IntEdge edge = new IntEdge(from, to);
-        if (!edges.contains(edge)) edges.add(edge);
+        if (edges.contains(edge)) {
+            return;
+        }
+        edges.add(edge);
+        invalidateExecutionForInputChange();
         graph = new IntGraph(graph.nodes(), edges);
         renderGraph();
         dispatchVisualizerAction(
@@ -175,7 +181,10 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
             appendLog(I18N.text("message.error.invalid_graph_start", text));
             return;
         }
-        startNode = id;
+        if (startNode != id) {
+            invalidateExecutionForInputChange();
+            startNode = id;
+        }
         appendLog(I18N.text("message.graph.start_set", id));
     }
 
@@ -189,7 +198,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     }
 
     private void renderGraph() {
-        visualizer.render(GraphViewState.initial(graph));
+        renderViewState(GraphViewState.initial(graph));
     }
 
     @Override
