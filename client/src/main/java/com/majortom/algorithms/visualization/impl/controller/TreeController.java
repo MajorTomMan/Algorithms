@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.tree.AvlTreeEventReducer;
 import com.majortom.algorithms.visualization.runtime.tree.AvlTreeViewState;
+import com.majortom.algorithms.visualization.structure.StructureSnapshot;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -82,7 +83,10 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (target == null) {
             return;
         }
-        AvlTreeViewState state = latestViewState();
+        AvlTreeViewState state = latestStructureState();
+        if (state == null) {
+            state = latestViewState();
+        }
         SearchResult result = null;
         if (state != null) {
             result = findNode(state.root(), target, null, new ArrayList<>());
@@ -213,12 +217,49 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     }
 
     @Override
+    public StructureSnapshot<AvlTreeViewState> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), structureSnapshotState(latestStructureState()));
+    }
+
+    @Override
+    public void restoreStructureSnapshot(StructureSnapshot<AvlTreeViewState> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        AvlTreeViewState state = snapshot.state();
+        values.clear();
+        values.addAll(state.values());
+        pendingCommands = List.of();
+        invalidateExecutionForInputChange();
+        renderStructureState(structureSnapshotState(state));
+        refreshStatsDisplay();
+    }
+
+    @Override
+    public String describeStructureSnapshot(AvlTreeViewState state) {
+        int height = 0;
+        if (state.root() != null) {
+            height = state.root().height();
+        }
+        return I18N.text("snapshot.tree.detail", state.values().size(), height);
+    }
+
+    private AvlTreeViewState structureSnapshotState(AvlTreeViewState state) {
+        if (state == null) {
+            return new AvlTreeViewState(null, values, null, null, null, null, java.util.Set.of(),
+                    AvlTreeViewState.Phase.IDLE, null, null, null, false);
+        }
+        return new AvlTreeViewState(state.root(), state.values(), null, null, null, null,
+                java.util.Set.of(), AvlTreeViewState.Phase.IDLE, null, null, null, false);
+    }
+
+    @Override
     protected void onAlgorithmFinished() {
         AvlTreeViewState state = latestViewState();
         if (state != null) {
             values.clear();
             values.addAll(state.values());
-            renderStructureState(state);
+            renderStructureState(structureSnapshotState(state));
         }
         super.onAlgorithmFinished();
         logI18n("message.execution.finished");

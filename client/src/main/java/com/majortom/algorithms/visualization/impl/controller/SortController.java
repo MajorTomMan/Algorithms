@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.HistogramSortVisual
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortEventReducer;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortViewState;
+import com.majortom.algorithms.visualization.structure.StructureSnapshot;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -95,6 +96,35 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     private void renderSource() {
         renderStructureState(IntegerSortViewState.source(sourceData));
+    }
+
+    @Override
+    public StructureSnapshot<IntegerSortViewState> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), IntegerSortViewState.source(sourceData));
+    }
+
+    @Override
+    public void restoreStructureSnapshot(StructureSnapshot<IntegerSortViewState> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        sourceData = List.copyOf(snapshot.state().values());
+        currentSize = sourceData.size();
+        invalidateExecutionForInputChange();
+        if (sizeSlider != null) {
+            double sliderValue = Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), currentSize));
+            sizeSlider.setValue(sliderValue);
+        }
+        if (sizeValueLabel != null) {
+            sizeValueLabel.setText(String.valueOf(currentSize));
+        }
+        renderSource();
+        refreshStatsDisplay();
+    }
+
+    @Override
+    public String describeStructureSnapshot(IntegerSortViewState state) {
+        return I18N.text("snapshot.sort.detail", state.values().size());
     }
 
     @FXML

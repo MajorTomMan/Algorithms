@@ -36,9 +36,12 @@ import com.majortom.algorithms.visualization.runtime.ReducedEventTimeline;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -98,6 +101,7 @@ public abstract class BaseController<S> implements Initializable {
     private final ExecutionExporter executionExporter;
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
+    private final LongProperty structureRevision = new SimpleLongProperty();
     private S latestViewState;
     private S latestStructureState;
     private ExecutionHandle currentSession;
@@ -415,6 +419,7 @@ public abstract class BaseController<S> implements Initializable {
             return;
         }
         latestStructureState = state;
+        structureRevision.set(structureRevision.get() + 1L);
         if (visualizer != null) {
             visualizer.render(state);
         }
@@ -446,6 +451,11 @@ public abstract class BaseController<S> implements Initializable {
     /** Returns the latest reducer state observed by this module. */
     protected final S latestViewState() {
         return latestViewState;
+    }
+
+    /** Returns the latest editable structure state retained by this module. */
+    protected final S latestStructureState() {
+        return latestStructureState;
     }
 
     /** Invalidates execution data after a module changes the algorithm input. */
@@ -860,6 +870,11 @@ public abstract class BaseController<S> implements Initializable {
 
     public final ReadOnlyBooleanProperty pausedProperty() {
         return paused;
+    }
+
+    /** Changes whenever the module publishes a new editable structure state. */
+    public final ReadOnlyLongProperty structureRevisionProperty() {
+        return structureRevision;
     }
 
     public final boolean isRunning() {

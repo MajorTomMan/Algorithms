@@ -9,11 +9,15 @@ import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
 import com.majortom.algorithms.visualization.module.ModuleRegistry;
+import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
+import com.majortom.algorithms.visualization.structure.StructureSnapshot;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
@@ -27,6 +31,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 
 import java.net.URL;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +54,8 @@ public class MainController implements Initializable {
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
     private static final double COMPACT_LAYOUT_WIDTH = 1180.0d;
     private static final double NARROW_LAYOUT_WIDTH = 860.0d;
+    private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @FXML
     private BorderPane rootPane;
@@ -128,6 +136,8 @@ public class MainController implements Initializable {
     @FXML
     private Label snapshotCountLabel;
     @FXML
+    private Button saveSnapshotBtn;
+    @FXML
     private Label algorithmViewTitleLabel;
     @FXML
     private Label viewportHintLabel;
@@ -167,9 +177,12 @@ public class MainController implements Initializable {
     private Slider timelineSlider;
 
     private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
+    private final InMemoryStructureSnapshotStore structureSnapshotStore =
+            new InMemoryStructureSnapshotStore();
     private final Map<String, Button> moduleButtons = new LinkedHashMap<>();
     private BaseController<?> currentSubController;
     private AlgorithmModuleDefinition activeDefinition;
+    private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -207,7 +220,7 @@ public class MainController implements Initializable {
         structurePreviewHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview.hint"));
         snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
-        snapshotCountLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.count"));
+        saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
         algorithmViewTitleLabel.setText(I18N.text("label.workspace.algorithm.preview"));
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
@@ -288,7 +301,7 @@ public class MainController implements Initializable {
         EffectUtils.applyDynamicEffect(
                 structureWorkspaceBtn, algorithmWorkspaceBtn, langBtn,
                 startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn,
-                stepForwardBtn, exportBtn, compareBtn);
+                stepForwardBtn, exportBtn, compareBtn, saveSnapshotBtn);
     }
 
     private void setupLayoutClips() {
@@ -370,8 +383,8 @@ public class MainController implements Initializable {
     }
 
     private void switchToModule(AlgorithmModuleDefinition definition) {
-        loadSubController(definition.controllerFactory().get());
         activeDefinition = definition;
+        loadSubController(definition.controllerFactory().get());
         refreshWorkspaceContext();
         if (currentSubController != null) {
             currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
@@ -405,8 +418,12 @@ public class MainController implements Initializable {
         currentSubController = newController;
         currentSubController.pausedProperty().addListener(
                 (observable, oldValue, newValue) -> refreshPauseText());
+        currentSubController.runningProperty().addListener(
+                (observable, oldValue, newValue) -> updateSnapshotActionState());
         currentSubController.setupCustomControls(customControlBox);
         distributeModuleControls();
+        structureRevisionListener = (observable, oldValue, newValue) -> refreshSnapshotCards();
+        currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
 
         BaseVisualizer<?> visualizer = newController.getVisualizer();
         if (visualizer != null) {
@@ -419,6 +436,10 @@ public class MainController implements Initializable {
     private void detachCurrentController() {
         if (currentSubController == null) {
             return;
+        }
+        if (structureRevisionListener != null) {
+            currentSubController.structureRevisionProperty().removeListener(structureRevisionListener);
+            structureRevisionListener = null;
         }
         BaseVisualizer<?> previousVisualizer = currentSubController.getVisualizer();
         if (previousVisualizer != null) {
@@ -517,33 +538,169 @@ public class MainController implements Initializable {
         structureWorkspaceSubtitleLabel.setText(moduleName);
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
         algorithmViewTitleLabel.setText(moduleName);
-        refreshSnapshotCards(moduleName);
+        refreshSnapshotCards();
     }
 
-    private void refreshSnapshotCards(String moduleName) {
-        snapshotCards.getChildren().clear();
-        snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.current"), true));
-        snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.saved"), false));
-        snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.empty"), false));
-    }
-
-    private VBox createSnapshotCard(String moduleName, String status, boolean current) {
-        VBox card = new VBox(4);
-        card.getStyleClass().add("snapshot-card");
-        if (current) {
-            card.getStyleClass().add("snapshot-card-current");
+    private void refreshSnapshotCards() {
+        if (activeDefinition == null || snapshotCards == null) {
+            return;
         }
+        String moduleName = I18N.text(activeDefinition.labelKey());
+        StructureSnapshotSupport<?> support = currentSnapshotSupport();
+        if (support == null) {
+            snapshotCards.getChildren().clear();
+            snapshotCountLabel.setText(I18N.text(
+                    "label.workspace.snapshot.count", 0,
+                    structureSnapshotStore.maxSnapshotsPerModule()));
+            updateSnapshotActionState();
+            return;
+        }
+
+        snapshotCards.getChildren().clear();
+        StructureSnapshot<?> current = support.captureStructureSnapshot();
+        snapshotCards.getChildren().add(createSnapshotCard(
+                moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true));
+
+        List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
+        for (StructureSnapshot<?> snapshot : saved) {
+            snapshotCards.getChildren().add(createSnapshotCard(
+                    moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
+                    support, false));
+        }
+        if (saved.isEmpty()) {
+            Label empty = new Label(I18N.text("label.workspace.snapshot.none"));
+            empty.getStyleClass().add("snapshot-empty");
+            empty.setWrapText(true);
+            snapshotCards.getChildren().add(empty);
+        }
+        snapshotCountLabel.setText(I18N.text(
+                "label.workspace.snapshot.count", saved.size(),
+                structureSnapshotStore.maxSnapshotsPerModule()));
+        updateSnapshotActionState();
+    }
+
+    private Node createSnapshotCard(
+            String moduleName,
+            String status,
+            StructureSnapshot<?> snapshot,
+            StructureSnapshotSupport<?> support,
+            boolean current) {
+        VBox content = new VBox(4);
+        content.setMaxWidth(Double.MAX_VALUE);
         Label title = new Label(moduleName);
+        if (!current) {
+            title.setText(moduleName + " · " + shortSnapshotId(snapshot));
+        }
         title.getStyleClass().add("snapshot-card-title");
         Label state = new Label(status);
         state.getStyleClass().add("snapshot-card-state");
-        Label detail = new Label(I18N.text("label.workspace.snapshot.detail"));
+        Label detail = new Label(describeSnapshot(support, snapshot));
         detail.getStyleClass().add("snapshot-card-detail");
-        card.getChildren().addAll(title, state, detail);
+        Label createdAt = new Label(I18N.text(
+                "label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
+        createdAt.getStyleClass().add("snapshot-card-detail");
+        content.getChildren().addAll(title, state, detail);
+        if (!current) {
+            content.getChildren().add(createdAt);
+        }
+        if (current) {
+            content.getStyleClass().add("snapshot-card");
+            content.getStyleClass().add("snapshot-card-current");
+            return content;
+        }
+
+        Button card = new Button();
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.setGraphic(content);
+        card.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        card.getStyleClass().add("snapshot-card");
+        card.getStyleClass().add("snapshot-card-saved");
+        card.setOnAction(event -> restoreSnapshot(snapshot));
         return card;
+    }
+
+    private StructureSnapshotSupport<?> currentSnapshotSupport() {
+        if (currentSubController instanceof StructureSnapshotSupport<?> support) {
+            return support;
+        }
+        return null;
+    }
+
+    @FXML
+    private void saveStructureSnapshot() {
+        if (currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        StructureSnapshotSupport<?> support = currentSnapshotSupport();
+        if (support == null || activeDefinition == null) {
+            return;
+        }
+        StructureSnapshot<?> snapshot = support.captureStructureSnapshot();
+        structureSnapshotStore.save(snapshot);
+        refreshSnapshotCards();
+        appendSystemLog(I18N.text("message.snapshot.saved", shortSnapshotId(snapshot)));
+    }
+
+    private void restoreSnapshot(StructureSnapshot<?> snapshot) {
+        if (currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        StructureSnapshotSupport<?> support = currentSnapshotSupport();
+        if (support == null || activeDefinition == null
+                || !activeDefinition.id().equals(snapshot.moduleId())) {
+            return;
+        }
+        try {
+            restoreSnapshotUnchecked(support, snapshot);
+        } catch (RuntimeException exception) {
+            appendSystemLog(I18N.text("message.snapshot.restore_failed"));
+            return;
+        }
+        refreshSnapshotCards();
+        appendSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void restoreSnapshotUnchecked(
+            StructureSnapshotSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
+        typedSupport.restoreStructureSnapshot(typedSnapshot);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String describeSnapshot(
+            StructureSnapshotSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
+        return typedSupport.describeStructureSnapshot(typedSnapshot.state());
+    }
+
+    private String formatSnapshotTime(StructureSnapshot<?> snapshot) {
+        return SNAPSHOT_TIME_FORMATTER.format(
+                snapshot.createdAt().atZone(ZoneId.systemDefault()));
+    }
+
+    private String shortSnapshotId(StructureSnapshot<?> snapshot) {
+        String id = snapshot.id();
+        int length = Math.min(8, id.length());
+        return id.substring(0, length);
+    }
+
+    private void updateSnapshotActionState() {
+        if (saveSnapshotBtn == null) {
+            return;
+        }
+        saveSnapshotBtn.setDisable(
+                currentSubController == null
+                        || currentSubController.isRunning()
+                        || currentSnapshotSupport() == null);
     }
 
     @FXML

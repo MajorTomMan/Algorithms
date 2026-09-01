@@ -82,6 +82,8 @@
                             <Region HBox.hgrow="ALWAYS" />
                             <Label fx:id="snapshotCountLabel" styleClass="panel-kicker" />
                         </HBox>
+                        <Button fx:id="saveSnapshotBtn" onAction="#saveStructureSnapshot"
+                            maxWidth="Infinity" styleClass="snapshot-save-button" />
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                             VBox.vgrow="ALWAYS" styleClass="snapshot-scroll-pane">
                             <content>

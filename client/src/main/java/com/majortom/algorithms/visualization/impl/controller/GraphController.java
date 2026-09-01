@@ -9,6 +9,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.graph.GraphEventReducer;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
+import com.majortom.algorithms.visualization.structure.StructureSnapshot;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -250,6 +251,36 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
 
     private void renderGraph() {
         renderStructureState(GraphViewState.initial(graph));
+    }
+
+    @Override
+    public StructureSnapshot<GraphViewState> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), GraphViewState.initial(graph));
+    }
+
+    @Override
+    public void restoreStructureSnapshot(StructureSnapshot<GraphViewState> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        graph = snapshot.state().graph();
+        if (!graph.nodes().contains(startNode)) {
+            startNode = 0;
+            if (!graph.nodes().isEmpty()) {
+                startNode = graph.nodes().getFirst();
+            }
+        }
+        if (startField != null) {
+            startField.setText(String.valueOf(startNode));
+        }
+        invalidateExecutionForInputChange();
+        renderGraph();
+        refreshStatsDisplay();
+    }
+
+    @Override
+    public String describeStructureSnapshot(GraphViewState state) {
+        return I18N.text("snapshot.graph.detail", state.graph().nodes().size(), state.graph().edges().size());
     }
 
     @Override

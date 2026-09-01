@@ -10,6 +10,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.MazeModuleVisualize
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.maze.MazeEventReducer;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
+import com.majortom.algorithms.visualization.structure.StructureSnapshot;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -140,7 +141,9 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
                 && state.entrance() != null && state.exit() != null) {
             generatedMaze = new GridMaze(
                     state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
-            renderStructureState(state);
+        }
+        if (!solving && state != null) {
+            renderStructureState(structureSnapshotState(state));
         }
         updateControlState();
         logI18n("message.execution.finished");
@@ -179,6 +182,77 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
 
     private void renderEmpty() {
         renderStructureState(MazeViewState.empty(size, size, structure == Structure.GRAPH));
+    }
+
+    @Override
+    public StructureSnapshot<MazeViewState> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), structureSnapshotState());
+    }
+
+    @Override
+    public void restoreStructureSnapshot(StructureSnapshot<MazeViewState> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        MazeViewState state = snapshot.state();
+        structure = Structure.ARRAY;
+        if (state.graphBased()) {
+            structure = Structure.GRAPH;
+        }
+        if (structureSelector != null) {
+            int index = 0;
+            if (structure == Structure.GRAPH) {
+                index = 1;
+            }
+            structureSelector.getSelectionModel().select(index);
+        }
+        size = state.rows();
+        if (sizeSlider != null) {
+            double sliderValue = Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), size));
+            sizeSlider.setValue(sliderValue);
+        }
+        if (sizeValueLabel != null) {
+            sizeValueLabel.setText(size + " x " + size);
+        }
+        generatedMaze = null;
+        if (!state.graphBased() && state.entrance() != null && state.exit() != null) {
+            generatedMaze = new GridMaze(
+                    state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
+        }
+        solving = false;
+        invalidateExecutionForInputChange();
+        renderStructureState(structureSnapshotState(state));
+        updateControlState();
+        refreshStatsDisplay();
+    }
+
+    @Override
+    public String describeStructureSnapshot(MazeViewState state) {
+        long openCells = state.openCells().stream().filter(Boolean::booleanValue).count();
+        return I18N.text("snapshot.maze.detail", state.rows(), state.columns(), openCells);
+    }
+
+    private MazeViewState structureSnapshotState() {
+        if (generatedMaze != null) {
+            return new MazeViewState(
+                    generatedMaze.rows(), generatedMaze.columns(), generatedMaze.openCells(),
+                    java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of(),
+                    java.util.Set.of(), java.util.Map.of(), generatedMaze.entrance(), generatedMaze.exit(),
+                    null, java.util.List.of(), false, MazeViewState.Phase.IDLE, false);
+        }
+        MazeViewState latest = latestStructureState();
+        if (latest != null) {
+            return structureSnapshotState(latest);
+        }
+        return MazeViewState.empty(size, size, structure == Structure.GRAPH);
+    }
+
+    private MazeViewState structureSnapshotState(MazeViewState state) {
+        return new MazeViewState(
+                state.rows(), state.columns(), state.openCells(),
+                java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of(),
+                java.util.Set.of(), java.util.Map.of(), state.entrance(), state.exit(), null,
+                state.graphEdges(), state.graphBased(), MazeViewState.Phase.IDLE, false);
     }
 
     @Override

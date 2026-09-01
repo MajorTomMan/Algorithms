@@ -1250,6 +1250,26 @@
     -fx-padding: 8px;
 }
 
+.snapshot-card.button {
+    -fx-alignment: TOP_LEFT;
+    -fx-content-display: graphic-only;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-min-height: 0;
+}
+
+.snapshot-card.button > .graphic {
+    -fx-padding: 8px;
+}
+
+.snapshot-card-saved {
+    -fx-background-color: #151e25;
+}
+
+.snapshot-card-saved:pressed {
+    -fx-background-color: #22384b;
+}
+
 .snapshot-card:hover {
     -fx-background-color: #1c2933;
     -fx-border-color: #526a7d;
@@ -1274,6 +1294,34 @@
 .snapshot-card-detail {
     -fx-text-fill: #71808b;
     -fx-font-size: 10px;
+}
+
+.snapshot-empty {
+    -fx-text-fill: #71808b;
+    -fx-font-size: 10px;
+    -fx-padding: 12px 8px;
+}
+
+.snapshot-save-button {
+    -fx-background-color: #14283d;
+    -fx-border-color: #3f8cff;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-text-fill: #78b5ff;
+    -fx-font-size: 10px;
+    -fx-padding: 6px 8px;
+    -fx-cursor: hand;
+}
+
+.snapshot-save-button:hover {
+    -fx-background-color: #1b3856;
+    -fx-text-fill: #e8f2ff;
+}
+
+.snapshot-save-button:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
 }
 
 .visualization-viewport {
