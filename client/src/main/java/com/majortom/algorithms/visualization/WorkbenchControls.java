@@ -6,7 +6,15 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 
-/** Shared controls supplied by the main JavaFX shell to one module controller. */
+/**
+ * Shared execution controls supplied by the dual-workspace JavaFX shell to one
+ * module controller.
+ *
+ * <p>The module panel is loaded once and split by {@code MainController} into
+ * structure and algorithm rails. The execution controls remain shared so a
+ * single controller continues to own run, pause, replay, statistics and export
+ * state.</p>
+ */
 public record WorkbenchControls(
         Label statsLabel,
         TextArea logArea,

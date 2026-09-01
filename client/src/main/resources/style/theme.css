@@ -863,3 +863,630 @@
 .root-pane:narrow-layout .visualization-viewport {
     -fx-padding: 6px;
 }
+
+/* ---------- dual workspace shell ---------- */
+
+.root-pane {
+    -fx-background-color: #080d11;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-size: 13px;
+}
+
+.top-shell {
+    -fx-background-color: #0b1116;
+    -fx-border-color: transparent transparent #29333b transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.top-bar {
+    -fx-background-color: #0b1116;
+    -fx-padding: 0 14px;
+    -fx-border-color: transparent;
+}
+
+.brand-title {
+    -fx-text-fill: #f1f4f6;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.top-divider,
+.toolbar-divider {
+    -fx-background-color: #34414a;
+    -fx-opacity: 0.75;
+}
+
+.module-nav {
+    -fx-padding: 0;
+}
+
+.module-nav .module-button {
+    -fx-min-width: 66px;
+    -fx-pref-width: 82px;
+    -fx-max-width: 130px;
+    -fx-min-height: 34px;
+    -fx-padding: 7px 10px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #27333c transparent;
+    -fx-border-width: 0 0 2px 0;
+    -fx-text-fill: #89949e;
+}
+
+.module-nav .module-button:hover {
+    -fx-background-color: #151e25;
+    -fx-text-fill: #edf1f4;
+}
+
+.module-nav .module-button:selected {
+    -fx-background-color: #111d27;
+    -fx-text-fill: #f4f6f7;
+}
+
+.module-nav .module-button.btn-ran-blue:selected {
+    -fx-border-color: transparent transparent #3e8cff transparent;
+}
+
+.module-nav .module-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent #ef5057 transparent;
+}
+
+.module-nav .module-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent #f0c52d transparent;
+}
+
+.module-nav .module-button.btn-ran-white:selected {
+    -fx-border-color: transparent transparent #e5e9ed transparent;
+}
+
+.workspace-mode-nav {
+    -fx-background-color: #111820;
+    -fx-background-radius: 4px;
+    -fx-border-color: #2c3942;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-padding: 2px;
+}
+
+.top-bar .workspace-mode-button {
+    -fx-min-width: 70px;
+    -fx-pref-width: 84px;
+    -fx-min-height: 30px;
+    -fx-pref-height: 32px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #9ca6ae;
+}
+
+.top-bar .workspace-mode-button:hover {
+    -fx-background-color: #1b2730;
+    -fx-text-fill: #f3f5f6;
+}
+
+.top-bar .workspace-mode-button:selected {
+    -fx-background-color: #2e5fa3;
+    -fx-border-color: #4b94f5;
+    -fx-text-fill: #ffffff;
+}
+
+.shell-toggle-button {
+    -fx-min-width: 72px;
+    -fx-pref-width: 82px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 34px;
+    -fx-background-color: #151e25;
+    -fx-border-color: #35434d;
+    -fx-text-fill: #dce2e6;
+}
+
+.shell-toggle-button:hover {
+    -fx-background-color: #202d36;
+    -fx-border-color: #697b88;
+}
+
+.workspace-layer {
+    -fx-background-color: #080d11;
+    -fx-padding: 8px;
+}
+
+.workspace-split {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.workspace-split > .split-pane-divider {
+    -fx-background-color: #1b252d;
+    -fx-padding: 0 3px;
+    -fx-border-color: #2a3640;
+    -fx-border-width: 0 1px;
+}
+
+.workspace-split > .split-pane-divider:hover {
+    -fx-background-color: #304252;
+}
+
+.workspace-pane {
+    -fx-background-color: #10171d;
+    -fx-border-color: #2c3841;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-padding: 0;
+}
+
+.workspace-pane:workspace-focus {
+    -fx-border-color: #3f8cff;
+    -fx-effect: dropshadow(gaussian, rgba(45, 124, 226, 0.18), 14, 0.2, 0, 0);
+}
+
+.workspace-pane-algorithm:workspace-focus {
+    -fx-border-color: #f0c52d;
+    -fx-effect: dropshadow(gaussian, rgba(240, 197, 45, 0.12), 14, 0.2, 0, 0);
+}
+
+.workspace-pane-header {
+    -fx-min-height: 52px;
+    -fx-pref-height: 58px;
+    -fx-padding: 9px 13px;
+    -fx-background-color: #111a21;
+    -fx-border-color: transparent transparent #293640 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-background-radius: 5px 5px 0 0;
+}
+
+.workspace-title {
+    -fx-text-fill: #f0f3f5;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.workspace-subtitle {
+    -fx-text-fill: #84919b;
+    -fx-font-size: 11px;
+}
+
+.workspace-index {
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 4px 7px;
+    -fx-background-radius: 3px;
+}
+
+.workspace-index-blue {
+    -fx-text-fill: #66a9ff;
+    -fx-background-color: #1c385d;
+}
+
+.workspace-index-yellow {
+    -fx-text-fill: #f3d45b;
+    -fx-background-color: #443a1a;
+}
+
+.workspace-body {
+    -fx-padding: 8px;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.control-rail,
+.diagnostics-panel,
+.snapshot-panel {
+    -fx-background-color: #111920;
+    -fx-border-color: #2b3740;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-padding: 0 7px 7px 7px;
+}
+
+.control-rail {
+    -fx-pref-width: 220px;
+}
+
+.algorithm-workspace .control-rail {
+    -fx-border-color: #3f3421;
+}
+
+.rail-header {
+    -fx-min-height: 35px;
+    -fx-pref-height: 38px;
+    -fx-padding: 8px 3px 7px 3px;
+    -fx-border-color: transparent transparent #293640 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.rail-header-secondary {
+    -fx-padding: 10px 3px 7px 3px;
+}
+
+.rail-title {
+    -fx-text-fill: #edf1f3;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.module-control-host {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.module-control-panel {
+    -fx-min-width: 0;
+    -fx-padding: 0;
+}
+
+.control-section,
+.control-card {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #293640 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 2px 11px 2px;
+}
+
+.control-section:hover,
+.control-card:hover {
+    -fx-background-color: #172129;
+}
+
+.structure-section {
+    -fx-border-color: transparent transparent #293640 #3f8cff;
+    -fx-border-width: 0 0 1px 2px;
+    -fx-padding-left: 9px;
+}
+
+.algorithm-section {
+    -fx-border-color: transparent transparent #293640 #f0c52d;
+    -fx-border-width: 0 0 1px 2px;
+    -fx-padding-left: 9px;
+}
+
+.control-section-header {
+    -fx-min-height: 22px;
+    -fx-padding: 0 0 6px 0;
+}
+
+.section-chevron {
+    -fx-text-fill: #8997a1;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.control-label {
+    -fx-text-fill: #dbe1e5;
+    -fx-font-size: 12px;
+}
+
+.operation-label,
+.operation-hint {
+    -fx-text-fill: #82909b;
+    -fx-font-size: 11px;
+}
+
+.operation-value {
+    -fx-text-fill: #f1cc3a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-weight: bold;
+}
+
+.operation-row {
+    -fx-spacing: 5px;
+}
+
+.operation-input {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-padding: 5px 7px;
+}
+
+.operation-button {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-padding: 5px 7px;
+    -fx-font-size: 11px;
+}
+
+.structure-preview-viewport {
+    -fx-background-color: #0b1218;
+    -fx-border-color: #27343d;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.structure-preview-empty {
+    -fx-padding: 20px;
+}
+
+.structure-preview-glyph {
+    -fx-text-fill: #3f8cff;
+    -fx-font-size: 44px;
+    -fx-font-family: "Segoe UI Symbol", "Segoe UI";
+}
+
+.structure-preview-title,
+.viewport-title {
+    -fx-text-fill: #e9eef1;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.structure-preview-hint,
+.viewport-hint-label {
+    -fx-text-fill: #788791;
+    -fx-font-size: 11px;
+    -fx-text-alignment: CENTER;
+}
+
+.snapshot-panel {
+    -fx-padding: 0 6px 6px 6px;
+}
+
+.snapshot-scroll-pane,
+.snapshot-scroll-pane > .viewport,
+.panel-scroll-pane,
+.panel-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+}
+
+.snapshot-card {
+    -fx-background-color: #151e25;
+    -fx-border-color: #2d3b45;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 8px;
+}
+
+.snapshot-card:hover {
+    -fx-background-color: #1c2933;
+    -fx-border-color: #526a7d;
+}
+
+.snapshot-card-current {
+    -fx-background-color: #14283d;
+    -fx-border-color: #3f8cff;
+}
+
+.snapshot-card-title {
+    -fx-text-fill: #e8edf0;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.snapshot-card-state {
+    -fx-text-fill: #5aa1ff;
+    -fx-font-size: 10px;
+}
+
+.snapshot-card-detail {
+    -fx-text-fill: #71808b;
+    -fx-font-size: 10px;
+}
+
+.visualization-viewport {
+    -fx-background-color: #05070a;
+    -fx-border-color: #27343d;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 0;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.visualization-container {
+    -fx-background-color: #05070a;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.viewport-overlay {
+    -fx-padding: 11px 13px;
+}
+
+.viewport-overlay .viewport-hint-label {
+    -fx-text-alignment: LEFT;
+}
+
+.diagnostics-panel {
+    -fx-padding: 0 6px 6px 6px;
+}
+
+.stats-card,
+.log-card {
+    -fx-background-color: #0c1319;
+    -fx-border-color: #2a3740;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.stats-card > .viewport {
+    -fx-background-color: #0c1319;
+    -fx-padding: 7px;
+}
+
+.stats-text {
+    -fx-text-fill: #dbe3e8;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 11px;
+    -fx-line-spacing: 3px;
+    -fx-padding: 2px;
+}
+
+.panel-kicker-blue {
+    -fx-text-fill: #5aa1ff;
+}
+
+.log-area {
+    -fx-control-inner-background: #0c1319;
+    -fx-text-fill: #b9c8d2;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 11px;
+    -fx-highlight-fill: #2e5fa3;
+    -fx-highlight-text-fill: #ffffff;
+}
+
+.log-area .content {
+    -fx-background-color: #0c1319;
+}
+
+.bottom-dock {
+    -fx-background-color: #0b1116;
+    -fx-border-color: #293640 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 8px 12px 10px 12px;
+}
+
+.playback-toolbar {
+    -fx-min-height: 36px;
+}
+
+.playback-toolbar .button {
+    -fx-min-height: 32px;
+    -fx-pref-height: 34px;
+    -fx-min-width: 70px;
+    -fx-pref-width: 82px;
+    -fx-padding: 6px 8px;
+    -fx-font-size: 11px;
+}
+
+.playback-toolbar .step-button {
+    -fx-min-width: 38px;
+    -fx-pref-width: 42px;
+    -fx-max-width: 46px;
+}
+
+.timeline-row {
+    -fx-padding: 7px 2px 0 2px;
+    -fx-border-color: #26333c transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.timeline-row .slider {
+    -fx-padding: 2px 0 0 0;
+}
+
+.btn-ran-yellow {
+    -fx-background-color: #473b16;
+    -fx-border-color: #d5ae24;
+    -fx-text-fill: #f6d34b;
+}
+
+.btn-ran-yellow:hover {
+    -fx-background-color: #5b4b1a;
+}
+
+.btn-primary,
+.btn-run-neon,
+.btn-ran-blue {
+    -fx-background-color: #28518d;
+    -fx-border-color: #4c94f5;
+    -fx-text-fill: #eef6ff;
+}
+
+.btn-ran-red {
+    -fx-background-color: #542a31;
+    -fx-border-color: #ed5960;
+    -fx-text-fill: #ffb0b4;
+}
+
+.btn-ran-white {
+    -fx-background-color: #202b33;
+    -fx-border-color: #71808b;
+    -fx-text-fill: #edf1f3;
+}
+
+.btn-primary:hover,
+.btn-run-neon:hover,
+.btn-ran-blue:hover {
+    -fx-background-color: #3568ad;
+}
+
+.btn-ran-red:hover {
+    -fx-background-color: #6a333b;
+}
+
+.btn-ran-white:hover {
+    -fx-background-color: #2d3b45;
+}
+
+/* ---------- compact and narrow workspaces ---------- */
+
+.root-pane:compact-layout .workspace-layer {
+    -fx-padding: 6px;
+}
+
+.root-pane:compact-layout .workspace-body {
+    -fx-padding: 6px;
+}
+
+.root-pane:compact-layout .workspace-pane-header {
+    -fx-min-height: 46px;
+    -fx-pref-height: 50px;
+    -fx-padding: 7px 10px;
+}
+
+.root-pane:compact-layout .workspace-title {
+    -fx-font-size: 13px;
+}
+
+.root-pane:compact-layout .control-rail,
+.root-pane:compact-layout .diagnostics-panel {
+    -fx-pref-width: 200px;
+}
+
+.root-pane:compact-layout .snapshot-panel {
+    -fx-pref-width: 160px;
+}
+
+.root-pane:narrow-layout .workspace-layer {
+    -fx-padding: 4px;
+}
+
+.root-pane:narrow-layout .workspace-body {
+    -fx-padding: 4px;
+}
+
+.root-pane:narrow-layout .workspace-pane-header {
+    -fx-min-height: 42px;
+    -fx-pref-height: 44px;
+}
+
+.root-pane:narrow-layout .module-nav .module-button {
+    -fx-min-width: 56px;
+    -fx-pref-width: 64px;
+    -fx-padding: 6px 5px;
+    -fx-font-size: 11px;
+}
+
+.root-pane:narrow-layout .workspace-mode-button {
+    -fx-min-width: 56px;
+    -fx-pref-width: 64px;
+    -fx-padding: 5px 6px;
+    -fx-font-size: 11px;
+}
+
+.root-pane:narrow-layout .playback-toolbar {
+    -fx-spacing: 4px;
+}
+
+.root-pane:narrow-layout .playback-toolbar .button {
+    -fx-min-width: 56px;
+    -fx-pref-width: 64px;
+    -fx-padding: 5px 5px;
+    -fx-font-size: 10px;
+}

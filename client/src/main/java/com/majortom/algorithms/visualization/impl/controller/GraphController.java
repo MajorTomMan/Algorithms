@@ -249,7 +249,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     }
 
     private void renderGraph() {
-        renderViewState(GraphViewState.initial(graph));
+        renderStructureState(GraphViewState.initial(graph));
     }
 
     @Override

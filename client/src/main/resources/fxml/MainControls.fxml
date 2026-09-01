@@ -5,187 +5,209 @@
 <?import java.lang.String?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-  fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
-  prefHeight="900.0" prefWidth="1440.0" minWidth="0.0" minHeight="0.0"
-  styleClass="root-pane" stylesheets="@../style/theme.css">
+    fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
+    prefHeight="900.0" prefWidth="1600.0" minWidth="0.0" minHeight="0.0"
+    styleClass="root-pane" stylesheets="@../style/theme.css">
 
-  <top>
-    <VBox fx:id="topShell" minHeight="62.0" prefHeight="62.0" maxHeight="62.0"
-      styleClass="top-shell">
-      <HBox fx:id="topBar" minHeight="62.0" prefHeight="62.0" maxHeight="62.0"
-        styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
-        <Label fx:id="menuTitleLabel" styleClass="brand-title" />
-        <Separator orientation="VERTICAL" styleClass="top-divider" />
-        <HBox fx:id="workspaceModeBox" styleClass="workspace-mode-nav" alignment="CENTER_LEFT" spacing="4">
-          <Button fx:id="structureWorkspaceBtn" onAction="#selectStructureWorkspace"
-            styleClass="workspace-mode-button" />
-          <Button fx:id="algorithmWorkspaceBtn" onAction="#selectAlgorithmWorkspace"
-            styleClass="workspace-mode-button" />
-        </HBox>
-        <Separator orientation="VERTICAL" styleClass="top-divider" />
-        <HBox fx:id="moduleMenuBox" styleClass="module-nav" alignment="CENTER_LEFT" spacing="6"
-          HBox.hgrow="ALWAYS" />
-        <Region HBox.hgrow="ALWAYS" />
-        <Button fx:id="settingsToggleBtn" onAction="#toggleSettingsPanel"
-          styleClass="shell-toggle-button desktop-drawer-toggle" />
-        <Button fx:id="diagnosticsToggleBtn" onAction="#toggleDiagnosticsPanel"
-          styleClass="shell-toggle-button desktop-drawer-toggle" />
-        <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
-          styleClass="shell-toggle-button desktop-drawer-toggle" />
-      </HBox>
-    </VBox>
-  </top>
+    <top>
+        <VBox fx:id="topShell" styleClass="top-shell">
+            <HBox fx:id="topBar" minHeight="58.0" prefHeight="58.0" maxHeight="58.0"
+                styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+                <Label fx:id="menuTitleLabel" styleClass="brand-title" />
+                <Separator orientation="VERTICAL" styleClass="top-divider" />
+                <HBox fx:id="moduleMenuBox" styleClass="module-nav" alignment="CENTER_LEFT" spacing="4"
+                    HBox.hgrow="ALWAYS" />
+                <Separator orientation="VERTICAL" styleClass="top-divider" />
+                <HBox fx:id="workspaceModeBox" styleClass="workspace-mode-nav" alignment="CENTER_LEFT" spacing="2">
+                    <Button fx:id="structureWorkspaceBtn" onAction="#selectStructureWorkspace"
+                        styleClass="workspace-mode-button" />
+                    <Button fx:id="algorithmWorkspaceBtn" onAction="#selectAlgorithmWorkspace"
+                        styleClass="workspace-mode-button" />
+                </HBox>
+                <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
+                    styleClass="shell-toggle-button" />
+            </HBox>
+        </VBox>
+    </top>
 
-  <center>
-    <StackPane fx:id="workspaceLayer" styleClass="workspace-layer">
-      <HBox fx:id="desktopWorkspace" maxWidth="Infinity" maxHeight="Infinity"
-        styleClass="desktop-workspace" spacing="0">
-        <VBox fx:id="settingsPanel" minWidth="220.0" prefWidth="250.0" maxWidth="340.0"
-          maxHeight="Infinity" spacing="12">
-        <styleClass>
-          <String fx:value="side-panel" />
-          <String fx:value="settings-panel" />
-        </styleClass>
-        <HBox styleClass="panel-header" alignment="CENTER_LEFT" spacing="8">
-          <Label fx:id="settingsTitleLabel" styleClass="panel-title" />
-          <Region HBox.hgrow="ALWAYS" />
-          <Label fx:id="settingsKickerLabel" styleClass="panel-kicker" />
-          <Button fx:id="settingsCloseBtn" text="×" onAction="#toggleSettingsPanel"
-            accessibleRole="BUTTON" styleClass="drawer-close-button" />
-        </HBox>
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-          VBox.vgrow="ALWAYS" styleClass="panel-scroll-pane">
-          <content>
-            <VBox fillWidth="true">
-              <styleClass>
-                <String fx:value="module-control-host" />
-                <String fx:value="card-stack" />
-              </styleClass>
-              <HBox fx:id="customControlBox" maxWidth="Infinity" fillHeight="true" />
+    <center>
+        <StackPane fx:id="workspaceLayer" styleClass="workspace-layer">
+            <VBox fx:id="structureWorkspacePane" focusTraversable="true"
+                styleClass="workspace-pane">
+                <HBox styleClass="workspace-pane-header" alignment="CENTER_LEFT" spacing="8">
+                    <VBox spacing="2">
+                        <Label fx:id="structureWorkspaceTitleLabel" styleClass="workspace-title" />
+                        <Label fx:id="structureWorkspaceSubtitleLabel" styleClass="workspace-subtitle" />
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label text="01">
+                        <styleClass>
+                            <String fx:value="workspace-index" />
+                            <String fx:value="workspace-index-blue" />
+                        </styleClass>
+                    </Label>
+                </HBox>
+                <HBox fx:id="structureWorkspaceBody" spacing="8" VBox.vgrow="ALWAYS"
+                    styleClass="workspace-body">
+                    <VBox fx:id="structureControlRail" minWidth="170.0" prefWidth="220.0" maxWidth="280.0"
+                        styleClass="control-rail">
+                        <HBox styleClass="rail-header" alignment="CENTER_LEFT">
+                            <Label fx:id="structureControlsTitleLabel" styleClass="rail-title" />
+                        </HBox>
+                        <ScrollPane fx:id="structureControlsScroll" fitToWidth="true"
+                            hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
+                            styleClass="panel-scroll-pane">
+                            <content>
+                                <VBox fx:id="structureControlsHost" fillWidth="true" spacing="0"
+                                    styleClass="module-control-host">
+                                    <HBox fx:id="customControlBox" maxWidth="Infinity" fillHeight="true" />
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </VBox>
+                    <StackPane fx:id="structurePreviewViewport" minWidth="150.0"
+                        HBox.hgrow="ALWAYS" styleClass="structure-preview-viewport">
+                        <VBox fx:id="structurePreviewEmpty" alignment="CENTER" spacing="10"
+                            mouseTransparent="true" styleClass="structure-preview-empty">
+                            <Label text="◇" styleClass="structure-preview-glyph" />
+                            <Label fx:id="structurePreviewTitleLabel" styleClass="structure-preview-title" />
+                            <Label fx:id="structurePreviewHintLabel" wrapText="true"
+                                maxWidth="320.0" styleClass="structure-preview-hint" />
+                        </VBox>
+                    </StackPane>
+                    <VBox fx:id="snapshotPanel" minWidth="140.0" prefWidth="180.0" maxWidth="220.0"
+                        spacing="7" styleClass="snapshot-panel">
+                        <HBox styleClass="rail-header" alignment="CENTER_LEFT" spacing="6">
+                            <Label fx:id="snapshotTitleLabel" styleClass="rail-title" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="snapshotCountLabel" styleClass="panel-kicker" />
+                        </HBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                            VBox.vgrow="ALWAYS" styleClass="snapshot-scroll-pane">
+                            <content>
+                                <VBox fx:id="snapshotCards" fillWidth="true" spacing="7" />
+                            </content>
+                        </ScrollPane>
+                    </VBox>
+                </HBox>
             </VBox>
-          </content>
-        </ScrollPane>
-        </VBox>
 
-        <StackPane fx:id="visualizationViewport" minHeight="120.0" prefHeight="480.0"
-          HBox.hgrow="ALWAYS" styleClass="visualization-viewport">
-          <StackPane fx:id="visualizationContainer" styleClass="visualization-container" />
-          <HBox alignment="TOP_RIGHT" mouseTransparent="true" styleClass="viewport-hint">
-            <Label fx:id="viewportHintLabel" styleClass="viewport-hint-label" />
-          </HBox>
+            <VBox fx:id="algorithmWorkspacePane" focusTraversable="true" managed="false" visible="false">
+                <styleClass>
+                    <String fx:value="workspace-pane" />
+                    <String fx:value="workspace-pane-algorithm" />
+                </styleClass>
+                <HBox styleClass="workspace-pane-header" alignment="CENTER_LEFT" spacing="8">
+                    <VBox spacing="2">
+                        <Label fx:id="algorithmWorkspaceTitleLabel" styleClass="workspace-title" />
+                        <Label fx:id="algorithmWorkspaceSubtitleLabel" styleClass="workspace-subtitle" />
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label text="02">
+                        <styleClass>
+                            <String fx:value="workspace-index" />
+                            <String fx:value="workspace-index-yellow" />
+                        </styleClass>
+                    </Label>
+                </HBox>
+                <HBox fx:id="algorithmWorkspaceBody" spacing="8" VBox.vgrow="ALWAYS"
+                    styleClass="workspace-body">
+                    <VBox fx:id="algorithmControlRail" minWidth="170.0" prefWidth="220.0" maxWidth="280.0"
+                        styleClass="control-rail">
+                        <HBox styleClass="rail-header" alignment="CENTER_LEFT">
+                            <Label fx:id="algorithmControlsTitleLabel" styleClass="rail-title" />
+                        </HBox>
+                        <ScrollPane fx:id="algorithmControlsScroll" fitToWidth="true"
+                            hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
+                            styleClass="panel-scroll-pane">
+                            <content>
+                                <VBox fx:id="algorithmControlsHost" fillWidth="true" spacing="0"
+                                    styleClass="module-control-host" />
+                            </content>
+                        </ScrollPane>
+                    </VBox>
+                    <StackPane fx:id="visualizationViewport" minWidth="180.0" minHeight="160.0"
+                        HBox.hgrow="ALWAYS" styleClass="visualization-viewport">
+                        <StackPane fx:id="visualizationContainer" styleClass="visualization-container" />
+                        <VBox alignment="TOP_LEFT" mouseTransparent="true" styleClass="viewport-overlay">
+                            <Label fx:id="algorithmViewTitleLabel" styleClass="viewport-title" />
+                            <Label fx:id="viewportHintLabel" styleClass="viewport-hint-label" />
+                        </VBox>
+                    </StackPane>
+                    <VBox fx:id="diagnosticsPanel" minWidth="180.0" prefWidth="235.0" maxWidth="300.0"
+                        spacing="7" styleClass="diagnostics-panel">
+                        <HBox styleClass="rail-header" alignment="CENTER_LEFT" spacing="7">
+                            <Label fx:id="statsTitleLabel" styleClass="rail-title" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="liveLabel">
+                                <styleClass>
+                                    <String fx:value="panel-kicker" />
+                                    <String fx:value="panel-kicker-blue" />
+                                </styleClass>
+                            </Label>
+                        </HBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                            prefHeight="150.0" minHeight="96.0">
+                            <styleClass>
+                                <String fx:value="stats-scroll-pane" />
+                                <String fx:value="stats-card" />
+                            </styleClass>
+                            <content>
+                                <Label fx:id="statsLabel" wrapText="true" maxWidth="Infinity"
+                                    styleClass="stats-text" />
+                            </content>
+                        </ScrollPane>
+                        <HBox alignment="CENTER_LEFT">
+                            <styleClass>
+                                <String fx:value="rail-header" />
+                                <String fx:value="rail-header-secondary" />
+                            </styleClass>
+                            <Label fx:id="logTitleLabel" styleClass="rail-title" />
+                        </HBox>
+                        <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" wrapText="true">
+                            <styleClass>
+                                <String fx:value="log-area" />
+                                <String fx:value="log-card" />
+                            </styleClass>
+                        </TextArea>
+                    </VBox>
+                </HBox>
+            </VBox>
         </StackPane>
+    </center>
 
-        <VBox fx:id="diagnosticsPanel" minWidth="230.0" prefWidth="300.0" maxWidth="380.0"
-          maxHeight="Infinity" spacing="12">
-        <styleClass>
-          <String fx:value="side-panel" />
-          <String fx:value="diagnostics-panel" />
-        </styleClass>
-        <HBox alignment="CENTER_LEFT" spacing="8" focusTraversable="true"
-          onMouseClicked="#toggleDiagnosticsSection" onKeyPressed="#handleDiagnosticsSectionKey">
-          <styleClass>
-            <String fx:value="panel-header" />
-            <String fx:value="diagnostic-section-header" />
-          </styleClass>
-          <Label fx:id="statsTitleLabel" styleClass="panel-title" />
-          <Region HBox.hgrow="ALWAYS" />
-          <Label fx:id="liveLabel">
-            <styleClass>
-              <String fx:value="panel-kicker" />
-              <String fx:value="panel-kicker-blue" />
-            </styleClass>
-          </Label>
-          <Label text="⌃" styleClass="section-chevron" />
-          <Button fx:id="diagnosticsCloseBtn" text="×" onAction="#toggleDiagnosticsPanel"
-            accessibleRole="BUTTON" styleClass="drawer-close-button" />
-        </HBox>
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-          prefHeight="150.0" minHeight="92.0">
-          <styleClass>
-            <String fx:value="stats-scroll-pane" />
-            <String fx:value="diagnostic-card" />
-            <String fx:value="stats-card" />
-          </styleClass>
-          <content>
-            <Label fx:id="statsLabel" styleClass="stats-text" wrapText="true" maxWidth="Infinity" />
-          </content>
-        </ScrollPane>
-        <HBox alignment="CENTER_LEFT" focusTraversable="true"
-          onMouseClicked="#toggleDiagnosticsSection" onKeyPressed="#handleDiagnosticsSectionKey">
-          <styleClass>
-            <String fx:value="panel-header" />
-            <String fx:value="panel-header-secondary" />
-            <String fx:value="diagnostic-section-header" />
-          </styleClass>
-          <Label fx:id="logTitleLabel" styleClass="panel-title" />
-          <Region HBox.hgrow="ALWAYS" />
-          <Label text="⌃" styleClass="section-chevron" />
-        </HBox>
-        <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" wrapText="true">
-          <styleClass>
-            <String fx:value="log-area" />
-            <String fx:value="diagnostic-card" />
-            <String fx:value="log-card" />
-          </styleClass>
-        </TextArea>
+    <bottom>
+        <VBox fx:id="bottomDock" spacing="8" styleClass="bottom-dock">
+            <HBox fx:id="playbackToolbar" alignment="CENTER_LEFT" spacing="7" styleClass="playback-toolbar">
+                <Button fx:id="startBtn" styleClass="btn-primary" />
+                <Button fx:id="pauseBtn" styleClass="btn-ran-white" />
+                <Button fx:id="resetBtn" styleClass="btn-ran-red" />
+                <Button fx:id="replayBtn" styleClass="btn-ran-blue" />
+                <Button fx:id="stepBackwardBtn" text="←">
+                    <styleClass>
+                        <String fx:value="btn-ran-white" />
+                        <String fx:value="step-button" />
+                    </styleClass>
+                </Button>
+                <Button fx:id="stepForwardBtn" text="→">
+                    <styleClass>
+                        <String fx:value="btn-ran-white" />
+                        <String fx:value="step-button" />
+                    </styleClass>
+                </Button>
+                <Separator orientation="VERTICAL" styleClass="toolbar-divider" />
+                <Button fx:id="exportBtn" styleClass="btn-ran-yellow" />
+                <Button fx:id="compareBtn" styleClass="btn-ran-red" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="delayLabel" styleClass="control-label" />
+                <Slider fx:id="delaySlider" min="0" max="500" value="50" blockIncrement="10"
+                    minWidth="120.0" prefWidth="180.0" maxWidth="220.0" />
+            </HBox>
+            <HBox fx:id="timelineRow" alignment="CENTER_LEFT" spacing="12" styleClass="timeline-row">
+                <Label fx:id="timelineLabel" minWidth="68.0" styleClass="control-label" />
+                <Slider fx:id="timelineSlider" min="0" max="1" value="0" disable="true"
+                    minWidth="140.0" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+            </HBox>
         </VBox>
-      </HBox>
-
-      <HBox fx:id="narrowPanelToggleBar" managed="false" visible="false" alignment="CENTER"
-        spacing="8" maxWidth="Infinity" styleClass="narrow-panel-toggle-bar"
-        StackPane.alignment="BOTTOM_CENTER">
-        <Button fx:id="narrowSettingsToggleBtn" onAction="#toggleSettingsPanel"
-          styleClass="shell-toggle-button" />
-        <Button fx:id="narrowDiagnosticsToggleBtn" onAction="#toggleDiagnosticsPanel"
-          styleClass="shell-toggle-button" />
-        <Button fx:id="narrowLangBtn" text="EN / 中文" onAction="#toggleLanguage"
-          styleClass="shell-toggle-button" />
-      </HBox>
-
-      <Region fx:id="drawerScrim" managed="false" visible="false" maxWidth="Infinity"
-        maxHeight="Infinity" onMouseClicked="#closeDrawers" styleClass="drawer-scrim" />
-    </StackPane>
-  </center>
-
-  <bottom>
-    <VBox styleClass="bottom-dock" spacing="8">
-      <FlowPane alignment="CENTER_LEFT" hgap="8" vgap="7" prefWrapLength="1100.0"
-        styleClass="playback-actions">
-        <Button fx:id="startBtn" styleClass="btn-primary" />
-        <Button fx:id="pauseBtn" styleClass="btn-ran-gold" />
-        <Button fx:id="resetBtn" styleClass="btn-ran-red" />
-        <Button fx:id="replayBtn" styleClass="btn-ran-blue" />
-        <Button fx:id="stepBackwardBtn" text="←">
-          <styleClass>
-            <String fx:value="btn-ran-white" />
-            <String fx:value="step-button" />
-          </styleClass>
-        </Button>
-        <Button fx:id="stepForwardBtn" text="→">
-          <styleClass>
-            <String fx:value="btn-ran-white" />
-            <String fx:value="step-button" />
-          </styleClass>
-        </Button>
-        <Button fx:id="exportBtn" styleClass="btn-ran-gold" />
-        <Button fx:id="compareBtn" styleClass="btn-ran-red" />
-      </FlowPane>
-      <HBox styleClass="timeline-row" alignment="CENTER_LEFT" spacing="18">
-        <VBox styleClass="timeline-group" spacing="4" minWidth="120.0" prefWidth="180.0">
-          <Label fx:id="delayLabel" styleClass="control-label" />
-          <Slider fx:id="delaySlider" min="0" max="500" value="50" minWidth="90.0"
-            maxWidth="Infinity" />
-        </VBox>
-        <VBox spacing="4" HBox.hgrow="ALWAYS">
-          <styleClass>
-            <String fx:value="timeline-group" />
-            <String fx:value="timeline-main" />
-          </styleClass>
-          <Label fx:id="timelineLabel" styleClass="control-label" />
-          <Slider fx:id="timelineSlider" min="0" max="1" value="0" minWidth="120.0"
-            maxWidth="Infinity" />
-        </VBox>
-      </HBox>
-    </VBox>
-  </bottom>
+    </bottom>
 </BorderPane>

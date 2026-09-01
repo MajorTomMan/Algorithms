@@ -99,6 +99,7 @@ public abstract class BaseController<S> implements Initializable {
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
     private S latestViewState;
+    private S latestStructureState;
     private ExecutionHandle currentSession;
     private ClientExecutionRecord lastExecution;
     private ReducedEventTimeline<S> lastTimeline;
@@ -405,6 +406,40 @@ public abstract class BaseController<S> implements Initializable {
         latestViewState = state;
         if (visualizer != null) {
             visualizer.render(state);
+        }
+    }
+
+    /** Stores an editable structure state without changing the algorithm cursor. */
+    protected final void renderStructureState(S state) {
+        if (state == null) {
+            return;
+        }
+        latestStructureState = state;
+        if (visualizer != null) {
+            visualizer.render(state);
+        }
+    }
+
+    /** Restores the structure page's state into the shared visualizer. */
+    public final void showStructureState() {
+        restoreStructureState();
+    }
+
+    /** Restores the latest algorithm frame after returning to the algorithm page. */
+    public final void showAlgorithmState() {
+        if (latestViewState != null && visualizer != null) {
+            visualizer.render(latestViewState);
+        }
+    }
+
+    /** Hook for modules that need to rebuild their structure projection. */
+    protected void restoreStructureState() {
+        if (latestStructureState != null && visualizer != null) {
+            visualizer.render(latestStructureState);
+            return;
+        }
+        if (latestViewState != null && visualizer != null) {
+            visualizer.render(latestViewState);
         }
     }
 

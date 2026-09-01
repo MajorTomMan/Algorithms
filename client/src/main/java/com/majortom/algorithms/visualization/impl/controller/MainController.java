@@ -9,7 +9,7 @@ import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
 import com.majortom.algorithms.visualization.module.ModuleRegistry;
-
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
@@ -17,19 +17,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
-import javafx.css.PseudoClass;
-import javafx.geometry.Pos;
 
 import java.net.URL;
 import java.util.LinkedHashMap;
@@ -39,23 +34,20 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
- * 主界面控制器。
+ * 双工作区 JavaFX 外壳。
  *
- * <p>
- * 它负责装配全局 UI：顶部模块导航、可视化容器、两侧面板和底部执行按钮。
- * 具体算法逻辑不在这里执行，而是通过 {@link ModuleRegistry} 创建当前模块的
- * {@link BaseController} 子控制器，再把共享控件注入进去。
- * </p>
+ * <p>结构工作区负责输入、编辑和快照，算法工作区负责选择算法、执行以及逐帧
+ * 回放。模块控制器仍然拥有具体的输入和算法逻辑，外壳只负责把同一套模块面板
+ * 按语义区段装配到两个工作区。</p>
  */
 public class MainController implements Initializable {
 
     private static final PseudoClass COMPACT_LAYOUT = PseudoClass.getPseudoClass("compact-layout");
+    private static final PseudoClass NARROW_LAYOUT = PseudoClass.getPseudoClass("narrow-layout");
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
     private static final double COMPACT_LAYOUT_WIDTH = 1180.0d;
-    private static final double NARROW_LAYOUT_WIDTH = 1020.0d;
-    private static final String DIAGNOSTIC_SECTION_EXPANDED_PROPERTY =
-            MainController.class.getName() + ".diagnosticSectionExpanded";
+    private static final double NARROW_LAYOUT_WIDTH = 860.0d;
 
     @FXML
     private BorderPane rootPane;
@@ -64,39 +56,85 @@ public class MainController implements Initializable {
     @FXML
     private HBox topBar;
     @FXML
+    private HBox moduleMenuBox;
+    @FXML
+    private HBox workspaceModeBox;
+    @FXML
     private Button structureWorkspaceBtn;
     @FXML
     private Button algorithmWorkspaceBtn;
     @FXML
+    private Button langBtn;
+    @FXML
     private StackPane workspaceLayer;
     @FXML
-    private HBox desktopWorkspace;
+    private VBox structureWorkspacePane;
+    @FXML
+    private VBox algorithmWorkspacePane;
+    @FXML
+    private HBox structureWorkspaceBody;
+    @FXML
+    private HBox algorithmWorkspaceBody;
+    @FXML
+    private VBox structureControlsHost;
+    @FXML
+    private VBox algorithmControlsHost;
+    @FXML
+    private HBox customControlBox;
+    @FXML
+    private VBox structureControlRail;
+    @FXML
+    private VBox algorithmControlRail;
+    @FXML
+    private VBox snapshotPanel;
+    @FXML
+    private VBox snapshotCards;
+    @FXML
+    private StackPane structurePreviewViewport;
+    @FXML
+    private VBox structurePreviewEmpty;
     @FXML
     private StackPane visualizationViewport;
     @FXML
     private StackPane visualizationContainer;
     @FXML
-    private HBox customControlBox;
-    @FXML
-    private VBox settingsPanel;
-    @FXML
     private VBox diagnosticsPanel;
     @FXML
-    private Region drawerScrim;
+    private VBox bottomDock;
     @FXML
-    private HBox moduleMenuBox;
+    private HBox playbackToolbar;
+    @FXML
+    private HBox timelineRow;
     @FXML
     private Label menuTitleLabel;
     @FXML
-    private Label settingsTitleLabel;
+    private Label structureWorkspaceTitleLabel;
     @FXML
-    private Label settingsKickerLabel;
+    private Label structureWorkspaceSubtitleLabel;
+    @FXML
+    private Label structureControlsTitleLabel;
+    @FXML
+    private Label algorithmWorkspaceTitleLabel;
+    @FXML
+    private Label algorithmWorkspaceSubtitleLabel;
+    @FXML
+    private Label algorithmControlsTitleLabel;
+    @FXML
+    private Label structurePreviewTitleLabel;
+    @FXML
+    private Label structurePreviewHintLabel;
+    @FXML
+    private Label snapshotTitleLabel;
+    @FXML
+    private Label snapshotCountLabel;
+    @FXML
+    private Label algorithmViewTitleLabel;
     @FXML
     private Label viewportHintLabel;
     @FXML
-    private Label liveLabel;
-    @FXML
     private Label statsTitleLabel;
+    @FXML
+    private Label liveLabel;
     @FXML
     private Label logTitleLabel;
     @FXML
@@ -124,41 +162,15 @@ public class MainController implements Initializable {
     @FXML
     private Button compareBtn;
     @FXML
-    private Button settingsToggleBtn;
-    @FXML
-    private Button diagnosticsToggleBtn;
-    @FXML
-    private Button langBtn;
-    @FXML
-    private Button settingsCloseBtn;
-    @FXML
-    private Button diagnosticsCloseBtn;
-    @FXML
-    private HBox narrowPanelToggleBar;
-    @FXML
-    private Button narrowSettingsToggleBtn;
-    @FXML
-    private Button narrowDiagnosticsToggleBtn;
-    @FXML
-    private Button narrowLangBtn;
-    @FXML
     private Slider delaySlider;
     @FXML
     private Slider timelineSlider;
 
-    private BaseController<?> currentSubController;
     private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
     private final Map<String, Button> moduleButtons = new LinkedHashMap<>();
-    private boolean narrowLayout;
-    private boolean settingsAutoCollapsed;
-    private boolean diagnosticsAutoCollapsed;
+    private BaseController<?> currentSubController;
+    private AlgorithmModuleDefinition activeDefinition;
 
-    /**
-     * JavaFX 初始化入口。
-     *
-     * @param location  FXML 地址
-     * @param resources 国际化资源
-     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         if (resources != null) {
@@ -166,8 +178,8 @@ public class MainController implements Initializable {
         }
 
         setupI18n();
-        setupWorkspaceMode();
         setupModuleMenu();
+        setupWorkspaceMode();
         setupGlobalEffects();
         setupLayoutClips();
         setupResponsiveLayout();
@@ -175,49 +187,68 @@ public class MainController implements Initializable {
         if (!moduleDefinitions.isEmpty()) {
             switchToModule(moduleDefinitions.getFirst());
         }
-
         appendSystemLog(I18N.text("message.system.initialized"));
     }
 
-    /**
-     * 绑定主界面固定文案和暂停按钮动态文案。
-     */
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
         structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
-        settingsTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.settings"));
-        settingsKickerLabel.textProperty().bind(I18N.createStringBinding("label.panel.parameters"));
-        viewportHintLabel.textProperty().bind(I18N.createStringBinding("label.panel.viewport.hint"));
-        settingsToggleBtn.textProperty().bind(I18N.createStringBinding("label.panel.settings.short"));
-        diagnosticsToggleBtn.textProperty().bind(I18N.createStringBinding("label.panel.stats.short"));
-        narrowSettingsToggleBtn.textProperty().bind(I18N.createStringBinding("label.panel.settings.short"));
-        narrowDiagnosticsToggleBtn.textProperty().bind(I18N.createStringBinding("label.panel.stats.short"));
-        liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
+        structureWorkspaceTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.structure.workspace"));
+        algorithmWorkspaceTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.algorithm.workspace"));
+        structureControlsTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.structure.controls"));
+        algorithmControlsTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.algorithm.controls"));
+        structurePreviewTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.structure.preview"));
+        structurePreviewHintLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.structure.preview.hint"));
+        snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        snapshotCountLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.count"));
+        algorithmViewTitleLabel.setText(I18N.text("label.workspace.algorithm.preview"));
+        viewportHintLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.stats"));
         logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
         startBtn.textProperty().bind(I18N.createStringBinding("action.execution.start"));
         resetBtn.textProperty().bind(I18N.createStringBinding("action.execution.reset"));
         replayBtn.textProperty().bind(I18N.createStringBinding("action.execution.replay"));
         exportBtn.textProperty().bind(I18N.createStringBinding("action.execution.export"));
         compareBtn.textProperty().bind(I18N.createStringBinding("action.execution.compare"));
+        delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
+        timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline"));
         logArea.promptTextProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
         stepBackwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.backward"));
         stepForwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.forward"));
-        settingsCloseBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("label.panel.drawer.close"));
-        diagnosticsCloseBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("label.panel.drawer.close"));
-        delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
-        timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline"));
-
-        I18N.localeProperty().addListener((observable, oldValue, newValue) -> refreshPauseText());
+        I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
+            refreshPauseText();
+            refreshWorkspaceContext();
+        });
         refreshPauseText();
     }
 
-    /** Installs the two top-level workspace entry points. */
+    private void setupModuleMenu() {
+        moduleMenuBox.getChildren().clear();
+        moduleButtons.clear();
+        for (AlgorithmModuleDefinition definition : moduleDefinitions) {
+            Button button = new Button();
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.getStyleClass().add("menu-button");
+            button.getStyleClass().add("module-button");
+            button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
+            button.textProperty().bind(I18N.createStringBinding(definition.labelKey()));
+            button.setOnAction(event -> switchToModule(definition));
+            moduleMenuBox.getChildren().add(button);
+            moduleButtons.put(definition.id(), button);
+        }
+    }
+
     private void setupWorkspaceMode() {
         setWorkspaceMode(true);
     }
@@ -233,67 +264,41 @@ public class MainController implements Initializable {
     }
 
     private void setWorkspaceMode(boolean structure) {
-        if (structureWorkspaceBtn != null) {
-            structureWorkspaceBtn.pseudoClassStateChanged(SELECTED, structure);
+        structureWorkspaceBtn.pseudoClassStateChanged(SELECTED, structure);
+        algorithmWorkspaceBtn.pseudoClassStateChanged(SELECTED, !structure);
+        structureWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, structure);
+        algorithmWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, !structure);
+        setPageVisibility(structureWorkspacePane, structure);
+        setPageVisibility(algorithmWorkspacePane, !structure);
+        attachVisualizer(structure);
+        if (structure && currentSubController != null) {
+            currentSubController.showStructureState();
         }
-        if (algorithmWorkspaceBtn != null) {
-            algorithmWorkspaceBtn.pseudoClassStateChanged(SELECTED, !structure);
+        if (!structure && currentSubController != null) {
+            currentSubController.showAlgorithmState();
         }
-        updateWorkspaceFocus(structure);
-    }
-
-    private void updateWorkspaceFocus(boolean structure) {
-        if (settingsPanel == null || diagnosticsPanel == null) {
+        if (structure) {
+            structureWorkspacePane.requestFocus();
             return;
         }
-        settingsPanel.pseudoClassStateChanged(WORKSPACE_FOCUS, structure);
-        diagnosticsPanel.pseudoClassStateChanged(WORKSPACE_FOCUS, !structure);
-        if (!narrowLayout) {
-            return;
-        }
-        settingsAutoCollapsed = false;
-        diagnosticsAutoCollapsed = false;
-        applyPanelVisibility(settingsPanel, settingsToggleBtn, structure);
-        applyPanelVisibility(diagnosticsPanel, diagnosticsToggleBtn, !structure);
+        algorithmWorkspacePane.requestFocus();
     }
 
-    /**
-     * 根据模块注册表创建顶部模块导航。
-     */
-    private void setupModuleMenu() {
-        moduleMenuBox.getChildren().clear();
-        moduleButtons.clear();
-
-        for (AlgorithmModuleDefinition definition : moduleDefinitions) {
-            Button button = new Button();
-            button.setMaxWidth(Double.MAX_VALUE);
-            button.getStyleClass().add("menu-button");
-            button.getStyleClass().add("module-button");
-            button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
-            button.textProperty().bind(I18N.createStringBinding(definition.labelKey()));
-            button.setOnAction(event -> switchToModule(definition));
-            moduleMenuBox.getChildren().add(button);
-            moduleButtons.put(definition.id(), button);
-        }
-    }
-
-    /**
-     * 给主界面按钮安装统一动效。
-     */
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(
-                startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn, stepForwardBtn,
-                exportBtn, compareBtn, settingsToggleBtn, diagnosticsToggleBtn, langBtn,
-                settingsCloseBtn, diagnosticsCloseBtn, structureWorkspaceBtn,
-                algorithmWorkspaceBtn, narrowSettingsToggleBtn, narrowDiagnosticsToggleBtn,
-                narrowLangBtn);
+                structureWorkspaceBtn, algorithmWorkspaceBtn, langBtn,
+                startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn,
+                stepForwardBtn, exportBtn, compareBtn);
     }
 
     private void setupLayoutClips() {
         bindClip(topShell);
         bindClip(topBar);
         bindClip(workspaceLayer);
-        bindClip(desktopWorkspace);
+        bindClip(structureWorkspacePane);
+        bindClip(algorithmWorkspacePane);
+        bindClip(bottomDock);
+        bindClip(structurePreviewViewport);
         bindClip(visualizationViewport);
     }
 
@@ -320,55 +325,40 @@ public class MainController implements Initializable {
         if (rootPane == null) {
             return;
         }
-        boolean compact = width > 0.0d && width < COMPACT_LAYOUT_WIDTH;
-        rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, compact);
-        if (settingsPanel != null) {
-            settingsPanel.setPrefWidth(compact ? 220.0d : 250.0d);
+        boolean nextCompactLayout = width > 0.0d && width < COMPACT_LAYOUT_WIDTH;
+        boolean nextNarrowLayout = width > 0.0d && width < NARROW_LAYOUT_WIDTH;
+        rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, nextCompactLayout);
+        rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
+        if (nextNarrowLayout) {
+            snapshotPanel.setManaged(false);
+            snapshotPanel.setVisible(false);
+        } else {
+            snapshotPanel.setManaged(true);
+            snapshotPanel.setVisible(true);
         }
-        if (diagnosticsPanel != null) {
-            diagnosticsPanel.setPrefWidth(compact ? 250.0d : 300.0d);
-        }
-        boolean narrow = width > 0.0d && width < NARROW_LAYOUT_WIDTH;
-        rootPane.pseudoClassStateChanged(
-                PseudoClass.getPseudoClass("narrow-layout"), narrow);
-        if (narrowPanelToggleBar != null) {
-            narrowPanelToggleBar.setManaged(narrow);
-            narrowPanelToggleBar.setVisible(narrow);
-        }
-        setDesktopToolbarVisibility(!narrow);
-        if (narrow == narrowLayout) {
-            updateDrawerMask();
-            syncPanelToggleStates();
-            return;
-        }
-        narrowLayout = narrow;
-        if (narrow) {
-            settingsAutoCollapsed = settingsPanel.isManaged();
-            diagnosticsAutoCollapsed = diagnosticsPanel.isManaged();
-            movePanelsToDrawerLayer();
-            applyPanelVisibility(settingsPanel, settingsToggleBtn, false);
-            applyPanelVisibility(diagnosticsPanel, diagnosticsToggleBtn, false);
-            updateDrawerMask();
-            syncPanelToggleStates();
-            return;
-        }
-        movePanelsToDesktopLayout();
-        if (settingsAutoCollapsed) {
-            applyPanelVisibility(settingsPanel, settingsToggleBtn, true);
-        }
-        if (diagnosticsAutoCollapsed) {
-            applyPanelVisibility(diagnosticsPanel, diagnosticsToggleBtn, true);
-        }
-        settingsAutoCollapsed = false;
-        diagnosticsAutoCollapsed = false;
-        updateDrawerMask();
-        syncPanelToggleStates();
+        resizeRail(structureControlRail, nextCompactLayout);
+        resizeRail(algorithmControlRail, nextCompactLayout);
+        resizeRail(diagnosticsPanel, nextCompactLayout);
+        setControlVisibility(langBtn, !nextNarrowLayout);
     }
 
-    private void setDesktopToolbarVisibility(boolean visible) {
-        setControlVisibility(settingsToggleBtn, visible);
-        setControlVisibility(diagnosticsToggleBtn, visible);
-        setControlVisibility(langBtn, visible);
+    private void setPageVisibility(VBox page, boolean visible) {
+        if (page == null) {
+            return;
+        }
+        page.setManaged(visible);
+        page.setVisible(visible);
+    }
+
+    private void resizeRail(Region rail, boolean compact) {
+        if (rail == null) {
+            return;
+        }
+        if (compact) {
+            rail.setPrefWidth(200.0d);
+            return;
+        }
+        rail.setPrefWidth(220.0d);
     }
 
     private void setControlVisibility(Node control, boolean visible) {
@@ -379,195 +369,22 @@ public class MainController implements Initializable {
         control.setVisible(visible);
     }
 
-    @FXML
-    private void toggleSettingsPanel() {
-        if (narrowLayout) {
-            settingsAutoCollapsed = false;
-        }
-        applyPanelVisibility(settingsPanel, settingsToggleBtn, !settingsPanel.isManaged());
-    }
-
-    @FXML
-    private void toggleDiagnosticsPanel() {
-        if (narrowLayout) {
-            diagnosticsAutoCollapsed = false;
-        }
-        applyPanelVisibility(diagnosticsPanel, diagnosticsToggleBtn, !diagnosticsPanel.isManaged());
-    }
-
-    @FXML
-    private void closeDrawers() {
-        applyPanelVisibility(settingsPanel, settingsToggleBtn, false);
-        applyPanelVisibility(diagnosticsPanel, diagnosticsToggleBtn, false);
-    }
-
-    private void movePanelsToDrawerLayer() {
-        if (desktopWorkspace == null || workspaceLayer == null) {
-            return;
-        }
-        desktopWorkspace.getChildren().remove(settingsPanel);
-        desktopWorkspace.getChildren().remove(diagnosticsPanel);
-        if (!workspaceLayer.getChildren().contains(settingsPanel)) {
-            workspaceLayer.getChildren().add(settingsPanel);
-        }
-        if (!workspaceLayer.getChildren().contains(diagnosticsPanel)) {
-            workspaceLayer.getChildren().add(diagnosticsPanel);
-        }
-        StackPane.setAlignment(settingsPanel, Pos.CENTER_LEFT);
-        StackPane.setAlignment(diagnosticsPanel, Pos.CENTER_RIGHT);
-    }
-
-    private void movePanelsToDesktopLayout() {
-        if (desktopWorkspace == null || workspaceLayer == null) {
-            return;
-        }
-        workspaceLayer.getChildren().remove(settingsPanel);
-        workspaceLayer.getChildren().remove(diagnosticsPanel);
-        if (!desktopWorkspace.getChildren().contains(settingsPanel)) {
-            desktopWorkspace.getChildren().add(0, settingsPanel);
-        }
-        if (!desktopWorkspace.getChildren().contains(diagnosticsPanel)) {
-            desktopWorkspace.getChildren().add(diagnosticsPanel);
-        }
-        HBox.setHgrow(visualizationViewport, Priority.ALWAYS);
-    }
-
-    /** Toggles the statistics or log content below the clicked diagnostics header. */
-    @FXML
-    private void toggleDiagnosticsSection(MouseEvent event) {
-        toggleDiagnosticsSection(event.getSource());
-        event.consume();
-    }
-
-    /** Allows keyboard users to expand or collapse the focused diagnostics header. */
-    @FXML
-    private void handleDiagnosticsSectionKey(KeyEvent event) {
-        if (event.getCode() != KeyCode.ENTER && event.getCode() != KeyCode.SPACE) {
-            return;
-        }
-        toggleDiagnosticsSection(event.getSource());
-        event.consume();
-    }
-
-    private void toggleDiagnosticsSection(Object source) {
-        if (!(source instanceof Node header)
-                || header.getParent() != diagnosticsPanel) {
-            return;
-        }
-
-        int headerIndex = diagnosticsPanel.getChildren().indexOf(header);
-        if (headerIndex < 0 || headerIndex + 1 >= diagnosticsPanel.getChildren().size()) {
-            return;
-        }
-
-        Node content = diagnosticsPanel.getChildren().get(headerIndex + 1);
-        boolean expanded = !Boolean.FALSE.equals(
-                header.getProperties().get(DIAGNOSTIC_SECTION_EXPANDED_PROPERTY));
-        setDiagnosticsSectionExpanded(header, content, !expanded);
-    }
-
-    private void setDiagnosticsSectionExpanded(Node header, Node content, boolean expanded) {
-        header.getProperties().put(DIAGNOSTIC_SECTION_EXPANDED_PROPERTY, expanded);
-        content.setManaged(expanded);
-        content.setVisible(expanded);
-        updateDiagnosticsChevron(header, expanded);
-    }
-
-    private void updateDiagnosticsChevron(Node header, boolean expanded) {
-        if (!(header instanceof Pane pane)) {
-            return;
-        }
-        for (Node child : pane.getChildren()) {
-            if (child instanceof Label label && label.getStyleClass().contains("section-chevron")) {
-                label.setText(expanded ? "⌃" : "⌄");
-                return;
-            }
-        }
-    }
-
-    private void applyPanelVisibility(VBox panel, Button toggleButton, boolean visible) {
-        if (panel == null) {
-            return;
-        }
-        panel.setManaged(visible);
-        panel.setVisible(visible);
-        if (toggleButton != null) {
-            toggleButton.pseudoClassStateChanged(
-                    PseudoClass.getPseudoClass("selected"), visible);
-        }
-        if (panel == settingsPanel && narrowSettingsToggleBtn != null) {
-            narrowSettingsToggleBtn.pseudoClassStateChanged(
-                    PseudoClass.getPseudoClass("selected"), visible);
-        }
-        if (panel == diagnosticsPanel && narrowDiagnosticsToggleBtn != null) {
-            narrowDiagnosticsToggleBtn.pseudoClassStateChanged(
-                    PseudoClass.getPseudoClass("selected"), visible);
-        }
-        updateDrawerMask();
-    }
-
-    private void updateDrawerMask() {
-        if (drawerScrim == null) {
-            return;
-        }
-        boolean drawerVisible = narrowLayout
-                && (isPanelVisible(settingsPanel) || isPanelVisible(diagnosticsPanel));
-        drawerScrim.setManaged(drawerVisible);
-        drawerScrim.setVisible(drawerVisible);
-        drawerScrim.setMouseTransparent(!drawerVisible);
-    }
-
-    private boolean isPanelVisible(VBox panel) {
-        return panel != null && panel.isManaged() && panel.isVisible();
-    }
-
-    private void syncPanelToggleStates() {
-        syncPanelToggleState(settingsPanel, settingsToggleBtn, narrowSettingsToggleBtn);
-        syncPanelToggleState(diagnosticsPanel, diagnosticsToggleBtn, narrowDiagnosticsToggleBtn);
-    }
-
-    private void syncPanelToggleState(VBox panel, Button topToggleButton, Button narrowToggleButton) {
-        if (panel == null) {
-            return;
-        }
-        boolean visible = panel.isManaged() && panel.isVisible();
-        if (topToggleButton != null) {
-            topToggleButton.pseudoClassStateChanged(SELECTED, visible);
-        }
-        if (narrowToggleButton != null) {
-            narrowToggleButton.pseudoClassStateChanged(SELECTED, visible);
-        }
-    }
-
-    /**
-     * 切换到指定模块。
-     *
-     * @param definition 模块定义
-     */
     private void switchToModule(AlgorithmModuleDefinition definition) {
         loadSubController(definition.controllerFactory().get());
+        activeDefinition = definition;
+        refreshWorkspaceContext();
         if (currentSubController != null) {
             currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
         }
-        moduleButtons.forEach((id, button) -> button.pseudoClassStateChanged(
-                javafx.css.PseudoClass.getPseudoClass("selected"), id.equals(definition.id())));
+        moduleButtons.forEach((id, button) ->
+                button.pseudoClassStateChanged(SELECTED, id.equals(definition.id())));
     }
 
-    /**
-     * 加载子控制器并接入可视化区域。
-     *
-     * @param newController 新模块控制器
-     */
     private void loadSubController(BaseController<?> newController) {
-        if (currentSubController != null) {
-            BaseVisualizer<?> previousVisualizer = currentSubController.getVisualizer();
-            if (previousVisualizer != null) {
-                previousVisualizer.prefWidthProperty().unbind();
-                previousVisualizer.prefHeightProperty().unbind();
-            }
-            currentSubController.dispatchVisualizerDetached();
-        }
+        detachCurrentController();
         visualizationContainer.getChildren().clear();
+        structureControlsHost.getChildren().clear();
+        algorithmControlsHost.getChildren().clear();
         customControlBox.getChildren().clear();
 
         newController.setUIReferences(new WorkbenchControls(
@@ -585,36 +402,150 @@ public class MainController implements Initializable {
                 exportBtn,
                 compareBtn));
 
-        this.currentSubController = newController;
-        this.currentSubController.pausedProperty().addListener(
+        currentSubController = newController;
+        currentSubController.pausedProperty().addListener(
                 (observable, oldValue, newValue) -> refreshPauseText());
-        this.currentSubController.dispatchVisualizerAttached();
+        currentSubController.setupCustomControls(customControlBox);
+        distributeModuleControls();
 
         BaseVisualizer<?> visualizer = newController.getVisualizer();
         if (visualizer != null) {
-            visualizer.prefWidthProperty().bind(visualizationContainer.widthProperty());
-            visualizer.prefHeightProperty().bind(visualizationContainer.heightProperty());
-            visualizationContainer.getChildren().add(visualizer);
+            attachVisualizer(isStructurePageVisible());
         }
-
-        newController.setupCustomControls(customControlBox);
-        stretchModuleControls();
+        currentSubController.dispatchVisualizerAttached();
+        refreshPauseText();
     }
 
-    private void stretchModuleControls() {
-        if (customControlBox == null || customControlBox.getChildren().isEmpty()) {
+    private void detachCurrentController() {
+        if (currentSubController == null) {
             return;
         }
-        javafx.scene.Node controlPanel = customControlBox.getChildren().getFirst();
-        HBox.setHgrow(controlPanel, Priority.ALWAYS);
-        if (controlPanel instanceof Region region) {
-            region.setMaxWidth(Double.MAX_VALUE);
+        BaseVisualizer<?> previousVisualizer = currentSubController.getVisualizer();
+        if (previousVisualizer != null) {
+            previousVisualizer.prefWidthProperty().unbind();
+            previousVisualizer.prefHeightProperty().unbind();
+            visualizationContainer.getChildren().remove(previousVisualizer);
+            structurePreviewViewport.getChildren().remove(previousVisualizer);
         }
+        currentSubController.dispatchVisualizerDetached();
+        currentSubController = null;
     }
 
     /**
-     * 切换界面语言。
+     * Places the one module visualizer in the currently visible page.
+     *
+     * <p>Keeping a single visualizer avoids two controllers or two event
+     * streams. Rebinding its size when the page changes also means structure
+     * edits remain visible on the structure page and algorithm frames remain
+     * visible on the algorithm page.</p>
      */
+    private void attachVisualizer(boolean structurePage) {
+        if (currentSubController == null || currentSubController.getVisualizer() == null) {
+            return;
+        }
+        BaseVisualizer<?> visualizer = currentSubController.getVisualizer();
+        visualizer.prefWidthProperty().unbind();
+        visualizer.prefHeightProperty().unbind();
+        visualizationContainer.getChildren().remove(visualizer);
+        structurePreviewViewport.getChildren().remove(visualizer);
+
+        StackPane target = visualizationContainer;
+        if (structurePage) {
+            target = structurePreviewViewport;
+        }
+        if (!target.getChildren().contains(visualizer)) {
+            target.getChildren().add(0, visualizer);
+        }
+        visualizer.prefWidthProperty().bind(target.widthProperty());
+        visualizer.prefHeightProperty().bind(target.heightProperty());
+        if (structurePreviewEmpty != null) {
+            structurePreviewEmpty.setVisible(!structurePage);
+            structurePreviewEmpty.setManaged(!structurePage);
+        }
+    }
+
+    private boolean isStructurePageVisible() {
+        return structureWorkspacePane != null && structureWorkspacePane.isManaged();
+    }
+
+    /** Moves FXML sections into the structure and algorithm rails without duplicating controls. */
+    private void distributeModuleControls() {
+        if (customControlBox.getChildren().isEmpty()) {
+            return;
+        }
+        Node modulePanel = customControlBox.getChildren().getFirst();
+        customControlBox.getChildren().clear();
+        if (!(modulePanel instanceof Pane pane)) {
+            structureControlsHost.getChildren().add(modulePanel);
+            stretchControls(structureControlsHost);
+            return;
+        }
+
+        List<Node> sections = List.copyOf(pane.getChildren());
+        pane.getChildren().clear();
+        if (sections.isEmpty()) {
+            structureControlsHost.getChildren().add(modulePanel);
+        }
+        for (Node section : sections) {
+            VBox target = isAlgorithmSection(section)
+                    ? algorithmControlsHost : structureControlsHost;
+            target.getChildren().add(section);
+        }
+        stretchControls(structureControlsHost);
+        stretchControls(algorithmControlsHost);
+    }
+
+    private boolean isAlgorithmSection(Node section) {
+        return section.getStyleClass().contains("algorithm-section")
+                || section.getStyleClass().contains("execution-section");
+    }
+
+    private void stretchControls(VBox host) {
+        for (Node child : host.getChildren()) {
+            VBox.setVgrow(child, Priority.NEVER);
+            if (child instanceof Region region) {
+                region.setMaxWidth(Double.MAX_VALUE);
+            }
+        }
+    }
+
+    private void refreshWorkspaceContext() {
+        if (activeDefinition == null) {
+            return;
+        }
+        String moduleName = I18N.text(activeDefinition.labelKey());
+        structureWorkspaceSubtitleLabel.setText(moduleName);
+        algorithmWorkspaceSubtitleLabel.setText(moduleName);
+        algorithmViewTitleLabel.setText(moduleName);
+        refreshSnapshotCards(moduleName);
+    }
+
+    private void refreshSnapshotCards(String moduleName) {
+        snapshotCards.getChildren().clear();
+        snapshotCards.getChildren().add(createSnapshotCard(
+                moduleName, I18N.text("label.workspace.snapshot.current"), true));
+        snapshotCards.getChildren().add(createSnapshotCard(
+                moduleName, I18N.text("label.workspace.snapshot.saved"), false));
+        snapshotCards.getChildren().add(createSnapshotCard(
+                moduleName, I18N.text("label.workspace.snapshot.empty"), false));
+    }
+
+    private VBox createSnapshotCard(String moduleName, String status, boolean current) {
+        VBox card = new VBox(4);
+        card.getStyleClass().add("snapshot-card");
+        if (current) {
+            card.getStyleClass().add("snapshot-card-current");
+        }
+        Label title = new Label(moduleName);
+        title.getStyleClass().add("snapshot-card-title");
+        Label state = new Label(status);
+        state.getStyleClass().add("snapshot-card-state");
+        Label detail = new Label(I18N.text("label.workspace.snapshot.detail"));
+        detail.getStyleClass().add("snapshot-card-detail");
+        card.getChildren().addAll(title, state, detail);
+        return card;
+    }
+
     @FXML
     private void toggleLanguage() {
         if (currentSubController != null) {
@@ -625,32 +556,23 @@ public class MainController implements Initializable {
             newLocale = Locale.ENGLISH;
         }
         I18N.setLocale(newLocale);
-        appendSystemLog(I18N.text("message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+        appendSystemLog(I18N.text(
+                "message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
     }
 
-    /**
-     * 向系统日志追加文本。
-     *
-     * @param msg 日志文本
-     */
-    private void appendSystemLog(String msg) {
-        if (logArea != null) {
-            logArea.appendText("System: " + msg + "\n");
+    private void appendSystemLog(String message) {
+        if (logArea == null) {
+            return;
         }
+        logArea.appendText("System: " + message + "\n");
     }
 
-    /**
-     * 根据模块 ID 选择菜单按钮强调色。
-     *
-     * @param moduleId 模块 ID
-     * @return CSS class 名称
-     */
     private String moduleAccentStyleClass(String moduleId) {
         return switch (moduleId) {
             case "sort" -> "btn-ran-blue";
             case "maze" -> "btn-ran-red";
             case "tree" -> "btn-ran-gold";
-            case "graph" -> "btn-ran-gold";
+            case "graph" -> "btn-ran-white";
             default -> "btn-ran-blue";
         };
     }
@@ -683,6 +605,9 @@ public class MainController implements Initializable {
     }
 
     private void refreshPauseText() {
+        if (pauseBtn == null) {
+            return;
+        }
         boolean paused = currentSubController != null && currentSubController.isPaused();
         String key = "action.execution.pause";
         if (paused) {

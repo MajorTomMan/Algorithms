@@ -140,6 +140,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
                 && state.entrance() != null && state.exit() != null) {
             generatedMaze = new GridMaze(
                     state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
+            renderStructureState(state);
         }
         updateControlState();
         logI18n("message.execution.finished");
@@ -177,7 +178,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     }
 
     private void renderEmpty() {
-        renderViewState(MazeViewState.empty(size, size, structure == Structure.GRAPH));
+        renderStructureState(MazeViewState.empty(size, size, structure == Structure.GRAPH));
     }
 
     @Override

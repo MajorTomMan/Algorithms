@@ -218,6 +218,7 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (state != null) {
             values.clear();
             values.addAll(state.values());
+            renderStructureState(state);
         }
         super.onAlgorithmFinished();
         logI18n("message.execution.finished");

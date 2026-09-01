@@ -94,7 +94,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     }
 
     private void renderSource() {
-        renderViewState(IntegerSortViewState.source(sourceData));
+        renderStructureState(IntegerSortViewState.source(sourceData));
     }
 
     @FXML
