@@ -9,6 +9,7 @@ import com.majortom.algorithms.core.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ExecutionFailure;
 import com.majortom.algorithms.core.runtime.ExecutionEvent;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
+import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.Reduction;
 import com.majortom.algorithms.core.runtime.ReductionCursor;
 import com.majortom.algorithms.core.runtime.ResourceSampler;
@@ -87,10 +88,31 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
             EventReducer<S> reducer,
             Consumer<S> viewStateConsumer,
             LongSupplier delayMillisSupplier) {
+        return start(
+                invoker,
+                input,
+                reducer,
+                viewStateConsumer,
+                ignored -> { },
+                delayMillisSupplier);
+    }
+
+    /**
+     * Starts local execution and reports statistics immediately after the
+     * corresponding event has been reduced by the live cursor.
+     */
+    public <S> ExecutionSession start(
+            AlgorithmInvoker invoker,
+            AlgorithmInput input,
+            EventReducer<S> reducer,
+            Consumer<S> viewStateConsumer,
+            Consumer<ExecutionStatistics> statisticsConsumer,
+            LongSupplier delayMillisSupplier) {
         Objects.requireNonNull(invoker, "invoker");
         Objects.requireNonNull(input, "input");
         Objects.requireNonNull(reducer, "reducer");
         Objects.requireNonNull(viewStateConsumer, "viewStateConsumer");
+        Objects.requireNonNull(statisticsConsumer, "statisticsConsumer");
         Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
 
         synchronized (lifecycleLock) {
@@ -119,6 +141,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
                 if (reduction.visualFrame()) {
                     viewStateConsumer.accept(reduction.state());
                 }
+                statisticsConsumer.accept(reductionCursor.statistics());
             });
             EventSink eventSink = event -> {
                 authoritativeEvents.accept(event);

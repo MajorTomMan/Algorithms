@@ -21,42 +21,47 @@ import javafx.util.Duration;
  */
 public abstract class BaseVisualizer<S> extends StackPane {
 
+    /* Canonical workbench palette: black, white, red, blue, yellow and gray. */
     public static final Color RAN_BLACK = Color.rgb(5, 5, 8); // 极夜黑
-    public static final Color RAN_WHITE = Color.rgb(255, 255, 245); // 骨白
-    public static final Color RAN_RED = Color.rgb(220, 0, 0); // 太郎红
-    public static final Color RAN_BLUE = Color.rgb(0, 100, 255); // 次郎蓝
+    public static final Color RAN_WHITE = Color.rgb(240, 240, 230); // 骨白
+    public static final Color RAN_RED = Color.rgb(255, 51, 51); // 太郎红
+    public static final Color RAN_BLUE = Color.rgb(0, 162, 255); // 次郎蓝
     public static final Color RAN_YELLOW = Color.rgb(255, 215, 0); // 三郎黄
-    public static final Color RAN_VIOLET = Color.rgb(150, 0, 255); // 终焉紫
+    public static final Color RAN_GRAY = Color.rgb(112, 117, 122); // 工作台灰
 
-    public static final Color RAN_STEEL = Color.rgb(160, 165, 170); // 钢印
-    public static final Color RAN_IRON = Color.rgb(70, 72, 75); // 生铁
-    public static final Color RAN_ASH = Color.rgb(40, 40, 45); // 灰烬
-    public static final Color RAN_SILVER = Color.rgb(200, 205, 210); // 冷银
-    public static final Color RAN_BRONZE = Color.rgb(150, 110, 70); // 古铜
-    public static final Color RAN_SLATE = Color.rgb(100, 110, 120); // 岩板
+    /* Legacy semantic names remain as palette aliases for existing visualizers. */
+    public static final Color RAN_VIOLET =
+            RAN_BLUE.deriveColor(0.0d, 1.0d, 0.62d, 1.0d); // 终焉紫 -> 深蓝（交换/出口）
 
-    public static final Color RAN_DARK_RED = Color.rgb(80, 0, 0); // 枯红
-    public static final Color RAN_DARK_BLUE = Color.rgb(0, 30, 80); // 墨蓝
-    public static final Color RAN_DARK_GOLD = Color.rgb(120, 100, 0); // 暗金
-    public static final Color RAN_BURNED = Color.rgb(20, 15, 10); // 焦灼
-    public static final Color RAN_DEEP_VINE = Color.rgb(40, 0, 60); // 暗紫
-    public static final Color RAN_VOID = Color.rgb(2, 2, 5); // 虚无 (绝对禁区)
+    public static final Color RAN_STEEL = RAN_GRAY; // 钢印 -> 灰
+    public static final Color RAN_IRON = Color.rgb(60, 60, 70); // 生铁 -> 深灰
+    public static final Color RAN_ASH = Color.rgb(42, 42, 48); // 灰烬 -> 深灰
+    public static final Color RAN_SILVER = RAN_WHITE; // 冷银 -> 白
+    public static final Color RAN_BRONZE = RAN_YELLOW.deriveColor(0.0d, 0.55d, 0.82d, 1.0d); // 古铜 -> 黄
+    public static final Color RAN_SLATE = RAN_GRAY; // 岩板 -> 灰
 
-    public static final Color RAN_GOLD = Color.rgb(255, 240, 150); // 描金
-    public static final Color RAN_CYAN = Color.rgb(100, 220, 255); // 荧蓝
-    public static final Color RAN_BLOOD_VIVID = Color.rgb(255, 40, 40); // 鲜红
-    public static final Color RAN_EMERALD = Color.rgb(0, 200, 100); // 翠绿
-    public static final Color RAN_AMBER = Color.rgb(255, 160, 0); // 琥珀
-    public static final Color RAN_GHOST_WHITE = Color.rgb(200, 220, 255, 0.4); // 幽灵白
+    public static final Color RAN_DARK_RED = RAN_RED.deriveColor(0.0d, 1.0d, 0.45d, 1.0d); // 枯红
+    public static final Color RAN_DARK_BLUE = RAN_BLUE.deriveColor(0.0d, 1.0d, 0.45d, 1.0d); // 墨蓝
+    public static final Color RAN_DARK_GOLD = RAN_YELLOW.deriveColor(0.0d, 1.0d, 0.55d, 1.0d); // 暗金
+    public static final Color RAN_BURNED = RAN_BLACK; // 焦灼 -> 黑
+    public static final Color RAN_DEEP_VINE = RAN_BLACK; // 暗紫 -> 黑
+    public static final Color RAN_VOID = RAN_BLACK; // 虚无 (绝对禁区)
 
-    public static final Color RAN_ENEMY_GREEN = Color.rgb(0, 70, 40); // 诡绿
-    public static final Color RAN_ENEMY_RUST = Color.rgb(130, 40, 20); // 铁锈红
-    public static final Color RAN_ENEMY_SHADOW = Color.rgb(30, 0, 50); // 极暗紫
-    public static final Color RAN_LIME_VIVID = Color.rgb(180, 255, 0); // 毒弩绿
-    public static final Color RAN_WALL_STONE = Color.rgb(45, 50, 55); // 坚石
-    public static final Color RAN_WALL_MOSS = Color.rgb(30, 40, 30); // 苔藓
-    public static final Color RAN_WALL_OBSIDIAN = Color.rgb(15, 15, 20); // 黑曜石
-    public static final Color RAN_WALL_CRACKED = Color.rgb(60, 55, 50); // 皲裂
+    public static final Color RAN_GOLD = RAN_YELLOW.deriveColor(0.0d, 0.42d, 1.0d, 1.0d); // 描金 -> 黄
+    public static final Color RAN_CYAN = RAN_BLUE; // 荧蓝 -> 蓝
+    public static final Color RAN_BLOOD_VIVID = RAN_RED; // 鲜红 -> 红
+    public static final Color RAN_EMERALD = RAN_WHITE; // 翠绿 -> 白（排序完成）
+    public static final Color RAN_AMBER = RAN_YELLOW; // 琥珀 -> 黄
+    public static final Color RAN_GHOST_WHITE = RAN_WHITE.deriveColor(0.0d, 1.0d, 1.0d, 0.4d); // 幽灵白
+
+    public static final Color RAN_ENEMY_GREEN = RAN_GRAY; // 诡绿 -> 灰
+    public static final Color RAN_ENEMY_RUST = RAN_RED; // 铁锈红 -> 红
+    public static final Color RAN_ENEMY_SHADOW = RAN_BLACK; // 极暗紫 -> 黑
+    public static final Color RAN_LIME_VIVID = RAN_YELLOW; // 毒弩绿 -> 黄
+    public static final Color RAN_WALL_STONE = RAN_IRON; // 坚石 -> 深灰
+    public static final Color RAN_WALL_MOSS = RAN_ASH; // 苔藓 -> 深灰
+    public static final Color RAN_WALL_OBSIDIAN = RAN_BLACK; // 黑曜石
+    public static final Color RAN_WALL_CRACKED = RAN_GRAY; // 皲裂 -> 灰
     protected final Canvas canvas;
     protected final GraphicsContext gc;
 

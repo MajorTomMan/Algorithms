@@ -17,6 +17,8 @@ public record WorkbenchControls(
         Button pauseButton,
         Button resetButton,
         Button replayButton,
+        Button stepBackwardButton,
+        Button stepForwardButton,
         Button exportButton,
         Button compareButton) {
 }

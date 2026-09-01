@@ -14,14 +14,9 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -39,9 +34,23 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
     @FXML private Label algorithmLabel;
+    @FXML private Label executionSectionLabel;
     @FXML private ComboBox<String> algorithmSelector;
+    @FXML private Label nodeOperationsLabel;
+    @FXML private Label edgeOperationsLabel;
+    @FXML private Label traversalLabel;
+    @FXML private TextField nodeField;
+    @FXML private TextField findNodeField;
+    @FXML private TextField fromField;
+    @FXML private TextField toField;
+    @FXML private TextField startField;
+    @FXML private Button addNodeBtn;
+    @FXML private Button deleteNodeBtn;
+    @FXML private Button findNodeBtn;
+    @FXML private Button addEdgeBtn;
+    @FXML private Button deleteEdgeBtn;
+    @FXML private Button setStartBtn;
     @FXML private Button runBtn;
-    @FXML private Button operationBtn;
 
     public GraphController() {
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
@@ -53,7 +62,10 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        EffectUtils.applyDynamicEffect(runBtn, operationBtn);
+        startField.setText(String.valueOf(startNode));
+        EffectUtils.applyDynamicEffect(
+                addNodeBtn, deleteNodeBtn, findNodeBtn, addEdgeBtn,
+                deleteEdgeBtn, setStartBtn, runBtn);
     }
 
     @Override
@@ -73,61 +85,86 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     }
 
     @FXML
-    private void openGraphOperationDialog() {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle(I18N.text("dialog.graph.title"));
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        TextField nodeField = field(I18N.text("prompt.graph.node"));
-        TextField fromField = field(I18N.text("prompt.graph.from"));
-        TextField toField = field(I18N.text("prompt.graph.to"));
-        TextField startField = field(I18N.text("prompt.graph.start"));
-        startField.setText(String.valueOf(startNode));
-        Button add = new Button(I18N.text("action.graph.add"));
-        OperationDialogTheme.addClasses(add, "btn-ran-purple", "compact-button");
-        add.setOnAction(event -> addNode(nodeField.getText()));
-        Button delete = new Button(I18N.text("action.graph.delete"));
-        OperationDialogTheme.addClasses(delete, "btn-ran-red", "compact-button");
-        delete.setOnAction(event -> deleteNode(nodeField.getText()));
-        Button link = new Button(I18N.text("action.graph.link"));
-        OperationDialogTheme.addClasses(link, "btn-ran-gold", "compact-button");
-        link.setOnAction(event -> linkNodes(fromField.getText(), toField.getText()));
-        Button setStart = new Button(I18N.text("action.graph.set_start"));
-        OperationDialogTheme.addClasses(setStart, "btn-ran-blue", "compact-button");
-        setStart.setOnAction(event -> setStartNode(startField.getText()));
-        HBox edgeFields = new HBox(10, fromField, toField);
-        HBox.setHgrow(fromField, Priority.ALWAYS);
-        HBox.setHgrow(toField, Priority.ALWAYS);
-        dialog.getDialogPane().setContent(new VBox(16,
-                formSection(I18N.text("label.graph.node_ops"), nodeField, new HBox(10, add, delete)),
-                formSection(I18N.text("label.graph.edge_ops"), edgeFields, new HBox(10, link)),
-                formSection(I18N.text("label.graph.run_start"), startField, new HBox(10, setStart))));
-        OperationDialogTheme.apply(dialog, 680.0d);
-        dialog.showAndWait();
+    private void handleAddNode() {
+        addNode(nodeField.getText());
     }
 
-    private TextField field(String prompt) {
-        TextField field = new TextField();
-        field.setPromptText(prompt);
-        OperationDialogTheme.addClasses(field, "dark-textfield", "dialog-input");
-        return field;
+    @FXML
+    private void handleDeleteNode() {
+        deleteNode(nodeField.getText());
     }
 
-    private VBox formSection(String title, javafx.scene.Node fields, javafx.scene.Node actions) {
-        Label titleLabel = new Label(title);
-        OperationDialogTheme.addClasses(titleLabel, "dialog-section-title");
-        OperationDialogTheme.addClasses(actions, "dialog-action-row");
-        VBox section = new VBox(8, titleLabel, fields, actions);
-        OperationDialogTheme.addClasses(section, "dialog-form-section");
-        return section;
+    @FXML
+    private void handleFindNode() {
+        if (isRunning()) {
+            logI18n("message.error.operation_running");
+            return;
+        }
+        Integer id = parseNode(findNodeField.getText());
+        if (id == null) {
+            return;
+        }
+        if (!graph.nodes().contains(id)) {
+            logI18n("message.graph.not_found", id);
+            return;
+        }
+        renderViewState(new GraphViewState(
+                graph, Set.of(), Set.of(), List.of(), java.util.Map.of(), id, null,
+                GraphViewState.Phase.VISITING, false));
+        logI18n("message.graph.found", id);
+    }
+
+    @FXML
+    private void handleAddEdge() {
+        linkNodes(fromField.getText(), toField.getText());
+    }
+
+    @FXML
+    private void handleDeleteEdge() {
+        Integer from = parseNode(fromField.getText());
+        Integer to = parseNode(toField.getText());
+        if (from == null || to == null) {
+            return;
+        }
+        if (!graph.nodes().contains(from) || !graph.nodes().contains(to)) {
+            logI18n("message.error.graph_node_missing");
+            return;
+        }
+        List<IntEdge> edges = new ArrayList<>(graph.edges());
+        boolean removed = edges.removeIf(edge -> edge.from() == from && edge.to() == to);
+        if (!removed) {
+            logI18n("message.graph.edge_not_found", from, to);
+            return;
+        }
+        invalidateExecutionForInputChange();
+        graph = new IntGraph(graph.nodes(), edges);
+        renderGraph();
+        logI18n("message.graph.edge_deleted", from, to);
+    }
+
+    @FXML
+    private void handleSetStart() {
+        setStartNode(startField.getText());
     }
 
     private void addNode(String text) {
         Integer id = parseNode(text);
-        if (id == null || graph.nodes().contains(id)) return;
+        if (id == null) {
+            return;
+        }
+        if (graph.nodes().contains(id)) {
+            logI18n("message.graph.already_exists", id);
+            return;
+        }
+        boolean wasEmpty = graph.nodes().isEmpty();
         List<Integer> nodes = new ArrayList<>(graph.nodes());
         nodes.add(id);
         invalidateExecutionForInputChange();
         graph = new IntGraph(nodes, graph.edges());
+        if (wasEmpty) {
+            startNode = id;
+            startField.setText(String.valueOf(startNode));
+        }
         renderGraph();
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_ADD_NODE,
@@ -137,7 +174,13 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
 
     private void deleteNode(String text) {
         Integer id = parseNode(text);
-        if (id == null || !graph.nodes().contains(id)) return;
+        if (id == null) {
+            return;
+        }
+        if (!graph.nodes().contains(id)) {
+            logI18n("message.graph.not_found", id);
+            return;
+        }
         List<Integer> nodes = new ArrayList<>(graph.nodes());
         nodes.remove(id);
         List<IntEdge> edges = graph.edges().stream()
@@ -145,7 +188,13 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
                 .toList();
         invalidateExecutionForInputChange();
         graph = new IntGraph(nodes, edges);
-        if (!nodes.contains(startNode) && !nodes.isEmpty()) startNode = nodes.getFirst();
+        if (nodes.isEmpty()) {
+            startNode = 0;
+            startField.clear();
+        } else if (!nodes.contains(startNode)) {
+            startNode = nodes.getFirst();
+            startField.setText(String.valueOf(startNode));
+        }
         renderGraph();
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_DELETE_NODE,
@@ -163,6 +212,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         List<IntEdge> edges = new ArrayList<>(graph.edges());
         IntEdge edge = new IntEdge(from, to);
         if (edges.contains(edge)) {
+            logI18n("message.graph.edge_exists", from, to);
             return;
         }
         edges.add(edge);
@@ -184,6 +234,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         if (startNode != id) {
             invalidateExecutionForInputChange();
             startNode = id;
+            renderGraph();
         }
         appendLog(I18N.text("message.graph.start_set", id));
     }
@@ -192,7 +243,7 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
         try {
             return Integer.valueOf(text.trim());
         } catch (RuntimeException exception) {
-            logI18n("message.error.graph_parse");
+            logI18n("message.error.invalid_graph_value");
             return null;
         }
     }
@@ -219,8 +270,24 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
     protected void setupI18n() {
         if (structureLabel != null) structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
         if (algorithmLabel != null) algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
-        if (runBtn != null) runBtn.textProperty().bind(I18N.createStringBinding("action.graph.run"));
-        if (operationBtn != null) operationBtn.textProperty().bind(I18N.createStringBinding("action.graph.operation"));
+        if (executionSectionLabel != null) {
+            executionSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.execution"));
+        }
+        bindLabel(nodeOperationsLabel, "label.graph.node_ops");
+        bindLabel(edgeOperationsLabel, "label.graph.edge_ops");
+        bindLabel(traversalLabel, "label.graph.run_start");
+        bindPrompt(nodeField, "prompt.graph.node");
+        bindPrompt(findNodeField, "prompt.graph.node");
+        bindPrompt(fromField, "prompt.graph.from");
+        bindPrompt(toField, "prompt.graph.to");
+        bindPrompt(startField, "prompt.graph.start");
+        bindButton(addNodeBtn, "action.graph.add");
+        bindButton(deleteNodeBtn, "action.graph.delete");
+        bindButton(findNodeBtn, "action.graph.find");
+        bindButton(addEdgeBtn, "action.graph.link");
+        bindButton(deleteEdgeBtn, "action.graph.delete_edge");
+        bindButton(setStartBtn, "action.graph.set_start");
+        bindButton(runBtn, "action.graph.run");
     }
 
     @Override
@@ -239,6 +306,24 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
             structureSelector.getSelectionModel().selectFirst();
             algorithmSelector.getSelectionModel().selectFirst();
         });
+    }
+
+    private void bindLabel(Label label, String key) {
+        if (label != null) {
+            label.textProperty().bind(I18N.createStringBinding(key));
+        }
+    }
+
+    private void bindPrompt(TextField field, String key) {
+        if (field != null) {
+            field.promptTextProperty().bind(I18N.createStringBinding(key));
+        }
+    }
+
+    private void bindButton(Button button, String key) {
+        if (button != null) {
+            button.textProperty().bind(I18N.createStringBinding(key));
+        }
     }
 
     private IntGraph randomGraph(int nodeCount, int edgeCount) {

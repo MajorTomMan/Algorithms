@@ -1,25 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import java.lang.String?>
 
-<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="CENTER_LEFT" spacing="14"
-    stylesheets="@../style/theme.css">
-
-    <VBox spacing="4" alignment="CENTER_LEFT">
-        <Label fx:id="structureLabel" styleClass="control-label" />
-        <ComboBox fx:id="structureSelector" minWidth="120" prefWidth="120" styleClass="dark-combo-box" />
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    styleClass="module-control-panel" stylesheets="@../style/theme.css">
+    <VBox spacing="7">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="structureLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <ComboBox fx:id="structureSelector" maxWidth="Infinity" styleClass="dark-combo-box" />
     </VBox>
 
-    <VBox spacing="4" alignment="CENTER_LEFT">
-        <Label fx:id="algorithmLabel" styleClass="control-label" />
-        <ComboBox fx:id="algorithmSelector" minWidth="150" prefWidth="150" styleClass="dark-combo-box" />
+    <VBox spacing="7">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="algorithmLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <ComboBox fx:id="algorithmSelector" maxWidth="Infinity" styleClass="dark-combo-box" />
     </VBox>
 
-    <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding: 18 0 0 0;">
-        <Button fx:id="sortBtn" onAction="#handleSort" styleClass="btn-run-neon compact-button" />
-        <Button fx:id="operationBtn" onAction="#openSortOperationDialog"
-            styleClass="btn-ran-gold compact-button" />
-    </HBox>
+    <VBox spacing="8">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="operation-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="inputSectionLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <HBox styleClass="operation-caption-row" alignment="CENTER_LEFT">
+            <Label fx:id="sizeLabel" styleClass="operation-label" />
+            <Label fx:id="sizeValueLabel" styleClass="operation-value" />
+        </HBox>
+        <Slider fx:id="sizeSlider" min="5" max="100" value="20" blockIncrement="1"
+            majorTickUnit="25" showTickLabels="true" showTickMarks="true" maxWidth="Infinity"
+            styleClass="operation-slider" />
+        <Button fx:id="generateBtn" onAction="#handleGenerate" maxWidth="Infinity">
+            <styleClass>
+                <String fx:value="btn-ran-blue" />
+                <String fx:value="operation-button" />
+            </styleClass>
+        </Button>
+    </VBox>
 
-</HBox>
+    <VBox spacing="8">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="operation-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="operationsSectionLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <TextField fx:id="elementValueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <TextField fx:id="elementIndexField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <Button fx:id="addElementBtn" onAction="#handleAddElement">
+                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+            <Button fx:id="deleteElementBtn" onAction="#handleDeleteElement">
+                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+            <Button fx:id="findElementBtn" onAction="#handleFindElement">
+                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <TextField fx:id="updateIndexField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <TextField fx:id="updateValueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <Button fx:id="updateElementBtn" onAction="#handleUpdateElement">
+                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="8">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="execution-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="executionSectionLabel">
+                <styleClass>
+                    <String fx:value="control-label" />
+                    <String fx:value="control-section-title" />
+                </styleClass>
+            </Label>
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <Button fx:id="sortBtn" onAction="#handleSort" maxWidth="Infinity">
+            <styleClass>
+                <String fx:value="btn-run-neon" />
+                <String fx:value="operation-button" />
+            </styleClass>
+        </Button>
+    </VBox>
+</VBox>

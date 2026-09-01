@@ -116,16 +116,16 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
             fill = RAN_BLUE.deriveColor(0.0d, 1.2d, 1.0d, 0.45d);
         }
         if (state.discovered().contains(point)) {
-            fill = RAN_BLUE.saturate();
+            fill = RAN_DARK_BLUE.saturate();
         }
         if (state.visited().contains(point)) {
-            fill = RAN_ENEMY_RUST.saturate();
+            fill = RAN_BLUE.saturate();
         }
         if (state.deadEnds().contains(point)) {
-            fill = Color.rgb(70, 54, 45);
+            fill = RAN_IRON;
         }
         if (state.backtracked().contains(point)) {
-            fill = RAN_YELLOW.saturate();
+            fill = RAN_RED.saturate();
         }
         if (state.path().contains(point)) {
             fill = RAN_GOLD.saturate();
@@ -150,7 +150,7 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
             fill = RAN_WHITE;
             monStroke = RAN_BLACK;
         } else if (terrain == MazeCellType.END) {
-            fill = RAN_VIOLET.saturate();
+            fill = RAN_DARK_BLUE.saturate();
             monStroke = RAN_WHITE;
         } else if (terrain == MazeCellType.ROAD) {
             monStroke = RAN_BLUE.saturate();

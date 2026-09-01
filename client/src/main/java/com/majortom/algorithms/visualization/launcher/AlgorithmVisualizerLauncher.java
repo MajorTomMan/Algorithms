@@ -34,17 +34,18 @@ public class AlgorithmVisualizerLauncher extends Application {
             ResourceBundle bundle = ResourceBundle.getBundle("language.language", Locale.getDefault());
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainControls.fxml"));
             loader.setResources(bundle);
-            // 2. 创建整界面等比缩放的场景。
-            // 1800px 是按底栏最宽的迷宫模块反推的默认宽度：
-            // 全局 6 个按钮 + 两个滑块 + 结构/生成/求解/操作控件约需要 1760px。
-            Scene scene = ResponsiveStageScaler.createScene(loader.load(), 1800, 860);
+            // 2. 创建可伸缩场景。主界面会在窄窗口中压缩侧栏并让播放栏自动换行。
+            Scene scene = ResponsiveStageScaler.createScene(
+                    loader.load(),
+                    ResponsiveStageScaler.DEFAULT_WIDTH,
+                    ResponsiveStageScaler.DEFAULT_HEIGHT);
             scene.setFill(Color.web("#0A0A0E"));
 
             // 3. 配置窗口属性
             primaryStage.setTitle("Algorithms");
             primaryStage.setScene(scene);
-            primaryStage.setMinWidth(1280);
-            primaryStage.setMinHeight(640);
+            primaryStage.setMinWidth(ResponsiveStageScaler.MIN_WIDTH);
+            primaryStage.setMinHeight(ResponsiveStageScaler.MIN_HEIGHT);
 
             // 4. 优雅退出：确保程序关闭时停止所有后台算法线程
             primaryStage.setOnCloseRequest(event -> System.exit(0));

@@ -5,7 +5,7 @@ graph {
 
 node {
     size: 32px;
-    fill-color: #B40000;
+    fill-color: #FF3333;
     stroke-mode: plain;
     stroke-color: #F0F0E6;
     stroke-width: 2px;
@@ -16,14 +16,14 @@ node {
 }
 
 node.highlight {
-    fill-color: #0078FF;
+    fill-color: #00A2FF;
     size: 45px;
     stroke-width: 4px;
     stroke-color: #FFFFFF;
 }
 
 node.secondary {
-    fill-color: #DCB400;
+    fill-color: #FFD700;
     size: 38px;
     stroke-width: 3px;
 }
@@ -35,7 +35,7 @@ edge {
 }
 
 node.visited {
-    fill-color: #00C864;
+    fill-color: #70757A;
     size: 38px;
     stroke-width: 3px;
 }

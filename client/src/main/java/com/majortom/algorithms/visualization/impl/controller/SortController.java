@@ -12,13 +12,10 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -37,10 +34,24 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @FXML private Label structureLabel;
     @FXML private Label algorithmLabel;
+    @FXML private Label inputSectionLabel;
+    @FXML private Label operationsSectionLabel;
+    @FXML private Label executionSectionLabel;
+    @FXML private Label sizeLabel;
     @FXML private ComboBox<String> structureSelector;
+    @FXML private Slider sizeSlider;
+    @FXML private Label sizeValueLabel;
+    @FXML private Button generateBtn;
     @FXML private Button sortBtn;
-    @FXML private Button operationBtn;
     @FXML private ComboBox<String> algorithmSelector;
+    @FXML private TextField elementValueField;
+    @FXML private TextField elementIndexField;
+    @FXML private TextField updateValueField;
+    @FXML private TextField updateIndexField;
+    @FXML private Button addElementBtn;
+    @FXML private Button deleteElementBtn;
+    @FXML private Button findElementBtn;
+    @FXML private Button updateElementBtn;
 
     public SortController() {
         super(new HistogramSortVisualizer(), "/fxml/SortControls.fxml");
@@ -52,7 +63,14 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         super.initialize(location, resources);
         bindStructureSelector();
         bindAlgorithmSelector();
-        EffectUtils.applyDynamicEffect(sortBtn, operationBtn);
+        sizeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            currentSize = newValue.intValue();
+            sizeValueLabel.setText(String.valueOf(currentSize));
+        });
+        sizeValueLabel.setText(String.valueOf(currentSize));
+        EffectUtils.applyDynamicEffect(
+                generateBtn, sortBtn, addElementBtn, deleteElementBtn,
+                findElementBtn, updateElementBtn);
         renderSource();
     }
 
@@ -80,35 +98,110 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     }
 
     @FXML
-    private void openSortOperationDialog() {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle(I18N.text("dialog.sort.title"));
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        Label valueLabel = new Label(String.valueOf(currentSize));
-        OperationDialogTheme.addClasses(valueLabel, "size-value-highlight");
-        Slider sizeSlider = new Slider(5, 100, currentSize);
-        sizeSlider.setShowTickLabels(true);
-        sizeSlider.setShowTickMarks(true);
-        sizeSlider.setMajorTickUnit(25);
-        sizeSlider.setPrefWidth(420);
-        sizeSlider.valueProperty().addListener((observable, oldValue, newValue) ->
-                valueLabel.setText(String.valueOf(newValue.intValue())));
-        Button generateButton = new Button(I18N.text("action.sort.generate"));
-        OperationDialogTheme.addClasses(generateButton, "btn-ran-gold", "compact-button");
-        generateButton.setOnAction(event -> {
-            currentSize = (int) sizeSlider.getValue();
-            handleGenerate();
-        });
-        Label sectionTitle = new Label(I18N.text("label.sort.size"));
-        OperationDialogTheme.addClasses(sectionTitle, "dialog-section-title");
-        VBox content = new VBox(12,
-                sectionTitle,
-                new HBox(12, sizeSlider, valueLabel),
-                new HBox(10, generateButton));
-        OperationDialogTheme.addClasses(content, "dialog-form-section");
-        dialog.getDialogPane().setContent(content);
-        OperationDialogTheme.apply(dialog, 560.0d);
-        dialog.showAndWait();
+    private void handleAddElement() {
+        Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
+        if (value == null) {
+            return;
+        }
+        Integer index = parseOptionalIndex(elementIndexField, sourceData.size());
+        if (index == null && !elementIndexField.getText().isBlank()) {
+            return;
+        }
+        List<Integer> next = new ArrayList<>(sourceData);
+        int insertedIndex = next.size();
+        if (index == null) {
+            next.add(value);
+        } else {
+            next.add(index, value);
+            insertedIndex = index;
+        }
+        replaceSourceData(next);
+        logI18n("message.sort.added", value, insertedIndex);
+    }
+
+    @FXML
+    private void handleDeleteElement() {
+        String indexText = elementIndexField.getText().trim();
+        Integer index = parseOptionalIndex(elementIndexField, sourceData.size() - 1);
+        if (index == null && !indexText.isBlank()) {
+            return;
+        }
+        if (index == null) {
+            Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
+            if (value == null) {
+                return;
+            }
+            index = sourceData.indexOf(value);
+            if (index < 0) {
+                logI18n("message.sort.not_found", value);
+                return;
+            }
+        }
+        List<Integer> next = new ArrayList<>(sourceData);
+        int removed = next.remove((int) index);
+        replaceSourceData(next);
+        logI18n("message.sort.deleted", removed, index);
+    }
+
+    @FXML
+    private void handleFindElement() {
+        Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
+        if (value == null) {
+            return;
+        }
+        int index = sourceData.indexOf(value);
+        if (index < 0) {
+            logI18n("message.sort.not_found", value);
+            return;
+        }
+        logI18n("message.sort.found", value, index);
+    }
+
+    @FXML
+    private void handleUpdateElement() {
+        Integer index = parseOptionalIndex(updateIndexField, sourceData.size() - 1);
+        Integer value = parseInteger(updateValueField, "message.error.invalid_sort_value");
+        if (index == null || value == null) {
+            return;
+        }
+        List<Integer> next = new ArrayList<>(sourceData);
+        int previous = next.set(index, value);
+        replaceSourceData(next);
+        logI18n("message.sort.updated", index, previous, value);
+    }
+
+    private void replaceSourceData(List<Integer> next) {
+        sourceData = List.copyOf(next);
+        invalidateExecutionForInputChange();
+        renderSource();
+        refreshStatsDisplay();
+    }
+
+    private Integer parseInteger(TextField field, String errorKey) {
+        try {
+            return Integer.valueOf(field.getText().trim());
+        } catch (RuntimeException exception) {
+            logI18n(errorKey);
+            return null;
+        }
+    }
+
+    private Integer parseOptionalIndex(TextField field, int maximum) {
+        String text = field.getText().trim();
+        if (text.isBlank()) {
+            return null;
+        }
+        try {
+            int index = Integer.parseInt(text);
+            if (index < 0 || index > maximum) {
+                logI18n("message.error.invalid_sort_index");
+                return null;
+            }
+            return index;
+        } catch (NumberFormatException exception) {
+            logI18n("message.error.invalid_sort_index");
+            return null;
+        }
     }
 
     @Override
@@ -151,11 +244,45 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         if (algorithmLabel != null) {
             algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
         }
+        if (inputSectionLabel != null) {
+            inputSectionLabel.textProperty().bind(I18N.createStringBinding("label.sort.input"));
+        }
+        if (sizeLabel != null) {
+            sizeLabel.textProperty().bind(I18N.createStringBinding("label.sort.size"));
+        }
+        if (operationsSectionLabel != null) {
+            operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.sort.operations"));
+        }
+        if (executionSectionLabel != null) {
+            executionSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.execution"));
+        }
+        if (generateBtn != null) {
+            generateBtn.textProperty().bind(I18N.createStringBinding("action.sort.generate"));
+        }
         if (sortBtn != null) {
             sortBtn.textProperty().bind(I18N.createStringBinding("action.sort.run"));
         }
-        if (operationBtn != null) {
-            operationBtn.textProperty().bind(I18N.createStringBinding("action.sort.operation"));
+        if (elementValueField != null) {
+            elementValueField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.value"));
+        }
+        if (elementIndexField != null) {
+            elementIndexField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.index"));
+        }
+        if (updateIndexField != null) {
+            updateIndexField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.index"));
+        }
+        if (updateValueField != null) {
+            updateValueField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.new_value"));
+        }
+        bindButton(addElementBtn, "action.sort.add");
+        bindButton(deleteElementBtn, "action.sort.delete");
+        bindButton(findElementBtn, "action.sort.find");
+        bindButton(updateElementBtn, "action.sort.update");
+    }
+
+    private void bindButton(Button button, String key) {
+        if (button != null) {
+            button.textProperty().bind(I18N.createStringBinding(key));
         }
     }
 

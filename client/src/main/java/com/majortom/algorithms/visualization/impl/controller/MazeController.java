@@ -15,13 +15,9 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.util.List;
@@ -48,9 +44,16 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     @FXML private Label structureTitleLabel;
     @FXML private Label generatorTitleLabel;
     @FXML private Label pathfinderTitleLabel;
+    @FXML private Label sizeSectionLabel;
+    @FXML private Label operationsSectionLabel;
+    @FXML private Label sizeLabel;
+    @FXML private Label sizeValueLabel;
+    @FXML private Label operationHintLabel;
+    @FXML private Slider sizeSlider;
     @FXML private Button buildBtn;
     @FXML private Button solveBtn;
-    @FXML private Button operationBtn;
+    @FXML private Button applySizeBtn;
+    @FXML private Button resetMazeBtn;
 
     public MazeController() {
         super(new MazeModuleVisualizer(), "/fxml/MazeControls.fxml");
@@ -61,7 +64,12 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        EffectUtils.applyDynamicEffect(buildBtn, solveBtn, operationBtn);
+        sizeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            int next = normalizeOdd(newValue.intValue());
+            sizeValueLabel.setText(next + " x " + next);
+        });
+        sizeValueLabel.setText(size + " x " + size);
+        EffectUtils.applyDynamicEffect(buildBtn, solveBtn, applySizeBtn, resetMazeBtn);
         updateControlState();
     }
 
@@ -106,40 +114,22 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     }
 
     @FXML
-    private void openMazeOperationDialog() {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle(I18N.text("dialog.maze.title"));
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        Label valueLabel = new Label(size + "x" + size);
-        OperationDialogTheme.addClasses(valueLabel, "size-value-highlight");
-        Slider slider = new Slider(11, 99, size);
-        slider.setShowTickLabels(true);
-        slider.setShowTickMarks(true);
-        slider.setMajorTickUnit(22);
-        slider.setPrefWidth(420);
-        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            int next = normalizeOdd(newValue.intValue());
-            valueLabel.setText(next + "x" + next);
-        });
-        Button apply = new Button(I18N.text("action.maze.apply_size"));
-        OperationDialogTheme.addClasses(apply, "btn-ran-gold", "compact-button");
-        apply.setOnAction(event -> {
-            invalidateExecutionForInputChange();
-            size = normalizeOdd((int) slider.getValue());
-            generatedMaze = null;
-            solving = false;
-            renderEmpty();
-            updateControlState();
-            refreshStatsDisplay();
-        });
-        Label sectionTitle = new Label(I18N.text("label.maze.size"));
-        OperationDialogTheme.addClasses(sectionTitle, "dialog-section-title");
-        VBox content = new VBox(12,
-                sectionTitle, new HBox(12, slider, valueLabel), new HBox(10, apply));
-        OperationDialogTheme.addClasses(content, "dialog-form-section");
-        dialog.getDialogPane().setContent(content);
-        OperationDialogTheme.apply(dialog, 560.0d);
-        dialog.showAndWait();
+    private void handleApplySize() {
+        invalidateExecutionForInputChange();
+        size = normalizeOdd((int) sizeSlider.getValue());
+        sizeSlider.setValue(size);
+        generatedMaze = null;
+        solving = false;
+        renderEmpty();
+        updateControlState();
+        refreshStatsDisplay();
+        logI18n("message.maze.size_set", size, size);
+    }
+
+    @FXML
+    private void handleResetMaze() {
+        reset();
+        logI18n("message.maze.reset");
     }
 
     @Override
@@ -195,9 +185,18 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
         if (structureTitleLabel != null) structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
         if (generatorTitleLabel != null) generatorTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.generator"));
         if (pathfinderTitleLabel != null) pathfinderTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.solver"));
+        if (sizeSectionLabel != null) sizeSectionLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
+        if (sizeLabel != null) sizeLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
+        if (operationsSectionLabel != null) {
+            operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
+        }
+        if (operationHintLabel != null) {
+            operationHintLabel.textProperty().bind(I18N.createStringBinding("label.maze.operation_hint"));
+        }
         if (buildBtn != null) buildBtn.textProperty().bind(I18N.createStringBinding("action.maze.build"));
         if (solveBtn != null) solveBtn.textProperty().bind(I18N.createStringBinding("action.maze.solve"));
-        if (operationBtn != null) operationBtn.textProperty().bind(I18N.createStringBinding("action.maze.operation"));
+        if (applySizeBtn != null) applySizeBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_size"));
+        if (resetMazeBtn != null) resetMazeBtn.textProperty().bind(I18N.createStringBinding("action.maze.reset"));
     }
 
     @Override

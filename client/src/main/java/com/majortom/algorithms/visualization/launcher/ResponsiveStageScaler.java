@@ -11,6 +11,11 @@ import javafx.scene.layout.Region;
  */
 public final class ResponsiveStageScaler {
 
+    public static final double DEFAULT_WIDTH = 1440.0d;
+    public static final double DEFAULT_HEIGHT = 900.0d;
+    public static final double MIN_WIDTH = 960.0d;
+    public static final double MIN_HEIGHT = 640.0d;
+
     private ResponsiveStageScaler() {
     }
 
@@ -19,6 +24,8 @@ public final class ResponsiveStageScaler {
             region.setPrefSize(designWidth, designHeight);
             region.setMinSize(0, 0);
         }
-        return new Scene(content, designWidth, designHeight);
+        double width = Math.max(MIN_WIDTH, designWidth);
+        double height = Math.max(MIN_HEIGHT, designHeight);
+        return new Scene(content, width, height);
     }
 }

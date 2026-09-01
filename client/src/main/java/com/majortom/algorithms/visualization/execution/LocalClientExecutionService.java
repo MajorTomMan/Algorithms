@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.api.AlgorithmInput;
 import com.majortom.algorithms.core.api.AlgorithmInvoker;
 import com.majortom.algorithms.core.runtime.ExecutionEvent;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
+import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.visualization.runtime.ExecutionSession;
@@ -41,6 +42,26 @@ public final class LocalClientExecutionService implements ClientExecutionService
                 invoker, input, reducer, liveStateConsumer, delayMillisSupplier);
         ExecutionSession session = delegate.start(
                 invoker, input, reducer, liveStateConsumer, delayMillisSupplier);
+        return new LocalExecutionHandle(session);
+    }
+
+    @Override
+    public <S> ExecutionHandle start(
+            AlgorithmInvoker invoker,
+            AlgorithmInput input,
+            EventReducer<S> reducer,
+            Consumer<S> liveStateConsumer,
+            Consumer<ExecutionStatistics> liveStatisticsConsumer,
+            LongSupplier delayMillisSupplier) {
+        ClientExecutionService.requireStartArguments(
+                invoker, input, reducer, liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
+        ExecutionSession session = delegate.start(
+                invoker,
+                input,
+                reducer,
+                liveStateConsumer,
+                liveStatisticsConsumer,
+                delayMillisSupplier);
         return new LocalExecutionHandle(session);
     }
 

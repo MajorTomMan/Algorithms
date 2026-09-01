@@ -1,308 +1,865 @@
-/* =========================================================
- * [0] 核心调色盘 - 极致黑白与“乱”美学对比
- * ======================================================= */
+/*
+ * Algorithms workbench theme
+ *
+ * The visual language is intentionally restrained: charcoal surfaces, white
+ * content, gray structure and only red/blue/yellow for state. The central
+ * visualizer remains the quietest and largest surface so dense data does not
+ * compete with controls.
+ */
+
 .root,
 .root-pane {
-  -fx-background-color: #000000;
+    -fx-background-color: #202326;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-size: 13px;
 }
 
-/* =========================================================
- * [1] 布局容器修复 - 锁定 80px 修复视觉位移
- * ======================================================= */
-.control-bar-refined {
-  -fx-background-color: #050505;
-  -fx-min-height: 80px;
-  -fx-max-height: 80px;
-  -fx-padding: 0 15;
-  -fx-alignment: CENTER_LEFT;
-  -fx-border-color: #333333 transparent transparent transparent;
-  -fx-border-width: 1 0 0 0;
+/* ---------- application shell ---------- */
+
+.top-shell,
+.top-bar {
+    -fx-background-color: #24272b;
+    -fx-min-height: 62px;
+    -fx-pref-height: 62px;
+    -fx-max-height: 62px;
 }
 
-/* 侧边栏整体 */
-.dark-panel {
-  -fx-background-color: #0d0d0f;
-  -fx-border-color: transparent #333333 transparent transparent;
-  -fx-border-width: 0 1 0 0;
+.top-bar {
+    -fx-padding: 0 14px;
+    -fx-border-color: transparent transparent #41464b transparent;
+    -fx-border-width: 0 0 1px 0;
 }
 
-/* =========================================================
- * [2] 侧边栏标题与状态居中 (修复 image_d3adec)
- * ======================================================= */
-
-/* 对应 menuTitleLabel, statsTitleLabel, logTitleLabel */
-.section-title {
-  -fx-text-fill: #ffffff;
-  -fx-font-family: "Microsoft YaHei", "Consolas";
-  -fx-font-weight: bold;
-  -fx-font-size: 15px;
-  -fx-padding: 15 0 5 0;
-  -fx-maxwidth: Infinity; /* 撑满宽度以实现水平居中 */
-  -fx-alignment: CENTER;
-  -fx-text-alignment: CENTER;
+.brand-title {
+    -fx-text-fill: #f2f3f4;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 4px 0 0;
 }
 
-/* 对应 statsLabel (系统就绪等) */
-.status-text {
-  -fx-text-fill: #00ff66; /* 状态绿，极致对比 */
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-size: 13px;
-  -fx-padding: 5 0;
-  -fx-maxwidth: Infinity;
-  -fx-alignment: CENTER;
-  -fx-text-alignment: CENTER;
+.top-divider {
+    -fx-background-color: #697178;
+    -fx-opacity: 0.5;
 }
 
-/* =========================================================
- * [3] 按钮体系 - 彻底解决文字显示不全 (修复 image_d32329)
- * ======================================================= */
+.module-nav {
+    -fx-padding: 0;
+}
+
+.workspace-mode-nav {
+    -fx-padding: 0;
+}
+
+.top-bar .workspace-mode-button {
+    -fx-min-width: 70px;
+    -fx-pref-width: 82px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 34px;
+    -fx-padding: 7px 10px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #4b5157 transparent;
+    -fx-border-width: 0 0 2px 0;
+    -fx-text-fill: #a5abb0;
+}
+
+.top-bar .workspace-mode-button:hover {
+    -fx-background-color: #2d3237;
+    -fx-text-fill: #f2f3f4;
+}
+
+.top-bar .workspace-mode-button:selected {
+    -fx-background-color: #30486d;
+    -fx-border-color: transparent transparent #3978d6 transparent;
+    -fx-text-fill: #e5efff;
+}
+
+.module-nav .module-button,
+.shell-toggle-button {
+    -fx-min-height: 32px;
+    -fx-pref-height: 34px;
+    -fx-max-height: 38px;
+}
+
+.module-nav .module-button {
+    -fx-min-width: 76px;
+    -fx-pref-width: 96px;
+    -fx-max-width: 170px;
+    -fx-padding: 7px 12px;
+}
+
+.shell-toggle-button {
+    -fx-min-width: 72px;
+    -fx-pref-width: 84px;
+    -fx-padding: 6px 10px;
+    -fx-background-color: #2c3034;
+    -fx-border-color: #4b5157;
+    -fx-border-width: 1px;
+    -fx-text-fill: #f2f3f4;
+}
+
+.shell-toggle-button:selected {
+    -fx-background-color: #3a3522;
+    -fx-border-color: #c8a924;
+    -fx-text-fill: #f2cf3b;
+}
+
+.module-nav .module-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2px 0;
+    -fx-text-fill: #a5abb0;
+}
+
+.module-nav .module-button:hover {
+    -fx-background-color: #2d3237;
+    -fx-border-color: #697178;
+    -fx-text-fill: #f2f3f4;
+}
+
+.module-nav .module-button:selected {
+    -fx-background-color: #30353a;
+    -fx-text-fill: #f2f3f4;
+}
+
+.module-nav .module-button.btn-ran-blue:selected {
+    -fx-border-color: transparent transparent #3978d6 transparent;
+}
+
+.module-nav .module-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent #e84e58 transparent;
+}
+
+.module-nav .module-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent #f0c52d transparent;
+}
+
+/* ---------- side panels ---------- */
+
+.side-panel {
+    -fx-background-color: #25292d;
+    -fx-min-width: 0;
+    -fx-max-height: Infinity;
+    -fx-padding: 0 12px 12px 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.42), 18, 0.2, 0, 4);
+}
+
+.settings-panel {
+    -fx-border-color: transparent #41464b transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.settings-panel:workspace-focus {
+    -fx-border-color: transparent #3978d6 transparent transparent;
+    -fx-border-width: 0 2px 0 0;
+}
+
+.diagnostics-panel {
+    -fx-border-color: transparent transparent transparent #41464b;
+    -fx-border-width: 0 0 0 1px;
+}
+
+.diagnostics-panel:workspace-focus {
+    -fx-border-color: transparent transparent transparent #f0c52d;
+    -fx-border-width: 0 0 0 2px;
+}
+
+.panel-header {
+    -fx-min-height: 42px;
+    -fx-padding: 9px 2px 8px 2px;
+    -fx-border-color: transparent transparent #41464b transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.panel-header-secondary {
+    -fx-padding: 12px 2px 7px 2px;
+}
+
+.panel-header .drawer-close-button {
+    -fx-min-width: 26px;
+    -fx-pref-width: 26px;
+    -fx-max-width: 26px;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-padding: 2px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #a5abb0;
+    -fx-font-size: 18px;
+}
+
+.panel-header .drawer-close-button:hover {
+    -fx-background-color: #482f34;
+    -fx-border-color: #c5535b;
+    -fx-text-fill: #f18b92;
+}
+
+.panel-title {
+    -fx-text-fill: #f2f3f4;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.panel-kicker {
+    -fx-text-fill: #929aa1;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.panel-kicker-blue {
+    -fx-text-fill: #6c9ce2;
+}
+
+.panel-scroll-pane,
+.stats-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+}
+
+.panel-scroll-pane > .viewport,
+.stats-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.module-control-host {
+    -fx-padding: 2px 0 12px 0;
+}
+
+.module-control-panel {
+    -fx-min-width: 0;
+    -fx-padding: 0;
+}
+
+.card-stack {
+    -fx-spacing: 0;
+}
+
+/* FXML keeps the sections separate; control-card is the semantic card hook
+ * and control-section keeps the accordion behavior explicit. */
+.control-section,
+.control-card {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent #3d4348 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-radius: 0;
+    -fx-padding: 11px 2px 13px 2px;
+}
+
+.control-section:hover,
+.control-card:hover {
+    -fx-background-color: #2a2e32;
+    -fx-border-color: transparent transparent #596168 transparent;
+}
+
+.control-section-header {
+    -fx-min-height: 22px;
+    -fx-padding: 0 0 6px 0;
+    -fx-cursor: hand;
+}
+
+.control-section-header:focused,
+.diagnostic-section-header:focused {
+    -fx-background-color: #2a2e32;
+    -fx-border-color: transparent transparent #6c9ce2 transparent;
+}
+
+.section-chevron {
+    -fx-text-fill: #a5abb0;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.execution-section {
+    -fx-border-color: transparent transparent #3d4348 #3978d6;
+    -fx-border-width: 0 0 1px 2px;
+    -fx-border-insets: 0;
+    -fx-padding: 11px 2px 13px 10px;
+}
+
+.control-section-title {
+    -fx-text-fill: #f2f3f4;
+    -fx-font-weight: bold;
+}
+
+/* ---------- persistent module operations ---------- */
+
+.operation-section {
+    -fx-padding: 11px 2px 12px 2px;
+}
+
+.operation-row {
+    -fx-alignment: CENTER_LEFT;
+    -fx-fill-height: true;
+}
+
+.operation-caption-row {
+    -fx-padding: 0 1px;
+}
+
+.operation-label {
+    -fx-text-fill: #aeb5bb;
+    -fx-font-size: 11px;
+}
+
+.operation-value {
+    -fx-text-fill: #f0c52d;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-weight: bold;
+}
+
+.operation-hint {
+    -fx-text-fill: #929aa1;
+    -fx-font-size: 11px;
+    -fx-line-spacing: 2px;
+    -fx-padding: 0 1px 2px 1px;
+}
+
+.operation-input {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-min-height: 31px;
+    -fx-pref-height: 31px;
+    -fx-padding: 5px 7px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.operation-button {
+    -fx-min-width: 64px;
+    -fx-pref-width: 0;
+    -fx-min-height: 31px;
+    -fx-pref-height: 31px;
+    -fx-padding: 6px 7px;
+    -fx-font-size: 12px;
+}
+
+.operation-slider {
+    -fx-padding: 3px 3px 0 3px;
+}
+
+.operation-slider .axis {
+    -fx-tick-label-fill: #929aa1;
+    -fx-tick-label-font-size: 10px;
+}
+
+/* ---------- central viewport ---------- */
+
+.desktop-workspace {
+    -fx-background-color: #11161b;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.workspace-layer {
+    -fx-background-color: #11161b;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+}
+
+.drawer-scrim {
+    -fx-background-color: rgba(0, 0, 0, 0.58);
+    -fx-cursor: hand;
+}
+
+.visualization-viewport {
+    -fx-background-color: #1b1e21;
+    -fx-background-insets: 0;
+    -fx-min-height: 120px;
+    -fx-pref-height: 480px;
+    -fx-max-height: Infinity;
+    -fx-padding: 8px;
+    -fx-border-color: #17191b;
+    -fx-border-width: 1px;
+}
+
+.visualization-container {
+    -fx-background-color: #1b1e21;
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: Infinity;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: Infinity;
+}
+
+.viewport-hint {
+    -fx-padding: 9px 11px;
+}
+
+.viewport-hint-label {
+    -fx-text-fill: rgba(242, 243, 244, 0.42);
+    -fx-font-size: 11px;
+}
+
+.narrow-panel-toggle-bar {
+    -fx-background-color: rgba(32, 35, 38, 0.96);
+    -fx-border-color: #4b5157;
+    -fx-border-width: 1px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-padding: 6px 8px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 52px;
+    -fx-max-height: 58px;
+}
+
+.root-pane:narrow-layout .narrow-panel-toggle-bar .shell-toggle-button {
+    -fx-min-width: 80px;
+    -fx-pref-width: 92px;
+    -fx-padding: 6px 8px;
+}
+
+/* ---------- diagnostic cards ---------- */
+
+.diagnostic-card {
+    -fx-background-color: #2b3034;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3px;
+    -fx-border-color: #454b51;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+.stats-scroll-pane.diagnostic-card {
+    -fx-padding: 0;
+}
+
+.stats-scroll-pane.diagnostic-card > .viewport {
+    -fx-background-color: #2b3034;
+    -fx-padding: 8px 10px;
+}
+
+.stats-text {
+    -fx-text-fill: #e4e7e9;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 12px;
+    -fx-line-spacing: 3px;
+    -fx-padding: 4px 2px 8px 2px;
+}
+
+.log-area.diagnostic-card {
+    -fx-padding: 0;
+    -fx-border-color: #454b51;
+}
+
+.log-area {
+    -fx-control-inner-background: #1f2225;
+    -fx-text-fill: #e4e7e9;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 12px;
+    -fx-border-color: #454b51;
+    -fx-border-width: 1px;
+    -fx-highlight-fill: #3978d6;
+    -fx-highlight-text-fill: #f2f3f4;
+}
+
+.log-area .content {
+    -fx-background-color: #1f2225;
+}
+
+/* ---------- bottom playback dock ---------- */
+
+.bottom-dock {
+    -fx-background-color: #24272b;
+    -fx-border-color: #41464b transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 9px 12px 11px 12px;
+}
+
+.playback-actions {
+    -fx-padding: 0;
+}
+
+.playback-actions .button {
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+}
+
+.playback-actions .step-button {
+    -fx-min-width: 42px;
+    -fx-pref-width: 42px;
+    -fx-max-width: 42px;
+    -fx-padding: 6px 8px;
+}
+
+.timeline-row {
+    -fx-padding: 6px 2px 0 2px;
+    -fx-border-color: #383e43 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.timeline-group {
+    -fx-padding: 0 2px;
+}
+
+.timeline-main {
+    -fx-min-width: 180px;
+}
+
+/* ---------- common controls ---------- */
+
 .button,
 .menu-button {
-  -fx-background-color: #000000;
-  -fx-background-radius: 0;
-  -fx-border-width: 2;
-  -fx-text-fill: #ffffff;
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-weight: bold;
-  -fx-font-size: 13px;
-  -fx-cursor: hand;
-
-  /* 核心修复：放宽 min-width 适配中文加粗，padding 提供呼吸感 */
-  -fx-min-width: 100px;
-  -fx-padding: 6 20;
-  -fx-alignment: CENTER;
-  -fx-text-overrun: CLIP;
-  -fx-ellipsis-string: "";
+    -fx-background-color: #303438;
+    -fx-background-radius: 3px;
+    -fx-border-color: #4c5359;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-text-fill: #f2f3f4;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: normal;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-min-width: 96px;
+    -fx-padding: 7px 13px;
+    -fx-alignment: CENTER;
+    -fx-text-overrun: CLIP;
+    -fx-ellipsis-string: "";
 }
 
 .button:hover,
 .menu-button:hover {
-  -fx-background-color: rgba(255, 255, 255, 0.15);
-  -fx-scale-x: 1.03;
+    -fx-background-color: #393e43;
+    -fx-border-color: #707980;
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+}
+
+.button:pressed,
+.menu-button:pressed {
+    -fx-background-color: #202326;
+    -fx-border-color: #8b939a;
+}
+
+.button:focused,
+.menu-button:focused {
+    -fx-border-color: #8b939a;
+    -fx-border-width: 1px;
+}
+
+.button:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
 }
 
 .compact-button {
-  -fx-min-width: 82px;
-  -fx-pref-width: 92px;
-  -fx-padding: 6 10;
+    -fx-min-width: 82px;
+    -fx-pref-width: 92px;
+    -fx-padding: 7px 10px;
 }
 
-/* 侧边栏大按钮专用宽度 */
-.dark-panel .menu-button {
-  -fx-min-width: 240px;
-  -fx-max-width: 250px;
-}
-
-/* --- 专项颜色分类 --- */
-#startBtn,
-#runBtn,
-#buildBtn,
-#insertBtn,
-#sortBtn,
-.btn-ran-blue {
-  -fx-border-color: #00a2ff;
-  -fx-text-fill: #00a2ff;
-}
-#pauseBtn,
-#randomBtn,
-#solveBtn,
-#linkBtn,
-#treeBtn,
-.btn-ran-gold {
-  -fx-border-color: #ffd700;
-  -fx-text-fill: #ffd700;
-}
-#resetBtn,
-#deleteBtn,
-#mazeBtn,
-.btn-ran-red {
-  -fx-border-color: #ff0000;
-  -fx-text-fill: #ff0000;
-}
-#addBtn,
-#graphBtn,
-.btn-ran-purple {
-  -fx-border-color: #d140ff;
-  -fx-text-fill: #d140ff;
-}
-
-/* 语言切换：冷冽青 */
-#langBtn {
-  -fx-border-color: #00ffcc;
-  -fx-text-fill: #00ffcc;
-  -fx-background-color: rgba(0, 255, 204, 0.05);
-}
-
-/* =========================================================
- * [4] 输入组件与标签 - 解决文本太暗问题
- * ======================================================= */
-.dark-textfield {
-  -fx-background-color: #000000;
-  -fx-border-color: #ffffff;
-  -fx-border-width: 2;
-  -fx-text-fill: #ffffff;
-  -fx-font-family: "Consolas";
-  -fx-font-weight: bold;
-  -fx-padding: 5 10;
-  -fx-alignment: CENTER;
-  -fx-min-width: 75px;
-  -fx-prompt-text-fill: #bbbbbb; /* 增强提示文字亮度 */
-}
-
-.dark-textfield:focused {
-  -fx-border-color: #00ffcc;
-}
-
-/* 普通提示标签 */
-.control-label {
-  -fx-text-fill: #ffffff;
-  -fx-font-size: 13px;
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-weight: bold;
-}
-
-/* =========================================================
- * [5] 滑动条与日志
- * ======================================================= */
-.slider .thumb {
-  -fx-background-color: #ffffff;
-  -fx-background-radius: 0;
-  -fx-border-color: #ff0000;
-  -fx-border-width: 2;
-}
-
-.log-area {
-  -fx-control-inner-background: #000000;
-  -fx-text-fill: #00ff00;
-  -fx-font-family: "Consolas";
-  -fx-font-size: 12px;
-  -fx-border-color: #333333;
-}
-
-/* =========================================================
- * [6] 重构后补回的组件样式桥接
- * ======================================================= */
 .btn-primary,
-.btn-run-neon {
-  -fx-border-color: #00a2ff;
-  -fx-text-fill: #00a2ff;
+.btn-run-neon,
+.btn-ran-blue {
+    -fx-background-color: #30486d;
+    -fx-border-color: #4f7fd0;
+    -fx-text-fill: #e5efff;
 }
 
+.btn-ran-gold {
+    -fx-background-color: #4b411f;
+    -fx-border-color: #c8a924;
+    -fx-text-fill: #f3d34b;
+}
+
+.btn-ran-red {
+    -fx-background-color: #482f34;
+    -fx-border-color: #c5535b;
+    -fx-text-fill: #f18b92;
+}
+
+.btn-ran-white {
+    -fx-background-color: #33383d;
+    -fx-border-color: #697178;
+    -fx-text-fill: #f2f3f4;
+}
+
+/* Legacy semantic aliases now use the same restrained state colors. */
+.btn-ran-purple,
 .btn-neon-cyan {
-  -fx-border-color: #00ffcc;
-  -fx-text-fill: #00ffcc;
-  -fx-background-color: rgba(0, 255, 204, 0.06);
+    -fx-background-color: #30486d;
+    -fx-border-color: #4f7fd0;
+    -fx-text-fill: #e5efff;
 }
 
 .btn-neon-pink {
-  -fx-border-color: #d140ff;
-  -fx-text-fill: #ff7af6;
-  -fx-background-color: rgba(209, 64, 255, 0.06);
+    -fx-background-color: #482f34;
+    -fx-border-color: #c5535b;
+    -fx-text-fill: #f18b92;
 }
 
-.module-button:selected,
-.module-button:hover {
-  -fx-background-color: rgba(255, 255, 255, 0.08);
+.btn-primary:hover,
+.btn-run-neon:hover,
+.btn-ran-blue:hover,
+.btn-ran-purple:hover,
+.btn-neon-cyan:hover {
+    -fx-background-color: #3a5785;
+}
+
+.btn-ran-gold:hover {
+    -fx-background-color: #5b4f24;
+}
+
+.btn-ran-red:hover,
+.btn-neon-pink:hover {
+    -fx-background-color: #5b373e;
 }
 
 .btn-ran-blue:selected,
-.btn-ran-blue:hover {
-  -fx-effect: dropshadow(gaussian, rgba(0, 162, 255, 0.3), 12, 0.2, 0, 0);
-}
-
 .btn-ran-gold:selected,
-.btn-ran-gold:hover {
-  -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.3), 12, 0.2, 0, 0);
+.btn-ran-red:selected {
+    -fx-effect: none;
 }
 
-.btn-ran-red:selected,
-.btn-ran-red:hover {
-  -fx-effect: dropshadow(gaussian, rgba(255, 0, 0, 0.28), 12, 0.2, 0, 0);
+.dark-textfield {
+    -fx-background-color: #1f2225;
+    -fx-background-radius: 3px;
+    -fx-border-color: #4c5359;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-text-fill: #f2f3f4;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: normal;
+    -fx-padding: 6px 9px;
+    -fx-alignment: CENTER;
+    -fx-min-width: 75px;
+    -fx-prompt-text-fill: #929aa1;
 }
 
-.btn-ran-purple:selected,
-.btn-ran-purple:hover {
-  -fx-effect: dropshadow(gaussian, rgba(209, 64, 255, 0.3), 12, 0.2, 0, 0);
+.dark-textfield:focused {
+    -fx-border-color: #3978d6;
+}
+
+.control-label {
+    -fx-text-fill: #e8eaec;
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: normal;
+}
+
+.slider .track {
+    -fx-background-color: #4a5157;
+    -fx-background-radius: 2px;
+    -fx-pref-height: 4px;
+}
+
+.slider .thumb {
+    -fx-background-color: #f2f3f4;
+    -fx-background-radius: 8px;
+    -fx-border-color: #f2f3f4;
+    -fx-border-width: 1px;
+    -fx-pref-width: 12px;
+    -fx-pref-height: 12px;
 }
 
 .dark-combo-box {
-  -fx-background-color: #000000;
-  -fx-border-color: #ffffff;
-  -fx-border-width: 2;
-  -fx-background-radius: 0;
-  -fx-border-radius: 0;
+    -fx-background-color: #1f2225;
+    -fx-background-radius: 3px;
+    -fx-border-color: #4c5359;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-min-height: 34px;
+}
+
+.dark-combo-box:hover {
+    -fx-border-color: #707980;
+}
+
+.dark-combo-box:focused {
+    -fx-border-color: #3978d6;
 }
 
 .dark-combo-box .list-cell,
 .dark-combo-box .text {
-  -fx-text-fill: #ffffff;
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-weight: bold;
+    -fx-background-color: transparent;
+    -fx-text-fill: #f2f3f4;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: normal;
 }
 
 .dark-combo-box .arrow-button {
-  -fx-background-color: #111111;
+    -fx-background-color: #2b3034;
+    -fx-background-radius: 0 3px 3px 0;
 }
 
 .dark-combo-box .arrow {
-  -fx-background-color: #00ffcc;
+    -fx-background-color: #a5abb0;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #25292d;
+    -fx-border-color: #4c5359;
+    -fx-border-width: 1px;
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: #25292d;
+    -fx-text-fill: #f2f3f4;
+    -fx-padding: 7px 9px;
+}
+
+.combo-box-popup .list-cell:hover,
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #30486d;
+    -fx-text-fill: #f2f3f4;
 }
 
 .subtle-divider {
-  -fx-opacity: 0.25;
-  -fx-background-color: #666666;
+    -fx-opacity: 0.8;
+    -fx-background-color: #3d4348;
 }
 
+/* Scrollbars are quiet but remain visible for large data sets. */
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-padding: 1px;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 3px;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #555e65;
+    -fx-background-radius: 3px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #737d85;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+/* ---------- dialogs ---------- */
+
 .size-value-highlight {
-  -fx-text-fill: #00ffcc;
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-weight: bold;
-  -fx-font-size: 13px;
+    -fx-text-fill: #f0c52d;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
 }
 
 .dialog-pane {
-  -fx-background-color: #050505;
+    -fx-background-color: #202326;
 }
 
 .dialog-pane .label {
-  -fx-text-fill: #ffffff;
-  -fx-font-family: "Consolas", "Microsoft YaHei";
-  -fx-font-weight: bold;
+    -fx-text-fill: #f2f3f4;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+    -fx-font-weight: normal;
 }
 
 .operation-dialog-pane {
-  -fx-background-color: #050505;
-  -fx-border-color: #333333;
-  -fx-border-width: 1;
-  -fx-padding: 18;
+    -fx-background-color: #202326;
+    -fx-border-color: #41464b;
+    -fx-border-width: 1px;
+    -fx-padding: 16px;
 }
 
 .operation-dialog-content {
-  -fx-min-width: 500px;
-  -fx-padding: 12;
+    -fx-min-width: 500px;
+    -fx-padding: 10px;
 }
 
 .dialog-form-section {
-  -fx-background-color: rgba(255, 255, 255, 0.035);
-  -fx-background-radius: 6;
-  -fx-padding: 14;
-  -fx-border-color: rgba(255, 255, 255, 0.12);
-  -fx-border-radius: 6;
+    -fx-background-color: #2b3034;
+    -fx-background-radius: 3px;
+    -fx-padding: 12px;
+    -fx-border-color: #454b51;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
 }
 
 .dialog-section-title {
-  -fx-text-fill: #00ffcc;
-  -fx-font-size: 14px;
+    -fx-text-fill: #6c9ce2;
+    -fx-font-size: 14px;
 }
 
 .dialog-input {
-  -fx-min-width: 180px;
-  -fx-pref-height: 38px;
-  -fx-font-size: 14px;
-  -fx-alignment: CENTER_LEFT;
+    -fx-min-width: 180px;
+    -fx-pref-height: 36px;
+    -fx-font-size: 14px;
+    -fx-alignment: CENTER_LEFT;
 }
 
 .dialog-action-row {
-  -fx-alignment: CENTER_RIGHT;
-  -fx-padding: 4 0 0 0;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 4px 0 0 0;
+}
+
+/* ---------- responsive refinements ---------- */
+
+.root-pane:compact-layout .top-bar {
+    -fx-padding: 0 10px;
+    -fx-spacing: 8px;
+}
+
+.root-pane:compact-layout .brand-title {
+    -fx-font-size: 15px;
+}
+
+.root-pane:compact-layout .module-nav .module-button {
+    -fx-min-width: 68px;
+    -fx-pref-width: 76px;
+    -fx-padding: 7px 6px;
+    -fx-font-size: 12px;
+}
+
+.root-pane:compact-layout .shell-toggle-button {
+    -fx-min-width: 62px;
+    -fx-pref-width: 70px;
+    -fx-padding: 6px;
+}
+
+.root-pane:narrow-layout .side-panel {
+    -fx-padding: 0 8px 8px 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.72), 24, 0.25, 0, 5);
+}
+
+.root-pane:narrow-layout .top-bar {
+    -fx-padding: 0 8px;
+    -fx-spacing: 6px;
+}
+
+.root-pane:narrow-layout .module-nav {
+    -fx-spacing: 4px;
+}
+
+.root-pane:narrow-layout .brand-title {
+    -fx-font-size: 13px;
+}
+
+.root-pane:narrow-layout .module-nav .module-button {
+    -fx-min-width: 60px;
+    -fx-pref-width: 68px;
+    -fx-padding: 6px 4px;
+    -fx-font-size: 11px;
+}
+
+.root-pane:narrow-layout .workspace-mode-button {
+    -fx-min-width: 54px;
+    -fx-pref-width: 62px;
+    -fx-padding: 6px 4px;
+    -fx-font-size: 11px;
+}
+
+.root-pane:narrow-layout .shell-toggle-button {
+    -fx-min-width: 62px;
+    -fx-pref-width: 70px;
+    -fx-padding: 6px 5px;
+}
+
+.root-pane:narrow-layout .panel-title {
+    -fx-font-size: 12px;
+}
+
+.root-pane:narrow-layout .visualization-viewport {
+    -fx-padding: 6px;
 }

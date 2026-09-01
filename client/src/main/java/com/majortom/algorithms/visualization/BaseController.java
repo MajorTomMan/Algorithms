@@ -64,6 +64,7 @@ import java.util.function.Supplier;
 /** Shared JavaFX shell around the UI-neutral provider/runtime/event pipeline. */
 public abstract class BaseController<S> implements Initializable {
 
+    private static final long LIVE_STATS_REFRESH_INTERVAL_NANOS = 50_000_000L;
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static final RunHistoryService DEFAULT_EXECUTION_HISTORY =
             new InMemoryRunHistoryService(RunHistoryPolicy.desktopDefault());
@@ -86,6 +87,8 @@ public abstract class BaseController<S> implements Initializable {
     protected Button pauseBtn;
     protected Button resetBtn;
     protected Button replayBtn;
+    protected Button stepBackwardBtn;
+    protected Button stepForwardBtn;
     protected Button exportBtn;
     protected Button compareBtn;
 
@@ -101,6 +104,7 @@ public abstract class BaseController<S> implements Initializable {
     private ReducedEventTimeline<S> lastTimeline;
     private PlaybackController<S> replayController;
     private boolean updatingTimelineSlider;
+    private long lastLiveStatsRefreshNanos;
     private final AtomicLong executionDelayMillis = new AtomicLong(50L);
     private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
         executionDelayMillis.set(Math.max(0L, newValue.longValue()));
@@ -151,12 +155,14 @@ public abstract class BaseController<S> implements Initializable {
         }
         stopAlgorithm();
         clearExecutionState();
+        lastLiveStatsRefreshNanos = 0L;
         refreshStatsDisplay();
 
         AlgorithmProvider<?, ?> provider = ProviderCatalog.production().require(algorithmId);
         EventReducer<S> liveReducer = reducerFactory.get();
         running.set(true);
         paused.set(false);
+        updatePlaybackButtonState();
         appendLog("Started: " + algorithmId);
 
         currentSession = execution.start(
@@ -164,6 +170,7 @@ public abstract class BaseController<S> implements Initializable {
                 input,
                 liveReducer,
                 this::renderState,
+                this::updateLiveStatistics,
                 executionDelayMillis::get);
         ExecutionHandle session = currentSession;
         session.completion().whenComplete((result, error) -> Platform.runLater(
@@ -178,6 +185,7 @@ public abstract class BaseController<S> implements Initializable {
         currentSession = null;
         running.set(false);
         paused.set(false);
+        updatePlaybackButtonState();
     }
 
     public final void togglePause() {
@@ -327,6 +335,7 @@ public abstract class BaseController<S> implements Initializable {
         session.close();
         running.set(false);
         paused.set(false);
+        updatePlaybackButtonState();
         currentSession = null;
         EventReducer<S> reducer = reducerFactory.get();
         ReducedEventTimeline<S> timeline = new ReducedEventTimeline<>(events, reducer);
@@ -368,6 +377,24 @@ public abstract class BaseController<S> implements Initializable {
 
     private void renderState(S state) {
         renderViewState(state);
+    }
+
+    /**
+     * Updates the module statistics from the live reduction cursor. The
+     * callback is delivered through the execution service's UI dispatcher,
+     * just like the corresponding view-state callback.
+     */
+    private void updateLiveStatistics(ExecutionStatistics liveStatistics) {
+        if (!running.get()) {
+            return;
+        }
+        stats = Objects.requireNonNull(liveStatistics, "liveStatistics");
+        long now = System.nanoTime();
+        if (lastLiveStatsRefreshNanos == 0L
+                || now - lastLiveStatsRefreshNanos >= LIVE_STATS_REFRESH_INTERVAL_NANOS) {
+            lastLiveStatsRefreshNanos = now;
+            refreshStatsDisplay();
+        }
     }
 
     /** Stores the semantic state separately from the visualizer's drawing cache. */
@@ -593,6 +620,27 @@ public abstract class BaseController<S> implements Initializable {
             }
             statsLabel.setText(message);
         }
+        updatePlaybackButtonState();
+    }
+
+    private void updatePlaybackButtonState() {
+        boolean playbackUnavailable = running.get() || !hasPlaybackData();
+        if (replayBtn != null) {
+            replayBtn.setDisable(playbackUnavailable);
+        }
+        if (stepBackwardBtn != null) {
+            stepBackwardBtn.setDisable(playbackUnavailable);
+        }
+        if (stepForwardBtn != null) {
+            stepForwardBtn.setDisable(playbackUnavailable);
+        }
+        boolean recordUnavailable = running.get() || !hasExecutionRecord();
+        if (exportBtn != null) {
+            exportBtn.setDisable(recordUnavailable);
+        }
+        if (compareBtn != null) {
+            compareBtn.setDisable(recordUnavailable);
+        }
     }
 
     private void setupGlobalButtonActions() {
@@ -620,8 +668,30 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (replayBtn != null) {
             replayBtn.setOnAction(event -> {
-                dispatchVisualizerAction(VisualizationActionType.EXECUTION_REPLAY);
+                VisualizationActionType action = VisualizationActionType.EXECUTION_RESUME;
+                if (replayController != null && replayController.isPlaying()) {
+                    action = VisualizationActionType.EXECUTION_PAUSE;
+                }
+                dispatchVisualizerAction(action);
                 toggleReplay();
+            });
+        }
+        if (stepBackwardBtn != null) {
+            stepBackwardBtn.setOnAction(event -> {
+                if (isRunning()) {
+                    return;
+                }
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_PAUSE);
+                stepBackward();
+            });
+        }
+        if (stepForwardBtn != null) {
+            stepForwardBtn.setOnAction(event -> {
+                if (isRunning()) {
+                    return;
+                }
+                dispatchVisualizerAction(VisualizationActionType.EXECUTION_PAUSE);
+                stepForward();
             });
         }
         if (exportBtn != null) {
@@ -644,6 +714,12 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (replayBtn != null) {
             replayBtn.setOnAction(null);
+        }
+        if (stepBackwardBtn != null) {
+            stepBackwardBtn.setOnAction(null);
+        }
+        if (stepForwardBtn != null) {
+            stepForwardBtn.setOnAction(null);
         }
         if (exportBtn != null) {
             exportBtn.setOnAction(null);
@@ -684,6 +760,8 @@ public abstract class BaseController<S> implements Initializable {
         this.pauseBtn = controls.pauseButton();
         this.resetBtn = controls.resetButton();
         this.replayBtn = controls.replayButton();
+        this.stepBackwardBtn = controls.stepBackwardButton();
+        this.stepForwardBtn = controls.stepForwardButton();
         this.exportBtn = controls.exportButton();
         this.compareBtn = controls.compareButton();
         if (this.delaySlider != null) {

@@ -111,10 +111,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         String style = null;
         Integer parent = state.parents().get(value.to());
         if (parent != null && parent == value.from()) {
-            style = "fill-color: #DCB400; size: 7px;";
+            style = "fill-color: #FFD700; size: 7px;";
         }
         if (value.equals(state.examinedEdge())) {
-            style = "fill-color: #00BEEA; size: 9px;";
+            style = "fill-color: #00A2FF; size: 9px;";
         }
         if (style == null) {
             edge.removeAttribute("ui.style");
