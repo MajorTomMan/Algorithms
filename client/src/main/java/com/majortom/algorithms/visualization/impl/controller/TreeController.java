@@ -6,6 +6,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.tree.AvlTreeEventReducer;
 import com.majortom.algorithms.visualization.runtime.tree.AvlTreeViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshot;
@@ -25,7 +26,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
-public final class TreeController extends BaseModuleController<AvlTreeViewState> {
+public final class TreeController extends BaseModuleController<AvlTreeViewState>
+        implements AlgorithmSelectionSupport {
 
     private final List<Integer> values = new ArrayList<>();
     private List<AvlCommand> pendingCommands = List.of();
@@ -210,6 +212,17 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         List<AvlCommand> commands = pendingCommands;
         pendingCommands = List.of();
         startAlgorithm("tree-avl", new AvlTreeInput(values, commands), AvlTreeEventReducer::new);
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        if (!"tree-avl".equals(algorithmId)) {
+            return false;
+        }
+        if (algorithmSelector != null) {
+            algorithmSelector.getSelectionModel().selectFirst();
+        }
+        return true;
     }
 
     private void runProjectionOnly() {

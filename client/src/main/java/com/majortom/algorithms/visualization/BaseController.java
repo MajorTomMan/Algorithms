@@ -809,6 +809,9 @@ public abstract class BaseController<S> implements Initializable {
         this.stepForwardBtn = controls.stepForwardButton();
         this.exportBtn = controls.exportButton();
         this.compareBtn = controls.compareButton();
+        if (this.startBtn != null) {
+            this.startBtn.setDisable(false);
+        }
         if (this.delaySlider != null) {
             delayMs.bind(delaySlider.valueProperty());
             executionDelayMillis.set(Math.max(0L, Math.round(delaySlider.getValue())));

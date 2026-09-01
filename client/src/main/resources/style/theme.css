@@ -1538,3 +1538,118 @@
     -fx-padding: 5px 5px;
     -fx-font-size: 10px;
 }
+
+/* ---------- structure and algorithm catalog inside each workbench rail ---------- */
+
+.workspace-catalog {
+    -fx-background-color: transparent;
+    -fx-padding: 2px 0 4px 0;
+}
+
+.workspace-catalog-divider {
+    -fx-background-color: #293640;
+    -fx-opacity: 0.9;
+}
+
+.sidebar-catalog-button,
+.sidebar-algorithm-button {
+    -fx-max-width: Infinity;
+    -fx-alignment: CENTER_LEFT;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 3px;
+    -fx-text-fill: #9ca8b0;
+}
+
+.sidebar-catalog-button {
+    -fx-min-height: 38px;
+    -fx-pref-height: 42px;
+    -fx-padding: 8px 10px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.sidebar-catalog-button:hover,
+.sidebar-algorithm-button:hover {
+    -fx-background-color: #17232d;
+    -fx-text-fill: #edf2f5;
+}
+
+.sidebar-catalog-button:selected {
+    -fx-background-color: #1b3657;
+    -fx-border-color: transparent transparent transparent #4a96ff;
+    -fx-text-fill: #f1f6ff;
+}
+
+.sidebar-catalog-button.sidebar-unavailable {
+    -fx-background-color: #111820;
+    -fx-border-color: transparent;
+    -fx-text-fill: #5d6871;
+    -fx-opacity: 0.8;
+}
+
+.sidebar-catalog-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent transparent #e84e58;
+}
+
+.sidebar-catalog-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent transparent #f0c52d;
+}
+
+.sidebar-catalog-button.btn-ran-white:selected {
+    -fx-border-color: transparent transparent transparent #e5e9ed;
+}
+
+.sidebar-catalog-group {
+    -fx-padding: 6px 0 9px 0;
+    -fx-border-color: transparent transparent #293640 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.sidebar-group-title {
+    -fx-text-fill: #e2e8ec;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 3px 8px 5px 8px;
+}
+
+.sidebar-algorithm-button {
+    -fx-min-height: 30px;
+    -fx-pref-height: 34px;
+    -fx-padding: 6px 10px 6px 14px;
+    -fx-font-size: 12px;
+}
+
+.sidebar-algorithm-button:selected {
+    -fx-background-color: #253b52;
+    -fx-border-color: transparent transparent transparent #4a96ff;
+    -fx-text-fill: #f1f6ff;
+}
+
+.sidebar-algorithm-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent transparent #e84e58;
+}
+
+.sidebar-algorithm-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent transparent #f0c52d;
+}
+
+.sidebar-algorithm-button.btn-ran-white:selected {
+    -fx-border-color: transparent transparent transparent #e5e9ed;
+}
+
+.root-pane:compact-layout .sidebar-catalog-button {
+    -fx-min-height: 35px;
+    -fx-pref-height: 38px;
+    -fx-padding: 7px 8px;
+    -fx-font-size: 12px;
+}
+
+.root-pane:compact-layout .sidebar-algorithm-button {
+    -fx-min-height: 28px;
+    -fx-pref-height: 30px;
+    -fx-padding: 5px 7px 5px 11px;
+    -fx-font-size: 11px;
+}

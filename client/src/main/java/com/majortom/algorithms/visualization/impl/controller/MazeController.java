@@ -8,6 +8,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeModuleVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.maze.MazeEventReducer;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshot;
@@ -24,9 +25,12 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public final class MazeController extends BaseModuleController<MazeViewState> {
+public final class MazeController extends BaseModuleController<MazeViewState>
+        implements AlgorithmSelectionSupport {
 
     private enum Structure { ARRAY, GRAPH }
+
+    private enum Operation { GENERATE, SOLVE }
 
     private static final List<String> ARRAY_GENERATORS = List.of(
             "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find");
@@ -38,6 +42,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     private Structure structure = Structure.ARRAY;
     private GridMaze generatedMaze;
     private boolean solving;
+    private Operation selectedOperation = Operation.GENERATE;
 
     @FXML private ComboBox<String> structureSelector;
     @FXML private ComboBox<String> generatorSelector;
@@ -76,7 +81,46 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
 
     @Override
     public void handleAlgorithmStart() {
+        if (selectedOperation == Operation.SOLVE) {
+            handleSolve();
+            return;
+        }
         handleGenerate();
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        if (isRunning()) {
+            return false;
+        }
+        if (ARRAY_GENERATORS.contains(algorithmId)) {
+            selectStructure(Structure.ARRAY);
+            boolean selected = selectAlgorithm(generatorSelector, ARRAY_GENERATORS, algorithmId);
+            if (selected) {
+                selectedOperation = Operation.GENERATE;
+                updateControlState();
+            }
+            return selected;
+        }
+        if (GRAPH_GENERATORS.contains(algorithmId)) {
+            selectStructure(Structure.GRAPH);
+            boolean selected = selectAlgorithm(generatorSelector, GRAPH_GENERATORS, algorithmId);
+            if (selected) {
+                selectedOperation = Operation.GENERATE;
+                updateControlState();
+            }
+            return selected;
+        }
+        if (ARRAY_PATHFINDERS.contains(algorithmId)) {
+            selectStructure(Structure.ARRAY);
+            boolean selected = selectAlgorithm(pathfinderSelector, ARRAY_PATHFINDERS, algorithmId);
+            if (selected) {
+                selectedOperation = Operation.SOLVE;
+                updateControlState();
+            }
+            return selected;
+        }
+        return false;
     }
 
     @FXML
@@ -85,6 +129,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
             return;
         }
         solving = false;
+        selectedOperation = Operation.GENERATE;
         generatedMaze = null;
         String id = selectedId(generatorSelector, generatorIds());
         dispatchVisualizerAction(
@@ -105,6 +150,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
             return;
         }
         solving = true;
+        selectedOperation = Operation.SOLVE;
         String id = selectedId(pathfinderSelector, ARRAY_PATHFINDERS);
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.MAZE_SOLVE,
@@ -121,6 +167,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
         sizeSlider.setValue(size);
         generatedMaze = null;
         solving = false;
+        selectedOperation = Operation.GENERATE;
         renderEmpty();
         updateControlState();
         refreshStatsDisplay();
@@ -176,6 +223,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     protected void onResetData() {
         generatedMaze = null;
         solving = false;
+        selectedOperation = Operation.GENERATE;
         renderEmpty();
         updateControlState();
     }
@@ -220,6 +268,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
                     state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
         }
         solving = false;
+        selectedOperation = Operation.GENERATE;
         invalidateExecutionForInputChange();
         renderStructureState(structureSnapshotState(state));
         updateControlState();
@@ -298,10 +347,25 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
             invalidateExecutionForInputChange();
             generatedMaze = null;
             solving = false;
+            selectedOperation = Operation.GENERATE;
             renderEmpty();
             selectFirstAlgorithms();
             updateControlState();
         });
+        generatorSelector.getSelectionModel().selectedIndexProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (newValue.intValue() >= 0 && !isRunning()) {
+                        selectedOperation = Operation.GENERATE;
+                        updateControlState();
+                    }
+                });
+        pathfinderSelector.getSelectionModel().selectedIndexProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (newValue.intValue() >= 0 && !isRunning()) {
+                        selectedOperation = Operation.SOLVE;
+                        updateControlState();
+                    }
+                });
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             selectFirstAlgorithms();
@@ -319,6 +383,7 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
     private void selectFirstAlgorithms() {
         if (!generatorSelector.getItems().isEmpty()) generatorSelector.getSelectionModel().selectFirst();
         if (!pathfinderSelector.getItems().isEmpty()) pathfinderSelector.getSelectionModel().selectFirst();
+        selectedOperation = Operation.GENERATE;
     }
 
     private List<String> generatorIds() {
@@ -337,10 +402,34 @@ public final class MazeController extends BaseModuleController<MazeViewState> {
         return ids.get(index);
     }
 
+    private boolean selectAlgorithm(ComboBox<String> comboBox, List<String> ids, String algorithmId) {
+        int index = ids.indexOf(algorithmId);
+        if (index < 0) {
+            return false;
+        }
+        if (comboBox != null) {
+            comboBox.getSelectionModel().select(index);
+        }
+        return true;
+    }
+
+    private void selectStructure(Structure target) {
+        int index = 0;
+        if (target == Structure.GRAPH) {
+            index = 1;
+        }
+        if (structureSelector != null) {
+            structureSelector.getSelectionModel().select(index);
+        }
+    }
+
     private void updateControlState() {
         boolean graph = structure == Structure.GRAPH;
         pathfinderSelector.setDisable(graph);
         solveBtn.setDisable(graph || generatedMaze == null);
+        if (startBtn != null) {
+            startBtn.setDisable(selectedOperation == Operation.SOLVE && generatedMaze == null);
+        }
     }
 
     private int normalizeOdd(int value) {

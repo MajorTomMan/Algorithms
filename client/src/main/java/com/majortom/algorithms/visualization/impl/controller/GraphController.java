@@ -7,6 +7,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.graph.GraphEventReducer;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshot;
@@ -27,7 +28,8 @@ import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public final class GraphController extends BaseModuleController<GraphViewState> {
+public final class GraphController extends BaseModuleController<GraphViewState>
+        implements AlgorithmSelectionSupport {
 
     private IntGraph graph;
     private int startNode = 0;
@@ -83,6 +85,17 @@ public final class GraphController extends BaseModuleController<GraphViewState> 
                 com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_RUN,
                 java.util.Map.of("startNode", startNode));
         startAlgorithm("graph-bfs", new GraphBfsInput(graph, startNode), () -> new GraphEventReducer(graph));
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        if (!"graph-bfs".equals(algorithmId)) {
+            return false;
+        }
+        if (algorithmSelector != null) {
+            algorithmSelector.getSelectionModel().selectFirst();
+        }
+        return true;
     }
 
     @FXML

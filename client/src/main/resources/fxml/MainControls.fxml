@@ -15,15 +15,14 @@
                 styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
                 <Label fx:id="menuTitleLabel" styleClass="brand-title" />
                 <Separator orientation="VERTICAL" styleClass="top-divider" />
-                <HBox fx:id="moduleMenuBox" styleClass="module-nav" alignment="CENTER_LEFT" spacing="4"
-                    HBox.hgrow="ALWAYS" />
-                <Separator orientation="VERTICAL" styleClass="top-divider" />
                 <HBox fx:id="workspaceModeBox" styleClass="workspace-mode-nav" alignment="CENTER_LEFT" spacing="2">
                     <Button fx:id="structureWorkspaceBtn" onAction="#selectStructureWorkspace"
                         styleClass="workspace-mode-button" />
                     <Button fx:id="algorithmWorkspaceBtn" onAction="#selectAlgorithmWorkspace"
                         styleClass="workspace-mode-button" />
                 </HBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <Separator orientation="VERTICAL" styleClass="top-divider" />
                 <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
                     styleClass="shell-toggle-button" />
             </HBox>
@@ -31,7 +30,7 @@
     </top>
 
     <center>
-        <StackPane fx:id="workspaceLayer" styleClass="workspace-layer">
+        <StackPane fx:id="workspaceLayer" HBox.hgrow="ALWAYS" styleClass="workspace-layer">
             <VBox fx:id="structureWorkspacePane" focusTraversable="true"
                 styleClass="workspace-pane">
                 <HBox styleClass="workspace-pane-header" alignment="CENTER_LEFT" spacing="8">
@@ -58,9 +57,13 @@
                             hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
                             styleClass="panel-scroll-pane">
                             <content>
-                                <VBox fx:id="structureControlsHost" fillWidth="true" spacing="0"
-                                    styleClass="module-control-host">
-                                    <HBox fx:id="customControlBox" maxWidth="Infinity" fillHeight="true" />
+                                <VBox fillWidth="true" spacing="8" styleClass="module-control-host">
+                                    <VBox fx:id="structureNavigationBox" fillWidth="true" spacing="4"
+                                        styleClass="workspace-catalog" />
+                                    <Separator styleClass="workspace-catalog-divider" />
+                                    <VBox fx:id="structureControlsHost" fillWidth="true" spacing="0">
+                                        <HBox fx:id="customControlBox" maxWidth="Infinity" fillHeight="true" />
+                                    </VBox>
                                 </VBox>
                             </content>
                         </ScrollPane>
@@ -123,8 +126,12 @@
                             hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
                             styleClass="panel-scroll-pane">
                             <content>
-                                <VBox fx:id="algorithmControlsHost" fillWidth="true" spacing="0"
-                                    styleClass="module-control-host" />
+                                <VBox fillWidth="true" spacing="8" styleClass="module-control-host">
+                                    <VBox fx:id="algorithmNavigationBox" fillWidth="true" spacing="8"
+                                        styleClass="workspace-catalog" />
+                                    <Separator styleClass="workspace-catalog-divider" />
+                                    <VBox fx:id="algorithmControlsHost" fillWidth="true" spacing="0" />
+                                </VBox>
                             </content>
                         </ScrollPane>
                     </VBox>

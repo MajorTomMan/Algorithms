@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.module.ModuleRegistry;
 import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
 import com.majortom.algorithms.visualization.structure.StructureSnapshot;
@@ -53,7 +54,7 @@ public class MainController implements Initializable {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
     private static final double COMPACT_LAYOUT_WIDTH = 1180.0d;
-    private static final double NARROW_LAYOUT_WIDTH = 860.0d;
+    private static final double NARROW_LAYOUT_WIDTH = 980.0d;
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -64,9 +65,11 @@ public class MainController implements Initializable {
     @FXML
     private HBox topBar;
     @FXML
-    private HBox moduleMenuBox;
-    @FXML
     private HBox workspaceModeBox;
+    @FXML
+    private VBox structureNavigationBox;
+    @FXML
+    private VBox algorithmNavigationBox;
     @FXML
     private Button structureWorkspaceBtn;
     @FXML
@@ -179,7 +182,8 @@ public class MainController implements Initializable {
     private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
-    private final Map<String, Button> moduleButtons = new LinkedHashMap<>();
+    private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
+    private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private BaseController<?> currentSubController;
     private AlgorithmModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
@@ -247,19 +251,124 @@ public class MainController implements Initializable {
     }
 
     private void setupModuleMenu() {
-        moduleMenuBox.getChildren().clear();
-        moduleButtons.clear();
+        structureNavigationBox.getChildren().clear();
+        algorithmNavigationBox.getChildren().clear();
+        structureButtons.clear();
+        algorithmButtons.clear();
         for (AlgorithmModuleDefinition definition : moduleDefinitions) {
-            Button button = new Button();
-            button.setMaxWidth(Double.MAX_VALUE);
-            button.getStyleClass().add("menu-button");
-            button.getStyleClass().add("module-button");
-            button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
-            button.textProperty().bind(I18N.createStringBinding(definition.labelKey()));
-            button.setOnAction(event -> switchToModule(definition));
-            moduleMenuBox.getChildren().add(button);
-            moduleButtons.put(definition.id(), button);
+            Button structureButton = createCatalogButton(definition);
+            structureNavigationBox.getChildren().add(structureButton);
+            if ("sort".equals(definition.id())) {
+                structureNavigationBox.getChildren().add(createUnavailableStructureButton());
+            }
+
+            VBox group = new VBox(4);
+            group.getStyleClass().add("sidebar-catalog-group");
+            Label groupTitle = new Label();
+            groupTitle.getStyleClass().add("sidebar-group-title");
+            groupTitle.textProperty().bind(I18N.createStringBinding(structureLabelKey(definition.id())));
+            group.getChildren().add(groupTitle);
+            for (AlgorithmNavigationItem item : algorithmNavigationItems(definition.id())) {
+                Button algorithmButton = createAlgorithmButton(definition, item);
+                group.getChildren().add(algorithmButton);
+            }
+            algorithmNavigationBox.getChildren().add(group);
         }
+    }
+
+    private Button createCatalogButton(AlgorithmModuleDefinition definition) {
+        Button button = new Button();
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.getStyleClass().add("menu-button");
+        button.getStyleClass().add("module-button");
+        button.getStyleClass().add("sidebar-catalog-button");
+        button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
+        button.textProperty().bind(I18N.createStringBinding(structureLabelKey(definition.id())));
+        button.setOnAction(event -> switchToModule(definition));
+        structureButtons.computeIfAbsent(definition.id(), ignored -> new java.util.ArrayList<>()).add(button);
+        return button;
+    }
+
+    private Button createUnavailableStructureButton() {
+        Button button = new Button();
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setDisable(true);
+        button.getStyleClass().add("sidebar-catalog-button");
+        button.getStyleClass().add("sidebar-unavailable");
+        button.textProperty().bind(I18N.createStringBinding("label.structure.linked_list.unavailable"));
+        return button;
+    }
+
+    private Button createAlgorithmButton(
+            AlgorithmModuleDefinition definition,
+            AlgorithmNavigationItem item) {
+        Button button = new Button();
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.getStyleClass().add("sidebar-algorithm-button");
+        button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
+        button.textProperty().bind(I18N.createStringBinding(item.labelKey()));
+        button.setOnAction(event -> selectAlgorithm(definition, item.id()));
+        algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
+                .put(item.id(), button);
+        return button;
+    }
+
+    private void selectAlgorithm(AlgorithmModuleDefinition definition, String algorithmId) {
+        if (activeDefinition == null || !activeDefinition.id().equals(definition.id())) {
+            switchToModule(definition);
+        }
+        setWorkspaceMode(false);
+        if (currentSubController instanceof AlgorithmSelectionSupport support
+                && support.selectAlgorithm(algorithmId)) {
+            selectAlgorithmButton(definition.id(), algorithmId);
+        }
+    }
+
+    private void selectAlgorithmButton(String moduleId, String algorithmId) {
+        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
+                button.pseudoClassStateChanged(SELECTED, false)));
+        Map<String, Button> buttons = algorithmButtons.get(moduleId);
+        if (buttons != null) {
+            Button selectedButton = buttons.get(algorithmId);
+            if (selectedButton != null) {
+                selectedButton.pseudoClassStateChanged(SELECTED, true);
+            }
+        }
+    }
+
+    private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> List.of(
+                    new AlgorithmNavigationItem("insertion-sort", "algorithm.sort.insertion"),
+                    new AlgorithmNavigationItem("selection-sort", "algorithm.sort.selection"),
+                    new AlgorithmNavigationItem("quick-sort", "algorithm.sort.quick"),
+                    new AlgorithmNavigationItem("heap-sort", "algorithm.sort.heap"));
+            case "maze" -> List.of(
+                    new AlgorithmNavigationItem("maze-generator-bfs", "algorithm.maze.generate.bfs"),
+                    new AlgorithmNavigationItem("maze-generator-dfs", "algorithm.maze.generate.dfs"),
+                    new AlgorithmNavigationItem("maze-generator-union-find", "algorithm.maze.generate.uf"),
+                    new AlgorithmNavigationItem("graph-generator-bfs", "algorithm.maze.generate.graph_bfs"),
+                    new AlgorithmNavigationItem("maze-pathfinder-astar", "algorithm.maze.solve.astar"),
+                    new AlgorithmNavigationItem("maze-pathfinder-dfs", "algorithm.maze.solve.dfs"));
+            case "tree" -> List.of(
+                    new AlgorithmNavigationItem("tree-avl", "algorithm.tree.avl"));
+            case "graph" -> List.of(
+                    new AlgorithmNavigationItem("graph-bfs", "algorithm.graph.bfs"));
+            default -> List.of();
+        };
+    }
+
+    private record AlgorithmNavigationItem(String id, String labelKey) {
+    }
+
+    private String structureLabelKey(String moduleId) {
+        return switch (moduleId) {
+            case "sort" -> "label.structure.array";
+            case "maze" -> "label.structure.grid";
+            case "tree" -> "label.structure.tree";
+            case "graph" -> "label.structure.graph";
+            default -> "label.workspace.structure";
+        };
     }
 
     private void setupWorkspaceMode() {
@@ -389,8 +498,23 @@ public class MainController implements Initializable {
         if (currentSubController != null) {
             currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
         }
-        moduleButtons.forEach((id, button) ->
-                button.pseudoClassStateChanged(SELECTED, id.equals(definition.id())));
+        structureButtons.forEach((id, buttons) -> buttons.forEach(button ->
+                button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
+        clearAlgorithmSelection();
+        selectFirstAlgorithmButton(definition.id());
+    }
+
+    private void clearAlgorithmSelection() {
+        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
+                button.pseudoClassStateChanged(SELECTED, false)));
+    }
+
+    private void selectFirstAlgorithmButton(String moduleId) {
+        Map<String, Button> buttons = algorithmButtons.get(moduleId);
+        if (buttons == null || buttons.isEmpty()) {
+            return;
+        }
+        buttons.values().iterator().next().pseudoClassStateChanged(SELECTED, true);
     }
 
     private void loadSubController(BaseController<?> newController) {

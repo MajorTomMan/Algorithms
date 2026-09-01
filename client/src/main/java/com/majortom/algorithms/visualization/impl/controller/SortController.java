@@ -5,6 +5,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.HistogramSortVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortEventReducer;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshot;
@@ -24,7 +25,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
-public final class SortController extends BaseModuleController<IntegerSortViewState> {
+public final class SortController extends BaseModuleController<IntegerSortViewState>
+        implements AlgorithmSelectionSupport {
 
     private static final List<String> ALGORITHM_IDS = List.of(
             "insertion-sort", "selection-sort", "quick-sort", "heap-sort");
@@ -244,6 +246,18 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
                 com.majortom.algorithms.visualization.VisualizationActionType.SORT_RUN,
                 java.util.Map.of("algorithmId", algorithmId, "size", sourceData.size()));
         startAlgorithm(algorithmId, new IntegerSortInput(sourceData), IntegerSortEventReducer::new);
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        int index = ALGORITHM_IDS.indexOf(algorithmId);
+        if (index < 0) {
+            return false;
+        }
+        if (algorithmSelector != null) {
+            algorithmSelector.getSelectionModel().select(index);
+        }
+        return true;
     }
 
     @FXML
