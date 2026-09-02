@@ -458,7 +458,7 @@ public abstract class BaseController<S> implements Initializable {
         if (!(envelope.event() instanceof LogEvent logEvent)) {
             return;
         }
-        Runnable task = () -> logView.append(logEvent);
+        Runnable task = () -> logView.append(logEvent, envelope.timestamp());
         if (Platform.isFxApplicationThread()) {
             task.run();
         } else {
