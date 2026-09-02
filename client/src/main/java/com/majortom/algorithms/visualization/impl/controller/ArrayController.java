@@ -30,13 +30,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
-public final class SortController extends BaseModuleController<IntegerSortViewState>
+public final class ArrayController extends BaseModuleController<IntegerSortViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Integer>>, SnapshotAlgorithmInputSupport<SequenceSnapshot<Integer>> {
 
-    private static final List<String> ALGORITHM_IDS = List.of(
-            "insertion-sort", "selection-sort", "quick-sort", "heap-sort");
-
     private final Random random = new Random();
+    private final List<String> algorithmIds;
     private final MutableArray<Integer> sourceArray;
     private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
     private int currentSize = 20;
@@ -63,8 +61,9 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     @FXML private Button updateElementBtn;
 
     @SuppressWarnings("unchecked")
-    public SortController() {
-        super(new HistogramSortVisualizer(), "/fxml/SortControls.fxml");
+    public ArrayController() {
+        super(new HistogramSortVisualizer(), "/fxml/ArrayControls.fxml");
+        algorithmIds = registeredAlgorithmIds("array", "Integer");
         sourceArray = module("structure.array.Integer", MutableArray.class);
         replaceArrayContents(randomValues());
     }
@@ -94,9 +93,6 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         })) {
             renderSource();
             refreshStatsDisplay();
-            dispatchVisualizerAction(
-                    com.majortom.algorithms.visualization.VisualizationActionType.SORT_GENERATE,
-                    java.util.Map.of("size", currentSize));
             logI18n("message.sort.generated", currentSize);
         }
     }
@@ -310,9 +306,6 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         List<Integer> values = inputSnapshot.state().values();
         if (values.isEmpty()) return;
         String algorithmId = selectedAlgorithmId();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.SORT_RUN,
-                java.util.Map.of("algorithmId", algorithmId, "size", values.size()));
         IntegerSortInput input = new IntegerSortInput(values);
         AbstractIntegerSort algorithm = module("algorithm.array.Integer." + algorithmId, AbstractIntegerSort.class);
         startAlgorithm(algorithmId, input, () -> algorithm.sort(input), IntegerSortEventReducer::new);
@@ -320,7 +313,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
-        int index = ALGORITHM_IDS.indexOf(algorithmId);
+        int index = algorithmIds.indexOf(algorithmId);
         if (index < 0) {
             return false;
         }
@@ -402,7 +395,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @Override
     protected String moduleId() {
-        return "sort";
+        return "array";
     }
 
     private String selectedAlgorithmId() {
@@ -410,13 +403,13 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
             index = algorithmSelector.getSelectionModel().getSelectedIndex();
         }
-        return ALGORITHM_IDS.get(Math.min(index, ALGORITHM_IDS.size() - 1));
+        return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
     }
 
     private void bindAlgorithmSelector() {
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
             javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : ALGORITHM_IDS) {
+            for (String id : algorithmIds) {
                 labels.add(I18N.text(AlgorithmLabels.key(id)));
             }
             return labels;

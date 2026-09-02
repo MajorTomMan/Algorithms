@@ -1,11 +1,14 @@
 package com.majortom.algorithms.core.runtime;
 
-import com.majortom.algorithms.core.domain.execution.*;
-
 import java.time.Clock;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
+
+import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
+import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
+import com.majortom.algorithms.core.domain.execution.RunStartedEvent;
 
 /** Small runtime lifecycle owner; domain behavior remains in domain methods. */
 public final class ExecutionRuntime {
@@ -26,16 +29,19 @@ public final class ExecutionRuntime {
         return execute(operationId, operationId, sink, RunControl.unrestricted(), operation);
     }
 
-    public ExecutionResult execute(String operationId, EventSink sink, RunControl control, ExecutionOperation<?> operation) {
+    public ExecutionResult execute(String operationId, EventSink sink, RunControl control,
+            ExecutionOperation<?> operation) {
         return execute(operationId, operationId, sink, control, operation);
     }
 
-    public ExecutionResult execute(String operationId, String source, EventSink sink, RunControl control, ExecutionOperation<?> operation) {
+    public ExecutionResult execute(
+            String operationId, String source, EventSink sink, RunControl control, ExecutionOperation<?> operation) {
         Objects.requireNonNull(operation);
         RuntimeEventContext c = new RuntimeEventContext(runIdSupplier.get(), operationId, source, sink, control, clock);
         DefaultExecutionControl defaultControl = control instanceof DefaultExecutionControl value ? value : null;
-        if (defaultControl != null) defaultControl.bindLifecycle(c::emitLifecycle);
-
+        if (defaultControl != null) {
+            defaultControl.bindLifecycle(c::emitLifecycle);
+        }
         try {
             c.emitLifecycle(new RunStartedEvent());
             c.checkpoint();
@@ -52,15 +58,19 @@ public final class ExecutionRuntime {
             Thread.currentThread().interrupt();
             return cancelled(c, "Execution interrupted");
         } catch (EventDeliveryException e) {
-            return ExecutionResult.failed(new ExecutionFailure("execution.event.delivery.failed", e.getMessage(), e.getClass().getName()));
+            return ExecutionResult.failed(new ExecutionFailure(
+                    "execution.event.delivery.failed", e.getMessage(), e.getClass().getName()));
         } catch (RuntimeException e) {
             try {
                 c.emitLifecycle(new RunFailedEvent("execution.operation.failed", message(e)));
             } catch (RuntimeException ignored) {
             }
-            return ExecutionResult.failed(new ExecutionFailure("execution.operation.failed", message(e), e.getClass().getName()));
+            return ExecutionResult.failed(new ExecutionFailure(
+                    "execution.operation.failed", message(e), e.getClass().getName()));
         } finally {
-            if (defaultControl != null) defaultControl.unbindLifecycle();
+            if (defaultControl != null) {
+                defaultControl.unbindLifecycle();
+            }
         }
     }
 

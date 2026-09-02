@@ -1,8 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationActionType;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortViewState;
 import javafx.animation.AnimationTimer;
 import javafx.scene.effect.Bloom;
@@ -24,9 +22,6 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
     private long lastFrameNanos;
     private boolean windRunning;
     private boolean animationRequested = true;
-    private long accentUntilMillis;
-    private String activeAlgorithmId = "";
-    private int activeArraySize;
     private double valueLabelSlotWidth = -1.0d;
     private Font valueLabelFont;
 
@@ -72,8 +67,6 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
                     x, horizonY, barWidth, flagHeight, colorFor(state, index), focused, index, value, labelFont);
         }
 
-        drawSortAccent(width, height);
-        drawTransientFeedbackOverlay();
         updateWindState();
     }
 
@@ -199,50 +192,9 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
         return valueLabelFont;
     }
 
-    private void drawSortAccent(double width, double height) {
-        long remaining = accentUntilMillis - System.currentTimeMillis();
-        if (remaining <= 0L) {
-            return;
-        }
-        double opacity = Math.min(1.0d, remaining / (double) FEEDBACK_DURATION_MS);
-        gc.save();
-        gc.setGlobalAlpha(opacity);
-        gc.setStroke(RAN_GOLD);
-        gc.setLineWidth(2.0d);
-        gc.strokeLine(28.0d, height - 78.0d, Math.max(28.0d, width - 28.0d), height - 78.0d);
-        if (!activeAlgorithmId.isBlank()) {
-            double boxX = Math.max(30.0d, width - 220.0d);
-            gc.setFill(RAN_GHOST_WHITE);
-            gc.fillRoundRect(boxX, height - 66.0d, 190.0d, 38.0d, 14.0d, 14.0d);
-            gc.setFill(RAN_BLACK);
-            gc.setFont(Font.font("Consolas", FontWeight.BOLD, 13.0d));
-            gc.fillText(activeAlgorithmId + " | n=" + activeArraySize, boxX + 14.0d, height - 42.0d);
-        }
-        gc.restore();
-    }
-
     @Override
-    public void onControlAction(VisualizationEvent event) {
-        super.onControlAction(event);
-        accentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
-        Object algorithmId = event.metadata().get("algorithmId");
-        if (algorithmId instanceof String value) {
-            activeAlgorithmId = value;
-        }
-        Object size = event.metadata().get("size");
-        if (size instanceof Integer value) {
-            activeArraySize = value;
-        }
-        VisualizationActionType action = event.actionType();
-        if (action == VisualizationActionType.EXECUTION_PAUSE) {
-            animationRequested = false;
-        } else if (action == VisualizationActionType.EXECUTION_RESUME
-                || action == VisualizationActionType.EXECUTION_START
-                || action == VisualizationActionType.SORT_GENERATE
-                || action == VisualizationActionType.SORT_RUN
-                || action == VisualizationActionType.EXECUTION_RESET) {
-            animationRequested = true;
-        }
+    public void setPlaybackPaused(boolean paused) {
+        animationRequested = !paused;
         updateWindState();
     }
 
@@ -312,8 +264,5 @@ public final class HistogramSortVisualizer extends BaseVisualizer<IntegerSortVie
     private void resetLocalState() {
         stopWind();
         wavePhase = 0.0d;
-        accentUntilMillis = 0L;
-        activeAlgorithmId = "";
-        activeArraySize = 0;
     }
 }

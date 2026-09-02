@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.library.string.KmpSearch;
 import com.majortom.algorithms.library.structure.MutableString;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -21,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -28,6 +30,7 @@ public final class StringController extends BaseModuleController<StringViewState
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
 
     private final MutableString source;
+    private final List<String> algorithmIds;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
 
     @FXML private Label structureLabel;
@@ -49,6 +52,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     public StringController() {
         super(new StringVisualizer(), "/fxml/StringControls.fxml");
+        algorithmIds = registeredAlgorithmIds("string", "String");
         source = module("structure.string.String", MutableString.class);
         source.replace("ABABDABACDABABCABAB");
         renderSource();
@@ -133,8 +137,9 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
-        if (!"kmp".equals(algorithmId)) return false;
-        if (algorithmSelector != null) algorithmSelector.getSelectionModel().selectFirst();
+        int index = algorithmIds.indexOf(algorithmId);
+        if (index < 0) return false;
+        if (algorithmSelector != null) algorithmSelector.getSelectionModel().select(index);
         return true;
     }
 
@@ -239,7 +244,10 @@ public final class StringController extends BaseModuleController<StringViewState
         structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
                 () -> FXCollections.observableArrayList(I18N.text("label.structure.string")), I18N.localeProperty()));
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text("algorithm.string.kmp")), I18N.localeProperty()));
+                () -> FXCollections.observableArrayList(algorithmIds.stream()
+                        .map(id -> I18N.text(AlgorithmLabels.key(id)))
+                        .toList()),
+                I18N.localeProperty()));
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             algorithmSelector.getSelectionModel().selectFirst();

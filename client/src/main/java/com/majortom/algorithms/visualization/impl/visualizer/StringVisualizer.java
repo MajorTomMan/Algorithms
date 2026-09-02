@@ -61,7 +61,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             gc.setFont(Font.font("Consolas", FontWeight.BOLD, 16));
             gc.fillText("PATTERN  " + state.pattern(), 20, 24);
         }
-        drawTransientFeedbackOverlay();
     }
 
     private static Set<Integer> matchedIndexes(StringViewState state) {

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.library.sort;
 
+import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.sort.event.SortComparedEvent;
 import com.majortom.algorithms.library.sort.event.SortCompletedEvent;
@@ -18,11 +19,13 @@ import java.util.List;
 public abstract class AbstractIntegerSort implements Sort<Integer> {
 
     public final IntegerSortOutput sort(IntegerSortInput input) {
+        Log.i("SORT", getClass().getSimpleName() + " start, size=" + input.values().size());
         MutableArray<Integer> array = new MutableArray<>(input.values());
         ExecutionEvents.emit(new SortInitializedEvent(List.copyOf(array.raw())));
         sort(array);
         List<Integer> result = List.copyOf(array.raw());
         ExecutionEvents.emit(new SortCompletedEvent(result));
+        Log.i("SORT", getClass().getSimpleName() + " completed");
         return new IntegerSortOutput(result);
     }
 

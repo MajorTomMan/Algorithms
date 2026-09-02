@@ -39,13 +39,10 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     private enum Operation { GENERATE, SOLVE }
 
-    private static final List<String> ARRAY_GENERATORS = List.of(
-            "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find");
-    private static final List<String> ARRAY_PATHFINDERS = List.of(
-            "maze-pathfinder-astar", "maze-pathfinder-dfs");
-    private static final List<String> GRAPH_GENERATORS = List.of("graph-generator-bfs");
-    private static final List<String> ALL_GENERATORS = List.of(
-            "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find", "graph-generator-bfs");
+    private final List<String> arrayGenerators;
+    private final List<String> arrayPathfinders;
+    private final List<String> graphGenerators;
+    private final List<String> allGenerators;
 
     private int size = 51;
     private Structure structure = Structure.ARRAY;
@@ -76,6 +73,12 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     public MazeController() {
         super(new MazeModuleVisualizer(), "/fxml/MazeControls.fxml");
+        arrayGenerators = idsWithPrefix(registeredAlgorithmIds("maze", "Boolean"), "maze-generator-");
+        arrayPathfinders = idsWithPrefix(registeredAlgorithmIds("maze", "Boolean"), "maze-pathfinder-");
+        graphGenerators = idsWithPrefix(registeredAlgorithmIds("graph", "Integer"), "graph-generator-");
+        List<String> generators = new java.util.ArrayList<>(arrayGenerators);
+        generators.addAll(graphGenerators);
+        allGenerators = List.copyOf(generators);
         renderEmpty();
     }
 
@@ -106,16 +109,16 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (isRunning()) {
             return false;
         }
-        if (ALL_GENERATORS.contains(algorithmId)) {
-            boolean selected = selectAlgorithm(generatorSelector, ALL_GENERATORS, algorithmId);
+        if (allGenerators.contains(algorithmId)) {
+            boolean selected = selectAlgorithm(generatorSelector, allGenerators, algorithmId);
             if (selected) {
                 selectedOperation = Operation.GENERATE;
                 updateControlState();
             }
             return selected;
         }
-        if (ARRAY_PATHFINDERS.contains(algorithmId)) {
-            boolean selected = selectAlgorithm(pathfinderSelector, ARRAY_PATHFINDERS, algorithmId);
+        if (arrayPathfinders.contains(algorithmId)) {
+            boolean selected = selectAlgorithm(pathfinderSelector, arrayPathfinders, algorithmId);
             if (selected) {
                 selectedOperation = Operation.SOLVE;
                 updateControlState();
@@ -133,11 +136,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         solving = false;
         selectedOperation = Operation.GENERATE;
         algorithmResultSnapshot = null;
-        String id = selectedId(generatorSelector, ALL_GENERATORS);
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.MAZE_BUILD,
-                java.util.Map.of("algorithmId", id, "size", size));
-        if (GRAPH_GENERATORS.contains(id)) {
+        String id = selectedId(generatorSelector, allGenerators);
+        if (graphGenerators.contains(id)) {
             GraphMazeGenerationInput input = new GraphMazeGenerationInput(size, size, System.nanoTime());
             GraphMazeBfsGenerator algorithm = module("algorithm.graph.Integer." + id, GraphMazeBfsGenerator.class);
             startAlgorithm(id, input, () -> algorithm.generate(input), () -> new MazeEventReducer(size, size, true));
@@ -157,10 +157,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         }
         solving = true;
         selectedOperation = Operation.SOLVE;
-        String id = selectedId(pathfinderSelector, ARRAY_PATHFINDERS);
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.MAZE_SOLVE,
-                java.util.Map.of("algorithmId", id, "size", selectedSnapshot.rows()));
+        String id = selectedId(pathfinderSelector, arrayPathfinders);
         ArrayMazePathInput input = new ArrayMazePathInput(inputMaze, inputMaze.entrance(), inputMaze.exit());
         ArrayMazePathfinder algorithm = module("algorithm.maze.Boolean." + id, ArrayMazePathfinder.class);
         startAlgorithm(id, input, () -> algorithm.findPath(input),
@@ -216,7 +213,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @Override
     protected String formatStatsMessage() {
         String structureName = I18N.text("label.maze.structure.array");
-        if (!solving && GRAPH_GENERATORS.contains(selectedId(generatorSelector, ALL_GENERATORS))) {
+        if (!solving && graphGenerators.contains(selectedId(generatorSelector, allGenerators))) {
             structureName = I18N.text("label.maze.structure.graph");
         }
         String mode = "Generation";
@@ -413,9 +410,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 I18N.text("label.maze.structure.array"), I18N.text("label.maze.structure.graph")),
                 I18N.localeProperty()));
         generatorSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(ALL_GENERATORS), I18N.localeProperty()));
+                () -> labels(allGenerators), I18N.localeProperty()));
         pathfinderSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(ARRAY_PATHFINDERS), I18N.localeProperty()));
+                () -> labels(arrayPathfinders), I18N.localeProperty()));
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.intValue() < 0 || isRunning() || applyingStructureState) {
                 return;
@@ -498,6 +495,16 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (startBtn != null) {
             startBtn.setDisable(selectedOperation == Operation.SOLVE && !solveAvailable);
         }
+    }
+
+    private static List<String> idsWithPrefix(List<String> algorithmIds, String prefix) {
+        List<String> matching = new java.util.ArrayList<>();
+        for (String algorithmId : algorithmIds) {
+            if (algorithmId.startsWith(prefix)) {
+                matching.add(algorithmId);
+            }
+        }
+        return List.copyOf(matching);
     }
 
     private int normalizeOdd(int value) {

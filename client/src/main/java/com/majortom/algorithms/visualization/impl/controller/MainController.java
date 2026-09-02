@@ -1,11 +1,12 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.registry.ModuleLoader;
+import com.majortom.algorithms.core.registry.ModuleRegistry;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationActionType;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.WorkbenchControls;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -24,9 +25,11 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TextArea;
+import com.majortom.algorithms.visualization.logging.LogView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -39,6 +42,7 @@ import javafx.scene.shape.Rectangle;
 import java.net.URL;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,11 +50,11 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
- * 双工作区 JavaFX 外壳。
+ * 单 Workbench JavaFX 外壳。
  *
- * <p>结构工作区负责输入、编辑和快照，算法工作区负责选择算法、执行以及逐帧
- * 回放。模块控制器仍然拥有具体的输入和算法逻辑，外壳只负责把同一套模块面板
- * 按语义区段装配到两个工作区。</p>
+ * <p>Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责
+ * 编辑真实结构和快照，Algorithm 模式消费当前或已保存快照的隔离副本并负责
+ * 执行、时间线、统计和日志。</p>
  */
 public class MainController implements Initializable {
 
@@ -62,6 +66,8 @@ public class MainController implements Initializable {
     private static final double NARROW_LAYOUT_WIDTH = 980.0d;
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final List<String> OFFICIAL_VALUE_TYPES = List.of(
+            "Integer", "Long", "Double", "Float", "Boolean", "Character", "Byte", "Short", "String");
 
     @FXML
     private BorderPane rootPane;
@@ -81,6 +87,16 @@ public class MainController implements Initializable {
     private Button algorithmWorkspaceBtn;
     @FXML
     private Button langBtn;
+    @FXML
+    private HBox valueTypeBox;
+    @FXML
+    private Label valueTypeLabel;
+    @FXML
+    private ComboBox<ValueTypeOption> valueTypeSelector;
+    @FXML
+    private Label hashValueTypeLabel;
+    @FXML
+    private ComboBox<ValueTypeOption> hashValueTypeSelector;
     @FXML
     private StackPane workspaceLayer;
     @FXML
@@ -170,7 +186,7 @@ public class MainController implements Initializable {
     @FXML
     private Label timelineLabel;
     @FXML
-    private TextArea logArea;
+    private LogView logView;
     @FXML
     private Button startBtn;
     @FXML
@@ -192,11 +208,17 @@ public class MainController implements Initializable {
     @FXML
     private Slider timelineSlider;
 
-    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.defaults();
+    private static final ModuleRegistry MODULE_REGISTRY = ModuleLoader.load();
+
+    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(MODULE_REGISTRY);
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
     private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
+    private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
+    private String selectedHashKeyType;
+    private String selectedHashValueType;
+    private boolean updatingValueTypeSelectors;
     private BaseController<?> currentSubController;
     private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
@@ -208,6 +230,7 @@ public class MainController implements Initializable {
         }
 
         setupI18n();
+        setupValueTypeSelectors();
         setupModuleMenu();
         setupWorkspaceMode();
         setupGlobalEffects();
@@ -222,6 +245,8 @@ public class MainController implements Initializable {
 
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
+        valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
+        hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
         structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
         structureWorkspaceTitleLabel.textProperty().bind(
@@ -252,7 +277,9 @@ public class MainController implements Initializable {
         compareBtn.textProperty().bind(I18N.createStringBinding("action.execution.compare"));
         delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
         timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline"));
-        logArea.promptTextProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
+        Label logPlaceholder = new Label();
+        logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
+        logView.setPlaceholder(logPlaceholder);
         stepBackwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.backward"));
         stepForwardBtn.accessibleTextProperty().bind(
@@ -261,19 +288,217 @@ public class MainController implements Initializable {
             refreshPauseText();
             refreshWorkspaceContext();
             refreshAlgorithmInputSource();
+            refreshValueTypeSelectors();
         });
         refreshPauseText();
     }
 
+    private void setupValueTypeSelectors() {
+        configureValueTypeSelector(valueTypeSelector);
+        configureValueTypeSelector(hashValueTypeSelector);
+        valueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
+                return;
+            }
+            if (!newValue.available()) {
+                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
+                refreshValueTypeSelectors();
+                return;
+            }
+            if ("hash-table".equals(activeDefinition.id())) {
+                selectedHashKeyType = newValue.type();
+            } else {
+                selectedValueTypes.put(activeDefinition.id(), newValue.type());
+            }
+            refreshAfterValueTypeChange();
+        });
+        hashValueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
+                return;
+            }
+            if (!newValue.available()) {
+                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
+                refreshValueTypeSelectors();
+                return;
+            }
+            selectedHashValueType = newValue.type();
+            refreshAfterValueTypeChange();
+        });
+    }
+
+    private void configureValueTypeSelector(ComboBox<ValueTypeOption> selector) {
+        selector.setCellFactory(ignored -> valueTypeCell());
+        selector.setButtonCell(valueTypeCell());
+    }
+
+    private ListCell<ValueTypeOption> valueTypeCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(ValueTypeOption item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setDisable(false);
+                    return;
+                }
+                setText(item.available() ? item.type() : item.type() + " · " + I18N.text("label.value_type.unavailable"));
+                setDisable(!item.available());
+            }
+        };
+    }
+
+    private void refreshValueTypeSelectors() {
+        if (activeDefinition == null) {
+            return;
+        }
+        String moduleId = activeDefinition.id();
+        boolean maze = "maze".equals(moduleId);
+        setControlVisibility(valueTypeBox, !maze);
+        if (maze) {
+            return;
+        }
+
+        updatingValueTypeSelectors = true;
+        try {
+            boolean hashTable = "hash-table".equals(moduleId);
+            setControlVisibility(hashValueTypeLabel, hashTable);
+            setControlVisibility(hashValueTypeSelector, hashTable);
+            if (hashTable) {
+                valueTypeLabel.textProperty().unbind();
+                valueTypeLabel.setText(I18N.text("label.value_type.key"));
+                refreshHashTableTypeSelectors();
+            } else {
+                if (!valueTypeLabel.textProperty().isBound()) {
+                    valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
+                }
+                List<String> available = availableValueTypes(moduleId);
+                String selected = selectedValueTypes.get(moduleId);
+                if (selected == null || !available.contains(selected)) {
+                    selected = available.isEmpty() ? null : available.getFirst();
+                    if (selected != null) {
+                        selectedValueTypes.put(moduleId, selected);
+                    }
+                }
+                valueTypeSelector.getItems().setAll(valueTypeOptions(available));
+                selectValueType(valueTypeSelector, selected);
+            }
+        } finally {
+            updatingValueTypeSelectors = false;
+        }
+    }
+
+    private void refreshHashTableTypeSelectors() {
+        List<String> signatures = MODULE_REGISTRY.structureTypeSignatures("hash-table");
+        List<String> keyTypes = new ArrayList<>();
+        for (String signature : signatures) {
+            int separator = signature.indexOf('.');
+            if (separator > 0) {
+                String keyType = signature.substring(0, separator);
+                if (!keyTypes.contains(keyType)) {
+                    keyTypes.add(keyType);
+                }
+            }
+        }
+        if (selectedHashKeyType == null || !keyTypes.contains(selectedHashKeyType)) {
+            selectedHashKeyType = keyTypes.isEmpty() ? null : keyTypes.getFirst();
+        }
+        valueTypeSelector.getItems().setAll(valueTypeOptions(keyTypes));
+        selectValueType(valueTypeSelector, selectedHashKeyType);
+
+        List<String> valueTypes = new ArrayList<>();
+        if (selectedHashKeyType != null) {
+            String prefix = selectedHashKeyType + ".";
+            for (String signature : signatures) {
+                if (signature.startsWith(prefix)) {
+                    valueTypes.add(signature.substring(prefix.length()));
+                }
+            }
+        }
+        if (selectedHashValueType == null || !valueTypes.contains(selectedHashValueType)) {
+            selectedHashValueType = valueTypes.isEmpty() ? null : valueTypes.getFirst();
+        }
+        hashValueTypeSelector.getItems().setAll(valueTypeOptions(valueTypes));
+        selectValueType(hashValueTypeSelector, selectedHashValueType);
+    }
+
+    private List<String> availableValueTypes(String moduleId) {
+        List<String> available = new ArrayList<>();
+        for (String signature : MODULE_REGISTRY.structureTypeSignatures(moduleId)) {
+            if (!signature.contains(".") && !available.contains(signature)) {
+                available.add(signature);
+            }
+        }
+        for (String valueType : MODULE_REGISTRY.algorithmValueTypes(moduleId)) {
+            if (!available.contains(valueType)) {
+                available.add(valueType);
+            }
+        }
+        return List.copyOf(available);
+    }
+
+    private List<ValueTypeOption> valueTypeOptions(List<String> available) {
+        List<ValueTypeOption> options = new ArrayList<>();
+        for (String type : OFFICIAL_VALUE_TYPES) {
+            options.add(new ValueTypeOption(type, available.contains(type)));
+        }
+        return List.copyOf(options);
+    }
+
+    private void selectValueType(ComboBox<ValueTypeOption> selector, String type) {
+        selector.getSelectionModel().clearSelection();
+        if (type == null) {
+            return;
+        }
+        for (ValueTypeOption option : selector.getItems()) {
+            if (option.type().equals(type)) {
+                selector.getSelectionModel().select(option);
+                return;
+            }
+        }
+    }
+
+    private String selectedValueType(String moduleId) {
+        String selected = selectedValueTypes.get(moduleId);
+        if (selected != null) {
+            return selected;
+        }
+        List<String> available = availableValueTypes(moduleId);
+        if (available.isEmpty()) {
+            return null;
+        }
+        selected = available.getFirst();
+        selectedValueTypes.put(moduleId, selected);
+        return selected;
+    }
+
+    private void refreshAfterValueTypeChange() {
+        refreshValueTypeSelectors();
+        rebuildAlgorithmMenu();
+        if (activeDefinition != null) {
+            updateAlgorithmWorkspaceAvailability(activeDefinition.id());
+            clearAlgorithmSelection();
+            selectFirstAlgorithmButton(activeDefinition.id());
+            List<AlgorithmNavigationItem> items = algorithmNavigationItems(activeDefinition.id());
+            if (!items.isEmpty() && currentSubController instanceof AlgorithmSelectionSupport support) {
+                support.selectAlgorithm(items.getFirst().id());
+            }
+        }
+    }
+
     private void setupModuleMenu() {
         structureNavigationBox.getChildren().clear();
-        algorithmNavigationBox.getChildren().clear();
         structureButtons.clear();
-        algorithmButtons.clear();
         for (WorkbenchModuleDefinition definition : moduleDefinitions) {
             Button structureButton = createCatalogButton(definition);
             structureNavigationBox.getChildren().add(structureButton);
+        }
+        rebuildAlgorithmMenu();
+    }
 
+    private void rebuildAlgorithmMenu() {
+        algorithmNavigationBox.getChildren().clear();
+        algorithmButtons.clear();
+        for (WorkbenchModuleDefinition definition : moduleDefinitions) {
             List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
             if (navigationItems.isEmpty()) {
                 continue;
@@ -285,8 +510,7 @@ public class MainController implements Initializable {
             groupTitle.textProperty().bind(I18N.createStringBinding(structureLabelKey(definition.id())));
             group.getChildren().add(groupTitle);
             for (AlgorithmNavigationItem item : navigationItems) {
-                Button algorithmButton = createAlgorithmButton(definition, item);
-                group.getChildren().add(algorithmButton);
+                group.getChildren().add(createAlgorithmButton(definition, item));
             }
             algorithmNavigationBox.getChildren().add(group);
         }
@@ -343,27 +567,52 @@ public class MainController implements Initializable {
     }
 
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
-        return switch (moduleId) {
-            case "sort" -> List.of(
-                    new AlgorithmNavigationItem("insertion-sort", "algorithm.sort.insertion"),
-                    new AlgorithmNavigationItem("selection-sort", "algorithm.sort.selection"),
-                    new AlgorithmNavigationItem("quick-sort", "algorithm.sort.quick"),
-                    new AlgorithmNavigationItem("heap-sort", "algorithm.sort.heap"));
-            case "maze" -> List.of(
-                    new AlgorithmNavigationItem("maze-generator-bfs", "algorithm.maze.generate.bfs"),
-                    new AlgorithmNavigationItem("maze-generator-dfs", "algorithm.maze.generate.dfs"),
-                    new AlgorithmNavigationItem("maze-generator-union-find", "algorithm.maze.generate.uf"),
-                    new AlgorithmNavigationItem("graph-generator-bfs", "algorithm.maze.generate.graph_bfs"),
-                    new AlgorithmNavigationItem("maze-pathfinder-astar", "algorithm.maze.solve.astar"),
-                    new AlgorithmNavigationItem("maze-pathfinder-dfs", "algorithm.maze.solve.dfs"));
-            case "tree" -> List.of(
-                    new AlgorithmNavigationItem("tree-avl", "algorithm.tree.avl"));
-            case "graph" -> List.of(
-                    new AlgorithmNavigationItem("graph-bfs", "algorithm.graph.bfs"));
-            case "string" -> List.of(
-                    new AlgorithmNavigationItem("kmp", "algorithm.string.kmp"));
-            default -> List.of();
-        };
+        List<String> algorithmIds = new ArrayList<>();
+        if ("maze".equals(moduleId)) {
+            addAlgorithmsForAllTypes(algorithmIds, "maze", null);
+            for (String valueType : MODULE_REGISTRY.algorithmValueTypes("graph")) {
+                for (String algorithmId : MODULE_REGISTRY.algorithmIds("graph", valueType)) {
+                    if (algorithmId.startsWith("graph-generator-")) {
+                        algorithmIds.add(algorithmId);
+                    }
+                }
+            }
+        } else {
+            String valueType = selectedValueType(moduleId);
+            if (valueType != null) {
+                for (String algorithmId : MODULE_REGISTRY.algorithmIds(moduleId, valueType)) {
+                    if (!"graph".equals(moduleId) || !algorithmId.startsWith("graph-generator-")) {
+                        algorithmIds.add(algorithmId);
+                    }
+                }
+            }
+        }
+
+        List<AlgorithmNavigationItem> items = new ArrayList<>();
+        for (String algorithmId : algorithmIds) {
+            items.add(new AlgorithmNavigationItem(algorithmId, algorithmLabelKey(moduleId, algorithmId)));
+        }
+        return List.copyOf(items);
+    }
+
+    private void addAlgorithmsForAllTypes(List<String> target, String family, String excludedPrefix) {
+        for (String valueType : MODULE_REGISTRY.algorithmValueTypes(family)) {
+            for (String algorithmId : MODULE_REGISTRY.algorithmIds(family, valueType)) {
+                if (excludedPrefix == null || !algorithmId.startsWith(excludedPrefix)) {
+                    target.add(algorithmId);
+                }
+            }
+        }
+    }
+
+    private String algorithmLabelKey(String moduleId, String algorithmId) {
+        if ("maze".equals(moduleId) && "graph-generator-bfs".equals(algorithmId)) {
+            return "algorithm.maze.generate.graph_bfs";
+        }
+        return AlgorithmLabels.key(algorithmId);
+    }
+
+    private record ValueTypeOption(String type, boolean available) {
     }
 
     private record AlgorithmNavigationItem(String id, String labelKey) {
@@ -371,7 +620,7 @@ public class MainController implements Initializable {
 
     private String structureLabelKey(String moduleId) {
         return switch (moduleId) {
-            case "sort" -> "label.structure.array";
+            case "array" -> "label.structure.array";
             case "linked-list" -> "label.structure.linked_list";
             case "stack" -> "label.structure.stack";
             case "queue" -> "label.structure.queue";
@@ -504,11 +753,9 @@ public class MainController implements Initializable {
     private void switchToModule(WorkbenchModuleDefinition definition) {
         activeDefinition = definition;
         loadSubController(definition.controllerFactory().get());
+        refreshValueTypeSelectors();
         updateAlgorithmWorkspaceAvailability(definition.id());
         refreshWorkspaceContext();
-        if (currentSubController != null) {
-            currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
-        }
         structureButtons.forEach((id, buttons) -> buttons.forEach(button ->
                 button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
         clearAlgorithmSelection();
@@ -568,7 +815,7 @@ public class MainController implements Initializable {
 
         newController.setUIReferences(new WorkbenchControls(
                 statsLabel,
-                logArea,
+                logView,
                 delaySlider,
                 timelineSlider,
                 customControlBox,
@@ -1004,9 +1251,6 @@ public class MainController implements Initializable {
 
     @FXML
     private void toggleLanguage() {
-        if (currentSubController != null) {
-            currentSubController.dispatchVisualizerEvent(mainEvent(VisualizationActionType.LANGUAGE_TOGGLE));
-        }
         Locale newLocale = Locale.CHINESE;
         if (I18N.getLocale().getLanguage().equals("zh")) {
             newLocale = Locale.ENGLISH;
@@ -1017,15 +1261,15 @@ public class MainController implements Initializable {
     }
 
     private void appendSystemLog(String message) {
-        if (logArea == null) {
+        if (logView == null) {
             return;
         }
-        logArea.appendText("System: " + message + "\n");
+        logView.appendSystem(message);
     }
 
     private String moduleAccentStyleClass(String moduleId) {
         return switch (moduleId) {
-            case "sort", "stack" -> "btn-ran-blue";
+            case "array", "stack" -> "btn-ran-blue";
             case "linked-list", "tree" -> "btn-ran-gold";
             case "queue", "graph" -> "btn-ran-white";
             case "maze" -> "btn-ran-red";
@@ -1033,38 +1277,6 @@ public class MainController implements Initializable {
             case "hash-table" -> "btn-ran-red";
             default -> "btn-ran-blue";
         };
-    }
-
-    private VisualizationActionType moduleSwitchAction(String moduleId) {
-        return switch (moduleId) {
-            case "sort" -> VisualizationActionType.MODULE_SORT;
-            case "linked-list" -> VisualizationActionType.MODULE_LINKED_LIST;
-            case "stack" -> VisualizationActionType.MODULE_STACK;
-            case "queue" -> VisualizationActionType.MODULE_QUEUE;
-            case "maze" -> VisualizationActionType.MODULE_MAZE;
-            case "tree" -> VisualizationActionType.MODULE_TREE;
-            case "graph" -> VisualizationActionType.MODULE_GRAPH;
-            case "string" -> VisualizationActionType.MODULE_STRING;
-            case "hash-table" -> VisualizationActionType.MODULE_HASH_TABLE;
-            default -> VisualizationActionType.MODULE_SORT;
-        };
-    }
-
-    private VisualizationEvent mainEvent(VisualizationActionType actionType) {
-        String moduleId = "unknown";
-        boolean running = false;
-        boolean paused = false;
-        if (currentSubController != null) {
-            moduleId = currentSubController.getModuleId();
-            running = currentSubController.isRunning();
-            paused = currentSubController.isPaused();
-        }
-        return VisualizationEvent.of(
-                actionType,
-                moduleId,
-                getClass().getSimpleName(),
-                running,
-                paused);
     }
 
     private void refreshPauseText() {

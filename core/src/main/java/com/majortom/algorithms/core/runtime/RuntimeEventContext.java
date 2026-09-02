@@ -17,7 +17,8 @@ final class RuntimeEventContext {
     private final Clock clock;
     private final AtomicLong sequence = new AtomicLong();
 
-    RuntimeEventContext(String runId, String operationId, String source, EventSink eventSink, RunControl runControl, Clock clock) {
+    RuntimeEventContext(
+            String runId, String operationId, String source, EventSink eventSink, RunControl runControl, Clock clock) {
         this.runId = req(runId, "runId");
         this.operationId = req(operationId, "operationId");
         this.source = req(source, "source");
@@ -28,7 +29,9 @@ final class RuntimeEventContext {
 
     void emit(ExecutionEvent event) {
         Objects.requireNonNull(event);
-        if (event instanceof ExecutionLifecycleEvent) throw new IllegalArgumentException("Domain code cannot emit runtime lifecycle events");
+        if (event instanceof ExecutionLifecycleEvent) {
+            throw new IllegalArgumentException("Domain code cannot emit runtime lifecycle events");
+        }
         publish(event);
     }
 
@@ -46,19 +49,29 @@ final class RuntimeEventContext {
 
     private void await(boolean domainEvent) throws InterruptedException {
         requireNotCancelled();
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Execution interrupted");
-        if (domainEvent) runControl.awaitDomainEventPermission(runControl);
-        else runControl.awaitPermission(runControl);
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("Execution interrupted");
+        }
+        if (domainEvent) {
+            runControl.awaitDomainEventPermission(runControl);
+        } else {
+            runControl.awaitPermission(runControl);
+        }
         requireNotCancelled();
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Execution interrupted");
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("Execution interrupted");
+        }
     }
 
     private void requireNotCancelled() {
-        if (runControl.isCancellationRequested()) throw new ExecutionCancellationException("Execution cancelled");
+        if (runControl.isCancellationRequested()) {
+            throw new ExecutionCancellationException("Execution cancelled");
+        }
     }
 
     private synchronized void publish(ExecutionEvent event) {
-        EventEnvelope envelope = new EventEnvelope(runId, operationId, sequence.getAndIncrement(), clock.instant(), source, event);
+        EventEnvelope envelope = new EventEnvelope(
+                runId, operationId, sequence.getAndIncrement(), clock.instant(), source, event);
         try {
             eventSink.accept(envelope);
         } catch (RuntimeException e) {
@@ -68,7 +81,9 @@ final class RuntimeEventContext {
 
     private static String req(String v, String n) {
         Objects.requireNonNull(v, n);
-        if (v.isBlank()) throw new IllegalArgumentException(n + " must not be blank");
+        if (v.isBlank()) {
+            throw new IllegalArgumentException(n + " must not be blank");
+        }
         return v;
     }
 }

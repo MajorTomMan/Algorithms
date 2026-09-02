@@ -4,8 +4,6 @@ import com.majortom.algorithms.visualization.runtime.maze.MazeCellType;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.maze.GridPoint;
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationActionType;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import javafx.animation.AnimationTimer;
 import javafx.scene.paint.Color;
@@ -62,7 +60,6 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
         }
         drawFocusTrail(state, cellWidth, cellHeight);
         drawFocus(state, cellWidth, cellHeight);
-        drawTransientFeedbackOverlay();
         updateTimerState();
     }
 
@@ -354,23 +351,8 @@ public final class MazeModuleVisualizer extends BaseVisualizer<MazeViewState> {
     }
 
     @Override
-    public void onControlAction(VisualizationEvent event) {
-        super.onControlAction(event);
-        VisualizationActionType action = event.actionType();
-        if (action == VisualizationActionType.EXECUTION_PAUSE) {
-            animationRequested = false;
-        } else if (action == VisualizationActionType.EXECUTION_RESUME
-                || action == VisualizationActionType.EXECUTION_START
-                || action == VisualizationActionType.MAZE_BUILD
-                || action == VisualizationActionType.MAZE_SOLVE
-                || action == VisualizationActionType.EXECUTION_RESET) {
-            animationRequested = true;
-        }
-        if (action == VisualizationActionType.MAZE_BUILD || action == VisualizationActionType.MAZE_SOLVE) {
-            focusTrail.clear();
-            lastFocus = null;
-            focusChangedAtNanos = 0L;
-        }
+    public void setPlaybackPaused(boolean paused) {
+        animationRequested = !paused;
         updateTimerState();
     }
 

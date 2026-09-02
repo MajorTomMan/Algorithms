@@ -1,5 +1,6 @@
 package com.majortom.algorithms.library.string;
 
+import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.structure.StringStructure;
 
@@ -11,8 +12,12 @@ public final class KmpSearch {
     public List<Integer> search(StringStructure target, String pattern) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(pattern, "pattern");
-        if (pattern.isEmpty()) throw new IllegalArgumentException("pattern must not be empty");
+        if (pattern.isEmpty()) {
+            Log.e("KMP", "Pattern must not be empty");
+            throw new IllegalArgumentException("pattern must not be empty");
+        }
         String text = target.raw();
+        Log.d("KMP", "Search start, text=" + text.length() + ", pattern=" + pattern.length());
         int[] prefix = prefix(pattern);
         List<Integer> matches = new ArrayList<>();
         ExecutionEvents.emit(new KmpEvent.Initialized(text, pattern));
@@ -40,6 +45,11 @@ public final class KmpSearch {
         }
         List<Integer> result = List.copyOf(matches);
         ExecutionEvents.emit(new KmpEvent.Completed(result));
+        if (result.isEmpty()) {
+            Log.w("KMP", "No matches found");
+        } else {
+            Log.i("KMP", "Matches found: " + result.size());
+        }
         return result;
     }
 

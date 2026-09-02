@@ -2,7 +2,6 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import javafx.application.Platform;
 import org.graphstream.graph.Edge;
@@ -26,7 +25,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private FxViewer viewer;
     private FxViewPanel viewPanel;
     private boolean graphDisposed;
-    private long accentUntilMillis;
 
     public GraphVisualizer() {
         System.setProperty("org.graphstream.ui", "javafx");
@@ -60,8 +58,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
         synchronizeGraph(state);
         clear();
-        drawAccentFrame();
-        drawTransientFeedbackOverlay();
     }
 
     private void synchronizeGraph(GraphViewState state) {
@@ -162,20 +158,12 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     @Override
-    public void onControlAction(VisualizationEvent event) {
-        super.onControlAction(event);
-        accentUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
-    }
-
-    @Override
     public void onVisualizationReset() {
-        accentUntilMillis = 0L;
         super.onVisualizationReset();
     }
 
     @Override
     public void onModuleDetached(String moduleId) {
-        accentUntilMillis = 0L;
         if (viewer != null) {
             viewer.disableAutoLayout();
         }
@@ -189,21 +177,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         if (viewer != null) {
             viewer.enableAutoLayout();
         }
-    }
-
-    private void drawAccentFrame() {
-        long remaining = accentUntilMillis - System.currentTimeMillis();
-        if (remaining <= 0L) {
-            return;
-        }
-        gc.save();
-        gc.setGlobalAlpha(Math.min(1.0d, remaining / (double) FEEDBACK_DURATION_MS));
-        gc.setStroke(RAN_CYAN);
-        gc.setLineWidth(2.5d);
-        gc.strokeRoundRect(12.0d, 12.0d,
-                Math.max(0.0d, canvas.getWidth() - 24.0d),
-                Math.max(0.0d, canvas.getHeight() - 24.0d), 18.0d, 18.0d);
-        gc.restore();
     }
 
     @Override

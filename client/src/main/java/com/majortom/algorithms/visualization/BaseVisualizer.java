@@ -1,18 +1,14 @@
 package com.majortom.algorithms.visualization;
 
-import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.Glow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
 /**
@@ -66,21 +62,16 @@ public abstract class BaseVisualizer<S> extends StackPane {
     protected final GraphicsContext gc;
 
     private S lastData;
-    private String transientFeedbackLabel;
-    private long transientFeedbackUntilMillis;
     private boolean renderQueued;
     private boolean resizeInProgress;
     private final PauseTransition resizeSettleTransition;
     private final ChangeListener<Number> sizeListener =
             (observable, oldValue, newValue) -> handleSizeInvalidated();
-    private final AnimationTimer feedbackTimer;
-    private boolean feedbackTimerRunning;
     private boolean moduleAttached;
     private boolean disposed;
 
     // 默认高亮效果
     protected final Glow highIntensityGlow = new Glow(0.8);
-    protected static final long FEEDBACK_DURATION_MS = 1200L;
     protected static final double RESIZE_SETTLE_MS = 140.0;
 
     public BaseVisualizer() {
@@ -90,17 +81,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
 
         this.resizeSettleTransition = new PauseTransition(Duration.millis(RESIZE_SETTLE_MS));
         this.resizeSettleTransition.setOnFinished(event -> handleResizeSettled());
-        this.feedbackTimer = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                if (!hasTransientFeedback() || !moduleAttached || disposed) {
-                    stopFeedbackTimer();
-                    requestRender();
-                    return;
-                }
-                requestRender();
-            }
-        };
 
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
@@ -202,19 +182,10 @@ public abstract class BaseVisualizer<S> extends StackPane {
     }
 
     /**
-     * 控制器按钮联动入口。
-     * 默认留空，由具体可视化按需覆写。
-     */
-    public void onControlAction(VisualizationEvent event) {
-        showTransientFeedback(event);
-    }
-
-    /**
      * 重置后的可视化清理钩子。
      * 默认只清空画布，子类可在此停止动画、清空缓存、重置局部状态。
      */
     public void onVisualizationReset() {
-        clearTransientFeedback();
         clear();
     }
 
@@ -224,9 +195,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
      */
     public void onModuleAttached(String moduleId) {
         moduleAttached = true;
-        if (hasTransientFeedback()) {
-            startFeedbackTimer();
-        }
         requestRender();
     }
 
@@ -236,8 +204,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
      */
     public void onModuleDetached(String moduleId) {
         moduleAttached = false;
-        stopFeedbackTimer();
-        clearTransientFeedback();
     }
 
     /** Definitively releases listeners, animation and canvas bindings. */
@@ -247,7 +213,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
         }
         disposed = true;
         moduleAttached = false;
-        stopFeedbackTimer();
         resizeSettleTransition.stop();
         resizeSettleTransition.setOnFinished(null);
         widthProperty().removeListener(sizeListener);
@@ -276,105 +241,8 @@ public abstract class BaseVisualizer<S> extends StackPane {
         return disposed;
     }
 
-    protected final void showTransientFeedback(VisualizationEvent event) {
-        this.transientFeedbackLabel = describeEvent(event);
-        this.transientFeedbackUntilMillis = System.currentTimeMillis() + FEEDBACK_DURATION_MS;
-        requestRender();
-        if (moduleAttached) {
-            startFeedbackTimer();
-        }
-    }
-
-    protected final void clearTransientFeedback() {
-        this.transientFeedbackLabel = null;
-        this.transientFeedbackUntilMillis = 0L;
-        stopFeedbackTimer();
-    }
-
-    protected final boolean hasTransientFeedback() {
-        return transientFeedbackLabel != null && System.currentTimeMillis() < transientFeedbackUntilMillis;
-    }
-
-    private void startFeedbackTimer() {
-        if (feedbackTimerRunning || disposed) {
-            return;
-        }
-        feedbackTimerRunning = true;
-        feedbackTimer.start();
-    }
-
-    private void stopFeedbackTimer() {
-        if (!feedbackTimerRunning) {
-            return;
-        }
-        feedbackTimer.stop();
-        feedbackTimerRunning = false;
-    }
-
-    protected final double getTransientFeedbackOpacity() {
-        long remaining = transientFeedbackUntilMillis - System.currentTimeMillis();
-        if (remaining <= 0) {
-            return 0.0;
-        }
-        return Math.max(0.0, Math.min(1.0, remaining / (double) FEEDBACK_DURATION_MS));
-    }
-
-    protected final void drawTransientFeedbackOverlay() {
-        if (!hasTransientFeedback()) {
-            return;
-        }
-
-        double x = 18;
-        double y = 16;
-        double width = 178;
-        double height = 34;
-
-        gc.save();
-        gc.setGlobalAlpha(getTransientFeedbackOpacity());
-        gc.setFill(RAN_BLACK.deriveColor(0, 1, 1, 0.82));
-        gc.fillRoundRect(x, y, width, height, 14, 14);
-        gc.setStroke(RAN_GOLD.deriveColor(0, 1, 1, 0.9));
-        gc.setLineWidth(1.5);
-        gc.strokeRoundRect(x, y, width, height, 14, 14);
-        gc.setFill(RAN_WHITE);
-        gc.setFont(Font.font("Consolas", FontWeight.BOLD, 14));
-        gc.setTextAlign(TextAlignment.LEFT);
-        gc.setTextBaseline(VPos.CENTER);
-        gc.fillText(transientFeedbackLabel, x + 14, y + height / 2);
-        gc.restore();
-    }
-
-    protected String describeEvent(VisualizationEvent event) {
-        return switch (event.actionType()) {
-            case EXECUTION_START -> "RUN";
-            case EXECUTION_PAUSE -> "PAUSE";
-            case EXECUTION_RESUME -> "RESUME";
-            case EXECUTION_RESET -> "RESET";
-            case EXECUTION_REPLAY -> "REPLAY";
-            case EXECUTION_EXPORT -> "EXPORT";
-            case EXECUTION_COMPARE -> "COMPARE";
-            case MODULE_SORT -> "SORT MODE";
-            case MODULE_LINKED_LIST -> "LINKED LIST";
-            case MODULE_STACK -> "STACK";
-            case MODULE_QUEUE -> "QUEUE";
-            case MODULE_MAZE -> "MAZE MODE";
-            case MODULE_TREE -> "TREE MODE";
-            case MODULE_GRAPH -> "GRAPH MODE";
-            case MODULE_STRING -> "STRING MODE";
-            case MODULE_HASH_TABLE -> "HASH TABLE";
-            case LANGUAGE_TOGGLE -> "LANGUAGE";
-            case SORT_GENERATE -> "NEW ARRAY";
-            case SORT_RUN -> "SORT";
-            case MAZE_BUILD -> "BUILD";
-            case MAZE_SOLVE -> "SOLVE";
-            case TREE_INSERT -> "INSERT";
-            case TREE_DELETE -> "DELETE";
-            case TREE_RANDOM -> "RANDOM";
-            case GRAPH_RUN -> "TRAVERSE";
-            case GRAPH_ADD_NODE -> "ADD NODE";
-            case GRAPH_DELETE_NODE -> "DELETE NODE";
-            case GRAPH_LINK -> "LINK";
-        };
+    /** Presentation-only pause state for ambient visualizer animation. */
+    public void setPlaybackPaused(boolean paused) {
     }
 
     /**

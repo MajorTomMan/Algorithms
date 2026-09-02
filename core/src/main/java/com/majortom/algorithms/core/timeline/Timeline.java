@@ -1,8 +1,12 @@
 package com.majortom.algorithms.core.timeline;
 
-import com.majortom.algorithms.core.runtime.*;
+import com.majortom.algorithms.core.runtime.EventEnvelope; 
+import com.majortom.algorithms.core.runtime.EventSink; 
 
-import java.util.*;
+
+import java.util.ArrayList;
+ import java.util.List; 
+ import java.util.Objects;
 
 public final class Timeline implements EventSink {
 
@@ -29,11 +33,15 @@ public final class Timeline implements EventSink {
     }
 
     public synchronized List<EventEnvelope> run(String id) {
-        return events.stream().filter(e -> e.runId().equals(id)).toList();
+        return events.stream()
+                .filter(e -> e.runId().equals(id))
+                .toList();
     }
 
     public synchronized List<EventEnvelope> operation(String id) {
-        return events.stream().filter(e -> e.operationId().equals(id)).toList();
+        return events.stream()
+                .filter(e -> e.operationId().equals(id))
+                .toList();
     }
 
     public synchronized void clear() {

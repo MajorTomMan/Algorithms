@@ -2,8 +2,6 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.visualization.BaseVisualizer;
-import com.majortom.algorithms.visualization.VisualizationActionType;
-import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.runtime.tree.AvlTreeViewState;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.VPos;
@@ -55,8 +53,7 @@ public final class TreeVisualizer extends BaseVisualizer<AvlTreeViewState> {
             parentById.clear();
             stopLayoutTimer();
             clear();
-            drawTransientFeedbackOverlay();
-            return;
+                return;
         }
         updateLayout(nextState.root());
         renderFrame();
@@ -154,7 +151,6 @@ public final class TreeVisualizer extends BaseVisualizer<AvlTreeViewState> {
         Set<Long> focusPath = state.ancestorIds();
         drawEdges(state.root(), focusPath);
         drawNodes(state.root(), focusPath);
-        drawTransientFeedbackOverlay();
     }
 
     private void drawEdges(AvlNodeSnapshot node, Set<Long> focusPath) {
@@ -262,19 +258,8 @@ public final class TreeVisualizer extends BaseVisualizer<AvlTreeViewState> {
     }
 
     @Override
-    public void onControlAction(VisualizationEvent event) {
-        super.onControlAction(event);
-        VisualizationActionType action = event.actionType();
-        if (action == VisualizationActionType.EXECUTION_PAUSE) {
-            animationRequested = false;
-        } else if (action == VisualizationActionType.EXECUTION_RESUME
-                || action == VisualizationActionType.EXECUTION_START
-                || action == VisualizationActionType.TREE_INSERT
-                || action == VisualizationActionType.TREE_DELETE
-                || action == VisualizationActionType.TREE_RANDOM
-                || action == VisualizationActionType.EXECUTION_RESET) {
-            animationRequested = true;
-        }
+    public void setPlaybackPaused(boolean paused) {
+        animationRequested = !paused;
         updateTimerState();
     }
 

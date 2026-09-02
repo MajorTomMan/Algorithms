@@ -3,6 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import java.lang.String?>
+<?import com.majortom.algorithms.visualization.logging.LogView?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
@@ -20,6 +21,12 @@
                         styleClass="workspace-mode-button" />
                     <Button fx:id="algorithmWorkspaceBtn" onAction="#selectAlgorithmWorkspace"
                         styleClass="workspace-mode-button" />
+                </HBox>
+                <HBox fx:id="valueTypeBox" alignment="CENTER_LEFT" spacing="6" styleClass="value-type-box">
+                    <Label fx:id="valueTypeLabel" styleClass="value-type-label" />
+                    <ComboBox fx:id="valueTypeSelector" prefWidth="126.0" styleClass="value-type-selector" />
+                    <Label fx:id="hashValueTypeLabel" styleClass="value-type-label" />
+                    <ComboBox fx:id="hashValueTypeSelector" prefWidth="126.0" styleClass="value-type-selector" />
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />
                 <Separator orientation="VERTICAL" styleClass="top-divider" />
@@ -186,12 +193,12 @@
                             </styleClass>
                             <Label fx:id="logTitleLabel" styleClass="rail-title" />
                         </HBox>
-                        <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" wrapText="true">
+                        <LogView fx:id="logView" VBox.vgrow="ALWAYS">
                             <styleClass>
-                                <String fx:value="log-area" />
+                                <String fx:value="log-view" />
                                 <String fx:value="log-card" />
                             </styleClass>
-                        </TextArea>
+                        </LogView>
                     </VBox>
                 </HBox>
             </VBox>

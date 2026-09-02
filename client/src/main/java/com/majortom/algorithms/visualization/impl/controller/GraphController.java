@@ -35,6 +35,7 @@ import java.util.Set;
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Integer>>, SnapshotAlgorithmInputSupport<GraphSnapshot<Integer>> {
 
+    private final List<String> algorithmIds;
     private MutableGraph<Integer> graph;
     private StructureSnapshot<GraphSnapshot<Integer>> algorithmInputSnapshot;
     private int startNode = 0;
@@ -62,6 +63,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     public GraphController() {
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
+        algorithmIds = registeredAlgorithmIds("graph", "Integer").stream()
+                .filter(id -> !id.startsWith("graph-generator-"))
+                .toList();
         graph = randomGraph(10, 16);
         renderGraph();
     }
@@ -89,9 +93,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (inputGraph.size() == 0) return;
         int algorithmStartNode = inputGraph.containsVertex(startNode)
                 ? startNode : inputGraph.raw().keySet().iterator().next();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_RUN,
-                java.util.Map.of("startNode", algorithmStartNode));
         IntGraph inputSnapshot = GraphBfs.snapshot(inputGraph);
         GraphBfs algorithm = module("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
         startAlgorithm("graph-bfs", inputSnapshot, () -> algorithm.traverse(inputGraph, algorithmStartNode), () -> new GraphEventReducer(inputSnapshot));
@@ -99,11 +100,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
-        if (!"graph-bfs".equals(algorithmId)) {
+        int index = algorithmIds.indexOf(algorithmId);
+        if (index < 0) {
             return false;
         }
         if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().selectFirst();
+            algorithmSelector.getSelectionModel().select(index);
         }
         return true;
     }
@@ -191,9 +193,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             startField.setText(String.valueOf(startNode));
         }
         renderGraph();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_ADD_NODE,
-                java.util.Map.of("node", id));
         logI18n("message.graph.node_added", id);
     }
 
@@ -217,9 +216,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             startField.setText(String.valueOf(startNode));
         }
         renderGraph();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_DELETE_NODE,
-                java.util.Map.of("node", id));
         logI18n("message.graph.node_deleted", id);
     }
 
@@ -241,9 +237,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         renderGraph();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.GRAPH_LINK,
-                java.util.Map.of("from", from, "to", to));
         logI18n("message.graph.link.directed", from, to, 1);
     }
 
@@ -388,7 +381,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
                 () -> FXCollections.observableArrayList(I18N.text("label.graph.structure.directed")),
                 I18N.localeProperty()));
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text(AlgorithmLabels.key("graph-bfs"))),
+                () -> FXCollections.observableArrayList(algorithmIds.stream()
+                        .map(id -> I18N.text(AlgorithmLabels.key(id)))
+                        .toList()),
                 I18N.localeProperty()));
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();

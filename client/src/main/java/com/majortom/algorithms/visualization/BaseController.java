@@ -53,7 +53,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TextArea;
+import com.majortom.algorithms.visualization.logging.LogView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 
@@ -89,7 +89,7 @@ public abstract class BaseController<S> implements Initializable {
     protected final BaseVisualizer<S> visualizer;
 
     protected Label statsLabel;
-    protected TextArea logArea;
+    protected LogView logView;
     protected Slider delaySlider;
     protected Slider timelineSlider;
     protected HBox customControlBox;
@@ -177,6 +177,7 @@ public abstract class BaseController<S> implements Initializable {
         EventReducer<S> liveReducer = reducerFactory.get();
         running.set(true);
         paused.set(false);
+        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
         appendLog("Started: " + algorithmId);
 
@@ -195,6 +196,14 @@ public abstract class BaseController<S> implements Initializable {
 
     protected final <T> T module(String key, Class<T> contract) {
         return MODULE_REGISTRY.create(key, contract);
+    }
+
+    protected final List<String> registeredAlgorithmIds(String family, String valueType) {
+        return MODULE_REGISTRY.algorithmIds(family, valueType);
+    }
+
+    protected final List<String> registeredStructureTypes(String family) {
+        return MODULE_REGISTRY.structureTypeSignatures(family);
     }
 
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */
@@ -241,6 +250,7 @@ public abstract class BaseController<S> implements Initializable {
         currentSession = null;
         running.set(false);
         paused.set(false);
+        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
     }
 
@@ -253,6 +263,7 @@ public abstract class BaseController<S> implements Initializable {
                 replayController.play();
                 paused.set(false);
             }
+            visualizer.setPlaybackPaused(paused.get());
             refreshStatsDisplay();
             return;
         }
@@ -266,6 +277,7 @@ public abstract class BaseController<S> implements Initializable {
             currentSession.pauseExecution();
             paused.set(true);
         }
+        visualizer.setPlaybackPaused(paused.get());
         updatePlaybackButtonState();
     }
 
@@ -276,6 +288,7 @@ public abstract class BaseController<S> implements Initializable {
         if (replayController.isPlaying()) {
             replayController.pause();
             paused.set(true);
+            visualizer.setPlaybackPaused(true);
             refreshStatsDisplay();
             return;
         }
@@ -287,6 +300,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         replayController.play();
         paused.set(false);
+        visualizer.setPlaybackPaused(false);
         refreshStatsDisplay();
     }
 
@@ -304,6 +318,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         boolean advanced = replayController.stepForward();
         paused.set(true);
+        visualizer.setPlaybackPaused(true);
         if (advanced) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
@@ -318,6 +333,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         boolean rewound = replayController.stepBackward();
         paused.set(true);
+        visualizer.setPlaybackPaused(true);
         if (rewound) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
@@ -337,6 +353,7 @@ public abstract class BaseController<S> implements Initializable {
             return;
         }
         paused.set(true);
+        visualizer.setPlaybackPaused(true);
         syncTimelineSlider(index, size);
     }
 
@@ -399,6 +416,7 @@ public abstract class BaseController<S> implements Initializable {
         session.close();
         running.set(false);
         paused.set(false);
+        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
         currentSession = null;
         EventReducer<S> reducer = reducerFactory.get();
@@ -440,10 +458,12 @@ public abstract class BaseController<S> implements Initializable {
         if (!(envelope.event() instanceof LogEvent logEvent)) {
             return;
         }
-        String prefix = logEvent.tag().isBlank()
-                ? logEvent.level().name()
-                : logEvent.level().name() + "/" + logEvent.tag();
-        appendLog(prefix + ": " + logEvent.message());
+        Runnable task = () -> logView.append(logEvent);
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
     }
 
     private void renderLiveState(S state) {
@@ -683,29 +703,14 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     protected final void appendLog(String message) {
-        if (logArea == null) {
+        if (logView == null) {
             return;
         }
-        Runnable task = () -> logArea.appendText(
-                String.format("[%tT] %s%n", System.currentTimeMillis(), message));
+        Runnable task = () -> logView.append(com.majortom.algorithms.core.logging.LogLevel.INFO, "CLIENT", message);
         if (Platform.isFxApplicationThread()) {
             task.run();
         } else {
             Platform.runLater(task);
-        }
-    }
-
-    public final void dispatchVisualizerAction(VisualizationActionType actionType) {
-        dispatchVisualizerEvent(buildVisualizationEvent(actionType, Map.of()));
-    }
-
-    public final void dispatchVisualizerAction(VisualizationActionType actionType, Map<String, Object> metadata) {
-        dispatchVisualizerEvent(buildVisualizationEvent(actionType, metadata));
-    }
-
-    public final void dispatchVisualizerEvent(VisualizationEvent event) {
-        if (visualizer != null) {
-            visualizer.onControlAction(event);
         }
     }
 
@@ -752,13 +757,6 @@ public abstract class BaseController<S> implements Initializable {
         clearGlobalButtonActions();
     }
 
-    private VisualizationEvent buildVisualizationEvent(
-            VisualizationActionType actionType,
-            Map<String, Object> metadata) {
-        return VisualizationEvent.of(
-                actionType, moduleId(), getClass().getSimpleName(), running.get(), paused.get(), metadata);
-    }
-
     protected void refreshStatsDisplay() {
         if (statsLabel != null) {
             String message = formatStatsMessage();
@@ -794,53 +792,29 @@ public abstract class BaseController<S> implements Initializable {
 
     private void setupGlobalButtonActions() {
         if (startBtn != null) {
-            startBtn.setOnAction(event -> {
-                dispatchVisualizerAction(VisualizationActionType.EXECUTION_START);
-                handleAlgorithmStart();
-            });
+            startBtn.setOnAction(event -> handleAlgorithmStart());
         }
         if (pauseBtn != null) {
-            pauseBtn.setOnAction(event -> {
-                VisualizationActionType action = VisualizationActionType.EXECUTION_PAUSE;
-                if (paused.get()) {
-                    action = VisualizationActionType.EXECUTION_RESUME;
-                }
-                dispatchVisualizerAction(action);
-                togglePause();
-            });
+            pauseBtn.setOnAction(event -> togglePause());
         }
         if (resetBtn != null) {
-            resetBtn.setOnAction(event -> {
-                dispatchVisualizerAction(VisualizationActionType.EXECUTION_RESET);
-                reset();
-            });
+            resetBtn.setOnAction(event -> reset());
         }
         if (replayBtn != null) {
-            replayBtn.setOnAction(event -> {
-                VisualizationActionType action = VisualizationActionType.EXECUTION_RESUME;
-                if (replayController != null && replayController.isPlaying()) {
-                    action = VisualizationActionType.EXECUTION_PAUSE;
-                }
-                dispatchVisualizerAction(action);
-                toggleReplay();
-            });
+            replayBtn.setOnAction(event -> toggleReplay());
         }
         if (stepBackwardBtn != null) {
             stepBackwardBtn.setOnAction(event -> {
-                if (isRunning()) {
-                    return;
+                if (!isRunning()) {
+                    stepBackward();
                 }
-                dispatchVisualizerAction(VisualizationActionType.EXECUTION_PAUSE);
-                stepBackward();
             });
         }
         if (stepForwardBtn != null) {
             stepForwardBtn.setOnAction(event -> {
-                if (isRunning() && !isPaused()) {
-                    return;
+                if (!isRunning() || isPaused()) {
+                    stepForward();
                 }
-                dispatchVisualizerAction(VisualizationActionType.EXECUTION_PAUSE);
-                stepForward();
             });
         }
         if (exportBtn != null) {
@@ -901,7 +875,7 @@ public abstract class BaseController<S> implements Initializable {
     public final void setUIReferences(WorkbenchControls controls) {
         Objects.requireNonNull(controls, "controls");
         this.statsLabel = controls.statsLabel();
-        this.logArea = controls.logArea();
+        this.logView = controls.logView();
         this.delaySlider = controls.delaySlider();
         this.timelineSlider = controls.timelineSlider();
         this.customControlBox = controls.customControlBox();
@@ -933,8 +907,8 @@ public abstract class BaseController<S> implements Initializable {
     public final void reset() {
         stopAlgorithm();
         clearExecutionState();
-        if (logArea != null) {
-            logArea.clear();
+        if (logView != null) {
+            logView.getItems().clear();
         }
         resetModuleState();
         dispatchVisualizerReset();

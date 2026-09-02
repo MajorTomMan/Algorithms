@@ -14,14 +14,18 @@ public final class ExecutionEvents {
     public static void emit(ExecutionEvent event) {
         Objects.requireNonNull(event);
         RuntimeEventContext c = CURRENT.get();
-        if (c == null) return;
+        if (c == null) {
+            return;
+        }
         domainCheckpoint(c);
         c.emit(event);
     }
 
     public static void checkpoint() {
         RuntimeEventContext c = CURRENT.get();
-        if (c == null) return;
+        if (c == null) {
+            return;
+        }
         try {
             c.checkpoint();
         } catch (InterruptedException e) {
@@ -56,10 +60,15 @@ public final class ExecutionEvents {
         }
 
         public void close() {
-            if (closed) return;
+            if (closed) {
+                return;
+            }
             closed = true;
-            if (previous == null) CURRENT.remove();
-            else CURRENT.set(previous);
+            if (previous == null) {
+                CURRENT.remove();
+            } else {
+                CURRENT.set(previous);
+            }
         }
     }
 }

@@ -10,7 +10,6 @@ import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.library.tree.AvlTreeCommands;
 import com.majortom.algorithms.library.tree.AvlTreeInput;
 import com.majortom.algorithms.utils.EffectUtils;
-import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -38,6 +37,7 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<BinaryTreeSnapshot<Integer>>, SnapshotAlgorithmInputSupport<BinaryTreeSnapshot<Integer>> {
 
     private final MutableAvlTree<Integer> tree;
+    private final List<String> algorithmIds;
     private StructureSnapshot<BinaryTreeSnapshot<Integer>> algorithmInputSnapshot;
 
     @FXML private Label structureLabel;
@@ -57,6 +57,7 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     @SuppressWarnings("unchecked")
     public TreeController() {
         super(new TreeVisualizer(), "/fxml/TreeControls.fxml");
+        algorithmIds = registeredAlgorithmIds("tree", "Integer");
         tree = module("structure.tree.Integer", MutableAvlTree.class);
         Random random = new Random();
         while (tree.size() < 12) {
@@ -78,7 +79,6 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (values.isEmpty()) {
             return;
         }
-        dispatchVisualizerAction(VisualizationActionType.TREE_INSERT, java.util.Map.of("count", values.size()));
         if (executeStructureOperation("insert", () -> {
             for (Integer value : values) {
                 tree.insert(value);
@@ -96,7 +96,6 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (values.isEmpty()) {
             return;
         }
-        dispatchVisualizerAction(VisualizationActionType.TREE_DELETE, java.util.Map.of("count", values.size()));
         if (executeStructureOperation("remove", () -> {
             for (Integer value : values) {
                 tree.remove(value);
@@ -153,7 +152,6 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (oldValue.equals(newValue)) {
             return;
         }
-        dispatchVisualizerAction(VisualizationActionType.TREE_DELETE, java.util.Map.of("count", 2));
         if (executeStructureOperation("update", () -> {
             tree.remove(oldValue);
             tree.insert(newValue);
@@ -168,7 +166,6 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     @FXML
     private void handleRandom() {
         valueField.setText(String.valueOf(new Random().nextInt(100)));
-        dispatchVisualizerAction(VisualizationActionType.TREE_RANDOM);
     }
 
     private List<Integer> parseValues(String input) {
@@ -235,11 +232,12 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
-        if (!"tree-avl".equals(algorithmId)) {
+        int index = algorithmIds.indexOf(algorithmId);
+        if (index < 0) {
             return false;
         }
         if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().selectFirst();
+            algorithmSelector.getSelectionModel().select(index);
         }
         return true;
     }
@@ -427,7 +425,9 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
                 () -> FXCollections.observableArrayList(I18N.text("label.tree.structure.avl")),
                 I18N.localeProperty()));
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text(AlgorithmLabels.key("tree-avl"))),
+                () -> FXCollections.observableArrayList(algorithmIds.stream()
+                        .map(id -> I18N.text(AlgorithmLabels.key(id)))
+                        .toList()),
                 I18N.localeProperty()));
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();

@@ -1674,3 +1674,44 @@
     -fx-text-fill: #8e99a8;
     -fx-padding: 1 0 0 0;
 }
+
+.log-view {
+    -fx-background-color: #0c1319;
+    -fx-border-color: #2a3740;
+    -fx-border-width: 1px;
+    -fx-padding: 2px;
+}
+
+.log-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 3px 6px;
+}
+
+.log-line {
+    -fx-line-spacing: 2px;
+}
+
+.log-prefix,
+.log-message {
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 11px;
+}
+
+.log-prefix-debug { -fx-fill: #7c8790; }
+.log-prefix-info { -fx-fill: #5aa1ff; }
+.log-prefix-warn { -fx-fill: #ffd75a; }
+.log-prefix-error { -fx-fill: #ff6666; }
+.log-message { -fx-fill: #c7d1d8; }
+
+.value-type-box {
+    -fx-padding: 0 0 0 8px;
+}
+
+.value-type-label {
+    -fx-text-fill: #9eabb4;
+    -fx-font-size: 11px;
+}
+
+.value-type-selector {
+    -fx-font-size: 11px;
+}

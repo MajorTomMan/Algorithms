@@ -47,7 +47,6 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
                 if (x > width - entryWidth) break;
             }
         }
-        drawTransientFeedbackOverlay();
     }
 
     private static List<List<HashTableSnapshot.Entry<String, Integer>>> buckets(HashTableSnapshot<String, Integer> snapshot) {
