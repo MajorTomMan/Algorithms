@@ -31,7 +31,7 @@ public final class AvlTreeEventReducer implements EventReducer<AvlTreeViewState>
         }
 
         if (payload instanceof TreeStructureEvent treeEvent) {
-            if (previous.phase() == AvlTreeViewState.Phase.EMPTY) {
+            if (previous.phase() == AvlTreeViewState.Phase.IDLE) {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
             return reduceStructureEvent(previous, treeEvent);

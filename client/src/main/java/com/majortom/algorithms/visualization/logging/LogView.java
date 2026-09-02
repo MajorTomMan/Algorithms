@@ -5,6 +5,8 @@ import com.majortom.algorithms.core.logging.LogLevel;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
@@ -58,14 +60,21 @@ public final class LogView extends ListView<LogView.Line> {
                 return;
             }
 
-            String tag = line.tag().isBlank() ? "" : "/" + line.tag();
-            Text prefix = new Text("[" + line.time() + "][" + line.level().name() + tag + "] ");
-            prefix.getStyleClass().addAll("log-prefix", "log-prefix-" + line.level().name().toLowerCase());
-            Text message = new Text(line.message());
+            Region bullet = new Region();
+            bullet.getStyleClass().addAll("log-bullet", "log-bullet-" + line.level().name().toLowerCase());
+
+            Text time = new Text(line.time() + "  ");
+            time.getStyleClass().add("log-time");
+            String tag = line.tag().isBlank() ? "" : line.tag() + ": ";
+            Text message = new Text(tag + line.message());
             message.getStyleClass().add("log-message");
-            TextFlow flow = new TextFlow(prefix, message);
+            TextFlow flow = new TextFlow(time, message);
             flow.getStyleClass().add("log-line");
-            setGraphic(flow);
+
+            HBox row = new HBox(6, bullet, flow);
+            row.setAlignment(Pos.TOP_LEFT);
+            row.getStyleClass().add("log-row");
+            setGraphic(row);
             setAlignment(Pos.TOP_LEFT);
         }
     }

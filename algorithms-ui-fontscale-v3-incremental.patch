@@ -1,0 +1,660 @@
+diff --git a/client/src/main/java/com/majortom/algorithms/visualization/impl/controller/MainController.java b/client/src/main/java/com/majortom/algorithms/visualization/impl/controller/MainController.java
+index 1ccf4f9..014d763 100644
+--- a/client/src/main/java/com/majortom/algorithms/visualization/impl/controller/MainController.java
++++ b/client/src/main/java/com/majortom/algorithms/visualization/impl/controller/MainController.java
+@@ -38,6 +38,8 @@ import javafx.scene.layout.Region;
+ import javafx.scene.layout.StackPane;
+ import javafx.scene.layout.VBox;
+ import javafx.scene.shape.Rectangle;
++import javafx.scene.input.KeyCode;
++import javafx.scene.input.KeyEvent;
+ 
+ import java.net.URL;
+ import java.time.ZoneId;
+@@ -48,6 +50,7 @@ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
+ import java.util.ResourceBundle;
++import java.util.prefs.Preferences;
+ 
+ /**
+  * 单 Workbench JavaFX 外壳。
+@@ -68,6 +71,11 @@ public class MainController implements Initializable {
+             DateTimeFormatter.ofPattern("HH:mm:ss");
+     private static final List<String> OFFICIAL_VALUE_TYPES = List.of(
+             "Integer", "Long", "Double", "Float", "Boolean", "Character", "Byte", "Short", "String");
++    private static final List<Integer> UI_FONT_SCALES = List.of(90, 100, 110, 125, 140);
++    private static final int DEFAULT_UI_FONT_SCALE = 125;
++    private static final double BASE_UI_FONT_SIZE = 13.0d;
++    private static final String UI_FONT_SCALE_PREFERENCE = "ui.font.scale";
++    private static final Preferences UI_PREFERENCES = Preferences.userNodeForPackage(MainController.class);
+ 
+     @FXML
+     private BorderPane rootPane;
+@@ -88,6 +96,10 @@ public class MainController implements Initializable {
+     @FXML
+     private Button langBtn;
+     @FXML
++    private Label fontScaleLabel;
++    @FXML
++    private ComboBox<String> fontScaleSelector;
++    @FXML
+     private HBox valueTypeBox;
+     @FXML
+     private Label valueTypeLabel;
+@@ -243,6 +255,7 @@ public class MainController implements Initializable {
+     private String selectedHashKeyType;
+     private String selectedHashValueType;
+     private boolean updatingValueTypeSelectors;
++    private int uiFontScale = DEFAULT_UI_FONT_SCALE;
+     private boolean updatingAlgorithmInputSelector;
+     private BaseController<?> currentSubController;
+     private WorkbenchModuleDefinition activeDefinition;
+@@ -255,6 +268,7 @@ public class MainController implements Initializable {
+         }
+ 
+         setupI18n();
++        setupFontScaleSelector();
+         setupStatsView();
+         setupTransportButtons();
+         setupValueTypeSelectors();
+@@ -275,6 +289,7 @@ public class MainController implements Initializable {
+         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
+         valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
+         hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
++        fontScaleLabel.textProperty().bind(I18N.createStringBinding("label.ui_font_scale"));
+         structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
+         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
+         structureWorkspaceTitleLabel.textProperty().bind(
+@@ -327,6 +342,90 @@ public class MainController implements Initializable {
+     }
+ 
+ 
++    private void setupFontScaleSelector() {
++        if (fontScaleSelector == null || rootPane == null) {
++            return;
++        }
++        List<String> options = new ArrayList<>();
++        for (int scale : UI_FONT_SCALES) {
++            options.add(scale + "%");
++        }
++        fontScaleSelector.getItems().setAll(options);
++
++        int savedScale = UI_PREFERENCES.getInt(UI_FONT_SCALE_PREFERENCE, DEFAULT_UI_FONT_SCALE);
++        if (!UI_FONT_SCALES.contains(savedScale)) {
++            savedScale = DEFAULT_UI_FONT_SCALE;
++        }
++        fontScaleSelector.getSelectionModel().select(savedScale + "%");
++        applyUiFontScale(savedScale, false);
++
++        fontScaleSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
++            int scale = parseUiFontScale(newValue);
++            applyUiFontScale(scale, true);
++        });
++        rootPane.addEventFilter(KeyEvent.KEY_PRESSED, this::handleUiFontScaleShortcut);
++    }
++
++    private int parseUiFontScale(String value) {
++        if (value == null || value.isBlank()) {
++            return DEFAULT_UI_FONT_SCALE;
++        }
++        try {
++            return Integer.parseInt(value.replace("%", "").trim());
++        } catch (NumberFormatException ignored) {
++            return DEFAULT_UI_FONT_SCALE;
++        }
++    }
++
++    private void applyUiFontScale(int scale, boolean persist) {
++        if (!UI_FONT_SCALES.contains(scale)) {
++            scale = DEFAULT_UI_FONT_SCALE;
++        }
++        uiFontScale = scale;
++        double fontSize = BASE_UI_FONT_SIZE * scale / 100.0d;
++        rootPane.setStyle(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", fontSize));
++        updateResponsiveLayout(rootPane.getWidth());
++        rootPane.requestLayout();
++        if (persist) {
++            UI_PREFERENCES.putInt(UI_FONT_SCALE_PREFERENCE, scale);
++        }
++    }
++
++    private void handleUiFontScaleShortcut(KeyEvent event) {
++        if (!event.isControlDown()) {
++            return;
++        }
++        KeyCode code = event.getCode();
++        if (code == KeyCode.EQUALS || code == KeyCode.ADD) {
++            changeUiFontScale(1);
++            event.consume();
++            return;
++        }
++        if (code == KeyCode.MINUS || code == KeyCode.SUBTRACT) {
++            changeUiFontScale(-1);
++            event.consume();
++            return;
++        }
++        if (code == KeyCode.DIGIT0 || code == KeyCode.NUMPAD0) {
++            selectUiFontScale(DEFAULT_UI_FONT_SCALE);
++            event.consume();
++        }
++    }
++
++    private void changeUiFontScale(int direction) {
++        int currentScale = parseUiFontScale(fontScaleSelector.getValue());
++        int index = UI_FONT_SCALES.indexOf(currentScale);
++        if (index < 0) {
++            index = UI_FONT_SCALES.indexOf(DEFAULT_UI_FONT_SCALE);
++        }
++        int nextIndex = Math.max(0, Math.min(UI_FONT_SCALES.size() - 1, index + direction));
++        selectUiFontScale(UI_FONT_SCALES.get(nextIndex));
++    }
++
++    private void selectUiFontScale(int scale) {
++        fontScaleSelector.getSelectionModel().select(scale + "%");
++    }
++
+     private void setupStatsView() {
+         if (statsLabel == null || statsRows == null) {
+             return;
+@@ -872,10 +971,14 @@ public class MainController implements Initializable {
+         rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
+         snapshotPanel.setManaged(true);
+         snapshotPanel.setVisible(true);
+-        snapshotPanel.setPrefWidth(nextNarrowLayout ? 154.0d : nextCompactLayout ? 168.0d : 184.0d);
++        double sidePanelWidth = nextNarrowLayout ? 184.0d : nextCompactLayout ? 202.0d : 232.0d;
++        if (uiFontScale >= 140) {
++            sidePanelWidth += 12.0d;
++        }
++        snapshotPanel.setPrefWidth(sidePanelWidth);
++        diagnosticsPanel.setPrefWidth(sidePanelWidth);
+         resizeRail(structureControlRail, nextCompactLayout);
+         resizeRail(algorithmControlRail, nextCompactLayout);
+-        resizeRail(diagnosticsPanel, nextCompactLayout);
+         setControlVisibility(langBtn, !nextNarrowLayout);
+     }
+ 
+@@ -891,11 +994,14 @@ public class MainController implements Initializable {
+         if (rail == null) {
+             return;
+         }
+-        if (compact) {
+-            rail.setPrefWidth(172.0d);
+-            return;
++        double width = compact ? 182.0d : 196.0d;
++        if (uiFontScale >= 125) {
++            width += 8.0d;
++        }
++        if (uiFontScale >= 140) {
++            width += 8.0d;
+         }
+-        rail.setPrefWidth(182.0d);
++        rail.setPrefWidth(Math.min(220.0d, width));
+     }
+ 
+     private void setControlVisibility(Node control, boolean visible) {
+diff --git a/client/src/main/resources/fxml/MainControls.fxml b/client/src/main/resources/fxml/MainControls.fxml
+index fa793e7..e8af0fd 100644
+--- a/client/src/main/resources/fxml/MainControls.fxml
++++ b/client/src/main/resources/fxml/MainControls.fxml
+@@ -15,7 +15,7 @@
+             <BorderPane fx:id="topBar" minHeight="56.0" prefHeight="56.0" maxHeight="56.0"
+                 styleClass="top-bar">
+                 <left>
+-                    <HBox minWidth="278.0" prefWidth="278.0" maxWidth="278.0" alignment="CENTER_LEFT" spacing="10">
++                    <HBox minWidth="240.0" prefWidth="390.0" alignment="CENTER_LEFT" spacing="10">
+                         <Label text="◉" styleClass="brand-glyph" />
+                         <Label fx:id="menuTitleLabel" styleClass="brand-title" />
+                     </HBox>
+@@ -29,13 +29,17 @@
+                     </HBox>
+                 </center>
+                 <right>
+-                    <HBox minWidth="278.0" prefWidth="278.0" maxWidth="278.0" alignment="CENTER_RIGHT" spacing="8">
++                    <HBox minWidth="240.0" prefWidth="390.0" alignment="CENTER_RIGHT" spacing="8">
+                         <HBox fx:id="valueTypeBox" alignment="CENTER_RIGHT" spacing="6" styleClass="value-type-box">
+                             <Label fx:id="valueTypeLabel" styleClass="value-type-label" />
+                             <ComboBox fx:id="valueTypeSelector" prefWidth="108.0" styleClass="value-type-selector" />
+                             <Label fx:id="hashValueTypeLabel" styleClass="value-type-label" />
+                             <ComboBox fx:id="hashValueTypeSelector" prefWidth="108.0" styleClass="value-type-selector" />
+                         </HBox>
++                        <HBox alignment="CENTER_RIGHT" spacing="5" styleClass="font-scale-box">
++                            <Label fx:id="fontScaleLabel" styleClass="font-scale-label" />
++                            <ComboBox fx:id="fontScaleSelector" prefWidth="92.0" styleClass="font-scale-selector" />
++                        </HBox>
+                         <Button fx:id="langBtn" text="EN / 中文" onAction="#toggleLanguage"
+                             styleClass="shell-toggle-button" />
+                     </HBox>
+@@ -102,7 +106,7 @@
+                         </StackPane>
+                     </VBox>
+ 
+-                    <VBox fx:id="snapshotPanel" minWidth="176.0" prefWidth="196.0" maxWidth="226.0"
++                    <VBox fx:id="snapshotPanel" minWidth="176.0" prefWidth="232.0" maxWidth="260.0"
+                         styleClass="workbench-card">
+                         <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="side-tab-pane">
+                             <tabs>
+@@ -235,7 +239,7 @@
+                         </StackPane>
+                     </VBox>
+ 
+-                    <VBox fx:id="diagnosticsPanel" minWidth="176.0" prefWidth="204.0" maxWidth="236.0"
++                    <VBox fx:id="diagnosticsPanel" minWidth="176.0" prefWidth="232.0" maxWidth="260.0"
+                         styleClass="workbench-card">
+                         <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="side-tab-pane diagnostics-tabs">
+                             <tabs>
+diff --git a/client/src/main/resources/language/language_en.properties b/client/src/main/resources/language/language_en.properties
+index 5e622da..f96ff05 100644
+--- a/client/src/main/resources/language/language_en.properties
++++ b/client/src/main/resources/language/language_en.properties
+@@ -321,3 +321,5 @@ message.value_type.unavailable=Value type {0} is not registered for this structu
+ label.workspace.structure.history.short=History
+ 
+ label.panel.log.short=Log
++
++label.ui_font_scale=Font
+diff --git a/client/src/main/resources/language/language_zh.properties b/client/src/main/resources/language/language_zh.properties
+index 1b28474..44d1ea1 100644
+--- a/client/src/main/resources/language/language_zh.properties
++++ b/client/src/main/resources/language/language_zh.properties
+@@ -322,3 +322,5 @@ message.value_type.unavailable=当前结构未注册 {0} 类型实现。
+ label.workspace.structure.history.short=历史
+ 
+ label.panel.log.short=日志
++
++label.ui_font_scale=字号
+diff --git a/client/src/main/resources/style/theme.css b/client/src/main/resources/style/theme.css
+index e317380..18c0693 100644
+--- a/client/src/main/resources/style/theme.css
++++ b/client/src/main/resources/style/theme.css
+@@ -1726,7 +1726,7 @@
+ .root-pane {
+     -fx-background-color: #070d12;
+     -fx-font-family: "Segoe UI", "Microsoft YaHei", "Consolas";
+-    -fx-font-size: 12px;
++    -fx-font-size: 13px;
+ }
+ 
+ .top-shell,
+@@ -1745,13 +1745,13 @@
+ 
+ .brand-glyph {
+     -fx-text-fill: #8d9aa4;
+-    -fx-font-size: 17px;
++    -fx-font-size: 1.25em;
+     -fx-font-family: "Segoe UI Symbol", "Segoe UI";
+ }
+ 
+ .brand-title {
+     -fx-text-fill: #e8edf0;
+-    -fx-font-size: 15px;
++    -fx-font-size: 1.15em;
+     -fx-font-weight: bold;
+ }
+ 
+@@ -1771,7 +1771,7 @@
+     -fx-border-width: 0 0 2px 0;
+     -fx-border-radius: 0;
+     -fx-text-fill: #8e9aa3;
+-    -fx-font-size: 13px;
++    -fx-font-size: 1.00em;
+     -fx-font-weight: bold;
+ }
+ 
+@@ -1792,15 +1792,14 @@
+ 
+ .value-type-label {
+     -fx-text-fill: #687680;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+-.value-type-selector,
+-.value-type-selector .list-cell {
++.value-type-selector {
+     -fx-background-color: #0d151b;
+     -fx-border-color: #28343d;
+     -fx-text-fill: #c7d0d6;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .shell-toggle-button {
+@@ -1814,7 +1813,7 @@
+     -fx-border-radius: 4px;
+     -fx-background-radius: 4px;
+     -fx-text-fill: #aeb9c0;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .workspace-layer {
+@@ -1869,13 +1868,13 @@
+ .tab-title,
+ .timeline-title {
+     -fx-text-fill: #dde4e8;
+-    -fx-font-size: 12px;
++    -fx-font-size: 0.95em;
+     -fx-font-weight: bold;
+ }
+ 
+ .card-chevron {
+     -fx-text-fill: #75838d;
+-    -fx-font-size: 12px;
++    -fx-font-size: 0.95em;
+ }
+ 
+ .visualizer-card-separator {
+@@ -1885,7 +1884,7 @@
+ .visualizer-card-meta,
+ .algorithm-input-source {
+     -fx-text-fill: #788790;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .panel-scroll-pane,
+@@ -1915,7 +1914,7 @@
+     -fx-border-width: 1px;
+     -fx-border-radius: 4px;
+     -fx-text-fill: #aeb9c0;
+-    -fx-font-size: 11px;
++    -fx-font-size: 0.90em;
+     -fx-font-weight: normal;
+     -fx-alignment: CENTER_LEFT;
+ }
+@@ -1941,7 +1940,7 @@
+     -fx-pref-width: 22px;
+     -fx-alignment: CENTER;
+     -fx-text-fill: #87949d;
+-    -fx-font-size: 18px;
++    -fx-font-size: 1.30em;
+     -fx-font-family: "Segoe UI Symbol", "Segoe UI", "Microsoft YaHei";
+ }
+ 
+@@ -1984,7 +1983,7 @@
+ 
+ .control-label {
+     -fx-text-fill: #c8d1d7;
+-    -fx-font-size: 11px;
++    -fx-font-size: 0.90em;
+     -fx-font-weight: bold;
+ }
+ 
+@@ -1996,12 +1995,12 @@
+ .operation-hint,
+ .runtime-scale-label {
+     -fx-text-fill: #71808a;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .operation-value {
+     -fx-text-fill: #eac33f;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .operation-input,
+@@ -2017,7 +2016,7 @@
+ .operation-button {
+     -fx-min-height: 31px;
+     -fx-pref-height: 31px;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+     -fx-background-radius: 4px;
+     -fx-border-radius: 4px;
+ }
+@@ -2095,7 +2094,7 @@
+     -fx-border-radius: 4px;
+     -fx-background-radius: 4px;
+     -fx-text-fill: #b7c2c9;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .snapshot-save-button:hover {
+@@ -2121,13 +2120,13 @@
+ 
+ .snapshot-card-title {
+     -fx-text-fill: #dce4e8;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .snapshot-card-state,
+ .snapshot-card-input-state {
+     -fx-text-fill: #64a2ff;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .snapshot-card-detail,
+@@ -2135,14 +2134,14 @@
+ .snapshot-empty,
+ .panel-kicker {
+     -fx-text-fill: #6f7e88;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .snapshot-card-action {
+     -fx-min-width: 0;
+     -fx-min-height: 25px;
+     -fx-padding: 4px 6px;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+ }
+ 
+ .stats-scroll-pane {
+@@ -2153,7 +2152,7 @@
+ .stats-text {
+     -fx-text-fill: #b9c5cc;
+     -fx-font-family: "Consolas", "Microsoft YaHei", "Segoe UI";
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+     -fx-line-spacing: 4px;
+     -fx-padding: 4px;
+ }
+@@ -2166,7 +2165,7 @@
+ 
+ .panel-kicker-blue {
+     -fx-text-fill: #4d94ff;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+ }
+ 
+ .structure-timeline-dock,
+@@ -2212,7 +2211,7 @@
+ .timeline-count,
+ .timeline-scale-label {
+     -fx-text-fill: #697883;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .bottom-dock {
+@@ -2235,7 +2234,7 @@
+     -fx-min-width: 54px;
+     -fx-pref-width: 64px;
+     -fx-padding: 4px 7px;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+     -fx-background-radius: 4px;
+     -fx-border-radius: 4px;
+ }
+@@ -2293,7 +2292,7 @@
+     -fx-min-height: 38px;
+     -fx-pref-height: 40px;
+     -fx-padding: 6px 7px;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .root-pane:compact-layout .snapshot-panel,
+@@ -2307,7 +2306,7 @@
+ 
+ .sidebar-catalog-text {
+     -fx-text-fill: #aeb9c0;
+-    -fx-font-size: 11px;
++    -fx-font-size: 0.90em;
+ }
+ 
+ .sidebar-catalog-button:selected .sidebar-catalog-text {
+@@ -2330,13 +2329,13 @@
+ 
+ .context-value-label {
+     -fx-text-fill: #c8d2d8;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+     -fx-font-weight: bold;
+ }
+ 
+ .algorithm-context-hint {
+     -fx-text-fill: #657580;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+     -fx-padding: 1px 0 0 0;
+ }
+ 
+@@ -2365,7 +2364,7 @@
+ }
+ 
+ .snapshot-card-title {
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+     -fx-font-weight: bold;
+ }
+ 
+@@ -2375,24 +2374,24 @@
+ 
+ .snapshot-card-input-state {
+     -fx-text-fill: #e7bd36;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+     -fx-font-weight: bold;
+ }
+ 
+ .snapshot-card-time,
+ .snapshot-card-detail {
+     -fx-text-fill: #73818a;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+ }
+ 
+ .snapshot-live-marker {
+     -fx-text-fill: #4b95ff;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .snapshot-saved-marker {
+     -fx-text-fill: #65737c;
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .snapshot-card-action {
+@@ -2404,7 +2403,7 @@
+     -fx-border-radius: 3px;
+     -fx-background-radius: 3px;
+     -fx-text-fill: #9facb4;
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+ }
+ 
+ .snapshot-card-action:hover {
+@@ -2443,7 +2442,7 @@
+ .history-sequence {
+     -fx-text-fill: #56646d;
+     -fx-font-family: "Consolas";
+-    -fx-font-size: 8px;
++    -fx-font-size: 0.75em;
+ }
+ 
+ .stats-panel-content,
+@@ -2465,19 +2464,19 @@
+ 
+ .stats-row-label {
+     -fx-text-fill: #7e8b94;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .stats-row-value {
+     -fx-text-fill: #d7dfe4;
+     -fx-font-family: "Consolas", "Microsoft YaHei";
+-    -fx-font-size: 10px;
++    -fx-font-size: 0.85em;
+ }
+ 
+ .stats-row-message {
+     -fx-padding: 7px 0;
+     -fx-text-fill: #8a98a1;
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+     -fx-border-color: transparent transparent #202b33 transparent;
+     -fx-border-width: 0 0 1px 0;
+ }
+@@ -2521,13 +2520,13 @@
+ .log-time {
+     -fx-fill: #5f6d76;
+     -fx-font-family: "Consolas";
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .log-message {
+     -fx-fill: #b7c2c9;
+     -fx-font-family: "Consolas", "Microsoft YaHei", "Segoe UI";
+-    -fx-font-size: 9px;
++    -fx-font-size: 0.80em;
+ }
+ 
+ .structure-timeline-dots {
+@@ -2564,7 +2563,7 @@
+ .transport-glyph {
+     -fx-text-fill: inherit;
+     -fx-font-family: "Segoe UI Symbol", "Segoe UI";
+-    -fx-font-size: 11px;
++    -fx-font-size: 0.90em;
+     -fx-font-weight: bold;
+ }
+ 
+@@ -2589,3 +2588,36 @@
+ .root-pane:compact-layout .snapshot-card {
+     -fx-padding: 6px;
+ }
++
++
++/* Application text scaling. Concrete visualizer canvases keep their own scale. */
++.font-scale-label {
++    -fx-text-fill: #687680;
++    -fx-font-size: 0.85em;
++}
++
++.font-scale-selector {
++    -fx-background-color: #0d151b;
++    -fx-border-color: #28343d;
++    -fx-text-fill: #c7d0d6;
++    -fx-font-size: 0.85em;
++}
++
++.font-scale-selector .list-cell,
++.value-type-selector .list-cell {
++    -fx-font-size: 1em;
++}
++
++.sidebar-catalog-text {
++    -fx-font-size: 1em;
++}
++
++.transport-glyph {
++    -fx-font-size: 1.05em;
++}
++
++.structure-preview-viewport,
++.visualization-viewport,
++.visualization-container {
++    -fx-font-size: 12px;
++}
