@@ -1,7 +1,7 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.graph.IntGraph;
 
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Typed graph-maze construction events. */
-public sealed interface GraphMazeGenerationEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface GraphMazeGenerationEvent extends ExecutionEvent, StatisticsContribution
         permits GraphMazeGenerationEvent.Initialized,
         GraphMazeGenerationEvent.EdgeAdded,
         GraphMazeGenerationEvent.Completed {

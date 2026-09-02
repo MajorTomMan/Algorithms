@@ -1,9 +1,8 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.AlgorithmInput;
 
 /** Grid dimensions and seed for the graph-maze BFS spanning tree. */
-public record GraphMazeGenerationInput(int rows, int columns, long seed) implements AlgorithmInput {
+public record GraphMazeGenerationInput(int rows, int columns, long seed) {
 
     public GraphMazeGenerationInput {
         if (rows < 1 || columns < 1) {

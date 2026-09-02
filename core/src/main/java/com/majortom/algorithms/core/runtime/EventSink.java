@@ -6,7 +6,7 @@ import java.util.Objects;
 @FunctionalInterface
 public interface EventSink {
 
-    void accept(ExecutionEvent event);
+    void accept(EventEnvelope event);
 
     static EventSink noop() {
         return event -> {

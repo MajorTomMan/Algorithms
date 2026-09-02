@@ -46,7 +46,7 @@ public final class JsonExecutionExporter implements ExecutionExporter {
         Files.createDirectories(exportDirectory);
         String timestamp = LocalDateTime.now(clock)
                 .format(FILE_TIMESTAMP);
-        Path file = exportDirectory.resolve(record.moduleId() + "_" + record.algorithmId()
+        Path file = exportDirectory.resolve(record.moduleId() + "_" + record.operationId()
                 + "_" + timestamp + "_" + safeFilePart(record.recording().runId()) + ".json");
         try (OutputStream output = Files.newOutputStream(
                 file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {

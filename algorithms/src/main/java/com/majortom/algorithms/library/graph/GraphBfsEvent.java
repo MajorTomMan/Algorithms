@@ -1,14 +1,14 @@
 package com.majortom.algorithms.library.graph;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /** Typed BFS events sufficient to replay traversal state. */
-public sealed interface GraphBfsEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface GraphBfsEvent extends ExecutionEvent, StatisticsContribution
         permits GraphBfsEvent.Initialized, GraphBfsEvent.Discovered,
         GraphBfsEvent.Entered, GraphBfsEvent.EdgeExamined,
         GraphBfsEvent.Visited, GraphBfsEvent.Completed {

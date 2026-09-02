@@ -1,29 +1,32 @@
 package com.majortom.algorithms.library.sort;
 
+import com.majortom.algorithms.library.structure.ArrayStructure;
+
 import java.util.ArrayDeque;
 
-/** In-place two-way quicksort with deterministic pivot selection. */
+/** In-place three-way quicksort with deterministic pivot selection. */
 public final class IntegerQuickSort extends AbstractIntegerSort {
 
     @Override
-    protected void sort(IntegerSortSupport sort) throws InterruptedException {
-        quicksortIteratively(sort);
+    public int compare(Integer left, Integer right) {
+        return Integer.compare(left, right);
     }
 
-    private void quicksortIteratively(IntegerSortSupport sort) throws InterruptedException {
+    @Override
+    public void sort(ArrayStructure<Integer> array) {
         ArrayDeque<Range> pending = new ArrayDeque<>();
-        pending.push(new Range(0, sort.size() - 1));
+        pending.push(new Range(0, array.size() - 1));
         while (!pending.isEmpty()) {
             Range range = pending.pop();
             if (range.low() >= range.high()) {
-                if (range.low() >= 0 && range.low() < sort.size()) {
-                    sort.settle(range.low());
+                if (range.low() >= 0 && range.low() < array.size()) {
+                    settle(array, range.low());
                 }
                 continue;
             }
-            sort.selectRange(range.low(), range.high());
-            EqualRange equal = partitionThreeWay(sort, range.low(), range.high());
-            sort.settleRange(equal.low(), equal.high());
+            selectRange(range.low(), range.high());
+            EqualRange equal = partitionThreeWay(array, range.low(), range.high());
+            settleRange(array, equal.low(), equal.high());
             if (range.low() < equal.low() - 1) {
                 pending.push(new Range(range.low(), equal.low() - 1));
             }
@@ -33,22 +36,21 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
         }
     }
 
-    private EqualRange partitionThreeWay(IntegerSortSupport sort, int low, int high)
-            throws InterruptedException {
+    private EqualRange partitionThreeWay(ArrayStructure<Integer> array, int low, int high) {
         int pivotSource = low + (high - low) / 2;
-        int pivot = sort.valueAt(pivotSource);
-        sort.selectPivot(pivotSource, pivot);
+        int pivot = array.get(pivotSource);
+        selectPivot(pivotSource, pivot);
         int lower = low;
         int index = low;
         int upper = high;
         while (index <= upper) {
-            int comparison = sort.compareValue(index, pivotSource, pivot);
+            int comparison = compareValue(array, index, pivotSource, pivot);
             if (comparison < 0) {
-                sort.swap(lower, index);
+                swap(array, lower, index);
                 lower++;
                 index++;
             } else if (comparison > 0) {
-                sort.swap(index, upper);
+                swap(array, index, upper);
                 upper--;
             } else {
                 index++;

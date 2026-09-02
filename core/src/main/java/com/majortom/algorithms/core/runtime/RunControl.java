@@ -1,12 +1,12 @@
 package com.majortom.algorithms.core.runtime;
 
-/**
- * Bound cancellation and checkpoint control for one run.
- *
- * <p>Keeping both responsibilities on one object guarantees that cancellation can wake an
- * execution currently blocked at a checkpoint.</p>
- */
+/** Bound pause/step/cancel control for one ordered run. */
 public interface RunControl extends CancellationToken, ExecutionGate {
+
+    /** Waits until a domain event may be published. A paused run may consume one step permit. */
+    default void awaitDomainEventPermission(CancellationToken cancellationToken) throws InterruptedException {
+        awaitPermission(cancellationToken);
+    }
 
     static RunControl unrestricted() {
         return new RunControl() {

@@ -1,9 +1,9 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.library.graph.GraphBfsEvent;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.graph.IntGraph;
@@ -30,8 +30,8 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
     }
 
     @Override
-    public Reduction<GraphViewState> reduce(GraphViewState previous, ExecutionEvent event) {
-        Object payload = event.payload();
+    public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope event) {
+        Object payload = event.event();
         if (payload instanceof GraphBfsEvent.Initialized initialized) {
             GraphViewState state = new GraphViewState(initialized.graph(),
                     Set.of(initialized.startNode()), Set.of(), List.of(), Map.of(), initialized.startNode(),

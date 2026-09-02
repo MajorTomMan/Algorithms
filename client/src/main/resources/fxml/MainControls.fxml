@@ -88,9 +88,21 @@
                         <Button fx:id="saveSnapshotBtn" onAction="#saveStructureSnapshot"
                             maxWidth="Infinity" styleClass="snapshot-save-button" />
                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-                            VBox.vgrow="ALWAYS" styleClass="snapshot-scroll-pane">
+                            prefHeight="210.0" VBox.vgrow="ALWAYS" styleClass="snapshot-scroll-pane">
                             <content>
                                 <VBox fx:id="snapshotCards" fillWidth="true" spacing="7" />
+                            </content>
+                        </ScrollPane>
+                        <Separator styleClass="workspace-catalog-divider" />
+                        <HBox styleClass="rail-header" alignment="CENTER_LEFT" spacing="6">
+                            <Label fx:id="structureHistoryTitleLabel" styleClass="rail-title" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="structureHistoryCountLabel" styleClass="panel-kicker" />
+                        </HBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                            prefHeight="160.0" VBox.vgrow="ALWAYS" styleClass="snapshot-scroll-pane">
+                            <content>
+                                <VBox fx:id="structureHistoryCards" fillWidth="true" spacing="6" />
                             </content>
                         </ScrollPane>
                     </VBox>
@@ -106,6 +118,7 @@
                     <VBox spacing="2">
                         <Label fx:id="algorithmWorkspaceTitleLabel" styleClass="workspace-title" />
                         <Label fx:id="algorithmWorkspaceSubtitleLabel" styleClass="workspace-subtitle" />
+                        <Label fx:id="algorithmInputSourceLabel" styleClass="algorithm-input-source" />
                     </VBox>
                     <Region HBox.hgrow="ALWAYS" />
                     <Label text="02">

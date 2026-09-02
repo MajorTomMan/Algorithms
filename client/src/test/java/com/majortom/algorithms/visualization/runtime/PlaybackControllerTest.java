@@ -1,10 +1,10 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -79,16 +79,17 @@ class PlaybackControllerTest {
         return !uiTasks.isEmpty();
     }
 
-    private ExecutionEvent event(long sequence) {
-        return new ExecutionEvent(
+    private EventEnvelope event(long sequence) {
+        return new EventEnvelope(
                 "run",
                 "algorithm",
                 sequence,
                 Instant.EPOCH,
+                "algorithm",
                 new PlaybackStep());
     }
 
-    private record PlaybackStep() implements AlgorithmEvent {
+    private record PlaybackStep() implements ExecutionEvent {
     }
 
     private EventReducer<Long> sequenceReducer() {
@@ -99,7 +100,7 @@ class PlaybackControllerTest {
             }
 
             @Override
-            public Reduction<Long> reduce(Long previousState, ExecutionEvent event) {
+            public Reduction<Long> reduce(Long previousState, EventEnvelope event) {
                 return Reduction.changed(event.sequence(), EventImportance.STATE_CHANGE, true);
             }
         };

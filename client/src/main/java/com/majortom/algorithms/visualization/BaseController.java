@@ -1,23 +1,29 @@
 package com.majortom.algorithms.visualization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.majortom.algorithms.core.api.AlgorithmInput;
-import com.majortom.algorithms.core.api.AlgorithmProvider;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionRecording;
 import com.majortom.algorithms.core.runtime.ExecutionRecordingState;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.logging.LogEvent;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
-import com.majortom.algorithms.library.catalog.ProviderCatalog;
-import com.majortom.algorithms.core.runtime.EventReducer;
+import com.majortom.algorithms.core.registry.ModuleLoader;
+import com.majortom.algorithms.core.registry.ModuleRegistry;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ExecutionSummary;
 import com.majortom.algorithms.core.runtime.ExecutionTiming;
 import com.majortom.algorithms.core.runtime.StatisticsReducer;
+import com.majortom.algorithms.core.runtime.RunControl;
+import com.majortom.algorithms.core.timeline.Timeline;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.execution.ClientExecutionRecord;
 import com.majortom.algorithms.visualization.execution.ClientExecutionService;
@@ -64,11 +70,12 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-/** Shared JavaFX shell around the UI-neutral provider/runtime/event pipeline. */
+/** Shared JavaFX shell around the UI-neutral registry/runtime/event pipeline. */
 public abstract class BaseController<S> implements Initializable {
 
     private static final long LIVE_STATS_REFRESH_INTERVAL_NANOS = 50_000_000L;
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private static final ModuleRegistry MODULE_REGISTRY = ModuleLoader.load();
     private static final RunHistoryService DEFAULT_EXECUTION_HISTORY =
             new InMemoryRunHistoryService(RunHistoryPolicy.desktopDefault());
     private static final InputFingerprint DEFAULT_INPUT_FINGERPRINT =
@@ -102,7 +109,9 @@ public abstract class BaseController<S> implements Initializable {
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
     private final LongProperty structureRevision = new SimpleLongProperty();
+    private final Timeline structureTimeline = new Timeline();
     private S latestViewState;
+    private long liveVisualFrameCount;
     private S latestStructureState;
     private ExecutionHandle currentSession;
     private ClientExecutionRecord lastExecution;
@@ -110,9 +119,9 @@ public abstract class BaseController<S> implements Initializable {
     private PlaybackController<S> replayController;
     private boolean updatingTimelineSlider;
     private long lastLiveStatsRefreshNanos;
-    private final AtomicLong executionDelayMillis = new AtomicLong(50L);
+    private final AtomicLong livePlaybackDelayMillis = new AtomicLong(50L);
     private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
-        executionDelayMillis.set(Math.max(0L, newValue.longValue()));
+        livePlaybackDelayMillis.set(Math.max(0L, newValue.longValue()));
         updatePlaybackSpeed(newValue.doubleValue());
     };
     private final ChangeListener<Number> timelineSliderListener =
@@ -153,17 +162,18 @@ public abstract class BaseController<S> implements Initializable {
 
     protected final void startAlgorithm(
             String algorithmId,
-            AlgorithmInput input,
+            Object input,
+            ExecutionOperation<?> operation,
             Supplier<? extends EventReducer<S>> reducerFactory) {
         if (disposed) {
             throw new IllegalStateException("Controller is disposed");
         }
         stopAlgorithm();
         clearExecutionState();
+        liveVisualFrameCount = 0L;
         lastLiveStatsRefreshNanos = 0L;
         refreshStatsDisplay();
 
-        AlgorithmProvider<?, ?> provider = ProviderCatalog.production().require(algorithmId);
         EventReducer<S> liveReducer = reducerFactory.get();
         running.set(true);
         paused.set(false);
@@ -171,15 +181,56 @@ public abstract class BaseController<S> implements Initializable {
         appendLog("Started: " + algorithmId);
 
         currentSession = execution.start(
-                provider.invoker(),
-                input,
+                algorithmId,
+                operation,
                 liveReducer,
-                this::renderState,
+                this::consumeLiveEvent,
+                this::renderLiveState,
                 this::updateLiveStatistics,
-                executionDelayMillis::get);
+                livePlaybackDelayMillis::get);
         ExecutionHandle session = currentSession;
-        session.completion().whenComplete((result, error) -> Platform.runLater(
+        session.presentationCompletion().whenComplete((result, error) -> Platform.runLater(
                 () -> finishExecution(session, algorithmId, input, reducerFactory, result, error)));
+    }
+
+    protected final <T> T module(String key, Class<T> contract) {
+        return MODULE_REGISTRY.create(key, contract);
+    }
+
+    /** Executes one editable structure mutation through the shared Runtime and records its event history. */
+    protected final boolean executeStructureOperation(String operationId, ExecutionOperation<?> operation) {
+        if (disposed) {
+            throw new IllegalStateException("Controller is disposed");
+        }
+        Objects.requireNonNull(operationId, "operationId");
+        Objects.requireNonNull(operation, "operation");
+        invalidateExecutionForStructureChange();
+        String runtimeOperationId = "structure." + moduleId() + "." + operationId;
+        ExecutionResult result = new ExecutionRuntime().execute(
+                runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), operation);
+        if (result.status() == ExecutionStatus.COMPLETED) {
+            return true;
+        }
+        String message = result.failure().map(failure -> failure.message()).orElse("Structure operation failed");
+        appendLog(message);
+        return false;
+    }
+
+    /** Records a semantic structure-side event without treating it as an input mutation. */
+    public final boolean recordStructureEvent(String operationId, ExecutionEvent event) {
+        Objects.requireNonNull(event, "event");
+        String runtimeOperationId = "structure." + moduleId() + "." + operationId;
+        ExecutionResult result = new ExecutionRuntime().execute(
+                runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), () -> {
+                    ExecutionEvents.emit(event);
+                    return null;
+                });
+        return result.status() == ExecutionStatus.COMPLETED;
+    }
+
+    /** Returns the complete structure-operation history retained by this controller. */
+    public final List<EventEnvelope> structureEvents() {
+        return structureTimeline.events();
     }
 
     public final void stopAlgorithm() {
@@ -215,6 +266,7 @@ public abstract class BaseController<S> implements Initializable {
             currentSession.pauseExecution();
             paused.set(true);
         }
+        updatePlaybackButtonState();
     }
 
     public final void toggleReplay() {
@@ -240,7 +292,14 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Advances one replay frame while leaving playback paused. */
     public final boolean stepForward() {
-        if (!hasExecutionData() || running.get()) {
+        if (running.get()) {
+            if (currentSession == null || !paused.get()) {
+                return false;
+            }
+            currentSession.stepExecution();
+            return true;
+        }
+        if (!hasExecutionData()) {
             return false;
         }
         boolean advanced = replayController.stepForward();
@@ -328,14 +387,14 @@ public abstract class BaseController<S> implements Initializable {
     private void finishExecution(
             ExecutionHandle session,
             String algorithmId,
-            AlgorithmInput input,
+            Object input,
             Supplier<? extends EventReducer<S>> reducerFactory,
             ExecutionResult result,
             Throwable error) {
         if (session != currentSession) {
             return;
         }
-        List<ExecutionEvent> events = session.events();
+        List<EventEnvelope> events = session.events();
         session.closeObserver();
         session.close();
         running.set(false);
@@ -347,11 +406,8 @@ public abstract class BaseController<S> implements Initializable {
         stats = timeline.statistics();
         Duration eventSpan = stats.eventSpan();
         ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
-                ExecutionTiming.of(
-                        eventSpan,
-                        session.totalDuration(),
-                        Optional.empty()));
-        lastExecution = createExecutionRecord(algorithmId, input, result, error, summary, events);
+                ExecutionTiming.of(eventSpan, session.totalDuration()));
+        lastExecution = createExecutionRecord(algorithmId, input, result, error, summary, events, timeline.size());
         lastTimeline = timeline;
         replacePlaybackController(reducer, events);
         if (lastExecution != null) {
@@ -380,8 +436,30 @@ public abstract class BaseController<S> implements Initializable {
         refreshStatsDisplay();
     }
 
+    private void consumeLiveEvent(EventEnvelope envelope) {
+        if (!(envelope.event() instanceof LogEvent logEvent)) {
+            return;
+        }
+        String prefix = logEvent.tag().isBlank()
+                ? logEvent.level().name()
+                : logEvent.level().name() + "/" + logEvent.tag();
+        appendLog(prefix + ": " + logEvent.message());
+    }
+
+    private void renderLiveState(S state) {
+        liveVisualFrameCount++;
+        renderViewState(state);
+    }
+
     private void renderState(S state) {
         renderViewState(state);
+    }
+
+    protected final long visualFrameCount() {
+        if (running.get()) {
+            return liveVisualFrameCount;
+        }
+        return lastTimeline == null ? 0L : lastTimeline.size();
     }
 
     /**
@@ -415,14 +493,19 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Stores an editable structure state without changing the algorithm cursor. */
     protected final void renderStructureState(S state) {
+        storeStructureState(state);
+        if (state != null && visualizer != null) {
+            visualizer.render(state);
+        }
+    }
+
+    /** Updates the editable structure while keeping the current Algorithm visual frame on screen. */
+    protected final void storeStructureState(S state) {
         if (state == null) {
             return;
         }
         latestStructureState = state;
         structureRevision.set(structureRevision.get() + 1L);
-        if (visualizer != null) {
-            visualizer.render(state);
-        }
     }
 
     /** Restores the structure page's state into the shared visualizer. */
@@ -430,8 +513,13 @@ public abstract class BaseController<S> implements Initializable {
         restoreStructureState();
     }
 
-    /** Restores the latest algorithm frame after returning to the algorithm page. */
+    /** Restores the latest algorithm frame or the module's selected algorithm-input preview. */
     public final void showAlgorithmState() {
+        restoreAlgorithmState();
+    }
+
+    /** Hook for modules that can preview a selected structure snapshot before execution starts. */
+    protected void restoreAlgorithmState() {
         if (latestViewState != null && visualizer != null) {
             visualizer.render(latestViewState);
         }
@@ -465,6 +553,20 @@ public abstract class BaseController<S> implements Initializable {
         refreshStatsDisplay();
     }
 
+    /** Invalidates algorithm state only when the current editable structure is the selected input. */
+    protected final void invalidateExecutionForStructureChange() {
+        stopAlgorithm();
+        if (algorithmInputTracksCurrentStructure()) {
+            clearExecutionState();
+        }
+        refreshStatsDisplay();
+    }
+
+    /** Modules with selectable saved-snapshot input override this to preserve independent algorithm state. */
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return true;
+    }
+
     private void stopReplay() {
         if (replayController != null) {
             replayController.pause();
@@ -492,7 +594,7 @@ public abstract class BaseController<S> implements Initializable {
         }
     }
 
-    private void replacePlaybackController(EventReducer<S> reducer, List<ExecutionEvent> events) {
+    private void replacePlaybackController(EventReducer<S> reducer, List<EventEnvelope> events) {
         if (replayController != null) {
             replayController.close();
         }
@@ -566,9 +668,9 @@ public abstract class BaseController<S> implements Initializable {
         ExecutionSummary summary = record.recording().summary();
         ExecutionTiming timing = summary.timing();
         return String.format(
-                "%s | event-span=%dms | total=%s | playback=%s | cpu=%s | memory=%s | events=%d | frames=%d | compares=%d",
-                record.algorithmId(), timing.eventSpan().toMillis(),
-                formatDuration(timing.totalDuration()), formatDuration(timing.playbackDuration()),
+                "%s | event-span=%dms | total=%s | cpu=%s | memory=%s | events=%d | frames=%d | compares=%d",
+                record.operationId(), timing.eventSpan().toMillis(),
+                formatDuration(timing.totalDuration()),
                 formatNanos(summary.resources().cpuTimeNanos()),
                 formatBytes(summary.resources().peakMemoryBytes()),
                 record.recording().statistics().totalEventCount(),
@@ -576,7 +678,7 @@ public abstract class BaseController<S> implements Initializable {
                 record.recording().statistics().metric("comparisons"));
     }
 
-    private String inputFingerprint(AlgorithmInput input) {
+    private String inputFingerprint(Object input) {
         return inputFingerprintService.fingerprint(input);
     }
 
@@ -677,7 +779,9 @@ public abstract class BaseController<S> implements Initializable {
             stepBackwardBtn.setDisable(playbackUnavailable);
         }
         if (stepForwardBtn != null) {
-            stepForwardBtn.setDisable(playbackUnavailable);
+            boolean liveStepAvailable = running.get() && paused.get() && currentSession != null;
+            boolean replayStepAvailable = !running.get() && hasPlaybackData();
+            stepForwardBtn.setDisable(!liveStepAvailable && !replayStepAvailable);
         }
         boolean recordUnavailable = running.get() || !hasExecutionRecord();
         if (exportBtn != null) {
@@ -732,7 +836,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (stepForwardBtn != null) {
             stepForwardBtn.setOnAction(event -> {
-                if (isRunning()) {
+                if (isRunning() && !isPaused()) {
                     return;
                 }
                 dispatchVisualizerAction(VisualizationActionType.EXECUTION_PAUSE);
@@ -814,7 +918,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (this.delaySlider != null) {
             delayMs.bind(delaySlider.valueProperty());
-            executionDelayMillis.set(Math.max(0L, Math.round(delaySlider.getValue())));
+            livePlaybackDelayMillis.set(Math.max(0L, Math.round(delaySlider.getValue())));
             delaySlider.valueProperty().addListener(delaySliderListener);
         }
         if (this.timelineSlider != null) {
@@ -855,16 +959,13 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Returns the shared summary retained for the latest local execution. */
     public final ExecutionSummary executionSummary() {
-        if (lastExecution == null) {
-            return ExecutionSummary.from(stats);
-        }
-        ExecutionSummary summary = lastExecution.recording().summary();
-        if (replayController == null) {
-            return summary;
-        }
-        ExecutionTiming timing = summary.timing().withPlaybackDuration(
-                replayController.playbackDuration());
-        return summary.withTiming(timing);
+        if (lastExecution == null) return ExecutionSummary.from(stats);
+        return lastExecution.recording().summary();
+    }
+
+    private Optional<Duration> currentPlaybackDuration() {
+        if (replayController == null) return Optional.empty();
+        return Optional.of(replayController.playbackDuration());
     }
 
     public final ReadOnlyBooleanProperty runningProperty() {
@@ -889,12 +990,13 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private ClientExecutionRecord createExecutionRecord(
-            String algorithmId,
-            AlgorithmInput input,
+            String operationId,
+            Object input,
             ExecutionResult result,
             Throwable error,
             ExecutionSummary summary,
-            List<ExecutionEvent> events) {
+            List<EventEnvelope> events,
+            long visualFrameCount) {
         if (events.isEmpty()) {
             return null;
         }
@@ -904,16 +1006,15 @@ public abstract class BaseController<S> implements Initializable {
             return null;
         }
         ExecutionRecordingState state = recordingState(result, error);
-        ExecutionEvent firstEvent = events.getFirst();
-        ExecutionStatistics authoritativeStatistics = authoritativeStatistics(events);
+        EventEnvelope firstEvent = events.getFirst();
+        ExecutionStatistics authoritativeStatistics = summary.statistics();
         ExecutionSummary recordingSummary = ExecutionSummary.from(
                 authoritativeStatistics, summary.resources()).withTiming(
                 ExecutionTiming.of(
                         authoritativeStatistics.eventSpan(),
-                        summary.timing().totalDuration(),
-                        summary.timing().playbackDuration()));
+                        summary.timing().totalDuration()));
         ExecutionRecording recording = new ExecutionRecording(
-                firstEvent.runId(), algorithmId, state, authoritativeStatistics, recordingSummary, events);
+                firstEvent.runId(), operationId, state, authoritativeStatistics, recordingSummary, events);
         ExecutionResult effectiveResult = result;
         if (effectiveResult == null) {
             String message = "Execution failed";
@@ -931,24 +1032,14 @@ public abstract class BaseController<S> implements Initializable {
                             exceptionType));
         }
         return new ClientExecutionRecord(
-                moduleId(), algorithmId, inputFingerprint(input), effectiveResult, recording,
-                summary.statistics().visualFrameCount());
+                moduleId(), operationId, inputFingerprint(input), effectiveResult, recording, visualFrameCount);
     }
 
-    private ExecutionStatistics authoritativeStatistics(List<ExecutionEvent> events) {
-        StatisticsReducer reducer = new StatisticsReducer();
-        ExecutionStatistics result = reducer.initialState();
-        for (ExecutionEvent event : events) {
-            result = reducer.reduce(result, event);
-        }
-        return result;
-    }
-
-    private boolean hasTerminalLifecycleEvent(List<ExecutionEvent> events) {
-        for (ExecutionEvent event : events) {
-            if (event.payload() instanceof RunCompletedEvent
-                    || event.payload() instanceof RunCancelledEvent
-                    || event.payload() instanceof RunFailedEvent) {
+    private boolean hasTerminalLifecycleEvent(List<EventEnvelope> events) {
+        for (EventEnvelope event : events) {
+            if (event.event() instanceof RunCompletedEvent
+                    || event.event() instanceof RunCancelledEvent
+                    || event.event() instanceof RunFailedEvent) {
                 return true;
             }
         }
@@ -976,7 +1067,7 @@ public abstract class BaseController<S> implements Initializable {
                 "%s | %s | %s | %s | %s",
                 I18N.text("stats.event.span", timing.eventSpan().toMillis()),
                 I18N.text("stats.total.time", formatDuration(timing.totalDuration())),
-                I18N.text("stats.playback.time", formatDuration(timing.playbackDuration())),
+                I18N.text("stats.playback.time", formatDuration(currentPlaybackDuration())),
                 I18N.text("stats.cpu.time", formatNanos(resources.cpuTimeNanos())),
                 I18N.text("stats.memory.peak", formatBytes(resources.peakMemoryBytes())));
     }

@@ -1,9 +1,9 @@
 package com.majortom.algorithms.visualization.runtime.tree;
 
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.library.tree.AvlTreeEvent;
 import com.majortom.algorithms.library.tree.TreeStepEvent;
@@ -22,8 +22,8 @@ public final class AvlTreeEventReducer implements EventReducer<AvlTreeViewState>
     }
 
     @Override
-    public Reduction<AvlTreeViewState> reduce(AvlTreeViewState previous, ExecutionEvent event) {
-        Object payload = event.payload();
+    public Reduction<AvlTreeViewState> reduce(AvlTreeViewState previous, EventEnvelope event) {
+        Object payload = event.event();
         if (payload instanceof AvlTreeEvent.Initialized initialized) {
             return changed(snapshot(previous, initialized.root(), null, null, null, Set.of(),
                     AvlTreeViewState.Phase.INITIALIZED, null, null, null, false), EventImportance.CHECKPOINT);

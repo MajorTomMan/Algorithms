@@ -354,9 +354,14 @@ public abstract class BaseVisualizer<S> extends StackPane {
             case EXECUTION_EXPORT -> "EXPORT";
             case EXECUTION_COMPARE -> "COMPARE";
             case MODULE_SORT -> "SORT MODE";
+            case MODULE_LINKED_LIST -> "LINKED LIST";
+            case MODULE_STACK -> "STACK";
+            case MODULE_QUEUE -> "QUEUE";
             case MODULE_MAZE -> "MAZE MODE";
             case MODULE_TREE -> "TREE MODE";
             case MODULE_GRAPH -> "GRAPH MODE";
+            case MODULE_STRING -> "STRING MODE";
+            case MODULE_HASH_TABLE -> "HASH TABLE";
             case LANGUAGE_TOGGLE -> "LANGUAGE";
             case SORT_GENERATE -> "NEW ARRAY";
             case SORT_RUN -> "SORT";

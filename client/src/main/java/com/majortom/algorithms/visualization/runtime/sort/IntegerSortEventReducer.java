@@ -1,17 +1,16 @@
 package com.majortom.algorithms.visualization.runtime.sort;
 
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.library.sort.event.SortComparedEvent;
 import com.majortom.algorithms.library.sort.event.SortCompletedEvent;
 import com.majortom.algorithms.library.sort.event.SortElementSettledEvent;
 import com.majortom.algorithms.library.sort.event.SortInitializedEvent;
 import com.majortom.algorithms.library.sort.event.SortPivotSelectedEvent;
 import com.majortom.algorithms.library.sort.event.SortRangeSelectedEvent;
-import com.majortom.algorithms.library.sort.event.SortSwappedEvent;
-import com.majortom.algorithms.library.sort.event.SortWrittenEvent;
+import com.majortom.algorithms.library.structure.event.ArrayStructureEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -27,8 +26,8 @@ public final class IntegerSortEventReducer implements EventReducer<IntegerSortVi
     }
 
     @Override
-    public Reduction<IntegerSortViewState> reduce(IntegerSortViewState previous, ExecutionEvent event) {
-        Object payload = event.payload();
+    public Reduction<IntegerSortViewState> reduce(IntegerSortViewState previous, EventEnvelope event) {
+        Object payload = event.event();
         if (payload instanceof SortInitializedEvent initialized) {
             return changed(new IntegerSortViewState(initialized.values(), -1, -1, -1, -1,
                     -1, -1, -1, Set.of(), IntegerSortViewState.Phase.INITIALIZED, false),
@@ -39,20 +38,20 @@ public final class IntegerSortEventReducer implements EventReducer<IntegerSortVi
                     -1, -1, previous.rangeStart(), previous.rangeEnd(), previous.settledIndices(),
                     IntegerSortViewState.Phase.COMPARING, false), EventImportance.TRANSIENT);
         }
-        if (payload instanceof SortWrittenEvent written) {
+        if (payload instanceof ArrayStructureEvent.Updated updated) {
             List<Integer> values = new ArrayList<>(previous.values());
-            requireIndex(written.index(), values.size());
-            values.set(written.index(), written.value());
-            return changed(copy(previous, values, written.index(), -1, -1, -1,
+            requireIndex(updated.index(), values.size());
+            values.set(updated.index(), (Integer) updated.value());
+            return changed(copy(previous, values, updated.index(), -1, -1, -1,
                     previous.rangeStart(), previous.rangeEnd(), previous.settledIndices(),
                     IntegerSortViewState.Phase.WRITING, false), EventImportance.STATE_CHANGE);
         }
-        if (payload instanceof SortSwappedEvent swapped) {
+        if (payload instanceof ArrayStructureEvent.Swapped swapped) {
             List<Integer> values = new ArrayList<>(previous.values());
             requireIndex(swapped.leftIndex(), values.size());
             requireIndex(swapped.rightIndex(), values.size());
-            values.set(swapped.leftIndex(), swapped.leftValue());
-            values.set(swapped.rightIndex(), swapped.rightValue());
+            values.set(swapped.leftIndex(), (Integer) swapped.leftValue());
+            values.set(swapped.rightIndex(), (Integer) swapped.rightValue());
             return changed(copy(previous, values, -1, -1, swapped.leftIndex(), swapped.rightIndex(),
                     previous.rangeStart(), previous.rangeEnd(), previous.settledIndices(),
                     IntegerSortViewState.Phase.SWAPPING, false), EventImportance.STATE_CHANGE);

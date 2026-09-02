@@ -1,11 +1,10 @@
 package com.majortom.algorithms.visualization.execution;
 
-import com.majortom.algorithms.core.api.AlgorithmInput;
-import com.majortom.algorithms.core.api.AlgorithmInvoker;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.core.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.visualization.runtime.ExecutionSession;
 import com.majortom.algorithms.visualization.runtime.LocalAlgorithmExecution;
@@ -18,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
-/** Adapter that exposes the existing per-run local runtime through a client service boundary. */
+/** Adapter exposing the local runtime through the client execution boundary. */
 public final class LocalClientExecutionService implements ClientExecutionService {
 
     private final LocalAlgorithmExecution delegate;
@@ -33,35 +32,17 @@ public final class LocalClientExecutionService implements ClientExecutionService
 
     @Override
     public <S> ExecutionHandle start(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
+            String operationId,
+            ExecutionOperation<?> operation,
             EventReducer<S> reducer,
-            Consumer<S> liveStateConsumer,
-            LongSupplier delayMillisSupplier) {
-        ClientExecutionService.requireStartArguments(
-                invoker, input, reducer, liveStateConsumer, delayMillisSupplier);
-        ExecutionSession session = delegate.start(
-                invoker, input, reducer, liveStateConsumer, delayMillisSupplier);
-        return new LocalExecutionHandle(session);
-    }
-
-    @Override
-    public <S> ExecutionHandle start(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
-            EventReducer<S> reducer,
+            Consumer<EventEnvelope> liveEventConsumer,
             Consumer<S> liveStateConsumer,
             Consumer<ExecutionStatistics> liveStatisticsConsumer,
             LongSupplier delayMillisSupplier) {
-        ClientExecutionService.requireStartArguments(
-                invoker, input, reducer, liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
-        ExecutionSession session = delegate.start(
-                invoker,
-                input,
-                reducer,
-                liveStateConsumer,
-                liveStatisticsConsumer,
-                delayMillisSupplier);
+        ClientExecutionService.requireStartArguments(operationId, operation, reducer, liveEventConsumer,
+                liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
+        ExecutionSession session = delegate.start(operationId, operation, reducer, liveEventConsumer, liveStateConsumer,
+                liveStatisticsConsumer, delayMillisSupplier);
         return new LocalExecutionHandle(session);
     }
 
@@ -79,13 +60,18 @@ public final class LocalClientExecutionService implements ClientExecutionService
         }
 
         @Override
-        public List<ExecutionEvent> events() {
+        public List<EventEnvelope> events() {
             return delegate.events();
         }
 
         @Override
-        public CompletableFuture<ExecutionResult> completion() {
-            return delegate.completion();
+        public CompletableFuture<ExecutionResult> runtimeCompletion() {
+            return delegate.runtimeCompletion();
+        }
+
+        @Override
+        public CompletableFuture<ExecutionResult> presentationCompletion() {
+            return delegate.presentationCompletion();
         }
 
         @Override
@@ -106,6 +92,11 @@ public final class LocalClientExecutionService implements ClientExecutionService
         @Override
         public void resumeExecution() {
             delegate.resumeExecution();
+        }
+
+        @Override
+        public void stepExecution() {
+            delegate.stepExecution();
         }
 
         @Override

@@ -1,9 +1,9 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Queue;
-import com.majortom.algorithms.library.basic.interfaces.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Queue;
 
 
 public class 回文数 {
@@ -11,7 +11,7 @@ public class 回文数 {
         System.out.println(isPalindrome(-121));
     }
     public static boolean isPalindrome(int x) {
-        Stack<String> stack =new LinkedList<>();
+        Deque<String> stack =new LinkedList<>();
         Queue<String> queue=new LinkedList<>();
         if(x<0){
             return false;
@@ -26,7 +26,7 @@ public class 回文数 {
         }
         return true;
     }
-    private static int isPalindrome(int x,Stack<String> stack,Queue<String> queue){
+    private static int isPalindrome(int x,Deque<String> stack,Queue<String> queue){
         if(x==0){
             return x;
         }

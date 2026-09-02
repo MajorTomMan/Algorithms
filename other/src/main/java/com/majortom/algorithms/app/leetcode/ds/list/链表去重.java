@@ -1,8 +1,6 @@
 package com.majortom.algorithms.app.leetcode.ds.list;
 
-import java.util.Random;
-
-import com.majortom.algorithms.library.basic.LinkedList;
+import java.util.LinkedList;
 import com.majortom.algorithms.library.basic.node.ListNode;
 import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
@@ -11,8 +9,8 @@ public class 链表去重 {
         Integer[] randomArray = AlgorithmsUtils.randomArray(100, 10);
         ListNode<Integer> head = AlgorithmsUtils.buildLinkedList(randomArray);
         LinkedList<Integer> list = new LinkedList<>();
-        list.sort();
-        list.foreach((i) -> {
+        list.sort(null);
+        list.forEach((i) -> {
             System.out.print(i + ",");
         });
         System.out.println();

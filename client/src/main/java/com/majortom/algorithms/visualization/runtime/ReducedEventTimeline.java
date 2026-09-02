@@ -1,11 +1,11 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.core.runtime.Reduction;
-import com.majortom.algorithms.core.runtime.ReductionCursor;
+import com.majortom.algorithms.visualization.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.ReductionCursor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,7 @@ public final class ReducedEventTimeline<S> {
 
     static final int DEFAULT_CHECKPOINT_INTERVAL = 256;
 
-    private final List<ExecutionEvent> events;
+    private final List<EventEnvelope> events;
     private final EventReducer<S> reducer;
     private final List<Integer> frameEventIndexes;
     private final List<Checkpoint<S>> checkpoints;
@@ -32,12 +32,12 @@ public final class ReducedEventTimeline<S> {
     private int currentEventIndex = -1;
     private S currentState;
 
-    public ReducedEventTimeline(List<ExecutionEvent> events, EventReducer<S> reducer) {
+    public ReducedEventTimeline(List<EventEnvelope> events, EventReducer<S> reducer) {
         this(events, reducer, DEFAULT_CHECKPOINT_INTERVAL);
     }
 
     ReducedEventTimeline(
-            List<ExecutionEvent> events,
+            List<EventEnvelope> events,
             EventReducer<S> reducer,
             int checkpointInterval) {
         this.events = List.copyOf(Objects.requireNonNull(events, "events"));
@@ -85,7 +85,7 @@ public final class ReducedEventTimeline<S> {
         return Objects.requireNonNull(reducer.initialState(), "reducer initial state");
     }
 
-    public ExecutionEvent event(int frameIndex) {
+    public EventEnvelope event(int frameIndex) {
         return events.get(eventIndex(frameIndex));
     }
 
@@ -143,7 +143,7 @@ public final class ReducedEventTimeline<S> {
         currentState = nearest.state();
     }
 
-    private Reduction<S> requireReduction(S state, ExecutionEvent event) {
+    private Reduction<S> requireReduction(S state, EventEnvelope event) {
         return Objects.requireNonNull(reducer.reduce(state, event), "reducer result");
     }
 

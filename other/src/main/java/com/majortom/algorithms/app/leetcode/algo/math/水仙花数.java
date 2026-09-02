@@ -2,8 +2,8 @@ package com.majortom.algorithms.app.leetcode.algo.math;
 
 import java.util.Scanner;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
 
 
 public class 水仙花数 {
@@ -18,7 +18,7 @@ public class 水仙花数 {
         int temp=n;
         String s="";
         Integer[] array=new Integer[3];
-        Stack<Integer> stack=new LinkedList<>();
+        Deque<Integer> stack=new LinkedList<>();
         while(n<=m){
             if(temp!=0){
                 stack.push(temp%10);

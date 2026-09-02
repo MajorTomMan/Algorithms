@@ -1,12 +1,11 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.AlgorithmOutput;
 
 import java.util.List;
 import java.util.Objects;
 
 /** Result path, empty when the goal is unreachable. */
-public record ArrayMazePathOutput(List<GridPoint> path, int visitedCount) implements AlgorithmOutput {
+public record ArrayMazePathOutput(List<GridPoint> path, int visitedCount) {
 
     public ArrayMazePathOutput {
         Objects.requireNonNull(path, "path");

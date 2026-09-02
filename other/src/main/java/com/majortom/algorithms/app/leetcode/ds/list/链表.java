@@ -1,7 +1,8 @@
 package com.majortom.algorithms.app.leetcode.ds.list;
 
 
-import com.majortom.algorithms.library.basic.LinkedList;
+import java.util.Collections;
+import java.util.LinkedList;
 
 public class 链表 {
     public static void main(String[] args) {
@@ -14,19 +15,19 @@ public class 链表 {
         list.add(10);
         list.add(1);
         list.add(2);
-        list.sort();
-        list.foreach((t) -> {
+        list.sort(null);
+        list.forEach((t) -> {
             System.out.println(t);
         });
         list.remove(1);
-        list.replace(6, 1);
+        list.set(1, 6);
         System.out.println("--------------------------------------");
-        list.foreach((t) -> {
+        list.forEach((t) -> {
             System.out.println(t);
         });
-        list.reverse();
+        Collections.reverse(list);
         System.out.println("--------------------------------------");
-        list.foreach((t) -> {
+        list.forEach((t) -> {
             System.out.println(t);
         });
         System.out.println(list.contains(1111));

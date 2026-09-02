@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.structure;
 
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

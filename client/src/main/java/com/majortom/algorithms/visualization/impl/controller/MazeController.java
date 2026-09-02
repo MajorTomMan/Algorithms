@@ -1,17 +1,24 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
+import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
+import com.majortom.algorithms.library.maze.GraphMazeBfsGenerator;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationInput;
 import com.majortom.algorithms.library.maze.ArrayMazePathInput;
 import com.majortom.algorithms.library.maze.GraphMazeGenerationInput;
 import com.majortom.algorithms.library.maze.GridMaze;
+import com.majortom.algorithms.library.maze.MazeStructureEvent;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeModuleVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.runtime.maze.MazeEventReducer;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
-import com.majortom.algorithms.visualization.structure.StructureSnapshot;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -26,7 +33,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public final class MazeController extends BaseModuleController<MazeViewState>
-        implements AlgorithmSelectionSupport {
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<MazeSnapshot>, SnapshotAlgorithmInputSupport<MazeSnapshot> {
 
     private enum Structure { ARRAY, GRAPH }
 
@@ -37,10 +44,15 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private static final List<String> ARRAY_PATHFINDERS = List.of(
             "maze-pathfinder-astar", "maze-pathfinder-dfs");
     private static final List<String> GRAPH_GENERATORS = List.of("graph-generator-bfs");
+    private static final List<String> ALL_GENERATORS = List.of(
+            "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find", "graph-generator-bfs");
 
     private int size = 51;
     private Structure structure = Structure.ARRAY;
     private GridMaze generatedMaze;
+    private MazeSnapshot algorithmResultSnapshot;
+    private StructureSnapshot<MazeSnapshot> algorithmInputSnapshot;
+    private boolean applyingStructureState;
     private boolean solving;
     private Operation selectedOperation = Operation.GENERATE;
 
@@ -59,6 +71,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @FXML private Button buildBtn;
     @FXML private Button solveBtn;
     @FXML private Button applySizeBtn;
+    @FXML private Button applyResultBtn;
     @FXML private Button resetMazeBtn;
 
     public MazeController() {
@@ -75,7 +88,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             sizeValueLabel.setText(next + " x " + next);
         });
         sizeValueLabel.setText(size + " x " + size);
-        EffectUtils.applyDynamicEffect(buildBtn, solveBtn, applySizeBtn, resetMazeBtn);
+        EffectUtils.applyDynamicEffect(buildBtn, solveBtn, applySizeBtn, applyResultBtn, resetMazeBtn);
         updateControlState();
     }
 
@@ -93,18 +106,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (isRunning()) {
             return false;
         }
-        if (ARRAY_GENERATORS.contains(algorithmId)) {
-            selectStructure(Structure.ARRAY);
-            boolean selected = selectAlgorithm(generatorSelector, ARRAY_GENERATORS, algorithmId);
-            if (selected) {
-                selectedOperation = Operation.GENERATE;
-                updateControlState();
-            }
-            return selected;
-        }
-        if (GRAPH_GENERATORS.contains(algorithmId)) {
-            selectStructure(Structure.GRAPH);
-            boolean selected = selectAlgorithm(generatorSelector, GRAPH_GENERATORS, algorithmId);
+        if (ALL_GENERATORS.contains(algorithmId)) {
+            boolean selected = selectAlgorithm(generatorSelector, ALL_GENERATORS, algorithmId);
             if (selected) {
                 selectedOperation = Operation.GENERATE;
                 updateControlState();
@@ -112,7 +115,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             return selected;
         }
         if (ARRAY_PATHFINDERS.contains(algorithmId)) {
-            selectStructure(Structure.ARRAY);
             boolean selected = selectAlgorithm(pathfinderSelector, ARRAY_PATHFINDERS, algorithmId);
             if (selected) {
                 selectedOperation = Operation.SOLVE;
@@ -130,23 +132,27 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         }
         solving = false;
         selectedOperation = Operation.GENERATE;
-        generatedMaze = null;
-        String id = selectedId(generatorSelector, generatorIds());
+        algorithmResultSnapshot = null;
+        String id = selectedId(generatorSelector, ALL_GENERATORS);
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.MAZE_BUILD,
                 java.util.Map.of("algorithmId", id, "size", size));
-        if (structure == Structure.GRAPH) {
+        if (GRAPH_GENERATORS.contains(id)) {
             GraphMazeGenerationInput input = new GraphMazeGenerationInput(size, size, System.nanoTime());
-            startAlgorithm(id, input, () -> new MazeEventReducer(size, size, true));
+            GraphMazeBfsGenerator algorithm = module("algorithm.graph.Integer." + id, GraphMazeBfsGenerator.class);
+            startAlgorithm(id, input, () -> algorithm.generate(input), () -> new MazeEventReducer(size, size, true));
         } else {
             ArrayMazeGenerationInput input = new ArrayMazeGenerationInput(size, size, System.nanoTime());
-            startAlgorithm(id, input, () -> new MazeEventReducer(size, size, false));
+            ArrayMazeGenerator algorithm = module("algorithm.maze.Boolean." + id, ArrayMazeGenerator.class);
+            startAlgorithm(id, input, () -> algorithm.generate(input), () -> new MazeEventReducer(size, size, false));
         }
     }
 
     @FXML
     public void handleSolve() {
-        if (isRunning() || structure == Structure.GRAPH || generatedMaze == null) {
+        MazeSnapshot selectedSnapshot = selectedAlgorithmSnapshot();
+        GridMaze inputMaze = gridMaze(selectedSnapshot);
+        if (isRunning() || inputMaze == null) {
             return;
         }
         solving = true;
@@ -154,10 +160,25 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         String id = selectedId(pathfinderSelector, ARRAY_PATHFINDERS);
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.MAZE_SOLVE,
-                java.util.Map.of("algorithmId", id, "size", size));
-        ArrayMazePathInput input = new ArrayMazePathInput(
-                generatedMaze, generatedMaze.entrance(), generatedMaze.exit());
-        startAlgorithm(id, input, () -> new MazeEventReducer(size, size, false));
+                java.util.Map.of("algorithmId", id, "size", selectedSnapshot.rows()));
+        ArrayMazePathInput input = new ArrayMazePathInput(inputMaze, inputMaze.entrance(), inputMaze.exit());
+        ArrayMazePathfinder algorithm = module("algorithm.maze.Boolean." + id, ArrayMazePathfinder.class);
+        startAlgorithm(id, input, () -> algorithm.findPath(input),
+                () -> new MazeEventReducer(selectedSnapshot.rows(), selectedSnapshot.columns(), false));
+    }
+
+    @FXML
+    private void handleApplyAlgorithmResult() {
+        if (isRunning() || algorithmResultSnapshot == null) {
+            return;
+        }
+        MazeSnapshot result = algorithmResultSnapshot;
+        applyStructureState(result, false);
+        recordStructureEvent("result-applied",
+                new MazeStructureEvent.ResultApplied(result.rows(), result.columns(), result.graphBased()));
+        updateControlState();
+        refreshStatsDisplay();
+        logI18n("message.maze.result_applied");
     }
 
     @FXML
@@ -166,6 +187,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         size = normalizeOdd((int) sizeSlider.getValue());
         sizeSlider.setValue(size);
         generatedMaze = null;
+        algorithmResultSnapshot = null;
         solving = false;
         selectedOperation = Operation.GENERATE;
         renderEmpty();
@@ -184,13 +206,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     protected void onAlgorithmFinished() {
         super.onAlgorithmFinished();
         MazeViewState state = latestViewState();
-        if (!solving && structure == Structure.ARRAY && state != null
-                && state.entrance() != null && state.exit() != null) {
-            generatedMaze = new GridMaze(
-                    state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
-        }
         if (!solving && state != null) {
-            renderStructureState(structureSnapshotState(state));
+            algorithmResultSnapshot = snapshotFromView(state);
         }
         updateControlState();
         logI18n("message.execution.finished");
@@ -199,7 +216,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @Override
     protected String formatStatsMessage() {
         String structureName = I18N.text("label.maze.structure.array");
-        if (structure == Structure.GRAPH) {
+        if (!solving && GRAPH_GENERATORS.contains(selectedId(generatorSelector, ALL_GENERATORS))) {
             structureName = I18N.text("label.maze.structure.graph");
         }
         String mode = "Generation";
@@ -222,6 +239,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @Override
     protected void onResetData() {
         generatedMaze = null;
+        algorithmResultSnapshot = null;
+        algorithmInputSnapshot = null;
         solving = false;
         selectedOperation = Operation.GENERATE;
         renderEmpty();
@@ -233,75 +252,135 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     @Override
-    public StructureSnapshot<MazeViewState> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), structureSnapshotState());
+    public StructureSnapshot<MazeSnapshot> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), mazeSnapshot());
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<MazeViewState> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<MazeSnapshot> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
-        MazeViewState state = snapshot.state();
-        structure = Structure.ARRAY;
-        if (state.graphBased()) {
-            structure = Structure.GRAPH;
-        }
-        if (structureSelector != null) {
-            int index = 0;
-            if (structure == Structure.GRAPH) {
-                index = 1;
-            }
-            structureSelector.getSelectionModel().select(index);
-        }
-        size = state.rows();
-        if (sizeSlider != null) {
-            double sliderValue = Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), size));
-            sizeSlider.setValue(sliderValue);
-        }
-        if (sizeValueLabel != null) {
-            sizeValueLabel.setText(size + " x " + size);
-        }
-        generatedMaze = null;
-        if (!state.graphBased() && state.entrance() != null && state.exit() != null) {
-            generatedMaze = new GridMaze(
-                    state.rows(), state.columns(), state.openCells(), state.entrance(), state.exit());
-        }
-        solving = false;
-        selectedOperation = Operation.GENERATE;
-        invalidateExecutionForInputChange();
-        renderStructureState(structureSnapshotState(state));
-        updateControlState();
+        invalidateExecutionForStructureChange();
+        algorithmResultSnapshot = null;
+        applyStructureState(snapshot.state(), true);
         refreshStatsDisplay();
     }
 
     @Override
-    public String describeStructureSnapshot(MazeViewState state) {
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<MazeSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        algorithmInputSnapshot = snapshot;
+        invalidateExecutionForInputChange();
+        updateControlState();
+    }
+
+    @Override
+    public void useCurrentStructureAsAlgorithmInput() {
+        algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+        updateControlState();
+    }
+
+    @Override
+    public String algorithmInputSnapshotId() {
+        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+    }
+
+    @Override
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return algorithmInputSnapshot == null;
+    }
+
+    @Override
+    protected void restoreAlgorithmState() {
+        if (latestViewState() != null) {
+            super.restoreAlgorithmState();
+            return;
+        }
+        renderViewState(viewState(selectedAlgorithmSnapshot()));
+    }
+
+    @Override
+    public String describeStructureSnapshot(MazeSnapshot state) {
         long openCells = state.openCells().stream().filter(Boolean::booleanValue).count();
         return I18N.text("snapshot.maze.detail", state.rows(), state.columns(), openCells);
     }
 
-    private MazeViewState structureSnapshotState() {
+    private MazeSnapshot mazeSnapshot() {
         if (generatedMaze != null) {
-            return new MazeViewState(
-                    generatedMaze.rows(), generatedMaze.columns(), generatedMaze.openCells(),
-                    java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of(),
-                    java.util.Set.of(), java.util.Map.of(), generatedMaze.entrance(), generatedMaze.exit(),
-                    null, java.util.List.of(), false, MazeViewState.Phase.IDLE, false);
+            return new MazeSnapshot(generatedMaze.rows(), generatedMaze.columns(), generatedMaze.openCells(),
+                    cell(generatedMaze.entrance()), cell(generatedMaze.exit()), List.of(), false);
         }
         MazeViewState latest = latestStructureState();
-        if (latest != null) {
-            return structureSnapshotState(latest);
-        }
-        return MazeViewState.empty(size, size, structure == Structure.GRAPH);
+        if (latest == null) latest = MazeViewState.empty(size, size, structure == Structure.GRAPH);
+        return new MazeSnapshot(latest.rows(), latest.columns(), latest.openCells(),
+                cell(latest.entrance()), cell(latest.exit()), latest.graphEdges().stream()
+                .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), latest.graphBased());
     }
 
-    private MazeViewState structureSnapshotState(MazeViewState state) {
-        return new MazeViewState(
-                state.rows(), state.columns(), state.openCells(),
+    private MazeSnapshot snapshotFromView(MazeViewState state) {
+        return new MazeSnapshot(state.rows(), state.columns(), state.openCells(),
+                cell(state.entrance()), cell(state.exit()), state.graphEdges().stream()
+                .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), state.graphBased());
+    }
+
+    private MazeSnapshot selectedAlgorithmSnapshot() {
+        return algorithmInputSnapshot == null ? mazeSnapshot() : algorithmInputSnapshot.state();
+    }
+
+    private GridMaze gridMaze(MazeSnapshot state) {
+        if (state == null || state.graphBased() || state.entrance() == null || state.exit() == null) {
+            return null;
+        }
+        return new GridMaze(state.rows(), state.columns(), state.openCells(),
+                point(state.entrance()), point(state.exit()));
+    }
+
+    private void applyStructureState(MazeSnapshot state, boolean render) {
+        applyingStructureState = true;
+        try {
+            structure = state.graphBased() ? Structure.GRAPH : Structure.ARRAY;
+            if (structureSelector != null) {
+                structureSelector.getSelectionModel().select(structure == Structure.GRAPH ? 1 : 0);
+            }
+            size = state.rows();
+            if (sizeSlider != null) {
+                sizeSlider.setValue(Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), size)));
+            }
+            if (sizeValueLabel != null) {
+                sizeValueLabel.setText(size + " x " + state.columns());
+            }
+        } finally {
+            applyingStructureState = false;
+        }
+        generatedMaze = gridMaze(state);
+        solving = false;
+        MazeViewState view = viewState(state);
+        if (render) {
+            renderStructureState(view);
+        } else {
+            storeStructureState(view);
+        }
+        updateControlState();
+    }
+
+    private MazeViewState viewState(MazeSnapshot state) {
+        return new MazeViewState(state.rows(), state.columns(), state.openCells(),
                 java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of(),
-                java.util.Set.of(), java.util.Map.of(), state.entrance(), state.exit(), null,
-                state.graphEdges(), state.graphBased(), MazeViewState.Phase.IDLE, false);
+                java.util.Set.of(), java.util.Map.of(), point(state.entrance()), point(state.exit()), null,
+                state.graphEdges().stream().map(edge -> new com.majortom.algorithms.library.graph.IntEdge(edge.from(), edge.to())).toList(),
+                state.graphBased(), MazeViewState.Phase.IDLE, false);
+    }
+
+    private MazeSnapshot.Cell cell(com.majortom.algorithms.library.maze.GridPoint point) {
+        return point == null ? null : new MazeSnapshot.Cell(point.row(), point.column());
+    }
+
+    private com.majortom.algorithms.library.maze.GridPoint point(MazeSnapshot.Cell cell) {
+        return cell == null ? null : new com.majortom.algorithms.library.maze.GridPoint(cell.row(), cell.column());
     }
 
     @Override
@@ -320,6 +399,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (buildBtn != null) buildBtn.textProperty().bind(I18N.createStringBinding("action.maze.build"));
         if (solveBtn != null) solveBtn.textProperty().bind(I18N.createStringBinding("action.maze.solve"));
         if (applySizeBtn != null) applySizeBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_size"));
+        if (applyResultBtn != null) applyResultBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_result"));
         if (resetMazeBtn != null) resetMazeBtn.textProperty().bind(I18N.createStringBinding("action.maze.reset"));
     }
 
@@ -333,23 +413,22 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 I18N.text("label.maze.structure.array"), I18N.text("label.maze.structure.graph")),
                 I18N.localeProperty()));
         generatorSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(generatorIds()), I18N.localeProperty(), structureSelector.getSelectionModel().selectedIndexProperty()));
+                () -> labels(ALL_GENERATORS), I18N.localeProperty()));
         pathfinderSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(pathfinderIds()), I18N.localeProperty(), structureSelector.getSelectionModel().selectedIndexProperty()));
+                () -> labels(ARRAY_PATHFINDERS), I18N.localeProperty()));
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue.intValue() < 0 || isRunning()) {
+            if (newValue.intValue() < 0 || isRunning() || applyingStructureState) {
                 return;
             }
             structure = Structure.ARRAY;
             if (newValue.intValue() == 1) {
                 structure = Structure.GRAPH;
             }
-            invalidateExecutionForInputChange();
+            invalidateExecutionForStructureChange();
             generatedMaze = null;
+            algorithmResultSnapshot = null;
             solving = false;
-            selectedOperation = Operation.GENERATE;
             renderEmpty();
-            selectFirstAlgorithms();
             updateControlState();
         });
         generatorSelector.getSelectionModel().selectedIndexProperty().addListener(
@@ -386,17 +465,13 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         selectedOperation = Operation.GENERATE;
     }
 
-    private List<String> generatorIds() {
-        if (structure == Structure.GRAPH) return GRAPH_GENERATORS;
-        return ARRAY_GENERATORS;
-    }
-
-    private List<String> pathfinderIds() {
-        if (structure == Structure.GRAPH) return List.of();
-        return ARRAY_PATHFINDERS;
-    }
-
     private String selectedId(ComboBox<String> comboBox, List<String> ids) {
+        if (ids.isEmpty()) {
+            throw new IllegalArgumentException("algorithm id list must not be empty");
+        }
+        if (comboBox == null) {
+            return ids.getFirst();
+        }
         int index = comboBox.getSelectionModel().getSelectedIndex();
         if (index < 0 || index >= ids.size()) index = 0;
         return ids.get(index);
@@ -413,22 +488,15 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         return true;
     }
 
-    private void selectStructure(Structure target) {
-        int index = 0;
-        if (target == Structure.GRAPH) {
-            index = 1;
-        }
-        if (structureSelector != null) {
-            structureSelector.getSelectionModel().select(index);
-        }
-    }
-
     private void updateControlState() {
-        boolean graph = structure == Structure.GRAPH;
-        pathfinderSelector.setDisable(graph);
-        solveBtn.setDisable(graph || generatedMaze == null);
+        boolean solveAvailable = gridMaze(selectedAlgorithmSnapshot()) != null;
+        pathfinderSelector.setDisable(false);
+        solveBtn.setDisable(!solveAvailable);
+        if (applyResultBtn != null) {
+            applyResultBtn.setDisable(isRunning() || algorithmResultSnapshot == null);
+        }
         if (startBtn != null) {
-            startBtn.setDisable(selectedOperation == Operation.SOLVE && generatedMaze == null);
+            startBtn.setDisable(selectedOperation == Operation.SOLVE && !solveAvailable);
         }
     }
 

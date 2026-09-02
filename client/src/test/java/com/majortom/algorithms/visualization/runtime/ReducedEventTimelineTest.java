@@ -1,10 +1,10 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -26,11 +26,11 @@ class ReducedEventTimelineTest {
         assertEquals(6, timeline.seek(2));
     }
 
-    private ExecutionEvent event(long sequence, int value) {
-        return new ExecutionEvent("run", "algorithm", sequence, Instant.EPOCH, new ValueEvent(value));
+    private EventEnvelope event(long sequence, int value) {
+        return new EventEnvelope("run", "algorithm", sequence, Instant.EPOCH, "algorithm", new ValueEvent(value));
     }
 
-    private record ValueEvent(int value) implements AlgorithmEvent {
+    private record ValueEvent(int value) implements ExecutionEvent {
     }
 
     private static final class SummingReducer implements EventReducer<Integer> {
@@ -41,8 +41,8 @@ class ReducedEventTimelineTest {
         }
 
         @Override
-        public Reduction<Integer> reduce(Integer previousState, ExecutionEvent event) {
-            ValueEvent valueEvent = (ValueEvent) event.payload();
+        public Reduction<Integer> reduce(Integer previousState, EventEnvelope event) {
+            ValueEvent valueEvent = (ValueEvent) event.event();
             int state = previousState + valueEvent.value();
             return Reduction.changed(state, EventImportance.STATE_CHANGE, true);
         }

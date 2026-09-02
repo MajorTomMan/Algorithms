@@ -1,9 +1,9 @@
 package com.majortom.algorithms.visualization.runtime.maze;
 
-import com.majortom.algorithms.core.runtime.EventImportance;
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
-import com.majortom.algorithms.core.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.EventImportance;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationEvent;
 import com.majortom.algorithms.library.maze.ArrayMazePathEvent;
@@ -41,8 +41,8 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
     }
 
     @Override
-    public Reduction<MazeViewState> reduce(MazeViewState previous, ExecutionEvent event) {
-        Object payload = event.payload();
+    public Reduction<MazeViewState> reduce(MazeViewState previous, EventEnvelope event) {
+        Object payload = event.event();
         if (payload instanceof ArrayMazeGenerationEvent.Initialized initialized) {
             MazeViewState state = MazeViewState.empty(initialized.rows(), initialized.columns(), false);
             state = copy(state, state.openCells(), Set.of(), Set.of(), Set.of(), Set.of(),

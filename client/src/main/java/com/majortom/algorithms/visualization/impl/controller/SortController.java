@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.library.sort.AbstractIntegerSort;
+import com.majortom.algorithms.library.structure.MutableArray;
 import com.majortom.algorithms.library.sort.model.IntegerSortInput;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -8,7 +10,10 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortEventReducer;
 import com.majortom.algorithms.visualization.runtime.sort.IntegerSortViewState;
-import com.majortom.algorithms.visualization.structure.StructureSnapshot;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -26,13 +31,14 @@ import java.util.Random;
 import java.util.ResourceBundle;
 
 public final class SortController extends BaseModuleController<IntegerSortViewState>
-        implements AlgorithmSelectionSupport {
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Integer>>, SnapshotAlgorithmInputSupport<SequenceSnapshot<Integer>> {
 
     private static final List<String> ALGORITHM_IDS = List.of(
             "insertion-sort", "selection-sort", "quick-sort", "heap-sort");
 
     private final Random random = new Random();
-    private List<Integer> sourceData = List.of();
+    private final MutableArray<Integer> sourceArray;
+    private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
     private int currentSize = 20;
 
     @FXML private Label structureLabel;
@@ -56,9 +62,11 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     @FXML private Button findElementBtn;
     @FXML private Button updateElementBtn;
 
+    @SuppressWarnings("unchecked")
     public SortController() {
         super(new HistogramSortVisualizer(), "/fxml/SortControls.fxml");
-        generateData();
+        sourceArray = module("structure.array.Integer", MutableArray.class);
+        replaceArrayContents(randomValues());
     }
 
     @Override
@@ -79,40 +87,58 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @FXML
     private void handleGenerate() {
-        invalidateExecutionForInputChange();
-        generateData();
-        renderSource();
-        dispatchVisualizerAction(
-                com.majortom.algorithms.visualization.VisualizationActionType.SORT_GENERATE,
-                java.util.Map.of("size", currentSize));
-        logI18n("message.sort.generated", currentSize);
+        List<Integer> values = randomValues();
+        if (executeStructureOperation("generate", () -> {
+            replaceArrayContents(values);
+            return null;
+        })) {
+            renderSource();
+            refreshStatsDisplay();
+            dispatchVisualizerAction(
+                    com.majortom.algorithms.visualization.VisualizationActionType.SORT_GENERATE,
+                    java.util.Map.of("size", currentSize));
+            logI18n("message.sort.generated", currentSize);
+        }
     }
 
-    private void generateData() {
+    private List<Integer> randomValues() {
         List<Integer> values = new ArrayList<>(currentSize);
         for (int index = 0; index < currentSize; index++) {
             values.add(random.nextInt(100) + 1);
         }
-        sourceData = List.copyOf(values);
+        return List.copyOf(values);
+    }
+
+    private void replaceArrayContents(List<Integer> values) {
+        while (sourceArray.size() > 0) {
+            sourceArray.remove(sourceArray.size() - 1);
+        }
+        for (int index = 0; index < values.size(); index++) {
+            sourceArray.insert(index, values.get(index));
+        }
+    }
+
+    private List<Integer> sourceValues() {
+        return List.copyOf(sourceArray.raw());
     }
 
     private void renderSource() {
-        renderStructureState(IntegerSortViewState.source(sourceData));
+        renderStructureState(IntegerSortViewState.source(sourceValues()));
     }
 
     @Override
-    public StructureSnapshot<IntegerSortViewState> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), IntegerSortViewState.source(sourceData));
+    public StructureSnapshot<SequenceSnapshot<Integer>> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), new SequenceSnapshot<>(sourceValues()));
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<IntegerSortViewState> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
-        sourceData = List.copyOf(snapshot.state().values());
-        currentSize = sourceData.size();
-        invalidateExecutionForInputChange();
+        replaceArrayContents(snapshot.state().values());
+        currentSize = sourceArray.size();
+        invalidateExecutionForStructureChange();
         if (sizeSlider != null) {
             double sliderValue = Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), currentSize));
             sizeSlider.setValue(sliderValue);
@@ -125,7 +151,43 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     }
 
     @Override
-    public String describeStructureSnapshot(IntegerSortViewState state) {
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        algorithmInputSnapshot = snapshot;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public void useCurrentStructureAsAlgorithmInput() {
+        algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public String algorithmInputSnapshotId() {
+        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+    }
+
+    @Override
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return algorithmInputSnapshot == null;
+    }
+
+
+    @Override
+    protected void restoreAlgorithmState() {
+        if (latestViewState() != null) {
+            super.restoreAlgorithmState();
+            return;
+        }
+        List<Integer> values = algorithmInputSnapshot == null
+                ? sourceValues() : algorithmInputSnapshot.state().values();
+        renderViewState(IntegerSortViewState.source(values));
+    }
+
+
+    @Override
+    public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.sort.detail", state.values().size());
     }
 
@@ -135,26 +197,25 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         if (value == null) {
             return;
         }
-        Integer index = parseOptionalIndex(elementIndexField, sourceData.size());
+        Integer index = parseOptionalIndex(elementIndexField, sourceArray.size());
         if (index == null && !elementIndexField.getText().isBlank()) {
             return;
         }
-        List<Integer> next = new ArrayList<>(sourceData);
-        int insertedIndex = next.size();
-        if (index == null) {
-            next.add(value);
-        } else {
-            next.add(index, value);
-            insertedIndex = index;
+        int insertedIndex = index == null ? sourceArray.size() : index;
+        if (executeStructureOperation("insert", () -> {
+            sourceArray.insert(insertedIndex, value);
+            return null;
+        })) {
+            renderSource();
+            refreshStatsDisplay();
+            logI18n("message.sort.added", value, insertedIndex);
         }
-        replaceSourceData(next);
-        logI18n("message.sort.added", value, insertedIndex);
     }
 
     @FXML
     private void handleDeleteElement() {
         String indexText = elementIndexField.getText().trim();
-        Integer index = parseOptionalIndex(elementIndexField, sourceData.size() - 1);
+        Integer index = parseOptionalIndex(elementIndexField, sourceArray.size() - 1);
         if (index == null && !indexText.isBlank()) {
             return;
         }
@@ -163,16 +224,22 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
             if (value == null) {
                 return;
             }
-            index = sourceData.indexOf(value);
+            index = sourceArray.raw().indexOf(value);
             if (index < 0) {
                 logI18n("message.sort.not_found", value);
                 return;
             }
         }
-        List<Integer> next = new ArrayList<>(sourceData);
-        int removed = next.remove((int) index);
-        replaceSourceData(next);
-        logI18n("message.sort.deleted", removed, index);
+        int removed = sourceArray.get(index);
+        int removedIndex = index;
+        if (executeStructureOperation("remove", () -> {
+            sourceArray.remove(removedIndex);
+            return null;
+        })) {
+            renderSource();
+            refreshStatsDisplay();
+            logI18n("message.sort.deleted", removed, removedIndex);
+        }
     }
 
     @FXML
@@ -181,7 +248,7 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
         if (value == null) {
             return;
         }
-        int index = sourceData.indexOf(value);
+        int index = sourceArray.raw().indexOf(value);
         if (index < 0) {
             logI18n("message.sort.not_found", value);
             return;
@@ -191,22 +258,21 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @FXML
     private void handleUpdateElement() {
-        Integer index = parseOptionalIndex(updateIndexField, sourceData.size() - 1);
+        Integer index = parseOptionalIndex(updateIndexField, sourceArray.size() - 1);
         Integer value = parseInteger(updateValueField, "message.error.invalid_sort_value");
         if (index == null || value == null) {
             return;
         }
-        List<Integer> next = new ArrayList<>(sourceData);
-        int previous = next.set(index, value);
-        replaceSourceData(next);
-        logI18n("message.sort.updated", index, previous, value);
-    }
-
-    private void replaceSourceData(List<Integer> next) {
-        sourceData = List.copyOf(next);
-        invalidateExecutionForInputChange();
-        renderSource();
-        refreshStatsDisplay();
+        int previous = sourceArray.get(index);
+        int updateIndex = index;
+        if (executeStructureOperation("update", () -> {
+            sourceArray.set(updateIndex, value);
+            return null;
+        })) {
+            renderSource();
+            refreshStatsDisplay();
+            logI18n("message.sort.updated", updateIndex, previous, value);
+        }
     }
 
     private Integer parseInteger(TextField field, String errorKey) {
@@ -238,14 +304,18 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
 
     @Override
     public void handleAlgorithmStart() {
-        if (isRunning() || sourceData.isEmpty()) {
-            return;
-        }
+        if (isRunning()) return;
+        StructureSnapshot<SequenceSnapshot<Integer>> inputSnapshot =
+                algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
+        List<Integer> values = inputSnapshot.state().values();
+        if (values.isEmpty()) return;
         String algorithmId = selectedAlgorithmId();
         dispatchVisualizerAction(
                 com.majortom.algorithms.visualization.VisualizationActionType.SORT_RUN,
-                java.util.Map.of("algorithmId", algorithmId, "size", sourceData.size()));
-        startAlgorithm(algorithmId, new IntegerSortInput(sourceData), IntegerSortEventReducer::new);
+                java.util.Map.of("algorithmId", algorithmId, "size", values.size()));
+        IntegerSortInput input = new IntegerSortInput(values);
+        AbstractIntegerSort algorithm = module("algorithm.array.Integer." + algorithmId, AbstractIntegerSort.class);
+        startAlgorithm(algorithmId, input, () -> algorithm.sort(input), IntegerSortEventReducer::new);
     }
 
     @Override
@@ -268,15 +338,15 @@ public final class SortController extends BaseModuleController<IntegerSortViewSt
     @Override
     protected String formatStatsMessage() {
         return String.format("%s | %s | %s | %s",
-                I18N.text("stats.size", sourceData.size()),
+                I18N.text("stats.size", sourceArray.size()),
                 formatMetric("stats.action", stats.metric("writes")),
                 formatMetric("stats.compare", stats.metric("comparisons")),
-                I18N.text("stats.frames", stats.visualFrameCount()));
+                I18N.text("stats.frames", visualFrameCount()));
     }
 
     @Override
     protected void onResetData() {
-        generateData();
+        replaceArrayContents(randomValues());
         renderSource();
     }
 

@@ -1,6 +1,6 @@
 package com.majortom.algorithms.core.runtime;
 
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
@@ -21,61 +21,47 @@ public final class StatisticsReducer {
         return ExecutionStatistics.empty();
     }
 
-    /** Reduces an event that does not create a visual frame. */
-    public ExecutionStatistics reduce(ExecutionStatistics previous, ExecutionEvent event) {
-        return reduce(previous, event, false);
-    }
-
-    /** Reduces an event and records the visual-frame decision made by a view reducer. */
-    public ExecutionStatistics reduce(
-            ExecutionStatistics previous,
-            ExecutionEvent event,
-            boolean visualFrame) {
+    public ExecutionStatistics reduce(ExecutionStatistics previous, EventEnvelope event) {
         Objects.requireNonNull(previous, "previous");
         Objects.requireNonNull(event, "event");
         if (previous.endedAt().isPresent()) {
             throw new IllegalArgumentException("No event may follow a terminal execution event");
         }
 
-        boolean lifecycle = event.payload() instanceof ExecutionLifecycleEvent;
-        long algorithmEventCount = previous.algorithmEventCount();
+        boolean lifecycle = event.event() instanceof ExecutionLifecycleEvent;
+        long domainEventCount = previous.domainEventCount();
         long lifecycleEventCount = previous.lifecycleEventCount();
         if (lifecycle) {
             lifecycleEventCount = Math.addExact(lifecycleEventCount, 1L);
         } else {
-            algorithmEventCount = Math.addExact(algorithmEventCount, 1L);
+            domainEventCount = Math.addExact(domainEventCount, 1L);
         }
 
-        long visualFrameCount = previous.visualFrameCount();
-        if (visualFrame) {
-            visualFrameCount = Math.addExact(visualFrameCount, 1L);
-        }
 
         Optional<Instant> startedAt = previous.startedAt();
         Optional<Instant> endedAt = previous.endedAt();
-        if (event.payload() instanceof RunStartedEvent) {
+        if (event.event() instanceof RunStartedEvent) {
             if (startedAt.isPresent()) {
                 throw new IllegalArgumentException("A run may only start once");
             }
-            startedAt = Optional.of(event.occurredAt());
+            startedAt = Optional.of(event.timestamp());
         }
         if (isTerminal(event)) {
             if (endedAt.isPresent()) {
                 throw new IllegalArgumentException("A run may only end once");
             }
-            endedAt = Optional.of(event.occurredAt());
+            endedAt = Optional.of(event.timestamp());
         }
 
-        Duration duration = duration(startedAt, endedAt, event.occurredAt());
+        Duration duration = duration(startedAt, endedAt, event.timestamp());
         if (duration.compareTo(previous.duration()) < 0) {
             throw new IllegalArgumentException("Execution event timestamps must be monotonic");
         }
         Map<String, Long> metrics = mergeMetrics(previous.metrics(), event);
         return new ExecutionStatistics(
                 Math.addExact(previous.totalEventCount(), 1L),
-                algorithmEventCount,
+                domainEventCount,
                 lifecycleEventCount,
-                visualFrameCount,
                 startedAt,
                 endedAt,
                 duration,
@@ -100,16 +86,16 @@ public final class StatisticsReducer {
         return duration;
     }
 
-    private static boolean isTerminal(ExecutionEvent event) {
-        return event.payload() instanceof RunCompletedEvent
-                || event.payload() instanceof RunCancelledEvent
-                || event.payload() instanceof RunFailedEvent;
+    private static boolean isTerminal(EventEnvelope event) {
+        return event.event() instanceof RunCompletedEvent
+                || event.event() instanceof RunCancelledEvent
+                || event.event() instanceof RunFailedEvent;
     }
 
     private static Map<String, Long> mergeMetrics(
             Map<String, Long> previous,
-            ExecutionEvent event) {
-        if (!(event.payload() instanceof StatisticsContribution contribution)) {
+            EventEnvelope event) {
+        if (!(event.event() instanceof StatisticsContribution contribution)) {
             return previous;
         }
         Map<String, Long> deltas = Objects.requireNonNull(

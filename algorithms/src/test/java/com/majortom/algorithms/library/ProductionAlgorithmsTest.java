@@ -1,17 +1,19 @@
 package com.majortom.algorithms.library;
 
-import com.majortom.algorithms.core.api.AlgorithmProvider;
-import com.majortom.algorithms.core.runtime.DefaultAlgorithmRunner;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.core.registry.ModuleLoader;
+import com.majortom.algorithms.core.registry.ModuleRegistry;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
+import com.majortom.algorithms.core.runtime.ExecutionRuntime;
+import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.InMemoryEventSink;
-import com.majortom.algorithms.library.catalog.ProviderCatalog;
+import com.majortom.algorithms.library.graph.GraphBfs;
 import com.majortom.algorithms.library.graph.GraphBfsEvent;
-import com.majortom.algorithms.library.graph.GraphBfsInput;
 import com.majortom.algorithms.library.graph.GraphBfsOutput;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.graph.IntGraph;
+import com.majortom.algorithms.library.structure.MutableGraph;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationEvent;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationInput;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationOutput;
@@ -19,18 +21,20 @@ import com.majortom.algorithms.library.maze.ArrayMazePathInput;
 import com.majortom.algorithms.library.maze.ArrayMazePathOutput;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
 import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
+import com.majortom.algorithms.library.maze.GraphMazeBfsGenerator;
 import com.majortom.algorithms.library.maze.GraphMazeGenerationEvent;
 import com.majortom.algorithms.library.maze.GraphMazeGenerationInput;
 import com.majortom.algorithms.library.maze.GraphMazeGenerationOutput;
 import com.majortom.algorithms.library.maze.GridMaze;
 import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.library.sort.AbstractIntegerSort;
 import com.majortom.algorithms.library.sort.event.SortCompletedEvent;
 import com.majortom.algorithms.library.sort.event.SortInitializedEvent;
-import com.majortom.algorithms.library.sort.event.SortSwappedEvent;
-import com.majortom.algorithms.library.sort.event.SortWrittenEvent;
 import com.majortom.algorithms.library.sort.model.IntegerSortInput;
 import com.majortom.algorithms.library.sort.model.IntegerSortOutput;
+import com.majortom.algorithms.library.structure.event.ArrayStructureEvent;
 import com.majortom.algorithms.library.tree.AvlCommand;
+import com.majortom.algorithms.library.tree.AvlTreeCommands;
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.library.tree.AvlTreeEvent;
 import com.majortom.algorithms.library.tree.AvlTreeInput;
@@ -45,7 +49,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,22 +58,23 @@ class ProductionAlgorithmsTest {
             "insertion-sort", "selection-sort", "quick-sort", "heap-sort",
             "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find",
             "graph-generator-bfs", "maze-pathfinder-astar", "maze-pathfinder-dfs",
-            "tree-avl", "graph-bfs");
+            "tree-avl", "graph-bfs", "kmp");
 
     @Test
-    void productionCatalogHasExactlyTwelveUniqueTypedProviders() {
-        ProviderCatalog catalog = ProviderCatalog.production();
-        assertEquals(12, catalog.providers().size());
-        assertEquals(PRODUCTION_IDS, catalog.providers().stream()
-                .map(provider -> provider.metadata().id()).collect(java.util.stream.Collectors.toSet()));
-        for (AlgorithmProvider<?, ?> provider : catalog.providers()) {
-            assertNotNull(provider.inputType());
-            assertNotNull(provider.outputType());
-            assertNotNull(provider.createAlgorithm());
-        }
-        assertFalse(catalog.find("maze-pathfinder-bfs").isPresent());
-        assertThrows(IllegalArgumentException.class,
-                () -> new ProviderCatalog(List.of(catalog.providers().getFirst(), catalog.providers().getFirst())));
+    void productionRegistryContainsAllProductionAlgorithmMappings() {
+        ModuleRegistry registry = ModuleLoader.load();
+        List<String> keys = registry.keys("algorithm.");
+        assertEquals(13, keys.size());
+        assertEquals(PRODUCTION_IDS, keys.stream()
+                .map(key -> key.substring(key.lastIndexOf('.') + 1))
+                .collect(java.util.stream.Collectors.toSet()));
+        assertTrue(keys.stream().allMatch(key -> registry.find(key).isPresent()));
+        assertFalse(registry.contains("algorithm.maze.Boolean.maze-pathfinder-bfs"));
+        assertEquals(Set.of(
+                "structure.array.Integer", "structure.graph.Integer", "structure.linked-list.Integer",
+                "structure.stack.Integer", "structure.queue.Integer", "structure.tree.Integer",
+                "structure.string.String", "structure.hash-table.String.Integer"),
+                Set.copyOf(registry.keys("structure.")));
     }
 
     @Test
@@ -100,8 +104,6 @@ class ProductionAlgorithmsTest {
                 () -> new GraphMazeGenerationInput(Integer.MAX_VALUE, Integer.MAX_VALUE, 1L));
         assertThrows(IllegalArgumentException.class,
                 () -> new GraphMazeGenerationInput(317, 317, 1L));
-        assertThrows(NullPointerException.class, () -> new ArrayMazeGenerator(null));
-        assertThrows(NullPointerException.class, () -> new ArrayMazePathfinder(null));
     }
 
     @Test
@@ -115,7 +117,7 @@ class ProductionAlgorithmsTest {
                 () -> new IntGraph(List.of(1), java.util.Collections.nCopies(
                         IntGraph.MAX_EDGES + 1, new IntEdge(1, 1))));
         assertThrows(IllegalArgumentException.class,
-                () -> new AvlTreeInput(java.util.Collections.nCopies(
+                () -> AvlTreeInput.fromValues(java.util.Collections.nCopies(
                         AvlTreeInput.MAX_OPERATIONS + 1, 1), List.of()));
     }
 
@@ -150,15 +152,21 @@ class ProductionAlgorithmsTest {
 
     @Test
     void graphAlgorithmsAreCorrectAndEventsRebuildResults() {
-        IntGraph graph = new IntGraph(
-                List.of(0, 1, 2, 3, 4),
-                List.of(new IntEdge(0, 1), new IntEdge(0, 2), new IntEdge(1, 3),
-                        new IntEdge(2, 3), new IntEdge(3, 4)));
+        MutableGraph<Integer> graph = new MutableGraph<>();
+        for (int node = 0; node < 5; node++) graph.addVertex(node);
+        graph.addEdge(0, 1);
+        graph.addEdge(0, 2);
+        graph.addEdge(1, 3);
+        graph.addEdge(2, 3);
+        graph.addEdge(3, 4);
         InMemoryEventSink bfsSink = new InMemoryEventSink();
-        GraphBfsOutput bfs = (GraphBfsOutput) run("graph-bfs", new GraphBfsInput(graph, 0), bfsSink);
+        GraphBfs algorithm = ModuleLoader.load().create("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
+        ExecutionResult bfsResult = new ExecutionRuntime().execute("graph-bfs", bfsSink, () -> algorithm.traverse(graph, 0));
+        assertEquals(ExecutionStatus.COMPLETED, bfsResult.status());
+        GraphBfsOutput bfs = (GraphBfsOutput) bfsResult.output().orElseThrow();
         assertEquals(List.of(0, 1, 2, 3, 4), bfs.visitOrder());
         assertEquals(bfs.visitOrder(), bfsSink.events().stream()
-                .map(ExecutionEvent::payload)
+                .map(EventEnvelope::event)
                 .filter(GraphBfsEvent.Visited.class::isInstance)
                 .map(GraphBfsEvent.Visited.class::cast)
                 .map(GraphBfsEvent.Visited::node).toList());
@@ -169,7 +177,7 @@ class ProductionAlgorithmsTest {
         assertEquals(20, generated.graph().nodes().size());
         assertEquals(38, generated.graph().edges().size());
         List<IntEdge> replayed = mazeSink.events().stream()
-                .map(ExecutionEvent::payload)
+                .map(EventEnvelope::event)
                 .filter(GraphMazeGenerationEvent.EdgeAdded.class::isInstance)
                 .map(GraphMazeGenerationEvent.EdgeAdded.class::cast)
                 .map(GraphMazeGenerationEvent.EdgeAdded::edge).toList();
@@ -181,7 +189,7 @@ class ProductionAlgorithmsTest {
         InMemoryEventSink sink = new InMemoryEventSink();
         AvlTreeOutput output = (AvlTreeOutput) run(
                 "tree-avl",
-                new AvlTreeInput(
+                AvlTreeInput.fromValues(
                         List.of(30, 20, 10, 25, 40, 50),
                         List.of(
                                 new AvlCommand(AvlCommand.Operation.REMOVE, 20),
@@ -190,7 +198,7 @@ class ProductionAlgorithmsTest {
         assertEquals(List.of(10, 25, 30, 35, 40, 50), output.values());
         assertAvl(output.root(), null, null);
         AvlTreeEvent.Completed completed = sink.events().stream()
-                .map(ExecutionEvent::payload)
+                .map(EventEnvelope::event)
                 .filter(AvlTreeEvent.Completed.class::isInstance)
                 .map(AvlTreeEvent.Completed.class::cast)
                 .findFirst().orElseThrow();
@@ -198,41 +206,60 @@ class ProductionAlgorithmsTest {
         assertEquals(output.values(), completed.values());
     }
 
-    private Object run(String id, com.majortom.algorithms.core.api.AlgorithmInput input, InMemoryEventSink sink) {
-        ExecutionResult result = new DefaultAlgorithmRunner().run(
-                ProviderCatalog.production().require(id).invoker(), input, sink);
+    private Object run(String id, Object input, InMemoryEventSink sink) {
+        ModuleRegistry registry = ModuleLoader.load();
+        ExecutionOperation<?> operation;
+        if (id.endsWith("-sort")) {
+            AbstractIntegerSort algorithm = registry.create("algorithm.array.Integer." + id, AbstractIntegerSort.class);
+            operation = () -> algorithm.sort((IntegerSortInput) input);
+        } else if (id.startsWith("maze-generator-")) {
+            ArrayMazeGenerator algorithm = registry.create("algorithm.maze.Boolean." + id, ArrayMazeGenerator.class);
+            operation = () -> algorithm.generate((ArrayMazeGenerationInput) input);
+        } else if (id.startsWith("maze-pathfinder-")) {
+            ArrayMazePathfinder algorithm = registry.create("algorithm.maze.Boolean." + id, ArrayMazePathfinder.class);
+            operation = () -> algorithm.findPath((ArrayMazePathInput) input);
+        } else if (id.equals("graph-generator-bfs")) {
+            GraphMazeBfsGenerator algorithm = registry.create("algorithm.graph.Integer." + id, GraphMazeBfsGenerator.class);
+            operation = () -> algorithm.generate((GraphMazeGenerationInput) input);
+        } else if (id.equals("tree-avl")) {
+            AvlTreeCommands algorithm = registry.create("algorithm.tree.Integer." + id, AvlTreeCommands.class);
+            operation = () -> algorithm.execute((AvlTreeInput) input);
+        } else {
+            throw new IllegalArgumentException("Unknown production algorithm: " + id);
+        }
+        ExecutionResult result = new ExecutionRuntime().execute(id, sink, operation);
         assertEquals(ExecutionStatus.COMPLETED, result.status(), id);
         return result.output().orElseThrow();
     }
 
-    private List<Integer> replaySort(List<ExecutionEvent> events) {
+    private List<Integer> replaySort(List<EventEnvelope> events) {
         List<Integer> values = new ArrayList<>();
-        for (ExecutionEvent event : events) {
-            if (event.payload() instanceof SortInitializedEvent initialized) {
+        for (EventEnvelope event : events) {
+            if (event.event() instanceof SortInitializedEvent initialized) {
                 values = new ArrayList<>(initialized.values());
-            } else if (event.payload() instanceof SortWrittenEvent written) {
-                values.set(written.index(), written.value());
-            } else if (event.payload() instanceof SortSwappedEvent swapped) {
-                values.set(swapped.leftIndex(), swapped.leftValue());
-                values.set(swapped.rightIndex(), swapped.rightValue());
-            } else if (event.payload() instanceof SortCompletedEvent completed) {
+            } else if (event.event() instanceof ArrayStructureEvent.Updated updated) {
+                values.set(updated.index(), (Integer) updated.value());
+            } else if (event.event() instanceof ArrayStructureEvent.Swapped swapped) {
+                values.set(swapped.leftIndex(), (Integer) swapped.leftValue());
+                values.set(swapped.rightIndex(), (Integer) swapped.rightValue());
+            } else if (event.event() instanceof SortCompletedEvent completed) {
                 assertEquals(completed.values(), values);
             }
         }
         return values;
     }
 
-    private GridMaze replayMaze(List<ExecutionEvent> events) {
+    private GridMaze replayMaze(List<EventEnvelope> events) {
         ArrayMazeGenerationEvent.Initialized initialized = events.stream()
-                .map(ExecutionEvent::payload)
+                .map(EventEnvelope::event)
                 .filter(ArrayMazeGenerationEvent.Initialized.class::isInstance)
                 .map(ArrayMazeGenerationEvent.Initialized.class::cast).findFirst().orElseThrow();
         List<Boolean> open = new ArrayList<>();
         for (int index = 0; index < initialized.rows() * initialized.columns(); index++) {
             open.add(false);
         }
-        for (ExecutionEvent event : events) {
-            if (event.payload() instanceof ArrayMazeGenerationEvent.CellOpened cell) {
+        for (EventEnvelope event : events) {
+            if (event.event() instanceof ArrayMazeGenerationEvent.CellOpened cell) {
                 open.set(cell.point().row() * initialized.columns() + cell.point().column(), true);
             }
         }

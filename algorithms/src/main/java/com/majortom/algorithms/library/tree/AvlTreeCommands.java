@@ -1,34 +1,38 @@
 package com.majortom.algorithms.library.tree;
 
-import com.majortom.algorithms.core.api.Algorithm;
-import com.majortom.algorithms.core.api.AlgorithmContext;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** AVL insertion/removal command processor with replayable semantic steps. */
-public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOutput> {
+public final class AvlTreeCommands {
 
     private long nextNodeId;
     private Node currentRoot;
 
-    @Override
-    public AvlTreeOutput run(AvlTreeInput input, AlgorithmContext context) throws InterruptedException {
+    public AvlTreeOutput execute(AvlTreeInput input) {
         nextNodeId = 1;
-        Node root = null;
-        for (int value : input.initialValues()) {
-            root = insertInitial(root, null, value);
+        Node root;
+        if (input.initialRoot() != null) {
+            root = restore(input.initialRoot(), null);
+            nextNodeId = maxNodeId(root) + 1;
+        } else {
+            root = null;
+            for (int value : input.initialValues()) {
+                root = insertInitial(root, null, value);
+            }
         }
         currentRoot = root;
-        context.emit(new AvlTreeEvent.Initialized(snapshot(root)));
+        ExecutionEvents.emit(new AvlTreeEvent.Initialized(snapshot(root)));
         Long focusId = null;
         Integer focusValue = null;
         for (AvlCommand command : input.commands()) {
-            context.checkpoint();
+            ExecutionEvents.checkpoint();
             if (command.operation() == AvlCommand.Operation.INSERT) {
-                root = insert(root, command.value(), null, null, command, context);
+                root = insert(root, command.value(), null, null, command);
             } else {
-                root = remove(root, command.value(), null, command, context);
+                root = remove(root, command.value(), null, command);
             }
             currentRoot = root;
             Node focus = findNearest(root, command.value());
@@ -38,14 +42,28 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
                 focusId = focus.id;
                 focusValue = focus.value;
             }
-            context.emit(new AvlTreeEvent.CommandCompleted(
+            ExecutionEvents.emit(new AvlTreeEvent.CommandCompleted(
                     command, snapshot(root), focusId, focusValue));
         }
         List<Integer> values = new ArrayList<>();
         traverse(root, values);
         AvlNodeSnapshot finalSnapshot = snapshot(root);
-        context.emit(new AvlTreeEvent.Completed(finalSnapshot, values, focusId, focusValue));
+        ExecutionEvents.emit(new AvlTreeEvent.Completed(finalSnapshot, values, focusId, focusValue));
         return new AvlTreeOutput(finalSnapshot, values);
+    }
+
+    private Node restore(AvlNodeSnapshot snapshot, Node parent) {
+        if (snapshot == null) return null;
+        Node node = new Node(snapshot.id(), snapshot.value(), parent);
+        node.height = snapshot.height();
+        node.left = restore(snapshot.left(), node);
+        node.right = restore(snapshot.right(), node);
+        return node;
+    }
+
+    private long maxNodeId(Node node) {
+        if (node == null) return 0L;
+        return Math.max(node.id, Math.max(maxNodeId(node.left), maxNodeId(node.right)));
     }
 
     private Node insertInitial(Node node, Node parent, int value) {
@@ -69,9 +87,8 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
             int value,
             Node parent,
             TreeStepEvent.Relation relation,
-            AvlCommand command,
-            AlgorithmContext context) throws InterruptedException {
-        context.checkpoint();
+            AvlCommand command) {
+        ExecutionEvents.checkpoint();
         if (node == null) {
             Node inserted = new Node(nextNodeId++, value, parent);
             Long parentId = null;
@@ -81,125 +98,123 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
             } else {
                 currentRoot = inserted;
             }
-            context.emit(new TreeStepEvent.NodeInserted(
+            ExecutionEvents.emit(new TreeStepEvent.NodeInserted(
                     command, inserted.id, inserted.value, parentId, relation));
             if (parent != null) {
-                context.emit(new TreeStepEvent.LinkChanged(
+                ExecutionEvents.emit(new TreeStepEvent.LinkChanged(
                         command, parent.id, inserted.id, relation));
             }
             emitStructureChanged(
-                    command, inserted.id, AvlTreeEvent.StructurePhase.INSERTED, context);
+                    command, inserted.id, AvlTreeEvent.StructurePhase.INSERTED);
             return inserted;
         }
-        emitVisitAndComparison(node, parent, value, command, context);
+        emitVisitAndComparison(node, parent, value, command);
         if (value < node.value) {
-            context.emit(new TreeStepEvent.ChildSelected(
+            ExecutionEvents.emit(new TreeStepEvent.ChildSelected(
                     command, node.id, node.value, id(node.left), value(node.left),
                     TreeStepEvent.Relation.LEFT));
             node.left = insert(
-                    node.left, value, node, TreeStepEvent.Relation.LEFT, command, context);
+                    node.left, value, node, TreeStepEvent.Relation.LEFT, command);
         } else if (value > node.value) {
-            context.emit(new TreeStepEvent.ChildSelected(
+            ExecutionEvents.emit(new TreeStepEvent.ChildSelected(
                     command, node.id, node.value, id(node.right), value(node.right),
                     TreeStepEvent.Relation.RIGHT));
             node.right = insert(
-                    node.right, value, node, TreeStepEvent.Relation.RIGHT, command, context);
+                    node.right, value, node, TreeStepEvent.Relation.RIGHT, command);
         } else {
             return node;
         }
-        return rebalance(node, command, context);
+        return rebalance(node, command);
     }
 
     private Node remove(
             Node node,
             int target,
             Node parent,
-            AvlCommand command,
-            AlgorithmContext context) throws InterruptedException {
-        context.checkpoint();
+            AvlCommand command) {
+        ExecutionEvents.checkpoint();
         if (node == null) {
             return null;
         }
-        emitVisitAndComparison(node, parent, target, command, context);
+        emitVisitAndComparison(node, parent, target, command);
         if (target < node.value) {
-            context.emit(new TreeStepEvent.ChildSelected(
+            ExecutionEvents.emit(new TreeStepEvent.ChildSelected(
                     command, node.id, node.value, id(node.left), value(node.left),
                     TreeStepEvent.Relation.LEFT));
-            node.left = remove(node.left, target, node, command, context);
+            node.left = remove(node.left, target, node, command);
         } else if (target > node.value) {
-            context.emit(new TreeStepEvent.ChildSelected(
+            ExecutionEvents.emit(new TreeStepEvent.ChildSelected(
                     command, node.id, node.value, id(node.right), value(node.right),
                     TreeStepEvent.Relation.RIGHT));
-            node.right = remove(node.right, target, node, command, context);
+            node.right = remove(node.right, target, node, command);
         } else {
             if (node.left == null) {
                 Node replacement = node.right;
                 TreeStepEvent.Relation removedRelation = relationOf(parent, node);
                 replaceNode(node, replacement);
-                context.emit(new TreeStepEvent.NodeRemoved(
+                ExecutionEvents.emit(new TreeStepEvent.NodeRemoved(
                         command, node.id, node.value, id(parent)));
-                emitReplacementLink(command, parent, replacement, removedRelation, context);
+                emitReplacementLink(command, parent, replacement, removedRelation);
                 emitStructureChanged(
                         command, focusAfterRemoval(replacement, parent),
-                        AvlTreeEvent.StructurePhase.REMOVED, context);
+                        AvlTreeEvent.StructurePhase.REMOVED);
                 return replacement;
             }
             if (node.right == null) {
                 Node replacement = node.left;
                 TreeStepEvent.Relation removedRelation = relationOf(parent, node);
                 replaceNode(node, replacement);
-                context.emit(new TreeStepEvent.NodeRemoved(
+                ExecutionEvents.emit(new TreeStepEvent.NodeRemoved(
                         command, node.id, node.value, id(parent)));
-                emitReplacementLink(command, parent, replacement, removedRelation, context);
+                emitReplacementLink(command, parent, replacement, removedRelation);
                 emitStructureChanged(
                         command, focusAfterRemoval(replacement, parent),
-                        AvlTreeEvent.StructurePhase.REMOVED, context);
+                        AvlTreeEvent.StructurePhase.REMOVED);
                 return replacement;
             }
-            Node successor = minimum(node.right, node, command, context);
+            Node successor = minimum(node.right, node, command);
             int previousValue = node.value;
             node.value = successor.value;
-            context.emit(new TreeStepEvent.NodeValueReplaced(
+            ExecutionEvents.emit(new TreeStepEvent.NodeValueReplaced(
                     command, node.id, previousValue, successor.value));
             emitStructureChanged(
-                    command, node.id, AvlTreeEvent.StructurePhase.VALUE_REPLACED, context);
-            node.right = remove(node.right, successor.value, node, command, context);
+                    command, node.id, AvlTreeEvent.StructurePhase.VALUE_REPLACED);
+            node.right = remove(node.right, successor.value, node, command);
         }
-        return rebalance(node, command, context);
+        return rebalance(node, command);
     }
 
     private void emitVisitAndComparison(
             Node node,
             Node parent,
             int target,
-            AvlCommand command,
-            AlgorithmContext context) {
-        context.emit(new TreeStepEvent.NodeVisited(command, node.id, node.value, id(parent)));
+            AvlCommand command) {
+        ExecutionEvents.emit(new TreeStepEvent.NodeVisited(command, node.id, node.value, id(parent)));
         TreeStepEvent.Comparison comparison = TreeStepEvent.Comparison.EQUAL;
         if (target < node.value) {
             comparison = TreeStepEvent.Comparison.LESS;
         } else if (target > node.value) {
             comparison = TreeStepEvent.Comparison.GREATER;
         }
-        context.emit(new TreeStepEvent.NodeCompared(
+        ExecutionEvents.emit(new TreeStepEvent.NodeCompared(
                 command, target, node.id, node.value, comparison));
     }
 
-    private Node rebalance(Node node, AvlCommand command, AlgorithmContext context) {
-        updateHeight(node, command, context);
+    private Node rebalance(Node node, AvlCommand command) {
+        updateHeight(node, command);
         int balance = height(node.left) - height(node.right);
-        context.emit(new AvlTreeEvent.BalanceChecked(command, node.id, node.value, balance));
+        ExecutionEvents.emit(new AvlTreeEvent.BalanceChecked(command, node.id, node.value, balance));
         if (balance > 1) {
             if (height(node.left.left) < height(node.left.right)) {
-                node.left = rotateLeft(node.left, command, context);
+                node.left = rotateLeft(node.left, command);
             }
-            return rotateRight(node, command, context);
+            return rotateRight(node, command);
         }
         if (balance < -1) {
             if (height(node.right.right) < height(node.right.left)) {
-                node.right = rotateRight(node.right, command, context);
+                node.right = rotateRight(node.right, command);
             }
-            return rotateLeft(node, command, context);
+            return rotateLeft(node, command);
         }
         return node;
     }
@@ -222,7 +237,7 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
         return node;
     }
 
-    private Node rotateLeft(Node root, AvlCommand command, AlgorithmContext context) {
+    private Node rotateLeft(Node root, AvlCommand command) {
         Node replacement = root.right;
         Node previousParent = root.parent;
         Node transfer = replacement.left;
@@ -235,17 +250,17 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
         root.parent = replacement;
         updateHeight(root);
         updateHeight(replacement);
-        context.emit(new AvlTreeEvent.Rotated(
+        ExecutionEvents.emit(new AvlTreeEvent.Rotated(
                 command, AvlTreeEvent.Direction.LEFT,
                 root.id, root.value, replacement.id, replacement.value));
         emitStructureChanged(
-                command, replacement.id, AvlTreeEvent.StructurePhase.ROTATED, context);
-        emitHeightUpdated(root, command, context);
-        emitHeightUpdated(replacement, command, context);
+                command, replacement.id, AvlTreeEvent.StructurePhase.ROTATED);
+        emitHeightUpdated(root, command);
+        emitHeightUpdated(replacement, command);
         return replacement;
     }
 
-    private Node rotateRight(Node root, AvlCommand command, AlgorithmContext context) {
+    private Node rotateRight(Node root, AvlCommand command) {
         Node replacement = root.left;
         Node previousParent = root.parent;
         Node transfer = replacement.right;
@@ -258,13 +273,13 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
         root.parent = replacement;
         updateHeight(root);
         updateHeight(replacement);
-        context.emit(new AvlTreeEvent.Rotated(
+        ExecutionEvents.emit(new AvlTreeEvent.Rotated(
                 command, AvlTreeEvent.Direction.RIGHT,
                 root.id, root.value, replacement.id, replacement.value));
         emitStructureChanged(
-                command, replacement.id, AvlTreeEvent.StructurePhase.ROTATED, context);
-        emitHeightUpdated(root, command, context);
-        emitHeightUpdated(replacement, command, context);
+                command, replacement.id, AvlTreeEvent.StructurePhase.ROTATED);
+        emitHeightUpdated(root, command);
+        emitHeightUpdated(replacement, command);
         return replacement;
     }
 
@@ -303,18 +318,17 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
     private Node minimum(
             Node node,
             Node parent,
-            AvlCommand command,
-            AlgorithmContext context) throws InterruptedException {
+            AvlCommand command) {
         Node current = node;
         Node currentParent = parent;
         while (true) {
-            context.checkpoint();
-            context.emit(new TreeStepEvent.NodeVisited(
+            ExecutionEvents.checkpoint();
+            ExecutionEvents.emit(new TreeStepEvent.NodeVisited(
                     command, current.id, current.value, id(currentParent)));
             if (current.left == null) {
                 return current;
             }
-            context.emit(new TreeStepEvent.ChildSelected(
+            ExecutionEvents.emit(new TreeStepEvent.ChildSelected(
                     command, current.id, current.value, current.left.id, current.left.value,
                     TreeStepEvent.Relation.LEFT));
             currentParent = current;
@@ -369,9 +383,8 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
     private void emitStructureChanged(
             AvlCommand command,
             Long focusId,
-            AvlTreeEvent.StructurePhase phase,
-            AlgorithmContext context) {
-        context.emit(new AvlTreeEvent.StructureChanged(
+            AvlTreeEvent.StructurePhase phase) {
+        ExecutionEvents.emit(new AvlTreeEvent.StructureChanged(
                 command, snapshot(currentRoot), focusId, phase));
     }
 
@@ -406,12 +419,11 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
             AvlCommand command,
             Node parent,
             Node replacement,
-            TreeStepEvent.Relation relation,
-            AlgorithmContext context) {
+            TreeStepEvent.Relation relation) {
         if (parent == null) {
             return;
         }
-        context.emit(new TreeStepEvent.LinkChanged(
+        ExecutionEvents.emit(new TreeStepEvent.LinkChanged(
                 command, parent.id, id(replacement), relation));
     }
 
@@ -445,13 +457,13 @@ public final class AvlTreeCommands implements Algorithm<AvlTreeInput, AvlTreeOut
         return id(parent);
     }
 
-    private void updateHeight(Node node, AvlCommand command, AlgorithmContext context) {
+    private void updateHeight(Node node, AvlCommand command) {
         updateHeight(node);
-        emitHeightUpdated(node, command, context);
+        emitHeightUpdated(node, command);
     }
 
-    private void emitHeightUpdated(Node node, AvlCommand command, AlgorithmContext context) {
-        context.emit(new AvlTreeEvent.HeightUpdated(
+    private void emitHeightUpdated(Node node, AvlCommand command) {
+        ExecutionEvents.emit(new AvlTreeEvent.HeightUpdated(
                 command, node.id, node.value, node.height));
     }
 

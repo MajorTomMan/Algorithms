@@ -7,8 +7,8 @@
  */
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
 
 public class 二叉树的层序遍历{

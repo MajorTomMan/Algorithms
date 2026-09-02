@@ -1,12 +1,12 @@
 package com.majortom.algorithms.app.leetcode.ds.stack_queue;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
 
 public class 栈实现队列 {
     private static class StackQueue{
-        private Stack<Integer> stack_1;
-        private Stack<Integer> stack_2;
+        private Deque<Integer> stack_1;
+        private Deque<Integer> stack_2;
         public StackQueue(){
             stack_1=new LinkedList<>();
             stack_2=new LinkedList<>();

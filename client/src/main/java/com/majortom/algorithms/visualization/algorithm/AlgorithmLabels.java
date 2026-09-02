@@ -19,7 +19,8 @@ public final class AlgorithmLabels {
             Map.entry("maze-pathfinder-astar", "algorithm.maze.solve.astar"),
             Map.entry("maze-pathfinder-dfs", "algorithm.maze.solve.dfs"),
             Map.entry("tree-avl", "algorithm.tree.avl"),
-            Map.entry("graph-bfs", "algorithm.graph.bfs"));
+            Map.entry("graph-bfs", "algorithm.graph.bfs"),
+            Map.entry("kmp", "algorithm.string.kmp"));
 
     private AlgorithmLabels() {
     }

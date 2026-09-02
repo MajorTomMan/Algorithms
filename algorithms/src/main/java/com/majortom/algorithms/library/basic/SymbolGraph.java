@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.majortom.algorithms.library.basic.interfaces.Queue;
+import com.majortom.algorithms.library.structure.LinkedQueue;
 
 public class SymbolGraph {
     private Map<String, List<String>> graph;
@@ -50,15 +50,15 @@ public class SymbolGraph {
 
     public void bfs(String vertex) {
         visited.put(vertex, true);
-        Queue<String> queue = new LinkedList<>();
-        queue.add(vertex);
+        LinkedQueue<String> queue = new LinkedQueue<>();
+        queue.enqueue(vertex);
         while (!queue.isEmpty()) {
-            String v = queue.poll();
+            String v = queue.dequeue();
             System.out.println("point: "+keys.get(0) + "\t" + keys.get(1) + "\t" + keys.get(2) + "\t" + keys.get(3) + "\t");
             System.out.println("point is visited?"+"\t"+visited.get(keys.get(0)) + "\t" + visited.get(keys.get(1)) + "\t" + visited.get(keys.get(2)) + "\t" + visited.get(keys.get(3)) + " ");
             for (String w : graph.get(v)) {
                 if (!visited.get(w)) {
-                    queue.add(w);
+                    queue.enqueue(w);
                     visited.put(w, true);
                 } 
             }

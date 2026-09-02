@@ -1,13 +1,13 @@
 package com.majortom.algorithms.library.tree;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.Map;
 import java.util.Objects;
 
 /** Structure-neutral binary-tree steps shared by tree algorithm implementations. */
-public sealed interface TreeStepEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface TreeStepEvent extends ExecutionEvent, StatisticsContribution
         permits TreeStepEvent.NodeVisited, TreeStepEvent.NodeCompared,
         TreeStepEvent.ChildSelected, TreeStepEvent.NodeInserted,
         TreeStepEvent.NodeRemoved, TreeStepEvent.NodeValueReplaced,

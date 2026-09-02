@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.algo.search;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class 迷宫回溯问题 {
     public static void main(String[] args) {

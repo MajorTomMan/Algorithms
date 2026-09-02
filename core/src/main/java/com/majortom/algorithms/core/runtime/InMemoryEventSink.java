@@ -7,14 +7,14 @@ import java.util.Objects;
 /** Thread-safe in-memory event collector for replay, tests, and local runs. */
 public final class InMemoryEventSink implements EventSink {
 
-    private final List<ExecutionEvent> events = new ArrayList<>();
+    private final List<EventEnvelope> events = new ArrayList<>();
 
     @Override
-    public synchronized void accept(ExecutionEvent event) {
+    public synchronized void accept(EventEnvelope event) {
         events.add(Objects.requireNonNull(event, "event"));
     }
 
-    public synchronized List<ExecutionEvent> events() {
+    public synchronized List<EventEnvelope> events() {
         return List.copyOf(events);
     }
 }

@@ -1,83 +1,121 @@
 package com.majortom.algorithms.visualization.runtime;
 
+import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.EventSink;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
 import javafx.application.Platform;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
-/**
- * Bounded, best-effort JavaFX observation channel for authoritative execution events.
- *
- * <p>Only one drain task is submitted at a time. Producers apply back pressure when the local
- * queue is full, so a fast algorithm cannot create an unbounded {@code Platform.runLater} queue.
- * Dispatcher and observer failures are deliberately isolated from algorithm execution: the
- * authoritative sink must be invoked before this observer, and remains the source for replay.</p>
- */
+/** Ordered, non-blocking live playback queue for authoritative Runtime events. */
 public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
-    static final int DEFAULT_CAPACITY = 256;
-    static final int DEFAULT_BATCH_SIZE = 64;
+    static final int DEFAULT_CAPACITY = 200_000;
 
     private final Consumer<Runnable> dispatcher;
-    private final Consumer<ExecutionEvent> consumer;
+    private final Consumer<EventEnvelope> consumer;
+    private final LongSupplier delayMillisSupplier;
     private final int capacity;
-    private final int batchSize;
+    private final ScheduledExecutorService playbackScheduler;
     private final Object lock = new Object();
-    private final Deque<ExecutionEvent> pendingEvents = new ArrayDeque<>();
+    private final Deque<EventEnvelope> pendingEvents = new ArrayDeque<>();
 
-    private boolean drainScheduled;
+    private boolean dispatchInFlight;
+    private boolean paused;
+    private int stepPermits;
     private boolean closed;
     private RuntimeException dispatcherFailure;
     private RuntimeException observerFailure;
     private long observerFailureCount;
+    private CompletableFuture<Void> drained = CompletableFuture.completedFuture(null);
 
-    public JavaFxEventSink(Consumer<ExecutionEvent> consumer) {
-        this(Platform::runLater, consumer, DEFAULT_CAPACITY, DEFAULT_BATCH_SIZE);
+    public JavaFxEventSink(Consumer<EventEnvelope> consumer) {
+        this(Platform::runLater, consumer, DEFAULT_CAPACITY, () -> 0L);
     }
 
-    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<ExecutionEvent> consumer) {
-        this(dispatcher, consumer, DEFAULT_CAPACITY, DEFAULT_BATCH_SIZE);
+    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer) {
+        this(dispatcher, consumer, DEFAULT_CAPACITY, () -> 0L);
     }
 
-    JavaFxEventSink(
-            Consumer<Runnable> dispatcher,
-            Consumer<ExecutionEvent> consumer,
-            int capacity,
-            int batchSize) {
+    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity, int ignoredBatchSize) {
+        this(dispatcher, consumer, capacity, () -> 0L);
+    }
+
+    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity,
+            LongSupplier delayMillisSupplier) {
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
         this.consumer = Objects.requireNonNull(consumer, "consumer");
+        this.delayMillisSupplier = Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
-        if (batchSize <= 0) {
-            throw new IllegalArgumentException("batchSize must be positive");
-        }
         this.capacity = capacity;
-        this.batchSize = batchSize;
+        this.playbackScheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "live-playback");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     @Override
-    public void accept(ExecutionEvent event) {
+    public void accept(EventEnvelope event) {
         Objects.requireNonNull(event, "event");
-        boolean scheduleDrain = false;
         synchronized (lock) {
-            boolean queueSpaceAvailable = awaitQueueSpace();
-            if (!queueSpaceAvailable || closed || dispatcherFailure != null) {
+            if (closed || dispatcherFailure != null || observerFailure != null) {
                 return;
             }
-            pendingEvents.addLast(event);
-            if (!drainScheduled) {
-                drainScheduled = true;
-                scheduleDrain = true;
+            if (pendingEvents.size() >= capacity) {
+                observerFailure = new IllegalStateException("Live playback queue capacity exceeded: " + capacity);
+                observerFailureCount++;
+                pendingEvents.clear();
+                completeDrainedIfIdle();
+                return;
             }
+            if (pendingEvents.isEmpty() && !dispatchInFlight) {
+                drained = new CompletableFuture<>();
+            }
+            pendingEvents.addLast(event);
+            scheduleNextLocked(0L);
         }
-        if (scheduleDrain) {
-            dispatchDrain();
+    }
+
+    public void pause() {
+        synchronized (lock) {
+            paused = true;
+            stepPermits = 0;
+        }
+    }
+
+    public void resume() {
+        synchronized (lock) {
+            paused = false;
+            stepPermits = 0;
+            scheduleNextLocked(0L);
+        }
+    }
+
+    public void step() {
+        synchronized (lock) {
+            if (!paused || closed) {
+                return;
+            }
+            stepPermits++;
+            scheduleNextLocked(0L);
+        }
+    }
+
+    public CompletableFuture<Void> drained() {
+        synchronized (lock) {
+            return drained;
         }
     }
 
@@ -105,105 +143,102 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
         }
     }
 
-    /** Waits on the producer thread until all queued observer work is consumed or disabled. */
-    void awaitDrained() {
-        synchronized (lock) {
-            while (!closed && dispatcherFailure == null
-                    && (!pendingEvents.isEmpty() || drainScheduled)) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException exception) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        }
-    }
-
     @Override
     public void close() {
         synchronized (lock) {
+            if (closed) {
+                return;
+            }
             closed = true;
             pendingEvents.clear();
-            lock.notifyAll();
-        }
-    }
-
-    private boolean awaitQueueSpace() {
-        while (pendingEvents.size() >= capacity && !closed && dispatcherFailure == null) {
-            try {
-                lock.wait();
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-                return false;
+            dispatchInFlight = false;
+            if (!drained.isDone()) {
+                drained.complete(null);
             }
         }
-        return true;
+        playbackScheduler.shutdownNow();
     }
 
-    private void dispatchDrain() {
-        try {
-            dispatcher.accept(this::drainBatch);
-        } catch (RuntimeException exception) {
-            disableDispatcher(exception);
+    private void scheduleNextLocked(long delayMillis) {
+        if (closed || dispatcherFailure != null || observerFailure != null || dispatchInFlight || pendingEvents.isEmpty()) {
+            completeDrainedIfIdle();
+            return;
         }
+        if (paused && stepPermits == 0) {
+            return;
+        }
+        EventEnvelope next = pendingEvents.peekFirst();
+        long delay = next != null && next.event() instanceof ExecutionLifecycleEvent ? 0L : Math.max(0L, delayMillis);
+        dispatchInFlight = true;
+        playbackScheduler.schedule(this::dispatchNext, delay, TimeUnit.MILLISECONDS);
     }
 
-    private void drainBatch() {
-        int drained = 0;
-        while (drained < batchSize) {
-            ExecutionEvent event;
-            synchronized (lock) {
-                if (closed || dispatcherFailure != null) {
-                    drainScheduled = false;
-                    pendingEvents.clear();
-                    lock.notifyAll();
-                    return;
-                }
-                event = pendingEvents.pollFirst();
-                lock.notifyAll();
-                if (event == null) {
-                    drainScheduled = false;
-                    lock.notifyAll();
-                    return;
-                }
-            }
-            notifyObserver(event);
-            drained++;
-        }
-
-        boolean scheduleAnotherDrain;
+    private void dispatchNext() {
+        EventEnvelope event;
         synchronized (lock) {
-            scheduleAnotherDrain = !closed
-                    && dispatcherFailure == null
-                    && !pendingEvents.isEmpty();
-            if (!scheduleAnotherDrain) {
-                drainScheduled = false;
-                lock.notifyAll();
+            if (closed || dispatcherFailure != null || observerFailure != null) {
+                dispatchInFlight = false;
+                completeDrainedIfIdle();
+                return;
+            }
+            if (paused && stepPermits == 0) {
+                dispatchInFlight = false;
+                return;
+            }
+            event = pendingEvents.pollFirst();
+            if (paused && stepPermits > 0) {
+                stepPermits--;
+            }
+            if (event == null) {
+                dispatchInFlight = false;
+                completeDrainedIfIdle();
+                return;
             }
         }
-        if (scheduleAnotherDrain) {
-            dispatchDrain();
+        try {
+            dispatcher.accept(() -> consumeAndContinue(event));
+        } catch (RuntimeException exception) {
+            synchronized (lock) {
+                dispatcherFailure = exception;
+                dispatchInFlight = false;
+                pendingEvents.clear();
+                completeDrainedIfIdle();
+            }
         }
     }
 
-    private void notifyObserver(ExecutionEvent event) {
+    private void consumeAndContinue(EventEnvelope event) {
+        synchronized (lock) {
+            if (closed) {
+                dispatchInFlight = false;
+                completeDrainedIfIdle();
+                return;
+            }
+        }
         try {
             consumer.accept(event);
         } catch (RuntimeException exception) {
             synchronized (lock) {
                 observerFailure = exception;
                 observerFailureCount++;
+                pendingEvents.clear();
+            }
+        } finally {
+            synchronized (lock) {
+                dispatchInFlight = false;
+                if (closed || dispatcherFailure != null || observerFailure != null) {
+                    completeDrainedIfIdle();
+                    return;
+                }
+                long delay = event.event() instanceof ExecutionLifecycleEvent ? 0L : Math.max(0L, delayMillisSupplier.getAsLong());
+                scheduleNextLocked(delay);
             }
         }
     }
 
-    private void disableDispatcher(RuntimeException exception) {
-        synchronized (lock) {
-            dispatcherFailure = exception;
-            drainScheduled = false;
-            pendingEvents.clear();
-            lock.notifyAll();
+    private void completeDrainedIfIdle() {
+        if (!dispatchInFlight && pendingEvents.isEmpty() && !drained.isDone()) {
+            drained.complete(null);
         }
     }
 }

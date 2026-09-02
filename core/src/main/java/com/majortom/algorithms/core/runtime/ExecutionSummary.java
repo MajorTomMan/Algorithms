@@ -55,8 +55,8 @@ public record ExecutionSummary(
     }
 
     /** Returns the logical algorithm counters represented by the summary. */
-    public AlgorithmStatistics algorithmStatistics() {
-        AlgorithmStatistics logical = statistics.algorithmStatistics();
+    public DomainStatistics domainStatistics() {
+        DomainStatistics logical = statistics.domainStatistics();
         if (inputSize.isPresent()) {
             return logical.withInputSize(inputSize.getAsLong());
         }
@@ -71,11 +71,6 @@ public record ExecutionSummary(
     /** Returns host-measured total execution time when the environment supplied it. */
     public Optional<Duration> totalDuration() {
         return timing.totalDuration();
-    }
-
-    /** Returns active replay time when a replay-capable consumer supplied it. */
-    public Optional<Duration> playbackDuration() {
-        return timing.playbackDuration();
     }
 
     public ExecutionSummary withInputSize(long value) {

@@ -1,13 +1,13 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.Map;
 import java.util.Objects;
 
 /** Typed deltas sufficient to replay array-maze generation. */
-public sealed interface ArrayMazeGenerationEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface ArrayMazeGenerationEvent extends ExecutionEvent, StatisticsContribution
         permits ArrayMazeGenerationEvent.Initialized,
         ArrayMazeGenerationEvent.CellOpened,
         ArrayMazeGenerationEvent.Completed {

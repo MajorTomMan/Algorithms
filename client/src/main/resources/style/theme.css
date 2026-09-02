@@ -1653,3 +1653,24 @@
     -fx-padding: 5px 7px 5px 11px;
     -fx-font-size: 11px;
 }
+
+.snapshot-card-algorithm-input {
+    -fx-border-color: #d8ad3d;
+}
+
+.snapshot-card-input-state {
+    -fx-text-fill: #e7c45d;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.snapshot-card-action {
+    -fx-font-size: 9px;
+    -fx-padding: 4px 6px;
+}
+
+.algorithm-input-source {
+    -fx-font-size: 10px;
+    -fx-text-fill: #8e99a8;
+    -fx-padding: 1 0 0 0;
+}

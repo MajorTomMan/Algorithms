@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.majortom.algorithms.core.api.AlgorithmInput;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,7 +23,7 @@ public final class JacksonSha256InputFingerprint implements InputFingerprint {
     }
 
     @Override
-    public String fingerprint(AlgorithmInput input) {
+    public String fingerprint(Object input) {
         Objects.requireNonNull(input, "input");
         try {
             ObjectNode envelope = mapper.createObjectNode();

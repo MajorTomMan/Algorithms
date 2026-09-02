@@ -1,12 +1,11 @@
 package com.majortom.algorithms.library.sort.model;
 
-import com.majortom.algorithms.core.api.AlgorithmInput;
 
 import java.util.List;
 import java.util.Objects;
 
 /** Immutable integer sequence accepted by the production integer sorts. */
-public record IntegerSortInput(List<Integer> values) implements AlgorithmInput {
+public record IntegerSortInput(List<Integer> values) {
 
     public static final int MAX_VALUES = 100_000;
 

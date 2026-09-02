@@ -1,116 +1,83 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.core.api.AlgorithmInput;
-import com.majortom.algorithms.core.api.AlgorithmInvoker;
-import com.majortom.algorithms.core.runtime.DefaultAlgorithmRunner;
 import com.majortom.algorithms.core.runtime.DefaultExecutionControl;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.EventSink;
-import com.majortom.algorithms.core.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ExecutionFailure;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
+import com.majortom.algorithms.core.runtime.ExecutionRuntime;
+import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.core.runtime.Reduction;
-import com.majortom.algorithms.core.runtime.ReductionCursor;
+import com.majortom.algorithms.visualization.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.ReductionCursor;
 import com.majortom.algorithms.core.runtime.ResourceSampler;
 import javafx.application.Platform;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-/** Desktop lifecycle boundary for local algorithm execution. */
+/** Local Runtime execution with an independent ordered JavaFX playback queue. */
 public final class LocalAlgorithmExecution implements AutoCloseable {
 
     public static final int DEFAULT_MAXIMUM_EVENT_COUNT = 200_000;
 
-    private final DefaultAlgorithmRunner runner;
+    private final ExecutionRuntime runtime;
     private final Consumer<Runnable> dispatcher;
     private final int maximumEventCount;
     private final Supplier<? extends ResourceSampler> resourceSamplerFactory;
     private final AtomicLong generation = new AtomicLong();
     private final Object lifecycleLock = new Object();
-
     private boolean closed;
     private ExecutionSession currentSession;
 
     public LocalAlgorithmExecution() {
-        this(new DefaultAlgorithmRunner(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT,
-                LocalResourceSampler::new);
+        this(new ExecutionRuntime(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT, LocalResourceSampler::new);
     }
 
-    /** Creates a local execution boundary with a new sampler for each run. */
     public LocalAlgorithmExecution(Supplier<? extends ResourceSampler> resourceSamplerFactory) {
-        this(new DefaultAlgorithmRunner(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT,
-                resourceSamplerFactory);
+        this(new ExecutionRuntime(), Platform::runLater, DEFAULT_MAXIMUM_EVENT_COUNT, resourceSamplerFactory);
     }
 
-    LocalAlgorithmExecution(DefaultAlgorithmRunner runner, Consumer<Runnable> dispatcher) {
-        this(runner, dispatcher, DEFAULT_MAXIMUM_EVENT_COUNT, ResourceSampler::noop);
+    LocalAlgorithmExecution(ExecutionRuntime runtime, Consumer<Runnable> dispatcher) {
+        this(runtime, dispatcher, DEFAULT_MAXIMUM_EVENT_COUNT, ResourceSampler::noop);
     }
 
-    LocalAlgorithmExecution(
-            DefaultAlgorithmRunner runner,
-            Consumer<Runnable> dispatcher,
-            int maximumEventCount) {
-        this(runner, dispatcher, maximumEventCount, ResourceSampler::noop);
+    LocalAlgorithmExecution(ExecutionRuntime runtime, Consumer<Runnable> dispatcher, int maximumEventCount) {
+        this(runtime, dispatcher, maximumEventCount, ResourceSampler::noop);
     }
 
-    LocalAlgorithmExecution(
-            DefaultAlgorithmRunner runner,
-            Consumer<Runnable> dispatcher,
-            int maximumEventCount,
+    LocalAlgorithmExecution(ExecutionRuntime runtime, Consumer<Runnable> dispatcher, int maximumEventCount,
             Supplier<? extends ResourceSampler> resourceSamplerFactory) {
-        this.runner = Objects.requireNonNull(runner, "runner");
+        this.runtime = Objects.requireNonNull(runtime, "runtime");
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
         this.resourceSamplerFactory = Objects.requireNonNull(resourceSamplerFactory, "resourceSamplerFactory");
-        if (maximumEventCount < 2) {
-            throw new IllegalArgumentException("maximumEventCount must be at least 2");
-        }
+        if (maximumEventCount < 2) throw new IllegalArgumentException("maximumEventCount must be at least 2");
         this.maximumEventCount = maximumEventCount;
     }
 
-    public <S> ExecutionSession start(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
-            EventReducer<S> reducer,
+    public <S> ExecutionSession start(String operationId, ExecutionOperation<?> operation, EventReducer<S> reducer,
             Consumer<S> viewStateConsumer) {
-        return start(invoker, input, reducer, viewStateConsumer, () -> 0L);
+        return start(operationId, operation, reducer, viewStateConsumer, () -> 0L);
     }
 
-    public <S> ExecutionSession start(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
-            EventReducer<S> reducer,
-            Consumer<S> viewStateConsumer,
-            LongSupplier delayMillisSupplier) {
-        return start(
-                invoker,
-                input,
-                reducer,
-                viewStateConsumer,
-                ignored -> { },
-                delayMillisSupplier);
+    public <S> ExecutionSession start(String operationId, ExecutionOperation<?> operation, EventReducer<S> reducer,
+            Consumer<S> viewStateConsumer, LongSupplier delayMillisSupplier) {
+        return start(operationId, operation, reducer, ignored -> { }, viewStateConsumer, ignored -> { }, delayMillisSupplier);
     }
 
-    /**
-     * Starts local execution and reports statistics immediately after the
-     * corresponding event has been reduced by the live cursor.
-     */
-    public <S> ExecutionSession start(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
-            EventReducer<S> reducer,
-            Consumer<S> viewStateConsumer,
-            Consumer<ExecutionStatistics> statisticsConsumer,
+    public <S> ExecutionSession start(String operationId, ExecutionOperation<?> operation, EventReducer<S> reducer,
+            Consumer<com.majortom.algorithms.core.runtime.EventEnvelope> liveEventConsumer,
+            Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,
             LongSupplier delayMillisSupplier) {
-        Objects.requireNonNull(invoker, "invoker");
-        Objects.requireNonNull(input, "input");
+        Objects.requireNonNull(operationId, "operationId");
+        if (operationId.isBlank()) throw new IllegalArgumentException("operationId must not be blank");
+        Objects.requireNonNull(operation, "operation");
         Objects.requireNonNull(reducer, "reducer");
+        Objects.requireNonNull(liveEventConsumer, "liveEventConsumer");
         Objects.requireNonNull(viewStateConsumer, "viewStateConsumer");
         Objects.requireNonNull(statisticsConsumer, "statisticsConsumer");
         Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
@@ -118,52 +85,32 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
         synchronized (lifecycleLock) {
             requireOpen();
             long runGeneration = generation.incrementAndGet();
-            if (currentSession != null) {
-                currentSession.retire();
-            }
+            if (currentSession != null) currentSession.retire();
 
             DefaultExecutionControl executionControl = new DefaultExecutionControl();
-            ResourceSampler resourceSampler = Objects.requireNonNull(
-                    resourceSamplerFactory.get(), "resourceSamplerFactory result");
+            ResourceSampler resourceSampler = Objects.requireNonNull(resourceSamplerFactory.get(), "resourceSamplerFactory result");
             BoundedExecutionEventStore authoritativeEvents = new BoundedExecutionEventStore(maximumEventCount);
-            InterruptibleEventPacer pacer = new InterruptibleEventPacer(delayMillisSupplier);
             ReductionCursor<S> reductionCursor = new ReductionCursor<>(reducer);
             JavaFxEventSink observerSink = new JavaFxEventSink(dispatcher, event -> {
-                if (generation.get() != runGeneration) {
-                    return;
-                }
+                if (generation.get() != runGeneration) return;
                 synchronized (lifecycleLock) {
-                    if (closed || generation.get() != runGeneration) {
-                        return;
-                    }
+                    if (closed || generation.get() != runGeneration) return;
                 }
+                liveEventConsumer.accept(event);
                 Reduction<S> reduction = reductionCursor.accept(event);
-                if (reduction.visualFrame()) {
-                    viewStateConsumer.accept(reduction.state());
-                }
+                if (reduction.visualFrame()) viewStateConsumer.accept(reduction.state());
                 statisticsConsumer.accept(reductionCursor.statistics());
-            });
+            }, maximumEventCount, delayMillisSupplier);
             EventSink eventSink = event -> {
                 authoritativeEvents.accept(event);
                 observerSink.accept(event);
                 sampleResourceUsage(resourceSampler);
-                pacer.awaitAfter(event);
             };
-            ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "algorithm-run-" + runGeneration);
-                thread.setDaemon(true);
-                return thread;
-            });
-            ExecutionSession session = new ExecutionSession(
-                    runGeneration,
-                    executionControl,
-                    authoritativeEvents,
-                    observerSink,
-                    pacer,
-                    executor,
-                    resourceSampler);
+            ExecutionScheduler scheduler = ExecutionScheduler.single("algorithm-run-" + runGeneration + "-");
+            ExecutionSession session = new ExecutionSession(runGeneration, executionControl, authoritativeEvents,
+                    observerSink, scheduler, resourceSampler);
             currentSession = session;
-            session.start(() -> runWithEventLimit(invoker, input, eventSink, executionControl,
+            session.start(() -> runWithEventLimit(operationId, operation, eventSink, executionControl,
                     authoritativeEvents, observerSink));
             return session;
         }
@@ -171,18 +118,14 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
 
     public void cancelCurrent() {
         synchronized (lifecycleLock) {
-            if (currentSession != null) {
-                currentSession.cancel();
-            }
+            if (currentSession != null) currentSession.cancel();
         }
     }
 
     @Override
     public void close() {
         synchronized (lifecycleLock) {
-            if (closed) {
-                return;
-            }
+            if (closed) return;
             closed = true;
             generation.incrementAndGet();
             if (currentSession != null) {
@@ -193,38 +136,22 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
     }
 
     private void requireOpen() {
-        if (closed) {
-            throw new IllegalStateException("Local algorithm execution is closed");
-        }
+        if (closed) throw new IllegalStateException("Local algorithm execution is closed");
     }
 
     private void sampleResourceUsage(ResourceSampler resourceSampler) {
-        try {
-            resourceSampler.sample();
-        } catch (RuntimeException ignored) {
-            // Resource sampling is best effort and must not affect execution.
-        }
+        try { resourceSampler.sample(); } catch (RuntimeException ignored) { }
     }
 
-    private ExecutionResult runWithEventLimit(
-            AlgorithmInvoker invoker,
-            AlgorithmInput input,
-            EventSink eventSink,
-            DefaultExecutionControl executionControl,
-            BoundedExecutionEventStore authoritativeEvents,
+    private ExecutionResult runWithEventLimit(String operationId, ExecutionOperation<?> operation, EventSink eventSink,
+            DefaultExecutionControl executionControl, BoundedExecutionEventStore authoritativeEvents,
             JavaFxEventSink observerSink) {
-        ExecutionResult result = runner.run(invoker, input, eventSink, executionControl);
-        if (!authoritativeEvents.limitExceeded()) {
-            observerSink.awaitDrained();
-            return result;
-        }
-        ExecutionEvent failureEvent = authoritativeEvents.recordLimitFailure();
+        ExecutionResult result = runtime.execute(operationId, eventSink, executionControl, operation);
+        if (!authoritativeEvents.limitExceeded()) return result;
+        var failureEvent = authoritativeEvents.recordLimitFailure();
         observerSink.accept(failureEvent);
-        observerSink.awaitDrained();
-        ExecutionFailure failure = new ExecutionFailure(
-                BoundedExecutionEventStore.limitFailureCode(),
-                authoritativeEvents.limitMessage(),
-                BoundedExecutionEventStore.EventLimitExceededException.class.getName());
+        ExecutionFailure failure = new ExecutionFailure(BoundedExecutionEventStore.limitFailureCode(),
+                authoritativeEvents.limitMessage(), BoundedExecutionEventStore.EventLimitExceededException.class.getName());
         return ExecutionResult.failed(failure);
     }
 }

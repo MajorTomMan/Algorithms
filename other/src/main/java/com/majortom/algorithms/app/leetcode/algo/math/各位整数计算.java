@@ -2,8 +2,8 @@ package com.majortom.algorithms.app.leetcode.algo.math;
 
 
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Queue;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class 各位整数计算 {
     public static void main(String[] args) {

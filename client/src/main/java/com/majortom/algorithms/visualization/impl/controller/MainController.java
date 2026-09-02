@@ -7,12 +7,17 @@ import com.majortom.algorithms.visualization.VisualizationActionType;
 import com.majortom.algorithms.visualization.VisualizationEvent;
 import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.international.I18N;
-import com.majortom.algorithms.visualization.module.AlgorithmModuleDefinition;
+import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.module.ModuleRegistry;
+import com.majortom.algorithms.visualization.module.WorkbenchModules;
 import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
-import com.majortom.algorithms.visualization.structure.StructureSnapshot;
+import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
+import com.majortom.algorithms.core.logging.LogEvent;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -101,6 +106,12 @@ public class MainController implements Initializable {
     @FXML
     private VBox snapshotCards;
     @FXML
+    private Label structureHistoryTitleLabel;
+    @FXML
+    private Label structureHistoryCountLabel;
+    @FXML
+    private VBox structureHistoryCards;
+    @FXML
     private StackPane structurePreviewViewport;
     @FXML
     private VBox structurePreviewEmpty;
@@ -128,6 +139,8 @@ public class MainController implements Initializable {
     private Label algorithmWorkspaceTitleLabel;
     @FXML
     private Label algorithmWorkspaceSubtitleLabel;
+    @FXML
+    private Label algorithmInputSourceLabel;
     @FXML
     private Label algorithmControlsTitleLabel;
     @FXML
@@ -179,13 +192,13 @@ public class MainController implements Initializable {
     @FXML
     private Slider timelineSlider;
 
-    private final List<AlgorithmModuleDefinition> moduleDefinitions = ModuleRegistry.defaults();
+    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.defaults();
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
     private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private BaseController<?> currentSubController;
-    private AlgorithmModuleDefinition activeDefinition;
+    private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
 
     @Override
@@ -224,6 +237,7 @@ public class MainController implements Initializable {
         structurePreviewHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview.hint"));
         snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
         saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
         algorithmViewTitleLabel.setText(I18N.text("label.workspace.algorithm.preview"));
         viewportHintLabel.textProperty().bind(
@@ -246,6 +260,7 @@ public class MainController implements Initializable {
         I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
             refreshPauseText();
             refreshWorkspaceContext();
+            refreshAlgorithmInputSource();
         });
         refreshPauseText();
     }
@@ -255,20 +270,21 @@ public class MainController implements Initializable {
         algorithmNavigationBox.getChildren().clear();
         structureButtons.clear();
         algorithmButtons.clear();
-        for (AlgorithmModuleDefinition definition : moduleDefinitions) {
+        for (WorkbenchModuleDefinition definition : moduleDefinitions) {
             Button structureButton = createCatalogButton(definition);
             structureNavigationBox.getChildren().add(structureButton);
-            if ("sort".equals(definition.id())) {
-                structureNavigationBox.getChildren().add(createUnavailableStructureButton());
-            }
 
+            List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
+            if (navigationItems.isEmpty()) {
+                continue;
+            }
             VBox group = new VBox(4);
             group.getStyleClass().add("sidebar-catalog-group");
             Label groupTitle = new Label();
             groupTitle.getStyleClass().add("sidebar-group-title");
             groupTitle.textProperty().bind(I18N.createStringBinding(structureLabelKey(definition.id())));
             group.getChildren().add(groupTitle);
-            for (AlgorithmNavigationItem item : algorithmNavigationItems(definition.id())) {
+            for (AlgorithmNavigationItem item : navigationItems) {
                 Button algorithmButton = createAlgorithmButton(definition, item);
                 group.getChildren().add(algorithmButton);
             }
@@ -276,7 +292,7 @@ public class MainController implements Initializable {
         }
     }
 
-    private Button createCatalogButton(AlgorithmModuleDefinition definition) {
+    private Button createCatalogButton(WorkbenchModuleDefinition definition) {
         Button button = new Button();
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("menu-button");
@@ -289,18 +305,8 @@ public class MainController implements Initializable {
         return button;
     }
 
-    private Button createUnavailableStructureButton() {
-        Button button = new Button();
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setDisable(true);
-        button.getStyleClass().add("sidebar-catalog-button");
-        button.getStyleClass().add("sidebar-unavailable");
-        button.textProperty().bind(I18N.createStringBinding("label.structure.linked_list.unavailable"));
-        return button;
-    }
-
     private Button createAlgorithmButton(
-            AlgorithmModuleDefinition definition,
+            WorkbenchModuleDefinition definition,
             AlgorithmNavigationItem item) {
         Button button = new Button();
         button.setMaxWidth(Double.MAX_VALUE);
@@ -313,7 +319,7 @@ public class MainController implements Initializable {
         return button;
     }
 
-    private void selectAlgorithm(AlgorithmModuleDefinition definition, String algorithmId) {
+    private void selectAlgorithm(WorkbenchModuleDefinition definition, String algorithmId) {
         if (activeDefinition == null || !activeDefinition.id().equals(definition.id())) {
             switchToModule(definition);
         }
@@ -354,6 +360,8 @@ public class MainController implements Initializable {
                     new AlgorithmNavigationItem("tree-avl", "algorithm.tree.avl"));
             case "graph" -> List.of(
                     new AlgorithmNavigationItem("graph-bfs", "algorithm.graph.bfs"));
+            case "string" -> List.of(
+                    new AlgorithmNavigationItem("kmp", "algorithm.string.kmp"));
             default -> List.of();
         };
     }
@@ -364,9 +372,14 @@ public class MainController implements Initializable {
     private String structureLabelKey(String moduleId) {
         return switch (moduleId) {
             case "sort" -> "label.structure.array";
+            case "linked-list" -> "label.structure.linked_list";
+            case "stack" -> "label.structure.stack";
+            case "queue" -> "label.structure.queue";
             case "maze" -> "label.structure.grid";
             case "tree" -> "label.structure.tree";
             case "graph" -> "label.structure.graph";
+            case "hash-table" -> "label.structure.hash_table";
+            case "string" -> "label.structure.string";
             default -> "label.workspace.structure";
         };
     }
@@ -392,6 +405,7 @@ public class MainController implements Initializable {
         algorithmWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, !structure);
         setPageVisibility(structureWorkspacePane, structure);
         setPageVisibility(algorithmWorkspacePane, !structure);
+        refreshExecutionDockVisibility(structure);
         attachVisualizer(structure);
         if (structure && currentSubController != null) {
             currentSubController.showStructureState();
@@ -451,13 +465,9 @@ public class MainController implements Initializable {
         boolean nextNarrowLayout = width > 0.0d && width < NARROW_LAYOUT_WIDTH;
         rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, nextCompactLayout);
         rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
-        if (nextNarrowLayout) {
-            snapshotPanel.setManaged(false);
-            snapshotPanel.setVisible(false);
-        } else {
-            snapshotPanel.setManaged(true);
-            snapshotPanel.setVisible(true);
-        }
+        snapshotPanel.setManaged(true);
+        snapshotPanel.setVisible(true);
+        snapshotPanel.setPrefWidth(nextNarrowLayout ? 140.0d : nextCompactLayout ? 160.0d : 180.0d);
         resizeRail(structureControlRail, nextCompactLayout);
         resizeRail(algorithmControlRail, nextCompactLayout);
         resizeRail(diagnosticsPanel, nextCompactLayout);
@@ -491,9 +501,10 @@ public class MainController implements Initializable {
         control.setVisible(visible);
     }
 
-    private void switchToModule(AlgorithmModuleDefinition definition) {
+    private void switchToModule(WorkbenchModuleDefinition definition) {
         activeDefinition = definition;
         loadSubController(definition.controllerFactory().get());
+        updateAlgorithmWorkspaceAvailability(definition.id());
         refreshWorkspaceContext();
         if (currentSubController != null) {
             currentSubController.dispatchVisualizerEvent(mainEvent(moduleSwitchAction(definition.id())));
@@ -502,6 +513,37 @@ public class MainController implements Initializable {
                 button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
         clearAlgorithmSelection();
         selectFirstAlgorithmButton(definition.id());
+    }
+
+
+    private void updateAlgorithmWorkspaceAvailability(String moduleId) {
+        boolean available = !algorithmNavigationItems(moduleId).isEmpty();
+        if (!available) {
+            setWorkspaceMode(true);
+        }
+        refreshExecutionDockVisibility(isStructurePageVisible());
+        updateWorkspaceInteractionState();
+    }
+
+    private void updateWorkspaceInteractionState() {
+        boolean running = currentSubController != null && currentSubController.isRunning();
+        boolean algorithmAvailable = activeDefinition != null
+                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        structureWorkspaceBtn.setDisable(running);
+        algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
+        structureButtons.values().forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
+        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
+    }
+
+    private void refreshExecutionDockVisibility(boolean structureMode) {
+        if (bottomDock == null) {
+            return;
+        }
+        boolean algorithmAvailable = activeDefinition != null
+                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        boolean visible = !structureMode && algorithmAvailable;
+        setPageVisibility(bottomDock, visible);
+        bottomDock.setDisable(!visible);
     }
 
     private void clearAlgorithmSelection() {
@@ -542,8 +584,10 @@ public class MainController implements Initializable {
         currentSubController = newController;
         currentSubController.pausedProperty().addListener(
                 (observable, oldValue, newValue) -> refreshPauseText());
-        currentSubController.runningProperty().addListener(
-                (observable, oldValue, newValue) -> updateSnapshotActionState());
+        currentSubController.runningProperty().addListener((observable, oldValue, newValue) -> {
+            updateSnapshotActionState();
+            updateWorkspaceInteractionState();
+        });
         currentSubController.setupCustomControls(customControlBox);
         distributeModuleControls();
         structureRevisionListener = (observable, oldValue, newValue) -> refreshSnapshotCards();
@@ -555,6 +599,7 @@ public class MainController implements Initializable {
         }
         currentSubController.dispatchVisualizerAttached();
         refreshPauseText();
+        updateWorkspaceInteractionState();
     }
 
     private void detachCurrentController() {
@@ -663,6 +708,7 @@ public class MainController implements Initializable {
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
         algorithmViewTitleLabel.setText(moduleName);
         refreshSnapshotCards();
+        refreshAlgorithmInputSource();
     }
 
     private void refreshSnapshotCards() {
@@ -677,6 +723,7 @@ public class MainController implements Initializable {
                     "label.workspace.snapshot.count", 0,
                     structureSnapshotStore.maxSnapshotsPerModule()));
             updateSnapshotActionState();
+            refreshStructureHistory();
             return;
         }
 
@@ -701,6 +748,56 @@ public class MainController implements Initializable {
                 "label.workspace.snapshot.count", saved.size(),
                 structureSnapshotStore.maxSnapshotsPerModule()));
         updateSnapshotActionState();
+        refreshStructureHistory();
+    }
+
+    private void refreshStructureHistory() {
+        if (structureHistoryCards == null || structureHistoryCountLabel == null) {
+            return;
+        }
+        structureHistoryCards.getChildren().clear();
+        if (currentSubController == null) {
+            structureHistoryCountLabel.setText("0");
+            return;
+        }
+        List<EventEnvelope> domainEvents = currentSubController.structureEvents().stream()
+                .filter(event -> !(event.event() instanceof ExecutionLifecycleEvent))
+                .filter(event -> !(event.event() instanceof LogEvent))
+                .toList();
+        structureHistoryCountLabel.setText(String.valueOf(domainEvents.size()));
+        if (domainEvents.isEmpty()) {
+            Label empty = new Label(I18N.text("label.workspace.structure.history.none"));
+            empty.getStyleClass().add("snapshot-empty");
+            empty.setWrapText(true);
+            structureHistoryCards.getChildren().add(empty);
+            return;
+        }
+        int start = Math.max(0, domainEvents.size() - 12);
+        for (int index = domainEvents.size() - 1; index >= start; index--) {
+            structureHistoryCards.getChildren().add(createStructureHistoryCard(domainEvents.get(index)));
+        }
+    }
+
+    private Node createStructureHistoryCard(EventEnvelope envelope) {
+        VBox card = new VBox(3);
+        card.getStyleClass().add("snapshot-card");
+        card.setMaxWidth(Double.MAX_VALUE);
+        Label eventName = new Label(envelope.event().getClass().getSimpleName());
+        eventName.getStyleClass().add("snapshot-card-title");
+        Label operation = new Label(shortOperationId(envelope.operationId()));
+        operation.getStyleClass().add("snapshot-card-state");
+        Label sequence = new Label("#" + envelope.sequence());
+        sequence.getStyleClass().add("snapshot-card-time");
+        card.getChildren().addAll(eventName, operation, sequence);
+        return card;
+    }
+
+    private String shortOperationId(String operationId) {
+        int lastDot = operationId.lastIndexOf('.');
+        if (lastDot < 0 || lastDot + 1 >= operationId.length()) {
+            return operationId;
+        }
+        return operationId.substring(lastDot + 1);
     }
 
     private Node createSnapshotCard(
@@ -709,38 +806,95 @@ public class MainController implements Initializable {
             StructureSnapshot<?> snapshot,
             StructureSnapshotSupport<?> support,
             boolean current) {
-        VBox content = new VBox(4);
-        content.setMaxWidth(Double.MAX_VALUE);
-        Label title = new Label(moduleName);
-        if (!current) {
-            title.setText(moduleName + " · " + shortSnapshotId(snapshot));
-        }
+        VBox card = new VBox(6);
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.getStyleClass().add("snapshot-card");
+        card.getStyleClass().add(current ? "snapshot-card-current" : "snapshot-card-saved");
+
+        Label title = new Label(current ? moduleName : moduleName + " · " + shortSnapshotId(snapshot));
         title.getStyleClass().add("snapshot-card-title");
         Label state = new Label(status);
         state.getStyleClass().add("snapshot-card-state");
         Label detail = new Label(describeSnapshot(support, snapshot));
         detail.getStyleClass().add("snapshot-card-detail");
-        Label createdAt = new Label(I18N.text(
-                "label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
-        createdAt.getStyleClass().add("snapshot-card-detail");
-        content.getChildren().addAll(title, state, detail);
+        card.getChildren().addAll(title, state, detail);
+
         if (!current) {
-            content.getChildren().add(createdAt);
-        }
-        if (current) {
-            content.getStyleClass().add("snapshot-card");
-            content.getStyleClass().add("snapshot-card-current");
-            return content;
+            Label createdAt = new Label(I18N.text("label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
+            createdAt.getStyleClass().add("snapshot-card-detail");
+            card.getChildren().add(createdAt);
         }
 
-        Button card = new Button();
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.setGraphic(content);
-        card.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add("snapshot-card-saved");
-        card.setOnAction(event -> restoreSnapshot(snapshot));
+        SnapshotAlgorithmInputSupport<?> algorithmInputSupport = currentAlgorithmInputSupport();
+        if (algorithmInputSupport != null) {
+            String selectedSnapshotId = algorithmInputSupport.algorithmInputSnapshotId();
+            boolean selected = current ? selectedSnapshotId == null : snapshot.id().equals(selectedSnapshotId);
+            if (selected) {
+                card.getStyleClass().add("snapshot-card-algorithm-input");
+                Label inputState = new Label(I18N.text("label.workspace.snapshot.algorithm_input"));
+                inputState.getStyleClass().add("snapshot-card-input-state");
+                card.getChildren().add(inputState);
+            }
+        }
+
+        HBox actions = new HBox(6);
+        if (!current) {
+            Button restore = new Button(I18N.text("action.workspace.restore_snapshot"));
+            restore.getStyleClass().add("snapshot-card-action");
+            restore.setOnAction(event -> restoreSnapshot(snapshot));
+            actions.getChildren().add(restore);
+        }
+        if (algorithmInputSupport != null) {
+            Button useInput = new Button(I18N.text(current
+                    ? "action.workspace.use_current_input" : "action.workspace.use_snapshot_input"));
+            useInput.getStyleClass().add("snapshot-card-action");
+            useInput.setOnAction(event -> {
+                if (current) {
+                    algorithmInputSupport.useCurrentStructureAsAlgorithmInput();
+                } else {
+                    useSnapshotAsAlgorithmInputUnchecked(algorithmInputSupport, snapshot);
+                }
+                refreshSnapshotCards();
+                refreshAlgorithmInputSource();
+                appendSystemLog(I18N.text(current
+                        ? "message.snapshot.input_current" : "message.snapshot.input_saved",
+                        current ? "" : shortSnapshotId(snapshot)));
+            });
+            actions.getChildren().add(useInput);
+        }
+        if (!actions.getChildren().isEmpty()) {
+            card.getChildren().add(actions);
+        }
         return card;
+    }
+
+    private void refreshAlgorithmInputSource() {
+        if (algorithmInputSourceLabel == null) {
+            return;
+        }
+        if (activeDefinition != null && "maze".equals(activeDefinition.id())) {
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.maze"));
+            return;
+        }
+        SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
+        if (support == null) {
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
+            return;
+        }
+        String snapshotId = support.algorithmInputSnapshotId();
+        if (snapshotId == null) {
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current"));
+            return;
+        }
+        algorithmInputSourceLabel.setText(I18N.text(
+                "label.workspace.algorithm.input.snapshot", shortSnapshotId(snapshotId)));
+    }
+
+    private String shortSnapshotId(String snapshotId) {
+        if (snapshotId == null || snapshotId.isBlank()) {
+            return "-";
+        }
+        return snapshotId.length() <= 8 ? snapshotId : snapshotId.substring(0, 8);
     }
 
     private StructureSnapshotSupport<?> currentSnapshotSupport() {
@@ -748,6 +902,23 @@ public class MainController implements Initializable {
             return support;
         }
         return null;
+    }
+
+    private SnapshotAlgorithmInputSupport<?> currentAlgorithmInputSupport() {
+        if (currentSubController instanceof SnapshotAlgorithmInputSupport<?> support) {
+            return support;
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void useSnapshotAsAlgorithmInputUnchecked(
+            SnapshotAlgorithmInputSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        SnapshotAlgorithmInputSupport<Object> typedSupport =
+                (SnapshotAlgorithmInputSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        typedSupport.useSnapshotAsAlgorithmInput(typedSnapshot);
     }
 
     @FXML
@@ -761,6 +932,8 @@ public class MainController implements Initializable {
         }
         StructureSnapshot<?> snapshot = support.captureStructureSnapshot();
         structureSnapshotStore.save(snapshot);
+        currentSubController.recordStructureEvent(
+                "snapshot-created", new SnapshotLifecycleEvent.Created(snapshot.id(), snapshot.moduleId()));
         refreshSnapshotCards();
         appendSystemLog(I18N.text("message.snapshot.saved", shortSnapshotId(snapshot)));
     }
@@ -776,6 +949,8 @@ public class MainController implements Initializable {
         }
         try {
             restoreSnapshotUnchecked(support, snapshot);
+            currentSubController.recordStructureEvent(
+                    "snapshot-restored", new SnapshotLifecycleEvent.Restored(snapshot.id(), snapshot.moduleId()));
         } catch (RuntimeException exception) {
             appendSystemLog(I18N.text("message.snapshot.restore_failed"));
             return;
@@ -850,10 +1025,12 @@ public class MainController implements Initializable {
 
     private String moduleAccentStyleClass(String moduleId) {
         return switch (moduleId) {
-            case "sort" -> "btn-ran-blue";
+            case "sort", "stack" -> "btn-ran-blue";
+            case "linked-list", "tree" -> "btn-ran-gold";
+            case "queue", "graph" -> "btn-ran-white";
             case "maze" -> "btn-ran-red";
-            case "tree" -> "btn-ran-gold";
-            case "graph" -> "btn-ran-white";
+            case "string" -> "btn-ran-gold";
+            case "hash-table" -> "btn-ran-red";
             default -> "btn-ran-blue";
         };
     }
@@ -861,9 +1038,14 @@ public class MainController implements Initializable {
     private VisualizationActionType moduleSwitchAction(String moduleId) {
         return switch (moduleId) {
             case "sort" -> VisualizationActionType.MODULE_SORT;
+            case "linked-list" -> VisualizationActionType.MODULE_LINKED_LIST;
+            case "stack" -> VisualizationActionType.MODULE_STACK;
+            case "queue" -> VisualizationActionType.MODULE_QUEUE;
             case "maze" -> VisualizationActionType.MODULE_MAZE;
             case "tree" -> VisualizationActionType.MODULE_TREE;
             case "graph" -> VisualizationActionType.MODULE_GRAPH;
+            case "string" -> VisualizationActionType.MODULE_STRING;
+            case "hash-table" -> VisualizationActionType.MODULE_HASH_TABLE;
             default -> VisualizationActionType.MODULE_SORT;
         };
     }

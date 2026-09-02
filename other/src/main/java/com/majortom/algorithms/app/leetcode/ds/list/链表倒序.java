@@ -3,8 +3,8 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 import java.util.ArrayList;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.List;
+import java.util.LinkedList;
+import java.util.List;
 import com.majortom.algorithms.library.basic.node.ListNode;
 /**
  * 链表倒序

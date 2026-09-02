@@ -1,11 +1,11 @@
 package com.majortom.algorithms.visualization.runtime.sort;
 
 import com.majortom.algorithms.core.domain.execution.RunStartedEvent;
-import com.majortom.algorithms.core.runtime.DefaultAlgorithmRunner;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.core.runtime.ExecutionRuntime;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.InMemoryEventSink;
-import com.majortom.algorithms.core.runtime.ReductionCursor;
-import com.majortom.algorithms.library.catalog.ProviderCatalog;
+import com.majortom.algorithms.visualization.runtime.ReductionCursor;
+import com.majortom.algorithms.library.sort.insertion.IntegerInsertionSort;
 import com.majortom.algorithms.library.sort.event.SortInitializedEvent;
 import com.majortom.algorithms.library.sort.model.IntegerSortInput;
 import org.junit.jupiter.api.Test;
@@ -22,9 +22,9 @@ class IntegerSortEventReducerTest {
     @Test
     void reducesACompleteTimelineWithoutJson() {
         InMemoryEventSink sink = new InMemoryEventSink();
-        new DefaultAlgorithmRunner().run(
-                ProviderCatalog.production().require("insertion-sort").invoker(),
-                new IntegerSortInput(List.of(4, 3, 1, 2)), sink);
+        IntegerInsertionSort algorithm = new IntegerInsertionSort();
+        new ExecutionRuntime().execute(
+                "insertion-sort", sink, () -> algorithm.sort(new IntegerSortInput(List.of(4, 3, 1, 2))));
         ReductionCursor<IntegerSortViewState> cursor = new ReductionCursor<>(new IntegerSortEventReducer());
         sink.events().forEach(cursor::accept);
         IntegerSortViewState state = cursor.state();
@@ -36,13 +36,13 @@ class IntegerSortEventReducerTest {
     @Test
     void cursorRejectsMixedRunsAndSequenceGaps() {
         ReductionCursor<IntegerSortViewState> cursor = new ReductionCursor<>(new IntegerSortEventReducer());
-        cursor.accept(new ExecutionEvent("run-1", "insertion-sort", 0L, Instant.EPOCH,
+        cursor.accept(new EventEnvelope("run-1", "insertion-sort", 0L, Instant.EPOCH, "insertion-sort",
                 new RunStartedEvent()));
-        assertThrows(IllegalArgumentException.class, () -> cursor.accept(new ExecutionEvent(
-                "run-2", "insertion-sort", 1L, Instant.EPOCH,
+        assertThrows(IllegalArgumentException.class, () -> cursor.accept(new EventEnvelope(
+                "run-2", "insertion-sort", 1L, Instant.EPOCH, "insertion-sort",
                 new SortInitializedEvent(List.of(2, 1)))));
-        assertThrows(IllegalArgumentException.class, () -> cursor.accept(new ExecutionEvent(
-                "run-1", "insertion-sort", 2L, Instant.EPOCH,
+        assertThrows(IllegalArgumentException.class, () -> cursor.accept(new EventEnvelope(
+                "run-1", "insertion-sort", 2L, Instant.EPOCH, "insertion-sort",
                 new SortInitializedEvent(List.of(2, 1)))));
     }
 }

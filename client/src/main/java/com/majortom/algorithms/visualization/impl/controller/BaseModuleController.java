@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -19,8 +18,7 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 
 /** Module controller with deliberately delayed FXML loading. */
-public abstract class BaseModuleController<S> extends BaseController<S>
-        implements StructureSnapshotSupport<S> {
+public abstract class BaseModuleController<S> extends BaseController<S> {
 
     private static final String SECTION_EXPANDED_PROPERTY =
             BaseModuleController.class.getName() + ".sectionExpanded";

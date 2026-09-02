@@ -2,7 +2,6 @@ package com.majortom.algorithms.app.leetcode.others;
 
 import java.util.Scanner;
 
-import com.majortom.algorithms.library.basic.Tree;
 
 public class 目录创建系统 {
     private static Scanner scanner;

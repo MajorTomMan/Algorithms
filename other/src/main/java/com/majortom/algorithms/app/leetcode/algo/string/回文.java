@@ -2,15 +2,15 @@ package com.majortom.algorithms.app.leetcode.algo.string;
 
 import java.util.Scanner;
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Queue;
-import com.majortom.algorithms.library.basic.interfaces.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class 回文 {
     public static void main(String[] args) {
         int i = 0;
         boolean flag = true;
-        Stack<String> stack = new LinkedList<>();
+        Deque<String> stack = new LinkedList<>();
         Queue<String> queue = new LinkedList<>();
         System.out.print("请输入数据:");
         Scanner scanner = new Scanner(System.in);

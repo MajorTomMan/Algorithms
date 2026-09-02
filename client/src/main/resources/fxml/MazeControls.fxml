@@ -107,6 +107,12 @@
                 </styleClass>
             </Button>
         </HBox>
+        <Button fx:id="applyResultBtn" onAction="#handleApplyAlgorithmResult" maxWidth="Infinity">
+            <styleClass>
+                <String fx:value="btn-ran-gold" />
+                <String fx:value="operation-button" />
+            </styleClass>
+        </Button>
         <Button fx:id="resetMazeBtn" onAction="#handleResetMaze" maxWidth="Infinity">
             <styleClass>
                 <String fx:value="btn-ran-white" />

@@ -1,14 +1,14 @@
 package com.majortom.algorithms.library.tree;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /** AVL-specific balancing events layered on top of common tree steps. */
-public sealed interface AvlTreeEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface AvlTreeEvent extends ExecutionEvent, StatisticsContribution
         permits AvlTreeEvent.Initialized, AvlTreeEvent.BalanceChecked,
         AvlTreeEvent.HeightUpdated, AvlTreeEvent.Rotated,
         AvlTreeEvent.StructureChanged, AvlTreeEvent.CommandCompleted,

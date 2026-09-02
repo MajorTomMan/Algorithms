@@ -2,15 +2,15 @@ package com.majortom.algorithms.app.leetcode.algo.math;
 
 
 
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.basic.interfaces.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
 
 
 
 public class 二进制{
     public static void main(String[] args) {
         int i=16;
-        Stack<Integer> stack=new LinkedList<>();
+        Deque<Integer> stack=new LinkedList<>();
         while(i!=0){
             stack.push(i%2);
             i=i/2;

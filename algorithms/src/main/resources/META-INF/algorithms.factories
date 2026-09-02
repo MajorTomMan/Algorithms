@@ -1,0 +1,23 @@
+# V2 startup registry. One key maps to one active implementation until restart.
+structure.array.Integer=com.majortom.algorithms.library.structure.MutableArray
+structure.graph.Integer=com.majortom.algorithms.library.structure.MutableGraph
+structure.linked-list.Integer=com.majortom.algorithms.library.basic.LinkedList
+structure.stack.Integer=com.majortom.algorithms.library.structure.LinkedStack
+structure.queue.Integer=com.majortom.algorithms.library.structure.LinkedQueue
+structure.tree.Integer=com.majortom.algorithms.library.structure.MutableAvlTree
+
+algorithm.array.Integer.insertion-sort=com.majortom.algorithms.library.sort.insertion.IntegerInsertionSort
+algorithm.array.Integer.selection-sort=com.majortom.algorithms.library.sort.IntegerSelectionSort
+algorithm.array.Integer.quick-sort=com.majortom.algorithms.library.sort.IntegerQuickSort
+algorithm.array.Integer.heap-sort=com.majortom.algorithms.library.sort.IntegerHeapSort
+algorithm.graph.Integer.graph-bfs=com.majortom.algorithms.library.graph.GraphBfs
+algorithm.graph.Integer.graph-generator-bfs=com.majortom.algorithms.library.maze.GraphMazeBfsGenerator
+algorithm.tree.Integer.tree-avl=com.majortom.algorithms.library.tree.AvlTreeCommands
+algorithm.maze.Boolean.maze-generator-bfs=com.majortom.algorithms.library.maze.BfsArrayMazeGenerator
+algorithm.maze.Boolean.maze-generator-dfs=com.majortom.algorithms.library.maze.DfsArrayMazeGenerator
+algorithm.maze.Boolean.maze-generator-union-find=com.majortom.algorithms.library.maze.UnionFindArrayMazeGenerator
+algorithm.maze.Boolean.maze-pathfinder-astar=com.majortom.algorithms.library.maze.AStarArrayMazePathfinder
+algorithm.maze.Boolean.maze-pathfinder-dfs=com.majortom.algorithms.library.maze.DfsArrayMazePathfinder
+structure.string.String=com.majortom.algorithms.library.structure.MutableString
+structure.hash-table.String.Integer=com.majortom.algorithms.library.structure.MutableHashTable
+algorithm.string.String.kmp=com.majortom.algorithms.library.string.KmpSearch

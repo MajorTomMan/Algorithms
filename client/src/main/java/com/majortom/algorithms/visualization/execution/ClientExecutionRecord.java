@@ -8,7 +8,7 @@ import java.util.Objects;
 /** Client history entry that decorates the shared recording with presentation identity and frame statistics. */
 public record ClientExecutionRecord(
         String moduleId,
-        String algorithmId,
+        String operationId,
         String inputFingerprint,
         ExecutionResult result,
         ExecutionRecording recording,
@@ -16,12 +16,12 @@ public record ClientExecutionRecord(
 
     public ClientExecutionRecord {
         moduleId = requireText(moduleId, "moduleId");
-        algorithmId = requireText(algorithmId, "algorithmId");
+        operationId = requireText(operationId, "operationId");
         inputFingerprint = requireText(inputFingerprint, "inputFingerprint");
         result = Objects.requireNonNull(result, "result");
         recording = Objects.requireNonNull(recording, "recording");
-        if (!algorithmId.equals(recording.algorithmId())) {
-            throw new IllegalArgumentException("Record algorithm ID must match its recording");
+        if (!operationId.equals(recording.operationId())) {
+            throw new IllegalArgumentException("Record operation ID must match its recording");
         }
         if (visualFrameCount < 0L || visualFrameCount > recording.statistics().totalEventCount()) {
             throw new IllegalArgumentException("visualFrameCount must be between zero and totalEventCount");

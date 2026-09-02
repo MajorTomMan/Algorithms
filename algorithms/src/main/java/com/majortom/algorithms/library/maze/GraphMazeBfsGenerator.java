@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.Algorithm;
-import com.majortom.algorithms.core.api.AlgorithmContext;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.library.graph.IntGraph;
 
@@ -14,15 +13,12 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-public final class GraphMazeBfsGenerator
-        implements Algorithm<GraphMazeGenerationInput, GraphMazeGenerationOutput> {
+public final class GraphMazeBfsGenerator {
 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
-    @Override
-    public GraphMazeGenerationOutput run(GraphMazeGenerationInput input, AlgorithmContext context)
-            throws InterruptedException {
-        context.emit(new GraphMazeGenerationEvent.Initialized(input.rows(), input.columns()));
+    public GraphMazeGenerationOutput generate(GraphMazeGenerationInput input) {
+        ExecutionEvents.emit(new GraphMazeGenerationEvent.Initialized(input.rows(), input.columns()));
         List<Integer> nodes = nodes(input);
         List<IntEdge> edges = new ArrayList<>();
         Set<Integer> discovered = new HashSet<>();
@@ -38,18 +34,18 @@ public final class GraphMazeBfsGenerator
                 if (!discovered.add(neighbor)) {
                     continue;
                 }
-                context.checkpoint();
+                ExecutionEvents.checkpoint();
                 IntEdge forward = new IntEdge(current, neighbor);
                 IntEdge reverse = new IntEdge(neighbor, current);
                 edges.add(forward);
                 edges.add(reverse);
-                context.emit(new GraphMazeGenerationEvent.EdgeAdded(forward));
-                context.emit(new GraphMazeGenerationEvent.EdgeAdded(reverse));
+                ExecutionEvents.emit(new GraphMazeGenerationEvent.EdgeAdded(forward));
+                ExecutionEvents.emit(new GraphMazeGenerationEvent.EdgeAdded(reverse));
                 queue.addLast(neighbor);
             }
         }
         IntGraph graph = new IntGraph(nodes, edges);
-        context.emit(new GraphMazeGenerationEvent.Completed(graph));
+        ExecutionEvents.emit(new GraphMazeGenerationEvent.Completed(graph));
         return new GraphMazeGenerationOutput(input.rows(), input.columns(), graph);
     }
 

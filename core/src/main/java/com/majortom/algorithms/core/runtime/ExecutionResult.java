@@ -1,23 +1,18 @@
 package com.majortom.algorithms.core.runtime;
 
-import com.majortom.algorithms.core.api.AlgorithmOutput;
-
 import java.util.Objects;
 import java.util.Optional;
 
-/** Immutable terminal result for the type-erased runtime boundary. */
+/** Immutable terminal result for one runtime-managed operation. */
 public record ExecutionResult(
         ExecutionStatus status,
-        Optional<AlgorithmOutput> output,
+        Optional<Object> output,
         Optional<ExecutionFailure> failure) {
 
     public ExecutionResult {
         Objects.requireNonNull(status, "status");
         output = Objects.requireNonNull(output, "output");
         failure = Objects.requireNonNull(failure, "failure");
-        if (status == ExecutionStatus.COMPLETED && output.isEmpty()) {
-            throw new IllegalArgumentException("A completed result requires an output");
-        }
         if (status != ExecutionStatus.COMPLETED && output.isPresent()) {
             throw new IllegalArgumentException("Only a completed result may contain an output");
         }
@@ -29,8 +24,12 @@ public record ExecutionResult(
         }
     }
 
-    public static ExecutionResult completed(AlgorithmOutput output) {
-        return new ExecutionResult(ExecutionStatus.COMPLETED, Optional.of(output), Optional.empty());
+    public static ExecutionResult completed(Object output) {
+        return new ExecutionResult(ExecutionStatus.COMPLETED, Optional.ofNullable(output), Optional.empty());
+    }
+
+    public static ExecutionResult completed() {
+        return completed(null);
     }
 
     public static ExecutionResult cancelled() {

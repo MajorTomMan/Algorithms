@@ -1,14 +1,14 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.api.AlgorithmEvent;
-import com.majortom.algorithms.core.api.StatisticsContribution;
+import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /** Search events that can replay visited cells and the final route. */
-public sealed interface ArrayMazePathEvent extends AlgorithmEvent, StatisticsContribution
+public sealed interface ArrayMazePathEvent extends ExecutionEvent, StatisticsContribution
         permits ArrayMazePathEvent.Initialized, ArrayMazePathEvent.Discovered,
         ArrayMazePathEvent.Entered, ArrayMazePathEvent.DeadEndReached,
         ArrayMazePathEvent.Backtracked, ArrayMazePathEvent.PathConfirmed,

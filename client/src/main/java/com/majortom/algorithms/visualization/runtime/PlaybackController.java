@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.core.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.ExecutionEvent;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import javafx.application.Platform;
 
 import java.time.Duration;
@@ -59,7 +59,7 @@ public final class PlaybackController<S> implements AutoCloseable {
         });
     }
 
-    public void load(List<ExecutionEvent> events) {
+    public void load(List<EventEnvelope> events) {
         Objects.requireNonNull(events, "events");
         ReducedEventTimeline<S> loadedTimeline = new ReducedEventTimeline<>(events, reducer);
         synchronized (lock) {

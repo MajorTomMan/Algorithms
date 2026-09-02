@@ -9,28 +9,28 @@ import com.majortom.algorithms.core.domain.execution.RunStartedEvent;
 import java.util.List;
 import java.util.Objects;
 
-/** Immutable snapshot of the authoritative event history for one algorithm run. */
+/** Immutable snapshot of the authoritative event history for one runtime-managed operation. */
 public record ExecutionRecording(
         String runId,
-        String algorithmId,
+        String operationId,
         ExecutionRecordingState state,
         ExecutionStatistics statistics,
         ExecutionSummary summary,
-        List<ExecutionEvent> events) {
+        List<EventEnvelope> events) {
 
     /** Creates a recording with event-derived timing and no host measurements. */
     public ExecutionRecording(
             String runId,
-            String algorithmId,
+            String operationId,
             ExecutionRecordingState state,
             ExecutionStatistics statistics,
-            List<ExecutionEvent> events) {
-        this(runId, algorithmId, state, statistics, ExecutionSummary.from(statistics), events);
+            List<EventEnvelope> events) {
+        this(runId, operationId, state, statistics, ExecutionSummary.from(statistics), events);
     }
 
     public ExecutionRecording {
         runId = requireText(runId, "runId");
-        algorithmId = requireText(algorithmId, "algorithmId");
+        operationId = requireText(operationId, "operationId");
         state = Objects.requireNonNull(state, "state");
         statistics = Objects.requireNonNull(statistics, "statistics");
         summary = Objects.requireNonNull(summary, "summary");
@@ -41,7 +41,7 @@ public record ExecutionRecording(
         if (events.isEmpty()) {
             throw new IllegalArgumentException("An execution recording requires at least one event");
         }
-        validate(runId, algorithmId, state, statistics, events);
+        validate(runId, operationId, state, statistics, events);
     }
 
     /** Replays the immutable event sequence into another runtime-neutral sink. */
@@ -53,33 +53,33 @@ public record ExecutionRecording(
     /** Returns a copy with host timing and resource measurements attached. */
     public ExecutionRecording withSummary(ExecutionSummary value) {
         Objects.requireNonNull(value, "summary");
-        return new ExecutionRecording(runId, algorithmId, state, statistics, value, events);
+        return new ExecutionRecording(runId, operationId, state, statistics, value, events);
     }
 
     private static void validate(
             String runId,
-            String algorithmId,
+            String operationId,
             ExecutionRecordingState expectedState,
             ExecutionStatistics statistics,
-            List<ExecutionEvent> events) {
+            List<EventEnvelope> events) {
         ExecutionRecordingState derivedState = ExecutionRecordingState.NOT_STARTED;
         StatisticsReducer statisticsReducer = new StatisticsReducer();
         ExecutionStatistics derivedStatistics = statisticsReducer.initialState();
 
         for (int index = 0; index < events.size(); index++) {
-            ExecutionEvent event = Objects.requireNonNull(events.get(index), "events[" + index + "]");
-            if (!runId.equals(event.runId()) || !algorithmId.equals(event.algorithmId())) {
+            EventEnvelope event = Objects.requireNonNull(events.get(index), "events[" + index + "]");
+            if (!runId.equals(event.runId()) || !operationId.equals(event.operationId())) {
                 throw new IllegalArgumentException("All events must belong to the recorded execution");
             }
             if (event.sequence() != index) {
                 throw new IllegalArgumentException("Execution event sequence must start at zero and be contiguous");
             }
 
-            if (event.payload() instanceof ExecutionLifecycleEvent lifecycleEvent) {
+            if (event.event() instanceof ExecutionLifecycleEvent lifecycleEvent) {
                 derivedState = transition(derivedState, lifecycleEvent);
             } else {
                 if (derivedState != ExecutionRecordingState.RUNNING) {
-                    throw new IllegalArgumentException("Algorithm events are only valid while a run is active");
+                    throw new IllegalArgumentException("Domain events are only valid while a run is active");
                 }
             }
             derivedStatistics = statisticsReducer.reduce(derivedStatistics, event);

@@ -1,150 +1,284 @@
-# Algorithms Lab
+Algorithms
 
-基于 Java 21 的算法实验与可视化项目。项目将算法协议、算法实现、桌面展示和服务端入口分开组织，算法通过结构化事件与展示层解耦。
+Algorithms 是一个面向数据结构学习、算法实验、执行过程观察和服务端运行的数据结构与算法项目。项目由领域结构、算法实现、执行运行时、桌面客户端和服务端组成。
 
-## 项目结构
+项目结构
 
-```text
-algorithms/
-├── core/        公共 API、执行上下文、事件流、EventReducer 和执行统计
-├── algorithms/  排序、树、迷宫、图等算法实现及 ProviderCatalog
-├── client/      JavaFX 桌面客户端、动画、时间轴和回放
-├── server/      Spring Boot 服务端入口
-├── other/       练习代码和独立实验
-└── docs/        详细架构文档
-```
+core/        执行运行时、事件、注册表、Timeline、Snapshot、Statistics、Logging、Scheduler
+algorithms/  数据结构与算法实现
+client/      JavaFX 工作区、可视化、动画播放、Snapshot、回放和执行控制
+server/      Spring Boot 算法目录与执行 API
+other/       练习、示例和独立程序
 
-主要依赖方向：
+主要依赖关系：
 
-```text
-client ──→ algorithms ──→ core
-other  ──→ algorithms ──→ core
-server ──→ core
-```
+algorithms ─────> core
+client ─────────> core + algorithms
+server ─────────> core + algorithms
+other ──────────> algorithms
 
-`client` 和 `server` 互不依赖；`core` 不包含 JavaFX 或 Spring Boot 实现。
+core 是 UI 无关的纯 Java 层，不依赖 JavaFX、FXML 或 Spring Web。
 
-## 架构设计
+运行环境
 
-算法通过 `Algorithm<I, O>` 实现强类型输入和输出，并由 `AlgorithmProvider` 提供元数据、校验和动态调用入口。`ProviderCatalog` 是内置算法的统一目录。
+JDK 21
 
-算法执行时不直接操作 UI，而是通过 `AlgorithmContext` 发布结构化事件：
+Maven
 
-```text
-Algorithm
-   ↓ emit event
-ExecutionEvent
-   ↓
-EventReducer<S>
-   ↓
-不可变视图状态 S
-   ↓
-JavaFX 实时动画 / 时间轴回放 / 其他事件消费者
-```
+JavaFX 21
 
-`EventReducer` 使同一串事件可以被重放、单步执行或定位到任意可视帧。`ExecutionStatistics` 同时归约执行时间、事件数、可视帧数，以及比较、写入、交换、访问、回溯和旋转等算法指标。
+Spring Boot
 
-JavaFX 客户端使用每次执行独立的会话、有界事件队列和 `PlaybackController`，支持：
+项目根目录是 Maven 多模块工程。
 
-- 执行、暂停、恢复和取消
-- 动态播放速度
-- 时间轴定位和重放；回放引擎支持前后单步
-- 排序、AVL 树、数组迷宫生成与寻路、图迷宫生成和图遍历动画
-- 执行记录导出与同输入结果对比
+常用验证命令：
 
-## 环境要求
+mvn -pl client -am test
+mvn -pl server -am test
 
-- JDK 21
-- Maven 3.9+
-- 启动 JavaFX 客户端时需要可用的图形桌面环境
+构建客户端：
 
-检查环境：
-
-```bash
-java -version
-mvn -version
-```
-
-## 测试与打包
-
-以下命令均在仓库根目录执行。
-
-```bash
-# 运行全部测试
-mvn test
-
-# 清理、测试并验证全部模块
-mvn clean verify
-
-# 打包全部模块
-mvn clean package
-
-# 跳过测试快速打包
-mvn clean package -DskipTests
-```
-
-只构建某个模块及其依赖：
-
-```bash
-mvn -pl core -am package
-mvn -pl algorithms -am package
 mvn -pl client -am package
-mvn -pl server -am package
-mvn -pl other -am package
-```
 
-构建产物位于各模块的 `target/` 目录。
+客户端入口：
 
-## 启动 JavaFX 客户端
-
-首次按单模块启动前，先将项目模块安装到本地 Maven 仓库：
-
-```bash
-mvn -pl client -am install -DskipTests
-```
-
-通过通用执行插件启动：
-
-```bash
-mvn -f client/pom.xml exec:java
-```
-
-IDE 入口：
-
-```text
 com.majortom.algorithms.launcher.LauncherMain
-```
 
-## 启动 Spring Boot 服务端
+服务端入口：
 
-`server` 目前提供 Spring Boot 应用骨架，并且只依赖 `core`。安装 reactor 依赖后启动：
-
-```bash
-mvn -pl server -am install -DskipTests
-mvn -f server/pom.xml spring-boot:run
-```
-
-IDE 入口：
-
-```text
 com.majortom.algorithms.server.AlgorithmsServerApplication
-```
 
-## 启动 other 示例
+数据结构
 
-`other` 模块的 Maven 默认入口为贪吃蛇示例，需要交互式终端和 ANSI 支持：
+生产注册表提供以下一等结构：
 
-```bash
-mvn -pl other -am install -DskipTests
-mvn -f other/pom.xml exec:java
-```
+Array
 
-## 添加算法
+LinkedList
 
-1. 在 `algorithms` 中定义强类型 Input、Output 和结构化 Event。
-2. 实现 `Algorithm<I, O>`，通过 `AlgorithmContext` 发布可回放事件。
-3. 提供 `AlgorithmProvider`，并注册到 `ProviderCatalog`。
-4. 需要可视化时，在消费端实现对应的 `EventReducer<ViewState>` 和渲染器。
-5. 为结果、事件顺序和边界输入补充测试。
+Stack
 
-详细架构说明见[系统架构设计文档](docs/系统架构设计文档.md)。
+Queue
+
+Tree
+
+Graph
+
+HashTable
+
+String
+
+结构通过领域接口暴露真实操作，例如：
+
+Array：get / set / insert / remove / swap
+
+LinkedList：insert / remove / update
+
+Stack：push / pop / peek
+
+Queue：enqueue / dequeue / front / rear
+
+Tree：insert / remove / find / rotate
+
+Graph：add/remove vertex、add/remove edge、neighbors
+
+HashTable：put / get / remove
+
+String：replace / insert / remove / update
+
+结构可以暴露必要的 raw 数据，使算法直接工作在真实结构上，而不是可视化模型上。
+
+算法
+
+算法保留明确的领域方法，例如：
+
+sort.sort(array);
+graphBfs.traverse(graph, startNode);
+kmp.search(string, pattern);
+mazeGenerator.generate(input);
+pathfinder.findPath(input);
+avl.execute(input);
+
+算法实现不依赖 JavaFX，也不直接控制动画。结构变化和算法语义通过领域事件表达。
+
+模块注册
+
+结构与算法通过：
+
+META-INF/algorithms.factories
+
+注册。
+
+启动时由：
+
+ModuleLoader -> ModuleRegistry
+
+加载。
+
+示例：
+
+structure.array.Integer=com.majortom.algorithms.library.structure.MutableArray
+algorithm.array.Integer.quick-sort=com.majortom.algorithms.library.sort.IntegerQuickSort
+structure.string.String=com.majortom.algorithms.library.structure.MutableString
+algorithm.string.String.kmp=com.majortom.algorithms.library.string.KmpSearch
+structure.hash-table.String.Integer=com.majortom.algorithms.library.structure.MutableHashTable
+
+Registry 负责根据结构类型、值类型和算法标识找到具体实现。
+
+执行模型
+
+一次执行由 ExecutionRuntime 管理。
+
+Runtime 负责：
+
+runId / operationId
+
+事件 sequence
+
+start / pause / resume / step / cancel
+
+生命周期状态
+
+错误处理
+
+EventEnvelope 元数据
+
+执行线程由 ExecutionScheduler 管理。领域结构和算法不自行维护执行线程。
+
+领域事件由 Runtime 包装成 EventEnvelope：
+
+runId
+operationId
+sequence
+timestamp
+source
+event
+
+同一事件流可以同时提供给 Timeline、Statistics、Logging、Client playback 和 Server recording。
+
+Client 工作区
+
+客户端使用一个工作区，并提供两种互斥模式：
+
+Structure
+
+负责：
+
+编辑真实结构
+
+结构可视化
+
+保存 Snapshot
+
+恢复 Snapshot
+
+查看结构历史
+
+Structure 模式持有唯一可编辑结构。
+
+Algorithm
+
+负责：
+
+选择算法
+
+设置算法参数
+
+选择算法输入 Snapshot
+
+运行 / 暂停 / 恢复 / 单步
+
+Timeline 回放
+
+日志与统计
+
+算法输入来自：
+
+当前结构生成的 Snapshot；或
+
+已保存的 Snapshot。
+
+算法运行时从 Snapshot 创建独立运行数据，不修改 Structure 模式中的真实结构。
+
+Maze 生成结果先作为算法结果存在，需要显式应用后才写入 Structure。
+
+Snapshot
+
+Snapshot 是完整结构状态的数据表示，定义在 core。
+
+主要类型包括：
+
+SequenceSnapshot
+
+BinaryTreeSnapshot
+
+GraphSnapshot
+
+HashTableSnapshot
+
+StringSnapshot
+
+MazeSnapshot
+
+Snapshot 不包含 JavaFX ViewState。
+
+保存的 Snapshot 可以恢复到 Structure，也可以单独作为 Algorithm 输入。
+
+Timeline 与播放
+
+Runtime 产生权威 EventEnvelope 流：
+
+Structure / Algorithm
+        ↓
+ExecutionRuntime
+        ↓
+EventEnvelope
+        ├── Recording
+        ├── Timeline
+        ├── Statistics
+        ├── Logging
+        └── JavaFX Playback -> Reducer -> ViewState -> Visualizer
+
+算法执行速度和 JavaFX 播放速度互相独立。动画延迟只影响 presentation playback，不阻塞算法 worker。
+
+runtimeCompletion 表示执行本身完成，presentationCompletion 表示客户端播放完成。
+
+Server API
+
+服务端使用与客户端相同的 Registry、Runtime 和 Scheduler 运行算法。
+
+接口：
+
+GET  /api/v1/health
+GET  /api/v1/algorithms
+POST /api/v1/executions
+GET  /api/v1/executions/{runId}
+
+执行请求格式：
+
+{
+  "algorithmId": "quick-sort",
+  "input": {
+    "values": [5, 3, 8, 1]
+  }
+}
+
+POST /api/v1/executions 返回 runId，随后可通过运行 ID 查询执行状态。
+
+Server 的 HTTP DTO 只负责传输数据。进入执行层后，输入会转换为领域结构或算法输入对象。
+
+扩展原则
+
+新增结构或算法时：
+
+定义清晰的领域操作或算法方法。
+
+实现必要的领域事件。
+
+在 META-INF/algorithms.factories 注册实现。
+
+需要桌面展示时，在 Client 增加 reducer、visualizer 和控制逻辑。
+
+需要 HTTP 调用时，在 Server 增加窄 DTO 和输入转换。
+
+核心算法逻辑应保留在具体结构和算法实现中，Runtime 只管理执行生命周期和公共运行能力。
