@@ -13,7 +13,6 @@ public final class IntegerSelectionSort extends AbstractIntegerSort {
     @Override
     public void sort(ArrayStructure<Integer> array) {
         for (int destination = 0; destination < array.size(); destination++) {
-            selectRange(destination, array.size() - 1);
             int minimum = destination;
             for (int candidate = destination + 1; candidate < array.size(); candidate++) {
                 if (compareAt(array, candidate, minimum) < 0) {
@@ -21,7 +20,6 @@ public final class IntegerSelectionSort extends AbstractIntegerSort {
                 }
             }
             swap(array, destination, minimum);
-            settle(array, destination);
         }
     }
 }

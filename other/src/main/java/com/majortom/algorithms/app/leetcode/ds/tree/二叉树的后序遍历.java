@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 二叉树的后序遍历 {
     public static void main(String[] args) {
@@ -23,8 +23,8 @@ public class 二叉树的后序遍历 {
         if (root == null) {
             return;
         }
-        postTraversal(root.left, list);
-        postTraversal(root.right, list);
-        list.add((Integer) root.data);
+        postTraversal(root.getLeft(), list);
+        postTraversal(root.getRight(), list);
+        list.add((Integer) root.getValue());
     }
 }

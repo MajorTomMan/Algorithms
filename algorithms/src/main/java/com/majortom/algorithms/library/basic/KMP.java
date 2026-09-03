@@ -4,15 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class KMP {
-    private String target = ""; // 待查字符串
-    private String pattern = ""; // 模式字符串
+    private java.lang.String target = ""; // 待查字符串
+    private java.lang.String pattern = ""; // 模式字符串
     private int[] next;
 
     /**
      * @param target  待查字符串
      * @param pattern 目标字符串
      */
-    public KMP(String target, String pattern) {
+    public KMP(java.lang.String target, java.lang.String pattern) {
         this.target = target;
         this.pattern = pattern;
         next=new int[pattern.length()];

@@ -58,23 +58,28 @@
             </Button>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="insertBtn" onAction="#handleInsert">
+            <TextField fx:id="parentIdField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <TextField fx:id="nodeIdField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <Button fx:id="addRootBtn" onAction="#handleAddRoot">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
+            <Button fx:id="addChildBtn" onAction="#handleAddChild">
+                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
             <Button fx:id="deleteBtn" onAction="#handleDelete">
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
             <Button fx:id="findBtn" onAction="#handleFind">
                 <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
             </Button>
-        </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <TextField fx:id="updateOldValueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-            <TextField fx:id="updateNewValueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
             <Button fx:id="updateBtn" onAction="#handleUpdate">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>

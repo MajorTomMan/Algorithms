@@ -20,13 +20,10 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
             Range range = pending.pop();
             if (range.low() >= range.high()) {
                 if (range.low() >= 0 && range.low() < array.size()) {
-                    settle(array, range.low());
                 }
                 continue;
             }
-            selectRange(range.low(), range.high());
             EqualRange equal = partitionThreeWay(array, range.low(), range.high());
-            settleRange(array, equal.low(), equal.high());
             if (range.low() < equal.low() - 1) {
                 pending.push(new Range(range.low(), equal.low() - 1));
             }
@@ -39,12 +36,11 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
     private EqualRange partitionThreeWay(ArrayStructure<Integer> array, int low, int high) {
         int pivotSource = low + (high - low) / 2;
         int pivot = array.get(pivotSource);
-        selectPivot(pivotSource, pivot);
         int lower = low;
         int index = low;
         int upper = high;
         while (index <= upper) {
-            int comparison = compareValue(array, index, pivotSource, pivot);
+            int comparison = compareValue(array, index, pivot);
             if (comparison < 0) {
                 swap(array, lower, index);
                 lower++;

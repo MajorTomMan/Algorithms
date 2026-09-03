@@ -1,19 +1,15 @@
 package com.majortom.algorithms.app.leetcode.ds.list;
 
-import java.util.LinkedList;
+import java.util.Random;
+
+import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 链表去重 {
     public static void main(String[] args) {
         Integer[] randomArray = AlgorithmsUtils.randomArray(100, 10);
         ListNode<Integer> head = AlgorithmsUtils.buildLinkedList(randomArray);
-        LinkedList<Integer> list = new LinkedList<>();
-        list.sort(null);
-        list.forEach((i) -> {
-            System.out.print(i + ",");
-        });
-        System.out.println();
         System.out.println(deleteDuplicates(head));
     }
 
@@ -21,19 +17,19 @@ public class 链表去重 {
         if (head == null) {
             return null;
         }
-        if (head.next == null) {
+        if (head.getNext() == null) {
             return head;
         }
-        return deleteDuplicates(head.next, head);
+        return deleteDuplicates(head.getNext(), head);
     }
 
     private static ListNode<Integer> deleteDuplicates(ListNode<Integer> node, ListNode<Integer> previous) {
         if (node == null) {
             return node;
         }
-        deleteDuplicates(node.next, node);
-        if (node.data == previous.data) { // 如果前一个节点数据相同于后一个节点
-            previous.next = node.next; // 则直接接上后一个节点的链表
+        deleteDuplicates(node.getNext(), node);
+        if (node.getValue().equals(previous.getValue())) { // 如果前一个节点数据相同于后一个节点
+            previous.setNext(node.getNext()); // 则直接接上后一个节点的链表
         }
         return previous;
     }
@@ -43,15 +39,15 @@ public class 链表去重 {
         if (head == null) {
             return null;
         }
-        ListNode<Integer> temp = head.next;
+        ListNode<Integer> temp = head.getNext();
         ListNode<Integer> pre = head;
         for (; temp != null;) {
-            if (pre.data == temp.data) {
-                pre.next = temp.next;
-                temp = temp.next;
+            if (pre.getValue().equals(temp.getValue())) {
+                pre.setNext(temp.getNext());
+                temp = temp.getNext();
             } else {
                 pre = temp;
-                temp = temp.next;
+                temp = temp.getNext();
             }
         }
         return head;

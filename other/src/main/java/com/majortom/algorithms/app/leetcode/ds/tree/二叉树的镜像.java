@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 二叉树的镜像 {
     public static void main(String[] args) {
@@ -14,10 +14,10 @@ public class 二叉树的镜像 {
         if (root == null) {
             return null;
         }
-        BinaryTreeNode<Integer> left = mirrorTree(root.left);
-        BinaryTreeNode<Integer> right = mirrorTree(root.right);
-        root.left = right;
-        root.right = left;
+        BinaryTreeNode<Integer> left = mirrorTree(root.getLeft());
+        BinaryTreeNode<Integer> right = mirrorTree(root.getRight());
+        root.setLeft(right);
+        root.setRight(left);
         return root;
     }
 }

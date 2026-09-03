@@ -41,6 +41,7 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
             loader.setResources(I18N.getBundle());
             loader.setController(this);
             controlPanel = loader.load();
+            WorkbenchTheme.apply(controlPanel);
         } catch (IOException exception) {
             throw new IllegalStateException("Module control panel load failed: " + fxmlPath, exception);
         }

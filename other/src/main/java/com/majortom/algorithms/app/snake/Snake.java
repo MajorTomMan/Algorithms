@@ -1,6 +1,7 @@
 package com.majortom.algorithms.app.snake;
 
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.basic.node.ListNode;
 
 public class Snake {
     public LinkedList<Point> snake = new LinkedList<Point>();
@@ -9,7 +10,7 @@ public class Snake {
     public boolean isGrow = false;
 
     public Snake() {
-        snake.addFirst(new Point(1, 1));
+        snake.push(new Point(1, 1));
     }
 
     public void move() {
@@ -17,7 +18,7 @@ public class Snake {
         if (isDead || direction == null) {
             return;
         }
-        Point head = snake.peekFirst();
+        Point head = snake.peek();
         if (head != null) {
             Point newHead = new Point(head.x, head.y);
             switch (direction) {
@@ -26,9 +27,9 @@ public class Snake {
                 case LEFT -> newHead.x--;
                 case RIGHT -> newHead.x++;
             }
-            snake.addFirst(newHead);
+            snake.push(newHead);
             if (!isGrow) {
-                snake.removeLast();
+                snake.remove(snake.size() - 1);
             } else {
                 isGrow = false;
             }
@@ -36,25 +37,19 @@ public class Snake {
     }
 
     private void checkSelfCollision() {
-        Point head = snake.peekFirst();
-        if (head == null) {
-            return;
-        }
-        boolean first = true;
-        for (Point body : snake) {
-            if (first) {
-                first = false;
-                continue;
-            }
-            if (head.x == body.x && head.y == body.y) {
+        ListNode<Point> head = snake.head();
+        ListNode<Point> body = head.getNext();
+        while (body != null) {
+            if (head.getValue().x == body.getValue().x && head.getValue().y == body.getValue().y) {
                 isDead = true;
-                return;
             }
+            body = body.getNext();
         }
+
     }
 
     public Point getHead() {
-        return snake.peekFirst();
+        return snake.head().getValue();
     }
 
     public int length() {
@@ -66,16 +61,25 @@ public class Snake {
     }
 
     public boolean contains(int x, int y) {
-        for (Point point : snake) {
-            if (point.x == x && point.y == y) {
+        ListNode<Point> node = snake.head();
+        while (node != null) {
+            if (node.getValue().x == x && node.getValue().y == y) {
                 return true;
             }
+            node = node.getNext();
         }
         return false;
     }
 
     public boolean contains(Point point) {
-        return contains(point.x, point.y);
+        ListNode<Point> node = snake.head();
+        while (node != null) {
+            if (node.getValue().x == point.x && node.getValue().y == point.y) {
+                return true;
+            }
+            node = node.getNext();
+        }
+        return false;
     }
 
     public void setDirection(Direction newDir) {

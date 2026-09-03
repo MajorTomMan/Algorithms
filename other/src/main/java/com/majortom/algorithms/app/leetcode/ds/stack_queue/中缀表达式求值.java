@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.ds.stack_queue;
 
-import java.util.Deque;
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 public class 中缀表达式求值 {
     public static void main(String[] args) {
@@ -11,8 +11,8 @@ public class 中缀表达式求值 {
         String statement = "(1+((2*3)+(4*5)))";
         char[] state = statement.toCharArray();
         Character cr = ' ';
-        Deque<Character> ops = new LinkedList<>();
-        Deque<Double> vals = new LinkedList<>();
+        StackStructure<Character> ops = new LinkedList<>();
+        StackStructure<Double> vals = new LinkedList<>();
         while (i != state.length) {
             if (state[i] == '(') {
                 i++;

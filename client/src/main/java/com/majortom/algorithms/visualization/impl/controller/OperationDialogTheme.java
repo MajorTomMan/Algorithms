@@ -22,12 +22,14 @@ final class OperationDialogTheme {
             pane.getStylesheets().add(theme.toExternalForm());
         }
         addClasses(pane, "operation-dialog-pane");
+        WorkbenchTheme.apply(pane);
         if (pane.getContent() != null) {
             addClasses(pane.getContent(), "operation-dialog-content");
         }
         Node closeButton = pane.lookupButton(ButtonType.CLOSE);
         if (closeButton != null) {
             addClasses(closeButton, "btn-ran-gold", "compact-button");
+            WorkbenchTheme.warningOutlined(closeButton);
         }
         pane.setMinWidth(preferredWidth);
         pane.setPrefWidth(preferredWidth);

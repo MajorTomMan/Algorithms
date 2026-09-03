@@ -1,36 +1,25 @@
 package com.majortom.algorithms.app.leetcode.ds.list;
 
-
-import java.util.Collections;
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
 
 public class 链表 {
     public static void main(String[] args) {
         LinkedList<Integer> list = new LinkedList<>();
-        list.add(1);
-        list.add(2);
-        list.add(3);
-        list.add(6);
-        list.add(8);
-        list.add(10);
-        list.add(1);
-        list.add(2);
-        list.sort(null);
-        list.forEach((t) -> {
-            System.out.println(t);
-        });
-        list.remove(1);
-        list.set(1, 6);
-        System.out.println("--------------------------------------");
-        list.forEach((t) -> {
-            System.out.println(t);
-        });
-        Collections.reverse(list);
-        System.out.println("--------------------------------------");
-        list.forEach((t) -> {
-            System.out.println(t);
-        });
-        System.out.println(list.contains(1111));
+        int[] values = {1, 2, 3, 6, 8, 10, 1, 2};
+        for (int value : values) {
+            list.enqueue(value);
+        }
+        print(list);
 
+        list.remove(1);
+        list.set(2, 1);
+        System.out.println("--------------------------------------");
+        print(list);
+    }
+
+    private static void print(LinkedList<Integer> list) {
+        for (Integer value : list) {
+            System.out.println(value);
+        }
     }
 }

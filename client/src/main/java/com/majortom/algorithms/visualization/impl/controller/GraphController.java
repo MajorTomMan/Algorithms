@@ -1,10 +1,13 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.library.basic.graph.Edge;
+import com.majortom.algorithms.library.basic.graph.Vertex;
 import com.majortom.algorithms.library.graph.GraphBfs;
-import com.majortom.algorithms.library.graph.IntEdge;
-import com.majortom.algorithms.library.graph.IntGraph;
-import com.majortom.algorithms.library.structure.MutableGraph;
+import com.majortom.algorithms.library.graph.GraphBfsOutput;
+import com.majortom.algorithms.library.graph.GraphTraversal;
+import com.majortom.algorithms.library.basic.graph.Graph;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -35,8 +38,8 @@ import java.util.Set;
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Integer>>, SnapshotAlgorithmInputSupport<GraphSnapshot<Integer>> {
 
-    private final List<String> algorithmIds;
-    private MutableGraph<Integer> graph;
+    private final List<String> algorithmIds = AlgorithmCatalog.graphTraversals();
+    private Graph<Integer> graph;
     private StructureSnapshot<GraphSnapshot<Integer>> algorithmInputSnapshot;
     private int startNode = 0;
 
@@ -63,10 +66,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     public GraphController() {
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
-        algorithmIds = registeredAlgorithmIds("graph", "Integer").stream()
-                .filter(id -> !id.startsWith("graph-generator-"))
-                .toList();
-        graph = randomGraph(10, 16);
+        graph = randomGraph(10, 16, false);
         renderGraph();
     }
 
@@ -89,13 +89,20 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         StructureSnapshot<GraphSnapshot<Integer>> selectedStructureSnapshot =
                 algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
         GraphSnapshot<Integer> selected = selectedStructureSnapshot.state();
-        MutableGraph<Integer> inputGraph = mutableGraph(selected);
-        if (inputGraph.size() == 0) return;
-        int algorithmStartNode = inputGraph.containsVertex(startNode)
-                ? startNode : inputGraph.raw().keySet().iterator().next();
-        IntGraph inputSnapshot = GraphBfs.snapshot(inputGraph);
-        GraphBfs algorithm = module("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
-        startAlgorithm("graph-bfs", inputSnapshot, () -> algorithm.traverse(inputGraph, algorithmStartNode), () -> new GraphEventReducer(inputSnapshot));
+        Graph<Integer> inputGraph = mutableGraph(selected);
+        if (inputGraph.isEmpty()) return;
+        int algorithmStartNode = inputGraph.vertex(startNode) != null
+                ? startNode : firstVertexValue(inputGraph);
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            return;
+        }
+        GraphSnapshot<Integer> inputSnapshot = GraphBfs.snapshot(inputGraph);
+        @SuppressWarnings("unchecked")
+        GraphTraversal<Integer, GraphBfsOutput> algorithm = (GraphTraversal<Integer, GraphBfsOutput>)
+                module("algorithm.graph.Integer." + algorithmId, GraphTraversal.class);
+        startAlgorithm(algorithmId, inputSnapshot, () -> algorithm.traverse(inputGraph, algorithmStartNode),
+                () -> new GraphEventReducer(inputSnapshot));
     }
 
     @Override
@@ -130,13 +137,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        if (!graph.containsVertex(id)) {
+        if (graph.vertex(id) == null) {
             logI18n("message.graph.not_found", id);
             return;
         }
-        renderViewState(new GraphViewState(
-                GraphBfs.snapshot(graph), Set.of(), Set.of(), List.of(), java.util.Map.of(), id, null,
-                GraphViewState.Phase.VISITING, false));
         logI18n("message.graph.found", id);
     }
 
@@ -152,15 +156,15 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (from == null || to == null) {
             return;
         }
-        if (!graph.containsVertex(from) || !graph.containsVertex(to)) {
+        if (graph.vertex(from) == null || graph.vertex(to) == null) {
             logI18n("message.error.graph_node_missing");
             return;
         }
-        if (!graph.neighbors(from).contains(to)) {
+        if (!graph.containsEdge(graph.vertex(from), graph.vertex(to))) {
             logI18n("message.graph.edge_not_found", from, to);
             return;
         }
-        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(from, to))) {
+        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(graph.vertex(from), graph.vertex(to)))) {
             return;
         }
         renderGraph();
@@ -177,11 +181,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        if (graph.containsVertex(id)) {
+        if (graph.vertex(id) != null) {
             logI18n("message.graph.already_exists", id);
             return;
         }
-        boolean wasEmpty = graph.size() == 0;
+        boolean wasEmpty = graph.isEmpty();
         if (!executeStructureOperation("add-vertex", () -> {
             graph.addVertex(id);
             return null;
@@ -201,18 +205,18 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        if (!graph.containsVertex(id)) {
+        if (graph.vertex(id) == null) {
             logI18n("message.graph.not_found", id);
             return;
         }
-        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(id))) {
+        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(graph.vertex(id)))) {
             return;
         }
-        if (graph.size() == 0) {
+        if (graph.isEmpty()) {
             startNode = 0;
             startField.clear();
-        } else if (!graph.containsVertex(startNode)) {
-            startNode = graph.raw().keySet().iterator().next();
+        } else if (graph.vertex(startNode) == null) {
+            startNode = firstVertexValue(graph);
             startField.setText(String.valueOf(startNode));
         }
         renderGraph();
@@ -222,27 +226,27 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void linkNodes(String fromText, String toText) {
         Integer from = parseNode(fromText);
         Integer to = parseNode(toText);
-        if (from == null || to == null || !graph.containsVertex(from) || !graph.containsVertex(to)) {
+        if (from == null || to == null || graph.vertex(from) == null || graph.vertex(to) == null) {
             logI18n("message.error.graph_node_missing");
             return;
         }
-        if (graph.neighbors(from).contains(to)) {
+        if (graph.containsEdge(graph.vertex(from), graph.vertex(to))) {
             logI18n("message.graph.edge_exists", from, to);
             return;
         }
         if (!executeStructureOperation("add-edge", () -> {
-            graph.addEdge(from, to);
+            graph.addEdge(graph.vertex(from), graph.vertex(to));
             return null;
         })) {
             return;
         }
         renderGraph();
-        logI18n("message.graph.link.directed", from, to, 1);
+        logI18n(graph.isDirected() ? "message.graph.link.directed" : "message.graph.link.undirected", from, to, 1);
     }
 
     private void setStartNode(String text) {
         Integer id = parseNode(text);
-        if (id == null || !graph.containsVertex(id)) {
+        if (id == null || graph.vertex(id) == null) {
             appendLog(I18N.text("message.error.invalid_graph_start", text));
             return;
         }
@@ -278,10 +282,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
         graph = mutableGraph(snapshot.state());
-        if (!graph.containsVertex(startNode)) {
+        if (graph.vertex(startNode) == null) {
             startNode = 0;
-            if (graph.size() > 0) {
-                startNode = graph.raw().keySet().iterator().next();
+            if (!graph.isEmpty()) {
+                startNode = firstVertexValue(graph);
             }
         }
         if (startField != null) {
@@ -336,7 +340,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     protected String formatStatsMessage() {
         return String.format("%s | %s | %s",
-                I18N.text("stats.graph.nodes", graph.size()),
+                I18N.text("stats.graph.nodes", graph.vertexCount()),
                 I18N.text("stats.graph.edges", GraphBfs.snapshot(graph).edges().size()),
                 formatMetric("stats.action", stats.metric("nodes.visited")
                         + stats.metric("edges.examined")));
@@ -376,15 +380,25 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return "graph";
     }
 
+    private String selectedAlgorithmId() {
+        int index = algorithmSelector == null ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
+        if (index < 0) {
+            index = 0;
+        }
+        return algorithmIds.isEmpty() ? null : algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+    }
+
     private void bindSelectors() {
         structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text("label.graph.structure.directed")),
+                () -> FXCollections.observableArrayList(I18N.text("label.graph.structure.undirected")),
                 I18N.localeProperty()));
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(algorithmIds.stream()
-                        .map(id -> I18N.text(AlgorithmLabels.key(id)))
-                        .toList()),
-                I18N.localeProperty()));
+        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+            javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
+            for (String id : algorithmIds) {
+                labels.add(AlgorithmLabels.text(id));
+            }
+            return labels;
+        }, I18N.localeProperty()));
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             algorithmSelector.getSelectionModel().selectFirst();
@@ -409,40 +423,46 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
     }
 
-    private MutableGraph<Integer> randomGraph(int nodeCount, int edgeCount) {
-        MutableGraph<Integer> result = new MutableGraph<>();
-        for (int node = 0; node < nodeCount; node++) result.addVertex(node);
-        Random random = new Random();
-        Set<IntEdge> edges = new LinkedHashSet<>();
-        for (int node = 1; node < nodeCount; node++) edges.add(new IntEdge(node - 1, node));
+    private Graph<Integer> randomGraph(int nodeCount, int edgeCount, boolean directed) {
+        Graph<Integer> result = new Graph<>(directed);
+        for (int node = 0; node < nodeCount; node++) {
+            result.addVertex(node);
+        }
+        Random random = new Random(0x5EEDL);
+        Set<String> edges = new LinkedHashSet<>();
+        for (int node = 1; node < nodeCount; node++) {
+            edges.add((node - 1) + ":" + node);
+        }
         while (edges.size() < edgeCount) {
             int from = random.nextInt(nodeCount);
             int to = random.nextInt(nodeCount);
-            if (from != to) edges.add(new IntEdge(from, to));
+            if (from == to) {
+                continue;
+            }
+            String key = directed || from < to ? from + ":" + to : to + ":" + from;
+            edges.add(key);
         }
-        for (IntEdge edge : edges) result.addEdge(edge.from(), edge.to());
+        for (String edge : edges) {
+            String[] parts = edge.split(":", 2);
+            int from = Integer.parseInt(parts[0]);
+            int to = Integer.parseInt(parts[1]);
+            result.addEdge(result.vertex(from), result.vertex(to));
+        }
         return result;
     }
 
     private GraphSnapshot<Integer> graphSnapshot() {
-        List<Integer> vertices = new ArrayList<>(graph.raw().keySet());
-        List<GraphSnapshot.Edge<Integer>> edges = new ArrayList<>();
-        for (Integer from : vertices) {
-            for (Integer to : graph.neighbors(from)) {
-                edges.add(new GraphSnapshot.Edge<>(from, to));
-            }
-        }
-        return new GraphSnapshot<>(vertices, edges);
+        return GraphBfs.snapshot(graph);
     }
 
-    private MutableGraph<Integer> mutableGraph(GraphSnapshot<Integer> snapshot) {
-        MutableGraph<Integer> result = new MutableGraph<>();
-        for (Integer node : snapshot.vertices()) {
-            result.addVertex(node);
-        }
-        for (GraphSnapshot.Edge<Integer> edge : snapshot.edges()) {
-            result.addEdge(edge.from(), edge.to());
-        }
+    private Graph<Integer> mutableGraph(GraphSnapshot<Integer> snapshot) {
+        Graph<Integer> result = new Graph<>(snapshot.directed());
+        result.restore(snapshot);
         return result;
+    }
+
+    private int firstVertexValue(Graph<Integer> source) {
+        for (Vertex<Integer> vertex : source.vertices()) return vertex.value();
+        throw new IllegalStateException("graph is empty");
     }
 }

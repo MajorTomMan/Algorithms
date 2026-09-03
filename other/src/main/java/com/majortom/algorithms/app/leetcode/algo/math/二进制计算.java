@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
 
 public class 二进制计算 {
     public static void main(String[] args) {
@@ -11,14 +11,14 @@ public class 二进制计算 {
         int i = 0;
         int j = 0;
         String str = "";
-        Queue<Integer> queue = new LinkedList<>();
+        QueueStructure<Integer> queue = new LinkedList<>();
         while (data != 0) {
-            queue.add(data % 2);
+            queue.enqueue(data % 2);
             data /= 2;
         }
         i = queue.size();
         while (!queue.isEmpty()) {
-            temp = queue.poll();
+            temp = queue.dequeue();
             if (temp == 1) {
                 temp *= Math.pow(2, j);
             }

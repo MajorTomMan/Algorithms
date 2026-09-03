@@ -38,10 +38,7 @@ public final class LogView extends ListView<LogView.Line> {
     }
 
     private void append(Instant timestamp, LogLevel level, String tag, String message) {
-        String normalizedTag = "";
-        if (tag != null) {
-            normalizedTag = tag;
-        }
+        String normalizedTag = tag == null ? "" : tag;
         getItems().add(new Line(TIME_FORMAT.format(timestamp), level, normalizedTag, message));
         scrollTo(getItems().size() - 1);
     }

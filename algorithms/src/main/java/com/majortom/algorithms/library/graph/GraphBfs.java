@@ -1,66 +1,66 @@
 package com.majortom.algorithms.library.graph;
 
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.library.basic.graph.Edge;
+import com.majortom.algorithms.library.basic.graph.Vertex;
 import com.majortom.algorithms.library.structure.GraphStructure;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/** Breadth-first traversal over the graph-domain contract. */
-public final class GraphBfs {
-
-    public GraphBfsOutput traverse(GraphStructure<Integer> graph, int startNode) {
+public final class GraphBfs implements GraphTraversal<Integer, GraphBfsOutput> {
+    @Override
+    public GraphBfsOutput traverse(GraphStructure<Integer> graph, Integer startNode) {
         Objects.requireNonNull(graph, "graph");
-        if (!graph.containsVertex(startNode)) {
+        Vertex<Integer> startVertex = vertex(graph, startNode);
+        if (startVertex == null) {
             throw new IllegalArgumentException("startNode must exist in graph");
         }
-        IntGraph snapshot = snapshot(graph);
-        ExecutionEvents.emit(new GraphBfsEvent.Initialized(snapshot, startNode));
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        Set<Integer> discovered = new HashSet<>();
-        Map<Integer, Integer> parents = new HashMap<>();
+        ArrayDeque<Vertex<Integer>> queue = new ArrayDeque<>();
+        Set<Vertex<Integer>> discovered = new HashSet<>();
         List<Integer> order = new ArrayList<>();
-        List<IntEdge> discoveryEdges = new ArrayList<>();
-        queue.add(startNode);
-        discovered.add(startNode);
-        ExecutionEvents.emit(new GraphBfsEvent.Discovered(startNode, null));
+        List<GraphBfsOutput.DiscoveryEdge> discoveryEdges = new ArrayList<>();
+        queue.add(startVertex);
+        discovered.add(startVertex);
         while (!queue.isEmpty()) {
             ExecutionEvents.checkpoint();
-            int node = queue.removeFirst();
-            order.add(node);
-            ExecutionEvents.emit(new GraphBfsEvent.Entered(node, parents.get(node)));
-            for (int neighbor : graph.neighbors(node)) {
+            Vertex<Integer> node = queue.removeFirst();
+            order.add(node.value());
+            for (Vertex<Integer> neighbor : graph.neighbors(node)) {
                 ExecutionEvents.checkpoint();
-                ExecutionEvents.emit(new GraphBfsEvent.EdgeExamined(node, neighbor));
                 if (discovered.add(neighbor)) {
-                    IntEdge edge = new IntEdge(node, neighbor);
-                    discoveryEdges.add(edge);
-                    parents.put(neighbor, node);
-                    ExecutionEvents.emit(new GraphBfsEvent.Discovered(neighbor, node));
+                    discoveryEdges.add(new GraphBfsOutput.DiscoveryEdge(node.value(), neighbor.value()));
                     queue.addLast(neighbor);
                 }
             }
-            ExecutionEvents.emit(new GraphBfsEvent.Visited(node));
         }
-        ExecutionEvents.emit(new GraphBfsEvent.Completed(order));
         return new GraphBfsOutput(order, discoveryEdges);
     }
 
-    public static IntGraph snapshot(GraphStructure<Integer> graph) {
+    public static GraphSnapshot<Integer> snapshot(GraphStructure<Integer> graph) {
         Objects.requireNonNull(graph, "graph");
-        List<Integer> nodes = new ArrayList<>(graph.raw().keySet());
-        List<IntEdge> edges = new ArrayList<>();
-        for (Integer node : nodes) {
-            for (Integer neighbor : graph.neighbors(node)) {
-                edges.add(new IntEdge(node, neighbor));
+        List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
+        for (Vertex<Integer> vertex : graph.vertices()) {
+            vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
+        }
+        List<GraphSnapshot.Edge> edges = new ArrayList<>();
+        for (Edge<Integer> edge : graph.edges()) {
+            edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
+        }
+        return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
+    }
+
+    private static Vertex<Integer> vertex(GraphStructure<Integer> graph, int value) {
+        for (Vertex<Integer> vertex : graph.vertices()) {
+            if (vertex.value() == value) {
+                return vertex;
             }
         }
-        return new IntGraph(nodes, edges);
+        return null;
     }
 }

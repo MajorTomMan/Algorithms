@@ -7,8 +7,8 @@
  */
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
 
 public class 二叉树的层序遍历{
@@ -18,23 +18,23 @@ public class 二叉树的层序遍历{
     public static Integer[] levelOrder(BinaryTreeNode<Integer> root,int size){
         // root节点不为空的情况下将root加入队列,然后弹出root
         // 若其还有左右子树,则加入队列中,可一定保证其层次的完整遍历
-        Queue<BinaryTreeNode<Integer>> queue = new LinkedList<>();
+        QueueStructure<BinaryTreeNode<Integer>> queue = new LinkedList<>();
         if(root==null){
             return null;
         }
         else{
-            queue.add(root);
+            queue.enqueue(root);
         }
         Integer[] temp=new Integer[size+1];
         int i=0;
         while(!queue.isEmpty()){
-            BinaryTreeNode<Integer> node=queue.poll();
-            temp[i]=node.data.intValue();
-            if(node.left!=null){
-                queue.add(node.left);
+            BinaryTreeNode<Integer> node=queue.dequeue();
+            temp[i]=node.getValue().intValue();
+            if(node.getLeft()!=null){
+                queue.enqueue(node.getLeft());
             }
-            if(node.right!=null){
-                queue.add(node.right);
+            if(node.getRight()!=null){
+                queue.enqueue(node.getRight());
             }
             i++;
         }

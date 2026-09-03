@@ -18,7 +18,7 @@ public class Bag<T> implements Iterable<T> {
             size++;
             return;
         }
-        node.next = top;
+        node.setNext(top);
         top = node;
         size++;
     }
@@ -52,8 +52,8 @@ public class Bag<T> implements Iterable<T> {
 
         public T next() {
             // TODO Auto-generated method stub
-            T data = current.data;
-            current = current.next;
+            T data = current.getValue();
+            current = current.getNext();
             return data;
         }
     }

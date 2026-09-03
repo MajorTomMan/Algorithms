@@ -10,9 +10,8 @@ import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.RecordingEventSink;
 import com.majortom.algorithms.library.graph.GraphBfs;
 import com.majortom.algorithms.library.graph.GraphBfsOutput;
-import com.majortom.algorithms.library.graph.IntEdge;
-import com.majortom.algorithms.library.structure.MutableGraph;
-import com.majortom.algorithms.library.structure.MutableString;
+import com.majortom.algorithms.library.basic.graph.Graph;
+import com.majortom.algorithms.library.structure.StringStructure;
 import com.majortom.algorithms.library.string.KmpSearch;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationInput;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerationOutput;
@@ -54,19 +53,19 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static final String VERSION = "2.0";
     private static final ModuleRegistry MODULES = ModuleLoader.load();
     private static final List<AlgorithmApiDescriptor> ALGORITHMS = List.of(
-            new AlgorithmApiDescriptor("insertion-sort", "array", "algorithm.array.Integer.insertion-sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("selection-sort", "array", "algorithm.array.Integer.selection-sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("quick-sort", "array", "algorithm.array.Integer.quick-sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("heap-sort", "array", "algorithm.array.Integer.heap-sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-bfs", "maze", "algorithm.maze.Boolean.maze-generator-bfs", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-dfs", "maze", "algorithm.maze.Boolean.maze-generator-dfs", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-union-find", "maze", "algorithm.maze.Boolean.maze-generator-union-find", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("graph-generator-bfs", "maze", "algorithm.graph.Integer.graph-generator-bfs", GraphMazeGenerationInput.class, GraphMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", "algorithm.maze.Boolean.maze-pathfinder-astar", ArrayMazePathInput.class, ArrayMazePathOutput.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", "algorithm.maze.Boolean.maze-pathfinder-dfs", ArrayMazePathInput.class, ArrayMazePathOutput.class),
-            new AlgorithmApiDescriptor("tree-avl", "tree", "algorithm.tree.Integer.tree-avl", AvlTreeInput.class, AvlTreeOutput.class),
-            new AlgorithmApiDescriptor("graph-bfs", "graph", "algorithm.graph.Integer.graph-bfs", GraphBfsRequest.class, GraphBfsOutput.class),
-            new AlgorithmApiDescriptor("kmp", "string", "algorithm.string.String.kmp", StringSearchRequest.class, List.class));
+            new AlgorithmApiDescriptor("insertion-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
+            new AlgorithmApiDescriptor("selection-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
+            new AlgorithmApiDescriptor("quick-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
+            new AlgorithmApiDescriptor("heap-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
+            new AlgorithmApiDescriptor("maze-generator-bfs", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
+            new AlgorithmApiDescriptor("maze-generator-dfs", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
+            new AlgorithmApiDescriptor("maze-generator-union-find", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
+            new AlgorithmApiDescriptor("graph-generator-bfs", "maze", GraphMazeGenerationInput.class, GraphMazeGenerationOutput.class),
+            new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", ArrayMazePathInput.class, ArrayMazePathOutput.class),
+            new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", ArrayMazePathInput.class, ArrayMazePathOutput.class),
+            new AlgorithmApiDescriptor("tree-avl", "tree", AvlTreeInput.class, AvlTreeOutput.class),
+            new AlgorithmApiDescriptor("graph-bfs", "graph", GraphBfsRequest.class, GraphBfsOutput.class),
+            new AlgorithmApiDescriptor("kmp", "string", StringSearchRequest.class, List.class));
 
     private final ObjectMapper objectMapper;
     private final ExecutionScheduler executionScheduler = ExecutionScheduler.bounded("algorithm-executor-", 10, 20, 100);
@@ -112,7 +111,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     @Override
     public List<AlgorithmInformationDto> getAlgorithms() {
-        return ALGORITHMS.stream().filter(descriptor -> MODULES.contains(descriptor.registryKey())).map(descriptor -> {
+        return ALGORITHMS.stream().map(descriptor -> {
             AlgorithmInformationDto dto = new AlgorithmInformationDto();
             dto.setId(descriptor.id());
             dto.setModuleId(descriptor.moduleId());
@@ -161,15 +160,14 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             }
             case "graph-bfs" -> {
                 GraphBfsRequest input = objectMapper.convertValue(rawInput, GraphBfsRequest.class);
-                MutableGraph<Integer> graph = new MutableGraph<>();
-                for (Integer node : input.graph().nodes()) graph.addVertex(node);
-                for (IntEdge edge : input.graph().edges()) graph.addEdge(edge.from(), edge.to());
+                Graph<Integer> graph = new Graph<>(input.graph().directed());
+                graph.restore(input.graph());
                 GraphBfs algorithm = MODULES.create("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
                 yield new PreparedExecution(() -> algorithm.traverse(graph, input.startNode()));
             }
             case "kmp" -> {
                 StringSearchRequest input = objectMapper.convertValue(rawInput, StringSearchRequest.class);
-                MutableString target = new MutableString(input.target());
+                StringStructure target = new com.majortom.algorithms.library.basic.String(input.target());
                 KmpSearch algorithm = MODULES.create("algorithm.string.String.kmp", KmpSearch.class);
                 yield new PreparedExecution(() -> algorithm.search(target, input.pattern()));
             }
@@ -180,6 +178,6 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private record PreparedExecution(ExecutionOperation<?> operation) {
     }
 
-    private record AlgorithmApiDescriptor(String id, String moduleId, String registryKey, Class<?> inputType, Class<?> outputType) {
+    private record AlgorithmApiDescriptor(String id, String moduleId, Class<?> inputType, Class<?> outputType) {
     }
 }

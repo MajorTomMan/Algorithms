@@ -8,7 +8,7 @@
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 树的子结构 {
     public static void main(String[] args) {
@@ -22,10 +22,10 @@ public class 树的子结构 {
         if (A == null || B == null) {
             return false;
         }
-        if (A.data == B.data && checkSubTree(A, B)) {
+        if (A.getValue() == B.getValue() && checkSubTree(A, B)) {
             return true;
         }
-        return isSubStructure(A.left, B) || isSubStructure(A.right, B);
+        return isSubStructure(A.getLeft(), B) || isSubStructure(A.getRight(), B);
     }
 
     /*
@@ -41,6 +41,6 @@ public class 树的子结构 {
         if (a == null) {
             return false;
         }
-        return a.data == b.data && checkSubTree(a.left, b.left) && checkSubTree(a.right, b.right);
+        return a.getValue() == b.getValue() && checkSubTree(a.getLeft(), b.getLeft()) && checkSubTree(a.getRight(), b.getRight());
     }
 }

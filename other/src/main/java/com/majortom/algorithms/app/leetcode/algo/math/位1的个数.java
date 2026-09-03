@@ -1,15 +1,15 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
 
-import java.util.Deque;
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 public class 位1的个数 {
     public static void main(String[] args) {
         System.out.println(hammingWeight(0b00000000000000000000000000001011));
     }
     public static int hammingWeight(int n) {
-        Deque<Integer> stack=new LinkedList<>();
+        StackStructure<Integer> stack=new LinkedList<>();
         Integer[] bits;
         int i=0;
         while(n!=0){

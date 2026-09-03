@@ -16,13 +16,10 @@ public final class IntegerHeapSort extends AbstractIntegerSort {
             siftDown(array, root, array.size());
         }
         for (int end = array.size() - 1; end > 0; end--) {
-            selectRange(0, end);
             swap(array, 0, end);
-            settle(array, end);
             siftDown(array, 0, end);
         }
         if (array.size() > 0) {
-            settle(array, 0);
         }
     }
 

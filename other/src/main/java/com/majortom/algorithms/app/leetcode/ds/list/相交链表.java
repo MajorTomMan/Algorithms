@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 相交链表{
     public static void main(String[] args) {
@@ -24,15 +24,15 @@ public class 相交链表{
             return null;
         }
         if(headA==null){ //如果A到头了,那么将其指向B链表的头部
-            return getIntersectionNode(origin_B,headB.next,origin_A,origin_B);
+            return getIntersectionNode(origin_B,headB.getNext(),origin_A,origin_B);
         }
         if(headB==null){ //如果B到头了,那么将其指向A链表的头部
-            return getIntersectionNode(headA.next,origin_A,origin_A,origin_B);
+            return getIntersectionNode(headA.getNext(),origin_A,origin_A,origin_B);
         }
         if(headA.equals(headB)){
             return headA;
         }
-        ListNode<Integer> result=getIntersectionNode(headA.next, headB.next,origin_A,origin_B); //同步往下找
+        ListNode<Integer> result=getIntersectionNode(headA.getNext(), headB.getNext(),origin_A,origin_B); //同步往下找
         return result;
     }
 }

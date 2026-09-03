@@ -3,7 +3,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 
 public class 删除链表节点{
@@ -16,11 +16,11 @@ public class 删除链表节点{
         if(head==null){
             return null;
         }
-        if(head.data==val){
-            return head.next;
+        if(head.getValue()==val){
+            return head.getNext();
         }
         else{
-            head.next=deleteNode(head.next, val);
+            head.setNext(deleteNode(head.getNext(), val));
         }
         return head;
     }

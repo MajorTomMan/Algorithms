@@ -13,29 +13,30 @@ final class ArrayMazeSupport {
     static final int[][] CELL_DIRECTIONS = {{-2, 0}, {0, 2}, {2, 0}, {0, -2}};
     static final int[][] PATH_DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
-    private ArrayMazeSupport() {}
+    private ArrayMazeSupport() {
+    }
 
     static GenerationState initialize(ArrayMazeGenerationInput input) {
         GridPoint entrance = new GridPoint(1, 1);
         GridPoint exit = new GridPoint(input.rows() - 2, input.columns() - 2);
-        ExecutionEvents.emit(new ArrayMazeGenerationEvent.Initialized(input.rows(), input.columns(), entrance, exit));
         return new GenerationState(new boolean[MazeDimensions.checkedCellCount(input.rows(), input.columns())], entrance, exit);
     }
 
     static void open(ArrayMazeGenerationInput input, boolean[] open, GridPoint point) {
         int index = index(input.columns(), point);
-        if (open[index]) return;
+        if (open[index]) {
+            return;
+        }
         ExecutionEvents.checkpoint();
         open[index] = true;
-        ExecutionEvents.emit(new ArrayMazeGenerationEvent.CellOpened(point));
     }
 
     static GridMaze complete(ArrayMazeGenerationInput input, GenerationState state) {
         List<Boolean> cells = new ArrayList<>(state.open().length);
-        for (boolean cell : state.open()) cells.add(cell);
-        GridMaze maze = new GridMaze(input.rows(), input.columns(), cells, state.entrance(), state.exit());
-        ExecutionEvents.emit(new ArrayMazeGenerationEvent.Completed(maze));
-        return maze;
+        for (boolean cell : state.open()) {
+            cells.add(cell);
+        }
+        return new GridMaze(input.rows(), input.columns(), cells, state.entrance(), state.exit());
     }
 
     static List<int[]> shuffledCellDirections(Random random) {
@@ -57,9 +58,13 @@ final class ArrayMazeSupport {
         for (int[] direction : PATH_DIRECTIONS) {
             int row = point.row() + direction[0];
             int column = point.column() + direction[1];
-            if (row < 0 || column < 0 || row >= maze.rows() || column >= maze.columns()) continue;
+            if (row < 0 || column < 0 || row >= maze.rows() || column >= maze.columns()) {
+                continue;
+            }
             GridPoint neighbor = new GridPoint(row, column);
-            if (maze.isOpen(neighbor)) neighbors.add(neighbor);
+            if (maze.isOpen(neighbor)) {
+                neighbors.add(neighbor);
+            }
         }
         return neighbors;
     }
@@ -70,18 +75,14 @@ final class ArrayMazeSupport {
         path.addFirst(current);
         while (!current.equals(start)) {
             current = previous.get(current);
-            if (current == null) return List.of();
+            if (current == null) {
+                return List.of();
+            }
             path.addFirst(current);
         }
         return List.copyOf(path);
     }
 
-    static void confirmPath(List<GridPoint> path) {
-        for (int index = 0; index < path.size(); index++) {
-            ExecutionEvents.checkpoint();
-            ExecutionEvents.emit(new ArrayMazePathEvent.PathConfirmed(path.get(index), index, path.size()));
-        }
+    record GenerationState(boolean[] open, GridPoint entrance, GridPoint exit) {
     }
-
-    record GenerationState(boolean[] open, GridPoint entrance, GridPoint exit) {}
 }

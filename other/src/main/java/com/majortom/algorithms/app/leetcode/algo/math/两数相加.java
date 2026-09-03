@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 两数相加 {
     public static void main(String[] args) {
@@ -24,20 +24,20 @@ public class 两数相加 {
         List<Integer> result_list = new ArrayList<>();
         for (ListNode<Integer> first = l1, second = l2;;) {
             if (first != null && second != null) {
-                list_1.add(first.data);
-                list_2.add(second.data);
-                first = first.next;
-                second = second.next;
+                list_1.add(first.getValue());
+                list_2.add(second.getValue());
+                first = first.getNext();
+                second = second.getNext();
                 continue;
             }
             if (first == null && second != null) {
-                list_2.add(second.data);
-                second = second.next;
+                list_2.add(second.getValue());
+                second = second.getNext();
                 continue;
             }
             if (first != null && second == null) {
-                list_1.add(first.data);
-                first = first.next;
+                list_1.add(first.getValue());
+                first = first.getNext();
                 continue;
             }
             if (first == null && second == null) {
@@ -57,9 +57,9 @@ public class 两数相加 {
         ListNode<Integer> temp = root;
         i--;
         while (i >= 0) {
-            temp.next = new ListNode<Integer>(list.get(i));
+            temp.setNext(new ListNode<Integer>(list.get(i)));
             i--;
-            temp = temp.next;
+            temp = temp.getNext();
         }
         return root;
     }

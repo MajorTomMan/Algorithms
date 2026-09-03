@@ -30,7 +30,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21</javafx.version>
         <atlantafx.version>2.1.0</atlantafx.version>
-        <graphstream.version>2.0</graphstream.version>
         <algs4.version>1.0.4</algs4.version>
         <jackson.version>2.17.2</jackson.version>
         <junit.version>5.10.2</junit.version>

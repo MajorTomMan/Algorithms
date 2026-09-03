@@ -19,28 +19,28 @@ public class CycleList<T> {
         ListNode<T> pre = new ListNode<>();
         while (i != index) {
             pre = temp;
-            temp = temp.next;
+            temp = temp.getNext();
             i++;
         }
-        head = temp.next;
-        pre.next = head;
-        System.out.println("被删除的节点是:" + temp.data);
+        head = temp.getNext();
+        pre.setNext(head);
+        System.out.println("被删除的节点是:" + temp.getValue());
     }
 
     public void add(T data) {
         // TODO Auto-generated method stub
         if (head == null) {
             head = new ListNode<>(data);
-            head.next = null;
+            head.setNext(null);
             return;
         }
         ListNode<T> temp = head;
         ListNode<T> node = new ListNode<>(data);
-        while (temp.next != head) {
-            temp = temp.next;
+        while (temp.getNext() != head) {
+            temp = temp.getNext();
         }
-        node.next = head;
-        temp.next = node;
+        node.setNext(head);
+        temp.setNext(node);
     }
 
     public int size() {
@@ -55,11 +55,11 @@ public class CycleList<T> {
 
     private void show(ListNode<T> node) {
         // TODO Auto-generated method stub
-        if (node.next == head) {
+        if (node.getNext() == head) {
             return;
         }
-        show(node.next);
-        System.out.println(node.data);
+        show(node.getNext());
+        System.out.println(node.getValue());
     }
 
     public boolean isEmpty() {

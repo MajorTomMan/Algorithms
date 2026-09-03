@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 链表中倒数第K个节点{
     private static int end=0;
@@ -15,7 +15,7 @@ public class 链表中倒数第K个节点{
         if(head==null){
             return null;
         }
-        ListNode<Integer> result=getKthFromEnd(head.next, k);
+        ListNode<Integer> result=getKthFromEnd(head.getNext(), k);
         end++;
         return end==k?head:result;
     }

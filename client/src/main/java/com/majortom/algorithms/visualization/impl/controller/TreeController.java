@@ -1,21 +1,22 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.core.snapshot.BinaryTreeSnapshot;
+import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
-import com.majortom.algorithms.library.structure.MutableAvlTree;
-import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
-import com.majortom.algorithms.library.tree.AvlTreeCommands;
+import com.majortom.algorithms.library.basic.tree.GeneralTreeNode;
+import com.majortom.algorithms.library.basic.tree.Tree;
+import com.majortom.algorithms.library.tree.TreeAlgorithm;
 import com.majortom.algorithms.library.tree.AvlTreeInput;
+import com.majortom.algorithms.library.tree.AvlTreeOutput;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.runtime.tree.AvlTreeEventReducer;
-import com.majortom.algorithms.visualization.runtime.tree.AvlTreeViewState;
+import com.majortom.algorithms.visualization.runtime.tree.TreeEventReducer;
+import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -27,18 +28,17 @@ import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Set;
 
-public final class TreeController extends BaseModuleController<AvlTreeViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<BinaryTreeSnapshot<Integer>>, SnapshotAlgorithmInputSupport<BinaryTreeSnapshot<Integer>> {
+public final class TreeController extends BaseModuleController<TreeViewState>
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<GeneralTreeSnapshot<Integer>>,
+        SnapshotAlgorithmInputSupport<GeneralTreeSnapshot<Integer>> {
 
-    private final MutableAvlTree<Integer> tree;
-    private final List<String> algorithmIds;
-    private StructureSnapshot<BinaryTreeSnapshot<Integer>> algorithmInputSnapshot;
+    private final List<String> algorithmIds = AlgorithmCatalog.treeAlgorithms();
+    private final Tree<Integer> tree;
+    private StructureSnapshot<GeneralTreeSnapshot<Integer>> algorithmInputSnapshot;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -46,9 +46,10 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     @FXML private Label operationsSectionLabel;
     @FXML private ComboBox<String> algorithmSelector;
     @FXML private TextField valueField;
-    @FXML private TextField updateOldValueField;
-    @FXML private TextField updateNewValueField;
-    @FXML private Button insertBtn;
+    @FXML private TextField parentIdField;
+    @FXML private TextField nodeIdField;
+    @FXML private Button addRootBtn;
+    @FXML private Button addChildBtn;
     @FXML private Button deleteBtn;
     @FXML private Button findBtn;
     @FXML private Button updateBtn;
@@ -57,12 +58,8 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     @SuppressWarnings("unchecked")
     public TreeController() {
         super(new TreeVisualizer(), "/fxml/TreeControls.fxml");
-        algorithmIds = registeredAlgorithmIds("tree", "Integer");
-        tree = module("structure.tree.Integer", MutableAvlTree.class);
-        Random random = new Random();
-        while (tree.size() < 12) {
-            tree.insert(random.nextInt(100));
-        }
+        tree = module("structure.tree.Integer", Tree.class);
+        initializeSampleTree();
         renderStructureState(currentStructureState());
     }
 
@@ -70,40 +67,53 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        EffectUtils.applyDynamicEffect(insertBtn, deleteBtn, findBtn, updateBtn, randomBtn);
+        EffectUtils.applyDynamicEffect(addRootBtn, addChildBtn, deleteBtn, findBtn, updateBtn, randomBtn);
     }
 
     @FXML
-    private void handleInsert() {
-        List<Integer> values = parseValues(valueField.getText());
-        if (values.isEmpty()) {
+    private void handleAddRoot() {
+        Integer value = parseValue(valueField);
+        if (value == null || tree.root() != null) {
+            if (tree.root() != null) {
+                logI18n("message.tree.root_exists");
+            }
             return;
         }
-        if (executeStructureOperation("insert", () -> {
-            for (Integer value : values) {
-                tree.insert(value);
-            }
-            return null;
-        })) {
-            renderStructureState(currentStructureState());
-            refreshStatsDisplay();
+        if (executeStructureOperation("add-root", () -> tree.addRoot(value))) {
+            refreshStructureView();
+        }
+    }
+
+    @FXML
+    private void handleAddChild() {
+        Integer value = parseValue(valueField);
+        Long parentId = parseId(parentIdField);
+        if (value == null || parentId == null) {
+            return;
+        }
+        GeneralTreeNode<Integer> parent = tree.findById(parentId);
+        if (parent == null) {
+            logI18n("message.tree.node_id_not_found", parentId);
+            return;
+        }
+        if (executeStructureOperation("add-child", () -> tree.addChild(parent, value))) {
+            refreshStructureView();
         }
     }
 
     @FXML
     private void handleDelete() {
-        List<Integer> values = parseValues(valueField.getText());
-        if (values.isEmpty()) {
+        Long nodeId = parseId(nodeIdField);
+        if (nodeId == null) {
             return;
         }
-        if (executeStructureOperation("remove", () -> {
-            for (Integer value : values) {
-                tree.remove(value);
-            }
-            return null;
-        })) {
-            renderStructureState(currentStructureState());
-            refreshStatsDisplay();
+        GeneralTreeNode<Integer> node = tree.findById(nodeId);
+        if (node == null) {
+            logI18n("message.tree.node_id_not_found", nodeId);
+            return;
+        }
+        if (executeStructureOperation("remove", () -> tree.remove(node))) {
+            refreshStructureView();
         }
     }
 
@@ -113,21 +123,16 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
             logI18n("message.error.operation_running");
             return;
         }
-        Integer target = parseValue(valueField);
-        if (target == null) {
+        Integer value = parseValue(valueField);
+        if (value == null) {
             return;
         }
-        AvlTreeViewState state = currentStructureState();
-        SearchResult result = findNode(state.root(), target, null, new ArrayList<>());
-        if (result == null) {
-            logI18n("message.tree.not_found", target);
+        GeneralTreeNode<Integer> node = tree.findFirstByValue(value);
+        if (node == null) {
+            logI18n("message.tree.not_found", value);
             return;
         }
-        renderViewState(new AvlTreeViewState(
-                state.root(), state.values(), result.id(), result.value(), result.parentId(), null,
-                new LinkedHashSet<>(result.ancestors()), AvlTreeViewState.Phase.VISITING,
-                null, null, null, false));
-        logI18n("message.tree.found", target);
+        logI18n("message.tree.found_with_id", value, node.getId());
     }
 
     @FXML
@@ -136,83 +141,27 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
             logI18n("message.error.operation_running");
             return;
         }
-        Integer oldValue = parseValue(updateOldValueField);
-        Integer newValue = parseValue(updateNewValueField);
-        if (oldValue == null || newValue == null) {
+        Long nodeId = parseId(nodeIdField);
+        Integer value = parseValue(valueField);
+        if (nodeId == null || value == null) {
             return;
         }
-        if (tree.find(oldValue) == null) {
-            logI18n("message.tree.not_found", oldValue);
-            return;
-        }
-        if (!oldValue.equals(newValue) && tree.find(newValue) != null) {
-            logI18n("message.tree.duplicate", newValue);
-            return;
-        }
-        if (oldValue.equals(newValue)) {
+        GeneralTreeNode<Integer> node = tree.findById(nodeId);
+        if (node == null) {
+            logI18n("message.tree.node_id_not_found", nodeId);
             return;
         }
         if (executeStructureOperation("update", () -> {
-            tree.remove(oldValue);
-            tree.insert(newValue);
+            node.setValue(value);
             return null;
         })) {
-            renderStructureState(currentStructureState());
-            refreshStatsDisplay();
-            logI18n("message.tree.updated", oldValue, newValue);
+            refreshStructureView();
         }
     }
 
     @FXML
     private void handleRandom() {
-        valueField.setText(String.valueOf(new Random().nextInt(100)));
-    }
-
-    private List<Integer> parseValues(String input) {
-        List<Integer> result = new ArrayList<>();
-        try {
-            for (String part : input.split("[,，]")) {
-                if (!part.isBlank()) {
-                    result.add(Integer.parseInt(part.trim()));
-                }
-            }
-        } catch (NumberFormatException exception) {
-            appendLog(I18N.text("message.error.invalid_tree_input"));
-            return List.of();
-        }
-        if (result.isEmpty()) {
-            appendLog(I18N.text("message.error.invalid_tree_input"));
-            return List.of();
-        }
-        return List.copyOf(result);
-    }
-
-    private Integer parseValue(TextField field) {
-        try {
-            return Integer.valueOf(field.getText().trim());
-        } catch (RuntimeException exception) {
-            logI18n("message.error.invalid_tree_input");
-            return null;
-        }
-    }
-
-    private SearchResult findNode(AvlNodeSnapshot node, int target, Long parentId, List<Long> path) {
-        if (node == null) {
-            return null;
-        }
-        List<Long> nextPath = new ArrayList<>(path);
-        nextPath.add(node.id());
-        if (target == node.value()) {
-            nextPath.removeLast();
-            return new SearchResult(node.id(), node.value(), parentId, nextPath);
-        }
-        if (target < node.value()) {
-            return findNode(node.left(), target, node.id(), nextPath);
-        }
-        return findNode(node.right(), target, node.id(), nextPath);
-    }
-
-    private record SearchResult(long id, int value, Long parentId, List<Long> ancestors) {
+        valueField.setText(Integer.toString(new Random().nextInt(100)));
     }
 
     @Override
@@ -220,14 +169,20 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         if (isRunning()) {
             return;
         }
-        StructureSnapshot<BinaryTreeSnapshot<Integer>> inputSnapshot =
+        StructureSnapshot<GeneralTreeSnapshot<Integer>> inputSnapshot =
                 algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
-        AvlNodeSnapshot inputRoot = toAvlSnapshot(inputSnapshot.state().root());
-        AvlTreeInput input = inputRoot == null
-                ? AvlTreeInput.fromValues(List.of(), List.of())
-                : AvlTreeInput.fromSnapshot(inputRoot, List.of());
-        AvlTreeCommands algorithm = module("algorithm.tree.Integer.tree-avl", AvlTreeCommands.class);
-        startAlgorithm("tree-avl", input, () -> algorithm.execute(input), AvlTreeEventReducer::new);
+        List<Integer> values = snapshotValues(inputSnapshot.state());
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            return;
+        }
+        AvlTreeInput input = AvlTreeInput.fromValues(values, List.of());
+        @SuppressWarnings("unchecked")
+        TreeAlgorithm<Integer, AvlTreeInput, AvlTreeOutput> algorithm =
+                (TreeAlgorithm<Integer, AvlTreeInput, AvlTreeOutput>)
+                        module("algorithm.tree.Integer." + algorithmId, TreeAlgorithm.class);
+        startAlgorithm(algorithmId, input, () -> algorithm.execute(input),
+                () -> new TreeEventReducer(TreeViewState.empty(TreeViewState.Kind.BINARY)));
     }
 
     @Override
@@ -243,24 +198,25 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
     }
 
     @Override
-    public StructureSnapshot<BinaryTreeSnapshot<Integer>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), new BinaryTreeSnapshot<>(snapshotTreeNode(tree.raw()), tree.size()));
+    public StructureSnapshot<GeneralTreeSnapshot<Integer>> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), currentSnapshot());
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<BinaryTreeSnapshot<Integer>> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<GeneralTreeSnapshot<Integer>> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
-        tree.restore(restoreTreeNode(snapshot.state().root()));
+        tree.restore(restoreNode(snapshot.state().root()));
         invalidateExecutionForStructureChange();
-        renderStructureState(currentStructureState());
-        refreshStatsDisplay();
+        refreshStructureView();
     }
 
     @Override
-    public void useSnapshotAsAlgorithmInput(StructureSnapshot<BinaryTreeSnapshot<Integer>> snapshot) {
-        if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<GeneralTreeSnapshot<Integer>> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
     }
@@ -281,7 +237,6 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         return algorithmInputSnapshot == null;
     }
 
-
     @Override
     protected void restoreAlgorithmState() {
         if (latestViewState() != null) {
@@ -292,100 +247,115 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
             renderViewState(currentStructureState());
             return;
         }
-        AvlNodeSnapshot root = toAvlSnapshot(algorithmInputSnapshot.state().root());
-        renderViewState(new AvlTreeViewState(root, values(root), null, null, null, null, Set.of(),
-                AvlTreeViewState.Phase.IDLE, null, null, null, false));
+        renderViewState(TreeViewState.general(algorithmInputSnapshot.state()));
     }
-
 
     @Override
-    public String describeStructureSnapshot(BinaryTreeSnapshot<Integer> state) {
-        int height = state.root() == null ? 0 : state.root().height();
-        return I18N.text("snapshot.tree.detail", state.size(), height);
+    public String describeStructureSnapshot(GeneralTreeSnapshot<Integer> state) {
+        return I18N.text("snapshot.tree.detail", state.size(), height(state.root()));
     }
 
-    private AvlTreeViewState currentStructureState() {
-        AvlNodeSnapshot root = snapshotNode(tree.raw());
-        return new AvlTreeViewState(root, values(root), null, null, null, null, Set.of(),
-                AvlTreeViewState.Phase.IDLE, null, null, null, false);
+    private void initializeSampleTree() {
+        GeneralTreeNode<Integer> root = tree.addRoot(50);
+        GeneralTreeNode<Integer> left = tree.addChild(root, 30);
+        GeneralTreeNode<Integer> middle = tree.addChild(root, 70);
+        tree.addChild(root, 90);
+        tree.addChild(left, 10);
+        tree.addChild(left, 40);
+        tree.addChild(middle, 60);
+        tree.addChild(middle, 80);
     }
 
-    private BinaryTreeSnapshot.Node<Integer> snapshotTreeNode(AVLTreeNode<Integer> node) {
+    private void refreshStructureView() {
+        renderStructureState(currentStructureState());
+        refreshStatsDisplay();
+    }
+
+    private TreeViewState currentStructureState() {
+        return TreeViewState.general(currentSnapshot());
+    }
+
+    private GeneralTreeSnapshot<Integer> currentSnapshot() {
+        return new GeneralTreeSnapshot<>(snapshotNode(tree.root()), tree.size());
+    }
+
+    private GeneralTreeSnapshot.Node<Integer> snapshotNode(GeneralTreeNode<Integer> node) {
         if (node == null) {
             return null;
         }
-        return new BinaryTreeSnapshot.Node<>(node.id, node.data, node.height,
-                snapshotTreeNode(left(node)), snapshotTreeNode(right(node)));
+        List<GeneralTreeSnapshot.Node<Integer>> children = node.getChildren().stream().map(this::snapshotNode).toList();
+        return new GeneralTreeSnapshot.Node<>(node.getId(), node.getValue(), children);
     }
 
-    private AvlNodeSnapshot toAvlSnapshot(BinaryTreeSnapshot.Node<Integer> snapshot) {
-        if (snapshot == null) return null;
-        return new AvlNodeSnapshot(snapshot.id(), snapshot.value(), snapshot.height(),
-                toAvlSnapshot(snapshot.left()), toAvlSnapshot(snapshot.right()));
-    }
-
-    private AVLTreeNode<Integer> restoreTreeNode(BinaryTreeSnapshot.Node<Integer> snapshot) {
-        if (snapshot == null) {
-            return null;
-        }
-        AVLTreeNode<Integer> node = new AVLTreeNode<>(snapshot.id(), snapshot.value());
-        node.height = snapshot.height();
-        node.left = restoreTreeNode(snapshot.left());
-        node.right = restoreTreeNode(snapshot.right());
-        return node;
-    }
-
-    private AvlNodeSnapshot snapshotNode(AVLTreeNode<Integer> node) {
+    private GeneralTreeNode<Integer> restoreNode(GeneralTreeSnapshot.Node<Integer> node) {
         if (node == null) {
             return null;
         }
-        return new AvlNodeSnapshot(node.id, node.data, node.height,
-                snapshotNode(left(node)), snapshotNode(right(node)));
+        List<GeneralTreeNode<Integer>> children = node.children().stream().map(this::restoreNode).toList();
+        return new GeneralTreeNode<>(node.id(), node.value(), children);
     }
 
-    private List<Integer> currentValues() {
-        return values(snapshotNode(tree.raw()));
+    private List<Integer> snapshotValues(GeneralTreeSnapshot<Integer> snapshot) {
+        List<Integer> values = new ArrayList<>();
+        collectSnapshotValues(snapshot.root(), values);
+        return List.copyOf(values);
     }
 
-    private List<Integer> values(AvlNodeSnapshot root) {
-        List<Integer> result = new ArrayList<>();
-        collectValues(root, result);
-        return List.copyOf(result);
-    }
-
-    private void collectValues(AvlNodeSnapshot node, List<Integer> values) {
+    private void collectSnapshotValues(GeneralTreeSnapshot.Node<Integer> node, List<Integer> values) {
         if (node == null) {
             return;
         }
-        collectValues(node.left(), values);
         values.add(node.value());
-        collectValues(node.right(), values);
+        for (GeneralTreeSnapshot.Node<Integer> child : node.children()) {
+            collectSnapshotValues(child, values);
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Integer> left(AVLTreeNode<Integer> node) {
-        return node == null ? null : (AVLTreeNode<Integer>) node.left;
+    private int height(GeneralTreeSnapshot.Node<Integer> node) {
+        if (node == null) {
+            return 0;
+        }
+        int maxChildHeight = 0;
+        for (GeneralTreeSnapshot.Node<Integer> child : node.children()) {
+            maxChildHeight = Math.max(maxChildHeight, height(child));
+        }
+        return maxChildHeight + 1;
     }
 
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Integer> right(AVLTreeNode<Integer> node) {
-        return node == null ? null : (AVLTreeNode<Integer>) node.right;
+    private Integer parseValue(TextField field) {
+        try {
+            return Integer.valueOf(field.getText().trim());
+        } catch (RuntimeException exception) {
+            logI18n("message.error.invalid_tree_input");
+            return null;
+        }
+    }
+
+    private Long parseId(TextField field) {
+        try {
+            long value = Long.parseLong(field.getText().trim());
+            if (value <= 0) {
+                throw new NumberFormatException("id must be positive");
+            }
+            return value;
+        } catch (RuntimeException exception) {
+            logI18n("message.error.invalid_tree_node_id");
+            return null;
+        }
     }
 
     @Override
-    protected void onAlgorithmFinished() {
-        super.onAlgorithmFinished();
+    protected void onAlgorithmFinished(com.majortom.algorithms.core.runtime.ExecutionResult result) {
+        super.onAlgorithmFinished(result);
         logI18n("message.execution.finished");
     }
 
     @Override
     protected String formatStatsMessage() {
-        AVLTreeNode<Integer> root = tree.raw();
-        int height = root == null ? 0 : root.height;
         return String.format("%s | %s | %s",
-                I18N.text("stats.size", tree.size()), I18N.text("stats.height", height),
-                formatMetric("stats.action", stats.metric("nodes.inserted")
-                        + stats.metric("nodes.removed") + stats.metric("rotations")));
+                I18N.text("stats.size", tree.size()),
+                I18N.text("stats.height", height(currentSnapshot().root())),
+                formatMetric("stats.action", stats.metric("nodes.inserted") + stats.metric("nodes.removed")));
     }
 
     @Override
@@ -406,9 +376,10 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
             operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
         }
         bindPrompt(valueField, "prompt.tree.value");
-        bindPrompt(updateOldValueField, "prompt.tree.old_value");
-        bindPrompt(updateNewValueField, "prompt.tree.new_value");
-        bindButton(insertBtn, "action.tree.insert");
+        bindPrompt(parentIdField, "prompt.tree.parent_id");
+        bindPrompt(nodeIdField, "prompt.tree.node_id");
+        bindButton(addRootBtn, "action.tree.add_root");
+        bindButton(addChildBtn, "action.tree.add_child");
         bindButton(deleteBtn, "action.tree.delete");
         bindButton(findBtn, "action.tree.find");
         bindButton(updateBtn, "action.tree.update");
@@ -420,15 +391,25 @@ public final class TreeController extends BaseModuleController<AvlTreeViewState>
         return "tree";
     }
 
+    private String selectedAlgorithmId() {
+        int index = algorithmSelector == null ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
+        if (index < 0) {
+            index = 0;
+        }
+        return algorithmIds.isEmpty() ? null : algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+    }
+
     private void bindSelectors() {
         structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text("label.tree.structure.avl")),
+                () -> FXCollections.observableArrayList(I18N.text("label.tree.structure.general")),
                 I18N.localeProperty()));
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(algorithmIds.stream()
-                        .map(id -> I18N.text(AlgorithmLabels.key(id)))
-                        .toList()),
-                I18N.localeProperty()));
+        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+            javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
+            for (String id : algorithmIds) {
+                labels.add(AlgorithmLabels.text(id));
+            }
+            return labels;
+        }, I18N.localeProperty()));
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             algorithmSelector.getSelectionModel().selectFirst();

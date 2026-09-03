@@ -3,7 +3,7 @@ package com.majortom.algorithms.app.leetcode.ds.tree;
 import java.util.Random;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 相同的树 {
     public static void main(String[] args) {
@@ -16,10 +16,10 @@ public class 相同的树 {
             return true;
         } else if (p == null || q == null) {
             return false;
-        } else if (p.data != q.data) {
+        } else if (p.getValue() != q.getValue()) {
             return false;
         } else {
-            return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);
+            return isSameTree(p.getLeft(), q.getLeft()) && isSameTree(p.getRight(), q.getRight());
         }
     }
 }

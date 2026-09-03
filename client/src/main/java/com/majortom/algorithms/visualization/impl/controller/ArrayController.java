@@ -1,15 +1,17 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.library.sort.AbstractIntegerSort;
-import com.majortom.algorithms.library.structure.MutableArray;
+import com.majortom.algorithms.library.sort.Sort;
+import com.majortom.algorithms.library.basic.Array;
 import com.majortom.algorithms.library.sort.model.IntegerSortInput;
+import com.majortom.algorithms.library.sort.model.IntegerSortOutput;
 import com.majortom.algorithms.utils.EffectUtils;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
-import com.majortom.algorithms.visualization.impl.visualizer.HistogramSortVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.runtime.sort.IntegerSortEventReducer;
-import com.majortom.algorithms.visualization.runtime.sort.IntegerSortViewState;
+import com.majortom.algorithms.visualization.runtime.array.ArrayEventReducer;
+import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
@@ -30,12 +32,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
-public final class ArrayController extends BaseModuleController<IntegerSortViewState>
+public final class ArrayController extends BaseModuleController<ArrayViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Integer>>, SnapshotAlgorithmInputSupport<SequenceSnapshot<Integer>> {
 
+    private final List<String> algorithmIds = AlgorithmCatalog.arraySorts();
+
     private final Random random = new Random();
-    private final List<String> algorithmIds;
-    private final MutableArray<Integer> sourceArray;
+    private final Array<Integer> sourceArray;
     private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
     private int currentSize = 20;
 
@@ -62,9 +65,8 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
 
     @SuppressWarnings("unchecked")
     public ArrayController() {
-        super(new HistogramSortVisualizer(), "/fxml/ArrayControls.fxml");
-        algorithmIds = registeredAlgorithmIds("array", "Integer");
-        sourceArray = module("structure.array.Integer", MutableArray.class);
+        super(new ArrayVisualizer(), "/fxml/ArrayControls.fxml");
+        sourceArray = module("structure.array.Integer", Array.class);
         replaceArrayContents(randomValues());
     }
 
@@ -115,11 +117,19 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
     }
 
     private List<Integer> sourceValues() {
-        return List.copyOf(sourceArray.raw());
+        return sourceValues(sourceArray);
+    }
+
+    private List<Integer> sourceValues(com.majortom.algorithms.library.structure.ArrayStructure<Integer> array) {
+        List<Integer> values = new ArrayList<>(array.size());
+        for (Integer value : array) {
+            values.add(value);
+        }
+        return List.copyOf(values);
     }
 
     private void renderSource() {
-        renderStructureState(IntegerSortViewState.source(sourceValues()));
+        renderStructureState(ArrayViewState.source(sourceValues()));
     }
 
     @Override
@@ -178,7 +188,7 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
         }
         List<Integer> values = algorithmInputSnapshot == null
                 ? sourceValues() : algorithmInputSnapshot.state().values();
-        renderViewState(IntegerSortViewState.source(values));
+        renderViewState(ArrayViewState.source(values));
     }
 
 
@@ -220,7 +230,7 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
             if (value == null) {
                 return;
             }
-            index = sourceArray.raw().indexOf(value);
+            index = indexOf(value);
             if (index < 0) {
                 logI18n("message.sort.not_found", value);
                 return;
@@ -244,7 +254,7 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
         if (value == null) {
             return;
         }
-        int index = sourceArray.raw().indexOf(value);
+        int index = indexOf(value);
         if (index < 0) {
             logI18n("message.sort.not_found", value);
             return;
@@ -306,9 +316,17 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
         List<Integer> values = inputSnapshot.state().values();
         if (values.isEmpty()) return;
         String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            return;
+        }
         IntegerSortInput input = new IntegerSortInput(values);
-        AbstractIntegerSort algorithm = module("algorithm.array.Integer." + algorithmId, AbstractIntegerSort.class);
-        startAlgorithm(algorithmId, input, () -> algorithm.sort(input), IntegerSortEventReducer::new);
+        @SuppressWarnings("unchecked")
+        Sort<Integer> algorithm = (Sort<Integer>) module("algorithm.array.Integer." + algorithmId, Sort.class);
+        Array<Integer> runtimeArray = new Array<>(values);
+        startAlgorithm(algorithmId, input, () -> {
+            algorithm.sort(runtimeArray);
+            return new IntegerSortOutput(sourceValues(runtimeArray));
+        }, () -> new ArrayEventReducer(input.values()));
     }
 
     @Override
@@ -403,14 +421,14 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
         if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
             index = algorithmSelector.getSelectionModel().getSelectedIndex();
         }
-        return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        return algorithmIds.isEmpty() ? null : algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
     }
 
     private void bindAlgorithmSelector() {
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
             javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
             for (String id : algorithmIds) {
-                labels.add(I18N.text(AlgorithmLabels.key(id)));
+                labels.add(AlgorithmLabels.text(id));
             }
             return labels;
         }, I18N.localeProperty()));
@@ -423,4 +441,11 @@ public final class ArrayController extends BaseModuleController<IntegerSortViewS
                 I18N.localeProperty()));
         Platform.runLater(() -> structureSelector.getSelectionModel().selectFirst());
     }
+    private int indexOf(int value) {
+        for (int index = 0; index < sourceArray.size(); index++) {
+            if (sourceArray.get(index) == value) return index;
+        }
+        return -1;
+    }
+
 }

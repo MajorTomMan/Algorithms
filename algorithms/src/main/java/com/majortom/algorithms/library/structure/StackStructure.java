@@ -1,12 +1,13 @@
 package com.majortom.algorithms.library.structure;
 
-import com.majortom.algorithms.library.basic.node.ListNode;
-
-public interface StackStructure<T> {
+public interface StackStructure<T> extends Iterable<T> {
     int size();
-    boolean isEmpty();
+
+    default boolean isEmpty() {
+        return size() == 0;
+    }
+
     void push(T value);
     T pop();
     T peek();
-    ListNode<T> raw();
 }

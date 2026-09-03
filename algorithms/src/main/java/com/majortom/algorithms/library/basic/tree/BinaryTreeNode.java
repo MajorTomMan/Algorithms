@@ -1,46 +1,57 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import java.util.ArrayList;
+import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
+
+import java.util.Arrays;
 import java.util.List;
 
-/**
- * 二叉树节点基类。
- *
- * <p>它把 left/right 转换为 {@link #getChildren()} 返回的统一子节点列表，
- * 让 {@code BaseTree} 的深拷贝和可视化布局不需要关心具体字段名。</p>
- *
- * @param <T> 节点数据类型
- */
 public abstract class BinaryTreeNode<T> extends TreeNode<T> {
-    /**
-     * 左子节点。
-     */
-    public BinaryTreeNode<T> left;
+    private BinaryTreeNode<T> left;
+    private BinaryTreeNode<T> right;
 
-    /**
-     * 右子节点。
-     */
-    public BinaryTreeNode<T> right;
-
-    /**
-     * 创建二叉树节点。
-     *
-     * @param data 节点数据
-     */
-    public BinaryTreeNode(T data) {
-        super(data);
+    protected BinaryTreeNode(T value) {
+        super(value);
     }
 
-    /**
-     * 获取左右子节点列表。
-     *
-     * @return 固定包含 left 和 right 的列表
-     */
+    public BinaryTreeNode<T> getLeft() {
+        return left;
+    }
+
+    public BinaryTreeNode<T> getRight() {
+        return right;
+    }
+
+    public void setLeft(BinaryTreeNode<T> left) {
+        if (this.left == left) {
+            return;
+        }
+        Long previousId = id(this.left);
+        this.left = left;
+        ExecutionEvents.emit(new TreeStructureEvent.LeftChanged(getId(), previousId, id(left)));
+    }
+
+    public void setRight(BinaryTreeNode<T> right) {
+        if (this.right == right) {
+            return;
+        }
+        Long previousId = id(this.right);
+        this.right = right;
+        ExecutionEvents.emit(new TreeStructureEvent.RightChanged(getId(), previousId, id(right)));
+    }
+
+
+    protected void initializeChildren(BinaryTreeNode<T> left, BinaryTreeNode<T> right) {
+        this.left = left;
+        this.right = right;
+    }
+
     @Override
     public List<BinaryTreeNode<T>> getChildren() {
-        List<BinaryTreeNode<T>> list = new ArrayList<>(2);
-        list.add(left);
-        list.add(right);
-        return list;
+        return Arrays.asList(left, right);
+    }
+
+    private static Long id(BinaryTreeNode<?> node) {
+        return node == null ? null : node.getId();
     }
 }

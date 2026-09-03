@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 二叉树的中序遍历 {
     public static void main(String[] args) {
@@ -23,9 +23,9 @@ public class 二叉树的中序遍历 {
         if (node == null) {
             return node;
         }
-        inorderTraversal(node.left, list);
-        list.add(node.data);
-        inorderTraversal(node.right, list);
+        inorderTraversal(node.getLeft(), list);
+        list.add(node.getValue());
+        inorderTraversal(node.getRight(), list);
         return node;
     }
 }

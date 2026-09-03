@@ -3,7 +3,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 环形链表 {
     public static void main(String[] args) {
@@ -11,17 +11,17 @@ public class 环形链表 {
         System.out.println(hasCycle(AlgorithmsUtils.buildLinkedList(nums)));
     }
     public static boolean hasCycle(ListNode<Integer> head) {
-        if (head == null || head.next == null) {
+        if (head == null || head.getNext() == null) {
             return false;
         }
         ListNode<Integer> slow = head;
-        ListNode<Integer> fast = head.next;
+        ListNode<Integer> fast = head.getNext();
         while (slow != fast) {
-            if (fast == null || fast.next == null) {
+            if (fast == null || fast.getNext() == null) {
                 return false;
             }
-            slow = slow.next;
-            fast = fast.next.next;
+            slow = slow.getNext();
+            fast = fast.getNext().getNext();
         }
         return true;
     }

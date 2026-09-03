@@ -1,203 +1,200 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
-import com.majortom.algorithms.library.graph.IntEdge;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.common.AnimationCoordinator;
+import com.majortom.algorithms.visualization.common.ViewportPane;
+import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
+import com.majortom.algorithms.visualization.common.view.EdgeView;
+import com.majortom.algorithms.visualization.common.view.NodeView;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphLayout;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
-import javafx.application.Platform;
-import org.graphstream.graph.Edge;
-import org.graphstream.graph.Graph;
-import org.graphstream.graph.Node;
-import org.graphstream.graph.implementations.SingleGraph;
-import org.graphstream.ui.fx_viewer.FxViewPanel;
-import org.graphstream.ui.fx_viewer.FxViewer;
+import javafx.animation.Animation;
+import javafx.animation.ParallelTransition;
+import javafx.geometry.Point2D;
+import javafx.scene.Node;
+import javafx.util.Duration;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-/** Incremental GraphStream adapter fed exclusively by the neutral graph projection. */
+/** Pure JavaFX graph renderer using deterministic project-owned layout. */
 public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
+    private static final CircleGeometry NODE_GEOMETRY = new CircleGeometry(27.0d);
+    private static final Duration MOVE_DURATION = Duration.millis(300.0d);
+    private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
+    private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
 
-    private final Graph graph = new SingleGraph("algorithm-graph");
-    private FxViewer viewer;
-    private FxViewPanel viewPanel;
-    private boolean graphDisposed;
+    private final ViewportPane viewport = new ViewportPane();
+    private final AnimationCoordinator animations = new AnimationCoordinator();
+    private final GraphLayout layout = new GraphLayout();
+    private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
+    private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
+    private GraphViewState renderedState = new GraphViewState(false, List.of(), List.of(), false);
+    private Animation activeAnimation;
+    private boolean firstRender = true;
 
     public GraphVisualizer() {
-        System.setProperty("org.graphstream.ui", "javafx");
-        graph.setStrict(false);
-        Platform.runLater(this::initializeViewer);
-    }
-
-    private void initializeViewer() {
-        if (graphDisposed || isDisposed()) {
-            return;
-        }
-        graph.setAttribute("ui.antialias");
-        java.net.URL css = getClass().getResource("/style/graph.css");
-        if (css != null) {
-            graph.setAttribute("ui.stylesheet", "url('" + css.toExternalForm() + "')");
-        }
-        viewer = new FxViewer(graph, FxViewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-        viewer.enableAutoLayout();
-        viewPanel = (FxViewPanel) viewer.addDefaultView(false);
-        viewPanel.prefWidthProperty().bind(widthProperty());
-        viewPanel.prefHeightProperty().bind(heightProperty());
-        getChildren().setAll(viewPanel, canvas);
-        canvas.setMouseTransparent(true);
-        drawCurrent();
+        getChildren().setAll(viewport);
+        viewport.prefWidthProperty().bind(widthProperty());
+        viewport.prefHeightProperty().bind(heightProperty());
     }
 
     @Override
     protected void draw(GraphViewState state) {
-        if (graphDisposed) {
+        stopActiveAnimation();
+        Map<Long, Point2D> positions = layout.layout(state).positions();
+        List<Animation> transitions = new ArrayList<>();
+
+        for (GraphViewState.Node node : state.nodes()) {
+            Point2D target = positions.get(node.id());
+            if (target == null) {
+                continue;
+            }
+            NodeView view = nodeViews.get(node.id());
+            if (view == null) {
+                view = new NodeView(NODE_GEOMETRY, Integer.toString(node.value()));
+                view.setCenter(target.getX(), target.getY());
+                nodeViews.put(node.id(), view);
+                viewport.content().getChildren().add(view);
+                if (!firstRender) {
+                    transitions.add(animations.together(
+                            animations.fadeIn(view, APPEAR_DURATION),
+                            animations.scaleIn(view, APPEAR_DURATION)));
+                }
+            } else {
+                view.setText(Integer.toString(node.value()));
+                if (firstRender) {
+                    view.setCenter(target.getX(), target.getY());
+                } else if (!view.center().equals(target)) {
+                    transitions.add(animations.move(view, target, MOVE_DURATION));
+                }
+            }
+            view.setHighlighted(state.completed());
+        }
+
+        syncEdges(state, transitions);
+
+        List<Long> removedNodes = nodeViews.keySet().stream()
+                .filter(id -> state.nodes().stream().noneMatch(node -> node.id() == id))
+                .toList();
+        for (Long nodeId : removedNodes) {
+            NodeView view = nodeViews.get(nodeId);
+            if (firstRender) {
+                removeNode(nodeId);
+                continue;
+            }
+            Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
+            fade.setOnFinished(event -> removeNode(nodeId));
+            transitions.add(fade);
+        }
+
+        reorderLayers();
+        renderedState = state;
+        if (firstRender) {
+            firstRender = false;
+            viewport.fitToViewport();
             return;
         }
-        synchronizeGraph(state);
-        clear();
+        if (!transitions.isEmpty()) {
+            ParallelTransition parallel = new ParallelTransition();
+            parallel.getChildren().addAll(transitions);
+            activeAnimation = parallel;
+            parallel.play();
+        }
     }
 
-    private void synchronizeGraph(GraphViewState state) {
-        Set<String> desiredNodeIds = new LinkedHashSet<>();
-        for (int id : state.graph().nodes()) {
-            desiredNodeIds.add(String.valueOf(id));
+    private void syncEdges(GraphViewState state, List<Animation> transitions) {
+        Map<Long, GraphViewState.Edge> expected = new LinkedHashMap<>();
+        for (GraphViewState.Edge edge : state.edges()) {
+            expected.put(edge.id(), edge);
         }
 
-        Map<String, IntEdge> desiredEdges = edgeIds(state.graph().edges());
-        List<String> obsoleteEdges = graph.edges()
-                .map(Edge::getId)
-                .filter(id -> !desiredEdges.containsKey(id))
-                .toList();
-        for (String edgeId : obsoleteEdges) {
-            graph.removeEdge(edgeId);
-        }
-
-        List<String> obsoleteNodes = graph.nodes()
-                .map(Node::getId)
-                .filter(id -> !desiredNodeIds.contains(id))
-                .toList();
-        for (String nodeId : obsoleteNodes) {
-            graph.removeNode(nodeId);
-        }
-
-        for (int id : state.graph().nodes()) {
-            String nodeId = String.valueOf(id);
-            Node node = graph.getNode(nodeId);
-            if (node == null) {
-                node = graph.addNode(nodeId);
+        for (GraphViewState.Edge edge : state.edges()) {
+            EdgeView existing = edgeViews.get(edge.id());
+            if (existing != null) {
+                existing.setDirected(state.directed());
+                continue;
             }
-            node.setAttribute("ui.label", nodeId);
-            applyNodeClass(node, id, state);
-        }
-
-        for (Map.Entry<String, IntEdge> entry : desiredEdges.entrySet()) {
-            Edge graphEdge = graph.getEdge(entry.getKey());
-            if (graphEdge == null) {
-                IntEdge edge = entry.getValue();
-                graphEdge = graph.addEdge(entry.getKey(), String.valueOf(edge.from()), String.valueOf(edge.to()), true);
+            NodeView source = nodeViews.get(edge.fromId());
+            NodeView target = nodeViews.get(edge.toId());
+            if (source == null || target == null) {
+                continue;
             }
-            applyEdgeClass(graphEdge, entry.getValue(), state);
+            EdgeView view = new EdgeView(source, target, state.directed());
+            view.setCurved(source == target);
+            edgeViews.put(edge.id(), view);
+            viewport.content().getChildren().add(view);
+            if (!firstRender) {
+                transitions.add(animations.reveal(view, APPEAR_DURATION));
+            }
+        }
+
+        List<Long> removed = edgeViews.keySet().stream()
+                .filter(id -> !expected.containsKey(id))
+                .toList();
+        for (Long edgeId : removed) {
+            EdgeView view = edgeViews.remove(edgeId);
+            if (view == null) {
+                continue;
+            }
+            if (firstRender) {
+                viewport.content().getChildren().remove(view);
+                continue;
+            }
+            Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
+            fade.setOnFinished(event -> viewport.content().getChildren().remove(view));
+            transitions.add(fade);
         }
     }
 
-    private void applyEdgeClass(Edge edge, IntEdge value, GraphViewState state) {
-        String style = null;
-        Integer parent = state.parents().get(value.to());
-        if (parent != null && parent == value.from()) {
-            style = "fill-color: #FFD700; size: 7px;";
-        }
-        if (value.equals(state.examinedEdge())) {
-            style = "fill-color: #00A2FF; size: 9px;";
-        }
-        if (style == null) {
-            edge.removeAttribute("ui.style");
-        } else {
-            edge.setAttribute("ui.style", style);
+    private void reorderLayers() {
+        List<Node> ordered = new ArrayList<>(edgeViews.values());
+        ordered.addAll(nodeViews.values());
+        viewport.content().getChildren().setAll(ordered);
+    }
+
+    private void removeNode(long nodeId) {
+        NodeView view = nodeViews.remove(nodeId);
+        if (view != null) {
+            viewport.content().getChildren().remove(view);
         }
     }
 
-    private Map<String, IntEdge> edgeIds(List<IntEdge> edges) {
-        Map<String, IntEdge> result = new LinkedHashMap<>();
-        Map<EdgePair, Integer> occurrences = new HashMap<>();
-        for (IntEdge edge : edges) {
-            EdgePair pair = new EdgePair(edge.from(), edge.to());
-            int occurrence = occurrences.getOrDefault(pair, 0);
-            occurrences.put(pair, occurrence + 1);
-            result.put("e:" + edge.from() + ":" + edge.to() + ":" + occurrence, edge);
-        }
-        return result;
-    }
-
-    private void applyNodeClass(Node node, int id, GraphViewState state) {
-        String styleClass = null;
-        if (state.discovered().contains(id)) {
-            styleClass = "secondary";
-        }
-        if (state.entered().contains(id)) {
-            styleClass = "highlight";
-        }
-        if (state.visited().contains(id)) {
-            styleClass = "visited";
-        }
-        if (state.focus() != null && state.focus() == id) {
-            styleClass = "highlight";
-        }
-        if (styleClass == null) {
-            node.removeAttribute("ui.class");
-        } else {
-            node.setAttribute("ui.class", styleClass);
+    private void stopActiveAnimation() {
+        if (activeAnimation != null) {
+            activeAnimation.stop();
+            activeAnimation = null;
         }
     }
 
     @Override
-    public void clear() {
-        gc.clearRect(0.0d, 0.0d, canvas.getWidth(), canvas.getHeight());
+    public void setPlaybackSpeed(double speed) {
+        animations.setPlaybackSpeed(speed);
+    }
+
+    @Override
+    public void setScrubbing(boolean scrubbing) {
+        animations.setScrubbing(scrubbing);
     }
 
     @Override
     public void onVisualizationReset() {
-        super.onVisualizationReset();
-    }
-
-    @Override
-    public void onModuleDetached(String moduleId) {
-        if (viewer != null) {
-            viewer.disableAutoLayout();
-        }
-        super.onModuleDetached(moduleId);
-        clear();
-    }
-
-    @Override
-    public void onModuleAttached(String moduleId) {
-        super.onModuleAttached(moduleId);
-        if (viewer != null) {
-            viewer.enableAutoLayout();
-        }
+        stopActiveAnimation();
+        renderedState = new GraphViewState(false, List.of(), List.of(), false);
+        nodeViews.clear();
+        edgeViews.clear();
+        viewport.content().getChildren().clear();
+        firstRender = true;
+        viewport.reset();
     }
 
     @Override
     public void dispose() {
-        if (graphDisposed) {
-            return;
-        }
-        graphDisposed = true;
-        if (viewPanel != null) {
-            viewPanel.prefWidthProperty().unbind();
-            viewPanel.prefHeightProperty().unbind();
-            viewPanel = null;
-        }
-        if (viewer != null) {
-            viewer.close();
-            viewer = null;
-        }
-        graph.clear();
+        stopActiveAnimation();
+        viewport.prefWidthProperty().unbind();
+        viewport.prefHeightProperty().unbind();
         super.dispose();
-    }
-
-    private record EdgePair(int from, int to) {
     }
 }

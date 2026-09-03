@@ -2,16 +2,16 @@ package com.majortom.algorithms.app.leetcode.algo.string;
 
 import java.util.Scanner;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 public class 回文 {
     public static void main(String[] args) {
         int i = 0;
         boolean flag = true;
-        Deque<String> stack = new LinkedList<>();
-        Queue<String> queue = new LinkedList<>();
+        StackStructure<String> stack = new LinkedList<>();
+        QueueStructure<String> queue = new LinkedList<>();
         System.out.print("请输入数据:");
         Scanner scanner = new Scanner(System.in);
         String context = scanner.nextLine();
@@ -19,11 +19,11 @@ public class 回文 {
         while (i != context.length()) {
             String ch = "" + context.charAt(i);
             stack.push(ch);
-            queue.add(ch);
+            queue.enqueue(ch);
             i++;
         }
         while (flag && stack.isEmpty()) {
-            if (!stack.pop().equals(queue.poll())) {
+            if (!stack.pop().equals(queue.dequeue())) {
                 flag = false;
             }
         }

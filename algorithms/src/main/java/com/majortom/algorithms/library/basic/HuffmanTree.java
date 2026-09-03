@@ -33,7 +33,7 @@ public class HuffmanTree<T extends Comparable<T>> {
         }
 
         @Override
-        public String toString() {
+        public java.lang.String toString() {
             return "Node [code=" + code + ", data=" + data + ", left=" + left + ", right=" + right + ", weight="
                     + weight + "]";
         }
@@ -65,11 +65,11 @@ public class HuffmanTree<T extends Comparable<T>> {
     }
 
     public void printTree() {
-        String code = "";
+        java.lang.String code = "";
         printNode(root, code);
     }
 
-    private void printNode(Node<T> node, String code) {
+    private void printNode(Node<T> node, java.lang.String code) {
         if (node == null) {
             return;
         }

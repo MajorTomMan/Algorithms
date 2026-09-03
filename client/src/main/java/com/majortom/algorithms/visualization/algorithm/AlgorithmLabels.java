@@ -1,10 +1,12 @@
 package com.majortom.algorithms.visualization.algorithm;
 
-import java.util.Map;
+import com.majortom.algorithms.visualization.international.I18N;
 
-/**
- * 将核心算法的稳定 ID 映射为客户端国际化资源 key。
- */
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/** Maps stable algorithm IDs to localized labels, with a readable fallback for auto-discovered algorithms. */
 public final class AlgorithmLabels {
 
     private static final Map<String, String> LABEL_KEYS = Map.ofEntries(
@@ -25,18 +27,21 @@ public final class AlgorithmLabels {
     private AlgorithmLabels() {
     }
 
-    /**
-     * 返回算法 ID 对应的国际化资源 key。
-     *
-     * @param algorithmId 稳定算法 ID
-     * @return 国际化资源 key
-     * @throws IllegalArgumentException ID 未配置客户端文案时抛出
-     */
-    public static String key(String algorithmId) {
+    public static String text(String algorithmId) {
         String key = LABEL_KEYS.get(algorithmId);
-        if (key == null) {
-            throw new IllegalArgumentException("Missing client label for algorithm: " + algorithmId);
+        if (key != null) {
+            return I18N.text(key);
         }
-        return key;
+        return Arrays.stream(algorithmId.split("-"))
+                .filter(part -> !part.isBlank())
+                .map(AlgorithmLabels::capitalize)
+                .collect(Collectors.joining(" "));
+    }
+
+    private static String capitalize(String value) {
+        if (value.isEmpty()) {
+            return value;
+        }
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
     }
 }

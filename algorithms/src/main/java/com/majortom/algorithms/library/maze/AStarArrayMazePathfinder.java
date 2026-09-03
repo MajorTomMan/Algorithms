@@ -14,7 +14,6 @@ import java.util.HashSet;
 public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
     public ArrayMazePathOutput findPath(ArrayMazePathInput input) {
-        ExecutionEvents.emit(new ArrayMazePathEvent.Initialized(input.maze(), input.start(), input.goal()));
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Map<GridPoint, Integer> distance = new HashMap<>();
         Set<GridPoint> discovered = new HashSet<>();
@@ -24,13 +23,11 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
         distance.put(input.start(), 0);
         discovered.add(input.start());
         frontier.add(input.start());
-        ExecutionEvents.emit(new ArrayMazePathEvent.Discovered(input.start(), null));
         int visitedCount = 0;
         boolean found = false;
         while (!frontier.isEmpty()) {
             GridPoint current = frontier.remove();
             ExecutionEvents.checkpoint();
-            ExecutionEvents.emit(new ArrayMazePathEvent.Entered(current, previous.get(current)));
             visitedCount++;
             if (current.equals(input.goal())) { found = true; break; }
             for (GridPoint neighbor : ArrayMazeSupport.neighbors(input.maze(), current)) {
@@ -40,12 +37,9 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
                 previous.put(neighbor, current);
                 frontier.remove(neighbor);
                 frontier.add(neighbor);
-                if (discovered.add(neighbor)) ExecutionEvents.emit(new ArrayMazePathEvent.Discovered(neighbor, current));
             }
         }
         List<GridPoint> path = found ? ArrayMazeSupport.reconstruct(previous, input.start(), input.goal()) : List.of();
-        ArrayMazeSupport.confirmPath(path);
-        ExecutionEvents.emit(new ArrayMazePathEvent.Completed(path));
         return new ArrayMazePathOutput(path, visitedCount);
     }
 

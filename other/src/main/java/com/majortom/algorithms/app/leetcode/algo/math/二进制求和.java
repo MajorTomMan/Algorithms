@@ -2,8 +2,8 @@ package com.majortom.algorithms.app.leetcode.algo.math;
 
 
 
-import java.util.Deque;
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 public class 二进制求和 {
     public static void main(String[] args) {
@@ -78,7 +78,7 @@ public class 二进制求和 {
         if (data == 0) {
             return "0";
         }
-        Deque<Long> stack = new LinkedList<>();
+        StackStructure<Long> stack = new LinkedList<>();
         String s = "";
         while (data != 0) {
             stack.push(data % 2);

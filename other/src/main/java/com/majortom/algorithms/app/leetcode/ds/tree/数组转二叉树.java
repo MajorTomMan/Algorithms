@@ -16,13 +16,13 @@ public class 数组转二叉树 {
         if (node == null) {
             return new AVLTreeNode<Integer>(data);
         }
-        if (node.left == null) {
-            node.left = transform(node.left, data);
-        } else if (node.right == null) {
-            node.right = transform(node.right, data);
+        if (node.getLeft() == null) {
+            node.setLeft(transform(node.getLeft(), data));
+        } else if (node.getRight() == null) {
+            node.setRight(transform(node.getRight(), data));
         } else {
-            node.left = transform(node.left, data);
-            node.right = transform(node.right, data);
+            node.setLeft(transform(node.getLeft(), data));
+            node.setRight(transform(node.getRight(), data));
         }
         return node;
     }

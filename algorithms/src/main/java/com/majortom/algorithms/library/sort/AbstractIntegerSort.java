@@ -1,45 +1,39 @@
 package com.majortom.algorithms.library.sort;
 
 import com.majortom.algorithms.core.logging.Log;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
-import com.majortom.algorithms.library.sort.event.SortComparedEvent;
-import com.majortom.algorithms.library.sort.event.SortCompletedEvent;
-import com.majortom.algorithms.library.sort.event.SortElementSettledEvent;
-import com.majortom.algorithms.library.sort.event.SortInitializedEvent;
-import com.majortom.algorithms.library.sort.event.SortPivotSelectedEvent;
-import com.majortom.algorithms.library.sort.event.SortRangeSelectedEvent;
+import com.majortom.algorithms.library.basic.Array;
 import com.majortom.algorithms.library.sort.model.IntegerSortInput;
 import com.majortom.algorithms.library.sort.model.IntegerSortOutput;
 import com.majortom.algorithms.library.structure.ArrayStructure;
-import com.majortom.algorithms.library.structure.MutableArray;
 
 import java.util.List;
 
-/** Shared event helpers for concrete integer sorting algorithms. */
+/** Shared direct helpers for concrete integer sorting algorithms. */
 public abstract class AbstractIntegerSort implements Sort<Integer> {
 
     public final IntegerSortOutput sort(IntegerSortInput input) {
         Log.i("SORT", getClass().getSimpleName() + " start, size=" + input.values().size());
-        MutableArray<Integer> array = new MutableArray<>(input.values());
-        ExecutionEvents.emit(new SortInitializedEvent(List.copyOf(array.raw())));
+        Array<Integer> array = new Array<>(input.values());
         sort(array);
-        List<Integer> result = List.copyOf(array.raw());
-        ExecutionEvents.emit(new SortCompletedEvent(result));
+        IntegerSortOutput output = new IntegerSortOutput(copy(array));
         Log.i("SORT", getClass().getSimpleName() + " completed");
-        return new IntegerSortOutput(result);
+        return output;
+    }
+
+    private List<Integer> copy(ArrayStructure<Integer> array) {
+        List<Integer> values = new java.util.ArrayList<>(array.size());
+        for (Integer value : array) {
+            values.add(value);
+        }
+        return List.copyOf(values);
     }
 
     protected final int compareAt(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
-        int left = array.get(leftIndex);
-        int right = array.get(rightIndex);
-        ExecutionEvents.emit(new SortComparedEvent(leftIndex, rightIndex, left, right));
-        return compare(left, right);
+        return compare(array.get(leftIndex), array.get(rightIndex));
     }
 
-    protected final int compareValue(ArrayStructure<Integer> array, int index, int comparedIndex, int value) {
-        int existing = array.get(index);
-        ExecutionEvents.emit(new SortComparedEvent(index, comparedIndex, existing, value));
-        return compare(existing, value);
+    protected final int compareValue(ArrayStructure<Integer> array, int index, int value) {
+        return compare(array.get(index), value);
     }
 
     protected final void write(ArrayStructure<Integer> array, int index, int value) {
@@ -47,27 +41,8 @@ public abstract class AbstractIntegerSort implements Sort<Integer> {
     }
 
     protected final void swap(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
-        if (leftIndex == rightIndex) {
-            return;
-        }
-        array.swap(leftIndex, rightIndex);
-    }
-
-    protected final void selectRange(int lowIndex, int highIndex) {
-        ExecutionEvents.emit(new SortRangeSelectedEvent(lowIndex, highIndex));
-    }
-
-    protected final void selectPivot(int index, int value) {
-        ExecutionEvents.emit(new SortPivotSelectedEvent(index, value));
-    }
-
-    protected final void settle(ArrayStructure<Integer> array, int index) {
-        ExecutionEvents.emit(new SortElementSettledEvent(index, array.get(index)));
-    }
-
-    protected final void settleRange(ArrayStructure<Integer> array, int lowIndex, int highIndex) {
-        for (int index = lowIndex; index <= highIndex; index++) {
-            settle(array, index);
+        if (leftIndex != rightIndex) {
+            array.swap(leftIndex, rightIndex);
         }
     }
 }

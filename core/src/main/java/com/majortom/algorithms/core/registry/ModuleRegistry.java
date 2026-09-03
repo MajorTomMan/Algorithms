@@ -59,7 +59,10 @@ public final class ModuleRegistry {
 
     public List<String> keys(String prefix) {
         Objects.requireNonNull(prefix, "prefix");
-        return implementations.keySet().stream().filter(key -> key.startsWith(prefix)).sorted().toList();
+        return implementations.keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .sorted()
+                .toList();
     }
 
     public List<String> structureFamilies() {

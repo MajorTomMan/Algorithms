@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 
 public class 反转链表{
@@ -16,14 +16,14 @@ public class 反转链表{
         if(head==null){
             return head; //空链表时的异常
         }
-        if (head.next == null){
+        if (head.getNext() == null){
             return head; // 这里是重点
         }
-        ListNode<Integer> last = reverseList(head.next);
+        ListNode<Integer> last = reverseList(head.getNext());
         System.out.println("Last:"+last);
         System.out.println("反转前head:"+head);
-        head.next.next = head;
-        head.next = null;
+        head.getNext().setNext(head);
+        head.setNext(null);
         System.out.println("反转后head:"+head);
         return last;
     }
@@ -32,16 +32,16 @@ public class 反转链表{
         if(head==null){
             return head;
         }
-        ListNode<Integer> pre=null,cur=head,next=head.next;
+        ListNode<Integer> pre=null,cur=head,next=head.getNext();
         while(cur!=null){
-            cur.next=pre;
+            cur.setNext(pre);
             pre=cur;
             cur=next;
             if(next==null){
                 continue;
             }
             else{
-                next=next.next;
+                next=next.getNext();
             }
         }
         return pre;

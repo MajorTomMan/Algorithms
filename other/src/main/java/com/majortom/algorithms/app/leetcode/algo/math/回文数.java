@@ -1,9 +1,9 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 
 public class 回文数 {
@@ -11,8 +11,8 @@ public class 回文数 {
         System.out.println(isPalindrome(-121));
     }
     public static boolean isPalindrome(int x) {
-        Deque<String> stack =new LinkedList<>();
-        Queue<String> queue=new LinkedList<>();
+        StackStructure<String> stack =new LinkedList<>();
+        QueueStructure<String> queue=new LinkedList<>();
         if(x<0){
             return false;
         }
@@ -20,20 +20,20 @@ public class 回文数 {
             isPalindrome(x,stack, queue);
         }
         while(!stack.isEmpty()){
-            if(!stack.pop().equals(queue.poll())){
+            if(!stack.pop().equals(queue.dequeue())){
                 return false;
             }
         }
         return true;
     }
-    private static int isPalindrome(int x,Deque<String> stack,Queue<String> queue){
+    private static int isPalindrome(int x,StackStructure<String> stack,QueueStructure<String> queue){
         if(x==0){
             return x;
         }
         else if(x<0){
         }
         stack.push(String.valueOf(x%10));
-        queue.add(String.valueOf(x%10));
+        queue.enqueue(String.valueOf(x%10));
         isPalindrome(x/10,stack,queue);
         return x;
     }

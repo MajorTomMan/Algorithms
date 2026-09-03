@@ -1,51 +1,72 @@
 package com.majortom.algorithms.library.basic.tree;
 
+import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
+
 import java.util.List;
+import java.util.Objects;
 
-/**
- * 树节点抽象基类
- * 职责：封装核心数据与结构元数据（高度、规模），提供统一的子节点访问接口。
- * 
- * @param <T> 存储的数据类型
- */
 public abstract class TreeNode<T> {
-   // 核心数据
-   public T data;
+    private T value;
+    private int height = 1;
+    private int subTreeCount = 1;
+    private int status;
 
-   // --- 算法结构元数据 ---
-   // 默认高度与计数由基类维护，保证所有树算法的通用统计能力
-   public int height = 1;
-   public int subTreeCount = 1;
+    protected TreeNode(T value) {
+        this.value = value;
+    }
 
-   /**
-    * 状态位：
-    * 用于存储算法特定的值（如 AVL 的平衡因子、红黑树的颜色位、B树的键数等）。
-    */
-   public int status = 0;
+    public abstract long getId();
 
-   public TreeNode(T data) {
-      this.data = data;
-   }
+    public T getValue() {
+        return value;
+    }
 
-   /**
-    * 获取当前节点的所有子节点
-    * 职责：实现此方法以适配通用的树遍历、高度计算及 UI 渲染逻辑。
-    * 
-    * @return 子节点列表
-    */
-   public abstract List<? extends TreeNode<T>> getChildren();
+    public void setValue(T value) {
+        if (Objects.equals(this.value, value)) {
+            return;
+        }
+        T previous = this.value;
+        this.value = value;
+        ExecutionEvents.emit(new TreeStructureEvent.ValueChanged(getId(), previous, value));
+    }
 
-   /**
-    * 辅助方法：判断是否为叶子节点
-    */
-   public boolean isLeaf() {
-      List<? extends TreeNode<T>> children = getChildren();
-      if (children == null || children.isEmpty())
-         return true;
-      for (TreeNode<T> child : children) {
-         if (child != null)
-            return false;
-      }
-      return true;
-   }
+    public int getHeight() {
+        return height;
+    }
+
+    public int getSubTreeCount() {
+        return subTreeCount;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public void updateMetrics(int height, int subTreeCount) {
+        if (height < 1 || subTreeCount < 1) {
+            throw new IllegalArgumentException("tree metrics must be positive");
+        }
+        this.height = height;
+        this.subTreeCount = subTreeCount;
+    }
+
+    public abstract List<? extends TreeNode<T>> getChildren();
+
+    public boolean isLeaf() {
+        List<? extends TreeNode<T>> children = getChildren();
+        if (children == null || children.isEmpty()) {
+            return true;
+        }
+        for (TreeNode<T> child : children) {
+            if (child != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

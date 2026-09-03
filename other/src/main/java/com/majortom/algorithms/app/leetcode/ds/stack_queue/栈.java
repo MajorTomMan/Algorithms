@@ -1,21 +1,19 @@
 package com.majortom.algorithms.app.leetcode.ds.stack_queue;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 public class 栈 {
     public static void main(String[] args) {
         Integer[] sortedArray = AlgorithmsUtils.nearlySortedArray(20, 19);
-        Deque<Integer> stack = new LinkedList<>();
+        StackStructure<Integer> stack = new LinkedList<>();
         for (Integer value : sortedArray) {
             stack.push(value);
         }
-        stack.forEach((v)->{
-            System.out.println(v);
-        });
+        for (Integer value : stack) {
+            System.out.println(value);
+        }
         System.out.println(stack.pop());
-
-
     }
 }

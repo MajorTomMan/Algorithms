@@ -1,15 +1,16 @@
 package com.majortom.algorithms.library.basic;
 
+import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.basic.node.ListNode;
 import com.majortom.algorithms.library.structure.LinkedStructure;
-import com.majortom.algorithms.library.structure.event.LinkedStructureEvent;
+import com.majortom.algorithms.library.structure.QueueStructure;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/** Direct doubly linked-list implementation used by the V2 structure model. */
-public final class LinkedList<T> implements LinkedStructure<T> {
+public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T>, QueueStructure<T> {
     private ListNode<T> head;
     private ListNode<T> tail;
     private int size;
@@ -26,65 +27,120 @@ public final class LinkedList<T> implements LinkedStructure<T> {
 
     @Override
     public T get(int index) {
-        return nodeAt(index).data;
+        return nodeAt(index).getValue();
     }
 
     @Override
     public void insert(int index, T value) {
         checkInsertIndex(index);
         ListNode<T> next = index == size ? null : nodeAt(index);
-        ListNode<T> previous = next == null ? tail : next.pre;
-        ListNode<T> inserted = new ListNode<>(value, next, previous);
+        ListNode<T> previous = next == null ? tail : next.getPrevious();
+        ListNode<T> inserted = new ListNode<>(value);
+        ExecutionEvents.emit(new LinkedStructureEvent.NodeInserted(inserted.getId(), value));
+        inserted.setPrevious(previous);
+        inserted.setNext(next);
         if (previous == null) {
             head = inserted;
         } else {
-            previous.next = inserted;
+            previous.setNext(inserted);
         }
         if (next == null) {
             tail = inserted;
         } else {
-            next.pre = inserted;
+            next.setPrevious(inserted);
         }
         size++;
-        ExecutionEvents.emit(new LinkedStructureEvent.Inserted(index, value));
     }
 
     @Override
     public T remove(int index) {
         ListNode<T> node = nodeAt(index);
-        ListNode<T> previous = node.pre;
-        ListNode<T> next = node.next;
+        ListNode<T> previous = node.getPrevious();
+        ListNode<T> next = node.getNext();
         if (previous == null) {
             head = next;
         } else {
-            previous.next = next;
+            previous.setNext(next);
         }
         if (next == null) {
             tail = previous;
         } else {
-            next.pre = previous;
+            next.setPrevious(previous);
         }
+        node.setPrevious(null);
+        node.setNext(null);
         size--;
-        ExecutionEvents.emit(new LinkedStructureEvent.Removed(index, node.data));
-        return node.data;
+        T value = node.getValue();
+        ExecutionEvents.emit(new LinkedStructureEvent.NodeRemoved(node.getId(), value));
+        return value;
     }
 
     @Override
-    public T update(int index, T value) {
+    public T set(int index, T value) {
         ListNode<T> node = nodeAt(index);
-        T previous = node.data;
-        node.data = value;
-        ExecutionEvents.emit(new LinkedStructureEvent.Updated(index, previous, value));
+        T previous = node.getValue();
+        node.setValue(value);
         return previous;
     }
 
     @Override
-    public ListNode<T> raw() {
+    public ListNode<T> head() {
         return head;
     }
 
+    @Override
     public ListNode<T> tail() {
         return tail;
+    }
+
+    @Override
+    public void push(T value) {
+        insert(0, value);
+    }
+
+    @Override
+    public T pop() {
+        if (isEmpty()) {
+            throw new NoSuchElementException("stack is empty");
+        }
+        return remove(0);
+    }
+
+    @Override
+    public T peek() {
+        if (head == null) {
+            throw new NoSuchElementException("stack is empty");
+        }
+        return head.getValue();
+    }
+
+    @Override
+    public void enqueue(T value) {
+        insert(size, value);
+    }
+
+    @Override
+    public T dequeue() {
+        if (isEmpty()) {
+            throw new NoSuchElementException("queue is empty");
+        }
+        return remove(0);
+    }
+
+    @Override
+    public T front() {
+        if (head == null) {
+            throw new NoSuchElementException("queue is empty");
+        }
+        return head.getValue();
+    }
+
+    @Override
+    public T rear() {
+        if (tail == null) {
+            throw new NoSuchElementException("queue is empty");
+        }
+        return tail.getValue();
     }
 
     @Override
@@ -102,8 +158,8 @@ public final class LinkedList<T> implements LinkedStructure<T> {
                 if (current == null) {
                     throw new NoSuchElementException();
                 }
-                T value = current.data;
-                current = current.next;
+                T value = current.getValue();
+                current = current.getNext();
                 return value;
             }
         };
@@ -114,13 +170,13 @@ public final class LinkedList<T> implements LinkedStructure<T> {
         if (index < size / 2) {
             ListNode<T> current = head;
             for (int i = 0; i < index; i++) {
-                current = current.next;
+                current = current.getNext();
             }
             return current;
         }
         ListNode<T> current = tail;
         for (int i = size - 1; i > index; i--) {
-            current = current.pre;
+            current = current.getPrevious();
         }
         return current;
     }

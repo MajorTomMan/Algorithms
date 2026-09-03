@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 二叉树的最长路径 {
     public static void main(String[] args) {
@@ -18,8 +18,8 @@ public class 二叉树的最长路径 {
         if (node == null) {
             return 0;
         } else {
-            int leftHeight = longestPath(node.left);
-            int rightHeight = longestPath(node.right);
+            int leftHeight = longestPath(node.getLeft());
+            int rightHeight = longestPath(node.getRight());
             return Math.max(leftHeight, rightHeight) + 1;
         }
     }

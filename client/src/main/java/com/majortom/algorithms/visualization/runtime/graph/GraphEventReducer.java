@@ -1,26 +1,21 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
+import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
-import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.runtime.Reduction;
-import com.majortom.algorithms.library.graph.GraphBfsEvent;
-import com.majortom.algorithms.library.graph.IntEdge;
-import com.majortom.algorithms.library.graph.IntGraph;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-/** Stateless reducer for graph traversal events. */
+/** Reduces factual Graph mutations and Runtime lifecycle events into GraphViewState. */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
+    private final GraphSnapshot<Integer> initialGraph;
 
-    private final IntGraph initialGraph;
-
-    public GraphEventReducer(IntGraph graph) {
+    public GraphEventReducer(GraphSnapshot<Integer> graph) {
         initialGraph = graph;
     }
 
@@ -30,78 +25,43 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
     }
 
     @Override
-    public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope event) {
-        Object payload = event.event();
-        if (payload instanceof GraphBfsEvent.Initialized initialized) {
-            GraphViewState state = new GraphViewState(initialized.graph(),
-                    Set.of(initialized.startNode()), Set.of(), List.of(), Map.of(), initialized.startNode(),
-                    null, GraphViewState.Phase.INITIALIZED, false);
-            return changed(state, EventImportance.CHECKPOINT);
+    public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope envelope) {
+        Object event = envelope.event();
+        if (event instanceof GraphStructureEvent.VertexAdded added) {
+            List<GraphViewState.Node> nodes = new ArrayList<>(previous.nodes());
+            nodes.add(new GraphViewState.Node(added.vertexId(), (Integer) added.value()));
+            return changed(new GraphViewState(previous.directed(), nodes, previous.edges(), false));
         }
-        if (payload instanceof GraphBfsEvent.Discovered discovered) {
-            Set<Integer> nodes = new LinkedHashSet<>(previous.discovered());
-            nodes.add(discovered.node());
-            Map<Integer, Integer> parents = new LinkedHashMap<>(previous.parents());
-            if (discovered.parent() != null) {
-                parents.putIfAbsent(discovered.node(), discovered.parent());
-            }
-            GraphViewState state = copy(previous, nodes, previous.entered(), previous.visited(), parents,
-                    discovered.node(), edge(discovered.parent(), discovered.node()),
-                    GraphViewState.Phase.DISCOVERING, false);
-            return changed(state, EventImportance.TRANSIENT);
+        if (event instanceof GraphStructureEvent.VertexRemoved removed) {
+            List<GraphViewState.Node> nodes = previous.nodes().stream()
+                    .filter(node -> node.id() != removed.vertexId())
+                    .toList();
+            List<GraphViewState.Edge> edges = previous.edges().stream()
+                    .filter(edge -> edge.fromId() != removed.vertexId() && edge.toId() != removed.vertexId())
+                    .toList();
+            return changed(new GraphViewState(previous.directed(), nodes, edges, false));
         }
-        if (payload instanceof GraphBfsEvent.Entered entered) {
-            Set<Integer> nodes = new LinkedHashSet<>(previous.entered());
-            nodes.add(entered.node());
-            Map<Integer, Integer> parents = new LinkedHashMap<>(previous.parents());
-            if (entered.parent() != null) {
-                parents.putIfAbsent(entered.node(), entered.parent());
-            }
-            GraphViewState state = copy(previous, previous.discovered(), nodes, previous.visited(), parents,
-                    entered.node(), edge(entered.parent(), entered.node()), GraphViewState.Phase.ENTERING, false);
-            return changed(state, EventImportance.TRANSIENT);
+        if (event instanceof GraphStructureEvent.EdgeAdded added) {
+            List<GraphViewState.Edge> edges = new ArrayList<>(previous.edges());
+            edges.add(new GraphViewState.Edge(added.edgeId(), added.fromId(), added.toId()));
+            return changed(new GraphViewState(previous.directed(), previous.nodes(), edges, false));
         }
-        if (payload instanceof GraphBfsEvent.EdgeExamined examined) {
-            GraphViewState state = copy(previous, previous.discovered(), previous.entered(), previous.visited(),
-                    previous.parents(), examined.from(), new IntEdge(examined.from(), examined.to()),
-                    GraphViewState.Phase.EXAMINING_EDGE, false);
-            return changed(state, EventImportance.TRANSIENT);
+        if (event instanceof GraphStructureEvent.EdgeRemoved removed) {
+            List<GraphViewState.Edge> edges = previous.edges().stream()
+                    .filter(edge -> edge.id() != removed.edgeId())
+                    .toList();
+            return changed(new GraphViewState(previous.directed(), previous.nodes(), edges, false));
         }
-        if (payload instanceof GraphBfsEvent.Visited visited) {
-            List<Integer> nodes = new ArrayList<>(previous.visited());
-            if (!nodes.contains(visited.node())) {
-                nodes.add(visited.node());
-            }
-            GraphViewState state = copy(previous, previous.discovered(), previous.entered(), nodes,
-                    previous.parents(), visited.node(), previous.examinedEdge(),
-                    GraphViewState.Phase.VISITING, false);
-            return changed(state, EventImportance.STATE_CHANGE);
-        }
-        if (payload instanceof GraphBfsEvent.Completed completed) {
-            GraphViewState state = copy(previous, previous.discovered(), previous.entered(),
-                    completed.visitOrder(), previous.parents(), previous.focus(), null,
-                    GraphViewState.Phase.COMPLETED, true);
-            return changed(state, EventImportance.TERMINAL);
+        if (event instanceof RunCompletedEvent) {
+            return Reduction.changed(
+                    new GraphViewState(previous.directed(), previous.nodes(), previous.edges(), true),
+                    EventImportance.TERMINAL,
+                    true);
         }
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
     }
 
-    private static GraphViewState copy(
-            GraphViewState previous, Set<Integer> discovered, Set<Integer> entered,
-            List<Integer> visited, Map<Integer, Integer> parents, Integer focus, IntEdge examinedEdge,
-            GraphViewState.Phase phase, boolean completed) {
-        return new GraphViewState(previous.graph(), discovered, entered, visited, parents, focus,
-                examinedEdge, phase, completed);
-    }
-
-    private static IntEdge edge(Integer from, int to) {
-        if (from == null) {
-            return null;
-        }
-        return new IntEdge(from, to);
-    }
-
-    private static Reduction<GraphViewState> changed(GraphViewState state, EventImportance importance) {
-        return Reduction.changed(state, importance, true);
+    private static Reduction<GraphViewState> changed(GraphViewState state) {
+        return Reduction.changed(state, EventImportance.STATE_CHANGE, true);
     }
 }

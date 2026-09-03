@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 有序数组转二叉树 {
     public static void main(String[] args) {
@@ -27,10 +27,10 @@ public class 有序数组转二叉树 {
         if (node == null) {
             return new AVLTreeNode<Integer>(data);
         }
-        if (data > node.data) {
-            node.right = rebuild(node.right, data);
-        } else if (data < node.data) {
-            node.left = rebuild(node.left, data);
+        if (data > node.getValue()) {
+            node.setRight(rebuild(node.getRight(), data));
+        } else if (data < node.getValue()) {
+            node.setLeft(rebuild(node.getLeft(), data));
         }
         return node;
     }

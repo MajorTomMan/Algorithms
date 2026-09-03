@@ -8,7 +8,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.Glow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 import javafx.util.Duration;
 
 /**
@@ -81,7 +80,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
 
         this.resizeSettleTransition = new PauseTransition(Duration.millis(RESIZE_SETTLE_MS));
         this.resizeSettleTransition.setOnFinished(event -> handleResizeSettled());
-
         canvas.widthProperty().bind(this.widthProperty());
         canvas.heightProperty().bind(this.heightProperty());
 
@@ -181,6 +179,14 @@ public abstract class BaseVisualizer<S> extends StackPane {
         return lastData;
     }
 
+    /** Updates presentation-only animation speed. Runtime execution speed remains independent. */
+    public void setPlaybackSpeed(double speed) {
+    }
+
+    /** Disables presentation animation while a timeline scrub directly seeks factual state. */
+    public void setScrubbing(boolean scrubbing) {
+    }
+
     /**
      * 重置后的可视化清理钩子。
      * 默认只清空画布，子类可在此停止动画、清空缓存、重置局部状态。
@@ -239,10 +245,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
 
     protected final boolean isDisposed() {
         return disposed;
-    }
-
-    /** Presentation-only pause state for ambient visualizer animation. */
-    public void setPlaybackPaused(boolean paused) {
     }
 
     /**

@@ -7,10 +7,10 @@
  */
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 对称二叉树{
     public static void main(String[] args) {
@@ -35,7 +35,7 @@ public class 对称二叉树{
         if (p == null || q == null) {
             return false;
         }
-        return p.data == q.data && check(p.left, q.right) && check(p.right, q.left);
+        return p.getValue() == q.getValue() && check(p.getLeft(), q.getRight()) && check(p.getRight(), q.getLeft());
     }
 
     /*
@@ -45,22 +45,22 @@ public class 对称二叉树{
      * 当队列为空时，或者我们检测到树不对称（即从队列中取出两个不相等的连续结点）时，该算法结束。
      */
     public static boolean check(BinaryTreeNode<Integer> root) {
-        Queue<BinaryTreeNode<Integer>> queue = new LinkedList<>();
-        queue.add(root);
-        queue.add(root);
+        QueueStructure<BinaryTreeNode<Integer>> queue = new LinkedList<>();
+        queue.enqueue(root);
+        queue.enqueue(root);
         while (!queue.isEmpty()) {
-            BinaryTreeNode<Integer> node_l = queue.poll();
-            BinaryTreeNode<Integer> node_r = queue.poll();
+            BinaryTreeNode<Integer> node_l = queue.dequeue();
+            BinaryTreeNode<Integer> node_r = queue.dequeue();
             if (node_l == null && node_r == null) {
                 continue;
             }
-            if (node_l == null || node_r == null || node_l.data != node_r.data) {
+            if (node_l == null || node_r == null || node_l.getValue() != node_r.getValue()) {
                 return false;
             }
-            queue.add(node_l.left);
-            queue.add(node_r.right);
-            queue.add(node_l.right);
-            queue.add(node_r.left);
+            queue.enqueue(node_l.getLeft());
+            queue.enqueue(node_r.getRight());
+            queue.enqueue(node_l.getRight());
+            queue.enqueue(node_r.getLeft());
         }
         return true;
     }

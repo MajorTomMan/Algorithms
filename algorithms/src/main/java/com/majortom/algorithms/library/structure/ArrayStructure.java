@@ -1,13 +1,15 @@
 package com.majortom.algorithms.library.structure;
 
-import java.util.List;
-
-public interface ArrayStructure<T> {
+public interface ArrayStructure<T> extends Iterable<T> {
     int size();
+
+    default boolean isEmpty() {
+        return size() == 0;
+    }
+
     T get(int index);
-    void set(int index, T value);
+    T set(int index, T value);
     void insert(int index, T value);
     T remove(int index);
     void swap(int leftIndex, int rightIndex);
-    List<T> raw();
 }

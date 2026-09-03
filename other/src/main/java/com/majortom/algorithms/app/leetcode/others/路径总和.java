@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.others;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
 import com.majortom.algorithms.library.basic.tree.TreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 /**
  * 路径总和
@@ -17,10 +17,10 @@ public class 路径总和 {
         if (root == null) {
             return false;
         }
-        targetSum -= root.data;
-        if (root.left == null && root.right == null) {
+        targetSum -= root.getValue();
+        if (root.getLeft() == null && root.getRight() == null) {
             return targetSum == 0;
         }
-        return hasPathSum(root.left, targetSum) || hasPathSum(root.right, targetSum);
+        return hasPathSum(root.getLeft(), targetSum) || hasPathSum(root.getRight(), targetSum);
     }
 }

@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import java.util.Deque;
-import java.util.LinkedList;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.StackStructure;
 
 /**
  * 后缀表达式求值
@@ -36,7 +36,7 @@ public class 表达式求值 {
      * 将前缀表达式反转即可。
      */
     private static void PreFix(List<String> values, String target) {
-        Deque<Character> operators = new LinkedList<>();
+        StackStructure<Character> operators = new LinkedList<>();
         int i = target.length() - 1;
         while (i >= 0) {
             Character c = target.charAt(i);
@@ -92,7 +92,7 @@ public class 表达式求值 {
      * 否则，将栈顶运算符弹出，并输出，直到遇到一个优先级比该运算符低的运算符或者栈为空为止，然后将该运算符入栈。
      */
     private static void PostFix(List<String> values, String target) {
-        Deque<Character> operators = new LinkedList<>();
+        StackStructure<Character> operators = new LinkedList<>();
         int i = 0;
         while (i < target.length()) {
             Character c = target.charAt(i);
@@ -144,7 +144,7 @@ public class 表达式求值 {
      * 最终栈中仅剩下一个元素，即为后缀表达式的计算结果。
      */
     private static void Calculate(List<String> values, String target) {
-        Deque<Integer> result = new LinkedList<>();
+        StackStructure<Integer> result = new LinkedList<>();
         String s = "";
         for (String ss : values) {
             s += ss;
@@ -165,7 +165,7 @@ public class 表达式求值 {
         System.out.println(result.pop());
     }
 
-    private static void Calculate(String s, Deque<Integer> result, int i) {
+    private static void Calculate(String s, StackStructure<Integer> result, int i) {
         Character c = s.charAt(i);
         if (Character.isDigit(c)) {
             result.push(Integer.parseInt(c + ""));

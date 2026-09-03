@@ -1,32 +1,50 @@
 package com.majortom.algorithms.visualization.runtime.string;
 
-import java.util.List;
+import java.util.Objects;
 
-public record StringViewState(
-        String target,
-        String pattern,
-        int targetIndex,
-        int patternIndex,
-        List<Integer> matches,
-        Phase phase,
-        boolean completed) {
+/** Immutable JavaFX-neutral String state derived only from factual string mutations. */
+public record StringViewState(String value, Mutation mutation, boolean completed) {
 
     public StringViewState {
-        target = target == null ? "" : target;
-        pattern = pattern == null ? "" : pattern;
-        matches = List.copyOf(matches);
+        value = value == null ? "" : value;
+        mutation = Objects.requireNonNull(mutation, "mutation");
     }
 
-    public static StringViewState source(String target) {
-        return new StringViewState(target, "", -1, -1, List.of(), Phase.IDLE, false);
+    public static StringViewState source(String value) {
+        return new StringViewState(value, Mutation.none(), false);
     }
 
-    public enum Phase {
-        IDLE,
-        INITIALIZED,
-        COMPARING,
-        FALLBACK,
-        MATCHED,
-        COMPLETED
+    public record Mutation(Type type, int index, int length) {
+        public Mutation {
+            Objects.requireNonNull(type, "type");
+        }
+
+        public static Mutation none() {
+            return new Mutation(Type.NONE, -1, 0);
+        }
+
+        public static Mutation inserted(int index, int length) {
+            return new Mutation(Type.INSERTED, index, length);
+        }
+
+        public static Mutation removed(int index, int length) {
+            return new Mutation(Type.REMOVED, index, length);
+        }
+
+        public static Mutation updated(int index) {
+            return new Mutation(Type.UPDATED, index, 1);
+        }
+
+        public static Mutation replaced(int index, int length) {
+            return new Mutation(Type.REPLACED, index, length);
+        }
+    }
+
+    public enum Type {
+        NONE,
+        INSERTED,
+        REMOVED,
+        UPDATED,
+        REPLACED
     }
 }

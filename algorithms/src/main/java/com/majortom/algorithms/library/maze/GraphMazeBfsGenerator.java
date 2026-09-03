@@ -1,8 +1,7 @@
 package com.majortom.algorithms.library.maze;
 
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
-import com.majortom.algorithms.library.graph.IntEdge;
-import com.majortom.algorithms.library.graph.IntGraph;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -13,17 +12,18 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-public final class GraphMazeBfsGenerator {
+public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> {
 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
+    @Override
     public GraphMazeGenerationOutput generate(GraphMazeGenerationInput input) {
-        ExecutionEvents.emit(new GraphMazeGenerationEvent.Initialized(input.rows(), input.columns()));
-        List<Integer> nodes = nodes(input);
-        List<IntEdge> edges = new ArrayList<>();
+        List<GraphSnapshot.Vertex<Integer>> vertices = vertices(input);
+        List<GraphSnapshot.Edge> edges = new ArrayList<>();
         Set<Integer> discovered = new HashSet<>();
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         Random random = new Random(input.seed());
+        long nextEdgeId = 1L;
         queue.add(0);
         discovered.add(0);
         while (!queue.isEmpty()) {
@@ -35,27 +35,22 @@ public final class GraphMazeBfsGenerator {
                     continue;
                 }
                 ExecutionEvents.checkpoint();
-                IntEdge forward = new IntEdge(current, neighbor);
-                IntEdge reverse = new IntEdge(neighbor, current);
-                edges.add(forward);
-                edges.add(reverse);
-                ExecutionEvents.emit(new GraphMazeGenerationEvent.EdgeAdded(forward));
-                ExecutionEvents.emit(new GraphMazeGenerationEvent.EdgeAdded(reverse));
+                edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L));
+                edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L));
                 queue.addLast(neighbor);
             }
         }
-        IntGraph graph = new IntGraph(nodes, edges);
-        ExecutionEvents.emit(new GraphMazeGenerationEvent.Completed(graph));
+        GraphSnapshot<Integer> graph = new GraphSnapshot<>(true, vertices, edges);
         return new GraphMazeGenerationOutput(input.rows(), input.columns(), graph);
     }
 
-    private List<Integer> nodes(GraphMazeGenerationInput input) {
+    private List<GraphSnapshot.Vertex<Integer>> vertices(GraphMazeGenerationInput input) {
         int cellCount = MazeDimensions.checkedCellCount(input.rows(), input.columns());
-        List<Integer> nodes = new ArrayList<>(cellCount);
+        List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>(cellCount);
         for (int node = 0; node < cellCount; node++) {
-            nodes.add(node);
+            vertices.add(new GraphSnapshot.Vertex<>(node + 1L, node));
         }
-        return nodes;
+        return vertices;
     }
 
     private List<Integer> neighbors(GraphMazeGenerationInput input, int node) {

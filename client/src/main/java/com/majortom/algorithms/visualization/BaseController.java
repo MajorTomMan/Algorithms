@@ -17,6 +17,7 @@ import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.core.registry.ModuleLoader;
 import com.majortom.algorithms.core.registry.ModuleRegistry;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ExecutionSummary;
@@ -53,7 +54,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import com.majortom.algorithms.visualization.logging.LogView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 
@@ -177,7 +177,6 @@ public abstract class BaseController<S> implements Initializable {
         EventReducer<S> liveReducer = reducerFactory.get();
         running.set(true);
         paused.set(false);
-        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
         appendLog("Started: " + algorithmId);
 
@@ -196,14 +195,6 @@ public abstract class BaseController<S> implements Initializable {
 
     protected final <T> T module(String key, Class<T> contract) {
         return MODULE_REGISTRY.create(key, contract);
-    }
-
-    protected final List<String> registeredAlgorithmIds(String family, String valueType) {
-        return MODULE_REGISTRY.algorithmIds(family, valueType);
-    }
-
-    protected final List<String> registeredStructureTypes(String family) {
-        return MODULE_REGISTRY.structureTypeSignatures(family);
     }
 
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */
@@ -225,8 +216,8 @@ public abstract class BaseController<S> implements Initializable {
         return false;
     }
 
-    /** Records a semantic structure-side event without treating it as an input mutation. */
-    public final boolean recordStructureEvent(String operationId, ExecutionEvent event) {
+    /** Records a non-mutation auxiliary event such as snapshot lifecycle state. */
+    public final boolean recordAuxiliaryEvent(String operationId, ExecutionEvent event) {
         Objects.requireNonNull(event, "event");
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionResult result = new ExecutionRuntime().execute(
@@ -250,7 +241,6 @@ public abstract class BaseController<S> implements Initializable {
         currentSession = null;
         running.set(false);
         paused.set(false);
-        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
     }
 
@@ -263,7 +253,6 @@ public abstract class BaseController<S> implements Initializable {
                 replayController.play();
                 paused.set(false);
             }
-            visualizer.setPlaybackPaused(paused.get());
             refreshStatsDisplay();
             return;
         }
@@ -277,7 +266,6 @@ public abstract class BaseController<S> implements Initializable {
             currentSession.pauseExecution();
             paused.set(true);
         }
-        visualizer.setPlaybackPaused(paused.get());
         updatePlaybackButtonState();
     }
 
@@ -288,7 +276,6 @@ public abstract class BaseController<S> implements Initializable {
         if (replayController.isPlaying()) {
             replayController.pause();
             paused.set(true);
-            visualizer.setPlaybackPaused(true);
             refreshStatsDisplay();
             return;
         }
@@ -300,7 +287,6 @@ public abstract class BaseController<S> implements Initializable {
         }
         replayController.play();
         paused.set(false);
-        visualizer.setPlaybackPaused(false);
         refreshStatsDisplay();
     }
 
@@ -318,7 +304,6 @@ public abstract class BaseController<S> implements Initializable {
         }
         boolean advanced = replayController.stepForward();
         paused.set(true);
-        visualizer.setPlaybackPaused(true);
         if (advanced) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
@@ -333,7 +318,6 @@ public abstract class BaseController<S> implements Initializable {
         }
         boolean rewound = replayController.stepBackward();
         paused.set(true);
-        visualizer.setPlaybackPaused(true);
         if (rewound) {
             syncTimelineSlider(replayController.currentIndex(), replayController.frameCount());
         }
@@ -349,11 +333,21 @@ public abstract class BaseController<S> implements Initializable {
         int size = lastTimeline.size();
         int index = (int) Math.round(progress * (size - 1));
         index = Math.max(0, Math.min(size - 1, index));
-        if (!seekReplayFrame(index)) {
+        if (visualizer != null) {
+            visualizer.setScrubbing(true);
+        }
+        boolean sought;
+        try {
+            sought = seekReplayFrame(index);
+        } finally {
+            if (visualizer != null) {
+                visualizer.setScrubbing(false);
+            }
+        }
+        if (!sought) {
             return;
         }
         paused.set(true);
-        visualizer.setPlaybackPaused(true);
         syncTimelineSlider(index, size);
     }
 
@@ -416,7 +410,6 @@ public abstract class BaseController<S> implements Initializable {
         session.close();
         running.set(false);
         paused.set(false);
-        visualizer.setPlaybackPaused(false);
         updatePlaybackButtonState();
         currentSession = null;
         EventReducer<S> reducer = reducerFactory.get();
@@ -449,13 +442,13 @@ public abstract class BaseController<S> implements Initializable {
         } else if (result != null && result.status() == ExecutionStatus.CANCELLED) {
             appendLog("Cancelled: " + algorithmId);
         } else {
-            onAlgorithmFinished();
+            onAlgorithmFinished(result);
         }
         refreshStatsDisplay();
     }
 
     private void consumeLiveEvent(EventEnvelope envelope) {
-        if (!(envelope.event() instanceof LogEvent logEvent)) {
+        if (!(envelope.event() instanceof LogEvent logEvent) || logView == null) {
             return;
         }
         Runnable task = () -> logView.append(logEvent, envelope.timestamp());
@@ -631,12 +624,15 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private void updatePlaybackSpeed(double requestedDelayMillis) {
-        PlaybackController<S> active = replayController;
-        if (active == null) {
-            return;
-        }
         double effectiveDelayMillis = Math.max(1.0d, requestedDelayMillis);
-        active.setSpeed(100.0d / effectiveDelayMillis);
+        double playbackSpeed = 100.0d / effectiveDelayMillis;
+        if (visualizer != null) {
+            visualizer.setPlaybackSpeed(playbackSpeed);
+        }
+        PlaybackController<S> active = replayController;
+        if (active != null) {
+            active.setSpeed(playbackSpeed);
+        }
     }
 
     private void prepareTimelineControls() {
@@ -706,7 +702,7 @@ public abstract class BaseController<S> implements Initializable {
         if (logView == null) {
             return;
         }
-        Runnable task = () -> logView.append(com.majortom.algorithms.core.logging.LogLevel.INFO, "CLIENT", message);
+        Runnable task = () -> logView.appendSystem(message);
         if (Platform.isFxApplicationThread()) {
             task.run();
         } else {
@@ -862,7 +858,7 @@ public abstract class BaseController<S> implements Initializable {
 
     public abstract void handleAlgorithmStart();
 
-    protected void onAlgorithmFinished() {
+    protected void onAlgorithmFinished(ExecutionResult result) {
         appendLog(String.format("Finished. Event span: %dms", executionSummary()
                 .timing().eventSpan().toMillis()));
     }

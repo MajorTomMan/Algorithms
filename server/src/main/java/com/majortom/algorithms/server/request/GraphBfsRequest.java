@@ -1,12 +1,15 @@
 package com.majortom.algorithms.server.request;
 
-import com.majortom.algorithms.library.graph.IntGraph;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 
 import java.util.Objects;
 
-public record GraphBfsRequest(IntGraph graph, int startNode) {
+public record GraphBfsRequest(GraphSnapshot<Integer> graph, int startNode) {
     public GraphBfsRequest {
         graph = Objects.requireNonNull(graph, "graph");
-        if (!graph.nodes().contains(startNode)) throw new IllegalArgumentException("startNode must exist in graph");
+        boolean found = graph.vertices().stream().anyMatch(vertex -> vertex.value() == startNode);
+        if (!found) {
+            throw new IllegalArgumentException("startNode must exist in graph");
+        }
     }
 }

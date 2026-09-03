@@ -3,7 +3,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 合并有序链表{
     public static void main(String[] args) {
@@ -19,11 +19,11 @@ public class 合并有序链表{
         else if(list2==null){
             return list1;
         }
-        else if (list1.data<list2.data) {
-            list1.next = mergeTwoLists(list1.next,list2);
+        else if (list1.getValue()<list2.getValue()) {
+            list1.setNext(mergeTwoLists(list1.getNext(),list2));
             return list1;
         } else {
-            list2.next = mergeTwoLists(list1,list2.next);
+            list2.setNext(mergeTwoLists(list1,list2.getNext()));
             return list2;
         }
     }

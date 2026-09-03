@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
 
 public class 二叉树的前序遍历 {
     public static void main(String[] args) {
@@ -31,8 +31,8 @@ public class 二叉树的前序遍历 {
         if (root == null) {
             return;
         }
-        list.add((Integer) root.data);
-        preorderTraversal(root.left, list);
-        preorderTraversal(root.right, list);
+        list.add((Integer) root.getValue());
+        preorderTraversal(root.getLeft(), list);
+        preorderTraversal(root.getRight(), list);
     }
 }

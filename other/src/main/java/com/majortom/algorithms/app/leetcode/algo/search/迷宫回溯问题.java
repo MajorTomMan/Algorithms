@@ -1,7 +1,7 @@
 package com.majortom.algorithms.app.leetcode.algo.search;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import com.majortom.algorithms.library.basic.LinkedList;
+import com.majortom.algorithms.library.structure.QueueStructure;
 
 public class 迷宫回溯问题 {
     public static void main(String[] args) {
@@ -129,11 +129,11 @@ public class 迷宫回溯问题 {
      * @return
      */
     public static boolean BFS(Integer[][] map, int x, int y, int target) {
-        Queue<Integer> queue = new LinkedList<>();
-        queue.add(map[x][y]);
+        QueueStructure<Integer> queue = new LinkedList<>();
+        queue.enqueue(map[x][y]);
         map[x][y] = -1;
         while (!queue.isEmpty()) {
-            int currentPoint = queue.poll();
+            int currentPoint = queue.dequeue();
             for (int i = y; i != map[x].length - 1 && x != map.length - 1; i++) {
                 if (map[x][i] == target) {
                     System.out.println("Found!");
@@ -141,7 +141,7 @@ public class 迷宫回溯问题 {
                     System.out.println("----------every step------------");
                     return true;
                 }
-                queue.add(map[x][i]);
+                queue.enqueue(map[x][i]);
                 if (map[x][i] != 1) {
                     map[x][i] = -1;
                 } else {

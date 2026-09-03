@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-
+import java.util.ServiceLoader;
 
 public final class ModuleLoader {
 
@@ -22,64 +22,86 @@ public final class ModuleLoader {
     }
 
     public static ModuleRegistry load() {
-        ClassLoader c = Thread.currentThread().getContextClassLoader();
-        if (c == null) {
-            c = ModuleLoader.class.getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = ModuleLoader.class.getClassLoader();
         }
-        return load(c);
+        return load(classLoader);
     }
 
-    public static ModuleRegistry load(ClassLoader c) {
-        Objects.requireNonNull(c);
-        Map<String, Class<?>> m = new LinkedHashMap<>();
-        for (URL u : resources(c)) {
-            loadResource(c, u, m);
+    public static ModuleRegistry load(ClassLoader classLoader) {
+        Objects.requireNonNull(classLoader, "classLoader");
+        Map<String, Class<?>> implementations = new LinkedHashMap<>();
+        for (URL resource : resources(classLoader)) {
+            loadResource(classLoader, resource, implementations);
         }
-        return new ModuleRegistry(m);
+        mergeDiscovered(classLoader, implementations);
+        return new ModuleRegistry(implementations);
     }
 
-    private static List<URL> resources(ClassLoader c) {
+    private static List<URL> resources(ClassLoader classLoader) {
         try {
-            Enumeration<URL> e = c.getResources(RESOURCE_NAME);
-            List<URL> r = new ArrayList<>();
-            while (e.hasMoreElements()) {
-                r.add(e.nextElement());
+            Enumeration<URL> enumeration = classLoader.getResources(RESOURCE_NAME);
+            List<URL> resources = new ArrayList<>();
+            while (enumeration.hasMoreElements()) {
+                resources.add(enumeration.nextElement());
             }
-            r.sort(Comparator.comparing(URL::toString));
-            return r;
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to enumerate " + RESOURCE_NAME, e);
+            resources.sort(Comparator.comparing(URL::toString));
+            return resources;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to enumerate " + RESOURCE_NAME, exception);
         }
     }
 
-    private static void loadResource(ClassLoader c, URL u, Map<String, Class<?>> m) {
-        Properties p = new Properties();
-        try (InputStreamReader r = new InputStreamReader(u.openStream(), StandardCharsets.UTF_8)) {
-            p.load(r);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to read module resource: " + u, e);
+    private static void loadResource(ClassLoader classLoader, URL resource, Map<String, Class<?>> implementations) {
+        Properties properties = new Properties();
+        try (InputStreamReader reader = new InputStreamReader(resource.openStream(), StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read module resource: " + resource, exception);
         }
-
-        for (String k : p.stringPropertyNames().stream().sorted().toList()) {
-            String n = p.getProperty(k).trim();
-            if (k.isBlank() || n.isBlank()) {
-                throw new IllegalStateException("Blank module mapping in " + u);
+        for (String key : properties.stringPropertyNames().stream().sorted().toList()) {
+            String className = properties.getProperty(key).trim();
+            if (key.isBlank() || className.isBlank()) {
+                throw new IllegalStateException("Blank module mapping in " + resource);
             }
-            Class<?> impl = loadClass(c, n, k, u);
-            Class<?> prev = m.putIfAbsent(k, impl);
-            if (prev != null && !prev.equals(impl)) {
-                throw new IllegalStateException(
-                        "Duplicate module key '" + k + "': " + prev.getName() + " vs " + impl.getName());
+            Class<?> implementation = loadClass(classLoader, className, key, resource);
+            Class<?> previous = implementations.putIfAbsent(key, implementation);
+            if (previous != null && !previous.equals(implementation)) {
+                throw new IllegalStateException("Duplicate module key '" + key + "': "
+                        + previous.getName() + " vs " + implementation.getName());
             }
         }
     }
 
-    private static Class<?> loadClass(ClassLoader c, String n, String k, URL u) {
+    private static void mergeDiscovered(ClassLoader classLoader, Map<String, Class<?>> implementations) {
+        List<ModuleDiscovery> discoveries = ServiceLoader.load(ModuleDiscovery.class, classLoader).stream()
+                .map(ServiceLoader.Provider::get)
+                .sorted(Comparator.comparing(discovery -> discovery.getClass().getName()))
+                .toList();
+        for (ModuleDiscovery discovery : discoveries) {
+            Map<String, Class<?>> discovered = discovery.discover(classLoader);
+            for (Map.Entry<String, Class<?>> entry : discovered.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey()).toList()) {
+                String key = entry.getKey();
+                Class<?> implementation = entry.getValue();
+                if (implementations.containsValue(implementation)) {
+                    continue;
+                }
+                Class<?> previous = implementations.putIfAbsent(key, implementation);
+                if (previous != null && !previous.equals(implementation)) {
+                    continue;
+                }
+            }
+        }
+    }
+
+    private static Class<?> loadClass(ClassLoader classLoader, String className, String key, URL resource) {
         try {
-            return Class.forName(n, false, c);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(
-                    "Implementation class not found for '" + k + "' in " + u + ": " + n, e);
+            return Class.forName(className, false, classLoader);
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Implementation class not found for '" + key + "' in "
+                    + resource + ": " + className, exception);
         }
     }
 }
