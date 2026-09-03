@@ -8,7 +8,7 @@
 package com.majortom.algorithms.app.leetcode.ds.tree;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 平衡二叉树 {
     public static void main(String[] args) {

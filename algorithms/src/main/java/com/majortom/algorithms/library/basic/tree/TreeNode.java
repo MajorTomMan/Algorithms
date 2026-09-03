@@ -8,9 +8,6 @@ import java.util.Objects;
 
 public abstract class TreeNode<T> {
     private T value;
-    private int height = 1;
-    private int subTreeCount = 1;
-    private int status;
 
     protected TreeNode(T value) {
         this.value = value;
@@ -29,30 +26,6 @@ public abstract class TreeNode<T> {
         T previous = this.value;
         this.value = value;
         ExecutionEvents.emit(new TreeStructureEvent.ValueChanged(getId(), previous, value));
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getSubTreeCount() {
-        return subTreeCount;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public void updateMetrics(int height, int subTreeCount) {
-        if (height < 1 || subTreeCount < 1) {
-            throw new IllegalArgumentException("tree metrics must be positive");
-        }
-        this.height = height;
-        this.subTreeCount = subTreeCount;
     }
 
     public abstract List<? extends TreeNode<T>> getChildren();

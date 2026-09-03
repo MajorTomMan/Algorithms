@@ -28,6 +28,32 @@ public final class Graph<T> implements GraphStructure<T> {
         this.directed = directed;
     }
 
+    public static <T> Graph<T> fromSnapshot(GraphSnapshot<T> snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Graph<T> graph = new Graph<>(snapshot.directed());
+        Map<Long, Vertex<T>> verticesById = new LinkedHashMap<>();
+        for (GraphSnapshot.Vertex<T> source : snapshot.vertices()) {
+            Vertex<T> vertex = new Vertex<>(source.id(), source.value());
+            graph.verticesByValue.put(vertex.value(), vertex);
+            graph.adjacency.put(vertex, new LinkedHashSet<>());
+            verticesById.put(vertex.id(), vertex);
+        }
+        for (GraphSnapshot.Edge source : snapshot.edges()) {
+            Vertex<T> from = verticesById.get(source.fromId());
+            Vertex<T> to = verticesById.get(source.toId());
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("snapshot edge references an unknown vertex");
+            }
+            Edge<T> edge = new Edge<>(source.id(), from, to);
+            graph.edges.add(edge);
+            graph.adjacency.get(from).add(to);
+            if (!graph.directed) {
+                graph.adjacency.get(to).add(from);
+            }
+        }
+        return graph;
+    }
+
     @Override
     public int vertexCount() {
         return adjacency.size();
@@ -144,36 +170,6 @@ public final class Graph<T> implements GraphStructure<T> {
 
     public Vertex<T> vertex(T value) {
         return verticesByValue.get(value);
-    }
-
-    public void restore(GraphSnapshot<T> snapshot) {
-        Objects.requireNonNull(snapshot, "snapshot");
-        if (snapshot.directed() != directed) {
-            throw new IllegalArgumentException("snapshot directedness does not match graph configuration");
-        }
-        verticesByValue.clear();
-        adjacency.clear();
-        edges.clear();
-        Map<Long, Vertex<T>> verticesById = new LinkedHashMap<>();
-        for (GraphSnapshot.Vertex<T> source : snapshot.vertices()) {
-            Vertex<T> vertex = new Vertex<>(source.id(), source.value());
-            verticesByValue.put(vertex.value(), vertex);
-            adjacency.put(vertex, new LinkedHashSet<>());
-            verticesById.put(vertex.id(), vertex);
-        }
-        for (GraphSnapshot.Edge source : snapshot.edges()) {
-            Vertex<T> from = verticesById.get(source.fromId());
-            Vertex<T> to = verticesById.get(source.toId());
-            if (from == null || to == null) {
-                throw new IllegalArgumentException("snapshot edge references an unknown vertex");
-            }
-            Edge<T> edge = new Edge<>(source.id(), from, to);
-            edges.add(edge);
-            adjacency.get(from).add(to);
-            if (!directed) {
-                adjacency.get(to).add(from);
-            }
-        }
     }
 
     private Edge<T> findEdge(Vertex<T> from, Vertex<T> to) {

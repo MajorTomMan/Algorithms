@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 两数相加 {
     public static void main(String[] args) {

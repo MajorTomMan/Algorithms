@@ -11,6 +11,15 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
     private int size;
     private long nextNodeId = 1L;
 
+    public static <T extends Comparable<? super T>> AVLTree<T> fromRestoredRoot(AVLTreeNode<T> restoredRoot) {
+        AVLTree<T> tree = new AVLTree<>();
+        tree.root = restoredRoot;
+        tree.size = tree.count(tree.root);
+        tree.nextNodeId = Math.max(1L, tree.maxId(tree.root) + 1L);
+        tree.normalize(tree.root);
+        return tree;
+    }
+
     @Override
     public int size() {
         return size;
@@ -66,13 +75,6 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
     public void rotateRight(TreeNode<T> node) {
         AVLTreeNode<T> target = requireAvlNode(node);
         setRoot(rotateAt(root, target.getId(), false));
-    }
-
-    public void restore(AVLTreeNode<T> restoredRoot) {
-        root = restoredRoot;
-        size = count(root);
-        nextNodeId = Math.max(1L, maxId(root) + 1L);
-        normalize(root);
     }
 
     private AVLTreeNode<T> insert(AVLTreeNode<T> node, T value, boolean[] inserted) {

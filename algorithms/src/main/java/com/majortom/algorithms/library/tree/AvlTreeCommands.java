@@ -12,10 +12,11 @@ public final class AvlTreeCommands implements TreeAlgorithm<Integer, AvlTreeInpu
     @Override
     public AvlTreeOutput execute(AvlTreeInput input) {
         Log.i("AVL", "Command batch start, commands=" + input.commands().size());
-        AVLTree<Integer> tree = new AVLTree<>();
+        AVLTree<Integer> tree;
         if (input.initialRoot() != null) {
-            tree.restore(restore(input.initialRoot()));
+            tree = AVLTree.fromRestoredRoot(reconstructNode(input.initialRoot()));
         } else {
+            tree = new AVLTree<>();
             for (int value : input.initialValues()) {
                 tree.insert(value);
             }
@@ -35,12 +36,12 @@ public final class AvlTreeCommands implements TreeAlgorithm<Integer, AvlTreeInpu
         return output;
     }
 
-    private AVLTreeNode<Integer> restore(AvlNodeSnapshot snapshot) {
+    private AVLTreeNode<Integer> reconstructNode(AvlNodeSnapshot snapshot) {
         if (snapshot == null) {
             return null;
         }
-        AVLTreeNode<Integer> left = restore(snapshot.left());
-        AVLTreeNode<Integer> right = restore(snapshot.right());
+        AVLTreeNode<Integer> left = reconstructNode(snapshot.left());
+        AVLTreeNode<Integer> right = reconstructNode(snapshot.right());
         return new AVLTreeNode<>(snapshot.id(), snapshot.value(), snapshot.height(), left, right);
     }
 

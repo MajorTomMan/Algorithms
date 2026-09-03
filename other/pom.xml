@@ -18,11 +18,6 @@
             <artifactId>algorithms-library</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>edu.princeton.cs</groupId>
-            <artifactId>algs4</artifactId>
-            <version>${algs4.version}</version>
-        </dependency>
         <!-- Source: https://mvnrepository.com/artifact/org.jline/jline-reader -->
         <dependency>
             <groupId>org.jline</groupId>

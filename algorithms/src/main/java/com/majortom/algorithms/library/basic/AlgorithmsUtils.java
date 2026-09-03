@@ -1,10 +1,13 @@
-package com.majortom.algorithms.library.basic.utils;
+package com.majortom.algorithms.library.basic;
 
 import java.util.*;
 import com.majortom.algorithms.library.basic.node.ListNode;
 import com.majortom.algorithms.library.basic.tree.TreeNode;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
 
+/**
+ * 算法实验室工具类。
+ */
 public abstract class AlgorithmsUtils {
     private static final Random random = new Random();
     private static final java.lang.String UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -147,8 +150,6 @@ public abstract class AlgorithmsUtils {
         node.setLeft(buildBSTInternal(data, start, mid - 1));
         node.setRight(buildBSTInternal(data, mid + 1, end));
 
-        // 关键：构建后刷新高度和规模，否则可视化画布无法分层
-        refreshNodeMetrics(node);
         return node;
     }
 
@@ -179,44 +180,8 @@ public abstract class AlgorithmsUtils {
             }
             i++;
 
-            // 这里通常需要全量刷新，层序构建较难单点维护高度，建议最后统一处理或在循环内局部刷新
-            refreshNodeMetrics(curr);
         }
-        // 对于层序构建，最好从根部递归刷新一次确保全局高度正确
-        refreshGlobalMetrics(root);
         return root;
-    }
-
-    /**
-     * 局部刷新节点的 height 和 subTreeCount
-     */
-    private static <T> void refreshNodeMetrics(BinaryTreeNode<T> node) {
-        if (node == null)
-            return;
-        int hL = (node.getLeft() == null) ? 0 : node.getLeft().getHeight();
-        int hR = (node.getRight() == null) ? 0 : node.getRight().getHeight();
-        int sL = (node.getLeft() == null) ? 0 : node.getLeft().getSubTreeCount();
-        int sR = (node.getRight() == null) ? 0 : node.getRight().getSubTreeCount();
-
-        node.updateMetrics(1 + Math.max(hL, hR), 1 + sL + sR);
-    }
-
-    /**
-     * 递归全局刷新树的元数据
-     */
-    private static <T> int refreshGlobalMetrics(TreeNode<T> node) {
-        if (node == null)
-            return 0;
-        int maxH = 0;
-        int totalS = 1;
-        for (TreeNode<T> child : node.getChildren()) {
-            if (child != null) {
-                maxH = Math.max(maxH, refreshGlobalMetrics(child));
-                totalS += child.getSubTreeCount();
-            }
-        }
-        node.updateMetrics(1 + maxH, totalS);
-        return node.getHeight();
     }
 
     // --- 图与迷宫工具 ---

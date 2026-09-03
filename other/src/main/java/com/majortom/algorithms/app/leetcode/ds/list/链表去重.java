@@ -4,7 +4,7 @@ import java.util.Random;
 
 import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 链表去重 {
     public static void main(String[] args) {

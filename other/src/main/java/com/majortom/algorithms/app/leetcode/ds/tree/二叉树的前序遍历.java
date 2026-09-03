@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 二叉树的前序遍历 {
     public static void main(String[] args) {

@@ -456,9 +456,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private Graph<Integer> mutableGraph(GraphSnapshot<Integer> snapshot) {
-        Graph<Integer> result = new Graph<>(snapshot.directed());
-        result.restore(snapshot);
-        return result;
+        return Graph.fromSnapshot(snapshot);
     }
 
     private int firstVertexValue(Graph<Integer> source) {

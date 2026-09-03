@@ -37,7 +37,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         SnapshotAlgorithmInputSupport<GeneralTreeSnapshot<Integer>> {
 
     private final List<String> algorithmIds = AlgorithmCatalog.treeAlgorithms();
-    private final Tree<Integer> tree;
+    private Tree<Integer> tree;
     private StructureSnapshot<GeneralTreeSnapshot<Integer>> algorithmInputSnapshot;
 
     @FXML private Label structureLabel;
@@ -151,10 +151,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             logI18n("message.tree.node_id_not_found", nodeId);
             return;
         }
-        if (executeStructureOperation("update", () -> {
-            node.setValue(value);
-            return null;
-        })) {
+        if (executeStructureOperation("update", () -> tree.set(node, value))) {
             refreshStructureView();
         }
     }
@@ -207,7 +204,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
-        tree.restore(restoreNode(snapshot.state().root()));
+        tree = Tree.fromSnapshot(snapshot.state());
         invalidateExecutionForStructureChange();
         refreshStructureView();
     }
@@ -287,14 +284,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return new GeneralTreeSnapshot.Node<>(node.getId(), node.getValue(), children);
     }
 
-    private GeneralTreeNode<Integer> restoreNode(GeneralTreeSnapshot.Node<Integer> node) {
-        if (node == null) {
-            return null;
-        }
-        List<GeneralTreeNode<Integer>> children = node.children().stream().map(this::restoreNode).toList();
-        return new GeneralTreeNode<>(node.id(), node.value(), children);
-    }
-
     private List<Integer> snapshotValues(GeneralTreeSnapshot<Integer> snapshot) {
         List<Integer> values = new ArrayList<>();
         collectSnapshotValues(snapshot.root(), values);
@@ -360,7 +349,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     protected void onResetData() {
-        tree.restore(null);
+        tree = new Tree<>();
         renderStructureState(currentStructureState());
     }
 

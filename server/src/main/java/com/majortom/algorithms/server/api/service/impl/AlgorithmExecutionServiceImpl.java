@@ -160,8 +160,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             }
             case "graph-bfs" -> {
                 GraphBfsRequest input = objectMapper.convertValue(rawInput, GraphBfsRequest.class);
-                Graph<Integer> graph = new Graph<>(input.graph().directed());
-                graph.restore(input.graph());
+                Graph<Integer> graph = Graph.fromSnapshot(input.graph());
                 GraphBfs algorithm = MODULES.create("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
                 yield new PreparedExecution(() -> algorithm.traverse(graph, input.startNode()));
             }

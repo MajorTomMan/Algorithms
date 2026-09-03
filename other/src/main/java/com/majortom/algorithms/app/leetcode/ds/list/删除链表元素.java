@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.ds.list;
 
 
 import com.majortom.algorithms.library.basic.node.ListNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 删除链表元素 {
     public static void main(String[] args) {

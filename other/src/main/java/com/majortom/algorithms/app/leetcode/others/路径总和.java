@@ -2,7 +2,7 @@ package com.majortom.algorithms.app.leetcode.others;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
 import com.majortom.algorithms.library.basic.tree.TreeNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 /**
  * 路径总和

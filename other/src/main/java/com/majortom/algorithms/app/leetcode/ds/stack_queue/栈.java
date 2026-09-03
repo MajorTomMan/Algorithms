@@ -1,6 +1,6 @@
 package com.majortom.algorithms.app.leetcode.ds.stack_queue;
 
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.structure.StackStructure;
 

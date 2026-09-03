@@ -2,6 +2,7 @@ package com.majortom.algorithms.library.basic.tree;
 
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.library.structure.GeneralTreeStructure;
 
 import java.util.ArrayDeque;
@@ -10,6 +11,17 @@ import java.util.Objects;
 public final class Tree<T> implements GeneralTreeStructure<T> {
     private GeneralTreeNode<T> root;
     private int size;
+
+    public static <T> Tree<T> fromSnapshot(GeneralTreeSnapshot<T> snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Tree<T> tree = new Tree<>();
+        tree.root = restoreNode(snapshot.root());
+        tree.size = tree.subtreeSize(tree.root);
+        if (tree.size != snapshot.size()) {
+            throw new IllegalArgumentException("snapshot size does not match tree topology");
+        }
+        return tree;
+    }
 
     @Override
     public int size() {
@@ -35,13 +47,13 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     }
 
     @Override
-    public GeneralTreeNode<T> addChild(TreeNode<T> parent, T value) {
+    public GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, T value) {
         GeneralTreeNode<T> node = requireNode(parent);
         return addChild(node, node.getChildren().size(), value);
     }
 
     @Override
-    public GeneralTreeNode<T> addChild(TreeNode<T> parent, int index, T value) {
+    public GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, int index, T value) {
         GeneralTreeNode<T> node = requireNode(parent);
         if (!contains(node)) {
             throw new IllegalArgumentException("parent does not belong to this tree");
@@ -57,7 +69,15 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     }
 
     @Override
-    public boolean remove(TreeNode<T> node) {
+    public T set(GeneralTreeNode<T> node, T value) {
+        GeneralTreeNode<T> target = requireMember(node, "node");
+        T previous = target.getValue();
+        target.setValue(value);
+        return previous;
+    }
+
+    @Override
+    public boolean remove(GeneralTreeNode<T> node) {
         GeneralTreeNode<T> target = requireNode(node);
         if (target == root) {
             long rootId = root.getId();
@@ -112,13 +132,63 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         return null;
     }
 
-    public void restore(GeneralTreeNode<T> restoredRoot) {
-        root = restoredRoot;
-        size = subtreeSize(restoredRoot);
+    @Override
+    public void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent) {
+        GeneralTreeNode<T> parent = requireMember(newParent, "newParent");
+        move(node, parent, parent.getChildren().size());
+    }
+
+    @Override
+    public void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent, int index) {
+        GeneralTreeNode<T> target = requireMember(node, "node");
+        GeneralTreeNode<T> parent = requireMember(newParent, "newParent");
+        if (target == root) {
+            throw new IllegalArgumentException("root cannot be moved below another node");
+        }
+        if (target == parent || containsInSubtree(target, parent)) {
+            throw new IllegalArgumentException("move would create a tree cycle");
+        }
+        GeneralTreeNode<T> previousParent = parentOf(target);
+        if (previousParent == null) {
+            throw new IllegalArgumentException("node does not belong to this tree");
+        }
+        if (index < 0 || index > parent.getChildren().size()) {
+            throw new IndexOutOfBoundsException("index=" + index + ", size=" + parent.getChildren().size());
+        }
+        int previousIndex = previousParent.getChildren().indexOf(target);
+        int destinationIndex = index;
+        if (previousParent == parent && previousIndex < destinationIndex) {
+            destinationIndex--;
+        }
+        if (previousParent == parent && previousIndex == destinationIndex) {
+            return;
+        }
+        previousParent.removeChild(target);
+        parent.addChild(destinationIndex, target);
     }
 
     private boolean contains(GeneralTreeNode<T> target) {
         return findById(target.getId()) == target;
+    }
+
+    private boolean containsInSubtree(GeneralTreeNode<T> root, GeneralTreeNode<T> target) {
+        if (root == target) {
+            return true;
+        }
+        for (GeneralTreeNode<T> child : root.getChildren()) {
+            if (containsInSubtree(child, target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private GeneralTreeNode<T> requireMember(GeneralTreeNode<T> node, String name) {
+        GeneralTreeNode<T> target = requireNode(node);
+        if (!contains(target)) {
+            throw new IllegalArgumentException(name + " does not belong to this tree");
+        }
+        return target;
     }
 
     private GeneralTreeNode<T> parentOf(GeneralTreeNode<T> target) {
@@ -157,12 +227,15 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         ExecutionEvents.emit(new TreeStructureEvent.NodeRemoved(node.getId(), node.getValue()));
     }
 
-    @SuppressWarnings("unchecked")
-    private GeneralTreeNode<T> requireNode(TreeNode<T> node) {
-        Objects.requireNonNull(node, "node");
-        if (!(node instanceof GeneralTreeNode<?>)) {
-            throw new IllegalArgumentException("node must be a GeneralTreeNode");
+    private GeneralTreeNode<T> requireNode(GeneralTreeNode<T> node) {
+        return Objects.requireNonNull(node, "node");
+    }
+
+    private static <T> GeneralTreeNode<T> restoreNode(GeneralTreeSnapshot.Node<T> node) {
+        if (node == null) {
+            return null;
         }
-        return (GeneralTreeNode<T>) node;
+        java.util.List<GeneralTreeNode<T>> children = node.children().stream().map(Tree::<T>restoreNode).toList();
+        return new GeneralTreeNode<>(node.id(), node.value(), children);
     }
 }

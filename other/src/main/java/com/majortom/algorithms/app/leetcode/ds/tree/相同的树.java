@@ -3,7 +3,7 @@ package com.majortom.algorithms.app.leetcode.ds.tree;
 import java.util.Random;
 
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.utils.AlgorithmsUtils;
+import com.majortom.algorithms.library.basic.AlgorithmsUtils;
 
 public class 相同的树 {
     public static void main(String[] args) {

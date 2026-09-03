@@ -1,97 +1,68 @@
 package com.majortom.algorithms.app.leetcode.algo.math;
 
-import com.majortom.algorithms.library.basic.PolyList;
-import com.majortom.algorithms.library.basic.node.PolyListNode;
-
-/*
- * @Date: 2023-04-26 16:51:29
- * @LastEditors: hujunhao hujunhao@rtczsz.com
- * @LastEditTime: 2023-04-27 11:56:30
- * @FilePath: /alg/App/Linear/多项式求和.java
- */
+import java.util.ArrayList;
+import java.util.List;
 
 public class 多项式求和 {
-    /*
-     * A:7+3x+9x^8+5x^17
-     * B:8x+22x^7-9x^8
-     * sum:7+11x+22x^7+5x^17
-     */
     public static void main(String[] args) {
-        PolyList list1 = new PolyList();
-        PolyList list2 = new PolyList();
-        list1.add(7, 0);
-        list1.add(3, 1);
-        list1.add(9, 8);
-        list1.add(5, 17);
-        list2.add(8, 1);
-        list2.add(22, 7);
-        list2.add(-9, 8);
-        PolyList sumList = add(list1, list2);
-        sumList.display();
+        Polynomial left = new Polynomial();
+        Polynomial right = new Polynomial();
+        left.add(7, 0);
+        left.add(3, 1);
+        left.add(9, 8);
+        left.add(5, 17);
+        right.add(8, 1);
+        right.add(22, 7);
+        right.add(-9, 8);
+        add(left, right).display();
     }
 
-    /*
-     * 关键是把握指针何时需要往前走
-     */
-    public static PolyList add(PolyList L1, PolyList L2) {
-        /* 如果链表为空 */
-        if (L1.isEmpty() || L2.isEmpty()) {
-            return null;
-        }
-        /* 结果链表 */
-        PolyList sumList = new PolyList();
-        /* 指向两个链表的指针 */
-        PolyListNode node1 = L1.head, node2 = L2.head;
-        for (; node1 != null && node2 != null;) {
-            /*
-             * 如果A链表的节点指数要小于B链表的节点指数
-             * 那么结果链表先将A链表的节点加入其中,
-             * 再将指向A的指针指向下一个节点
-             * 指向B的指针不动
-             * 如果B链表的节点指数小于A链表
-             * 那么结果链表先将B链表的节点加入其中,
-             * 再将指向B的指针指向下一个节点
-             * 指向A的指针不动
-             * 如果两者相等,则分情况讨论
-             * 若两者系数相加等于0,等价于两个相反数相加结果必然为0,结果链表不需要加入已经相消的节点
-             * 若两者系数相加不等于0,将两者的系数相加后加入结果链表
-             * 两种情况在处理完以后都需要将指针往后移,因为此时该节点已经处理完了
-             * 需要处理下一个节点的情况
-             */
-            if (node1.getExp() < node2.getExp()) {
-                sumList.add(node1.getPower(), node1.getExp());
-                node1 = node1.getNext();
-            } else if (node1.getExp() > node2.getExp()) {
-                sumList.add(node2.getPower(), node2.getExp());
-                node2 = node2.getNext();
-            }
-            if (node1.getExp() == node2.getExp()) {
-                int sum = node1.getPower() + node2.getPower();
-                if (sum != 0) {
-                    sumList.add(sum, node1.getExp());
+    public static Polynomial add(Polynomial left, Polynomial right) {
+        Polynomial result = new Polynomial();
+        int leftIndex = 0;
+        int rightIndex = 0;
+        while (leftIndex < left.terms.size() && rightIndex < right.terms.size()) {
+            Term leftTerm = left.terms.get(leftIndex);
+            Term rightTerm = right.terms.get(rightIndex);
+            if (leftTerm.exponent < rightTerm.exponent) {
+                result.add(leftTerm.coefficient, leftTerm.exponent);
+                leftIndex++;
+            } else if (leftTerm.exponent > rightTerm.exponent) {
+                result.add(rightTerm.coefficient, rightTerm.exponent);
+                rightIndex++;
+            } else {
+                int coefficient = leftTerm.coefficient + rightTerm.coefficient;
+                if (coefficient != 0) {
+                    result.add(coefficient, leftTerm.exponent);
                 }
-                node1 = node1.getNext();
-                node2 = node2.getNext();
+                leftIndex++;
+                rightIndex++;
             }
         }
-        /*
-         * 因为多项式的项数是不确定的,
-         * 所以需要一个保险措施，
-         * 检查有无剩余的节点还没处理
-         * 将剩下的节点加入结果链表
-         * 无论是哪个链表
-         */
-        if (node1 == null) {
-            while (node2 != null) {
-                sumList.add(node2.getPower(), node2.getExp());
-                node2 = node2.getNext();
-            }
-        } else {
-            while (node1 != null) {
-                sumList.add(node1.getPower(), node1.getExp());
-                node1 = node1.getNext();
-            }
+        while (leftIndex < left.terms.size()) {
+            Term term = left.terms.get(leftIndex++);
+            result.add(term.coefficient, term.exponent);
         }
-        return sumList;
+        while (rightIndex < right.terms.size()) {
+            Term term = right.terms.get(rightIndex++);
+            result.add(term.coefficient, term.exponent);
+        }
+        return result;
+    }
+
+    private record Term(int coefficient, int exponent) {
+    }
+
+    public static final class Polynomial {
+        private final List<Term> terms = new ArrayList<>();
+
+        public void add(int coefficient, int exponent) {
+            terms.add(new Term(coefficient, exponent));
+            terms.sort(java.util.Comparator.comparingInt(Term::exponent));
+        }
+
+        public void display() {
+            terms.forEach(System.out::println);
+        }
     }
 }
