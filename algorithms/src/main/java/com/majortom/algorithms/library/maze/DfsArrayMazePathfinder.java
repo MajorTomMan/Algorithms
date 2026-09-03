@@ -11,25 +11,24 @@ import java.util.Set;
 /** Recursive depth-first pathfinder with explicit backtrack events. */
 public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
-    public ArrayMazePathOutput findPath(ArrayMazePathInput input) {
+    public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {
+        ArrayMazeSupport.requirePathEndpoints(maze, start, goal);
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Set<GridPoint> discovered = new HashSet<>();
-        int[] visitedCount = {0};
-        discovered.add(input.start());
-        boolean found = visit(input.maze(), input.start(), null, input.goal(), discovered, previous, visitedCount);
-        List<GridPoint> path = found ? ArrayMazeSupport.reconstruct(previous, input.start(), input.goal()) : List.of();
-        return new ArrayMazePathOutput(path, visitedCount[0]);
+        discovered.add(start);
+        boolean found = visit(maze, start, goal, discovered, previous);
+        List<GridPoint> path = found ? ArrayMazeSupport.reconstruct(previous, start, goal) : List.of();
+        return path;
     }
 
-    private boolean visit(GridMaze maze, GridPoint current, GridPoint parent, GridPoint goal,
-                          Set<GridPoint> discovered, Map<GridPoint, GridPoint> previous, int[] visitedCount) {
+    private boolean visit(GridMaze maze, GridPoint current, GridPoint goal,
+                          Set<GridPoint> discovered, Map<GridPoint, GridPoint> previous) {
         ExecutionEvents.checkpoint();
-        visitedCount[0]++;
         if (current.equals(goal)) return true;
         for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
             if (!discovered.add(neighbor)) continue;
             previous.put(neighbor, current);
-            if (visit(maze, neighbor, current, goal, discovered, previous, visitedCount)) return true;
+            if (visit(maze, neighbor, goal, discovered, previous)) return true;
         }
         return false;
     }

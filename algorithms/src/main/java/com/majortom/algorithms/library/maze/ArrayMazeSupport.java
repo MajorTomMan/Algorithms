@@ -16,14 +16,15 @@ final class ArrayMazeSupport {
     private ArrayMazeSupport() {
     }
 
-    static GenerationState initialize(ArrayMazeGenerationInput input) {
+    static GenerationState initialize(MazeDimensions dimensions) {
+        requireArrayDimensions(dimensions);
         GridPoint entrance = new GridPoint(1, 1);
-        GridPoint exit = new GridPoint(input.rows() - 2, input.columns() - 2);
-        return new GenerationState(new boolean[MazeDimensions.checkedCellCount(input.rows(), input.columns())], entrance, exit);
+        GridPoint exit = new GridPoint(dimensions.rows() - 2, dimensions.columns() - 2);
+        return new GenerationState(new boolean[dimensions.cellCount()], entrance, exit);
     }
 
-    static void open(ArrayMazeGenerationInput input, boolean[] open, GridPoint point) {
-        int index = index(input.columns(), point);
+    static void open(MazeDimensions dimensions, boolean[] open, GridPoint point) {
+        int index = index(dimensions.columns(), point);
         if (open[index]) {
             return;
         }
@@ -31,12 +32,12 @@ final class ArrayMazeSupport {
         open[index] = true;
     }
 
-    static GridMaze complete(ArrayMazeGenerationInput input, GenerationState state) {
+    static GridMaze complete(MazeDimensions dimensions, GenerationState state) {
         List<Boolean> cells = new ArrayList<>(state.open().length);
         for (boolean cell : state.open()) {
             cells.add(cell);
         }
-        return new GridMaze(input.rows(), input.columns(), cells, state.entrance(), state.exit());
+        return new GridMaze(dimensions.rows(), dimensions.columns(), cells, state.entrance(), state.exit());
     }
 
     static List<int[]> shuffledCellDirections(Random random) {
@@ -45,8 +46,8 @@ final class ArrayMazeSupport {
         return directions;
     }
 
-    static boolean isInner(ArrayMazeGenerationInput input, int row, int column) {
-        return row > 0 && row < input.rows() - 1 && column > 0 && column < input.columns() - 1;
+    static boolean isInner(MazeDimensions dimensions, int row, int column) {
+        return row > 0 && row < dimensions.rows() - 1 && column > 0 && column < dimensions.columns() - 1;
     }
 
     static int index(int columns, GridPoint point) {
@@ -81,6 +82,23 @@ final class ArrayMazeSupport {
             path.addFirst(current);
         }
         return List.copyOf(path);
+    }
+
+    static void requirePathEndpoints(GridMaze maze, GridPoint start, GridPoint goal) {
+        java.util.Objects.requireNonNull(maze, "maze");
+        java.util.Objects.requireNonNull(start, "start");
+        java.util.Objects.requireNonNull(goal, "goal");
+        if (!maze.isOpen(start) || !maze.isOpen(goal)) {
+            throw new IllegalArgumentException("path endpoints must be open maze cells");
+        }
+    }
+
+    private static void requireArrayDimensions(MazeDimensions dimensions) {
+        java.util.Objects.requireNonNull(dimensions, "dimensions");
+        if (dimensions.rows() < 3 || dimensions.columns() < 3
+                || dimensions.rows() % 2 == 0 || dimensions.columns() % 2 == 0) {
+            throw new IllegalArgumentException("maze dimensions must be odd and at least 3");
+        }
     }
 
     record GenerationState(boolean[] open, GridPoint entrance, GridPoint exit) {

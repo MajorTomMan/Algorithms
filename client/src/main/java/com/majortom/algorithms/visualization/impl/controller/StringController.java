@@ -135,7 +135,7 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         StringStructure input = new com.majortom.algorithms.library.basic.String(target);
         @SuppressWarnings("unchecked")
-        StringSearch<List<Integer>> algorithm = (StringSearch<List<Integer>>)
+        StringSearch algorithm = (StringSearch)
                 module("algorithm.string.String." + algorithmId, StringSearch.class);
         startAlgorithm(algorithmId, Map.of("target", target, "pattern", pattern),
                 () -> algorithm.search(input, pattern), () -> new StringEventReducer(target));

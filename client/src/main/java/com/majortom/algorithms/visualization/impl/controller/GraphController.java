@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.library.basic.graph.Edge;
 import com.majortom.algorithms.library.basic.graph.Vertex;
 import com.majortom.algorithms.library.graph.GraphBfs;
-import com.majortom.algorithms.library.graph.GraphBfsOutput;
 import com.majortom.algorithms.library.graph.GraphTraversal;
 import com.majortom.algorithms.library.basic.graph.Graph;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -99,7 +98,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         GraphSnapshot<Integer> inputSnapshot = GraphBfs.snapshot(inputGraph);
         @SuppressWarnings("unchecked")
-        GraphTraversal<Integer, GraphBfsOutput> algorithm = (GraphTraversal<Integer, GraphBfsOutput>)
+        GraphTraversal<Integer> algorithm = (GraphTraversal<Integer>)
                 module("algorithm.graph.Integer." + algorithmId, GraphTraversal.class);
         startAlgorithm(algorithmId, inputSnapshot, () -> algorithm.traverse(inputGraph, algorithmStartNode),
                 () -> new GraphEventReducer(inputSnapshot));

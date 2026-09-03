@@ -9,30 +9,30 @@ import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.RecordingEventSink;
 import com.majortom.algorithms.library.graph.GraphBfs;
-import com.majortom.algorithms.library.graph.GraphBfsOutput;
 import com.majortom.algorithms.library.basic.graph.Graph;
 import com.majortom.algorithms.library.structure.StringStructure;
 import com.majortom.algorithms.library.string.KmpSearch;
-import com.majortom.algorithms.library.maze.ArrayMazeGenerationInput;
-import com.majortom.algorithms.library.maze.ArrayMazeGenerationOutput;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
-import com.majortom.algorithms.library.maze.ArrayMazePathInput;
-import com.majortom.algorithms.library.maze.ArrayMazePathOutput;
 import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
 import com.majortom.algorithms.library.maze.GraphMazeBfsGenerator;
-import com.majortom.algorithms.library.maze.GraphMazeGenerationInput;
-import com.majortom.algorithms.library.maze.GraphMazeGenerationOutput;
-import com.majortom.algorithms.library.sort.AbstractIntegerSort;
-import com.majortom.algorithms.library.sort.model.IntegerSortInput;
-import com.majortom.algorithms.library.sort.model.IntegerSortOutput;
+import com.majortom.algorithms.library.maze.GridMaze;
+import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.library.maze.MazeDimensions;
+import com.majortom.algorithms.library.sort.Sort;
 import com.majortom.algorithms.library.tree.AvlTreeCommands;
-import com.majortom.algorithms.library.tree.AvlTreeInput;
-import com.majortom.algorithms.library.tree.AvlTreeOutput;
+import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
+import com.majortom.algorithms.library.basic.tree.AVLTree;
+import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.server.api.constant.ExecutionState;
 import com.majortom.algorithms.server.api.entity.ExecutionUnit;
 import com.majortom.algorithms.server.api.service.AlgorithmExecutionService;
 import com.majortom.algorithms.server.dto.AlgorithmInformationDto;
 import com.majortom.algorithms.server.request.ExecutionRequest;
+import com.majortom.algorithms.server.request.IntegerSortRequest;
+import com.majortom.algorithms.server.request.MazeGenerationRequest;
+import com.majortom.algorithms.server.request.MazePathRequest;
+import com.majortom.algorithms.server.request.AvlTreeRequest;
 import com.majortom.algorithms.server.request.GraphBfsRequest;
 import com.majortom.algorithms.server.request.StringSearchRequest;
 import jakarta.annotation.PreDestroy;
@@ -53,18 +53,18 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static final String VERSION = "2.0";
     private static final ModuleRegistry MODULES = ModuleLoader.load();
     private static final List<AlgorithmApiDescriptor> ALGORITHMS = List.of(
-            new AlgorithmApiDescriptor("insertion-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("selection-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("quick-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("heap-sort", "sort", IntegerSortInput.class, IntegerSortOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-bfs", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-dfs", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-generator-union-find", "maze", ArrayMazeGenerationInput.class, ArrayMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("graph-generator-bfs", "maze", GraphMazeGenerationInput.class, GraphMazeGenerationOutput.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", ArrayMazePathInput.class, ArrayMazePathOutput.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", ArrayMazePathInput.class, ArrayMazePathOutput.class),
-            new AlgorithmApiDescriptor("tree-avl", "tree", AvlTreeInput.class, AvlTreeOutput.class),
-            new AlgorithmApiDescriptor("graph-bfs", "graph", GraphBfsRequest.class, GraphBfsOutput.class),
+            new AlgorithmApiDescriptor("insertion-sort", "array", IntegerSortRequest.class, List.class),
+            new AlgorithmApiDescriptor("selection-sort", "array", IntegerSortRequest.class, List.class),
+            new AlgorithmApiDescriptor("quick-sort", "array", IntegerSortRequest.class, List.class),
+            new AlgorithmApiDescriptor("heap-sort", "array", IntegerSortRequest.class, List.class),
+            new AlgorithmApiDescriptor("maze-generator-bfs", "maze", MazeGenerationRequest.class, GridMaze.class),
+            new AlgorithmApiDescriptor("maze-generator-dfs", "maze", MazeGenerationRequest.class, GridMaze.class),
+            new AlgorithmApiDescriptor("maze-generator-union-find", "maze", MazeGenerationRequest.class, GridMaze.class),
+            new AlgorithmApiDescriptor("graph-generator-bfs", "maze", MazeGenerationRequest.class, GraphSnapshot.class),
+            new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", MazePathRequest.class, List.class),
+            new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", MazePathRequest.class, List.class),
+            new AlgorithmApiDescriptor("tree-avl", "tree", AvlTreeRequest.class, AvlNodeSnapshot.class),
+            new AlgorithmApiDescriptor("graph-bfs", "graph", GraphBfsRequest.class, List.class),
             new AlgorithmApiDescriptor("kmp", "string", StringSearchRequest.class, List.class));
 
     private final ObjectMapper objectMapper;
@@ -134,44 +134,87 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private PreparedExecution prepareExecution(String algorithmId, Map<String, Object> rawInput) {
         return switch (algorithmId) {
             case "insertion-sort", "selection-sort", "quick-sort", "heap-sort" -> {
-                IntegerSortInput input = objectMapper.convertValue(rawInput, IntegerSortInput.class);
-                AbstractIntegerSort algorithm = MODULES.create("algorithm.array.Integer." + algorithmId, AbstractIntegerSort.class);
-                yield new PreparedExecution(() -> algorithm.sort(input));
+                IntegerSortRequest request = objectMapper.convertValue(rawInput, IntegerSortRequest.class);
+                @SuppressWarnings("unchecked")
+                Sort<Integer> algorithm = (Sort<Integer>) MODULES.create(
+                        "algorithm.array.Integer." + algorithmId, Sort.class);
+                com.majortom.algorithms.library.basic.Array<Integer> array =
+                        new com.majortom.algorithms.library.basic.Array<>(request.values());
+                yield new PreparedExecution(() -> {
+                    algorithm.sort(array);
+                    return copy(array);
+                });
             }
             case "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find" -> {
-                ArrayMazeGenerationInput input = objectMapper.convertValue(rawInput, ArrayMazeGenerationInput.class);
-                ArrayMazeGenerator algorithm = MODULES.create("algorithm.maze.Boolean." + algorithmId, ArrayMazeGenerator.class);
-                yield new PreparedExecution(() -> algorithm.generate(input));
+                MazeGenerationRequest request = objectMapper.convertValue(rawInput, MazeGenerationRequest.class);
+                MazeDimensions dimensions = request.dimensions();
+                ArrayMazeGenerator algorithm = MODULES.create(
+                        "algorithm.maze.Boolean." + algorithmId, ArrayMazeGenerator.class);
+                yield new PreparedExecution(() -> algorithm.generate(dimensions, request.seed()));
             }
             case "graph-generator-bfs" -> {
-                GraphMazeGenerationInput input = objectMapper.convertValue(rawInput, GraphMazeGenerationInput.class);
-                GraphMazeBfsGenerator algorithm = MODULES.create("algorithm.graph.Integer.graph-generator-bfs", GraphMazeBfsGenerator.class);
-                yield new PreparedExecution(() -> algorithm.generate(input));
+                MazeGenerationRequest request = objectMapper.convertValue(rawInput, MazeGenerationRequest.class);
+                MazeDimensions dimensions = request.dimensions();
+                GraphMazeBfsGenerator algorithm = MODULES.create(
+                        "algorithm.graph.Integer.graph-generator-bfs", GraphMazeBfsGenerator.class);
+                yield new PreparedExecution(() -> algorithm.generate(dimensions, request.seed()));
             }
             case "maze-pathfinder-astar", "maze-pathfinder-dfs" -> {
-                ArrayMazePathInput input = objectMapper.convertValue(rawInput, ArrayMazePathInput.class);
-                ArrayMazePathfinder algorithm = MODULES.create("algorithm.maze.Boolean." + algorithmId, ArrayMazePathfinder.class);
-                yield new PreparedExecution(() -> algorithm.findPath(input));
+                MazePathRequest request = objectMapper.convertValue(rawInput, MazePathRequest.class);
+                ArrayMazePathfinder algorithm = MODULES.create(
+                        "algorithm.maze.Boolean." + algorithmId, ArrayMazePathfinder.class);
+                yield new PreparedExecution(() -> algorithm.findPath(request.maze(), request.start(), request.goal()));
             }
             case "tree-avl" -> {
-                AvlTreeInput input = objectMapper.convertValue(rawInput, AvlTreeInput.class);
-                AvlTreeCommands algorithm = MODULES.create("algorithm.tree.Integer.tree-avl", AvlTreeCommands.class);
-                yield new PreparedExecution(() -> algorithm.execute(input));
+                AvlTreeRequest request = objectMapper.convertValue(rawInput, AvlTreeRequest.class);
+                AvlTreeCommands algorithm = MODULES.create(
+                        "algorithm.tree.Integer.tree-avl", AvlTreeCommands.class);
+                yield new PreparedExecution(() -> {
+                    AVLTree<Integer> tree = request.toTree();
+                    algorithm.execute(tree, request.commands());
+                    return snapshot(tree.root());
+                });
             }
             case "graph-bfs" -> {
-                GraphBfsRequest input = objectMapper.convertValue(rawInput, GraphBfsRequest.class);
-                Graph<Integer> graph = Graph.fromSnapshot(input.graph());
+                GraphBfsRequest request = objectMapper.convertValue(rawInput, GraphBfsRequest.class);
+                Graph<Integer> graph = Graph.fromSnapshot(request.graph());
                 GraphBfs algorithm = MODULES.create("algorithm.graph.Integer.graph-bfs", GraphBfs.class);
-                yield new PreparedExecution(() -> algorithm.traverse(graph, input.startNode()));
+                yield new PreparedExecution(() -> algorithm.traverse(graph, request.startNode()));
             }
             case "kmp" -> {
-                StringSearchRequest input = objectMapper.convertValue(rawInput, StringSearchRequest.class);
-                StringStructure target = new com.majortom.algorithms.library.basic.String(input.target());
+                StringSearchRequest request = objectMapper.convertValue(rawInput, StringSearchRequest.class);
+                StringStructure target = new com.majortom.algorithms.library.basic.String(request.target());
                 KmpSearch algorithm = MODULES.create("algorithm.string.String.kmp", KmpSearch.class);
-                yield new PreparedExecution(() -> algorithm.search(target, input.pattern()));
+                yield new PreparedExecution(() -> algorithm.search(target, request.pattern()));
             }
             default -> throw new IllegalArgumentException("Unknown algorithm ID: " + algorithmId);
         };
+    }
+
+    private List<Integer> copy(com.majortom.algorithms.library.structure.ArrayStructure<Integer> array) {
+        java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
+        for (Integer value : array) {
+            values.add(value);
+        }
+        return List.copyOf(values);
+    }
+
+    private AvlNodeSnapshot snapshot(AVLTreeNode<Integer> node) {
+        if (node == null) {
+            return null;
+        }
+        return new AvlNodeSnapshot(node.getId(), node.getValue(), node.getHeight(),
+                snapshot(left(node)), snapshot(right(node)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private AVLTreeNode<Integer> left(AVLTreeNode<Integer> node) {
+        return node == null ? null : (AVLTreeNode<Integer>) node.getLeft();
+    }
+
+    @SuppressWarnings("unchecked")
+    private AVLTreeNode<Integer> right(AVLTreeNode<Integer> node) {
+        return node == null ? null : (AVLTreeNode<Integer>) node.getRight();
     }
 
     private record PreparedExecution(ExecutionOperation<?> operation) {

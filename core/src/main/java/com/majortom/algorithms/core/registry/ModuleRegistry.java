@@ -13,11 +13,21 @@ public final class ModuleRegistry {
 
     private static final String STRUCTURE_PREFIX = "structure.";
     private static final String ALGORITHM_PREFIX = "algorithm.";
+    private static final List<String> VALUE_TYPES = List.of(
+            "Integer", "Long", "Double", "Float", "Boolean",
+            "Character", "Byte", "Short", "String");
 
     private final Map<String, Class<?>> implementations;
 
     ModuleRegistry(Map<String, Class<?>> implementations) {
-        this.implementations = Map.copyOf(new LinkedHashMap<>(implementations));
+        LinkedHashMap<String, Class<?>> copy = new LinkedHashMap<>(implementations);
+        validateAlgorithmValueTypes(copy.keySet());
+        this.implementations = Map.copyOf(copy);
+    }
+
+
+    public static List<String> valueTypes() {
+        return VALUE_TYPES;
     }
 
     public boolean contains(String key) {
@@ -117,6 +127,28 @@ public final class ModuleRegistry {
 
     public Map<String, Class<?>> entries() {
         return implementations;
+    }
+
+
+    private static void validateAlgorithmValueTypes(Set<String> keys) {
+        for (String key : keys) {
+            if (!key.startsWith(ALGORITHM_PREFIX)) {
+                continue;
+            }
+            String suffix = key.substring(ALGORITHM_PREFIX.length());
+            int familySeparator = suffix.indexOf('.');
+            if (familySeparator < 1) {
+                throw new IllegalArgumentException("Invalid algorithm registry key: " + key);
+            }
+            int typeSeparator = suffix.indexOf('.', familySeparator + 1);
+            if (typeSeparator < 0) {
+                throw new IllegalArgumentException("Invalid algorithm registry key: " + key);
+            }
+            String valueType = suffix.substring(familySeparator + 1, typeSeparator);
+            if (!VALUE_TYPES.contains(valueType)) {
+                throw new IllegalArgumentException("Unsupported Registry ValueType '" + valueType + "' in " + key);
+            }
+        }
     }
 
     private static String segmentAfterPrefix(String key, String prefix) {

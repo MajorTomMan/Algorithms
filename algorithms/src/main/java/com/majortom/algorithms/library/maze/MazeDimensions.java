@@ -1,11 +1,19 @@
 package com.majortom.algorithms.library.maze;
 
-/** Central resource and overflow guard for in-memory maze values. */
-final class MazeDimensions {
+/** Immutable validated maze dimensions shared by maze algorithms. */
+public record MazeDimensions(int rows, int columns) {
 
-    static final int MAX_CELLS = 100_000;
+    public static final int MAX_CELLS = 100_000;
 
-    private MazeDimensions() {
+    public MazeDimensions {
+        if (rows < 1 || columns < 1) {
+            throw new IllegalArgumentException("maze dimensions must be positive");
+        }
+        checkedCellCount(rows, columns);
+    }
+
+    public int cellCount() {
+        return checkedCellCount(rows, columns);
     }
 
     static int checkedCellCount(int rows, int columns) {

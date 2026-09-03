@@ -3,15 +3,16 @@ package com.majortom.algorithms.library.basic.tree;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 
-import java.util.Arrays;
-import java.util.List;
-
 public abstract class BinaryTreeNode<T> extends TreeNode<T> {
     private BinaryTreeNode<T> left;
     private BinaryTreeNode<T> right;
 
     protected BinaryTreeNode(T value) {
         super(value);
+    }
+
+    protected BinaryTreeNode(long id, T value) {
+        super(id, value);
     }
 
     public BinaryTreeNode<T> getLeft() {
@@ -40,15 +41,9 @@ public abstract class BinaryTreeNode<T> extends TreeNode<T> {
         ExecutionEvents.emit(new TreeStructureEvent.RightChanged(getId(), previousId, id(right)));
     }
 
-
     protected void initializeChildren(BinaryTreeNode<T> left, BinaryTreeNode<T> right) {
         this.left = left;
         this.right = right;
-    }
-
-    @Override
-    public List<BinaryTreeNode<T>> getChildren() {
-        return Arrays.asList(left, right);
     }
 
     private static Long id(BinaryTreeNode<?> node) {

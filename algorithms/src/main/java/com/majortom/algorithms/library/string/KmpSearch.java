@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public final class KmpSearch implements StringSearch<List<Integer>> {
+public final class KmpSearch implements StringSearch {
     @Override
     public List<Integer> search(StringStructure target, String pattern) {
         Objects.requireNonNull(target, "target");

@@ -13,24 +13,23 @@ import java.util.HashSet;
 /** A* pathfinder using Manhattan distance on the maze grid. */
 public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
-    public ArrayMazePathOutput findPath(ArrayMazePathInput input) {
+    public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {
+        ArrayMazeSupport.requirePathEndpoints(maze, start, goal);
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Map<GridPoint, Integer> distance = new HashMap<>();
         Set<GridPoint> discovered = new HashSet<>();
         PriorityQueue<GridPoint> frontier = new PriorityQueue<>(Comparator
-                .comparingInt((GridPoint point) -> distance.getOrDefault(point, Integer.MAX_VALUE) + manhattan(point, input.goal()))
+                .comparingInt((GridPoint point) -> distance.getOrDefault(point, Integer.MAX_VALUE) + manhattan(point, goal))
                 .thenComparingInt(GridPoint::row).thenComparingInt(GridPoint::column));
-        distance.put(input.start(), 0);
-        discovered.add(input.start());
-        frontier.add(input.start());
-        int visitedCount = 0;
+        distance.put(start, 0);
+        discovered.add(start);
+        frontier.add(start);
         boolean found = false;
         while (!frontier.isEmpty()) {
             GridPoint current = frontier.remove();
             ExecutionEvents.checkpoint();
-            visitedCount++;
-            if (current.equals(input.goal())) { found = true; break; }
-            for (GridPoint neighbor : ArrayMazeSupport.neighbors(input.maze(), current)) {
+            if (current.equals(goal)) { found = true; break; }
+            for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
                 int candidate = distance.get(current) + 1;
                 if (candidate >= distance.getOrDefault(neighbor, Integer.MAX_VALUE)) continue;
                 distance.put(neighbor, candidate);
@@ -39,8 +38,8 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
                 frontier.add(neighbor);
             }
         }
-        List<GridPoint> path = found ? ArrayMazeSupport.reconstruct(previous, input.start(), input.goal()) : List.of();
-        return new ArrayMazePathOutput(path, visitedCount);
+        List<GridPoint> path = found ? ArrayMazeSupport.reconstruct(previous, start, goal) : List.of();
+        return path;
     }
 
     private int manhattan(GridPoint left, GridPoint right) {

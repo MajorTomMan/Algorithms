@@ -3,13 +3,9 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
 import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
 import com.majortom.algorithms.library.maze.GraphMazeGenerator;
-import com.majortom.algorithms.library.maze.ArrayMazeGenerationInput;
-import com.majortom.algorithms.library.maze.ArrayMazeGenerationOutput;
-import com.majortom.algorithms.library.maze.ArrayMazePathInput;
-import com.majortom.algorithms.library.maze.ArrayMazePathOutput;
-import com.majortom.algorithms.library.maze.GraphMazeGenerationInput;
-import com.majortom.algorithms.library.maze.GraphMazeGenerationOutput;
 import com.majortom.algorithms.library.maze.GridMaze;
+import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.library.maze.MazeDimensions;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -21,6 +17,7 @@ import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSup
 import com.majortom.algorithms.visualization.runtime.maze.MazeEventReducer;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import javafx.application.Platform;
@@ -137,15 +134,19 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         algorithmResultSnapshot = null;
         String id = selectedId(generatorSelector, allGenerators);
         if (graphGenerators.contains(id)) {
-            GraphMazeGenerationInput input = new GraphMazeGenerationInput(size, size, System.nanoTime());
+            MazeDimensions dimensions = new MazeDimensions(size, size);
+            long seed = System.nanoTime();
             @SuppressWarnings("unchecked")
             GraphMazeGenerator<Integer> algorithm = (GraphMazeGenerator<Integer>)
                     module("algorithm.graph.Integer." + id, GraphMazeGenerator.class);
-            startAlgorithm(id, input, () -> algorithm.generate(input), () -> new MazeEventReducer(size, size, true));
+            startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
+                    () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, true));
         } else {
-            ArrayMazeGenerationInput input = new ArrayMazeGenerationInput(size, size, System.nanoTime());
+            MazeDimensions dimensions = new MazeDimensions(size, size);
+            long seed = System.nanoTime();
             ArrayMazeGenerator algorithm = module("algorithm.maze.Boolean." + id, ArrayMazeGenerator.class);
-            startAlgorithm(id, input, () -> algorithm.generate(input), () -> new MazeEventReducer(size, size, false));
+            startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
+                    () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, false));
         }
     }
 
@@ -159,9 +160,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         solving = true;
         selectedOperation = Operation.SOLVE;
         String id = selectedId(pathfinderSelector, arrayPathfinders);
-        ArrayMazePathInput input = new ArrayMazePathInput(inputMaze, inputMaze.entrance(), inputMaze.exit());
+        GridPoint start = inputMaze.entrance();
+        GridPoint goal = inputMaze.exit();
         ArrayMazePathfinder algorithm = module("algorithm.maze.Boolean." + id, ArrayMazePathfinder.class);
-        startAlgorithm(id, input, () -> algorithm.findPath(input),
+        startAlgorithm(id, Map.of("maze", inputMaze, "start", start, "goal", goal),
+                () -> algorithm.findPath(inputMaze, start, goal),
                 () -> new MazeEventReducer(selectedSnapshot.rows(), selectedSnapshot.columns(), false));
     }
 
@@ -202,15 +205,18 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     protected void onAlgorithmFinished(ExecutionResult result) {
         super.onAlgorithmFinished(result);
         Object output = result.output().orElse(null);
-        if (output instanceof ArrayMazeGenerationOutput generated) {
-            algorithmResultSnapshot = snapshot(generated.maze());
-            renderViewState(completedViewState(algorithmResultSnapshot, java.util.Set.of()));
-        } else if (output instanceof GraphMazeGenerationOutput generated) {
+        if (output instanceof GridMaze generated) {
             algorithmResultSnapshot = snapshot(generated);
             renderViewState(completedViewState(algorithmResultSnapshot, java.util.Set.of()));
-        } else if (output instanceof ArrayMazePathOutput pathOutput) {
+        } else if (output instanceof GraphSnapshot<?> graphSnapshot) {
+            @SuppressWarnings("unchecked")
+            GraphSnapshot<Integer> generated = (GraphSnapshot<Integer>) graphSnapshot;
+            algorithmResultSnapshot = snapshot(size, size, generated);
+            renderViewState(completedViewState(algorithmResultSnapshot, java.util.Set.of()));
+        } else if (output instanceof List<?> pathValues) {
+            List<GridPoint> path = pathValues.stream().map(GridPoint.class::cast).toList();
             MazeSnapshot input = selectedAlgorithmSnapshot();
-            renderViewState(completedViewState(input, new java.util.LinkedHashSet<>(pathOutput.path())));
+            renderViewState(completedViewState(input, new java.util.LinkedHashSet<>(path)));
         }
         updateControlState();
         logI18n("message.execution.finished");
@@ -323,18 +329,18 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 false);
     }
 
-    private MazeSnapshot snapshot(GraphMazeGenerationOutput output) {
-        java.util.Map<Long, Integer> valuesById = output.graph().vertices().stream()
+    private MazeSnapshot snapshot(int rows, int columns, GraphSnapshot<Integer> graph) {
+        java.util.Map<Long, Integer> valuesById = graph.vertices().stream()
                 .collect(java.util.stream.Collectors.toMap(
                         com.majortom.algorithms.core.snapshot.GraphSnapshot.Vertex::id,
                         com.majortom.algorithms.core.snapshot.GraphSnapshot.Vertex::value));
-        List<MazeSnapshot.Edge> edges = output.graph().edges().stream()
+        List<MazeSnapshot.Edge> edges = graph.edges().stream()
                 .map(edge -> new MazeSnapshot.Edge(valuesById.get(edge.fromId()), valuesById.get(edge.toId())))
                 .toList();
         return new MazeSnapshot(
-                output.rows(),
-                output.columns(),
-                java.util.Collections.nCopies(output.rows() * output.columns(), true),
+                rows,
+                columns,
+                java.util.Collections.nCopies(rows * columns, true),
                 null,
                 null,
                 edges,

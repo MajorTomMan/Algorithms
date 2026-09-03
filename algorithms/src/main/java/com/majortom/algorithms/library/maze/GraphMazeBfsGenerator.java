@@ -17,18 +17,18 @@ public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
     @Override
-    public GraphMazeGenerationOutput generate(GraphMazeGenerationInput input) {
-        List<GraphSnapshot.Vertex<Integer>> vertices = vertices(input);
+    public GraphSnapshot<Integer> generate(MazeDimensions dimensions, long seed) {
+        List<GraphSnapshot.Vertex<Integer>> vertices = vertices(dimensions);
         List<GraphSnapshot.Edge> edges = new ArrayList<>();
         Set<Integer> discovered = new HashSet<>();
         ArrayDeque<Integer> queue = new ArrayDeque<>();
-        Random random = new Random(input.seed());
+        Random random = new Random(seed);
         long nextEdgeId = 1L;
         queue.add(0);
         discovered.add(0);
         while (!queue.isEmpty()) {
             int current = queue.removeFirst();
-            List<Integer> neighbors = neighbors(input, current);
+            List<Integer> neighbors = neighbors(dimensions, current);
             Collections.shuffle(neighbors, random);
             for (int neighbor : neighbors) {
                 if (!discovered.add(neighbor)) {
@@ -40,12 +40,11 @@ public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> 
                 queue.addLast(neighbor);
             }
         }
-        GraphSnapshot<Integer> graph = new GraphSnapshot<>(true, vertices, edges);
-        return new GraphMazeGenerationOutput(input.rows(), input.columns(), graph);
+        return new GraphSnapshot<>(true, vertices, edges);
     }
 
-    private List<GraphSnapshot.Vertex<Integer>> vertices(GraphMazeGenerationInput input) {
-        int cellCount = MazeDimensions.checkedCellCount(input.rows(), input.columns());
+    private List<GraphSnapshot.Vertex<Integer>> vertices(MazeDimensions dimensions) {
+        int cellCount = dimensions.cellCount();
         List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>(cellCount);
         for (int node = 0; node < cellCount; node++) {
             vertices.add(new GraphSnapshot.Vertex<>(node + 1L, node));
@@ -53,16 +52,16 @@ public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> 
         return vertices;
     }
 
-    private List<Integer> neighbors(GraphMazeGenerationInput input, int node) {
-        int row = node / input.columns();
-        int column = node % input.columns();
+    private List<Integer> neighbors(MazeDimensions dimensions, int node) {
+        int row = node / dimensions.columns();
+        int column = node % dimensions.columns();
         List<Integer> neighbors = new ArrayList<>(4);
         for (int[] direction : DIRECTIONS) {
             int nextRow = row + direction[0];
             int nextColumn = column + direction[1];
             if (nextRow >= 0 && nextColumn >= 0
-                    && nextRow < input.rows() && nextColumn < input.columns()) {
-                neighbors.add(nextRow * input.columns() + nextColumn);
+                    && nextRow < dimensions.rows() && nextColumn < dimensions.columns()) {
+                neighbors.add(nextRow * dimensions.columns() + nextColumn);
             }
         }
         return neighbors;

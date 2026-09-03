@@ -2,8 +2,6 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.library.sort.Sort;
 import com.majortom.algorithms.library.basic.Array;
-import com.majortom.algorithms.library.sort.model.IntegerSortInput;
-import com.majortom.algorithms.library.sort.model.IntegerSortOutput;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -319,14 +317,13 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmId == null) {
             return;
         }
-        IntegerSortInput input = new IntegerSortInput(values);
         @SuppressWarnings("unchecked")
         Sort<Integer> algorithm = (Sort<Integer>) module("algorithm.array.Integer." + algorithmId, Sort.class);
         Array<Integer> runtimeArray = new Array<>(values);
-        startAlgorithm(algorithmId, input, () -> {
+        startAlgorithm(algorithmId, values, () -> {
             algorithm.sort(runtimeArray);
-            return new IntegerSortOutput(sourceValues(runtimeArray));
-        }, () -> new ArrayEventReducer(input.values()));
+            return sourceValues(runtimeArray);
+        }, () -> new ArrayEventReducer(values));
     }
 
     @Override

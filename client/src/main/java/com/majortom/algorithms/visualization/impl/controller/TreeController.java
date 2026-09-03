@@ -4,9 +4,9 @@ import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.library.basic.tree.GeneralTreeNode;
 import com.majortom.algorithms.library.basic.tree.Tree;
+import com.majortom.algorithms.library.basic.tree.AVLTree;
 import com.majortom.algorithms.library.tree.TreeAlgorithm;
-import com.majortom.algorithms.library.tree.AvlTreeInput;
-import com.majortom.algorithms.library.tree.AvlTreeOutput;
+import com.majortom.algorithms.library.tree.AvlTreeCommands;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -173,13 +173,20 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (algorithmId == null) {
             return;
         }
-        AvlTreeInput input = AvlTreeInput.fromValues(values, List.of());
         @SuppressWarnings("unchecked")
-        TreeAlgorithm<Integer, AvlTreeInput, AvlTreeOutput> algorithm =
-                (TreeAlgorithm<Integer, AvlTreeInput, AvlTreeOutput>)
-                        module("algorithm.tree.Integer." + algorithmId, TreeAlgorithm.class);
-        startAlgorithm(algorithmId, input, () -> algorithm.execute(input),
-                () -> new TreeEventReducer(TreeViewState.empty(TreeViewState.Kind.BINARY)));
+        TreeAlgorithm<Integer> algorithm = (TreeAlgorithm<Integer>)
+                module("algorithm.tree.Integer." + algorithmId, TreeAlgorithm.class);
+        if (!(algorithm instanceof AvlTreeCommands avl)) {
+            throw new IllegalStateException("Unsupported tree algorithm: " + algorithm.getClass().getName());
+        }
+        startAlgorithm(algorithmId, values, () -> {
+            AVLTree<Integer> runtimeTree = new AVLTree<>();
+            for (Integer value : values) {
+                runtimeTree.insert(value);
+            }
+            avl.execute(runtimeTree, List.of());
+            return null;
+        }, () -> new TreeEventReducer(TreeViewState.empty(TreeViewState.Kind.BINARY)));
     }
 
     @Override

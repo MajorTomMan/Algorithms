@@ -24,6 +24,14 @@ client  server
 
 `core` 不依赖 `algorithms`、JavaFX、AtlantaFX 或 Spring。`core` 只定义跨模块 SPI/Contract；例如 `ModuleDiscovery` 在 core，真正认识 `Sort/TreeAlgorithm/GraphTraversal` 的 `AlgorithmModuleDiscovery` 在 algorithms。
 
+Registry 的 `ValueType` 只描述算法所属的数据值类型，允许值固定为：
+
+```text
+Integer / Long / Double / Float / Boolean / Character / Byte / Short / String
+```
+
+`ValueType` 不表示整个算法输入类型。
+
 ## Canonical Structure
 
 `algorithms/src/main/java` 当前正式基础结构：
@@ -57,7 +65,7 @@ HashTable **没有 production registration**，Workbench 不把“只有 Contrac
 当前 V2 正式完成：
 
 ```text
-TreeNode<T>                 -> 仅所有 Tree 共有的 value
+TreeNode<T>                 -> 仅所有 Tree 共有的 id / value
 GeneralTreeNode<T>          -> ordered children
 BinaryTreeNode<T>           -> left / right
 AVLTreeNode<T>              -> height / subtree metrics
@@ -110,7 +118,21 @@ Logging     LogEvent
 
 Compare / Pivot / Visit / KMP Fallback 等算法意图不再作为 Structure truth source。
 
-## Registry 与 Algorithm auto-discovery
+## Algorithm I/O / Registry / auto-discovery
+
+`algorithms` 不维护为了框架统一而存在的 `AlgorithmInput / AlgorithmOutput / XxxInput / XxxOutput`。Java 方法签名本身就是算法 I/O Contract。当前正式算法 API：
+
+```java
+void Sort<T>.sort(ArrayStructure<T> array);
+List<T> GraphTraversal<T>.traverse(GraphStructure<T> graph, T startNode);
+List<Integer> StringSearch.search(StringStructure target, java.lang.String pattern);
+void AvlTreeCommands.execute(AVLTree<Integer> tree, List<AvlCommand> commands);
+GridMaze ArrayMazeGenerator.generate(MazeDimensions dimensions, long seed);
+List<GridPoint> ArrayMazePathfinder.findPath(GridMaze maze, GridPoint start, GridPoint goal);
+GraphSnapshot<T> GraphMazeGenerator<T>.generate(MazeDimensions dimensions, long seed);
+```
+
+`GridMaze`、`GridPoint`、`MazeDimensions`、Structure 与 Snapshot 是有独立领域/边界语义的对象，不属于 I/O wrapper。
 
 显式实现可继续通过：
 
@@ -181,6 +203,20 @@ Server 与 Client 共用 `ModuleRegistry + ExecutionRuntime + algorithms`，但�
 
 HTTP DTO 只属于 server 边界；进入 algorithms 后使用真实领域 Structure / 参数对象。
 
+```text
+HTTP JSON
+    ↓
+Server Request DTO
+    ↓
+Structure / 普通 Java 参数
+    ↓
+Algorithm
+    ↓
+真实 Java 返回值
+```
+
+Server 可以把返回值转换为 HTTP 表达，但不会要求 `algorithms` 再维护一套 Input/Output。`ExecutionRequest`、`core.runtime.ExecutionResult` 与 `core.snapshot.*` 保留各自边界职责。
+
 ## `other` 模块
 
 `other` 仅保存练习、历史代码和第三方教材示例，不属于 canonical family。生产源码中已经删除的旧重复实现不会为了让 `other` 编译而加回 compatibility layer；示例应迁移到当前 API，或在 `other` 内自包含。直接依赖 Princeton `algs4.jar` 的教材专项示例保留在 `other/examples/princeton/`，不进入默认 Maven reactor compile。
@@ -197,10 +233,10 @@ HTTP DTO 只属于 server 边界；进入 algorithms 后使用真实领域 Struc
 
 ## 验证
 
-完整 reactor：
+当前工程不保留测试源码；Final Closure 使用完整 production reactor clean compile 与运行级 smoke 验证：
 
 ```bash
-mvn clean test
+mvn -pl client,server -am clean compile
 ```
 
 Closure 还需要验证：

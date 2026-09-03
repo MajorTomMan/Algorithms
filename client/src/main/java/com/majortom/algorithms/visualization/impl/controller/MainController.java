@@ -69,8 +69,7 @@ public class MainController implements Initializable {
     private static final double NARROW_LAYOUT_WIDTH = 980.0d;
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
-    private static final List<String> OFFICIAL_VALUE_TYPES = List.of(
-            "Integer", "Long", "Double", "Float", "Boolean", "Character", "Byte", "Short", "String");
+    private static final List<String> OFFICIAL_VALUE_TYPES = ModuleRegistry.valueTypes();
     private static final List<Integer> UI_FONT_SCALES = List.of(90, 100, 110, 125, 140);
     private static final int DEFAULT_UI_FONT_SCALE = 125;
     private static final double BASE_UI_FONT_SIZE = 13.0d;

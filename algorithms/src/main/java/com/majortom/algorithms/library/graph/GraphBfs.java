@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class GraphBfs implements GraphTraversal<Integer, GraphBfsOutput> {
+public final class GraphBfs implements GraphTraversal<Integer> {
     @Override
-    public GraphBfsOutput traverse(GraphStructure<Integer> graph, Integer startNode) {
+    public List<Integer> traverse(GraphStructure<Integer> graph, Integer startNode) {
         Objects.requireNonNull(graph, "graph");
         Vertex<Integer> startVertex = vertex(graph, startNode);
         if (startVertex == null) {
@@ -24,7 +24,6 @@ public final class GraphBfs implements GraphTraversal<Integer, GraphBfsOutput> {
         ArrayDeque<Vertex<Integer>> queue = new ArrayDeque<>();
         Set<Vertex<Integer>> discovered = new HashSet<>();
         List<Integer> order = new ArrayList<>();
-        List<GraphBfsOutput.DiscoveryEdge> discoveryEdges = new ArrayList<>();
         queue.add(startVertex);
         discovered.add(startVertex);
         while (!queue.isEmpty()) {
@@ -34,12 +33,11 @@ public final class GraphBfs implements GraphTraversal<Integer, GraphBfsOutput> {
             for (Vertex<Integer> neighbor : graph.neighbors(node)) {
                 ExecutionEvents.checkpoint();
                 if (discovered.add(neighbor)) {
-                    discoveryEdges.add(new GraphBfsOutput.DiscoveryEdge(node.value(), neighbor.value()));
                     queue.addLast(neighbor);
                 }
             }
         }
-        return new GraphBfsOutput(order, discoveryEdges);
+        return List.copyOf(order);
     }
 
     public static GraphSnapshot<Integer> snapshot(GraphStructure<Integer> graph) {
