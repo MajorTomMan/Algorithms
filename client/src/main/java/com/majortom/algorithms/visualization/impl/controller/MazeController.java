@@ -31,14 +31,20 @@ import javafx.scene.control.Slider;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public final class MazeController extends BaseModuleController<MazeViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<MazeSnapshot>, SnapshotAlgorithmInputSupport<MazeSnapshot> {
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<MazeSnapshot>,
+        SnapshotAlgorithmInputSupport<MazeSnapshot> {
 
-    private enum Structure { ARRAY, GRAPH }
+    private enum Structure {
+        ARRAY, GRAPH
+    }
 
-    private enum Operation { GENERATE, SOLVE }
+    private enum Operation {
+        GENERATE, SOLVE
+    }
 
     private final List<String> arrayGenerators = AlgorithmCatalog.arrayMazeGenerators();
     private final List<String> graphGenerators = AlgorithmCatalog.graphMazeGenerators();
@@ -55,23 +61,40 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private boolean solving;
     private Operation selectedOperation = Operation.GENERATE;
 
-    @FXML private ComboBox<String> structureSelector;
-    @FXML private ComboBox<String> generatorSelector;
-    @FXML private ComboBox<String> pathfinderSelector;
-    @FXML private Label structureTitleLabel;
-    @FXML private Label generatorTitleLabel;
-    @FXML private Label pathfinderTitleLabel;
-    @FXML private Label sizeSectionLabel;
-    @FXML private Label operationsSectionLabel;
-    @FXML private Label sizeLabel;
-    @FXML private Label sizeValueLabel;
-    @FXML private Label operationHintLabel;
-    @FXML private Slider sizeSlider;
-    @FXML private Button buildBtn;
-    @FXML private Button solveBtn;
-    @FXML private Button applySizeBtn;
-    @FXML private Button applyResultBtn;
-    @FXML private Button resetMazeBtn;
+    @FXML
+    private ComboBox<String> structureSelector;
+    @FXML
+    private ComboBox<String> generatorSelector;
+    @FXML
+    private ComboBox<String> pathfinderSelector;
+    @FXML
+    private Label structureTitleLabel;
+    @FXML
+    private Label generatorTitleLabel;
+    @FXML
+    private Label pathfinderTitleLabel;
+    @FXML
+    private Label sizeSectionLabel;
+    @FXML
+    private Label operationsSectionLabel;
+    @FXML
+    private Label sizeLabel;
+    @FXML
+    private Label sizeValueLabel;
+    @FXML
+    private Label operationHintLabel;
+    @FXML
+    private Slider sizeSlider;
+    @FXML
+    private Button buildBtn;
+    @FXML
+    private Button solveBtn;
+    @FXML
+    private Button applySizeBtn;
+    @FXML
+    private Button applyResultBtn;
+    @FXML
+    private Button resetMazeBtn;
 
     public MazeController() {
         super(new MazeVisualizer(), "/fxml/MazeControls.fxml");
@@ -137,8 +160,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             MazeDimensions dimensions = new MazeDimensions(size, size);
             long seed = System.nanoTime();
             @SuppressWarnings("unchecked")
-            GraphMazeGenerator<Integer> algorithm = (GraphMazeGenerator<Integer>)
-                    module("algorithm.graph.Integer." + id, GraphMazeGenerator.class);
+            GraphMazeGenerator<Integer> algorithm = (GraphMazeGenerator<Integer>) module(
+                    "algorithm.graph.Integer." + id, GraphMazeGenerator.class);
             startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
                     () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, true));
         } else {
@@ -347,7 +370,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 true);
     }
 
-    private MazeViewState completedViewState(MazeSnapshot snapshot, java.util.Set<com.majortom.algorithms.library.maze.GridPoint> path) {
+    private MazeViewState completedViewState(MazeSnapshot snapshot,
+            java.util.Set<com.majortom.algorithms.library.maze.GridPoint> path) {
         MazeViewState state = MazeViewState.source(snapshot);
         return new MazeViewState(
                 state.rows(),
@@ -367,16 +391,19 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                     cell(generatedMaze.entrance()), cell(generatedMaze.exit()), List.of(), false);
         }
         MazeViewState latest = latestStructureState();
-        if (latest == null) latest = MazeViewState.empty(size, size, structure == Structure.GRAPH);
+        if (latest == null)
+            latest = MazeViewState.empty(size, size, structure == Structure.GRAPH);
         return new MazeSnapshot(latest.rows(), latest.columns(), latest.openCells(),
                 cell(latest.entrance()), cell(latest.exit()), latest.graphEdges().stream()
-                .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), latest.graphBased());
+                        .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(),
+                latest.graphBased());
     }
 
     private MazeSnapshot snapshotFromView(MazeViewState state) {
         return new MazeSnapshot(state.rows(), state.columns(), state.openCells(),
                 cell(state.entrance()), cell(state.exit()), state.graphEdges().stream()
-                .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), state.graphBased());
+                        .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(),
+                state.graphBased());
     }
 
     private MazeSnapshot selectedAlgorithmSnapshot() {
@@ -433,22 +460,32 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     protected void setupI18n() {
-        if (structureTitleLabel != null) structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
-        if (generatorTitleLabel != null) generatorTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.generator"));
-        if (pathfinderTitleLabel != null) pathfinderTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.solver"));
-        if (sizeSectionLabel != null) sizeSectionLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
-        if (sizeLabel != null) sizeLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
+        if (structureTitleLabel != null)
+            structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
+        if (generatorTitleLabel != null)
+            generatorTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.generator"));
+        if (pathfinderTitleLabel != null)
+            pathfinderTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.solver"));
+        if (sizeSectionLabel != null)
+            sizeSectionLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
+        if (sizeLabel != null)
+            sizeLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));
         if (operationsSectionLabel != null) {
             operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
         }
         if (operationHintLabel != null) {
             operationHintLabel.textProperty().bind(I18N.createStringBinding("label.maze.operation_hint"));
         }
-        if (buildBtn != null) buildBtn.textProperty().bind(I18N.createStringBinding("action.maze.build"));
-        if (solveBtn != null) solveBtn.textProperty().bind(I18N.createStringBinding("action.maze.solve"));
-        if (applySizeBtn != null) applySizeBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_size"));
-        if (applyResultBtn != null) applyResultBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_result"));
-        if (resetMazeBtn != null) resetMazeBtn.textProperty().bind(I18N.createStringBinding("action.maze.reset"));
+        if (buildBtn != null)
+            buildBtn.textProperty().bind(I18N.createStringBinding("action.maze.build"));
+        if (solveBtn != null)
+            solveBtn.textProperty().bind(I18N.createStringBinding("action.maze.solve"));
+        if (applySizeBtn != null)
+            applySizeBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_size"));
+        if (applyResultBtn != null)
+            applyResultBtn.textProperty().bind(I18N.createStringBinding("action.maze.apply_result"));
+        if (resetMazeBtn != null)
+            resetMazeBtn.textProperty().bind(I18N.createStringBinding("action.maze.reset"));
     }
 
     @Override
@@ -508,8 +545,10 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private void selectFirstAlgorithms() {
-        if (!generatorSelector.getItems().isEmpty()) generatorSelector.getSelectionModel().selectFirst();
-        if (!pathfinderSelector.getItems().isEmpty()) pathfinderSelector.getSelectionModel().selectFirst();
+        if (!generatorSelector.getItems().isEmpty())
+            generatorSelector.getSelectionModel().selectFirst();
+        if (!pathfinderSelector.getItems().isEmpty())
+            pathfinderSelector.getSelectionModel().selectFirst();
         selectedOperation = Operation.GENERATE;
     }
 
@@ -521,7 +560,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             return ids.getFirst();
         }
         int index = comboBox.getSelectionModel().getSelectedIndex();
-        if (index < 0 || index >= ids.size()) index = 0;
+        if (index < 0 || index >= ids.size())
+            index = 0;
         return ids.get(index);
     }
 
@@ -549,7 +589,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private int normalizeOdd(int value) {
-        if (value % 2 == 0) return value + 1;
+        if (value % 2 == 0)
+            return value + 1;
         return value;
     }
 }

@@ -10,7 +10,7 @@ package com.majortom.algorithms.app.leetcode.ds.tree;
 import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.structure.QueueStructure;
 import com.majortom.algorithms.library.basic.tree.BinaryTreeNode;
-import com.majortom.algorithms.library.basic.AlgorithmsUtils;
+import com.majortom.algorithms.library.utils.AlgorithmsUtils;
 
 public class 对称二叉树{
     public static void main(String[] args) {

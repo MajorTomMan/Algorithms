@@ -1,4 +1,4 @@
-package com.majortom.algorithms.library.basic;
+package com.majortom.algorithms.library.utils;
 
 import java.util.*;
 import com.majortom.algorithms.library.basic.node.ListNode;
@@ -25,11 +25,7 @@ public abstract class AlgorithmsUtils {
         public SimpleBinaryNode(T data) {
             super(data);
         }
-
-        @Override
-        public long getId() {
-            return id;
-        }
+        
     }
 
     // --- 数组工具 ---
