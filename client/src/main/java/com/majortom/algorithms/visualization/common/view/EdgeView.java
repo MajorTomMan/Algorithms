@@ -14,6 +14,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.QuadCurveTo;
 
+import java.util.List;
 import java.util.Objects;
 
 /** Edge primitive with boundary attachment, straight/curved/self-loop paths and optional arrow. */
@@ -28,6 +29,7 @@ public final class EdgeView extends Group {
     private final BooleanProperty curved = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
     private final InvalidationListener geometryListener = observable -> updateGeometry();
+    private List<Point2D> route = List.of();
 
     public EdgeView(NodeView source, NodeView target, boolean directed) {
         this.source = Objects.requireNonNull(source, "source");
@@ -106,7 +108,30 @@ public final class EdgeView extends Group {
         return path;
     }
 
+    /** Applies presentation-only route geometry, typically produced by ELK. */
+    public void setRoute(List<Point2D> points) {
+        route = List.copyOf(Objects.requireNonNull(points, "points"));
+        updateGeometry();
+    }
+
+    /** Restores project-owned dynamic source/target attachment while nodes are moving. */
+    public void clearRoute() {
+        if (route.isEmpty()) {
+            return;
+        }
+        route = List.of();
+        updateGeometry();
+    }
+
+    public boolean hasRoute() {
+        return !route.isEmpty();
+    }
+
     private void updateGeometry() {
+        if (route.size() >= 2) {
+            updateRoutedGeometry();
+            return;
+        }
         path.getElements().clear();
         Point2D sourceCenter = source.center();
         Point2D targetCenter = target.center();
@@ -135,6 +160,19 @@ public final class EdgeView extends Group {
             path.getElements().add(new LineTo(end.getX(), end.getY()));
             tangent = end.subtract(start);
         }
+        updateArrow(end, tangent);
+    }
+
+    private void updateRoutedGeometry() {
+        path.getElements().clear();
+        Point2D start = route.getFirst();
+        path.getElements().add(new MoveTo(start.getX(), start.getY()));
+        for (int index = 1; index < route.size(); index++) {
+            Point2D point = route.get(index);
+            path.getElements().add(new LineTo(point.getX(), point.getY()));
+        }
+        Point2D end = route.getLast();
+        Point2D tangent = end.subtract(route.get(route.size() - 2));
         updateArrow(end, tangent);
     }
 

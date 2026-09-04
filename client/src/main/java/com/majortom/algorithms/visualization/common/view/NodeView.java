@@ -10,6 +10,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Circle;
@@ -62,6 +63,11 @@ public final class NodeView extends StackPane {
 
     public void setText(String text) {
         label.setText(text == null ? "" : text);
+    }
+
+    /** Current CSS-resolved label bounds for family-specific size measurement. */
+    public Bounds labelBounds() {
+        return label.getLayoutBounds();
     }
 
     public double getCenterX() {

@@ -1456,10 +1456,6 @@
 }
 
 /* ---------- project-owned JavaFX visualization primitives ---------- */
-.visual-viewport {
-    -fx-background-color: #050508;
-}
-
 .visual-node-shape {
     -fx-fill: #20262c;
     -fx-stroke: #70757a;
@@ -1526,7 +1522,14 @@
     -fx-font-weight: bold;
 }
 
-.array-cell-body,
+.array-cell-body {
+    -fx-background-color: #20262c;
+    -fx-border-color: #70757a;
+    -fx-border-width: 2px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+}
+
 .string-cell-body {
     -fx-fill: #20262c;
     -fx-stroke: #70757a;
@@ -1548,13 +1551,18 @@
     -fx-font-size: 0.77em;
 }
 
-.array-cell:highlighted .array-cell-body,
-.string-cell:highlighted .string-cell-body {
-    -fx-stroke: #ffd700;
-    -fx-stroke-width: 3px;
+.array-cell:highlighted .array-cell-body {
+    -fx-border-color: #ffd700;
 }
 
-.array-cell:completed .array-cell-body,
+.string-cell:highlighted .string-cell-body {
+    -fx-stroke: #ffd700;
+}
+
+.array-cell:completed .array-cell-body {
+    -fx-border-color: #00a2ff;
+}
+
 .string-cell:completed .string-cell-body {
     -fx-stroke: #00a2ff;
 }
@@ -1644,4 +1652,42 @@
     -fx-fill: #d8dde1;
     -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
     -fx-font-size: 0.92em;
+}
+
+/* ---------- shared GestureFX visualization surface ---------- */
+.visualization-surface,
+.visualization-gesture-pane {
+    -fx-background-color: #050508;
+}
+
+.visualization-surface {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.visualization-gesture-pane {
+    -fx-padding: 0;
+}
+
+.viewport-toolbar {
+    -fx-padding: 8px;
+    -fx-background-color: rgba(14, 17, 22, 0.88);
+    -fx-background-radius: 8px;
+    -fx-border-color: rgba(112, 117, 122, 0.42);
+    -fx-border-radius: 8px;
+    -fx-translate-x: -10px;
+    -fx-translate-y: 10px;
+}
+
+.viewport-toolbar-button {
+    -fx-min-width: 32px;
+    -fx-min-height: 28px;
+    -fx-padding: 4px 8px;
+    -fx-font-size: 0.82em;
+}
+
+.viewport-zoom-label {
+    -fx-text-fill: #f0f0e6;
+    -fx-font-size: 0.78em;
+    -fx-font-weight: bold;
 }

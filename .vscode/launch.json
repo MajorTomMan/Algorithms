@@ -3,9 +3,9 @@
   "configurations": [
     {
       "type": "java",
-      "name": "LauncherMain",
+      "name": "Algorithms App",
       "request": "launch",
-      "mainClass": "LauncherMain",
+      "mainClass": "com.majortom.algorithms.App",
       "projectName": "algorithms-client"
     },
     {
@@ -24,9 +24,9 @@
     },
     {
       "type": "java",
-      "name": "LauncherMain",
+      "name": "Algorithms App",
       "request": "launch",
-      "mainClass": "com.majortom.algorithms.launcher.LauncherMain",
+      "mainClass": "com.majortom.algorithms.App",
       "projectName": "algorithms-client"
     },
     {

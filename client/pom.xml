@@ -62,6 +62,26 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>net.kurobako</groupId>
+            <artifactId>gesturefx</artifactId>
+            <version>${gesturefx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.elk</groupId>
+            <artifactId>org.eclipse.elk.alg.layered</artifactId>
+            <version>${elk.version}</version>
+        </dependency>
+
+        <!-- ELK 0.12.0 requires this OSGi bundle at runtime but its Maven POM omits it. -->
+        <dependency>
+            <groupId>org.eclipse.xtext</groupId>
+            <artifactId>org.eclipse.xtext.xbase.lib</artifactId>
+            <version>${xtext.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

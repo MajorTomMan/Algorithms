@@ -25,7 +25,6 @@ public abstract class AlgorithmsUtils {
         public SimpleBinaryNode(T data) {
             super(data);
         }
-        
     }
 
     // --- 数组工具 ---

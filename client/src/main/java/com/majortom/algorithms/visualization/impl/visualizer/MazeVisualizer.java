@@ -3,17 +3,29 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import com.majortom.algorithms.library.maze.GridPoint;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.runtime.maze.MazeCellType;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import javafx.scene.paint.Color;
 
-/** Canvas maze renderer driven only by factual maze state. */
+/** Project-owned Canvas/Grid maze renderer hosted by the shared GestureFX visualization surface. */
 public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
+    private final VisualizationSurface surface = new VisualizationSurface();
+
+    public MazeVisualizer() {
+        getChildren().setAll(surface);
+        surface.prefWidthProperty().bind(widthProperty());
+        surface.prefHeightProperty().bind(heightProperty());
+        surface.nodeLayer().getChildren().add(canvas);
+        surface.markViewportPristine();
+    }
+
     @Override
     protected void draw(MazeViewState state) {
         clear();
         if (state.rows() < 1 || state.columns() < 1
                 || state.openCells().size() < state.rows() * state.columns()) {
+            surface.fitIfPristine();
             return;
         }
         double cellWidth = canvas.getWidth() / state.columns();
@@ -22,6 +34,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         if (state.graphBased()) {
             drawGraphEdges(state, cellWidth, cellHeight);
         }
+        surface.fitIfPristine();
     }
 
     private void drawTerrain(MazeViewState state, double cellWidth, double cellHeight) {
@@ -131,5 +144,19 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
                     (toRow + 0.5d) * cellHeight);
         }
         gc.restore();
+    }
+
+    @Override
+    public void onVisualizationReset() {
+        clear();
+        surface.reset();
+        surface.markViewportPristine();
+    }
+
+    @Override
+    public void dispose() {
+        surface.prefWidthProperty().unbind();
+        surface.prefHeightProperty().unbind();
+        super.dispose();
     }
 }

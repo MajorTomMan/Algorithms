@@ -2,11 +2,18 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.AnimationCoordinator;
-import com.majortom.algorithms.visualization.common.ViewportPane;
+import com.majortom.algorithms.visualization.common.VisualizationSurface;
+import com.majortom.algorithms.visualization.common.layout.ElementBounds;
+import com.majortom.algorithms.visualization.common.layout.LayoutResult;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout.ElementSize;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
+import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.geometry.Bounds;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
@@ -14,26 +21,38 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** Pure JavaFX String renderer using a deterministic horizontal character layout. */
+/** String renderer using measured JavaFX cells, transient ELK layout and GestureFX viewport. */
 public final class StringVisualizer extends BaseVisualizer<StringViewState> {
-    private static final double START_X = 36.0d;
-    private static final double START_Y = 64.0d;
-    private static final double CELL_STEP = 58.0d;
+    private static final double EMPTY_X = 36.0d;
+    private static final double EMPTY_Y = 64.0d;
     private static final Duration APPEAR_DURATION = Duration.millis(150.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(120.0d);
 
-    private final ViewportPane viewport = new ViewportPane();
+    private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
+    private final StringElkLayout layout = new StringElkLayout();
+    private final ExecutorService layoutExecutor = Executors.newSingleThreadExecutor(task -> {
+        Thread thread = new Thread(task, "string-elk-layout");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Integer, StringCellView> cells = new LinkedHashMap<>();
     private final Text emptyLabel = new Text("EMPTY STRING");
+    private final InvalidationListener elementSizeListener = observable -> requestRender();
+
+    private List<ElementSize> lastLayoutInput = List.of();
     private Animation activeAnimation;
     private boolean firstRender = true;
 
     public StringVisualizer() {
-        getChildren().setAll(viewport);
-        viewport.prefWidthProperty().bind(widthProperty());
-        viewport.prefHeightProperty().bind(heightProperty());
+        getChildren().setAll(surface);
+        surface.prefWidthProperty().bind(widthProperty());
+        surface.prefHeightProperty().bind(heightProperty());
         emptyLabel.getStyleClass().add("visual-empty-label");
     }
 
@@ -43,32 +62,37 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         List<Animation> transitions = new ArrayList<>();
         String value = state.value();
 
+        if (firstRender) {
+            surface.markViewportPristine();
+        }
         if (value.isEmpty()) {
+            invalidateLayout();
             clearCells(transitions);
-            if (!viewport.content().getChildren().contains(emptyLabel)) {
-                emptyLabel.relocate(START_X, START_Y);
-                viewport.content().getChildren().add(emptyLabel);
+            if (!surface.decorationLayer().getChildren().contains(emptyLabel)) {
+                emptyLabel.relocate(EMPTY_X, EMPTY_Y);
+                surface.decorationLayer().getChildren().add(emptyLabel);
             }
             play(transitions);
+            surface.fitIfPristine();
             firstRender = false;
             return;
         }
-        viewport.content().getChildren().remove(emptyLabel);
+        surface.decorationLayer().getChildren().remove(emptyLabel);
 
         for (int index = 0; index < value.length(); index++) {
             StringCellView cell = cells.get(index);
             boolean added = false;
             if (cell == null) {
                 cell = new StringCellView(index, value.charAt(index));
+                cell.layoutBoundsProperty().addListener(elementSizeListener);
                 cells.put(index, cell);
-                viewport.content().getChildren().add(cell);
+                surface.nodeLayer().getChildren().add(cell);
                 added = true;
             }
             cell.setIndex(index);
             cell.setValue(value.charAt(index));
             cell.setHighlighted(isMutationIndex(state.mutation(), index));
             cell.setCompleted(state.completed());
-            cell.relocate(START_X + index * CELL_STEP, START_Y);
             if (added && !firstRender) {
                 transitions.add(animations.together(
                         animations.fadeIn(cell, APPEAR_DURATION),
@@ -79,21 +103,70 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         List<Integer> removed = cells.keySet().stream().filter(index -> index >= value.length()).toList();
         for (Integer index : removed) {
             StringCellView cell = cells.remove(index);
+            cell.layoutBoundsProperty().removeListener(elementSizeListener);
             if (firstRender) {
-                viewport.content().getChildren().remove(cell);
+                surface.nodeLayer().getChildren().remove(cell);
             } else {
                 Animation fade = animations.fadeOut(cell, DISAPPEAR_DURATION);
-                fade.setOnFinished(event -> viewport.content().getChildren().remove(cell));
+                fade.setOnFinished(event -> surface.nodeLayer().getChildren().remove(cell));
                 transitions.add(fade);
             }
         }
 
-        if (firstRender) {
-            firstRender = false;
-            viewport.fitToViewport();
-            return;
+        List<ElementSize> measured = measureElements(value.length());
+        if (!measured.equals(lastLayoutInput)) {
+            lastLayoutInput = measured;
+            scheduleLayout(measured);
         }
         play(transitions);
+        firstRender = false;
+    }
+
+    private List<ElementSize> measureElements(int size) {
+        List<ElementSize> measured = new ArrayList<>(size);
+        for (int index = 0; index < size; index++) {
+            StringCellView cell = cells.get(index);
+            cell.applyCss();
+            cell.autosize();
+            Bounds bounds = cell.getLayoutBounds();
+            double width = positive(bounds.getWidth(), cell.prefWidth(-1.0d));
+            double height = positive(bounds.getHeight(), cell.prefHeight(-1.0d));
+            measured.add(new ElementSize(id(index), quantize(width), quantize(height)));
+        }
+        return List.copyOf(measured);
+    }
+
+    private void scheduleLayout(List<ElementSize> input) {
+        long version = layoutVersion.incrementAndGet();
+        layoutExecutor.execute(() -> {
+            try {
+                LayoutResult result = layout.layout(input);
+                Platform.runLater(() -> applyLayout(version, result));
+            } catch (Throwable failure) {
+                Platform.runLater(() -> handleLayoutFailure(version, failure));
+            }
+        });
+    }
+
+    private void applyLayout(long version, LayoutResult result) {
+        if (isDisposed() || version != layoutVersion.get()) {
+            return;
+        }
+        for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
+            ElementBounds bounds = result.elements().get(id(entry.getKey()));
+            if (bounds != null) {
+                entry.getValue().relocate(bounds.x(), bounds.y());
+            }
+        }
+        surface.fitIfPristine();
+    }
+
+    private void handleLayoutFailure(long version, Throwable failure) {
+        if (isDisposed() || version != layoutVersion.get()) {
+            return;
+        }
+        lastLayoutInput = List.of();
+        throw new IllegalStateException("String ELK layout failed", failure);
     }
 
     private boolean isMutationIndex(StringViewState.Mutation mutation, int index) {
@@ -106,16 +179,23 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
     private void clearCells(List<Animation> transitions) {
         if (firstRender) {
+            cells.values().forEach(cell -> cell.layoutBoundsProperty().removeListener(elementSizeListener));
             cells.clear();
-            viewport.content().getChildren().clear();
+            surface.nodeLayer().getChildren().clear();
             return;
         }
         for (StringCellView cell : cells.values()) {
+            cell.layoutBoundsProperty().removeListener(elementSizeListener);
             Animation fade = animations.fadeOut(cell, DISAPPEAR_DURATION);
-            fade.setOnFinished(event -> viewport.content().getChildren().remove(cell));
+            fade.setOnFinished(event -> surface.nodeLayer().getChildren().remove(cell));
             transitions.add(fade);
         }
         cells.clear();
+    }
+
+    private void invalidateLayout() {
+        layoutVersion.incrementAndGet();
+        lastLayoutInput = List.of();
     }
 
     private void play(List<Animation> transitions) {
@@ -148,17 +228,39 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     @Override
     public void onVisualizationReset() {
         stopActiveAnimation();
+        invalidateLayout();
+        cells.values().forEach(cell -> cell.layoutBoundsProperty().removeListener(elementSizeListener));
         cells.clear();
-        viewport.content().getChildren().clear();
+        surface.nodeLayer().getChildren().clear();
+        surface.decorationLayer().getChildren().clear();
         firstRender = true;
-        viewport.reset();
+        surface.reset();
+        surface.markViewportPristine();
     }
 
     @Override
     public void dispose() {
         stopActiveAnimation();
-        viewport.prefWidthProperty().unbind();
-        viewport.prefHeightProperty().unbind();
+        invalidateLayout();
+        cells.values().forEach(cell -> cell.layoutBoundsProperty().removeListener(elementSizeListener));
+        layoutExecutor.shutdownNow();
+        surface.prefWidthProperty().unbind();
+        surface.prefHeightProperty().unbind();
         super.dispose();
+    }
+
+    private static String id(int index) {
+        return "string:" + index;
+    }
+
+    private static double positive(double actual, double fallback) {
+        if (actual > 0.0d) {
+            return actual;
+        }
+        return fallback > 0.0d ? fallback : 1.0d;
+    }
+
+    private static double quantize(double value) {
+        return Math.rint(value * 100.0d) / 100.0d;
     }
 }

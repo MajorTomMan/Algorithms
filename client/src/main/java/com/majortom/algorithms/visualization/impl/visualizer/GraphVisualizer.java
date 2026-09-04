@@ -2,73 +2,108 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.AnimationCoordinator;
-import com.majortom.algorithms.visualization.common.ViewportPane;
+import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
+import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
+import com.majortom.algorithms.visualization.common.layout.ElementBounds;
+import com.majortom.algorithms.visualization.common.layout.LayoutResult;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
-import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout.LayoutRequest;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout.Link;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout.NodeSize;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
+import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
-import javafx.scene.Node;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** Pure JavaFX graph renderer using deterministic project-owned layout. */
+/** Graph renderer using measured JavaFX nodes, transient ELK Layered routes and GestureFX viewport. */
 public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
-    private static final CircleGeometry NODE_GEOMETRY = new CircleGeometry(27.0d);
+    private static final double MIN_RADIUS = 27.0d;
+    private static final double LABEL_PADDING = 24.0d;
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
 
-    private final ViewportPane viewport = new ViewportPane();
+    private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
-    private final GraphLayout layout = new GraphLayout();
+    private final GraphElkLayout layout = new GraphElkLayout();
+    private final ExecutorService layoutExecutor = Executors.newSingleThreadExecutor(task -> {
+        Thread thread = new Thread(task, "graph-elk-layout");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
-    private GraphViewState renderedState = new GraphViewState(false, List.of(), List.of(), false);
+    private boolean measuringElements;
+    private final InvalidationListener elementSizeListener = observable -> {
+        if (!measuringElements) {
+            requestRender();
+        }
+    };
+
+    private GraphViewState renderedState = emptyState();
+    private LayoutRequest lastLayoutInput = LayoutRequest.empty();
     private Animation activeAnimation;
+    private List<Animation> pendingTransitions = List.of();
+    private Set<Long> pendingNewNodeIds = Set.of();
+    private long pendingVersion = -1L;
     private boolean firstRender = true;
+    private boolean hasAppliedLayout;
 
     public GraphVisualizer() {
-        getChildren().setAll(viewport);
-        viewport.prefWidthProperty().bind(widthProperty());
-        viewport.prefHeightProperty().bind(heightProperty());
+        getChildren().setAll(surface);
+        surface.prefWidthProperty().bind(widthProperty());
+        surface.prefHeightProperty().bind(heightProperty());
     }
 
     @Override
     protected void draw(GraphViewState state) {
         stopActiveAnimation();
-        Map<Long, Point2D> positions = layout.layout(state).positions();
+        cleanupDetachedViews();
         List<Animation> transitions = new ArrayList<>();
+        Set<Long> newNodeIds = new HashSet<>();
 
+        if (firstRender) {
+            surface.markViewportPristine();
+        }
+
+        Map<Long, GraphViewState.Node> previousNodes = renderedState.nodesById();
         for (GraphViewState.Node node : state.nodes()) {
-            Point2D target = positions.get(node.id());
-            if (target == null) {
-                continue;
-            }
             NodeView view = nodeViews.get(node.id());
             if (view == null) {
-                view = new NodeView(NODE_GEOMETRY, Integer.toString(node.value()));
-                view.setCenter(target.getX(), target.getY());
+                view = new NodeView(new CircleGeometry(MIN_RADIUS), Integer.toString(node.value()));
+                view.layoutBoundsProperty().addListener(elementSizeListener);
                 nodeViews.put(node.id(), view);
-                viewport.content().getChildren().add(view);
+                surface.nodeLayer().getChildren().add(view);
+                newNodeIds.add(node.id());
                 if (!firstRender) {
                     transitions.add(animations.together(
                             animations.fadeIn(view, APPEAR_DURATION),
                             animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
+                GraphViewState.Node previous = previousNodes.get(node.id());
                 view.setText(Integer.toString(node.value()));
-                if (firstRender) {
-                    view.setCenter(target.getX(), target.getY());
-                } else if (!view.center().equals(target)) {
-                    transitions.add(animations.move(view, target, MOVE_DURATION));
+                if (previous != null && previous.value() != node.value()) {
+                    view.setHighlighted(true);
                 }
             }
             view.setHighlighted(state.completed());
@@ -76,33 +111,161 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
         syncEdges(state, transitions);
 
-        List<Long> removedNodes = nodeViews.keySet().stream()
-                .filter(id -> state.nodes().stream().noneMatch(node -> node.id() == id))
+        Set<Long> currentNodeIds = state.nodes().stream().map(GraphViewState.Node::id)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Long> removedIds = nodeViews.keySet().stream()
+                .filter(id -> !currentNodeIds.contains(id))
                 .toList();
-        for (Long nodeId : removedNodes) {
-            NodeView view = nodeViews.get(nodeId);
+        for (Long nodeId : removedIds) {
+            NodeView view = nodeViews.remove(nodeId);
+            view.layoutBoundsProperty().removeListener(elementSizeListener);
             if (firstRender) {
-                removeNode(nodeId);
-                continue;
+                surface.nodeLayer().getChildren().remove(view);
+            } else {
+                Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
+                fade.setOnFinished(event -> surface.nodeLayer().getChildren().remove(view));
+                transitions.add(fade);
             }
-            Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
-            fade.setOnFinished(event -> removeNode(nodeId));
-            transitions.add(fade);
         }
 
-        reorderLayers();
+        LayoutRequest request = buildLayoutInput(state);
+        boolean layoutChanged = !request.equals(lastLayoutInput);
+        if (layoutChanged) {
+            lastLayoutInput = request;
+            clearCurrentRoutes();
+            if (request.nodes().isEmpty()) {
+                invalidateLayout();
+                pendingTransitions = List.of();
+                pendingNewNodeIds = Set.of();
+                pendingVersion = -1L;
+                hasAppliedLayout = false;
+                play(transitions, null);
+                surface.fitIfPristine();
+            } else {
+                scheduleLayout(request, transitions, newNodeIds);
+            }
+        } else {
+            play(transitions, null);
+        }
+
         renderedState = state;
-        if (firstRender) {
-            firstRender = false;
-            viewport.fitToViewport();
+        firstRender = false;
+    }
+
+    private LayoutRequest buildLayoutInput(GraphViewState state) {
+        List<GraphViewState.Node> orderedNodes = state.nodes().stream()
+                .sorted(Comparator.comparingLong(GraphViewState.Node::id)).toList();
+        List<NodeSize> nodes = new ArrayList<>(orderedNodes.size());
+        measuringElements = true;
+        try {
+            for (GraphViewState.Node node : orderedNodes) {
+                NodeView view = nodeViews.get(node.id());
+                if (view == null) {
+                    continue;
+                }
+                resizeToMeasuredLabel(view);
+                CircleGeometry geometry = (CircleGeometry) view.getGeometry();
+                nodes.add(new NodeSize(node.id(), quantize(geometry.width()), quantize(geometry.height())));
+            }
+        } finally {
+            measuringElements = false;
+        }
+
+        Set<Long> available = nodes.stream().map(NodeSize::id).collect(java.util.stream.Collectors.toSet());
+        List<Link> links = state.edges().stream()
+                .filter(edge -> available.contains(edge.fromId()) && available.contains(edge.toId()))
+                .sorted(Comparator.comparingLong(GraphViewState.Edge::id))
+                .map(edge -> new Link(GraphElkLayout.edgeId(edge.id()), edge.id(), edge.fromId(), edge.toId()))
+                .toList();
+        return new LayoutRequest(state.directed(), nodes, links);
+    }
+
+    private void resizeToMeasuredLabel(NodeView view) {
+        view.applyCss();
+        Bounds label = view.labelBounds();
+        double diameter = Math.max(MIN_RADIUS * 2.0d,
+                Math.ceil(Math.max(label.getWidth(), label.getHeight()) + LABEL_PADDING));
+        double radius = diameter / 2.0d;
+        CircleGeometry geometry = (CircleGeometry) view.getGeometry();
+        if (Math.abs(geometry.radius() - radius) > 0.01d) {
+            view.setGeometry(new CircleGeometry(radius));
+        }
+    }
+
+    private void scheduleLayout(LayoutRequest request, List<Animation> transitions, Set<Long> newNodeIds) {
+        long version = layoutVersion.incrementAndGet();
+        pendingVersion = version;
+        pendingTransitions = List.copyOf(transitions);
+        pendingNewNodeIds = Set.copyOf(newNodeIds);
+        layoutExecutor.execute(() -> {
+            try {
+                LayoutResult result = layout.layout(request);
+                Platform.runLater(() -> applyLayout(version, result));
+            } catch (Throwable failure) {
+                Platform.runLater(() -> handleLayoutFailure(version, failure));
+            }
+        });
+    }
+
+    private void applyLayout(long version, LayoutResult result) {
+        if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        if (!transitions.isEmpty()) {
-            ParallelTransition parallel = new ParallelTransition();
-            parallel.getChildren().addAll(transitions);
-            activeAnimation = parallel;
-            parallel.play();
+
+        List<Animation> transitions = new ArrayList<>();
+        if (pendingVersion == version) {
+            transitions.addAll(pendingTransitions);
         }
+        Set<Long> newNodeIds = pendingVersion == version ? pendingNewNodeIds : Set.of();
+
+        for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+            ElementBounds bounds = result.elements().get(GraphElkLayout.nodeId(entry.getKey()));
+            if (bounds == null) {
+                continue;
+            }
+            Point2D target = new Point2D(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
+            NodeView view = entry.getValue();
+            if (!hasAppliedLayout || newNodeIds.contains(entry.getKey())) {
+                view.setCenter(target.getX(), target.getY());
+            } else if (!close(view.center(), target)) {
+                transitions.add(animations.move(view, target, MOVE_DURATION));
+            }
+        }
+
+        pendingVersion = -1L;
+        pendingTransitions = List.of();
+        pendingNewNodeIds = Set.of();
+        hasAppliedLayout = true;
+
+        Runnable finish = () -> {
+            if (!isDisposed() && version == layoutVersion.get()) {
+                applyRoutes(result);
+                surface.fitIfPristine();
+            }
+        };
+        play(transitions, finish);
+    }
+
+    private void applyRoutes(LayoutResult result) {
+        for (Map.Entry<Long, EdgeView> entry : edgeViews.entrySet()) {
+            EdgeRoute route = result.edges().get(GraphElkLayout.edgeId(entry.getKey()));
+            if (route == null || route.points().size() < 2) {
+                entry.getValue().clearRoute();
+            } else {
+                entry.getValue().setRoute(route.points());
+            }
+        }
+    }
+
+    private void handleLayoutFailure(long version, Throwable failure) {
+        if (isDisposed() || version != layoutVersion.get()) {
+            return;
+        }
+        lastLayoutInput = LayoutRequest.empty();
+        pendingVersion = -1L;
+        pendingTransitions = List.of();
+        pendingNewNodeIds = Set.of();
+        throw new IllegalStateException("Graph ELK layout failed", failure);
     }
 
     private void syncEdges(GraphViewState state, List<Animation> transitions) {
@@ -125,41 +288,54 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView view = new EdgeView(source, target, state.directed());
             view.setCurved(source == target);
             edgeViews.put(edge.id(), view);
-            viewport.content().getChildren().add(view);
+            surface.edgeLayer().getChildren().add(view);
             if (!firstRender) {
                 transitions.add(animations.reveal(view, APPEAR_DURATION));
             }
         }
 
         List<Long> removed = edgeViews.keySet().stream()
-                .filter(id -> !expected.containsKey(id))
-                .toList();
+                .filter(id -> !expected.containsKey(id)).toList();
         for (Long edgeId : removed) {
             EdgeView view = edgeViews.remove(edgeId);
-            if (view == null) {
-                continue;
-            }
             if (firstRender) {
-                viewport.content().getChildren().remove(view);
-                continue;
+                surface.edgeLayer().getChildren().remove(view);
+            } else {
+                Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
+                fade.setOnFinished(event -> surface.edgeLayer().getChildren().remove(view));
+                transitions.add(fade);
             }
-            Animation fade = animations.fadeOut(view, DISAPPEAR_DURATION);
-            fade.setOnFinished(event -> viewport.content().getChildren().remove(view));
-            transitions.add(fade);
         }
     }
 
-    private void reorderLayers() {
-        List<Node> ordered = new ArrayList<>(edgeViews.values());
-        ordered.addAll(nodeViews.values());
-        viewport.content().getChildren().setAll(ordered);
+    private void clearCurrentRoutes() {
+        edgeViews.values().forEach(EdgeView::clearRoute);
     }
 
-    private void removeNode(long nodeId) {
-        NodeView view = nodeViews.remove(nodeId);
-        if (view != null) {
-            viewport.content().getChildren().remove(view);
+    private void cleanupDetachedViews() {
+        surface.nodeLayer().getChildren().removeIf(node -> node instanceof NodeView && !nodeViews.containsValue(node));
+        surface.edgeLayer().getChildren().removeIf(node -> node instanceof EdgeView && !edgeViews.containsValue(node));
+    }
+
+    private void invalidateLayout() {
+        layoutVersion.incrementAndGet();
+        lastLayoutInput = LayoutRequest.empty();
+    }
+
+    private void play(List<Animation> transitions, Runnable onFinished) {
+        if (transitions.isEmpty()) {
+            if (onFinished != null) {
+                onFinished.run();
+            }
+            return;
         }
+        ParallelTransition parallel = new ParallelTransition();
+        parallel.getChildren().addAll(transitions);
+        if (onFinished != null) {
+            parallel.setOnFinished(event -> onFinished.run());
+        }
+        activeAnimation = parallel;
+        parallel.play();
     }
 
     private void stopActiveAnimation() {
@@ -182,19 +358,43 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     @Override
     public void onVisualizationReset() {
         stopActiveAnimation();
-        renderedState = new GraphViewState(false, List.of(), List.of(), false);
+        invalidateLayout();
+        renderedState = emptyState();
+        nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         nodeViews.clear();
         edgeViews.clear();
-        viewport.content().getChildren().clear();
+        surface.nodeLayer().getChildren().clear();
+        surface.edgeLayer().getChildren().clear();
+        surface.decorationLayer().getChildren().clear();
+        pendingTransitions = List.of();
+        pendingNewNodeIds = Set.of();
+        pendingVersion = -1L;
+        hasAppliedLayout = false;
         firstRender = true;
-        viewport.reset();
+        surface.reset();
+        surface.markViewportPristine();
     }
 
     @Override
     public void dispose() {
         stopActiveAnimation();
-        viewport.prefWidthProperty().unbind();
-        viewport.prefHeightProperty().unbind();
+        invalidateLayout();
+        nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
+        layoutExecutor.shutdownNow();
+        surface.prefWidthProperty().unbind();
+        surface.prefHeightProperty().unbind();
         super.dispose();
+    }
+
+    private static GraphViewState emptyState() {
+        return new GraphViewState(false, List.of(), List.of(), false);
+    }
+
+    private static double quantize(double value) {
+        return Math.rint(value * 100.0d) / 100.0d;
+    }
+
+    private static boolean close(Point2D a, Point2D b) {
+        return a.distance(b) <= 0.01d;
     }
 }
