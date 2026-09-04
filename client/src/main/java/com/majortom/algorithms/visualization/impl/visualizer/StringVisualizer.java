@@ -5,6 +5,7 @@ import com.majortom.algorithms.visualization.common.AnimationCoordinator;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout.ElementSize;
@@ -43,6 +44,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Integer, StringCellView> cells = new LinkedHashMap<>();
     private final Text emptyLabel = new Text("EMPTY STRING");
+    private final Text observationLabel = new Text();
     private final InvalidationListener elementSizeListener = observable -> requestRender();
 
     private List<ElementSize> lastLayoutInput = List.of();
@@ -54,6 +56,8 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
         emptyLabel.getStyleClass().add("visual-empty-label");
+        observationLabel.getStyleClass().add("visual-empty-label");
+        observationLabel.setMouseTransparent(true);
     }
 
     @Override
@@ -72,6 +76,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                 emptyLabel.relocate(EMPTY_X, EMPTY_Y);
                 surface.decorationLayer().getChildren().add(emptyLabel);
             }
+            updateObservationLabel(state.observation());
             play(transitions);
             surface.fitIfPristine();
             firstRender = false;
@@ -91,7 +96,8 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             }
             cell.setIndex(index);
             cell.setValue(value.charAt(index));
-            cell.setHighlighted(isMutationIndex(state.mutation(), index));
+            cell.setHighlighted(isMutationIndex(state.mutation(), index)
+                    || isObservationIndex(state.observation(), index));
             cell.setCompleted(state.completed());
             if (added && !firstRender) {
                 transitions.add(animations.together(
@@ -118,6 +124,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             lastLayoutInput = measured;
             scheduleLayout(measured);
         }
+        updateObservationLabel(state.observation());
         play(transitions);
         firstRender = false;
     }
@@ -165,8 +172,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = List.of();
-        throw new IllegalStateException("String ELK layout failed", failure);
+        LayoutFailureReporter.report("String", failure);
     }
 
     private boolean isMutationIndex(StringViewState.Mutation mutation, int index) {
@@ -175,6 +181,35 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
         int end = mutation.index() + Math.max(1, mutation.length());
         return index >= mutation.index() && index < end;
+    }
+
+
+    private boolean isObservationIndex(StringViewState.Observation observation, int index) {
+        return switch (observation.type()) {
+            case COMPARED -> observation.firstIndex() == index;
+            case MATCHED -> index >= observation.firstIndex()
+                    && index < observation.firstIndex() + observation.length();
+            case FALLBACK, NONE -> false;
+        };
+    }
+
+    private void updateObservationLabel(StringViewState.Observation observation) {
+        String text = switch (observation.type()) {
+            case COMPARED -> "COMPARE target[" + observation.firstIndex() + "] ↔ pattern["
+                    + observation.secondIndex() + "]";
+            case MATCHED -> "MATCH @" + observation.firstIndex() + " ×" + observation.length();
+            case FALLBACK -> "FALLBACK " + observation.firstIndex() + " → " + observation.secondIndex();
+            case NONE -> "";
+        };
+        observationLabel.setText(text);
+        if (text.isEmpty()) {
+            surface.decorationLayer().getChildren().remove(observationLabel);
+            return;
+        }
+        observationLabel.relocate(EMPTY_X, 118.0d);
+        if (!surface.decorationLayer().getChildren().contains(observationLabel)) {
+            surface.decorationLayer().getChildren().add(observationLabel);
+        }
     }
 
     private void clearCells(List<Animation> transitions) {
@@ -233,6 +268,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         cells.clear();
         surface.nodeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
+        observationLabel.setText("");
         firstRender = true;
         surface.reset();
         surface.markViewportPristine();

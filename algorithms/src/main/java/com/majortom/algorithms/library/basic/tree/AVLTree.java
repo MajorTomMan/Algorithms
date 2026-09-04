@@ -4,7 +4,11 @@ import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.structure.SearchTreeStructure;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 public final class AVLTree<T extends Comparable<? super T>> implements SearchTreeStructure<T> {
     private AVLTreeNode<T> root;
@@ -12,11 +16,13 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
     private long nextNodeId = 1L;
 
     public static <T extends Comparable<? super T>> AVLTree<T> fromRestoredRoot(AVLTreeNode<T> restoredRoot) {
+        Set<AVLTreeNode<T>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<Long> nodeIds = new HashSet<>();
+        Validation validation = validateRestored(restoredRoot, null, null, identities, nodeIds);
         AVLTree<T> tree = new AVLTree<>();
         tree.root = restoredRoot;
-        tree.size = tree.count(tree.root);
-        tree.nextNodeId = Math.max(1L, tree.maxId(tree.root) + 1L);
-        tree.normalize(tree.root);
+        tree.size = validation.count();
+        tree.nextNodeId = Math.max(1L, validation.maxId() + 1L);
         return tree;
     }
 
@@ -182,13 +188,56 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         return current;
     }
 
-    private void normalize(AVLTreeNode<T> node) {
+    private static <T extends Comparable<? super T>> Validation validateRestored(
+            AVLTreeNode<T> node,
+            T lowerExclusive,
+            T upperExclusive,
+            Set<AVLTreeNode<T>> identities,
+            Set<Long> nodeIds) {
         if (node == null) {
-            return;
+            return Validation.empty();
         }
-        normalize(left(node));
-        normalize(right(node));
-        update(node);
+        if (!identities.add(node)) {
+            throw new IllegalArgumentException("restored AVL tree contains a cycle or reused node reference");
+        }
+        if (!nodeIds.add(node.getId())) {
+            throw new IllegalArgumentException("restored AVL tree contains duplicate node id: " + node.getId());
+        }
+        T value = Objects.requireNonNull(node.getValue(), "restored AVL node value");
+        if (lowerExclusive != null && value.compareTo(lowerExclusive) <= 0) {
+            throw new IllegalArgumentException("restored AVL tree violates BST lower bound at node " + node.getId());
+        }
+        if (upperExclusive != null && value.compareTo(upperExclusive) >= 0) {
+            throw new IllegalArgumentException("restored AVL tree violates BST upper bound at node " + node.getId());
+        }
+
+        @SuppressWarnings("unchecked")
+        AVLTreeNode<T> left = (AVLTreeNode<T>) node.getLeft();
+        @SuppressWarnings("unchecked")
+        AVLTreeNode<T> right = (AVLTreeNode<T>) node.getRight();
+        Validation leftValidation = validateRestored(left, lowerExclusive, value, identities, nodeIds);
+        Validation rightValidation = validateRestored(right, value, upperExclusive, identities, nodeIds);
+        int expectedHeight = Math.max(leftValidation.height(), rightValidation.height()) + 1;
+        int expectedCount = leftValidation.count() + rightValidation.count() + 1;
+        if (node.getHeight() != expectedHeight) {
+            throw new IllegalArgumentException("restored AVL height mismatch at node " + node.getId()
+                    + ": expected " + expectedHeight + ", actual " + node.getHeight());
+        }
+        if (node.getSubTreeCount() != expectedCount) {
+            throw new IllegalArgumentException("restored AVL subtree count mismatch at node " + node.getId()
+                    + ": expected " + expectedCount + ", actual " + node.getSubTreeCount());
+        }
+        if (Math.abs(leftValidation.height() - rightValidation.height()) > 1) {
+            throw new IllegalArgumentException("restored AVL balance factor is invalid at node " + node.getId());
+        }
+        long maxId = Math.max(node.getId(), Math.max(leftValidation.maxId(), rightValidation.maxId()));
+        return new Validation(expectedHeight, expectedCount, maxId);
+    }
+
+    private record Validation(int height, int count, long maxId) {
+        private static Validation empty() {
+            return new Validation(0, 0, 0L);
+        }
     }
 
     private void update(AVLTreeNode<T> node) {

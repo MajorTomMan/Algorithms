@@ -1,11 +1,10 @@
 package com.majortom.algorithms.core.event.structure;
 
-import com.majortom.algorithms.core.event.ExecutionEvent;
 import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
 import java.util.Map;
 
-public sealed interface ArrayStructureEvent extends ExecutionEvent, StatisticsContribution
+public sealed interface ArrayStructureEvent extends StructureEvent, StatisticsContribution
         permits ArrayStructureEvent.Inserted, ArrayStructureEvent.Removed,
         ArrayStructureEvent.Updated, ArrayStructureEvent.Swapped {
     record Inserted(int index, Object value) implements ArrayStructureEvent {

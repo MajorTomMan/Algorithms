@@ -7,12 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Immutable JavaFX-neutral Graph facts: directedness, vertices and edges. */
-public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edges, boolean completed) {
+/** Immutable JavaFX-neutral Graph facts and current factual execution observation. */
+public record GraphViewState(
+        boolean directed,
+        List<Node> nodes,
+        List<Edge> edges,
+        Observation observation,
+        boolean completed) {
 
     public GraphViewState {
         nodes = List.copyOf(Objects.requireNonNull(nodes, "nodes"));
         edges = List.copyOf(Objects.requireNonNull(edges, "edges"));
+        observation = Objects.requireNonNull(observation, "observation");
     }
 
     public static GraphViewState initial(GraphSnapshot<Integer> graph) {
@@ -23,7 +29,7 @@ public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edge
         List<Edge> edges = graph.edges().stream()
                 .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId()))
                 .toList();
-        return new GraphViewState(graph.directed(), nodes, edges, false);
+        return new GraphViewState(graph.directed(), nodes, edges, Observation.none(), false);
     }
 
     public Map<Long, Node> nodesById() {
@@ -34,7 +40,33 @@ public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edge
         return Map.copyOf(result);
     }
 
-    public record Node(long id, int value) {}
+    public record Node(long id, int value) {
+    }
 
-    public record Edge(long id, long fromId, long toId) {}
+    public record Edge(long id, long fromId, long toId) {
+    }
+
+    public record Observation(Type type, Long firstNodeId, Long secondNodeId) {
+        public Observation {
+            Objects.requireNonNull(type, "type");
+        }
+
+        public static Observation none() {
+            return new Observation(Type.NONE, null, null);
+        }
+
+        public static Observation visited(long nodeId) {
+            return new Observation(Type.VISITED, nodeId, null);
+        }
+
+        public static Observation examined(long fromId, long toId) {
+            return new Observation(Type.EXAMINED, fromId, toId);
+        }
+    }
+
+    public enum Type {
+        NONE,
+        VISITED,
+        EXAMINED
+    }
 }

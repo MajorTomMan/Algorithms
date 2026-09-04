@@ -5,6 +5,7 @@ import com.majortom.algorithms.visualization.common.AnimationCoordinator;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayElkLayout.ElementSize;
@@ -165,8 +166,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = List.of();
-        throw new IllegalStateException("Array ELK layout failed", failure);
+        LayoutFailureReporter.report("Array", failure);
     }
 
     private boolean isMutationIndex(ArrayViewState.Mutation mutation, int index) {

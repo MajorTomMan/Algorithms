@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,17 +33,35 @@ public final class Graph<T> implements GraphStructure<T> {
         Objects.requireNonNull(snapshot, "snapshot");
         Graph<T> graph = new Graph<>(snapshot.directed());
         Map<Long, Vertex<T>> verticesById = new LinkedHashMap<>();
+        Set<T> values = new HashSet<>();
         for (GraphSnapshot.Vertex<T> source : snapshot.vertices()) {
+            if (verticesById.containsKey(source.id())) {
+                throw new IllegalArgumentException("snapshot contains duplicate vertex id: " + source.id());
+            }
+            if (!values.add(source.value())) {
+                throw new IllegalArgumentException("snapshot contains duplicate vertex value: " + source.value());
+            }
             Vertex<T> vertex = new Vertex<>(source.id(), source.value());
             graph.verticesByValue.put(vertex.value(), vertex);
             graph.adjacency.put(vertex, new LinkedHashSet<>());
             verticesById.put(vertex.id(), vertex);
         }
+
+        Set<Long> edgeIds = new HashSet<>();
+        Set<EdgeKey> edgeKeys = new HashSet<>();
         for (GraphSnapshot.Edge source : snapshot.edges()) {
+            if (!edgeIds.add(source.id())) {
+                throw new IllegalArgumentException("snapshot contains duplicate edge id: " + source.id());
+            }
             Vertex<T> from = verticesById.get(source.fromId());
             Vertex<T> to = verticesById.get(source.toId());
             if (from == null || to == null) {
                 throw new IllegalArgumentException("snapshot edge references an unknown vertex");
+            }
+            EdgeKey key = EdgeKey.of(source.fromId(), source.toId(), snapshot.directed());
+            if (!edgeKeys.add(key)) {
+                throw new IllegalArgumentException("snapshot contains parallel edge: "
+                        + source.fromId() + " -> " + source.toId());
             }
             Edge<T> edge = new Edge<>(source.id(), from, to);
             graph.edges.add(edge);
@@ -52,6 +71,15 @@ public final class Graph<T> implements GraphStructure<T> {
             }
         }
         return graph;
+    }
+
+    private record EdgeKey(long fromId, long toId) {
+        private static EdgeKey of(long fromId, long toId, boolean directed) {
+            if (directed || fromId <= toId) {
+                return new EdgeKey(fromId, toId);
+            }
+            return new EdgeKey(toId, fromId);
+        }
     }
 
     @Override

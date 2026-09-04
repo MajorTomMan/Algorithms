@@ -4,6 +4,8 @@ import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
+import com.majortom.algorithms.core.domain.execution.RunPausedEvent;
+import com.majortom.algorithms.core.domain.execution.RunResumedEvent;
 import com.majortom.algorithms.core.domain.execution.RunStartedEvent;
 
 import java.util.List;
@@ -78,8 +80,8 @@ public record ExecutionRecording(
             if (event.event() instanceof ExecutionLifecycleEvent lifecycleEvent) {
                 derivedState = transition(derivedState, lifecycleEvent);
             } else {
-                if (derivedState != ExecutionRecordingState.RUNNING) {
-                    throw new IllegalArgumentException("Domain events are only valid while a run is active");
+                if (!derivedState.acceptsDomainEvents()) {
+                    throw new IllegalArgumentException("Domain events are only valid while a run is active or paused");
                 }
             }
             derivedStatistics = statisticsReducer.reduce(derivedStatistics, event);
@@ -107,16 +109,34 @@ public record ExecutionRecording(
             }
             return ExecutionRecordingState.RUNNING;
         }
+        if (lifecycleEvent instanceof RunPausedEvent) {
+            if (currentState != ExecutionRecordingState.RUNNING) {
+                throw new IllegalArgumentException("Only a running execution may be paused");
+            }
+            return ExecutionRecordingState.PAUSED;
+        }
+        if (lifecycleEvent instanceof RunResumedEvent) {
+            if (currentState != ExecutionRecordingState.PAUSED) {
+                throw new IllegalArgumentException("Only a paused execution may be resumed");
+            }
+            return ExecutionRecordingState.RUNNING;
+        }
         if (lifecycleEvent instanceof RunCompletedEvent) {
             if (currentState != ExecutionRecordingState.RUNNING) {
-                throw new IllegalArgumentException("A run must start before it completes");
+                throw new IllegalArgumentException("A run must be running before it completes");
             }
             return ExecutionRecordingState.COMPLETED;
         }
         if (lifecycleEvent instanceof RunCancelledEvent) {
+            if (!currentState.acceptsDomainEvents()) {
+                throw new IllegalArgumentException("Only an active execution may be cancelled");
+            }
             return ExecutionRecordingState.CANCELLED;
         }
         if (lifecycleEvent instanceof RunFailedEvent) {
+            if (!currentState.acceptsDomainEvents()) {
+                throw new IllegalArgumentException("Only an active execution may fail");
+            }
             return ExecutionRecordingState.FAILED;
         }
         throw new IllegalArgumentException("Unsupported execution lifecycle event: " + lifecycleEvent.getClass());

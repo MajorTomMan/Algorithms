@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListElkLayout.LayoutRequest;
@@ -135,7 +136,6 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         boolean layoutChanged = !request.equals(lastLayoutInput);
         if (layoutChanged) {
             lastLayoutInput = request;
-            clearCurrentRoutes();
             if (request.nodes().isEmpty()) {
                 invalidateLayout();
                 pendingTransitions = List.of();
@@ -225,6 +225,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             return;
         }
 
+        clearCurrentRoutes();
         List<Animation> transitions = new ArrayList<>();
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
@@ -274,11 +275,12 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = LayoutRequest.empty();
+        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
-        throw new IllegalStateException("LinkedList ELK layout failed", failure);
+        LayoutFailureReporter.report("LinkedList", failure);
+        play(transitions, null);
     }
 
     private void syncEdges(LinkedListViewState state, List<Animation> transitions) {

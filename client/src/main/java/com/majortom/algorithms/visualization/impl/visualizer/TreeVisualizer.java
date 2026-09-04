@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
@@ -134,7 +135,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         boolean layoutChanged = !request.equals(lastLayoutInput);
         if (layoutChanged) {
             lastLayoutInput = request;
-            clearCurrentRoutes();
             if (request.nodes().isEmpty()) {
                 invalidateLayout();
                 pendingTransitions = List.of();
@@ -240,6 +240,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             return;
         }
 
+        clearCurrentRoutes();
         List<Animation> transitions = new ArrayList<>();
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
@@ -289,11 +290,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = LayoutRequest.empty();
+        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
-        throw new IllegalStateException("Tree ELK layout failed", failure);
+        LayoutFailureReporter.report("Tree", failure);
+        play(transitions, null);
     }
 
     private void syncEdges(TreeViewState state, List<Animation> transitions) {

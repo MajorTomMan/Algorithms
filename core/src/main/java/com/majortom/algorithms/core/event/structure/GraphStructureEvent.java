@@ -1,8 +1,7 @@
 package com.majortom.algorithms.core.event.structure;
 
-import com.majortom.algorithms.core.event.ExecutionEvent;
 
-public sealed interface GraphStructureEvent extends ExecutionEvent
+public sealed interface GraphStructureEvent extends StructureEvent
         permits GraphStructureEvent.VertexAdded, GraphStructureEvent.VertexRemoved,
         GraphStructureEvent.EdgeAdded, GraphStructureEvent.EdgeRemoved {
 

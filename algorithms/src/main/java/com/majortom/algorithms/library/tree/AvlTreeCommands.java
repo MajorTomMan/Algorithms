@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.tree;
 
 import com.majortom.algorithms.core.logging.Log;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.basic.tree.AVLTree;
 
 import java.util.List;
@@ -20,7 +19,6 @@ public final class AvlTreeCommands implements TreeAlgorithm<Integer> {
         }
         Log.i("AVL", "Command batch start, commands=" + commands.size());
         for (AvlCommand command : commands) {
-            ExecutionEvents.checkpoint();
             if (command.operation() == AvlCommand.Operation.INSERT) {
                 tree.insert(command.value());
             } else {

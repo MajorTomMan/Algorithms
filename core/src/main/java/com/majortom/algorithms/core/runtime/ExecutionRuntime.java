@@ -15,7 +15,7 @@ public final class ExecutionRuntime {
         Objects.requireNonNull(operation); RuntimeEventContext c=new RuntimeEventContext(runIdSupplier.get(),operationId,source,sink,control,clock);
         DefaultExecutionControl defaultControl=control instanceof DefaultExecutionControl value?value:null;
         if(defaultControl!=null)defaultControl.bindLifecycle(c::emitLifecycle);
-        try{c.emitLifecycle(new RunStartedEvent());c.checkpoint();Object output;try(ExecutionEvents.Binding ignored=ExecutionEvents.bind(c)){output=operation.execute();}c.checkpoint();c.emitLifecycle(new RunCompletedEvent());return ExecutionResult.completed(output);}
+        try{c.emitLifecycle(new RunStartedEvent());c.startCheckpoint();Object output;try(ExecutionEvents.Binding ignored=ExecutionEvents.bind(c)){output=operation.execute();}c.completionCheckpoint();c.emitLifecycle(new RunCompletedEvent());return ExecutionResult.completed(output);}
         catch(ExecutionCancellationException e){return cancelled(c,e.getMessage());}
         catch(InterruptedException e){Thread.currentThread().interrupt();return cancelled(c,"Execution interrupted");}
         catch(EventDeliveryException e){return ExecutionResult.failed(new ExecutionFailure("execution.event.delivery.failed",e.getMessage(),e.getClass().getName()));}

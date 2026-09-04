@@ -26,8 +26,8 @@ public final class RecordingEventSink implements EventSink {
         if (event.event() instanceof ExecutionLifecycleEvent lifecycleEvent) {
             nextState = ExecutionRecording.transition(state, lifecycleEvent);
         } else {
-            if (state != ExecutionRecordingState.RUNNING) {
-                throw new IllegalArgumentException("Domain events are only valid while a run is active");
+            if (!state.acceptsDomainEvents()) {
+                throw new IllegalArgumentException("Domain events are only valid while a run is active or paused");
             }
         }
         nextStatistics = statisticsReducer.reduce(statistics, event);

@@ -6,7 +6,11 @@ import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.library.structure.GeneralTreeStructure;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 public final class Tree<T> implements GeneralTreeStructure<T> {
     private GeneralTreeNode<T> root;
@@ -14,12 +18,15 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
 
     public static <T> Tree<T> fromSnapshot(GeneralTreeSnapshot<T> snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
-        Tree<T> tree = new Tree<>();
-        tree.root = restoreNode(snapshot.root());
-        tree.size = tree.subtreeSize(tree.root);
-        if (tree.size != snapshot.size()) {
+        Set<GeneralTreeSnapshot.Node<T>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<Long> nodeIds = new HashSet<>();
+        Restoration<T> restoration = restoreNode(snapshot.root(), identities, nodeIds);
+        if (restoration.size() != snapshot.size()) {
             throw new IllegalArgumentException("snapshot size does not match tree topology");
         }
+        Tree<T> tree = new Tree<>();
+        tree.root = restoration.node();
+        tree.size = restoration.size();
         return tree;
     }
 
@@ -231,11 +238,32 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         return Objects.requireNonNull(node, "node");
     }
 
-    private static <T> GeneralTreeNode<T> restoreNode(GeneralTreeSnapshot.Node<T> node) {
+    private static <T> Restoration<T> restoreNode(
+            GeneralTreeSnapshot.Node<T> node,
+            Set<GeneralTreeSnapshot.Node<T>> identities,
+            Set<Long> nodeIds) {
         if (node == null) {
-            return null;
+            return new Restoration<>(null, 0);
         }
-        java.util.List<GeneralTreeNode<T>> children = node.children().stream().map(Tree::<T>restoreNode).toList();
-        return new GeneralTreeNode<>(node.id(), node.value(), children);
+        if (!identities.add(node)) {
+            throw new IllegalArgumentException("snapshot reuses the same tree node in multiple locations");
+        }
+        if (!nodeIds.add(node.id())) {
+            throw new IllegalArgumentException("snapshot contains duplicate tree node id: " + node.id());
+        }
+        java.util.List<GeneralTreeNode<T>> children = new java.util.ArrayList<>(node.children().size());
+        int size = 1;
+        for (GeneralTreeSnapshot.Node<T> child : node.children()) {
+            if (child == null) {
+                throw new IllegalArgumentException("general tree snapshot cannot contain null child entries");
+            }
+            Restoration<T> restoredChild = restoreNode(child, identities, nodeIds);
+            children.add(restoredChild.node());
+            size += restoredChild.size();
+        }
+        return new Restoration<>(new GeneralTreeNode<>(node.id(), node.value(), children), size);
+    }
+
+    private record Restoration<T>(GeneralTreeNode<T> node, int size) {
     }
 }

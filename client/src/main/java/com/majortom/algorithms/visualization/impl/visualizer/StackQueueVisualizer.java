@@ -6,6 +6,7 @@ import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
@@ -173,8 +174,7 @@ public final class StackQueueVisualizer extends BaseVisualizer<LinearStructureVi
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = LayoutInput.empty();
-        throw new IllegalStateException("Stack/Queue ELK layout failed", failure);
+        LayoutFailureReporter.report("Stack/Queue", failure);
     }
 
     private void syncQueueEdges(boolean stack, int size, List<Animation> transitions) {

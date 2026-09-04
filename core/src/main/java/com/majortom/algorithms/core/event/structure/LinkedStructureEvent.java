@@ -1,8 +1,7 @@
 package com.majortom.algorithms.core.event.structure;
 
-import com.majortom.algorithms.core.event.ExecutionEvent;
 
-public sealed interface LinkedStructureEvent extends ExecutionEvent
+public sealed interface LinkedStructureEvent extends StructureEvent
         permits LinkedStructureEvent.NodeInserted, LinkedStructureEvent.NodeRemoved,
         LinkedStructureEvent.ValueChanged, LinkedStructureEvent.NextChanged,
         LinkedStructureEvent.PreviousChanged {

@@ -166,7 +166,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         ArrayMazePathfinder algorithm = module("algorithm.maze.Boolean." + id, ArrayMazePathfinder.class);
         startAlgorithm(id, Map.of("maze", inputMaze, "start", start, "goal", goal),
                 () -> algorithm.findPath(inputMaze, start, goal),
-                () -> new MazeEventReducer(selectedSnapshot.rows(), selectedSnapshot.columns(), false));
+                () -> new MazeEventReducer(selectedSnapshot));
     }
 
     @FXML
@@ -355,6 +355,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 state.columns(),
                 state.openCells(),
                 path,
+                state.visited(),
+                state.active(),
+                state.backtracked(),
                 state.entrance(),
                 state.exit(),
                 state.graphEdges(),

@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
 import com.majortom.algorithms.visualization.common.layout.LayoutResult;
+import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
@@ -100,13 +101,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                             animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
-                GraphViewState.Node previous = previousNodes.get(node.id());
                 view.setText(Integer.toString(node.value()));
-                if (previous != null && previous.value() != node.value()) {
-                    view.setHighlighted(true);
-                }
             }
-            view.setHighlighted(state.completed());
+            view.setHighlighted(state.completed() || isObservedNode(state.observation(), node.id()));
         }
 
         syncEdges(state, transitions);
@@ -132,7 +129,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         boolean layoutChanged = !request.equals(lastLayoutInput);
         if (layoutChanged) {
             lastLayoutInput = request;
-            clearCurrentRoutes();
             if (request.nodes().isEmpty()) {
                 invalidateLayout();
                 pendingTransitions = List.of();
@@ -212,6 +208,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             return;
         }
 
+        clearCurrentRoutes();
         List<Animation> transitions = new ArrayList<>();
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
@@ -261,11 +258,12 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        lastLayoutInput = LayoutRequest.empty();
+        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
-        throw new IllegalStateException("Graph ELK layout failed", failure);
+        LayoutFailureReporter.report("Graph", failure);
+        play(transitions, null);
     }
 
     private void syncEdges(GraphViewState state, List<Animation> transitions) {
@@ -278,6 +276,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView existing = edgeViews.get(edge.id());
             if (existing != null) {
                 existing.setDirected(state.directed());
+                existing.setHighlighted(isObservedEdge(state, edge));
                 continue;
             }
             NodeView source = nodeViews.get(edge.fromId());
@@ -287,6 +286,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             }
             EdgeView view = new EdgeView(source, target, state.directed());
             view.setCurved(source == target);
+            view.setHighlighted(isObservedEdge(state, edge));
             edgeViews.put(edge.id(), view);
             surface.edgeLayer().getChildren().add(view);
             if (!firstRender) {
@@ -386,8 +386,30 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         super.dispose();
     }
 
+    private static boolean isObservedNode(GraphViewState.Observation observation, long nodeId) {
+        return switch (observation.type()) {
+            case VISITED -> observation.firstNodeId() != null && observation.firstNodeId() == nodeId;
+            case EXAMINED -> (observation.firstNodeId() != null && observation.firstNodeId() == nodeId)
+                    || (observation.secondNodeId() != null && observation.secondNodeId() == nodeId);
+            case NONE -> false;
+        };
+    }
+
+    private static boolean isObservedEdge(GraphViewState state, GraphViewState.Edge edge) {
+        GraphViewState.Observation observation = state.observation();
+        if (observation.type() != GraphViewState.Type.EXAMINED
+                || observation.firstNodeId() == null || observation.secondNodeId() == null) {
+            return false;
+        }
+        boolean direct = edge.fromId() == observation.firstNodeId() && edge.toId() == observation.secondNodeId();
+        if (state.directed()) {
+            return direct;
+        }
+        return direct || (edge.fromId() == observation.secondNodeId() && edge.toId() == observation.firstNodeId());
+    }
+
     private static GraphViewState emptyState() {
-        return new GraphViewState(false, List.of(), List.of(), false);
+        return new GraphViewState(false, List.of(), List.of(), GraphViewState.Observation.none(), false);
     }
 
     private static double quantize(double value) {

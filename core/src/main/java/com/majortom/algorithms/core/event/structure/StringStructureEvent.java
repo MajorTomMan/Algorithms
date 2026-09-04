@@ -1,8 +1,7 @@
 package com.majortom.algorithms.core.event.structure;
 
-import com.majortom.algorithms.core.event.ExecutionEvent;
 
-public sealed interface StringStructureEvent extends ExecutionEvent
+public sealed interface StringStructureEvent extends StructureEvent
         permits StringStructureEvent.Replaced, StringStructureEvent.Inserted,
         StringStructureEvent.Removed, StringStructureEvent.Updated {
 

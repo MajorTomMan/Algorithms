@@ -1,5 +1,6 @@
 package com.majortom.algorithms.library.string;
 
+import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.library.structure.StringStructure;
@@ -23,17 +24,35 @@ public final class KmpSearch implements StringSearch {
         List<Integer> matches = new ArrayList<>();
         int patternIndex = 0;
         for (int targetIndex = 0; targetIndex < text.length(); targetIndex++) {
-            ExecutionEvents.checkpoint();
-            while (patternIndex > 0 && text.charAt(targetIndex) != pattern.charAt(patternIndex)) {
+            boolean matchedCharacter = false;
+            while (true) {
+                ExecutionEvents.observe(new ObservationEvent.Compared(
+                        new ObservationEvent.IndexRef("target", targetIndex),
+                        new ObservationEvent.IndexRef("pattern", patternIndex)));
+                if (text.charAt(targetIndex) == pattern.charAt(patternIndex)) {
+                    patternIndex++;
+                    matchedCharacter = true;
+                    break;
+                }
+                if (patternIndex == 0) {
+                    break;
+                }
+                int previousPatternIndex = patternIndex;
                 patternIndex = prefix[patternIndex - 1];
+                ExecutionEvents.observe(new ObservationEvent.Fallback(previousPatternIndex, patternIndex));
             }
-            if (text.charAt(targetIndex) != pattern.charAt(patternIndex)) {
+            if (!matchedCharacter) {
                 continue;
             }
-            patternIndex++;
             if (patternIndex == pattern.length()) {
-                matches.add(targetIndex - pattern.length() + 1);
+                int matchIndex = targetIndex - pattern.length() + 1;
+                matches.add(matchIndex);
+                ExecutionEvents.observe(new ObservationEvent.Matched(matchIndex, pattern.length()));
+                int previousPatternIndex = patternIndex;
                 patternIndex = prefix[patternIndex - 1];
+                if (patternIndex != previousPatternIndex) {
+                    ExecutionEvents.observe(new ObservationEvent.Fallback(previousPatternIndex, patternIndex));
+                }
             }
         }
         List<Integer> result = List.copyOf(matches);

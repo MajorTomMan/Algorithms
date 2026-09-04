@@ -65,6 +65,15 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         if (state.path().contains(point)) {
             return RAN_GOLD.saturate();
         }
+        if (point.equals(state.backtracked())) {
+            return RAN_ENEMY_RUST.saturate();
+        }
+        if (point.equals(state.active())) {
+            return RAN_GOLD.brighter();
+        }
+        if (state.visited().contains(point)) {
+            return RAN_BLUE.brighter();
+        }
         if (state.openCells().get(index)) {
             return RAN_BLUE.deriveColor(0.0d, 1.2d, 1.0d, 0.45d);
         }

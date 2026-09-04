@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-/** Linked-list workbench backed by factual node/link events and the Pure JavaFX linked visualizer. */
+/** Linked-list workbench backed by factual node/link events and the family-specific linked visualizer. */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
         implements StructureSnapshotSupport<SequenceSnapshot<Integer>> {
     private static final String MODULE_ID = "linked-list";

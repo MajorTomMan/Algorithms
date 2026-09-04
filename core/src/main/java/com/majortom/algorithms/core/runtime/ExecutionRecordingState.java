@@ -4,6 +4,7 @@ package com.majortom.algorithms.core.runtime;
 public enum ExecutionRecordingState {
     NOT_STARTED,
     RUNNING,
+    PAUSED,
     COMPLETED,
     CANCELLED,
     FAILED;
@@ -11,5 +12,10 @@ public enum ExecutionRecordingState {
     /** Returns whether no further events may be appended to the recording. */
     public boolean isTerminal() {
         return this == COMPLETED || this == CANCELLED || this == FAILED;
+    }
+
+    /** Returns whether domain facts may be recorded in this state. */
+    public boolean acceptsDomainEvents() {
+        return this == RUNNING || this == PAUSED;
     }
 }

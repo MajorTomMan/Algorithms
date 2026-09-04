@@ -1,6 +1,6 @@
 # Algorithms V2
 
-Algorithms 是一个数据结构与算法实验室。当前 V2 的主线是：**唯一 canonical Structure → 真实 mutation → factual StructureEvent → Runtime/Timeline → Reducer/ViewState → 项目自有 Pure JavaFX Visualizer**。
+Algorithms 是一个数据结构与算法实验室。当前 V2 的主线是：**唯一 canonical Structure → factual StructureEvent / ObservationEvent → Runtime/Timeline → Reducer/ViewState → JavaFX + GestureFX + ELK Visualizer**。
 
 ## 模块
 
@@ -91,7 +91,7 @@ move(node, newParent[, index])
 
 Structure Contract 不暴露 `raw()` 或 mutable collection/array 逃生口。
 
-算法代码不显式发布 visualization-driving Event。真正结构变化只能来自 Structure mutation：
+算法代码不显式发布 visualization-driving Structure Event。真正结构变化只能来自 Structure mutation；read-only 执行事实通过最小 ObservationEvent 表达：
 
 ```text
 UI / Algorithm
@@ -117,6 +117,26 @@ Logging     LogEvent
 ```
 
 Compare / Pivot / Visit / KMP Fallback 等算法意图不再作为 Structure truth source。
+
+## Execution Closure
+
+Runtime lifecycle 正式状态为 `NOT_STARTED / RUNNING / PAUSED / COMPLETED / CANCELLED / FAILED`。Pause/Resume 可以完整 recording + replay；EventEnvelope sequence 只在 sink 成功接收后提交，因此 delivery failure 不会留下 sequence hole。
+
+Live Step 的 gate 只作用于可执行观察单位：
+
+```text
+checkpoint / StructureEvent / ObservationEvent
+                 ↓
+             RunControl
+RUNNING                 -> pass
+PAUSED + step permit    -> consume one permit and pass one unit
+PAUSED + no permit      -> block
+CANCELLED               -> abort
+```
+
+Log/Snapshot 等辅助事件仍可进入 Timeline，但不会消费 Live Step permit。Statistics 只从 StructureEvent / ObservationEvent 的 `StatisticsContribution` 聚合，不由 UI 推测。
+
+Snapshot reconstruction 会验证 canonical invariant；Server execution catalog 以 ModuleRegistry availability 为 implementation truth，并对 scheduler reject、bounded retention、result/failure query 和 HTTP error contract 做显式处理。
 
 ## Algorithm I/O / Registry / auto-discovery
 
@@ -178,22 +198,29 @@ Client 只有一个 Workbench，一个 Visualizer 区域；Structure / Algorithm
 Visualization 技术路线固定为：
 
 ```text
-factual Event
+StructureEvent / ObservationEvent
    ↓
 Reducer
    ↓
 ViewState
    ↓
-family-specific Layout
+family-specific layout adapter
    ↓
-Node/Edge Geometry + Animation
+JavaFX project-owned Node/Edge/CSS/Animation
    ↓
-Pure JavaFX Visualizer
+VisualizationSurface / GestureFX viewport
 ```
 
-AtlantaFX 只负责 Workbench theme / controls。`core`、`algorithms`、Reducer、ViewState 不依赖 JavaFX/AtlantaFX。
+职责边界：
 
-Tree 使用项目自有 deterministic tidy-tree layout；Graph 使用 deterministic circle + force refinement。Maze 继续使用 Canvas。
+```text
+JavaFX      -> visual element / CSS / animation
+AtlantaFX   -> Workbench theme / controls
+GestureFX   -> center canvas zoom / pan / fit / center / reset
+ELK         -> client-only transient layout calculation
+```
+
+Array/String/Stack/Queue/LinkedList/Tree/Graph 使用 family-specific ELK adapter；Maze 保留 project-owned Canvas/Grid Layout，只复用 GestureFX viewport。ELK graph model 是瞬态计算对象，不进入 Structure/Event/Snapshot/ViewState/core/algorithms/server。
 
 Playback speed 是 presentation-only：x8 按基础动画时长的 `1/8` 播放，x16 与 timeline scrub 直接 snap，避免积压无界 JavaFX animation backlog。
 
@@ -227,25 +254,31 @@ Server 可以把返回值转换为 HTTP 表达，但不会要求 `algorithms` �
 - 不重新引入 `raw()` mutable state。
 - 不让 Controller/Algorithm 建立第二条 Structure Event 路径。
 - 不引入万能 Runner / giant Context / universal VisualModel。
-- 不引入 GraphStream、FXDiagram、Graphviz、ELK/KIELER、WebView+D3 等 Diagram/Layout 依赖。
+- 不引入 GraphStream、FXDiagram、Graphviz、SmartGraph、WebView+D3 或 universal Diagram model；ELK 仅作为 client transient layout engine。
 - 公共父类只保存所有子类型真正共有的领域状态。
 - Snapshot reconstruction 只能用于初始化/隔离副本恢复，不作为普通编辑 API。
 
 ## 验证
 
-当前工程不保留测试源码；Final Closure 使用完整 production reactor clean compile 与运行级 smoke 验证：
+Execution Closure 在验收阶段使用最小 contract regression tests 验证 Runtime / Snapshot / Server 正式语义；这些临时测试在验证通过后删除，正式源码不保留 `src/test`。最终交付以 production reactor `clean compile` 与运行级 smoke 为准：
 
 ```bash
-mvn -pl client,server -am clean compile
+mvn clean compile
 ```
 
-Closure 还需要验证：
+Closure 至少验证：
 
 ```text
+Pause / Resume recording + replay
+sink failure 后 sequence contiguous
+PAUSED Live Step 精确放行一个 checkpoint / StructureEvent / ObservationEvent
+BFS / KMP / Maze factual observation + statistics
+Graph / General Tree / AVL Snapshot invariant rejection
+Server scheduler reject / bounded retention / result & failure query / HTTP errors
+ELK failure containment
 JavaFX startup smoke
 Snapshot isolation
 Timeline replay deterministic
-pause / resume / step / cancel
 x8 playback duration scaling
 x16 playback no-animation backlog
 ```

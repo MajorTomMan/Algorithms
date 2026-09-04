@@ -1,8 +1,7 @@
 package com.majortom.algorithms.core.event.structure;
 
-import com.majortom.algorithms.core.event.ExecutionEvent;
 
-public sealed interface TreeStructureEvent extends ExecutionEvent
+public sealed interface TreeStructureEvent extends StructureEvent
         permits TreeStructureEvent.NodeInserted, TreeStructureEvent.NodeRemoved,
         TreeStructureEvent.ValueChanged, TreeStructureEvent.LeftChanged,
         TreeStructureEvent.RightChanged, TreeStructureEvent.RootChanged,

@@ -15,43 +15,81 @@ public final class DefaultExecutionControl implements RunControl {
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition stateChanged = lock.newCondition();
     private boolean paused;
+    private boolean lifecycleTransitionInProgress;
     private int stepPermits;
     private volatile boolean cancelled;
     private Consumer<ExecutionLifecycleEvent> lifecycleSink;
 
     public void pause() {
+        Consumer<ExecutionLifecycleEvent> sink;
         lock.lock();
         try {
+            awaitLifecycleTransition();
             if (cancelled || paused) {
                 return;
             }
+            lifecycleTransitionInProgress = true;
             paused = true;
             stepPermits = 0;
-            emitLifecycle(new RunPausedEvent());
+            sink = lifecycleSink;
         } finally {
             lock.unlock();
         }
-    }
 
-    public void resume() {
+        RuntimeException failure = emitLifecycle(sink, new RunPausedEvent());
+
         lock.lock();
         try {
-            if (cancelled || !paused) {
-                return;
+            if (failure != null && !cancelled) {
+                paused = false;
             }
-            emitLifecycle(new RunResumedEvent());
-            paused = false;
-            stepPermits = 0;
+            lifecycleTransitionInProgress = false;
             stateChanged.signalAll();
         } finally {
             lock.unlock();
         }
+        if (failure != null) {
+            throw failure;
+        }
     }
 
-    /** Allows exactly one subsequent domain event through while remaining paused. */
+    public void resume() {
+        Consumer<ExecutionLifecycleEvent> sink;
+        lock.lock();
+        try {
+            awaitLifecycleTransition();
+            if (cancelled || !paused) {
+                return;
+            }
+            lifecycleTransitionInProgress = true;
+            sink = lifecycleSink;
+        } finally {
+            lock.unlock();
+        }
+
+        RuntimeException failure = emitLifecycle(sink, new RunResumedEvent());
+
+        lock.lock();
+        try {
+            if (failure == null && !cancelled) {
+                paused = false;
+                stepPermits = 0;
+            }
+            lifecycleTransitionInProgress = false;
+            stateChanged.signalAll();
+        } finally {
+            lock.unlock();
+        }
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
+    /** Allows exactly one subsequent execution gate through while remaining paused. */
     public void step() {
         lock.lock();
         try {
+            awaitLifecycleTransition();
             if (cancelled || !paused) {
                 return;
             }
@@ -65,6 +103,7 @@ public final class DefaultExecutionControl implements RunControl {
     public void cancel() {
         lock.lock();
         try {
+            awaitLifecycleTransition();
             cancelled = true;
             paused = false;
             stepPermits = 0;
@@ -83,7 +122,27 @@ public final class DefaultExecutionControl implements RunControl {
     public void awaitPermission(CancellationToken cancellationToken) throws InterruptedException {
         lock.lockInterruptibly();
         try {
-            while (paused && !cancelled && !cancellationToken.isCancellationRequested()) {
+            while ((paused || lifecycleTransitionInProgress)
+                    && stepPermits == 0
+                    && !cancelled
+                    && !cancellationToken.isCancellationRequested()) {
+                stateChanged.await();
+            }
+            if (paused && !lifecycleTransitionInProgress && stepPermits > 0) {
+                stepPermits--;
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void awaitStartPermission(CancellationToken cancellationToken) throws InterruptedException {
+        lock.lockInterruptibly();
+        try {
+            while ((lifecycleTransitionInProgress || (paused && stepPermits == 0))
+                    && !cancelled
+                    && !cancellationToken.isCancellationRequested()) {
                 stateChanged.await();
             }
         } finally {
@@ -93,13 +152,17 @@ public final class DefaultExecutionControl implements RunControl {
 
     @Override
     public void awaitDomainEventPermission(CancellationToken cancellationToken) throws InterruptedException {
+        awaitPermission(cancellationToken);
+    }
+
+    @Override
+    public void awaitCompletionPermission(CancellationToken cancellationToken) throws InterruptedException {
         lock.lockInterruptibly();
         try {
-            while (paused && stepPermits == 0 && !cancelled && !cancellationToken.isCancellationRequested()) {
+            while ((paused || lifecycleTransitionInProgress)
+                    && !cancelled
+                    && !cancellationToken.isCancellationRequested()) {
                 stateChanged.await();
-            }
-            if (paused && stepPermits > 0) {
-                stepPermits--;
             }
         } finally {
             lock.unlock();
@@ -124,10 +187,23 @@ public final class DefaultExecutionControl implements RunControl {
         }
     }
 
-    private void emitLifecycle(ExecutionLifecycleEvent event) {
-        Consumer<ExecutionLifecycleEvent> sink = lifecycleSink;
-        if (sink != null) {
+    private void awaitLifecycleTransition() {
+        while (lifecycleTransitionInProgress) {
+            stateChanged.awaitUninterruptibly();
+        }
+    }
+
+    private static RuntimeException emitLifecycle(
+            Consumer<ExecutionLifecycleEvent> sink,
+            ExecutionLifecycleEvent event) {
+        if (sink == null) {
+            return null;
+        }
+        try {
             sink.accept(event);
+            return null;
+        } catch (RuntimeException exception) {
+            return exception;
         }
     }
 }
