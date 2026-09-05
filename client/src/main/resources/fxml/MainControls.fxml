@@ -16,7 +16,7 @@
         <VBox fx:id="topShell" styleClass="top-shell">
             <HBox fx:id="topBar" minHeight="72.0" prefHeight="72.0" maxHeight="72.0"
                 styleClass="lab-top-bar" alignment="CENTER_LEFT">
-                <HBox minWidth="430.0" prefWidth="430.0" alignment="CENTER_LEFT" spacing="13" styleClass="brand-zone">
+                <HBox minWidth="260.0" prefWidth="430.0" alignment="CENTER_LEFT" spacing="13" styleClass="brand-zone">
                     <StackPane minWidth="52.0" prefWidth="52.0" minHeight="52.0" prefHeight="52.0" styleClass="brand-mark">
                         <Polygon styleClass="brand-mark-red"><points><Double fx:value="0"/><Double fx:value="0"/><Double fx:value="46"/><Double fx:value="0"/><Double fx:value="0"/><Double fx:value="46"/></points></Polygon>
                         <Polygon styleClass="brand-mark-white"><points><Double fx:value="46"/><Double fx:value="46"/><Double fx:value="12"/><Double fx:value="46"/><Double fx:value="46"/><Double fx:value="12"/></points></Polygon>
@@ -27,7 +27,7 @@
                     </VBox>
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />
-                <HBox fx:id="workspaceModeBox" minWidth="420.0" prefWidth="420.0" maxWidth="420.0"
+                <HBox fx:id="workspaceModeBox" minWidth="260.0" prefWidth="420.0" maxWidth="420.0"
                     styleClass="lab-mode-switch" alignment="CENTER" spacing="0">
                     <Button fx:id="structureWorkspaceBtn" text="STRUCTURE" onAction="#selectStructureWorkspace"
                         maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
@@ -35,7 +35,7 @@
                         maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />
-                <HBox minWidth="500.0" prefWidth="500.0" alignment="CENTER_RIGHT" spacing="18" styleClass="top-context-zone">
+                <HBox minWidth="300.0" prefWidth="500.0" alignment="CENTER_RIGHT" spacing="18" styleClass="top-context-zone">
                     <Label fx:id="topContextLabel" text="ARRAY / STRUCTURE EDITOR" styleClass="top-context-title" />
                     <Label fx:id="runStateLabel" text="EDITING" styleClass="run-state-badge" />
                     <Label fx:id="runIdLabel" text="" styleClass="run-id-label" />
@@ -57,11 +57,11 @@
             <!-- ========================== STRUCTURE MODE ========================== -->
             <VBox fx:id="structureWorkspacePane" focusTraversable="true" styleClass="lab-workspace">
                 <HBox fx:id="structureWorkspaceBody" VBox.vgrow="ALWAYS" styleClass="lab-workspace-body">
-                    <VBox minWidth="142.0" prefWidth="142.0" maxWidth="142.0" styleClass="family-rail">
+                    <VBox minWidth="118.0" prefWidth="142.0" maxWidth="142.0" styleClass="family-rail">
                         <VBox fx:id="structureNavigationBox" fillWidth="true" spacing="0" VBox.vgrow="ALWAYS" styleClass="family-nav" />
                     </VBox>
 
-                    <VBox fx:id="structureControlRail" minWidth="320.0" prefWidth="320.0" maxWidth="340.0" styleClass="structure-control-panel">
+                    <VBox fx:id="structureControlRail" minWidth="260.0" prefWidth="320.0" maxWidth="340.0" styleClass="structure-control-panel">
                         <HBox minHeight="48.0" alignment="CENTER_LEFT" styleClass="panel-topline">
                             <Label fx:id="structureWorkspaceTitleLabel" text="STRUCTURE" styleClass="panel-eyebrow" />
                             <Region HBox.hgrow="ALWAYS" />
@@ -114,7 +114,7 @@
                         </VBox>
                     </StackPane>
 
-                    <VBox fx:id="snapshotPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
+                    <VBox fx:id="snapshotPanel" minWidth="300.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
                         <TabPane fx:id="structureInspectorTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="inspector-tabs">
                             <tabs>
                                 <Tab text="INSPECTOR">
@@ -177,11 +177,11 @@
             <!-- ========================== ALGORITHM MODE ========================== -->
             <VBox fx:id="algorithmWorkspacePane" focusTraversable="true" managed="false" visible="false" styleClass="lab-workspace">
                 <HBox fx:id="algorithmWorkspaceBody" VBox.vgrow="ALWAYS" styleClass="lab-workspace-body">
-                    <VBox minWidth="142.0" prefWidth="142.0" maxWidth="142.0" styleClass="family-rail">
+                    <VBox minWidth="118.0" prefWidth="142.0" maxWidth="142.0" styleClass="family-rail">
                         <VBox fx:id="algorithmNavigationBox" fillWidth="true" spacing="0" VBox.vgrow="ALWAYS" styleClass="family-nav" />
                     </VBox>
 
-                    <VBox fx:id="algorithmControlRail" minWidth="320.0" prefWidth="320.0" maxWidth="340.0" styleClass="algorithm-control-panel">
+                    <VBox fx:id="algorithmControlRail" minWidth="260.0" prefWidth="320.0" maxWidth="340.0" styleClass="algorithm-control-panel">
                         <HBox minHeight="48.0" alignment="CENTER_LEFT" styleClass="panel-topline">
                             <Label fx:id="algorithmWorkspaceTitleLabel" text="ALGORITHM" styleClass="panel-eyebrow" />
                         </HBox>
@@ -220,7 +220,7 @@
                         </VBox>
                     </StackPane>
 
-                    <VBox fx:id="diagnosticsPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
+                    <VBox fx:id="diagnosticsPanel" minWidth="300.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
                         <TabPane fx:id="algorithmInspectorTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="inspector-tabs algorithm-tabs">
                             <tabs>
                                 <Tab text="STATISTICS">
