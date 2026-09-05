@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic;
 
-import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.library.basic.node.ListNode;
 import com.majortom.algorithms.library.structure.LinkedStructure;
 import com.majortom.algorithms.library.structure.QueueStructure;
@@ -36,7 +35,7 @@ public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T
         ListNode<T> next = index == size ? null : nodeAt(index);
         ListNode<T> previous = next == null ? tail : next.getPrevious();
         ListNode<T> inserted = new ListNode<>(value);
-        ExecutionEvents.emit(new LinkedStructureEvent.NodeInserted(inserted.getId(), value));
+        StructureEvents.linkedNodeInserted(inserted.getId(), value);
         inserted.setPrevious(previous);
         inserted.setNext(next);
         if (previous == null) {
@@ -71,7 +70,7 @@ public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T
         node.setNext(null);
         size--;
         T value = node.getValue();
-        ExecutionEvents.emit(new LinkedStructureEvent.NodeRemoved(node.getId(), value));
+        StructureEvents.linkedNodeRemoved(node.getId(), value);
         return value;
     }
 
