@@ -1,8 +1,7 @@
 package com.majortom.algorithms.library.string;
 
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.logging.Log;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.library.structure.StringStructure;
 
 import java.util.ArrayList;
@@ -26,9 +25,7 @@ public final class KmpSearch implements StringSearch {
         for (int targetIndex = 0; targetIndex < text.length(); targetIndex++) {
             boolean matchedCharacter = false;
             while (true) {
-                ExecutionEvents.observe(new ObservationEvent.Compared(
-                        new ObservationEvent.IndexRef("target", targetIndex),
-                        new ObservationEvent.IndexRef("pattern", patternIndex)));
+                Observations.compared("target", targetIndex, "pattern", patternIndex);
                 if (text.charAt(targetIndex) == pattern.charAt(patternIndex)) {
                     patternIndex++;
                     matchedCharacter = true;
@@ -39,7 +36,7 @@ public final class KmpSearch implements StringSearch {
                 }
                 int previousPatternIndex = patternIndex;
                 patternIndex = prefix[patternIndex - 1];
-                ExecutionEvents.observe(new ObservationEvent.Fallback(previousPatternIndex, patternIndex));
+                Observations.fallback(previousPatternIndex, patternIndex);
             }
             if (!matchedCharacter) {
                 continue;
@@ -47,11 +44,11 @@ public final class KmpSearch implements StringSearch {
             if (patternIndex == pattern.length()) {
                 int matchIndex = targetIndex - pattern.length() + 1;
                 matches.add(matchIndex);
-                ExecutionEvents.observe(new ObservationEvent.Matched(matchIndex, pattern.length()));
+                Observations.matched(matchIndex, pattern.length());
                 int previousPatternIndex = patternIndex;
                 patternIndex = prefix[patternIndex - 1];
                 if (patternIndex != previousPatternIndex) {
-                    ExecutionEvents.observe(new ObservationEvent.Fallback(previousPatternIndex, patternIndex));
+                    Observations.fallback(previousPatternIndex, patternIndex);
                 }
             }
         }
