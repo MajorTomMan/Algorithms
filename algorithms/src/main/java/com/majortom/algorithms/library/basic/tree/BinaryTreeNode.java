@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 
 public abstract class BinaryTreeNode<T> extends TreeNode<T> {
     private BinaryTreeNode<T> left;
@@ -29,7 +28,7 @@ public abstract class BinaryTreeNode<T> extends TreeNode<T> {
         }
         Long previousId = id(this.left);
         this.left = left;
-        ExecutionEvents.emit(new TreeStructureEvent.LeftChanged(getId(), previousId, id(left)));
+        StructureEvents.treeLeftChanged(getId(), previousId, id(left));
     }
 
     public void setRight(BinaryTreeNode<T> right) {
@@ -38,7 +37,7 @@ public abstract class BinaryTreeNode<T> extends TreeNode<T> {
         }
         Long previousId = id(this.right);
         this.right = right;
-        ExecutionEvents.emit(new TreeStructureEvent.RightChanged(getId(), previousId, id(right)));
+        StructureEvents.treeRightChanged(getId(), previousId, id(right));
     }
 
     protected void initializeChildren(BinaryTreeNode<T> left, BinaryTreeNode<T> right) {
