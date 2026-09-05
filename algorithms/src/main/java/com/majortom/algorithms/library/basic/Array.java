@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic;
 
-import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.library.structure.ArrayStructure;
 
 import java.util.Collection;
@@ -46,7 +45,7 @@ public final class Array<T> implements ArrayStructure<T> {
             return previous;
         }
         elements[index] = value;
-        ExecutionEvents.emit(new ArrayStructureEvent.Updated(index, previous, value));
+        StructureEvents.arrayUpdated(index, previous, value);
         return previous;
     }
 
@@ -57,7 +56,7 @@ public final class Array<T> implements ArrayStructure<T> {
         System.arraycopy(elements, index, elements, index + 1, size - index);
         elements[index] = value;
         size++;
-        ExecutionEvents.emit(new ArrayStructureEvent.Inserted(index, value));
+        StructureEvents.arrayInserted(index, value);
     }
 
     @Override
@@ -69,7 +68,7 @@ public final class Array<T> implements ArrayStructure<T> {
             System.arraycopy(elements, index + 1, elements, index, moved);
         }
         elements[--size] = null;
-        ExecutionEvents.emit(new ArrayStructureEvent.Removed(index, removed));
+        StructureEvents.arrayRemoved(index, removed);
         return removed;
     }
 
@@ -84,7 +83,7 @@ public final class Array<T> implements ArrayStructure<T> {
         T right = element(rightIndex);
         elements[leftIndex] = right;
         elements[rightIndex] = left;
-        ExecutionEvents.emit(new ArrayStructureEvent.Swapped(leftIndex, rightIndex, right, left));
+        StructureEvents.arraySwapped(leftIndex, rightIndex, right, left);
     }
 
     @Override
