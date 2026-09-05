@@ -180,6 +180,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         }
         MazeSnapshot result = algorithmResultSnapshot;
         applyStructureState(result, false);
+        algorithmInputSnapshot = null;
+        algorithmResultSnapshot = null;
         updateControlState();
         refreshStatsDisplay();
         logI18n("message.maze.result_applied");
@@ -213,6 +215,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         Object output = result.output().orElse(null);
         if (output instanceof GridMaze generated) {
             algorithmResultSnapshot = snapshot(generated);
+            if (!arrayPathfinders.isEmpty()) {
+                selectedOperation = Operation.SOLVE;
+            }
             renderViewState(completedViewState(algorithmResultSnapshot, java.util.Set.of()));
         } else if (output instanceof GraphSnapshot<?> graphSnapshot) {
             @SuppressWarnings("unchecked")
@@ -286,6 +291,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        algorithmResultSnapshot = null;
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
         updateControlState();
@@ -293,6 +299,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     public void useCurrentStructureAsAlgorithmInput() {
+        algorithmResultSnapshot = null;
         algorithmInputSnapshot = null;
         invalidateExecutionForInputChange();
         updateControlState();
@@ -388,6 +395,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private MazeSnapshot selectedAlgorithmSnapshot() {
+        if (algorithmResultSnapshot != null) {
+            return algorithmResultSnapshot;
+        }
         return algorithmInputSnapshot == null ? mazeSnapshot() : algorithmInputSnapshot.state();
     }
 
@@ -542,6 +552,18 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                         updateControlState();
                     }
                 });
+        generatorSelector.showingProperty().addListener((observable, oldValue, showing) -> {
+            if (showing && !isRunning()) {
+                selectedOperation = Operation.GENERATE;
+                updateControlState();
+            }
+        });
+        pathfinderSelector.showingProperty().addListener((observable, oldValue, showing) -> {
+            if (showing && !isRunning()) {
+                selectedOperation = Operation.SOLVE;
+                updateControlState();
+            }
+        });
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             selectFirstAlgorithms();
