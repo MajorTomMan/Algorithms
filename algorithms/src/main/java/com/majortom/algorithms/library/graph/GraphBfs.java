@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.graph;
 
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.library.basic.graph.Edge;
 import com.majortom.algorithms.library.basic.graph.Vertex;
@@ -31,10 +30,10 @@ public final class GraphBfs implements GraphTraversal<Integer> {
         discovered.add(startVertex);
         while (!queue.isEmpty()) {
             Vertex<Integer> node = queue.removeFirst();
-            ExecutionEvents.observe(new ObservationEvent.Visited(ref(node)));
+            Observations.visited(VERTEX_DOMAIN, node.id());
             order.add(node.value());
             for (Vertex<Integer> neighbor : graph.neighbors(node)) {
-                ExecutionEvents.observe(new ObservationEvent.Examined(ref(node), ref(neighbor)));
+                Observations.examined(VERTEX_DOMAIN, node.id(), neighbor.id());
                 if (discovered.add(neighbor)) {
                     queue.addLast(neighbor);
                 }
@@ -54,10 +53,6 @@ public final class GraphBfs implements GraphTraversal<Integer> {
             edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
         }
         return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
-    }
-
-    private static ObservationEvent.EntityRef ref(Vertex<Integer> vertex) {
-        return new ObservationEvent.EntityRef(VERTEX_DOMAIN, vertex.id());
     }
 
     private static Vertex<Integer> vertex(GraphStructure<Integer> graph, int value) {
