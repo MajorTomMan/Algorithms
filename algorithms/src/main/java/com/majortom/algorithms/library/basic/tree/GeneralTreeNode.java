@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +29,7 @@ public final class GeneralTreeNode<T> extends TreeNode<T> {
 
     void addChild(int index, GeneralTreeNode<T> child) {
         children.add(index, child);
-        ExecutionEvents.emit(new TreeStructureEvent.ChildInserted(getId(), index, child.getId(), child.getValue()));
+        StructureEvents.treeChildInserted(getId(), index, child.getId(), child.getValue());
     }
 
     boolean removeChild(GeneralTreeNode<T> child) {
@@ -39,7 +38,7 @@ public final class GeneralTreeNode<T> extends TreeNode<T> {
             return false;
         }
         children.remove(index);
-        ExecutionEvents.emit(new TreeStructureEvent.ChildRemoved(getId(), index, child.getId(), child.getValue()));
+        StructureEvents.treeChildRemoved(getId(), index, child.getId(), child.getValue());
         return true;
     }
 }
