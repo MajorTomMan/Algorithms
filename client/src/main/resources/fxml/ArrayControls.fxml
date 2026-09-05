@@ -108,30 +108,4 @@
             </Button>
         </HBox>
     </VBox>
-
-    <VBox spacing="8">
-        <styleClass>
-            <String fx:value="control-section" />
-            <String fx:value="control-card" />
-            <String fx:value="execution-section" />
-            <String fx:value="algorithm-section" />
-        </styleClass>
-        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
-            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
-            <Label fx:id="executionSectionLabel">
-                <styleClass>
-                    <String fx:value="control-label" />
-                    <String fx:value="control-section-title" />
-                </styleClass>
-            </Label>
-            <Region HBox.hgrow="ALWAYS" />
-            <Label text="⌃" styleClass="section-chevron" />
-        </HBox>
-        <Button fx:id="sortBtn" onAction="#handleSort" maxWidth="Infinity">
-            <styleClass>
-                <String fx:value="btn-run-neon" />
-                <String fx:value="operation-button" />
-            </styleClass>
-        </Button>
-    </VBox>
 </VBox>
