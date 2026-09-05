@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,6 +38,6 @@ public abstract class TreeNode<T> {
         }
         T previous = this.value;
         this.value = value;
-        ExecutionEvents.emit(new TreeStructureEvent.ValueChanged(id, previous, value));
+        StructureEvents.treeValueChanged(id, previous, value);
     }
 }
