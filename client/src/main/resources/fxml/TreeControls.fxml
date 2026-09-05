@@ -18,7 +18,7 @@
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
-        <ComboBox fx:id="structureSelector" maxWidth="Infinity" styleClass="dark-combo-box" />
+        <ComboBox fx:id="structureSelector" maxWidth="Infinity" />
     </VBox>
 
     <VBox spacing="7">
@@ -33,7 +33,7 @@
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
-        <ComboBox fx:id="algorithmSelector" maxWidth="Infinity" styleClass="dark-combo-box" />
+        <ComboBox fx:id="algorithmSelector" maxWidth="Infinity" />
     </VBox>
 
     <VBox spacing="8">

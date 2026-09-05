@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.prefs.Preferences;
 
 /**
@@ -148,11 +150,19 @@ public class MainController implements Initializable {
     @FXML
     private VBox structureSelectionOverlay;
     @FXML
+    private Label selectedEntityTitleLabel;
+    @FXML
+    private Label selectedEntityHintLabel;
+    @FXML
     private Label selectedNodeIdLabel;
     @FXML
     private Label selectedNodeValueLabel;
     @FXML
     private Label structureInspectorBody;
+    @FXML
+    private Label currentSelectionHeadingLabel;
+    @FXML
+    private Label structureOverviewHeadingLabel;
     @FXML
     private Label structureOverviewLabel;
     @FXML
@@ -236,7 +246,11 @@ public class MainController implements Initializable {
     @FXML
     private Label timelinePositionLabel;
     @FXML
-    private HBox timelineMarkers;
+    private Pane timelineMarkers;
+    @FXML
+    private VBox timelineDetails;
+    @FXML
+    private Button timelineToggleBtn;
     @FXML
     private Button speed1Btn;
     @FXML
@@ -292,6 +306,14 @@ public class MainController implements Initializable {
     @FXML
     private Label timelineLabel;
     @FXML
+    private Label speedLabel;
+    @FXML
+    private Label timelineRuntimeLegendLabel;
+    @FXML
+    private Label timelineStructureLegendLabel;
+    @FXML
+    private Label timelineObservationLegendLabel;
+    @FXML
     private LogView logView;
     @FXML
     private Button startBtn;
@@ -341,6 +363,7 @@ public class MainController implements Initializable {
         setupModuleMenu();
         setupWorkspaceMode();
         setupPlaybackSpeedButtons();
+        setupTimelinePresentation();
         setupGlobalEffects();
         setupLayoutClips();
         setupResponsiveLayout();
@@ -359,30 +382,36 @@ public class MainController implements Initializable {
         valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
         hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
         fontScaleLabel.textProperty().bind(I18N.createStringBinding("label.ui_font_scale"));
-        structureWorkspaceBtn.setText("STRUCTURE");
-        algorithmWorkspaceBtn.setText("ALGORITHM");
-        structureWorkspaceTitleLabel.setText("STRUCTURE");
-        algorithmWorkspaceTitleLabel.setText("ALGORITHM");
+        structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
+        algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
+        structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
+        algorithmWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
         structurePreviewTitleLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview"));
         structurePreviewHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview.hint"));
-        snapshotTitleLabel.setText("SNAPSHOTS");
-        structureHistoryTitleLabel.setText("STRUCTURE HISTORY");
-        saveSnapshotBtn.setText("SAVE SNAPSHOT");
+        snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
+        saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
+        currentSelectionHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.current"));
+        structureOverviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.overview"));
         algorithmViewTitleLabel.setText(I18N.text("label.workspace.algorithm.preview"));
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
-        statsTitleLabel.setText("RUN SUMMARY");
-        logTitleLabel.setText("LOG");
-        liveLabel.setText("LIVE");
-        startBtn.setText("RUN ALGORITHM");
+        statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
+        logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
+        startBtn.textProperty().bind(I18N.createStringBinding("action.execution.run_algorithm"));
         resetBtn.setText("✕");
-        replayBtn.setText("REPLAY");
+        replayBtn.textProperty().bind(I18N.createStringBinding("action.execution.replay"));
         exportBtn.textProperty().bind(I18N.createStringBinding("action.execution.export"));
         compareBtn.textProperty().bind(I18N.createStringBinding("action.execution.compare"));
         delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
-        timelineLabel.setText("EXECUTION TIMELINE");
+        timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline.full"));
+        speedLabel.textProperty().bind(I18N.createStringBinding("label.execution.speed"));
+        timelineRuntimeLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.runtime"));
+        timelineStructureLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.structure"));
+        timelineObservationLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.observation"));
         Label logPlaceholder = new Label();
         logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
         logView.setPlaceholder(logPlaceholder);
@@ -917,6 +946,15 @@ public class MainController implements Initializable {
         setPageVisibility(algorithmWorkspacePane, !structure);
         refreshExecutionDockVisibility(structure);
         attachVisualizer(structure);
+        if (currentSubController instanceof ArrayController arrayController) {
+            arrayController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof StringController stringController) {
+            stringController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof MazeController mazeController) {
+            mazeController.setStructureSelectionEnabled(structure);
+        }
         if (structure && currentSubController != null) {
             currentSubController.showStructureState();
         }
@@ -930,6 +968,42 @@ public class MainController implements Initializable {
             return;
         }
         algorithmWorkspacePane.requestFocus();
+    }
+
+    private void setupTimelinePresentation() {
+        if (timelineMarkers != null) {
+            timelineMarkers.widthProperty().addListener((observable, oldValue, newValue) -> {
+                if (timelineDetails != null && timelineDetails.isVisible()) {
+                    rebuildTimelineMarkers();
+                }
+            });
+        }
+        setTimelineExpanded(false);
+    }
+
+    @FXML
+    private void toggleTimelineDetails() {
+        boolean expanded = timelineDetails != null && !timelineDetails.isVisible();
+        setTimelineExpanded(expanded);
+        if (expanded) {
+            rebuildTimelineMarkers();
+        }
+    }
+
+    private void setTimelineExpanded(boolean expanded) {
+        if (timelineDetails != null) {
+            timelineDetails.setManaged(expanded);
+            timelineDetails.setVisible(expanded);
+        }
+        if (bottomDock != null) {
+            bottomDock.setMinHeight(expanded ? 156.0d : 62.0d);
+            bottomDock.setPrefHeight(expanded ? 168.0d : 62.0d);
+            bottomDock.getStyleClass().removeAll("timeline-collapsed", "timeline-expanded");
+            bottomDock.getStyleClass().add(expanded ? "timeline-expanded" : "timeline-collapsed");
+        }
+        if (timelineToggleBtn != null) {
+            timelineToggleBtn.setText(expanded ? "▼" : "▲");
+        }
     }
 
     private void setupGlobalEffects() {
@@ -1766,6 +1840,27 @@ public class MainController implements Initializable {
         if (currentSubController instanceof TreeController treeController) {
             treeController.setSelectionListener(this::showTreeSelection);
         }
+        if (currentSubController instanceof ArrayController arrayController) {
+            arrayController.setSelectionListener(this::showArraySelection);
+            arrayController.setStructureSelectionEnabled(isStructurePageVisible());
+        }
+        if (currentSubController instanceof StringController stringController) {
+            stringController.setSelectionListener(this::showStringSelection);
+            stringController.setStructureSelectionEnabled(isStructurePageVisible());
+        }
+        if (currentSubController instanceof GraphController graphController) {
+            graphController.setSelectionListener(this::showGraphSelection);
+        }
+        if (currentSubController instanceof MazeController mazeController) {
+            mazeController.setSelectionListener(this::showMazeSelection);
+            mazeController.setStructureSelectionEnabled(isStructurePageVisible());
+        }
+        if (currentSubController instanceof LinkedListController linkedController) {
+            linkedController.setSelectionListener(this::showLinkedSelection);
+        }
+        if (currentSubController instanceof LinearStructureController linearController) {
+            linearController.setSelectionListener(this::showLinearSelection);
+        }
     }
 
     private void showTreeSelection(TreeController.NodeSelection selection) {
@@ -1773,18 +1868,124 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        if (structureSelectionOverlay != null) {
-            structureSelectionOverlay.setManaged(true);
-            structureSelectionOverlay.setVisible(true);
-        }
-        if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText("#" + selection.id());
-        if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(Integer.toString(selection.value()));
+        showStructureSelectionOverlay("SELECTED NODE", "#" + selection.id(),
+                Integer.toString(selection.value()), "Ready to edit or remove this node.");
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(String.format(Locale.ROOT,
                     "Node ID        #%d%nValue          %d%nParent         %s%nChildren       %d%nDepth          %d",
                     selection.id(), selection.value(), selection.parentId() == null ? "none" : "#" + selection.parentId(),
                     selection.childCount(), selection.depth()));
         }
+    }
+
+    private void showArraySelection(ArrayController.IndexSelection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        showStructureSelectionOverlay("SELECTED CELL", "[" + selection.index() + "]",
+                Integer.toString(selection.value()), "Index and operation fields follow this cell.");
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Index          %d%nValue          %d%nSize           %d",
+                    selection.index(), selection.value(), selection.size()));
+        }
+    }
+
+    private void showStringSelection(StringController.IndexSelection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        showStructureSelectionOverlay("SELECTED CHARACTER", "[" + selection.index() + "]",
+                Character.toString(selection.value()), "Index and character fields follow this position.");
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Index          %d%nCharacter      %s%nLength         %d",
+                    selection.index(), Character.toString(selection.value()), selection.length()));
+        }
+    }
+
+    private void showGraphSelection(GraphController.Selection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        if (selection instanceof GraphController.NodeSelection node) {
+            showStructureSelectionOverlay("SELECTED NODE", "#" + node.id(),
+                    Integer.toString(node.value()), "Node editor fields follow this vertex.");
+            if (structureInspectorBody != null) {
+                structureInspectorBody.setText(String.format(Locale.ROOT,
+                        "Node ID        #%d%nValue          %d%nDegree         %d",
+                        node.id(), node.value(), node.degree()));
+            }
+            return;
+        }
+        GraphController.EdgeSelection edge = (GraphController.EdgeSelection) selection;
+        String relation = edge.directed() ? " → " : " — ";
+        showStructureSelectionOverlay("SELECTED EDGE", "E#" + edge.id(),
+                edge.fromValue() + relation + edge.toValue(), "Edge editor fields follow this relation.");
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Edge ID        #%d%nFrom           %d%nTo             %d%nDirected       %s",
+                    edge.id(), edge.fromValue(), edge.toValue(), edge.directed() ? "yes" : "no"));
+        }
+    }
+
+    private void showLinkedSelection(LinkedListController.NodeSelection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        showStructureSelectionOverlay("SELECTED NODE", "#" + selection.id(),
+                Integer.toString(selection.value()), "Linked pointer facts from the current ViewState.");
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Node ID        #%d%nValue          %d%nIndex          %d%nPrevious       %s%nNext           %s%nSize           %d",
+                    selection.id(), selection.value(), selection.index(),
+                    selection.previousId() == null ? "none" : "#" + selection.previousId(),
+                    selection.nextId() == null ? "none" : "#" + selection.nextId(), selection.size()));
+        }
+    }
+
+    private void showLinearSelection(LinearStructureController.ItemSelection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        showStructureSelectionOverlay("SELECTED ITEM", "[" + selection.index() + "]",
+                Integer.toString(selection.value()), selection.role());
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Index          %d%nValue          %d%nRole           %s%nSize           %d",
+                    selection.index(), selection.value(), selection.role(), selection.size()));
+        }
+    }
+
+    private void showMazeSelection(MazeController.CellSelection selection) {
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        showStructureSelectionOverlay("SELECTED CELL",
+                "[" + selection.row() + "," + selection.column() + "]",
+                selection.state(), "Maze selection is presentation-only.");
+        if (structureInspectorBody != null) {
+            structureInspectorBody.setText(String.format(Locale.ROOT,
+                    "Row            %d%nColumn         %d%nCell State     %s",
+                    selection.row(), selection.column(), selection.state()));
+        }
+    }
+
+    private void showStructureSelectionOverlay(String title, String id, String value, String hint) {
+        if (structureSelectionOverlay != null) {
+            structureSelectionOverlay.setManaged(true);
+            structureSelectionOverlay.setVisible(true);
+        }
+        if (selectedEntityTitleLabel != null) selectedEntityTitleLabel.setText(title);
+        if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
+        if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
+        if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
     }
 
     private void clearStructureSelection() {
@@ -1807,6 +2008,7 @@ public class MainController implements Initializable {
                 currentStepOverlay.setManaged(false);
                 currentStepOverlay.setVisible(false);
             }
+            updateVisualizationObstruction(false);
             if (eventKindLabel != null) eventKindLabel.setText("NO EVENT");
             if (eventDetailsLabel != null) eventDetailsLabel.setText("Run an algorithm or select a timeline event.");
             if (eventKindDot != null) setEventDotClass("event-dot-idle");
@@ -1816,6 +2018,7 @@ public class MainController implements Initializable {
                 currentStepOverlay.setManaged(true);
                 currentStepOverlay.setVisible(true);
             }
+            updateVisualizationObstruction(true);
             String kind = eventDisplayName(current);
             if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
             if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
@@ -1836,6 +2039,15 @@ public class MainController implements Initializable {
         refreshRunSummary();
         rebuildTimelineMarkers();
         refreshStructureSummary();
+    }
+
+    private void updateVisualizationObstruction(boolean currentStepVisible) {
+        if (currentSubController == null || currentSubController.getVisualizer() == null) {
+            return;
+        }
+        double left = currentStepVisible ? 254.0d : 0.0d;
+        currentSubController.getVisualizer().setViewportObstructionInsets(
+                new javafx.geometry.Insets(0.0d, 0.0d, 0.0d, left));
     }
 
     private String eventDisplayName(EventEnvelope envelope) {
@@ -1979,49 +2191,100 @@ public class MainController implements Initializable {
 
     private void updateTimelineCursorCallout(EventEnvelope current) {
         if (timelineCursorLabel == null || current == null) return;
-        timelineCursorLabel.setText(String.format(Locale.ROOT, "#%04d   %s", current.sequence(), eventDisplayName(current)));
+        timelineCursorLabel.setText(String.format(Locale.ROOT, "#%04d  %s", current.sequence(), eventDisplayName(current)));
         timelineCursorLabel.setManaged(true);
         timelineCursorLabel.setVisible(true);
-        int count = currentSubController.executionEvents().size();
-        int index = currentSubController.presentationEventIndex();
-        if (timelineSlider != null && count > 1 && timelineSlider.getWidth() > 0.0d) {
-            double ratio = Math.max(0.0d, Math.min(1.0d, index / (double) (count - 1)));
-            double usable = Math.max(0.0d, timelineSlider.getWidth() - 190.0d);
-            timelineCursorLabel.setTranslateX((ratio - 0.5d) * usable);
-        }
     }
 
     private record MetricDisplay(String title, String value) {}
 
     private void rebuildTimelineMarkers() {
-        if (timelineMarkers == null || currentSubController == null) return;
+        if (timelineMarkers == null || currentSubController == null
+                || timelineDetails == null || !timelineDetails.isVisible()) {
+            return;
+        }
         timelineMarkers.getChildren().clear();
         List<EventEnvelope> events = currentSubController.executionEvents();
         if (events.isEmpty()) return;
-        int max = 15;
-        int step = Math.max(1, (int) Math.ceil(events.size() / (double) max));
+
+        Region track = new Region();
+        track.getStyleClass().add("timeline-marker-track");
+        track.setManaged(false);
+        double paneWidth = timelineMarkers.getWidth() > 0.0d ? timelineMarkers.getWidth() : 700.0d;
+        track.resizeRelocate(14.0d, 14.0d, Math.max(1.0d, paneWidth - 28.0d), 1.0d);
+        timelineMarkers.getChildren().add(track);
+
         int currentIndex = currentSubController.presentationEventIndex();
-        for (int index = 0; index < events.size(); index += step) {
+        Set<Integer> indexes = timelineMarkerIndexes(events, currentIndex);
+        double usableWidth = Math.max(1.0d, paneWidth - 28.0d);
+        for (int index : indexes) {
             EventEnvelope envelope = events.get(index);
-            Label marker = new Label(eventMarker(envelope));
-            marker.getStyleClass().add("timeline-marker");
-            marker.getStyleClass().add(eventMarkerClass(envelope));
-            if (index == currentIndex) marker.getStyleClass().add("timeline-marker-current");
+            VBox marker = new VBox(3.0d);
+            marker.setAlignment(javafx.geometry.Pos.TOP_CENTER);
+            marker.setPrefWidth(42.0d);
+            marker.setMinWidth(42.0d);
+            marker.setMaxWidth(42.0d);
+            marker.setManaged(false);
+            marker.getStyleClass().add("timeline-marker-node");
+
+            Region symbol = new Region();
+            symbol.getStyleClass().addAll("timeline-marker-symbol", eventMarkerClass(envelope));
+            if (index == currentIndex) symbol.getStyleClass().add("timeline-marker-current");
+            Label sequence = new Label(Integer.toString(index + 1));
+            sequence.getStyleClass().add("timeline-marker-sequence");
+            if (index == currentIndex) sequence.getStyleClass().add("timeline-marker-sequence-current");
+            marker.getChildren().setAll(symbol, sequence);
+
+            double ratio = events.size() <= 1 ? 0.0d : index / (double) (events.size() - 1);
+            marker.relocate(14.0d + ratio * usableWidth - 21.0d, 8.0d);
+            marker.setOnMouseClicked(event -> {
+                if (!currentSubController.isRunning()) {
+                    currentSubController.seekEventIndex(index);
+                    refreshExecutionPresentation();
+                }
+                event.consume();
+            });
             timelineMarkers.getChildren().add(marker);
         }
     }
 
-    private String eventMarker(EventEnvelope envelope) {
-        if (envelope.event() instanceof ExecutionLifecycleEvent) return "◆";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "■";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.observation.ObservationEvent) return "●";
-        return "·";
+    private Set<Integer> timelineMarkerIndexes(List<EventEnvelope> events, int currentIndex) {
+        TreeSet<Integer> indexes = new TreeSet<>();
+        int last = events.size() - 1;
+        indexes.add(0);
+        indexes.add(last);
+        if (currentIndex >= 0 && currentIndex <= last) indexes.add(currentIndex);
+        for (int index = 0; index < events.size(); index++) {
+            if (events.get(index).event() instanceof ExecutionLifecycleEvent) {
+                indexes.add(index);
+            }
+        }
+
+        int budget = Math.max(13, indexes.size());
+        List<Integer> domainCandidates = new ArrayList<>();
+        for (int index = 0; index < events.size(); index++) {
+            Object event = events.get(index).event();
+            if ((event instanceof com.majortom.algorithms.core.event.structure.StructureEvent
+                    || event instanceof ObservationEvent) && !indexes.contains(index)) {
+                domainCandidates.add(index);
+            }
+        }
+        int remaining = Math.max(0, budget - indexes.size());
+        if (remaining > 0 && !domainCandidates.isEmpty()) {
+            double step = domainCandidates.size() / (double) remaining;
+            for (int slot = 0; slot < remaining; slot++) {
+                int candidate = domainCandidates.get(Math.min(domainCandidates.size() - 1,
+                        (int) Math.floor(slot * step)));
+                indexes.add(candidate);
+            }
+        }
+        return indexes;
     }
 
     private String eventMarkerClass(EventEnvelope envelope) {
         if (envelope.event() instanceof ExecutionLifecycleEvent) return "timeline-runtime";
         if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "timeline-structure";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.observation.ObservationEvent) return "timeline-observation";
+        if (envelope.event() instanceof ObservationEvent) return "timeline-observation";
         return "timeline-other";
     }
 

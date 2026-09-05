@@ -5,7 +5,8 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.structure.QueueStructure;
 import com.majortom.algorithms.library.structure.StackStructure;
-import com.majortom.algorithms.visualization.impl.visualizer.StackQueueVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.fxml.FXML;
@@ -17,6 +18,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /** Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7. */
 public final class LinearStructureController extends BaseModuleController<LinearStructureViewState>
@@ -28,6 +30,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private final String moduleId;
     private final StackStructure<Integer> stack;
     private final QueueStructure<Integer> queue;
+    private Consumer<ItemSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
     @FXML private Label operationsLabel;
@@ -40,7 +43,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @SuppressWarnings("unchecked")
     private LinearStructureController(Kind kind, String moduleId) {
-        super(new StackQueueVisualizer(), "/fxml/LinearStructureControls.fxml");
+        super(kind == Kind.STACK ? new StackVisualizer() : new QueueVisualizer(), "/fxml/LinearStructureControls.fxml");
         this.kind = kind;
         this.moduleId = moduleId;
         stack = kind == Kind.STACK ? (StackStructure<Integer>) module("structure.stack.Integer", LinkedList.class) : null;
@@ -61,6 +64,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         configureControls();
+        if (kind == Kind.STACK) stackVisualizer().setSelectionListener(this::handleVisualSelection);
+        else queueVisualizer().setSelectionListener(this::handleVisualSelection);
     }
 
     @FXML
@@ -98,6 +103,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void push() {
+        clearVisualSelection();
         Integer value = value();
         if (value == null) {
             return;
@@ -106,12 +112,13 @@ public final class LinearStructureController extends BaseModuleController<Linear
             stack.push(value);
             return null;
         })) {
-            renderStructureState(currentState());
+            renderMutation(LinearStructureViewState.Type.PUSH, value);
             logI18n("message.stack.pushed", value);
         }
     }
 
     private void pop() {
+        clearVisualSelection();
         if (stack.isEmpty()) {
             logI18n("message.linear.empty");
             return;
@@ -121,7 +128,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             value[0] = stack.pop();
             return null;
         })) {
-            renderStructureState(currentState());
+            renderMutation(LinearStructureViewState.Type.POP, value[0]);
             logI18n("message.stack.popped", value[0]);
         }
     }
@@ -135,6 +142,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void enqueue() {
+        clearVisualSelection();
         Integer value = value();
         if (value == null) {
             return;
@@ -143,12 +151,13 @@ public final class LinearStructureController extends BaseModuleController<Linear
             queue.enqueue(value);
             return null;
         })) {
-            renderStructureState(currentState());
+            renderMutation(LinearStructureViewState.Type.ENQUEUE, value);
             logI18n("message.queue.enqueued", value);
         }
     }
 
     private void dequeue() {
+        clearVisualSelection();
         if (queue.isEmpty()) {
             logI18n("message.linear.empty");
             return;
@@ -158,7 +167,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             value[0] = queue.dequeue();
             return null;
         })) {
-            renderStructureState(currentState());
+            renderMutation(LinearStructureViewState.Type.DEQUEUE, value[0]);
             logI18n("message.queue.dequeued", value[0]);
         }
     }
@@ -204,6 +213,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return new LinearStructureViewState(moduleId, values());
     }
 
+    private void renderMutation(LinearStructureViewState.Type type, Integer value) {
+        renderStructureState(new LinearStructureViewState(
+                moduleId, values(), LinearStructureViewState.Mutation.of(type, value)));
+    }
+
     private List<Integer> values() {
         List<Integer> values = new ArrayList<>();
         Iterable<Integer> source = kind == Kind.STACK ? stack : queue;
@@ -237,6 +251,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     protected void onResetData() {
+        clearVisualSelection();
         clearWithoutRuntime();
         seed();
         renderStructureState(currentState());
@@ -252,6 +267,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (!moduleId.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        clearVisualSelection();
         clearWithoutRuntime();
         List<Integer> snapshotValues = snapshot.state().values();
         if (kind == Kind.STACK) {
@@ -269,6 +285,50 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
+    }
+
+    public void setSelectionListener(Consumer<ItemSelection> listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    private void handleVisualSelection(int index) {
+        List<Integer> current = values();
+        if (index < 0 || index >= current.size()) {
+            clearVisualSelection();
+            return;
+        }
+        int value = current.get(index);
+        valueField.setText(Integer.toString(value));
+        String role;
+        if (kind == Kind.STACK) {
+            role = index == 0 ? "TOP" : "ITEM";
+        } else if (current.size() == 1) {
+            role = "FRONT / REAR";
+        } else if (index == 0) {
+            role = "FRONT";
+        } else if (index == current.size() - 1) {
+            role = "REAR";
+        } else {
+            role = "ITEM";
+        }
+        selectionListener.accept(new ItemSelection(index, value, role, current.size()));
+    }
+
+    private void clearVisualSelection() {
+        if (kind == Kind.STACK) stackVisualizer().clearSelection();
+        else queueVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private StackVisualizer stackVisualizer() {
+        return (StackVisualizer) visualizer;
+    }
+
+    private QueueVisualizer queueVisualizer() {
+        return (QueueVisualizer) visualizer;
+    }
+
+    public record ItemSelection(int index, int value, String role, int size) {
     }
 
     private void clearWithoutRuntime() {

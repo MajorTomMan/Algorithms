@@ -11,11 +11,14 @@ import org.eclipse.elk.core.math.ElkPadding;
 import org.eclipse.elk.core.options.CoreOptions;
 import org.eclipse.elk.core.options.Direction;
 import org.eclipse.elk.core.options.EdgeRouting;
+import org.eclipse.elk.core.options.PortConstraints;
+import org.eclipse.elk.core.options.PortSide;
 import org.eclipse.elk.core.util.BasicProgressMonitor;
 import org.eclipse.elk.graph.ElkBendPoint;
 import org.eclipse.elk.graph.ElkEdge;
 import org.eclipse.elk.graph.ElkEdgeSection;
 import org.eclipse.elk.graph.ElkNode;
+import org.eclipse.elk.graph.ElkPort;
 import org.eclipse.elk.graph.util.ElkGraphUtil;
 
 import java.util.ArrayList;
@@ -56,13 +59,16 @@ public final class TreeElkLayout {
             elkNodes.put(nodeSize.id(), node);
         }
 
+        Map<String, ElkPort> sourcePorts = request.kind() == Kind.BINARY
+                ? createOrderedSourcePorts(request, elkNodes) : Map.of();
         for (Link link : request.links()) {
             ElkNode source = elkNodes.get(link.sourceId());
             ElkNode target = elkNodes.get(link.targetId());
             if (source == null || target == null) {
                 continue;
             }
-            ElkEdge edge = ElkGraphUtil.createSimpleEdge(source, target);
+            ElkPort sourcePort = sourcePorts.get(link.id());
+            ElkEdge edge = ElkGraphUtil.createSimpleEdge(sourcePort == null ? source : sourcePort, target);
             edge.setIdentifier(link.id());
         }
 
@@ -87,6 +93,34 @@ public final class TreeElkLayout {
             edges.put(edge.getIdentifier(), new EdgeRoute(edge.getIdentifier(), points));
         }
         return new LayoutResult(elements, edges);
+    }
+
+    private Map<String, ElkPort> createOrderedSourcePorts(LayoutRequest request, Map<Long, ElkNode> elkNodes) {
+        Map<Long, List<Link>> outgoing = new LinkedHashMap<>();
+        for (Link link : request.links()) {
+            outgoing.computeIfAbsent(link.sourceId(), ignored -> new ArrayList<>()).add(link);
+        }
+
+        Map<String, ElkPort> ports = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<Link>> entry : outgoing.entrySet()) {
+            ElkNode source = elkNodes.get(entry.getKey());
+            if (source == null) {
+                continue;
+            }
+            List<Link> ordered = new ArrayList<>(entry.getValue());
+            ordered.sort((left, right) -> Integer.compare(left.index(), right.index()));
+            source.setProperty(CoreOptions.PORT_CONSTRAINTS, PortConstraints.FIXED_ORDER);
+            for (int ordinal = 0; ordinal < ordered.size(); ordinal++) {
+                Link link = ordered.get(ordinal);
+                ElkPort port = ElkGraphUtil.createPort(source);
+                port.setIdentifier("port:" + link.id());
+                port.setDimensions(1.0d, 1.0d);
+                port.setProperty(CoreOptions.PORT_SIDE, PortSide.SOUTH);
+                port.setProperty(CoreOptions.PORT_INDEX, ordered.size() - 1 - ordinal);
+                ports.put(link.id(), port);
+            }
+        }
+        return ports;
     }
 
     public record LayoutRequest(Kind kind, List<NodeSize> nodes, List<Link> links) {

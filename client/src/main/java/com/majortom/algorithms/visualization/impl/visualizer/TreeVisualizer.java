@@ -17,7 +17,6 @@ import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout.
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Bounds;
@@ -38,8 +37,8 @@ import java.util.function.LongConsumer;
 
 /** General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX viewport. */
 public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
-    private static final double MIN_RADIUS = 36.0d;
-    private static final double LABEL_PADDING = 24.0d;
+    private static final double MIN_RADIUS = 24.0d;
+    private static final double LABEL_PADDING = 18.0d;
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
@@ -53,7 +52,11 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         return thread;
     });
     private final AtomicLong layoutVersion = new AtomicLong();
+    private final Object layoutQueueLock = new Object();
+    private LayoutJob queuedLayout;
+    private boolean layoutWorkerActive;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
+    private final Map<Long, Point2D> settledTargets = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
     private boolean measuringElements;
     private final InvalidationListener elementSizeListener = observable -> {
@@ -81,7 +84,9 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
 
     @Override
     protected void draw(TreeViewState state) {
-        stopActiveAnimation();
+        if (layoutAffectingChange(renderedState, state)) {
+            stopActiveAnimation();
+        }
         cleanupDetachedViews();
         List<Animation> transitions = new ArrayList<>();
         Set<Long> newNodeIds = new HashSet<>();
@@ -111,17 +116,11 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                             animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
-                TreeViewState.Node previous = renderedState.nodes().get(node.id());
                 view.setText(Integer.toString(node.value()));
-                view.setHighlighted(false);
-                if (previous != null && previous.value() != node.value()) {
-                    view.setHighlighted(true);
-                    PauseTransition clearHighlight = new PauseTransition(Duration.millis(360.0d));
-                    NodeView highlightedView = view;
-                    clearHighlight.setOnFinished(event -> highlightedView.setHighlighted(false));
-                    transitions.add(clearHighlight);
-                }
             }
+            view.setCurrent(state.currentNodeIds().contains(node.id()));
+            view.setHighlighted(state.observedNodeIds().contains(node.id()));
+            view.setVisited(state.visitedNodeIds().contains(node.id()));
         }
 
         syncSelectionState();
@@ -132,6 +131,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 .toList();
         for (Long nodeId : removedIds) {
             NodeView view = nodeViews.remove(nodeId);
+            settledTargets.remove(nodeId);
             view.layoutBoundsProperty().removeListener(elementSizeListener);
             if (firstRender) {
                 surface.nodeLayer().getChildren().remove(view);
@@ -153,7 +153,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitIfPristine();
+                surface.fitWithMinimumScale(0.78d);
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }
@@ -236,14 +236,41 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         pendingVersion = version;
         pendingTransitions = List.copyOf(transitions);
         pendingNewNodeIds = Set.copyOf(newNodeIds);
-        layoutExecutor.execute(() -> {
-            try {
-                LayoutResult result = layout.layout(request);
-                Platform.runLater(() -> applyLayout(version, result));
-            } catch (Throwable failure) {
-                Platform.runLater(() -> handleLayoutFailure(version, failure));
+
+        boolean startWorker = false;
+        synchronized (layoutQueueLock) {
+            queuedLayout = new LayoutJob(version, request);
+            if (!layoutWorkerActive) {
+                layoutWorkerActive = true;
+                startWorker = true;
             }
-        });
+        }
+        if (startWorker) {
+            layoutExecutor.execute(this::runLatestLayouts);
+        }
+    }
+
+    private void runLatestLayouts() {
+        while (!Thread.currentThread().isInterrupted()) {
+            LayoutJob job;
+            synchronized (layoutQueueLock) {
+                job = queuedLayout;
+                queuedLayout = null;
+                if (job == null) {
+                    layoutWorkerActive = false;
+                    return;
+                }
+            }
+            try {
+                LayoutResult result = layout.layout(job.request());
+                Platform.runLater(() -> applyLayout(job.version(), result));
+            } catch (Throwable failure) {
+                Platform.runLater(() -> handleLayoutFailure(job.version(), failure));
+            }
+        }
+        synchronized (layoutQueueLock) {
+            layoutWorkerActive = false;
+        }
     }
 
     private void applyLayout(long version, LayoutResult result) {
@@ -264,6 +291,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 continue;
             }
             Point2D target = new Point2D(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
+            settledTargets.put(entry.getKey(), target);
             NodeView view = entry.getValue();
             if (!hasAppliedLayout || newNodeIds.contains(entry.getKey())) {
                 view.setCenter(target.getX(), target.getY());
@@ -280,7 +308,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         Runnable finish = () -> {
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
-                surface.fitIfPristine();
+                surface.fitWithMinimumScale(0.78d);
             }
         };
         play(transitions, finish);
@@ -430,6 +458,9 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private void invalidateLayout() {
         layoutVersion.incrementAndGet();
         lastLayoutInput = LayoutRequest.empty();
+        synchronized (layoutQueueLock) {
+            queuedLayout = null;
+        }
     }
 
     private void play(List<Animation> transitions, Runnable onFinished) {
@@ -441,11 +472,29 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
         ParallelTransition parallel = new ParallelTransition();
         parallel.getChildren().addAll(transitions);
-        if (onFinished != null) {
-            parallel.setOnFinished(event -> onFinished.run());
+        if (activeAnimation != null && activeAnimation.getStatus() == Animation.Status.RUNNING) {
+            if (onFinished != null) {
+                parallel.setOnFinished(event -> onFinished.run());
+            }
+            parallel.play();
+            return;
         }
         activeAnimation = parallel;
+        parallel.setOnFinished(event -> {
+            if (activeAnimation == parallel) {
+                activeAnimation = null;
+            }
+            if (onFinished != null) {
+                onFinished.run();
+            }
+        });
         parallel.play();
+    }
+
+    private boolean layoutAffectingChange(TreeViewState previous, TreeViewState current) {
+        return previous.kind() != current.kind()
+                || !java.util.Objects.equals(previous.rootId(), current.rootId())
+                || !previous.nodes().equals(current.nodes());
     }
 
     private void stopActiveAnimation() {
@@ -455,12 +504,21 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
         // A new factual frame may arrive before a presentation fade/scale completes.
         // Never allow an interrupted animation to become persistent geometry/style state.
-        nodeViews.values().forEach(view -> {
+        nodeViews.forEach((id, view) -> {
+            Point2D target = settledTargets.get(id);
+            if (target != null) {
+                view.setCenter(target.getX(), target.getY());
+            }
             view.setOpacity(1.0d);
             view.setScaleX(1.0d);
             view.setScaleY(1.0d);
         });
         edgeViews.values().forEach(edge -> edge.setOpacity(1.0d));
+    }
+
+    @Override
+    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
+        surface.setObstructionInsets(insets);
     }
 
     @Override
@@ -480,6 +538,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         renderedState = TreeViewState.empty(TreeViewState.Kind.GENERAL);
         nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         nodeViews.clear();
+        settledTargets.clear();
         edgeViews.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
@@ -533,6 +592,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             return styleClass;
         }
     }
+
+    private record LayoutJob(long version, LayoutRequest request) {}
 
     private record EdgeKey(long sourceId, long targetId, Relation relation, int index) {}
     private record EdgeSpec(long sourceId, long targetId) {}

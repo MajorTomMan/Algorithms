@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /** Linked-list workbench backed by factual node/link events and the family-specific linked visualizer. */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
@@ -27,6 +28,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private static final String MODULE_ID = "linked-list";
 
     private final LinkedStructure<Integer> linkedList;
+    private Consumer<NodeSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
     @FXML private Label operationsLabel;
@@ -49,6 +51,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         configureControls();
+        linkedVisualizer().setSelectionListener(this::handleVisualSelection);
     }
 
     @FXML
@@ -72,6 +75,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void insert() {
+        clearVisualSelection();
         Integer value = value();
         if (value == null) {
             return;
@@ -91,6 +95,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void remove() {
+        clearVisualSelection();
         Integer target = index(false);
         if (target == null || target < 0 || target >= linkedList.size()) {
             logI18n("message.error.invalid_linear_index");
@@ -113,6 +118,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void update() {
+        clearVisualSelection();
         Integer target = index(false);
         Integer value = value();
         if (target == null || value == null || target < 0 || target >= linkedList.size()) {
@@ -214,6 +220,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     protected void onResetData() {
+        clearVisualSelection();
         clearWithoutRuntime();
         seed();
         renderStructureState(currentState());
@@ -229,6 +236,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (!MODULE_ID.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        clearVisualSelection();
         clearWithoutRuntime();
         for (Integer value : snapshot.state().values()) {
             linkedList.insert(linkedList.size(), value);
@@ -239,6 +247,50 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
+    }
+
+    public void setSelectionListener(Consumer<NodeSelection> listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    private void handleVisualSelection(long nodeId) {
+        if (nodeId <= 0L) {
+            clearVisualSelection();
+            return;
+        }
+        LinkedListViewState state = latestStructureState();
+        if (state == null) state = currentState();
+        LinkedListViewState.Node node = state.nodes().get(nodeId);
+        if (node == null) {
+            clearVisualSelection();
+            return;
+        }
+        List<Long> order = new ArrayList<>();
+        Long current = state.nodes().values().stream()
+                .filter(candidate -> candidate.previousId() == null)
+                .map(LinkedListViewState.Node::id)
+                .findFirst()
+                .orElse(null);
+        while (current != null && state.nodes().containsKey(current) && !order.contains(current)) {
+            order.add(current);
+            current = state.nodes().get(current).nextId();
+        }
+        int index = order.indexOf(nodeId);
+        valueField.setText(Integer.toString(node.value()));
+        if (index >= 0) indexField.setText(Integer.toString(index));
+        selectionListener.accept(new NodeSelection(node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+    }
+
+    private void clearVisualSelection() {
+        linkedVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private LinkedListVisualizer linkedVisualizer() {
+        return (LinkedListVisualizer) visualizer;
+    }
+
+    public record NodeSelection(long id, int value, Long previousId, Long nextId, int index, int size) {
     }
 
     private void clearWithoutRuntime() {

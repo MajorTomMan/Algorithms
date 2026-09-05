@@ -3,6 +3,7 @@ package com.majortom.algorithms.core.event.observation;
 import com.majortom.algorithms.core.event.ExecutionEvent;
 import com.majortom.algorithms.core.statistics.StatisticsContribution;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -12,7 +13,8 @@ import java.util.Objects;
  */
 public sealed interface ObservationEvent extends ExecutionEvent, StatisticsContribution
         permits ObservationEvent.Compared, ObservationEvent.Visited, ObservationEvent.Examined,
-        ObservationEvent.Matched, ObservationEvent.Fallback, ObservationEvent.Backtracked {
+        ObservationEvent.Matched, ObservationEvent.Fallback, ObservationEvent.Backtracked,
+        ObservationEvent.PathFound {
 
     /** Marker for stable references carried by observation facts. */
     sealed interface Reference permits EntityRef, IndexRef, CoordinateRef, ValueRef {
@@ -125,6 +127,22 @@ public sealed interface ObservationEvent extends ExecutionEvent, StatisticsContr
         @Override
         public Map<String, Long> metricDeltas() {
             return Map.of("backtracks", 1L);
+        }
+    }
+
+    /** Factual final path, expressed only through stable domain references. */
+    record PathFound(List<Reference> refs) implements ObservationEvent {
+        public PathFound {
+            refs = List.copyOf(Objects.requireNonNull(refs, "refs"));
+            if (refs.isEmpty()) {
+                throw new IllegalArgumentException("path refs must not be empty");
+            }
+            for (Reference ref : refs) Objects.requireNonNull(ref, "path ref");
+        }
+
+        @Override
+        public Map<String, Long> metricDeltas() {
+            return Map.of();
         }
     }
 

@@ -6,6 +6,9 @@ import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 
 /** Applies AtlantaFX control semantics while preserving project-specific layout classes. */
 final class WorkbenchTheme {
@@ -72,6 +75,12 @@ final class WorkbenchTheme {
 
         if (hasAny(node, "compact-button", "operation-button", "snapshot-card-action")) {
             add(node, Styles.SMALL);
+        }
+        if (node.getStyleClass().contains("operation-button") && node instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+            if (node.getParent() instanceof HBox) {
+                HBox.setHgrow(node, Priority.ALWAYS);
+            }
         }
     }
 

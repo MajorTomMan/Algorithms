@@ -106,11 +106,11 @@
                         <VBox fx:id="structureSelectionOverlay" mouseTransparent="true" managed="false" visible="false"
                             maxWidth="220.0" prefWidth="220.0" maxHeight="184.0" prefHeight="184.0"
                             StackPane.alignment="TOP_RIGHT" styleClass="selection-overlay">
-                            <HBox alignment="CENTER_LEFT"><Label text="SELECTED NODE" styleClass="overlay-eyebrow"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="selectedNodeIdLabel" text="#—" styleClass="overlay-id"/></HBox>
+                            <HBox alignment="CENTER_LEFT"><Label fx:id="selectedEntityTitleLabel" text="SELECTED NODE" styleClass="overlay-eyebrow"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="selectedNodeIdLabel" text="#—" styleClass="overlay-id"/></HBox>
                             <Label text="VALUE" styleClass="overlay-caption"/>
                             <Label fx:id="selectedNodeValueLabel" text="—" styleClass="overlay-value"/>
                             <Separator />
-                            <Label text="Ready to edit or remove this node." wrapText="true" styleClass="overlay-hint"/>
+                            <Label fx:id="selectedEntityHintLabel" text="Ready to edit or remove this node." wrapText="true" styleClass="overlay-hint"/>
                         </VBox>
                     </StackPane>
 
@@ -122,11 +122,11 @@
                                         <content>
                                             <VBox spacing="0" styleClass="inspector-content">
                                                 <VBox spacing="10" styleClass="inspector-section">
-                                                    <Label text="CURRENT SELECTION" styleClass="inspector-heading" />
+                                                    <Label fx:id="currentSelectionHeadingLabel" text="CURRENT SELECTION" styleClass="inspector-heading" />
                                                     <Label fx:id="structureInspectorBody" text="Select an element in the canvas." wrapText="true" styleClass="inspector-body" />
                                                 </VBox>
                                                 <VBox spacing="10" styleClass="inspector-section">
-                                                    <Label text="STRUCTURE OVERVIEW" styleClass="inspector-heading" />
+                                                    <Label fx:id="structureOverviewHeadingLabel" text="STRUCTURE OVERVIEW" styleClass="inspector-heading" />
                                                     <GridPane hgap="0" vgap="0" styleClass="structure-overview-grid">
                                                         <columnConstraints>
                                                             <ColumnConstraints percentWidth="25" halignment="CENTER"/>
@@ -286,30 +286,18 @@
                     </VBox>
                 </HBox>
 
-                <VBox fx:id="bottomDock" minHeight="174.0" prefHeight="174.0" maxHeight="210.0" styleClass="algorithm-dock">
-                    <HBox alignment="CENTER_LEFT" styleClass="timeline-header">
-                        <Label fx:id="timelineLabel" text="EXECUTION TIMELINE" styleClass="history-title"/>
-                        <HBox spacing="18" alignment="CENTER_LEFT" styleClass="timeline-legend">
-                            <Label text="◆ Runtime Event" styleClass="timeline-legend-runtime" />
-                            <Label text="■ Structure Event" styleClass="timeline-legend-structure" />
-                            <Label text="● Observation Event" styleClass="timeline-legend-observation" />
-                        </HBox>
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="timelinePositionLabel" text="#0000" styleClass="history-count"/>
-                    </HBox>
-                    <StackPane VBox.vgrow="ALWAYS" styleClass="timeline-visual">
-                        <Slider fx:id="timelineSlider" min="0" max="1" value="0" disable="true" maxWidth="Infinity" StackPane.alignment="CENTER"/>
-                        <HBox fx:id="timelineMarkers" alignment="CENTER" spacing="24" mouseTransparent="true" styleClass="timeline-markers" StackPane.alignment="CENTER"/>
-                        <Label fx:id="timelineCursorLabel" text="" managed="false" visible="false" mouseTransparent="true" StackPane.alignment="TOP_CENTER" styleClass="timeline-cursor-callout"/>
-                    </StackPane>
-                    <HBox fx:id="playbackToolbar" alignment="CENTER" spacing="10" styleClass="playback-toolbar-light">
-                        <Button fx:id="stepBackwardBtn" text="|◀" styleClass="playback-button" />
+                <VBox fx:id="bottomDock" minHeight="62.0" prefHeight="62.0" maxHeight="188.0" styleClass="algorithm-dock timeline-collapsed">
+                    <HBox fx:id="playbackToolbar" alignment="CENTER" spacing="8" styleClass="timeline-compact-row">
+                        <Button fx:id="stepBackwardBtn" text="|◀" styleClass="playback-button playback-icon-button" />
                         <Button fx:id="replayBtn" text="REPLAY" styleClass="playback-button" />
                         <Button fx:id="pauseBtn" text="PAUSE" styleClass="playback-primary" />
                         <Button fx:id="stepForwardBtn" text="STEP  ▶|" styleClass="playback-button" />
-                        <Button fx:id="resetBtn" text="✕" styleClass="playback-button cancel-button" />
-                        <Region minWidth="24.0" />
-                        <Label text="SPEED" styleClass="speed-label"/>
+                        <Button fx:id="resetBtn" text="✕" styleClass="playback-button playback-icon-button cancel-button" />
+                        <StackPane HBox.hgrow="ALWAYS" styleClass="timeline-compact-track">
+                            <Slider fx:id="timelineSlider" min="0" max="1" value="0" disable="true" maxWidth="Infinity" StackPane.alignment="CENTER"/>
+                        </StackPane>
+                        <Label fx:id="timelinePositionLabel" text="#0000" styleClass="timeline-position-compact"/>
+                        <Label fx:id="speedLabel" text="SPEED" styleClass="speed-label"/>
                         <HBox fx:id="speedButtonBox" spacing="0">
                             <Button fx:id="speed1Btn" text="1×" styleClass="speed-button" />
                             <Button fx:id="speed2Btn" text="2×" styleClass="speed-button" />
@@ -317,11 +305,25 @@
                             <Button fx:id="speed8Btn" text="8×" styleClass="speed-button" />
                             <Button fx:id="speed16Btn" text="16×" styleClass="speed-button" />
                         </HBox>
+                        <Button fx:id="timelineToggleBtn" text="▲" onAction="#toggleTimelineDetails" styleClass="timeline-toggle-button" />
                         <Slider fx:id="delaySlider" min="0" max="500" value="50" managed="false" visible="false" />
                         <Label fx:id="delayLabel" managed="false" visible="false" />
                         <Button fx:id="exportBtn" managed="false" visible="false" />
                         <Button fx:id="compareBtn" managed="false" visible="false" />
                     </HBox>
+                    <VBox fx:id="timelineDetails" managed="false" visible="false" VBox.vgrow="ALWAYS" styleClass="timeline-details">
+                        <HBox alignment="CENTER_LEFT" styleClass="timeline-header">
+                            <Label fx:id="timelineLabel" text="EXECUTION TIMELINE" styleClass="history-title"/>
+                            <HBox spacing="16" alignment="CENTER_LEFT" styleClass="timeline-legend">
+                                <Label fx:id="timelineRuntimeLegendLabel" text="◆ Runtime" styleClass="timeline-legend-runtime" />
+                                <Label fx:id="timelineStructureLegendLabel" text="■ Structure" styleClass="timeline-legend-structure" />
+                                <Label fx:id="timelineObservationLegendLabel" text="● Observation" styleClass="timeline-legend-observation" />
+                            </HBox>
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="timelineCursorLabel" text="" managed="false" visible="false" mouseTransparent="true" styleClass="timeline-current-summary"/>
+                        </HBox>
+                        <Pane fx:id="timelineMarkers" minHeight="58.0" prefHeight="58.0" VBox.vgrow="ALWAYS" styleClass="timeline-markers"/>
+                    </VBox>
                     <HBox fx:id="timelineRow" managed="false" visible="false" />
                 </VBox>
             </VBox>

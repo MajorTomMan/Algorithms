@@ -10,6 +10,7 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.array.ArrayEventReducer;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
+import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public final class ArrayController extends BaseModuleController<ArrayViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Integer>>, SnapshotAlgorithmInputSupport<SequenceSnapshot<Integer>> {
@@ -39,6 +41,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private final Array<Integer> sourceArray;
     private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
     private int currentSize = 20;
+    private boolean structureSelectionEnabled = true;
+    private Consumer<IndexSelection> selectionListener = ignored -> { };
 
     @FXML private Label structureLabel;
     @FXML private Label algorithmLabel;
@@ -81,11 +85,13 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         EffectUtils.applyDynamicEffect(
                 generateBtn, sortBtn, addElementBtn, deleteElementBtn,
                 findElementBtn, updateElementBtn);
+        arrayVisualizer().setOnIndexSelected(this::handleArraySelection);
         renderSource();
     }
 
     @FXML
     private void handleGenerate() {
+        clearArraySelection();
         List<Integer> values = randomValues();
         if (executeStructureOperation("generate", () -> {
             replaceArrayContents(values);
@@ -130,6 +136,32 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         renderStructureState(ArrayViewState.source(sourceValues()));
     }
 
+    /** Projects the latest factual Array StructureEvent into the Structure presentation state. */
+    private void renderLatestStructureMutation() {
+        ArrayViewState.Mutation mutation = latestArrayMutation();
+        renderStructureState(new ArrayViewState(sourceValues(), mutation, false));
+    }
+
+    private ArrayViewState.Mutation latestArrayMutation() {
+        List<com.majortom.algorithms.core.runtime.EventEnvelope> events = structureEvents();
+        for (int index = events.size() - 1; index >= 0; index--) {
+            Object event = events.get(index).event();
+            if (event instanceof ArrayStructureEvent.Inserted inserted) {
+                return ArrayViewState.Mutation.inserted(inserted.index());
+            }
+            if (event instanceof ArrayStructureEvent.Removed removed) {
+                return ArrayViewState.Mutation.removed(removed.index());
+            }
+            if (event instanceof ArrayStructureEvent.Updated updated) {
+                return ArrayViewState.Mutation.updated(updated.index());
+            }
+            if (event instanceof ArrayStructureEvent.Swapped swapped) {
+                return ArrayViewState.Mutation.swapped(swapped.leftIndex(), swapped.rightIndex());
+            }
+        }
+        return ArrayViewState.Mutation.none();
+    }
+
     @Override
     public StructureSnapshot<SequenceSnapshot<Integer>> captureStructureSnapshot() {
         return StructureSnapshot.create(moduleId(), new SequenceSnapshot<>(sourceValues()));
@@ -140,6 +172,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        clearArraySelection();
         replaceArrayContents(snapshot.state().values());
         currentSize = sourceArray.size();
         invalidateExecutionForStructureChange();
@@ -197,6 +230,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @FXML
     private void handleAddElement() {
+        clearArraySelection();
         Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
         if (value == null) {
             return;
@@ -210,7 +244,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             sourceArray.insert(insertedIndex, value);
             return null;
         })) {
-            renderSource();
+            renderLatestStructureMutation();
             refreshStatsDisplay();
             logI18n("message.sort.added", value, insertedIndex);
         }
@@ -218,6 +252,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @FXML
     private void handleDeleteElement() {
+        clearArraySelection();
         String indexText = elementIndexField.getText().trim();
         Integer index = parseOptionalIndex(elementIndexField, sourceArray.size() - 1);
         if (index == null && !indexText.isBlank()) {
@@ -240,7 +275,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             sourceArray.remove(removedIndex);
             return null;
         })) {
-            renderSource();
+            renderLatestStructureMutation();
             refreshStatsDisplay();
             logI18n("message.sort.deleted", removed, removedIndex);
         }
@@ -273,10 +308,45 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             sourceArray.set(updateIndex, value);
             return null;
         })) {
-            renderSource();
+            renderLatestStructureMutation();
             refreshStatsDisplay();
             logI18n("message.sort.updated", updateIndex, previous, value);
         }
+    }
+
+    public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
+        this.selectionListener = selectionListener == null ? ignored -> { } : selectionListener;
+    }
+
+    public void setStructureSelectionEnabled(boolean enabled) {
+        structureSelectionEnabled = enabled;
+        if (!enabled) {
+            clearArraySelection();
+        }
+    }
+
+    private void handleArraySelection(int index) {
+        if (!structureSelectionEnabled || index < 0 || index >= sourceArray.size()) {
+            return;
+        }
+        int value = sourceArray.get(index);
+        if (elementIndexField != null) elementIndexField.setText(Integer.toString(index));
+        if (updateIndexField != null) updateIndexField.setText(Integer.toString(index));
+        if (elementValueField != null) elementValueField.setText(Integer.toString(value));
+        if (updateValueField != null) updateValueField.setText(Integer.toString(value));
+        selectionListener.accept(new IndexSelection(index, value, sourceArray.size()));
+    }
+
+    private void clearArraySelection() {
+        arrayVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private ArrayVisualizer arrayVisualizer() {
+        return (ArrayVisualizer) visualizer;
+    }
+
+    public record IndexSelection(int index, int value, int size) {
     }
 
     private Integer parseInteger(TextField field, String errorKey) {
@@ -354,6 +424,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     protected void onResetData() {
+        clearArraySelection();
         replaceArrayContents(randomValues());
         renderSource();
     }

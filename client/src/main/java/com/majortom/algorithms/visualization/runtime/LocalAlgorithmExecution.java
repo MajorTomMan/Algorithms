@@ -96,10 +96,10 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
                 synchronized (lifecycleLock) {
                     if (closed || generation.get() != runGeneration) return;
                 }
-                liveEventConsumer.accept(event);
                 Reduction<S> reduction = reductionCursor.accept(event);
                 if (reduction.visualFrame()) viewStateConsumer.accept(reduction.state());
                 statisticsConsumer.accept(reductionCursor.statistics());
+                liveEventConsumer.accept(event);
             }, maximumEventCount, delayMillisSupplier);
             EventSink eventSink = event -> {
                 authoritativeEvents.accept(event);

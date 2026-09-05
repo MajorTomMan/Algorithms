@@ -20,7 +20,7 @@ import java.util.Objects;
 /** String-specific transient ELK adapter for deterministic character ordering. */
 public final class StringElkLayout {
     private static final double PADDING = 28.0d;
-    private static final double ELEMENT_SPACING = 14.0d;
+    private static final double ELEMENT_SPACING = 0.0d;
     private static final int RANDOM_SEED = 1;
 
     public LayoutResult layout(List<ElementSize> elements) {

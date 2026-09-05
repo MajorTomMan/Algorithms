@@ -24,12 +24,16 @@ import java.util.Objects;
 public final class NodeView extends StackPane {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
+    private static final PseudoClass CURRENT = PseudoClass.getPseudoClass("current");
+    private static final PseudoClass VISITED = PseudoClass.getPseudoClass("visited");
 
     private final ObjectProperty<NodeGeometry> geometry = new SimpleObjectProperty<>();
     private final DoubleProperty centerX = new SimpleDoubleProperty();
     private final DoubleProperty centerY = new SimpleDoubleProperty();
     private final BooleanProperty selected = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
+    private final BooleanProperty current = new SimpleBooleanProperty();
+    private final BooleanProperty visited = new SimpleBooleanProperty();
     private final Text label = new Text();
     private Shape selectionRing;
     private Shape shape;
@@ -42,6 +46,8 @@ public final class NodeView extends StackPane {
         centerY.addListener(observable -> updatePosition());
         selected.addListener((observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
         highlighted.addListener((observable, previous, current) -> pseudoClassStateChanged(HIGHLIGHTED, current));
+        this.current.addListener((observable, previous, current) -> pseudoClassStateChanged(CURRENT, current));
+        visited.addListener((observable, previous, current) -> pseudoClassStateChanged(VISITED, current));
         setGeometry(geometry);
         setText(text);
     }
@@ -122,6 +128,30 @@ public final class NodeView extends StackPane {
 
     public BooleanProperty highlightedProperty() {
         return highlighted;
+    }
+
+    public boolean isCurrent() {
+        return current.get();
+    }
+
+    public void setCurrent(boolean current) {
+        this.current.set(current);
+    }
+
+    public BooleanProperty currentProperty() {
+        return current;
+    }
+
+    public boolean isVisited() {
+        return visited.get();
+    }
+
+    public void setVisited(boolean visited) {
+        this.visited.set(visited);
+    }
+
+    public BooleanProperty visitedProperty() {
+        return visited;
     }
 
     private void rebuildShape(NodeGeometry geometry) {

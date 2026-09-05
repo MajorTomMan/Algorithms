@@ -187,6 +187,10 @@ public abstract class BaseVisualizer<S> extends StackPane {
     public void setScrubbing(boolean scrubbing) {
     }
 
+    /** Presentation-only viewport obstruction contributed by shell overlays such as Current Step. */
+    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
+    }
+
     /**
      * 重置后的可视化清理钩子。
      * 默认只清空画布，子类可在此停止动画、清空缓存、重置局部状态。

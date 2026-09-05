@@ -20,14 +20,17 @@ import java.util.Objects;
 /** Edge primitive with boundary attachment, straight/curved/self-loop paths and optional arrow. */
 public final class EdgeView extends Group {
     private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
+    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
 
     private final NodeView source;
     private final NodeView target;
+    private final Path hitPath = new Path();
     private final Path path = new Path();
     private final Polygon arrow = new Polygon();
     private final BooleanProperty directed = new SimpleBooleanProperty();
     private final BooleanProperty curved = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
+    private final BooleanProperty selected = new SimpleBooleanProperty();
     private final InvalidationListener geometryListener = observable -> updateGeometry();
     private List<Point2D> route = List.of();
 
@@ -35,14 +38,20 @@ public final class EdgeView extends Group {
         this.source = Objects.requireNonNull(source, "source");
         this.target = Objects.requireNonNull(target, "target");
         getStyleClass().add("visual-edge");
+        hitPath.getStyleClass().add("visual-edge-hit-path");
+        hitPath.setFill(null);
+        hitPath.setStroke(Color.TRANSPARENT);
+        hitPath.setStrokeWidth(12.0d);
         path.getStyleClass().add("visual-edge-path");
         path.setFill(null);
         path.setStroke(Color.GRAY);
         path.setStrokeWidth(2.0d);
         arrow.getStyleClass().add("visual-edge-arrow");
         arrow.fillProperty().bind(path.strokeProperty());
-        getChildren().addAll(path, arrow);
-        setMouseTransparent(true);
+        path.setMouseTransparent(true);
+        arrow.setMouseTransparent(true);
+        getChildren().addAll(hitPath, path, arrow);
+        setMouseTransparent(false);
 
         source.centerXProperty().addListener(geometryListener);
         source.centerYProperty().addListener(geometryListener);
@@ -56,6 +65,7 @@ public final class EdgeView extends Group {
             pseudoClassStateChanged(HIGHLIGHTED, current);
             path.setStrokeWidth(current ? 3.5d : 2.0d);
         });
+        selected.addListener((observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
         setDirected(directed);
         updateGeometry();
     }
@@ -104,6 +114,22 @@ public final class EdgeView extends Group {
         return highlighted;
     }
 
+    public boolean isSelected() {
+        return selected.get();
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    public BooleanProperty selectedProperty() {
+        return selected;
+    }
+
+    public Path hitPath() {
+        return hitPath;
+    }
+
     public Path path() {
         return path;
     }
@@ -141,6 +167,7 @@ public final class EdgeView extends Group {
         }
         if (sourceCenter.equals(targetCenter)) {
             arrow.setVisible(false);
+            syncHitPath();
             return;
         }
 
@@ -161,6 +188,7 @@ public final class EdgeView extends Group {
             tangent = end.subtract(start);
         }
         updateArrow(end, tangent);
+        syncHitPath();
     }
 
     private void updateRoutedGeometry() {
@@ -174,6 +202,7 @@ public final class EdgeView extends Group {
         Point2D end = route.getLast();
         Point2D tangent = end.subtract(route.get(route.size() - 2));
         updateArrow(end, tangent);
+        syncHitPath();
     }
 
     private void updateSelfLoop(Point2D center) {
@@ -189,6 +218,26 @@ public final class EdgeView extends Group {
                 control2.getX(), control2.getY(),
                 end.getX(), end.getY()));
         updateArrow(end, end.subtract(control2));
+        syncHitPath();
+    }
+
+    private void syncHitPath() {
+        hitPath.getElements().clear();
+        for (var element : path.getElements()) {
+            if (element instanceof MoveTo move) {
+                hitPath.getElements().add(new MoveTo(move.getX(), move.getY()));
+            } else if (element instanceof LineTo line) {
+                hitPath.getElements().add(new LineTo(line.getX(), line.getY()));
+            } else if (element instanceof QuadCurveTo curve) {
+                hitPath.getElements().add(new QuadCurveTo(
+                        curve.getControlX(), curve.getControlY(), curve.getX(), curve.getY()));
+            } else if (element instanceof CubicCurveTo curve) {
+                hitPath.getElements().add(new CubicCurveTo(
+                        curve.getControlX1(), curve.getControlY1(),
+                        curve.getControlX2(), curve.getControlY2(),
+                        curve.getX(), curve.getY()));
+            }
+        }
     }
 
     private void updateArrow(Point2D tip, Point2D tangent) {

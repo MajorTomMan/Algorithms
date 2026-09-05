@@ -25,8 +25,8 @@ import java.util.Objects;
  * been copied into a {@link LayoutResult}.</p>
  */
 public final class ArrayElkLayout {
-    private static final double PADDING = 28.0d;
-    private static final double ELEMENT_SPACING = 18.0d;
+    private static final double PADDING = 24.0d;
+    private static final double ELEMENT_SPACING = 0.0d;
     private static final int RANDOM_SEED = 1;
 
     public LayoutResult layout(List<ElementSize> elements) {

@@ -532,9 +532,6 @@
 }
 
 /* Slider and ComboBox chrome comes from AtlantaFX. */
-.dark-combo-box {
-    -fx-min-height: 34px;
-}
 
 .subtle-divider {
     -fx-opacity: 0.8;
@@ -1921,9 +1918,7 @@
 .structure-control-panel .text-field,
 .algorithm-control-panel .text-field,
 .structure-control-panel .combo-box,
-.algorithm-control-panel .combo-box,
-.structure-control-panel .dark-combo-box,
-.algorithm-control-panel .dark-combo-box {
+.algorithm-control-panel .combo-box {
     -fx-background-color: -ui-white;
     -fx-border-color: #bcbcbc;
     -fx-border-width: 1px;
@@ -2176,14 +2171,12 @@
 .root-pane:narrow-layout .structure-control-panel,
 .root-pane:narrow-layout .algorithm-control-panel { -fx-max-width: 270px; -fx-pref-width: 270px; }
 
+.root-pane:narrow-layout .viewport-toolbar { -fx-translate-x: -8px; }
+.root-pane:narrow-layout .viewport-toolbar-button { -fx-min-width: 30px; -fx-padding: 0 5px; -fx-font-size: 10px; }
+.root-pane:narrow-layout .viewport-zoom-label { -fx-padding: 0 5px; -fx-font-size: 10px; }
 
-/* 2026-09-05 screenshot convergence */
-.structure-control-panel .operation-button,
-.algorithm-control-panel .operation-button {
-    -fx-pref-width: 86px;
-    -fx-min-width: 72px;
-    -fx-max-width: 120px;
-}
+
+/* Workbench visual closure */
 .visual-node-selection-ring {
     -fx-fill: transparent;
     -fx-stroke: -ui-red;
@@ -2412,4 +2405,534 @@
 #eventDetailsLabel {
     -fx-text-fill: -ui-black;
     -fx-opacity: 1.0;
+}
+
+/* ========================================================================== */
+/* Visualization Grammar V0/V1 — shared Structure grammar + Array memory strip */
+/* ========================================================================== */
+.visual-entity {
+    -fx-opacity: 1;
+}
+
+/* Shared semantic state grammar. Family geometry remains family-specific. */
+.visual-entity:current {
+    -fx-effect: dropshadow(gaussian, rgba(245,27,35,0.18), 7, 0.10, 0, 0);
+}
+.visual-entity:observed {
+    -fx-effect: dropshadow(gaussian, rgba(245,180,0,0.14), 6, 0.08, 0, 0);
+}
+.visual-entity:visited,
+.visual-entity:completed {
+    -fx-effect: none;
+}
+
+/* Array = one continuous logical memory strip, not a row of independent buttons. */
+.array-cell {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+.array-cell-index {
+    -fx-fill: -ui-gray-500;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.array-cell-body {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-blue;
+    -fx-border-width: 2px 0 2px 1px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.array-cell-first .array-cell-body {
+    -fx-border-width: 2px 0 2px 2px;
+}
+.array-cell-last .array-cell-body {
+    -fx-border-width: 2px 2px 2px 1px;
+}
+.array-cell-only .array-cell-body {
+    -fx-border-width: 2px;
+}
+.array-cell-value {
+    -fx-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+.array-cell-selection-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
+    -fx-border-insets: -3px;
+}
+.array-cell:selected .array-cell-selection-outline {
+    -fx-border-color: -ui-red;
+}
+.array-cell:current .array-cell-selection-outline {
+    -fx-border-color: -ui-red;
+}
+.array-cell:observed .array-cell-body {
+    -fx-background-color: -ui-yellow;
+}
+.array-cell:visited .array-cell-body,
+.array-cell:completed .array-cell-body {
+    -fx-background-color: -ui-blue;
+    -fx-border-color: -ui-blue;
+}
+.array-cell:visited .array-cell-value,
+.array-cell:completed .array-cell-value {
+    -fx-fill: -ui-white;
+}
+.array-cell:observed .array-cell-value {
+    -fx-fill: -ui-black;
+}
+.array-cell-compact .array-cell-value {
+    -fx-font-size: 15px;
+}
+.array-cell-dense .array-cell-value {
+    -fx-font-size: 12px;
+}
+.array-cell-dense .array-cell-index {
+    -fx-font-size: 8px;
+}
+
+/* Viewport toolbar stays secondary to the visualization itself. */
+.viewport-toolbar {
+    -fx-spacing: 0;
+}
+.viewport-toolbar-last {
+    -fx-border-width: 0;
+}
+
+/* ========================================================================== */
+/* Restrained execution timeline — exact semantics, low visual dominance.      */
+/* ========================================================================== */
+.algorithm-dock.timeline-collapsed,
+.algorithm-dock.timeline-expanded {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.timeline-compact-row {
+    -fx-padding: 9px 18px;
+    -fx-min-height: 61px;
+    -fx-pref-height: 61px;
+    -fx-background-color: -ui-white;
+}
+.timeline-compact-row .playback-button,
+.timeline-compact-row .playback-primary,
+.timeline-compact-row .speed-button,
+.timeline-toggle-button {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-background-radius: 2px;
+    -fx-border-radius: 2px;
+    -fx-font-size: 10px;
+}
+.timeline-compact-row .playback-button {
+    -fx-min-width: 66px;
+    -fx-padding: 0 10px;
+}
+.timeline-compact-row .playback-icon-button {
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-padding: 0;
+}
+.timeline-compact-row .playback-primary {
+    -fx-min-width: 104px;
+    -fx-pref-width: 104px;
+}
+.timeline-compact-row .speed-button {
+    -fx-min-width: 31px;
+    -fx-pref-width: 31px;
+    -fx-padding: 0;
+}
+.timeline-compact-track {
+    -fx-min-width: 120px;
+    -fx-padding: 0 8px;
+}
+.timeline-compact-track .slider .track {
+    -fx-background-color: -ui-gray-300;
+    -fx-pref-height: 2px;
+}
+.timeline-compact-track .slider .thumb {
+    -fx-background-color: -ui-red;
+    -fx-pref-width: 10px;
+    -fx-pref-height: 10px;
+}
+.timeline-position-compact {
+    -fx-min-width: 82px;
+    -fx-alignment: center;
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.timeline-toggle-button {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-padding: 0;
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 800;
+}
+.timeline-details {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-200 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.timeline-details .timeline-header {
+    -fx-padding: 8px 20px 2px 20px;
+}
+.timeline-details .timeline-legend {
+    -fx-padding: 0 0 0 22px;
+}
+.timeline-details .timeline-legend .label {
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-opacity: 0.78;
+}
+.timeline-current-summary {
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 6px;
+}
+.timeline-markers {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.timeline-marker-track {
+    -fx-background-color: -ui-gray-300;
+}
+.timeline-marker-node {
+    -fx-cursor: hand;
+}
+.timeline-marker-symbol {
+    -fx-min-width: 7px;
+    -fx-pref-width: 7px;
+    -fx-max-width: 7px;
+    -fx-min-height: 7px;
+    -fx-pref-height: 7px;
+    -fx-max-height: 7px;
+    -fx-background-color: -ui-gray-500;
+}
+.timeline-marker-symbol.timeline-runtime {
+    -fx-background-color: -ui-red;
+    -fx-shape: "M 4 0 L 8 4 L 4 8 L 0 4 Z";
+}
+.timeline-marker-symbol.timeline-structure {
+    -fx-background-color: -ui-blue;
+    -fx-background-radius: 0;
+}
+.timeline-marker-symbol.timeline-observation {
+    -fx-background-color: -ui-yellow;
+    -fx-background-radius: 99px;
+}
+.timeline-marker-symbol.timeline-other {
+    -fx-background-color: -ui-gray-500;
+    -fx-background-radius: 99px;
+    -fx-opacity: 0.55;
+}
+.timeline-marker-symbol.timeline-marker-current {
+    -fx-effect: dropshadow(gaussian, rgba(8,9,10,0.38), 5, 0.18, 0, 0);
+    -fx-scale-x: 1.32;
+    -fx-scale-y: 1.32;
+}
+.timeline-marker-sequence {
+    -fx-text-fill: -ui-gray-500;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 8px;
+    -fx-padding: 2px 0 0 0;
+}
+.timeline-marker-sequence-current {
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 800;
+}
+
+/* ========================================================================== */
+/* Visualization Grammar V2 — String logical character track                  */
+/* ========================================================================== */
+.string-cell {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+.string-cell-index {
+    -fx-fill: -ui-gray-500;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.string-cell-body {
+    -fx-background-color: -ui-white;
+    -fx-border-color: transparent -ui-gray-300 -ui-blue transparent;
+    -fx-border-width: 0 1px 2px 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.string-cell-first .string-cell-body,
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent -ui-gray-300 -ui-blue -ui-blue;
+    -fx-border-width: 0 1px 2px 1px;
+}
+.string-cell-last .string-cell-body,
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent -ui-blue -ui-blue transparent;
+    -fx-border-width: 0 1px 2px 0;
+}
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent -ui-blue -ui-blue -ui-blue;
+    -fx-border-width: 0 1px 2px 1px;
+}
+.string-cell-value {
+    -fx-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 22px;
+    -fx-font-weight: 800;
+}
+.string-cell-selection-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
+    -fx-border-insets: -3px;
+}
+.string-cell:selected .string-cell-selection-outline,
+.string-cell:current .string-cell-selection-outline {
+    -fx-border-color: -ui-red;
+}
+.string-cell:observed .string-cell-body {
+    -fx-background-color: -ui-yellow;
+}
+.string-cell:observed .string-cell-value {
+    -fx-fill: -ui-black;
+}
+.string-cell:visited .string-cell-body,
+.string-cell:completed .string-cell-body {
+    -fx-background-color: -ui-blue;
+    -fx-border-color: transparent -ui-white -ui-blue transparent;
+}
+.string-cell:visited .string-cell-value,
+.string-cell:completed .string-cell-value {
+    -fx-fill: -ui-white;
+}
+.string-cell-compact .string-cell-value {
+    -fx-font-size: 19px;
+}
+.string-cell-dense .string-cell-value {
+    -fx-font-size: 15px;
+}
+.string-cell-dense .string-cell-index {
+    -fx-font-size: 8px;
+}
+.string-observation-label {
+    -fx-fill: -ui-gray-700;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+/* ---------- V3 logical linear structure grammar ---------- */
+.linked-node .visual-node-label {
+    -fx-translate-y: -13px;
+    -fx-font-size: 17px;
+}
+.linked-node-divider,
+.linked-node-port-divider {
+    -fx-stroke: -ui-gray-300;
+    -fx-stroke-width: 1px;
+}
+.linked-port-label {
+    -fx-fill: -ui-gray-700;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.linked-port-dot {
+    -fx-fill: -ui-black;
+    -fx-stroke: -ui-black;
+    -fx-stroke-width: 1px;
+}
+.linked-port-dot.linked-port-empty {
+    -fx-fill: -ui-white;
+    -fx-stroke: -ui-gray-300;
+}
+.linked-head-label,
+.linked-tail-label,
+.stack-top-label,
+.queue-front-label,
+.queue-rear-label {
+    -fx-fill: -ui-black;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+.linked-next-edge .visual-edge-path,
+.linked-previous-edge .visual-edge-path {
+    -fx-stroke: -ui-black;
+    -fx-stroke-width: 2px;
+}
+.linked-next-edge .visual-edge-arrow,
+.linked-previous-edge .visual-edge-arrow {
+    -fx-stroke: -ui-black;
+    -fx-fill: -ui-black;
+}
+.stack-item .visual-node-shape,
+.queue-item .visual-node-shape {
+    -fx-fill: -ui-white;
+    -fx-stroke: -ui-blue;
+    -fx-stroke-width: 2px;
+}
+.stack-item .visual-node-shape {
+    -fx-arc-width: 0;
+    -fx-arc-height: 0;
+}
+.queue-item .visual-node-shape {
+    -fx-arc-width: 0;
+    -fx-arc-height: 0;
+}
+.stack-item .visual-node-label,
+.queue-item .visual-node-label {
+    -fx-fill: -ui-black;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+.stack-item:highlighted .visual-node-shape,
+.queue-item:highlighted .visual-node-shape {
+    -fx-stroke: -ui-yellow;
+    -fx-stroke-width: 3px;
+}
+.linear-flow-label {
+    -fx-fill: -ui-gray-700;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+/* ---------- V5 graph structure grammar ---------- */
+.graph-node-id-label {
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.visual-edge-hit-path {
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 12px;
+}
+.visual-edge:selected .visual-edge-path {
+    -fx-stroke: -ui-red;
+    -fx-fill: transparent;
+    -fx-stroke-width: 3px;
+}
+.visual-edge:selected .visual-edge-arrow {
+    -fx-stroke: -ui-red;
+    -fx-fill: -ui-red;
+}
+
+/* ========================================================================== */
+/* Algorithm Visualization Grammar A0 — factual runtime overlay precedence.    */
+/* Selection/Current > Observation > Visited > Base. Lifecycle is not a color. */
+/* ========================================================================== */
+.visual-node:visited .visual-node-shape {
+    -fx-fill: -ui-blue;
+    -fx-stroke: -ui-blue;
+}
+.visual-node:visited .visual-node-label {
+    -fx-fill: -ui-white;
+}
+.visual-node:visited:highlighted .visual-node-shape,
+.visual-node:highlighted .visual-node-shape {
+    -fx-stroke: -ui-yellow;
+    -fx-stroke-width: 3px;
+}
+.visual-node:current .visual-node-shape {
+    -fx-stroke: -ui-red;
+    -fx-stroke-width: 3.5px;
+}
+.visual-node:selected .visual-node-shape {
+    -fx-stroke: -ui-red;
+    -fx-stroke-width: 4px;
+}
+.visual-edge:selected .visual-edge-path {
+    -fx-stroke: -ui-red;
+    -fx-fill: transparent;
+    -fx-stroke-width: 3px;
+}
+.visual-edge:selected .visual-edge-arrow {
+    -fx-stroke: -ui-red;
+    -fx-fill: -ui-red;
+}
+
+/* RunCompleted is lifecycle only; it must not impersonate Visited. */
+.array-cell:completed .array-cell-body {
+    -fx-background-color: -ui-white;
+}
+.array-cell:completed .array-cell-value {
+    -fx-fill: -ui-black;
+}
+.string-cell:completed .string-cell-body {
+    -fx-background-color: -ui-white;
+    -fx-border-color: transparent -ui-gray-300 -ui-blue transparent;
+}
+.string-cell-first:completed .string-cell-body {
+    -fx-border-color: transparent -ui-gray-300 -ui-blue -ui-blue;
+}
+.string-cell-last:completed .string-cell-body {
+    -fx-border-color: transparent -ui-blue -ui-blue transparent;
+}
+.string-cell-only:completed .string-cell-body {
+    -fx-border-color: transparent -ui-blue -ui-blue -ui-blue;
+}
+.string-cell:completed .string-cell-value {
+    -fx-fill: -ui-black;
+}
+
+/* ========================================================================== */
+/* Algorithm Visualization Grammar A2 — KMP pattern rail overlay.              */
+/* ========================================================================== */
+.kmp-pattern-caption {
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+.kmp-pattern-track {
+    -fx-spacing: 0;
+}
+.kmp-pattern-cell {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+.kmp-pattern-index {
+    -fx-fill: -ui-gray-500;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 8px;
+    -fx-font-weight: 700;
+}
+.kmp-pattern-body {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px 1px 2px 1px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.kmp-pattern-value {
+    -fx-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+}
+.kmp-pattern-cell:observed .kmp-pattern-body {
+    -fx-background-color: -ui-yellow;
+    -fx-border-color: -ui-yellow;
+}
+.kmp-pattern-compact .kmp-pattern-value {
+    -fx-font-size: 14px;
+}
+.kmp-pattern-dense .kmp-pattern-value {
+    -fx-font-size: 12px;
 }

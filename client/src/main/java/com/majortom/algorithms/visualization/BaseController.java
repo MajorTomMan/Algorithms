@@ -113,6 +113,8 @@ public abstract class BaseController<S> implements Initializable {
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
     private final LongProperty structureRevision = new SimpleLongProperty();
     private final ObjectProperty<EventEnvelope> presentationEvent = new SimpleObjectProperty<>();
+    private int presentationEventIndex = -1;
+    private int liveEventIndex = -1;
     private final Timeline structureTimeline = new Timeline();
     private S latestViewState;
     private long liveVisualFrameCount;
@@ -175,6 +177,8 @@ public abstract class BaseController<S> implements Initializable {
         stopAlgorithm();
         clearExecutionState();
         liveVisualFrameCount = 0L;
+        liveEventIndex = -1;
+        presentationEventIndex = -1;
         lastLiveStatsRefreshNanos = 0L;
         refreshStatsDisplay();
 
@@ -344,15 +348,26 @@ public abstract class BaseController<S> implements Initializable {
         try {
             sought = seekReplayFrame(index);
         } finally {
-            if (visualizer != null) {
-                visualizer.setScrubbing(false);
-            }
+            releaseScrubbingAfterQueuedRender();
         }
         if (!sought) {
             return;
         }
         paused.set(true);
         syncTimelineSlider(index, size);
+    }
+
+
+    /**
+     * Visualizers render through Platform.runLater. Keep scrub mode active until that queued draw
+     * has consumed the absolute replay state, then release it on the following FX queue turn.
+     */
+    private void releaseScrubbingAfterQueuedRender() {
+        BaseVisualizer<S> scrubVisualizer = visualizer;
+        if (scrubVisualizer == null) {
+            return;
+        }
+        Platform.runLater(() -> scrubVisualizer.setScrubbing(false));
     }
 
     public final boolean hasExecutionData() {
@@ -453,7 +468,9 @@ public abstract class BaseController<S> implements Initializable {
 
     private void consumeLiveEvent(EventEnvelope envelope) {
         Runnable task = () -> {
+            int eventIndex = ++liveEventIndex;
             if (!(envelope.event() instanceof LogEvent)) {
+                presentationEventIndex = eventIndex;
                 presentationEvent.set(envelope);
             }
             if (envelope.event() instanceof LogEvent logEvent && logView != null) {
@@ -622,13 +639,15 @@ public abstract class BaseController<S> implements Initializable {
         replayController = new PlaybackController<>(reducer, state -> {
             renderState(state);
             PlaybackController<S> active = replayController;
+            ReducedEventTimeline<S> timeline = lastTimeline;
             if (active != null) {
-                int index = active.currentIndex();
-                syncTimelineSlider(index, active.frameCount());
-                if (index >= 0 && index < events.size()) {
-                    presentationEvent.set(events.get(index));
-                }
+                int frameIndex = active.currentIndex();
+                syncTimelineSlider(frameIndex, active.frameCount());
                 refreshStatsDisplay();
+                if (timeline != null && frameIndex >= 0 && frameIndex < timeline.size()) {
+                    presentationEventIndex = timeline.eventIndex(frameIndex);
+                    presentationEvent.set(timeline.event(frameIndex));
+                }
             }
         });
         replayController.load(events);
@@ -684,6 +703,8 @@ public abstract class BaseController<S> implements Initializable {
         lastExecution = null;
         lastTimeline = null;
         latestViewState = null;
+        presentationEventIndex = -1;
+        liveEventIndex = -1;
         presentationEvent.set(null);
         if (timelineSlider != null) {
             timelineSlider.setDisable(true);
@@ -979,13 +1000,35 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     public final int presentationEventIndex() {
-        EventEnvelope current = currentPresentationEvent();
-        if (current == null) return -1;
-        List<EventEnvelope> events = executionEvents();
-        for (int index = 0; index < events.size(); index++) {
-            if (events.get(index) == current || events.get(index).equals(current)) return index;
+        return presentationEventIndex;
+    }
+
+    /** Exact authoritative event inspection with canvas state resolved at-or-before that event. */
+    public final void seekEventIndex(int eventIndex) {
+        if (lastTimeline == null || lastTimeline.events().isEmpty() || running.get()) {
+            return;
         }
-        return events.isEmpty() ? -1 : events.size() - 1;
+        int exactEventIndex = Math.max(0, Math.min(lastTimeline.events().size() - 1, eventIndex));
+        int frameIndex = lastTimeline.frameIndexAtOrBeforeEvent(exactEventIndex);
+        stopReplay();
+        if (visualizer != null) {
+            visualizer.setScrubbing(true);
+        }
+        try {
+            if (frameIndex >= 0) {
+                if (!seekReplayFrame(frameIndex)) {
+                    return;
+                }
+                syncTimelineSlider(frameIndex, lastTimeline.size());
+            } else if (visualizer != null) {
+                renderState(lastTimeline.initialState());
+            }
+        } finally {
+            releaseScrubbingAfterQueuedRender();
+        }
+        paused.set(true);
+        presentationEventIndex = exactEventIndex;
+        presentationEvent.set(lastTimeline.events().get(exactEventIndex));
     }
 
     public final String latestRunId() {

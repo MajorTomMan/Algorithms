@@ -16,6 +16,7 @@ public record MazeViewState(
         Set<GridPoint> path,
         Set<GridPoint> visited,
         GridPoint active,
+        GridPoint observed,
         GridPoint backtracked,
         GridPoint entrance,
         GridPoint exit,
@@ -30,6 +31,24 @@ public record MazeViewState(
         graphEdges = List.copyOf(graphEdges);
     }
 
+    /** Compatibility constructor for callers that predate the transient observed candidate. */
+    public MazeViewState(
+            int rows,
+            int columns,
+            List<Boolean> openCells,
+            Set<GridPoint> path,
+            Set<GridPoint> visited,
+            GridPoint active,
+            GridPoint backtracked,
+            GridPoint entrance,
+            GridPoint exit,
+            List<MazeSnapshot.Edge> graphEdges,
+            boolean graphBased,
+            boolean completed) {
+        this(rows, columns, openCells, path, visited, active, null, backtracked,
+                entrance, exit, graphEdges, graphBased, completed);
+    }
+
     public static MazeViewState empty(int rows, int columns, boolean graphBased) {
         return new MazeViewState(
                 rows,
@@ -37,6 +56,7 @@ public record MazeViewState(
                 Collections.nCopies(rows * columns, graphBased),
                 Set.of(),
                 Set.of(),
+                null,
                 null,
                 null,
                 null,
@@ -59,6 +79,7 @@ public record MazeViewState(
                 empty.visited(),
                 null,
                 null,
+                null,
                 new GridPoint(1, 1),
                 new GridPoint(rows - 2, columns - 2),
                 empty.graphEdges(),
@@ -75,6 +96,7 @@ public record MazeViewState(
                 Set.of(),
                 null,
                 null,
+                null,
                 point(snapshot.entrance()),
                 point(snapshot.exit()),
                 snapshot.graphEdges(),
@@ -85,7 +107,7 @@ public record MazeViewState(
     public MazeViewState visit(GridPoint point) {
         LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
         nextVisited.add(point);
-        return new MazeViewState(rows, columns, openCells, path, nextVisited, point, null,
+        return new MazeViewState(rows, columns, openCells, path, nextVisited, point, null, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 
@@ -98,18 +120,46 @@ public record MazeViewState(
         nextOpenCells.set(index, true);
         LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
         nextVisited.add(point);
-        return new MazeViewState(rows, columns, nextOpenCells, path, nextVisited, point, null,
+        return new MazeViewState(rows, columns, nextOpenCells, path, nextVisited, point, null, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 
-    public MazeViewState examine(GridPoint point) {
-        return new MazeViewState(rows, columns, openCells, path, visited, point, null,
+    public MazeViewState examine(GridPoint from, GridPoint to) {
+        GridPoint current = from == null ? active : from;
+        return new MazeViewState(rows, columns, openCells, path, visited, current, to, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 
     public MazeViewState backtrack(GridPoint point) {
-        return new MazeViewState(rows, columns, openCells, path, visited, point, point,
+        return new MazeViewState(rows, columns, openCells, path, visited, point, null, point,
                 entrance, exit, graphEdges, graphBased, false);
+    }
+
+    public MazeViewState connect(GridPoint from, GridPoint to) {
+        if (from == null || to == null) return this;
+        int fromIndex = from.row() * columns + from.column();
+        int toIndex = to.row() * columns + to.column();
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= rows * columns || toIndex >= rows * columns) {
+            return this;
+        }
+        java.util.ArrayList<MazeSnapshot.Edge> nextEdges = new java.util.ArrayList<>(graphEdges);
+        MazeSnapshot.Edge forward = new MazeSnapshot.Edge(fromIndex, toIndex);
+        MazeSnapshot.Edge reverse = new MazeSnapshot.Edge(toIndex, fromIndex);
+        if (!nextEdges.contains(forward)) nextEdges.add(forward);
+        if (!nextEdges.contains(reverse)) nextEdges.add(reverse);
+        return new MazeViewState(rows, columns, openCells, path, visited, active, observed, backtracked,
+                entrance, exit, nextEdges, graphBased, false);
+    }
+
+    public MazeViewState withPath(java.util.Collection<GridPoint> points) {
+        LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(points);
+        return new MazeViewState(rows, columns, openCells, nextPath, visited, active, observed, backtracked,
+                entrance, exit, graphEdges, graphBased, false);
+    }
+
+    public MazeViewState completedBase() {
+        return new MazeViewState(rows, columns, openCells, path, Set.of(), null, null, null,
+                entrance, exit, graphEdges, graphBased, true);
     }
 
     private static GridPoint point(MazeSnapshot.Cell cell) {

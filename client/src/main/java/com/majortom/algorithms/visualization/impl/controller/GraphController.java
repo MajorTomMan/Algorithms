@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Integer>>, SnapshotAlgorithmInputSupport<GraphSnapshot<Integer>> {
@@ -41,6 +42,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private Graph<Integer> graph;
     private StructureSnapshot<GraphSnapshot<Integer>> algorithmInputSnapshot;
     private int startNode = 0;
+    private Consumer<Selection> selectionListener = ignored -> { };
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -66,6 +68,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public GraphController() {
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
         graph = randomGraph(10, 16, false);
+        graphVisualizer().setNodeSelectionListener(this::handleVisualNodeSelection);
+        graphVisualizer().setEdgeSelectionListener(this::handleVisualEdgeSelection);
         renderGraph();
     }
 
@@ -166,6 +170,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(graph.vertex(from), graph.vertex(to)))) {
             return;
         }
+        clearVisualSelection();
         renderGraph();
         logI18n("message.graph.edge_deleted", from, to);
     }
@@ -211,6 +216,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(graph.vertex(id)))) {
             return;
         }
+        clearVisualSelection();
         if (graph.isEmpty()) {
             startNode = 0;
             startField.clear();
@@ -291,6 +297,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             startField.setText(String.valueOf(startNode));
         }
         invalidateExecutionForStructureChange();
+        clearVisualSelection();
         renderGraph();
         refreshStatsDisplay();
     }
@@ -449,6 +456,74 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         return result;
     }
+
+
+    public void setSelectionListener(Consumer<Selection> listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    private void handleVisualNodeSelection(long nodeId) {
+        GraphSnapshot<Integer> snapshot = graphSnapshot();
+        GraphSnapshot.Vertex<Integer> vertex = snapshot.vertices().stream()
+                .filter(candidate -> candidate.id() == nodeId)
+                .findFirst()
+                .orElse(null);
+        if (vertex == null) {
+            clearVisualSelection();
+            return;
+        }
+        int degree = (int) snapshot.edges().stream()
+                .filter(edge -> edge.fromId() == nodeId || edge.toId() == nodeId)
+                .count();
+        String value = Integer.toString(vertex.value());
+        if (nodeField != null) nodeField.setText(value);
+        if (findNodeField != null) findNodeField.setText(value);
+        if (startField != null) startField.setText(value);
+        selectionListener.accept(new NodeSelection(nodeId, vertex.value(), degree));
+    }
+
+    private void handleVisualEdgeSelection(long edgeId) {
+        GraphSnapshot<Integer> snapshot = graphSnapshot();
+        GraphSnapshot.Edge edge = snapshot.edges().stream()
+                .filter(candidate -> candidate.id() == edgeId)
+                .findFirst()
+                .orElse(null);
+        if (edge == null) {
+            clearVisualSelection();
+            return;
+        }
+        Integer from = vertexValue(snapshot, edge.fromId());
+        Integer to = vertexValue(snapshot, edge.toId());
+        if (from == null || to == null) {
+            clearVisualSelection();
+            return;
+        }
+        if (fromField != null) fromField.setText(Integer.toString(from));
+        if (toField != null) toField.setText(Integer.toString(to));
+        selectionListener.accept(new EdgeSelection(edgeId, from, to, snapshot.directed()));
+    }
+
+    private Integer vertexValue(GraphSnapshot<Integer> snapshot, long nodeId) {
+        for (GraphSnapshot.Vertex<Integer> vertex : snapshot.vertices()) {
+            if (vertex.id() == nodeId) return vertex.value();
+        }
+        return null;
+    }
+
+    private void clearVisualSelection() {
+        graphVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private GraphVisualizer graphVisualizer() {
+        return (GraphVisualizer) visualizer;
+    }
+
+    public sealed interface Selection permits NodeSelection, EdgeSelection { }
+
+    public record NodeSelection(long id, int value, int degree) implements Selection { }
+
+    public record EdgeSelection(long id, int fromValue, int toValue, boolean directed) implements Selection { }
 
     private GraphSnapshot<Integer> graphSnapshot() {
         return GraphBfs.snapshot(graph);

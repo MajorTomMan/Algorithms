@@ -41,9 +41,24 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
             }
         }
         if (event instanceof ObservationEvent.Examined examined) {
-            GridPoint point = point(examined.toRef());
-            if (point != null) {
-                return observation(previous.examine(point));
+            GridPoint from = point(examined.fromRef());
+            GridPoint to = point(examined.toRef());
+            if (to != null) {
+                MazeViewState next = previous.examine(from, to);
+                if (generation && previous.graphBased() && from != null) {
+                    next = next.connect(from, to);
+                }
+                return observation(next);
+            }
+        }
+        if (event instanceof ObservationEvent.PathFound pathFound) {
+            java.util.LinkedHashSet<GridPoint> path = new java.util.LinkedHashSet<>();
+            for (ObservationEvent.Reference ref : pathFound.refs()) {
+                GridPoint point = point(ref);
+                if (point != null) path.add(point);
+            }
+            if (!path.isEmpty()) {
+                return Reduction.changed(previous.withPath(path), EventImportance.STATE_CHANGE, true);
             }
         }
         if (event instanceof ObservationEvent.Backtracked backtracked) {
@@ -53,20 +68,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
             }
         }
         if (event instanceof RunCompletedEvent) {
-            MazeViewState completed = new MazeViewState(
-                    previous.rows(),
-                    previous.columns(),
-                    previous.openCells(),
-                    previous.path(),
-                    previous.visited(),
-                    previous.active(),
-                    previous.backtracked(),
-                    previous.entrance(),
-                    previous.exit(),
-                    previous.graphEdges(),
-                    previous.graphBased(),
-                    true);
-            return Reduction.changed(completed, EventImportance.TERMINAL, true);
+            return Reduction.changed(previous.completedBase(), EventImportance.TERMINAL, true);
         }
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
     }

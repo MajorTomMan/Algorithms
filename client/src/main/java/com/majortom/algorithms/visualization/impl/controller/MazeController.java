@@ -33,6 +33,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public final class MazeController extends BaseModuleController<MazeViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<MazeSnapshot>, SnapshotAlgorithmInputSupport<MazeSnapshot> {
@@ -55,6 +56,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private boolean applyingStructureState;
     private boolean solving;
     private Operation selectedOperation = Operation.GENERATE;
+    private boolean structureSelectionEnabled = true;
+    private Consumer<CellSelection> selectionListener = ignored -> { };
 
     @FXML private ComboBox<String> structureSelector;
     @FXML private ComboBox<String> generatorSelector;
@@ -88,6 +91,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             sizeValueLabel.setText(next + " x " + next);
         });
         sizeValueLabel.setText(size + " x " + size);
+        mazeVisualizer().setSelectionListener(this::handleCellSelection);
         EffectUtils.applyDynamicEffect(buildBtn, solveBtn, applySizeBtn, applyResultBtn, resetMazeBtn);
         updateControlState();
     }
@@ -190,6 +194,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         algorithmResultSnapshot = null;
         solving = false;
         selectedOperation = Operation.GENERATE;
+        clearCellSelection();
         renderEmpty();
         updateControlState();
         refreshStatsDisplay();
@@ -251,6 +256,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         algorithmInputSnapshot = null;
         solving = false;
         selectedOperation = Operation.GENERATE;
+        clearCellSelection();
         renderEmpty();
         updateControlState();
     }
@@ -433,6 +439,46 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         return cell == null ? null : new com.majortom.algorithms.library.maze.GridPoint(cell.row(), cell.column());
     }
 
+    public void setSelectionListener(Consumer<CellSelection> listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    public void setStructureSelectionEnabled(boolean enabled) {
+        structureSelectionEnabled = enabled;
+        if (!enabled) clearCellSelection();
+    }
+
+    private void handleCellSelection(GridPoint point) {
+        if (!structureSelectionEnabled || point == null) return;
+        MazeViewState state = latestStructureState();
+        if (state == null || point.row() < 0 || point.row() >= state.rows()
+                || point.column() < 0 || point.column() >= state.columns()) {
+            clearCellSelection();
+            return;
+        }
+        String cellState = cellState(state, point);
+        selectionListener.accept(new CellSelection(point.row(), point.column(), cellState));
+    }
+
+    private String cellState(MazeViewState state, GridPoint point) {
+        if (point.equals(state.entrance())) return "ENTRANCE";
+        if (point.equals(state.exit())) return "EXIT";
+        int index = point.row() * state.columns() + point.column();
+        return state.openCells().get(index) ? "OPEN" : "WALL";
+    }
+
+    private void clearCellSelection() {
+        mazeVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private MazeVisualizer mazeVisualizer() {
+        return (MazeVisualizer) visualizer;
+    }
+
+    public record CellSelection(int row, int column, String state) {
+    }
+
     @Override
     protected void setupI18n() {
         if (structureTitleLabel != null) structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
@@ -478,6 +524,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             generatedMaze = null;
             algorithmResultSnapshot = null;
             solving = false;
+            clearCellSelection();
             renderEmpty();
             updateControlState();
         });

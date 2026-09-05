@@ -3,7 +3,12 @@ package com.majortom.algorithms.visualization.runtime.string;
 import java.util.Objects;
 
 /** Immutable JavaFX-neutral String state and current factual execution observation. */
-public record StringViewState(String value, Mutation mutation, Observation observation, boolean completed) {
+public record StringViewState(
+        String value,
+        Mutation mutation,
+        Observation observation,
+        int patternStart,
+        boolean completed) {
 
     public StringViewState {
         value = value == null ? "" : value;
@@ -11,8 +16,13 @@ public record StringViewState(String value, Mutation mutation, Observation obser
         observation = Objects.requireNonNull(observation, "observation");
     }
 
+    /** Compatibility constructor for Structure-only presentation state. */
+    public StringViewState(String value, Mutation mutation, Observation observation, boolean completed) {
+        this(value, mutation, observation, 0, completed);
+    }
+
     public static StringViewState source(String value) {
-        return new StringViewState(value, Mutation.none(), Observation.none(), false);
+        return new StringViewState(value, Mutation.none(), Observation.none(), 0, false);
     }
 
     public record Mutation(Type type, int index, int length) {

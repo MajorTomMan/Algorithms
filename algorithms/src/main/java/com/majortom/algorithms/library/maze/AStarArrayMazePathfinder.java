@@ -47,7 +47,11 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
                 frontier.add(neighbor);
             }
         }
-        return found ? ArrayMazeSupport.reconstruct(previous, start, goal) : List.of();
+        if (!found) return List.of();
+        List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
+        ExecutionEvents.observe(new ObservationEvent.PathFound(
+                path.stream().map(AStarArrayMazePathfinder::ref).map(ObservationEvent.Reference.class::cast).toList()));
+        return path;
     }
 
     private static ObservationEvent.CoordinateRef ref(GridPoint point) {

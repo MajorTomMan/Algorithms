@@ -20,7 +20,7 @@ import java.util.Objects;
 /** Stack/Queue-specific transient ELK adapter. Ordering is supplied by the family, geometry by ELK. */
 public final class StackQueueElkLayout {
     private static final double PADDING = 30.0d;
-    private static final double ELEMENT_SPACING = 28.0d;
+    private static final double ELEMENT_SPACING = 0.0d;
     private static final int RANDOM_SEED = 1;
 
     public LayoutResult layoutStack(List<ElementSize> elements) {

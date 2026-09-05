@@ -5,6 +5,8 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.geometry.Bounds;
+import javafx.geometry.Dimension2D;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -17,38 +19,44 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.ZoomEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import net.kurobako.gesturefx.GesturePane;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
- * Shared viewport infrastructure for the Workbench visualization area.
+ * Shared viewport infrastructure for project-owned Structure visualizers.
  *
- * <p>The surface owns only presentation-space concerns: three ordered JavaFX
- * layers plus GestureFX zoom/pan/fit/center/reset behavior. It deliberately has
- * no knowledge of structure families, events, algorithms or view-state
- * semantics.</p>
+ * <p>This class owns presentation-space concerns only: layers, GestureFX viewport behavior,
+ * safe-area-aware fit/center and the viewport toolbar. It never interprets Structure/Event data.</p>
  */
 public final class VisualizationSurface extends StackPane {
     private static final double MIN_ZOOM = 0.10d;
     private static final double MAX_ZOOM = 8.00d;
     private static final double DEFAULT_ZOOM = 1.00d;
+    private static final double MAX_AUTO_FIT_SCALE = 1.35d;
     private static final double TOOLBAR_ZOOM_FACTOR = 1.15d;
-    private static final double FIT_PADDING = 36.0d;
+    private static final Insets DEFAULT_SAFE_INSETS = new Insets(16.0d, 16.0d, 62.0d, 16.0d);
 
     private final Group edgeLayer = layer("visualization-edge-layer");
     private final Group nodeLayer = layer("visualization-node-layer");
     private final Group decorationLayer = layer("visualization-decoration-layer");
     private final Group worldPane = new Group(edgeLayer, nodeLayer, decorationLayer);
     private final GesturePane gesturePane = new GesturePane(worldPane);
-    private final HBox viewportToolbar = new HBox(5.0d);
+    private final HBox viewportToolbar = new HBox(0.0d);
     private final Label zoomLabel = new Label();
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
 
+    private Insets safeInsets = DEFAULT_SAFE_INSETS;
+    private Insets obstructionInsets = Insets.EMPTY;
     private boolean userViewportChanged;
+    private double autoFitMinimumScale = MIN_ZOOM;
     private boolean programmaticViewportChange;
     private boolean fitQueued;
+    private double queuedMinimumAutoScale = MIN_ZOOM;
+    private boolean queuedInitialFit;
 
     public VisualizationSurface() {
         getStyleClass().add("visualization-surface");
@@ -59,25 +67,21 @@ public final class VisualizationSurface extends StackPane {
         installShortcuts();
         getChildren().setAll(gesturePane, viewportToolbar);
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
-        viewportToolbar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+        viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
     }
 
-    /** Layer rendered behind nodes. Intended for EdgeView / Path instances. */
     public Group edgeLayer() {
         return edgeLayer;
     }
 
-    /** Main visual-element layer. */
     public Group nodeLayer() {
         return nodeLayer;
     }
 
-    /** Foreground annotations, transient markers and presentation decorations. */
     public Group decorationLayer() {
         return decorationLayer;
     }
 
-    /** Current GestureFX scale, where {@code 1.0 == 100% design scale}. */
     public double zoom() {
         return zoom.get();
     }
@@ -86,74 +90,97 @@ public final class VisualizationSurface extends StackPane {
         return zoom.getReadOnlyProperty();
     }
 
-    /** Current viewport bounds in surface coordinates. */
     public Bounds viewportBounds() {
         return gesturePane.getViewportBound();
     }
 
-    /** Bounds of the complete project-owned visualization world. */
     public Bounds worldBounds() {
         return worldPane.getLayoutBounds();
     }
 
-    /** Zooms one toolbar step around the current viewport centre. */
+    /** Insets reserved for overlays/toolbars. Fit and center use the remaining usable viewport. */
+    public void setSafeInsets(Insets safeInsets) {
+        this.safeInsets = Objects.requireNonNull(safeInsets, "safeInsets");
+        if (!userViewportChanged) {
+            fitWithMinimumScale(autoFitMinimumScale);
+        }
+    }
+
+    public Insets safeInsets() {
+        return effectiveSafeInsets();
+    }
+
+    /** Additional shell-level obstruction, composed with family safe insets without replacing them. */
+    public void setObstructionInsets(Insets obstructionInsets) {
+        Insets next = Objects.requireNonNull(obstructionInsets, "obstructionInsets");
+        if (next.equals(this.obstructionInsets)) {
+            return;
+        }
+        this.obstructionInsets = next;
+        if (!userViewportChanged) {
+            fitWithMinimumScale(autoFitMinimumScale);
+        }
+    }
+
     public void zoomIn() {
         userViewportChanged = true;
         setZoomAroundViewportCentre(zoom() * TOOLBAR_ZOOM_FACTOR);
     }
 
-    /** Zooms one toolbar step around the current viewport centre. */
     public void zoomOut() {
         userViewportChanged = true;
         setZoomAroundViewportCentre(zoom() / TOOLBAR_ZOOM_FACTOR);
     }
 
-    /** Keeps the current scale and centres the world in the viewport. */
+    /** Keeps current scale and centers the world in the safe viewport rather than under overlays. */
     public void center() {
         Bounds bounds = worldBounds();
         if (hasWorld(bounds)) {
-            runProgrammatic(() -> gesturePane.centreOn(worldCenter(bounds)));
+            runProgrammatic(() -> centerOnSafeViewport(worldCenter(bounds)));
         }
         userViewportChanged = true;
     }
 
-    /** Fits the complete world into the current viewport while preserving aspect ratio. */
+    /** Explicit FIT: always fits the complete world, even when that requires a small scale. */
     public void fit() {
-        fit(false);
+        requestFit(false, MIN_ZOOM);
     }
 
     /**
-     * Initial-load fit. After the user has manipulated the viewport this method
-     * becomes a no-op so ordinary data updates cannot unexpectedly move the view.
+     * Legacy pristine fit used by families that have not adopted a family-specific auto-fit floor yet.
      */
     public void fitIfPristine() {
-        if (!userViewportChanged) {
-            fit(true);
-        }
+        fitWithMinimumScale(MIN_ZOOM);
     }
 
-    /** Restores 100% design scale and centres the world. */
+    /**
+     * Initial/automatic fit with a readability floor. This never marks the viewport as user-modified.
+     * Explicit {@link #fit()} ignores this floor and can fit the complete world at any supported scale.
+     */
+    public void fitWithMinimumScale(double minimumAutoScale) {
+        autoFitMinimumScale = clamp(minimumAutoScale);
+        if (userViewportChanged) {
+            return;
+        }
+        requestFit(true, autoFitMinimumScale);
+    }
+
     public void reset() {
         Bounds bounds = worldBounds();
         Point2D pivot = hasWorld(bounds) ? worldCenter(bounds) : new Point2D(0.0d, 0.0d);
         runProgrammatic(() -> {
             gesturePane.zoomTo(DEFAULT_ZOOM, pivot);
             if (hasWorld(bounds)) {
-                gesturePane.centreOn(pivot);
+                centerOnSafeViewport(pivot);
             }
         });
         userViewportChanged = true;
     }
 
-    /** True once wheel/drag/pinch or a toolbar viewport action has been used. */
     public boolean isUserViewportChanged() {
         return userViewportChanged;
     }
 
-    /**
-     * Marks the viewport as pristine for a newly mounted visualization world.
-     * This does not itself move or scale the viewport.
-     */
     public void markViewportPristine() {
         userViewportChanged = false;
     }
@@ -166,7 +193,7 @@ public final class VisualizationSurface extends StackPane {
         gesturePane.setFitWidth(false);
         gesturePane.setFitHeight(false);
         gesturePane.setFitMode(GesturePane.FitMode.UNBOUNDED);
-        gesturePane.setScrollMode(GesturePane.ScrollMode.PAN);
+        gesturePane.setScrollMode(GesturePane.ScrollMode.ZOOM);
         gesturePane.setScrollBarPolicy(GesturePane.ScrollBarPolicy.NEVER);
         gesturePane.currentScaleProperty().addListener((observable, oldValue, newValue) -> {
             zoom.set(newValue.doubleValue());
@@ -182,12 +209,14 @@ public final class VisualizationSurface extends StackPane {
 
         Button zoomOut = button("−", "action.viewport.zoom_out", this::zoomOut);
         zoomLabel.getStyleClass().add("viewport-zoom-label");
-        zoomLabel.setMinWidth(54.0d);
+        zoomLabel.setMinWidth(46.0d);
         zoomLabel.setAlignment(Pos.CENTER);
         Button zoomIn = button("+", "action.viewport.zoom_in", this::zoomIn);
         Button fit = button("FIT", "action.viewport.fit", this::fit);
+        Button center = button("CENTER", "action.viewport.center", this::center);
         Button reset = button("⌂", "action.viewport.reset", this::reset);
-        viewportToolbar.getChildren().setAll(zoomOut, zoomLabel, zoomIn, fit, reset);
+        reset.getStyleClass().add("viewport-toolbar-last");
+        viewportToolbar.getChildren().setAll(zoomOut, zoomLabel, zoomIn, fit, center, reset);
     }
 
     private Button button(String text, String tooltipKey, Runnable action) {
@@ -218,43 +247,59 @@ public final class VisualizationSurface extends StackPane {
         });
     }
 
-    private void fit(boolean initialFit) {
-        if (fitNow(initialFit)) {
+    private void requestFit(boolean initialFit, double minimumAutoScale) {
+        if (fitNow(initialFit, minimumAutoScale)) {
             return;
         }
         if (getScene() != null && !fitQueued) {
             fitQueued = true;
+            queuedInitialFit = initialFit;
+            queuedMinimumAutoScale = minimumAutoScale;
             Platform.runLater(() -> {
                 fitQueued = false;
-                if (!initialFit || !userViewportChanged) {
-                    fitNow(initialFit);
+                if (!queuedInitialFit || !userViewportChanged) {
+                    fitNow(queuedInitialFit, queuedMinimumAutoScale);
                 }
             });
         }
     }
 
-    private boolean fitNow(boolean initialFit) {
+    private boolean fitNow(boolean initialFit, double minimumAutoScale) {
         Bounds bounds = worldBounds();
         double viewportWidth = gesturePane.getViewportWidth();
         double viewportHeight = gesturePane.getViewportHeight();
         if (!hasWorld(bounds) || viewportWidth <= 0.0d || viewportHeight <= 0.0d) {
             return false;
         }
-        double availableWidth = Math.max(1.0d, viewportWidth - FIT_PADDING * 2.0d);
-        double availableHeight = Math.max(1.0d, viewportHeight - FIT_PADDING * 2.0d);
+
+        Insets insets = effectiveSafeInsets();
+        double availableWidth = Math.max(1.0d, viewportWidth - insets.getLeft() - insets.getRight());
+        double availableHeight = Math.max(1.0d, viewportHeight - insets.getTop() - insets.getBottom());
         double scaleX = bounds.getWidth() <= 0.0d ? MAX_ZOOM : availableWidth / bounds.getWidth();
         double scaleY = bounds.getHeight() <= 0.0d ? MAX_ZOOM : availableHeight / bounds.getHeight();
-        double requestedScale = clamp(Math.min(scaleX, scaleY));
-        final double targetScale = initialFit ? Math.min(DEFAULT_ZOOM, requestedScale) : requestedScale;
+        double fitScale = clamp(Math.min(scaleX, scaleY));
+        double targetScale = initialFit
+                ? Math.min(MAX_AUTO_FIT_SCALE, Math.max(fitScale, minimumAutoScale))
+                : fitScale;
         Point2D center = worldCenter(bounds);
         runProgrammatic(() -> {
             gesturePane.zoomTo(targetScale, center);
-            gesturePane.centreOn(center);
+            centerOnSafeViewport(center);
         });
         if (!initialFit) {
             userViewportChanged = true;
         }
         return true;
+    }
+
+    private void centerOnSafeViewport(Point2D worldCenter) {
+        gesturePane.centreOn(worldCenter);
+        Insets insets = effectiveSafeInsets();
+        double xOffset = (insets.getRight() - insets.getLeft()) / 2.0d;
+        double yOffset = (insets.getBottom() - insets.getTop()) / 2.0d;
+        if (Math.abs(xOffset) > 0.01d || Math.abs(yOffset) > 0.01d) {
+            gesturePane.translateBy(new Dimension2D(xOffset, yOffset));
+        }
     }
 
     private void setZoomAroundViewportCentre(double requestedScale) {
@@ -280,6 +325,15 @@ public final class VisualizationSurface extends StackPane {
 
     private void updateZoomLabel() {
         zoomLabel.setText(String.format(Locale.ROOT, "%.0f%%", zoom() * 100.0d));
+    }
+
+
+    private Insets effectiveSafeInsets() {
+        return new Insets(
+                Math.max(safeInsets.getTop(), obstructionInsets.getTop()),
+                Math.max(safeInsets.getRight(), obstructionInsets.getRight()),
+                Math.max(safeInsets.getBottom(), obstructionInsets.getBottom()),
+                Math.max(safeInsets.getLeft(), obstructionInsets.getLeft()));
     }
 
     private static Group layer(String styleClass) {

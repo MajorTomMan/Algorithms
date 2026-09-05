@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.AnimationCoordinator;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
+import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
 import com.majortom.algorithms.visualization.common.layout.ElementBounds;
@@ -21,6 +22,7 @@ import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
+import javafx.scene.control.Label;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
@@ -33,10 +35,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 
 /** Graph renderer using measured JavaFX nodes, transient ELK Layered routes and GestureFX viewport. */
 public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
-    private static final double MIN_RADIUS = 27.0d;
+    private static final double MIN_RADIUS = 28.0d;
     private static final double LABEL_PADDING = 24.0d;
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
@@ -53,6 +56,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
+    private final Map<Long, Label> nodeIdLabels = new LinkedHashMap<>();
     private boolean measuringElements;
     private final InvalidationListener elementSizeListener = observable -> {
         if (!measuringElements) {
@@ -68,6 +72,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private long pendingVersion = -1L;
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
+    private Long selectedNodeId;
+    private Long selectedEdgeId;
+    private LongConsumer nodeSelectionListener = ignored -> { };
+    private LongConsumer edgeSelectionListener = ignored -> { };
+    private VisualDensity density = VisualDensity.DETAIL;
 
     public GraphVisualizer() {
         getChildren().setAll(surface);
@@ -86,14 +95,24 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             surface.markViewportPristine();
         }
 
+        density = densityFor(state.nodes().size());
         Map<Long, GraphViewState.Node> previousNodes = renderedState.nodesById();
         for (GraphViewState.Node node : state.nodes()) {
             NodeView view = nodeViews.get(node.id());
             if (view == null) {
                 view = new NodeView(new CircleGeometry(MIN_RADIUS), Integer.toString(node.value()));
                 view.layoutBoundsProperty().addListener(elementSizeListener);
+                long visualNodeId = node.id();
+                view.setOnMouseClicked(event -> {
+                    selectedNodeId = visualNodeId;
+                    selectedEdgeId = null;
+                    syncSelectionState();
+                    nodeSelectionListener.accept(visualNodeId);
+                    event.consume();
+                });
                 nodeViews.put(node.id(), view);
                 surface.nodeLayer().getChildren().add(view);
+                installNodeIdLabel(node.id(), view);
                 newNodeIds.add(node.id());
                 if (!firstRender) {
                     transitions.add(animations.together(
@@ -103,10 +122,12 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             } else {
                 view.setText(Integer.toString(node.value()));
             }
-            view.setHighlighted(state.completed() || isObservedNode(state.observation(), node.id()));
+            view.setVisited(state.visitedNodeIds().contains(node.id()));
+            view.setHighlighted(isObservedNode(state.observation(), node.id()));
         }
 
         syncEdges(state, transitions);
+        syncSelectionState();
 
         Set<Long> currentNodeIds = state.nodes().stream().map(GraphViewState.Node::id)
                 .collect(java.util.stream.Collectors.toSet());
@@ -115,6 +136,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 .toList();
         for (Long nodeId : removedIds) {
             NodeView view = nodeViews.remove(nodeId);
+            removeNodeIdLabel(nodeId);
+            if (selectedNodeId != null && selectedNodeId.equals(nodeId)) {
+                selectedNodeId = null;
+            }
             view.layoutBoundsProperty().removeListener(elementSizeListener);
             if (firstRender) {
                 surface.nodeLayer().getChildren().remove(view);
@@ -136,7 +161,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitIfPristine();
+                surface.fitWithMinimumScale(0.72d);
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }
@@ -237,7 +262,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         Runnable finish = () -> {
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
-                surface.fitIfPristine();
+                surface.fitWithMinimumScale(0.72d);
             }
         };
         play(transitions, finish);
@@ -285,6 +310,14 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 continue;
             }
             EdgeView view = new EdgeView(source, target, state.directed());
+            long visualEdgeId = edge.id();
+            view.setOnMouseClicked(event -> {
+                selectedEdgeId = visualEdgeId;
+                selectedNodeId = null;
+                syncSelectionState();
+                edgeSelectionListener.accept(visualEdgeId);
+                event.consume();
+            });
             view.setCurved(source == target);
             view.setHighlighted(isObservedEdge(state, edge));
             edgeViews.put(edge.id(), view);
@@ -298,6 +331,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 .filter(id -> !expected.containsKey(id)).toList();
         for (Long edgeId : removed) {
             EdgeView view = edgeViews.remove(edgeId);
+            if (selectedEdgeId != null && selectedEdgeId.equals(edgeId)) {
+                selectedEdgeId = null;
+            }
             if (firstRender) {
                 surface.edgeLayer().getChildren().remove(view);
             } else {
@@ -306,6 +342,67 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 transitions.add(fade);
             }
         }
+    }
+
+    public void setNodeSelectionListener(LongConsumer listener) {
+        nodeSelectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    public void setEdgeSelectionListener(LongConsumer listener) {
+        edgeSelectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    public void clearSelection() {
+        selectedNodeId = null;
+        selectedEdgeId = null;
+        syncSelectionState();
+    }
+
+    public Long selectedNodeId() {
+        return selectedNodeId;
+    }
+
+    public Long selectedEdgeId() {
+        return selectedEdgeId;
+    }
+
+    private void syncSelectionState() {
+        nodeViews.forEach((id, view) -> view.setSelected(selectedNodeId != null && selectedNodeId.equals(id)));
+        edgeViews.forEach((id, view) -> view.setSelected(selectedEdgeId != null && selectedEdgeId.equals(id)));
+        syncNodeIdLabelVisibility();
+    }
+
+    private void installNodeIdLabel(long nodeId, NodeView view) {
+        Label label = new Label("#" + nodeId);
+        label.getStyleClass().add("graph-node-id-label");
+        label.setMouseTransparent(true);
+        label.layoutXProperty().bind(view.centerXProperty().subtract(label.widthProperty().divide(2.0d)));
+        label.layoutYProperty().bind(view.centerYProperty().add(MIN_RADIUS + 6.0d));
+        nodeIdLabels.put(nodeId, label);
+        surface.decorationLayer().getChildren().add(label);
+    }
+
+    private void removeNodeIdLabel(long nodeId) {
+        Label label = nodeIdLabels.remove(nodeId);
+        if (label == null) return;
+        label.layoutXProperty().unbind();
+        label.layoutYProperty().unbind();
+        surface.decorationLayer().getChildren().remove(label);
+    }
+
+    private void syncNodeIdLabelVisibility() {
+        nodeIdLabels.forEach((id, label) -> {
+            boolean visible = density == VisualDensity.DETAIL
+                    || (selectedNodeId != null && selectedNodeId.equals(id));
+            label.setManaged(visible);
+            label.setVisible(visible);
+        });
+    }
+
+    private VisualDensity densityFor(int nodeCount) {
+        if (nodeCount <= 12) return VisualDensity.DETAIL;
+        if (nodeCount <= 30) return VisualDensity.COMPACT;
+        return VisualDensity.DENSE;
     }
 
     private void clearCurrentRoutes() {
@@ -346,6 +443,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     @Override
+    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
+        surface.setObstructionInsets(insets);
+    }
+
+    @Override
     public void setPlaybackSpeed(double speed) {
         animations.setPlaybackSpeed(speed);
     }
@@ -363,6 +465,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         nodeViews.clear();
         edgeViews.clear();
+        nodeIdLabels.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
@@ -370,6 +473,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         pendingNewNodeIds = Set.of();
         pendingVersion = -1L;
         hasAppliedLayout = false;
+        selectedNodeId = null;
+        selectedEdgeId = null;
         firstRender = true;
         surface.reset();
         surface.markViewportPristine();
@@ -388,7 +493,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     private static boolean isObservedNode(GraphViewState.Observation observation, long nodeId) {
         return switch (observation.type()) {
-            case VISITED -> observation.firstNodeId() != null && observation.firstNodeId() == nodeId;
+            case VISITED -> false;
             case EXAMINED -> (observation.firstNodeId() != null && observation.firstNodeId() == nodeId)
                     || (observation.secondNodeId() != null && observation.secondNodeId() == nodeId);
             case NONE -> false;

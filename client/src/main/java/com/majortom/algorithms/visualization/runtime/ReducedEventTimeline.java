@@ -99,6 +99,32 @@ public final class ReducedEventTimeline<S> {
         return frameEventIndexes.get(frameIndex);
     }
 
+    /**
+     * Returns the visual frame whose event is the requested authoritative event, or the nearest
+     * visual frame at-or-before it. Non-visual Runtime/Log events therefore inspect exactly while
+     * the canvas remains the factual visual state at that point in the stream.
+     */
+    public int frameIndexAtOrBeforeEvent(int eventIndex) {
+        if (events.isEmpty()) {
+            return -1;
+        }
+        int target = Math.max(0, Math.min(events.size() - 1, eventIndex));
+        int low = 0;
+        int high = frameEventIndexes.size() - 1;
+        int result = -1;
+        while (low <= high) {
+            int middle = low + (high - low) / 2;
+            int candidate = frameEventIndexes.get(middle);
+            if (candidate <= target) {
+                result = middle;
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+        return result;
+    }
+
     public S seek(int frameIndex) {
         requireFrameIndex(frameIndex);
         int targetEventIndex = frameEventIndexes.get(frameIndex);

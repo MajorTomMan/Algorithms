@@ -12,11 +12,26 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Immutable JavaFX-neutral tree facts for general and binary tree families. */
-public record TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, boolean completed) {
+public record TreeViewState(
+        Kind kind,
+        Long rootId,
+        Map<Long, Node> nodes,
+        Set<Long> currentNodeIds,
+        Set<Long> observedNodeIds,
+        Set<Long> visitedNodeIds,
+        boolean completed) {
 
     public TreeViewState {
         kind = Objects.requireNonNull(kind, "kind");
         nodes = Map.copyOf(Objects.requireNonNull(nodes, "nodes"));
+        currentNodeIds = Set.copyOf(Objects.requireNonNull(currentNodeIds, "currentNodeIds"));
+        observedNodeIds = Set.copyOf(Objects.requireNonNull(observedNodeIds, "observedNodeIds"));
+        visitedNodeIds = Set.copyOf(Objects.requireNonNull(visitedNodeIds, "visitedNodeIds"));
+    }
+
+    /** Compatibility constructor for source/base states without runtime overlays. */
+    public TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, boolean completed) {
+        this(kind, rootId, nodes, Set.of(), Set.of(), Set.of(), completed);
     }
 
     public static TreeViewState empty(Kind kind) {

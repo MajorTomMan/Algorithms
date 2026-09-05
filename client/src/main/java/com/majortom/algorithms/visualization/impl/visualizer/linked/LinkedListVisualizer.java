@@ -21,6 +21,7 @@ import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
+import javafx.scene.text.Text;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
@@ -33,13 +34,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 
 /** Linked-list renderer driven by factual topology, measured JavaFX nodes, ELK routes and GestureFX viewport. */
 public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewState> {
-    private static final double MIN_NODE_WIDTH = 84.0d;
-    private static final double MIN_NODE_HEIGHT = 46.0d;
-    private static final double LABEL_HORIZONTAL_PADDING = 32.0d;
-    private static final double LABEL_VERTICAL_PADDING = 20.0d;
+    private static final double MIN_NODE_WIDTH = 112.0d;
+    private static final double MIN_NODE_HEIGHT = 72.0d;
+    private static final double LABEL_HORIZONTAL_PADDING = 40.0d;
     private static final Duration MOVE_DURATION = Duration.millis(260.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
@@ -54,7 +55,10 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     });
     private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
+    private final Map<Long, LinkedNodeDecoration> nodeDecorations = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
+    private final Text headLabel = new Text("HEAD ↓");
+    private final Text tailLabel = new Text("↑ TAIL");
     private boolean measuringElements;
     private final InvalidationListener elementSizeListener = observable -> {
         if (!measuringElements) {
@@ -70,11 +74,17 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private long pendingVersion = -1L;
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
+    private Long selectedNodeId;
+    private LongConsumer selectionListener = ignored -> { };
 
     public LinkedListVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
+        surface.setSafeInsets(new javafx.geometry.Insets(26.0d, 16.0d, 62.0d, 16.0d));
+        headLabel.getStyleClass().addAll("linear-role-label", "linked-head-label");
+        tailLabel.getStyleClass().addAll("linear-role-label", "linked-tail-label");
+        surface.decorationLayer().getChildren().addAll(headLabel, tailLabel);
     }
 
     @Override
@@ -93,8 +103,20 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             if (view == null) {
                 view = new NodeView(new RectangleGeometry(MIN_NODE_WIDTH, MIN_NODE_HEIGHT), label(node));
                 view.layoutBoundsProperty().addListener(elementSizeListener);
+                view.getStyleClass().add("linked-node");
+                long nodeId = node.id();
+                view.setOnMouseClicked(event -> {
+                    selectedNodeId = nodeId;
+                    syncSelection();
+                    selectionListener.accept(nodeId);
+                    event.consume();
+                });
                 nodeViews.put(node.id(), view);
                 surface.nodeLayer().getChildren().add(view);
+                LinkedNodeDecoration decoration = new LinkedNodeDecoration(view);
+                decoration.setLinks(node.previousId(), node.nextId());
+                nodeDecorations.put(node.id(), decoration);
+                surface.decorationLayer().getChildren().add(decoration);
                 newNodeIds.add(node.id());
                 if (!firstRender) {
                     transitions.add(animations.together(
@@ -104,6 +126,10 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             } else {
                 LinkedListViewState.Node previous = renderedState.nodes().get(node.id());
                 view.setText(label(node));
+                LinkedNodeDecoration decoration = nodeDecorations.get(node.id());
+                if (decoration != null) {
+                    decoration.setLinks(node.previousId(), node.nextId());
+                }
                 view.setHighlighted(false);
                 if (previous != null && !java.util.Objects.equals(previous.value(), node.value())) {
                     view.setHighlighted(true);
@@ -115,14 +141,24 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             }
         }
 
+        syncSelection();
         syncEdges(state, transitions);
 
         List<Long> removedIds = nodeViews.keySet().stream()
                 .filter(id -> !state.nodes().containsKey(id))
                 .toList();
         for (Long nodeId : removedIds) {
+            if (java.util.Objects.equals(selectedNodeId, nodeId)) {
+                selectedNodeId = null;
+                selectionListener.accept(-1L);
+            }
             NodeView view = nodeViews.remove(nodeId);
             view.layoutBoundsProperty().removeListener(elementSizeListener);
+            LinkedNodeDecoration decoration = nodeDecorations.remove(nodeId);
+            if (decoration != null) {
+                decoration.dispose();
+                surface.decorationLayer().getChildren().remove(decoration);
+            }
             if (firstRender) {
                 surface.nodeLayer().getChildren().remove(view);
             } else {
@@ -186,10 +222,6 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
                 EdgeKey key = new EdgeKey(node.id(), node.nextId(), Relation.NEXT);
                 links.add(new Link(routeId(key), node.id(), node.nextId()));
             }
-            if (node.previousId() != null && state.nodes().containsKey(node.previousId())) {
-                EdgeKey key = new EdgeKey(node.id(), node.previousId(), Relation.PREVIOUS);
-                links.add(new Link(routeId(key), node.id(), node.previousId()));
-            }
         }
         return new LayoutRequest(nodes, links);
     }
@@ -198,7 +230,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         view.applyCss();
         Bounds label = view.labelBounds();
         double width = Math.max(MIN_NODE_WIDTH, Math.ceil(label.getWidth() + LABEL_HORIZONTAL_PADDING));
-        double height = Math.max(MIN_NODE_HEIGHT, Math.ceil(label.getHeight() + LABEL_VERTICAL_PADDING));
+        double height = MIN_NODE_HEIGHT;
         RectangleGeometry geometry = (RectangleGeometry) view.getGeometry();
         if (Math.abs(geometry.width() - width) > 0.01d || Math.abs(geometry.height() - height) > 0.01d) {
             view.setGeometry(new RectangleGeometry(width, height));
@@ -254,7 +286,8 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         Runnable finish = () -> {
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
-                surface.fitIfPristine();
+                positionRoleLabels(result);
+                surface.fitWithMinimumScale(0.78d);
             }
         };
         play(transitions, finish);
@@ -268,6 +301,23 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             } else {
                 entry.getValue().setRoute(route.points());
             }
+        }
+    }
+
+    private void positionRoleLabels(LayoutResult result) {
+        List<Long> order = orderedNodeIds(renderedState);
+        if (order.isEmpty()) {
+            headLabel.relocate(40.0d, 30.0d);
+            tailLabel.relocate(120.0d, 30.0d);
+            return;
+        }
+        ElementBounds head = result.elements().get(LinkedListElkLayout.nodeId(order.getFirst()));
+        ElementBounds tail = result.elements().get(LinkedListElkLayout.nodeId(order.getLast()));
+        if (head != null) {
+            headLabel.relocate(head.x() + 8.0d, Math.max(2.0d, head.y() - 28.0d));
+        }
+        if (tail != null) {
+            tailLabel.relocate(tail.x() + tail.width() - 42.0d, tail.y() + tail.height() + 10.0d);
         }
     }
 
@@ -394,6 +444,26 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         }
     }
 
+    public void setSelectionListener(LongConsumer listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    public void clearSelection() {
+        selectedNodeId = null;
+        syncSelection();
+    }
+
+    private void syncSelection() {
+        for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+            entry.getValue().setSelected(java.util.Objects.equals(selectedNodeId, entry.getKey()));
+        }
+    }
+
+    @Override
+    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
+        surface.setObstructionInsets(insets);
+    }
+
     @Override
     public void setPlaybackSpeed(double speed) {
         animations.setPlaybackSpeed(speed);
@@ -410,11 +480,14 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         invalidateLayout();
         renderedState = LinkedListViewState.empty();
         nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
+        selectedNodeId = null;
         nodeViews.clear();
         edgeViews.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
-        surface.decorationLayer().getChildren().clear();
+        nodeDecorations.values().forEach(LinkedNodeDecoration::dispose);
+        nodeDecorations.clear();
+        surface.decorationLayer().getChildren().setAll(headLabel, tailLabel);
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
         pendingVersion = -1L;
@@ -429,6 +502,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         stopActiveAnimation();
         invalidateLayout();
         nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
+        nodeDecorations.values().forEach(LinkedNodeDecoration::dispose);
         layoutExecutor.shutdownNow();
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();

@@ -18,7 +18,11 @@ public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
         Set<GridPoint> discovered = new HashSet<>();
         discovered.add(start);
         boolean found = visit(maze, start, goal, discovered, previous);
-        return found ? ArrayMazeSupport.reconstruct(previous, start, goal) : List.of();
+        if (!found) return List.of();
+        List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
+        ExecutionEvents.observe(new ObservationEvent.PathFound(
+                path.stream().map(DfsArrayMazePathfinder::ref).map(ObservationEvent.Reference.class::cast).toList()));
+        return path;
     }
 
     private boolean visit(
