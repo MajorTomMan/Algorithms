@@ -1691,3 +1691,710 @@
     -fx-font-size: 0.78em;
     -fx-font-weight: bold;
 }
+
+/* ========================================================================== */
+/* 2026-09-05 Algorithms / Lab — shared Structure + Algorithm workbench shell */
+/* Palette is intentionally limited to red / blue / yellow / black / white / gray. */
+/* ========================================================================== */
+
+.root-pane {
+    -ui-red: #f51b23;
+    -ui-blue: #1769d3;
+    -ui-yellow: #f5b400;
+    -ui-black: #08090a;
+    -ui-white: #ffffff;
+    -ui-gray-050: #fafafa;
+    -ui-gray-100: #f4f4f4;
+    -ui-gray-200: #e6e6e6;
+    -ui-gray-300: #d2d2d2;
+    -ui-gray-500: #8a8a8a;
+    -ui-gray-700: #444444;
+    -ui-gray-900: #171717;
+    -fx-background-color: -ui-white;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Arial";
+    -fx-font-size: 12.5px;
+}
+
+.top-shell,
+.lab-top-bar {
+    -fx-background-color: -ui-black;
+}
+
+.lab-top-bar {
+    -fx-padding: 0 24px;
+    -fx-border-color: transparent transparent #2b2b2b transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.brand-zone {
+    -fx-padding: 0 0 0 0;
+}
+
+.brand-mark {
+    -fx-background-color: transparent;
+}
+
+.brand-mark-red { -fx-fill: -ui-red; }
+.brand-mark-white { -fx-fill: -ui-white; }
+
+.brand-title-main {
+    -fx-text-fill: -ui-white;
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+}
+
+.brand-subtitle {
+    -fx-text-fill: #bfbfbf;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+.lab-mode-switch {
+    -fx-background-color: #191919;
+    -fx-border-color: #3b3b3b;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 0;
+}
+
+.lab-mode-switch .workspace-mode-button {
+    -fx-min-width: 0;
+    -fx-min-height: 50px;
+    -fx-pref-height: 50px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-text-fill: #d3d3d3;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-padding: 0 26px;
+}
+
+.lab-mode-switch .workspace-mode-button:hover {
+    -fx-background-color: #252525;
+    -fx-text-fill: -ui-white;
+}
+
+.lab-mode-switch .workspace-mode-button:selected {
+    -fx-background-color: -ui-red;
+    -fx-text-fill: -ui-white;
+}
+
+.top-context-zone { -fx-padding: 0 0 0 12px; }
+.top-context-title {
+    -fx-text-fill: -ui-white;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+.run-state-badge {
+    -fx-text-fill: -ui-white;
+    -fx-background-color: #171717;
+    -fx-border-color: -ui-red;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 9px 18px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+.run-state-badge.state-running { -fx-background-color: -ui-red; -fx-border-color: -ui-red; }
+.run-state-badge.state-paused { -fx-background-color: #171717; -fx-border-color: -ui-yellow; -fx-text-fill: -ui-yellow; }
+.run-state-badge.state-completed { -fx-background-color: #171717; -fx-border-color: -ui-blue; -fx-text-fill: -ui-blue; }
+.run-state-badge.state-failed { -fx-background-color: -ui-red; -fx-border-color: -ui-black; -fx-text-fill: -ui-white; }
+.run-id-label { -fx-text-fill: #d0d0d0; -fx-font-size: 13px; -fx-font-weight: 700; }
+
+.workspace-layer,
+.lab-workspace,
+.lab-workspace-body {
+    -fx-background-color: -ui-white;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+/* ---------- fixed family navigation rail ---------- */
+.family-rail {
+    -fx-background-color: -ui-black;
+    -fx-border-color: transparent #2d2d2d transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.family-nav { -fx-padding: 0; }
+.family-rail-button {
+    -fx-min-width: 142px;
+    -fx-pref-width: 142px;
+    -fx-max-width: 142px;
+    -fx-min-height: 76px;
+    -fx-pref-height: 76px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-text-fill: #eeeeee;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 16px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+.family-rail-button:hover { -fx-background-color: #1c1c1c; }
+.family-rail-button:selected {
+    -fx-background-color: -ui-red;
+    -fx-text-fill: -ui-white;
+}
+.family-rail-button:disabled { -fx-opacity: 0.42; }
+
+/* ---------- left operation panels ---------- */
+.structure-control-panel,
+.algorithm-control-panel {
+    -fx-background-color: -ui-white;
+    -fx-border-color: transparent -ui-gray-300 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 0 16px 14px 18px;
+    -fx-min-width: 280px;
+}
+.panel-topline {
+    -fx-border-color: transparent transparent -ui-gray-300 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.panel-eyebrow,
+.panel-section-title,
+.inspector-heading,
+.history-title {
+    -fx-text-fill: -ui-black;
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+}
+.panel-gear { -fx-text-fill: -ui-black; -fx-font-size: 18px; }
+.structure-identity-block { -fx-padding: 14px 2px 12px 2px; }
+.structure-identity-title { -fx-text-fill: -ui-black; -fx-font-size: 19px; -fx-font-weight: 800; }
+.structure-identity-meta { -fx-text-fill: -ui-gray-500; -fx-font-size: 11px; -fx-font-weight: 700; }
+.live-row { -fx-padding: 9px 0 0 0; }
+.live-dot { -fx-background-color: -ui-gray-700; -fx-background-radius: 999px; }
+.live-label { -fx-text-fill: -ui-gray-700; -fx-font-size: 11px; -fx-font-weight: 700; }
+
+.light-scroll-pane,
+.light-scroll-pane > .viewport,
+.structure-control-panel .panel-scroll-pane,
+.structure-control-panel .panel-scroll-pane > .viewport,
+.algorithm-control-panel .panel-scroll-pane,
+.algorithm-control-panel .panel-scroll-pane > .viewport {
+    -fx-background-color: -ui-white;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.structure-control-panel .control-section,
+.structure-control-panel .control-card,
+.algorithm-control-panel .control-section,
+.algorithm-control-panel .control-card {
+    -fx-background-color: -ui-white;
+    -fx-border-color: transparent transparent -ui-gray-200 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 0 12px 0;
+}
+.structure-control-panel .structure-section,
+.algorithm-control-panel .algorithm-section,
+.algorithm-control-panel .execution-section {
+    -fx-border-color: transparent transparent -ui-gray-200 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 0 12px 0;
+}
+.structure-control-panel .control-label,
+.algorithm-control-panel .control-label,
+.structure-control-panel .control-section-title,
+.algorithm-control-panel .control-section-title {
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 700;
+}
+.structure-control-panel .section-chevron,
+.algorithm-control-panel .section-chevron,
+.structure-control-panel .operation-label,
+.algorithm-control-panel .operation-label,
+.structure-control-panel .operation-hint,
+.algorithm-control-panel .operation-hint {
+    -fx-text-fill: -ui-gray-500;
+}
+.structure-control-panel .dark-textfield,
+.algorithm-control-panel .dark-textfield,
+.structure-control-panel .text-field,
+.algorithm-control-panel .text-field,
+.structure-control-panel .combo-box,
+.algorithm-control-panel .combo-box,
+.structure-control-panel .dark-combo-box,
+.algorithm-control-panel .dark-combo-box {
+    -fx-background-color: -ui-white;
+    -fx-border-color: #bcbcbc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 2px;
+    -fx-background-radius: 2px;
+    -fx-text-fill: -ui-black;
+    -fx-prompt-text-fill: #8c8c8c;
+}
+.structure-control-panel .combo-box .list-cell,
+.algorithm-control-panel .combo-box .list-cell { -fx-text-fill: -ui-black; -fx-background-color: -ui-white; }
+.structure-control-panel .button,
+.algorithm-control-panel .button {
+    -fx-background-color: -ui-white;
+    -fx-border-color: #b6b6b6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 2px;
+    -fx-background-radius: 2px;
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 700;
+    -fx-min-height: 32px;
+}
+.structure-control-panel .button:hover,
+.algorithm-control-panel .button:hover { -fx-background-color: -ui-gray-100; }
+.structure-control-panel .btn-ran-red,
+.algorithm-control-panel .btn-ran-red { -fx-border-color: -ui-red; -fx-text-fill: -ui-red; }
+.structure-control-panel .btn-ran-blue,
+.algorithm-control-panel .btn-ran-blue { -fx-border-color: -ui-blue; -fx-text-fill: -ui-blue; }
+.structure-control-panel .btn-ran-gold,
+.algorithm-control-panel .btn-ran-gold { -fx-border-color: -ui-yellow; -fx-text-fill: #8e6800; }
+
+.primary-red-button {
+    -fx-background-color: -ui-red;
+    -fx-border-color: -ui-red;
+    -fx-text-fill: -ui-white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+}
+.primary-red-button:hover { -fx-background-color: #d90008; }
+.snapshot-quick-block { -fx-padding: 4px 0 0 0; }
+.summary-strip {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 4px;
+}
+.summary-caption { -fx-text-fill: -ui-gray-700; -fx-font-size: 10px; }
+.summary-number,
+.summary-number-red,
+.summary-number-blue { -fx-font-size: 22px; -fx-font-weight: 800; -fx-text-fill: -ui-black; }
+.summary-number-red { -fx-text-fill: -ui-red; }
+.summary-number-blue { -fx-text-fill: -ui-blue; }
+.input-source-block { -fx-padding: 12px 0; }
+.algorithm-input-source-card {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-padding: 11px 12px;
+    -fx-text-fill: -ui-black;
+    -fx-font-size: 11px;
+}
+
+/* ---------- central visualization canvas ---------- */
+.lab-canvas,
+.visualization-container,
+.visualization-surface,
+.visualization-gesture-pane {
+    -fx-background-color: -ui-white;
+}
+.lab-canvas {
+    -fx-border-color: transparent -ui-gray-300 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.visualization-surface { -fx-focus-color: transparent; -fx-faint-focus-color: transparent; }
+.visualization-gesture-pane { -fx-padding: 0; }
+.viewport-toolbar {
+    -fx-padding: 0;
+    -fx-background-color: -ui-white;
+    -fx-border-color: #bcbcbc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-translate-x: -24px;
+    -fx-translate-y: -22px;
+}
+.viewport-toolbar-button {
+    -fx-min-width: 40px;
+    -fx-min-height: 38px;
+    -fx-background-color: -ui-white;
+    -fx-border-color: transparent -ui-gray-300 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 700;
+}
+.viewport-zoom-label { -fx-text-fill: -ui-black; -fx-padding: 0 12px; -fx-font-weight: 700; }
+
+.visual-node-shape { -fx-fill: -ui-white; -fx-stroke: -ui-blue; -fx-stroke-width: 2.5px; }
+.visual-node-label { -fx-fill: -ui-black; -fx-font-size: 16px; -fx-font-weight: 700; }
+.visual-node:selected .visual-node-shape { -fx-stroke: -ui-red; -fx-stroke-width: 4px; }
+.visual-node:highlighted .visual-node-shape { -fx-stroke: -ui-yellow; -fx-stroke-width: 3px; }
+.visual-edge-path,
+.visual-edge-arrow,
+.tree-left-edge .visual-edge-path,
+.tree-right-edge .visual-edge-path,
+.tree-child-edge .visual-edge-path {
+    -fx-stroke: -ui-black;
+    -fx-fill: -ui-black;
+    -fx-stroke-width: 1.8px;
+}
+.visual-edge:highlighted .visual-edge-path,
+.visual-edge:highlighted .visual-edge-arrow { -fx-stroke: -ui-yellow; -fx-fill: -ui-yellow; }
+
+.selection-overlay,
+.current-step-overlay {
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px 1px 1px 4px;
+    -fx-border-insets: 18px 18px 0 0;
+    -fx-background-insets: 18px 18px 0 0;
+    -fx-padding: 28px 30px 18px 16px;
+    -fx-spacing: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 12, 0.12, 0, 2);
+}
+.selection-overlay { -fx-border-color: transparent transparent transparent -ui-red; }
+.current-step-overlay { -fx-border-color: -ui-gray-300 -ui-gray-300 -ui-gray-300 -ui-red; -fx-border-insets: 18px 0 0 18px; -fx-background-insets: 18px 0 0 18px; -fx-padding: 28px 12px 12px 34px; }
+.overlay-eyebrow { -fx-text-fill: -ui-red; -fx-font-size: 11px; -fx-font-weight: 800; }
+.overlay-id { -fx-text-fill: -ui-red; -fx-font-weight: 800; }
+.overlay-caption { -fx-text-fill: -ui-gray-700; -fx-font-size: 11px; }
+.overlay-value { -fx-text-fill: -ui-red; -fx-font-size: 26px; -fx-font-weight: 800; }
+.overlay-hint,
+.current-step-detail { -fx-text-fill: -ui-gray-700; -fx-font-size: 11px; }
+.current-step-sequence { -fx-text-fill: -ui-black; -fx-font-weight: 800; }
+.current-step-kind { -fx-text-fill: -ui-red; -fx-font-weight: 800; }
+
+/* ---------- right inspector ---------- */
+.inspector-panel { -fx-background-color: -ui-white; }
+.inspector-tabs { -fx-background-color: -ui-white; -fx-tab-min-height: 42px; }
+.inspector-tabs .tab-header-area { -fx-padding: 0; }
+.inspector-tabs .tab-header-background { -fx-background-color: -ui-white; -fx-border-color: transparent transparent -ui-gray-300 transparent; -fx-border-width: 0 0 1px 0; }
+.inspector-tabs .tab { -fx-background-color: -ui-white; -fx-border-color: transparent; -fx-padding: 0 12px; }
+.inspector-tabs .tab .tab-label { -fx-text-fill: -ui-gray-700; -fx-font-size: 11px; -fx-font-weight: 700; }
+.inspector-tabs .tab:selected { -fx-border-color: transparent transparent -ui-red transparent; -fx-border-width: 0 0 2px 0; }
+.inspector-tabs .tab:selected .tab-label { -fx-text-fill: -ui-black; }
+.inspector-tabs .tab-content-area { -fx-background-color: -ui-white; }
+.inspector-content,
+.snapshot-tab-content { -fx-background-color: -ui-white; -fx-padding: 16px 14px; }
+.inspector-section { -fx-padding: 0 0 18px 0; -fx-border-color: transparent transparent -ui-gray-200 transparent; -fx-border-width: 0 0 1px 0; }
+.inspector-body { -fx-text-fill: -ui-gray-700; -fx-font-size: 12px; -fx-line-spacing: 6px; }
+.mono-body { -fx-font-family: "Consolas", "Segoe UI"; }
+.snapshot-count,
+.history-count { -fx-text-fill: -ui-gray-500; -fx-font-size: 10px; }
+.snapshot-card {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-background-radius: 2px;
+    -fx-border-radius: 2px;
+    -fx-padding: 10px;
+}
+.snapshot-card-current { -fx-border-color: -ui-red; -fx-border-width: 1px 1px 1px 3px; }
+.snapshot-card:hover { -fx-background-color: -ui-gray-050; -fx-border-color: -ui-gray-500; }
+.snapshot-card-title { -fx-text-fill: -ui-black; -fx-font-weight: 800; }
+.snapshot-card-state { -fx-text-fill: -ui-blue; }
+.snapshot-card-detail { -fx-text-fill: -ui-gray-500; }
+.snapshot-card-action { -fx-background-color: -ui-white; -fx-border-color: -ui-gray-300; -fx-text-fill: -ui-black; }
+.status-mini { -fx-text-fill: -ui-red; -fx-font-weight: 800; }
+.stats-text-light { -fx-text-fill: -ui-black; -fx-font-family: "Consolas", "Segoe UI"; -fx-line-spacing: 7px; }
+.event-kind { -fx-text-fill: -ui-yellow; -fx-font-size: 18px; -fx-font-weight: 800; }
+.result-value {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-padding: 14px;
+    -fx-text-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+}
+.log-view-light,
+.log-view-light .virtual-flow,
+.log-view-light .list-cell { -fx-background-color: -ui-white; }
+.log-view-light { -fx-border-color: -ui-gray-300; -fx-border-width: 1px; }
+.log-view-light .log-time { -fx-fill: -ui-gray-500; }
+.log-view-light .log-message { -fx-fill: -ui-black; }
+
+/* ---------- Structure history / Algorithm timeline ---------- */
+.history-dock,
+.algorithm-dock {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.history-header,
+.timeline-header { -fx-padding: 10px 24px 8px 24px; }
+.history-scroll,
+.history-scroll > .viewport { -fx-background-color: -ui-white; -fx-padding: 0; }
+.history-cards { -fx-padding: 8px 30px 12px 30px; }
+.history-cards .snapshot-card { -fx-min-width: 210px; -fx-pref-width: 210px; }
+.timeline-visual { -fx-padding: 2px 36px 4px 36px; }
+.timeline-visual .slider .track { -fx-background-color: -ui-gray-700; -fx-pref-height: 1px; }
+.timeline-visual .slider .thumb { -fx-background-color: -ui-red; -fx-pref-width: 13px; -fx-pref-height: 13px; }
+.timeline-markers { -fx-padding: 0 36px; }
+.timeline-marker { -fx-font-size: 18px; -fx-font-weight: 800; }
+.timeline-runtime { -fx-text-fill: -ui-red; }
+.timeline-structure { -fx-text-fill: -ui-blue; }
+.timeline-observation { -fx-text-fill: -ui-yellow; }
+.timeline-other { -fx-text-fill: -ui-gray-500; }
+.timeline-marker-current { -fx-underline: true; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 4, 0.1, 0, 0); }
+.playback-toolbar-light {
+    -fx-padding: 8px 20px 10px 20px;
+    -fx-border-color: -ui-gray-200 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.playback-button,
+.playback-primary,
+.speed-button {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 700;
+    -fx-min-height: 36px;
+}
+.playback-primary { -fx-background-color: -ui-red; -fx-border-color: -ui-red; -fx-text-fill: -ui-white; -fx-min-width: 138px; }
+.cancel-button { -fx-font-size: 17px; }
+.speed-label { -fx-text-fill: -ui-gray-700; -fx-font-size: 10px; -fx-font-weight: 800; }
+.speed-button { -fx-min-width: 58px; -fx-background-radius: 0; -fx-border-radius: 0; }
+.speed-button:selected { -fx-background-color: -ui-red; -fx-border-color: -ui-red; -fx-text-fill: -ui-white; }
+
+/* ---------- responsive preservation of the central canvas ---------- */
+.root-pane:compact-layout .family-rail { -fx-min-width: 112px; -fx-pref-width: 112px; -fx-max-width: 112px; }
+.root-pane:compact-layout .family-rail-button { -fx-min-width: 112px; -fx-pref-width: 112px; -fx-max-width: 112px; -fx-font-size: 11px; -fx-padding: 0 10px; }
+.root-pane:narrow-layout .inspector-panel { -fx-max-width: 300px; -fx-pref-width: 300px; }
+.root-pane:narrow-layout .structure-control-panel,
+.root-pane:narrow-layout .algorithm-control-panel { -fx-max-width: 270px; -fx-pref-width: 270px; }
+
+
+/* 2026-09-05 screenshot convergence */
+.structure-control-panel .operation-button,
+.algorithm-control-panel .operation-button {
+    -fx-pref-width: 86px;
+    -fx-min-width: 72px;
+    -fx-max-width: 120px;
+}
+.visual-node-selection-ring {
+    -fx-fill: transparent;
+    -fx-stroke: -ui-red;
+    -fx-stroke-width: 2px;
+}
+.visual-node:selected .visual-node-shape {
+    -fx-stroke: -ui-red;
+    -fx-stroke-width: 3px;
+}
+.selection-overlay,
+.current-step-overlay {
+    -fx-min-height: 0;
+}
+.lab-canvas,
+.visualization-surface,
+.visualization-gesture-pane {
+    -fx-background-image: url("grid-dot.png");
+    -fx-background-repeat: repeat;
+    -fx-background-position: 0 0;
+}
+/* Compact canvas overlays: fixed cards, never stretched by StackPane. */
+.selection-overlay,
+.current-step-overlay {
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-border-color: -ui-gray-300 -ui-gray-300 -ui-gray-300 -ui-red;
+    -fx-border-width: 1px 1px 1px 4px;
+    -fx-padding: 14px 14px 14px 16px;
+    -fx-spacing: 7px;
+}
+.selection-overlay { -fx-translate-x: -18px; -fx-translate-y: 18px; }
+.current-step-overlay { -fx-translate-x: 18px; -fx-translate-y: 18px; }
+.inspector-body { -fx-text-fill: -ui-gray-800; }
+/* Light diagnostics tabs must override AtlantaFX dark user-agent theme. */
+.inspector-tabs > .tab-header-area > .tab-header-background,
+.inspector-tabs > .tab-content-area,
+.inspector-tabs .tab-content-area,
+.algorithm-tabs > .tab-content-area {
+    -fx-background-color: -ui-white;
+}
+.inspector-tabs .tab,
+.inspector-tabs .tab-label { -fx-background-color: -ui-white; -fx-text-fill: -ui-black; }
+.algorithm-tabs .tab-label { -fx-text-fill: -ui-gray-700; }
+.algorithm-tabs .tab:selected .tab-label { -fx-text-fill: -ui-red; }
+.input-source-toggle-row { -fx-padding: 0; }
+.input-source-toggle {
+    -fx-font-size: 10px;
+    -fx-padding: 7px 7px;
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-text-fill: -ui-gray-700;
+}
+.input-source-toggle:selected {
+    -fx-border-color: -ui-red;
+    -fx-text-fill: -ui-red;
+    -fx-background-color: -ui-white;
+}
+.timeline-legend { -fx-padding: 0 0 0 26px; }
+.timeline-legend .label { -fx-font-size: 10px; -fx-font-weight: 700; }
+.timeline-legend-runtime { -fx-text-fill: -ui-red; }
+.timeline-legend-structure { -fx-text-fill: -ui-blue; }
+.timeline-legend-observation { -fx-text-fill: -ui-yellow; }
+.inspector-snapshot-section .snapshot-card { -fx-padding: 9px 10px; }
+/* Hard override of the Algorithm inspector against PrimerDark internals. */
+#diagnosticsPanel,
+#algorithmInspectorTabs,
+#algorithmInspectorTabs > .tab-content-area,
+#algorithmInspectorTabs .tab-content-area,
+#algorithmInspectorTabs .inspector-content,
+#algorithmInspectorTabs .snapshot-tab-content,
+#algorithmInspectorTabs .scroll-pane,
+#algorithmInspectorTabs .scroll-pane > .viewport {
+    -fx-background-color: #ffffff;
+    -fx-control-inner-background: #ffffff;
+}
+#algorithmInspectorTabs > .tab-header-area > .tab-header-background,
+#algorithmInspectorTabs .tab-header-background { -fx-background-color: #ffffff; }
+#algorithmInspectorTabs .tab {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent;
+    -fx-padding: 0 8px;
+}
+#algorithmInspectorTabs .tab .tab-label { -fx-text-fill: #3f3f3f; -fx-font-size: 10.5px; }
+#algorithmInspectorTabs .tab:selected {
+    -fx-border-color: transparent transparent -ui-red transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+#algorithmInspectorTabs .tab:selected .tab-label { -fx-text-fill: -ui-red; }
+.algorithm-control-panel .input-source-toggle:selected {
+    -fx-border-color: -ui-red;
+    -fx-text-fill: -ui-red;
+    -fx-background-color: -ui-white;
+}
+
+/* 2026-09-05 debugger detail convergence */
+.event-inspector-content {
+    -fx-padding: 14px 13px 16px 13px;
+}
+.event-card {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 12px;
+}
+.event-kind-dot {
+    -fx-background-color: transparent;
+    -fx-border-color: -ui-gray-500;
+    -fx-border-width: 2.5px;
+    -fx-border-radius: 999px;
+    -fx-background-radius: 999px;
+}
+.event-dot-runtime { -fx-border-color: -ui-red; -fx-background-color: -ui-red; }
+.event-dot-structure { -fx-border-color: -ui-blue; -fx-background-color: -ui-blue; }
+.event-dot-observation { -fx-border-color: -ui-yellow; -fx-background-color: -ui-white; }
+.event-dot-idle { -fx-border-color: -ui-gray-300; -fx-background-color: -ui-white; }
+.event-detail-body {
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+    -fx-font-size: 11px;
+    -fx-line-spacing: 4px;
+    -fx-text-fill: -ui-black;
+}
+.run-summary-grid {
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px 0 0 1px;
+    -fx-min-height: 116px;
+    -fx-pref-height: 116px;
+}
+.metric-tile {
+    -fx-border-color: transparent -ui-gray-300 -ui-gray-300 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-padding: 8px 4px;
+    -fx-background-color: -ui-white;
+}
+.metric-title {
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-size: 9.5px;
+    -fx-font-weight: 700;
+}
+.metric-value {
+    -fx-text-fill: -ui-black;
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+}
+.result-preview-value {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-border-radius: 2px;
+    -fx-background-radius: 2px;
+    -fx-padding: 10px 12px;
+    -fx-text-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 12px;
+}
+.timeline-cursor-callout {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-400;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 5px 10px;
+    -fx-text-fill: -ui-black;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-translate-y: -4px;
+}
+.selection-overlay {
+    -fx-padding: 13px 14px 13px 16px;
+    -fx-spacing: 5px;
+}
+.selection-overlay .overlay-hint {
+    -fx-font-size: 10.5px;
+    -fx-line-spacing: 1px;
+}
+.current-step-sequence {
+    -fx-min-width: 54px;
+    -fx-pref-width: 54px;
+    -fx-max-width: 54px;
+    -fx-font-size: 11px;
+}
+.current-step-kind {
+    -fx-font-size: 11.5px;
+}
+#algorithmInspectorTabs .inspector-body,
+#algorithmInspectorTabs .event-detail-body,
+#algorithmInspectorTabs .result-preview-value {
+    -fx-text-fill: #171717;
+    -fx-opacity: 1.0;
+}
+#algorithmInspectorTabs .event-card .separator .line {
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px 0 0 0;
+}
+.structure-overview-grid {
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px 0 0 1px;
+    -fx-min-height: 76px;
+    -fx-pref-height: 76px;
+}
+.overview-tile {
+    -fx-border-color: transparent -ui-gray-300 -ui-gray-300 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-padding: 8px 3px;
+}
+.overview-value,
+.overview-value-blue,
+.overview-value-yellow {
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -ui-black;
+}
+.overview-value-blue { -fx-text-fill: -ui-blue; }
+.overview-value-yellow { -fx-text-fill: -ui-yellow; }
+.lab-mode-switch .workspace-mode-button:selected:disabled,
+.family-rail-button:selected:disabled {
+    -fx-opacity: 1.0;
+    -fx-background-color: -ui-red;
+    -fx-text-fill: -ui-white;
+}
+.event-kind {
+    -fx-text-fill: -ui-black;
+}
+#eventDetailsLabel {
+    -fx-text-fill: -ui-black;
+    -fx-opacity: 1.0;
+}

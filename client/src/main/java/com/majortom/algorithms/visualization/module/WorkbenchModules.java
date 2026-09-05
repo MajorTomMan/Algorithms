@@ -28,13 +28,13 @@ public final class WorkbenchModules {
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition("queue", "module.queue", LinearStructureController::queue));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("maze", "module.maze", MazeController::new));
-        addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition("tree", "module.tree", TreeController::new));
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition("graph", "module.graph", GraphController::new));
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition("string", "module.string", StringController::new));
+        addIfAvailable(modules, registry,
+                new WorkbenchModuleDefinition("maze", "module.maze", MazeController::new));
         return List.copyOf(modules);
     }
 

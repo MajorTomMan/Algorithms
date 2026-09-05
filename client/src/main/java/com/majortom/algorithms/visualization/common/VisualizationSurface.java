@@ -58,7 +58,8 @@ public final class VisualizationSurface extends StackPane {
         installInteractionTracking();
         installShortcuts();
         getChildren().setAll(gesturePane, viewportToolbar);
-        StackPane.setAlignment(viewportToolbar, Pos.TOP_RIGHT);
+        StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
+        viewportToolbar.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
     }
 
     /** Layer rendered behind nodes. Intended for EdgeView / Path instances. */
@@ -184,10 +185,9 @@ public final class VisualizationSurface extends StackPane {
         zoomLabel.setMinWidth(54.0d);
         zoomLabel.setAlignment(Pos.CENTER);
         Button zoomIn = button("+", "action.viewport.zoom_in", this::zoomIn);
-        Button center = button("C", "action.viewport.center", this::center);
-        Button fit = button("Fit", "action.viewport.fit", this::fit);
-        Button reset = button("1:1", "action.viewport.reset", this::reset);
-        viewportToolbar.getChildren().setAll(zoomOut, zoomLabel, zoomIn, center, fit, reset);
+        Button fit = button("FIT", "action.viewport.fit", this::fit);
+        Button reset = button("⌂", "action.viewport.reset", this::reset);
+        viewportToolbar.getChildren().setAll(zoomOut, zoomLabel, zoomIn, fit, reset);
     }
 
     private Button button(String text, String tooltipKey, Runnable action) {
@@ -244,7 +244,8 @@ public final class VisualizationSurface extends StackPane {
         double availableHeight = Math.max(1.0d, viewportHeight - FIT_PADDING * 2.0d);
         double scaleX = bounds.getWidth() <= 0.0d ? MAX_ZOOM : availableWidth / bounds.getWidth();
         double scaleY = bounds.getHeight() <= 0.0d ? MAX_ZOOM : availableHeight / bounds.getHeight();
-        double targetScale = clamp(Math.min(scaleX, scaleY));
+        double requestedScale = clamp(Math.min(scaleX, scaleY));
+        final double targetScale = initialFit ? Math.min(DEFAULT_ZOOM, requestedScale) : requestedScale;
         Point2D center = worldCenter(bounds);
         runProgrammatic(() -> {
             gesturePane.zoomTo(targetScale, center);

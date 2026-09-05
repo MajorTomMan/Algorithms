@@ -34,10 +34,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 
 /** General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX viewport. */
 public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
-    private static final double MIN_RADIUS = 27.0d;
+    private static final double MIN_RADIUS = 36.0d;
     private static final double LABEL_PADDING = 24.0d;
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
@@ -69,6 +70,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private long pendingVersion = -1L;
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
+    private Long selectedNodeId;
+    private LongConsumer selectionListener = ignored -> { };
 
     public TreeVisualizer() {
         getChildren().setAll(surface);
@@ -92,6 +95,13 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             if (view == null) {
                 view = new NodeView(new CircleGeometry(MIN_RADIUS), Integer.toString(node.value()));
                 view.layoutBoundsProperty().addListener(elementSizeListener);
+                long visualNodeId = node.id();
+                view.setOnMouseClicked(event -> {
+                    selectedNodeId = visualNodeId;
+                    syncSelectionState();
+                    selectionListener.accept(visualNodeId);
+                    event.consume();
+                });
                 nodeViews.put(node.id(), view);
                 surface.nodeLayer().getChildren().add(view);
                 newNodeIds.add(node.id());
@@ -114,6 +124,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             }
         }
 
+        syncSelectionState();
         syncEdges(state, transitions);
 
         List<Long> removedIds = nodeViews.keySet().stream()
@@ -397,6 +408,25 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         surface.edgeLayer().getChildren().removeIf(node -> node instanceof EdgeView && !edgeViews.containsValue(node));
     }
 
+    public void setSelectionListener(LongConsumer listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    public void clearSelection() {
+        selectedNodeId = null;
+        syncSelectionState();
+    }
+
+    public Long selectedNodeId() {
+        return selectedNodeId;
+    }
+
+    private void syncSelectionState() {
+        for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+            entry.getValue().setSelected(selectedNodeId != null && selectedNodeId.equals(entry.getKey()));
+        }
+    }
+
     private void invalidateLayout() {
         layoutVersion.incrementAndGet();
         lastLayoutInput = LayoutRequest.empty();
@@ -423,6 +453,14 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             activeAnimation.stop();
             activeAnimation = null;
         }
+        // A new factual frame may arrive before a presentation fade/scale completes.
+        // Never allow an interrupted animation to become persistent geometry/style state.
+        nodeViews.values().forEach(view -> {
+            view.setOpacity(1.0d);
+            view.setScaleX(1.0d);
+            view.setScaleY(1.0d);
+        });
+        edgeViews.values().forEach(edge -> edge.setOpacity(1.0d));
     }
 
     @Override
@@ -450,6 +488,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         pendingNewNodeIds = Set.of();
         pendingVersion = -1L;
         hasAppliedLayout = false;
+        selectedNodeId = null;
         firstRender = true;
         surface.reset();
         surface.markViewportPristine();

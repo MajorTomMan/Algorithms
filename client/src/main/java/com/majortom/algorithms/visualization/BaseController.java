@@ -44,11 +44,14 @@ import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.LongProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -109,6 +112,7 @@ public abstract class BaseController<S> implements Initializable {
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
     private final LongProperty structureRevision = new SimpleLongProperty();
+    private final ObjectProperty<EventEnvelope> presentationEvent = new SimpleObjectProperty<>();
     private final Timeline structureTimeline = new Timeline();
     private S latestViewState;
     private long liveVisualFrameCount;
@@ -448,10 +452,14 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private void consumeLiveEvent(EventEnvelope envelope) {
-        if (!(envelope.event() instanceof LogEvent logEvent) || logView == null) {
-            return;
-        }
-        Runnable task = () -> logView.append(logEvent, envelope.timestamp());
+        Runnable task = () -> {
+            if (!(envelope.event() instanceof LogEvent)) {
+                presentationEvent.set(envelope);
+            }
+            if (envelope.event() instanceof LogEvent logEvent && logView != null) {
+                logView.append(logEvent, envelope.timestamp());
+            }
+        };
         if (Platform.isFxApplicationThread()) {
             task.run();
         } else {
@@ -615,7 +623,11 @@ public abstract class BaseController<S> implements Initializable {
             renderState(state);
             PlaybackController<S> active = replayController;
             if (active != null) {
-                syncTimelineSlider(active.currentIndex(), active.frameCount());
+                int index = active.currentIndex();
+                syncTimelineSlider(index, active.frameCount());
+                if (index >= 0 && index < events.size()) {
+                    presentationEvent.set(events.get(index));
+                }
                 refreshStatsDisplay();
             }
         });
@@ -672,6 +684,7 @@ public abstract class BaseController<S> implements Initializable {
         lastExecution = null;
         lastTimeline = null;
         latestViewState = null;
+        presentationEvent.set(null);
         if (timelineSlider != null) {
             timelineSlider.setDisable(true);
             updatingTimelineSlider = true;
@@ -925,6 +938,87 @@ public abstract class BaseController<S> implements Initializable {
 
     public final Region getVisualizerView() {
         return visualizer;
+    }
+
+    /** Read-only execution stream for the Workbench timeline/event inspector. */
+    public final List<EventEnvelope> executionEvents() {
+        if (currentSession != null) {
+            return List.copyOf(currentSession.events());
+        }
+        if (lastTimeline != null) {
+            return lastTimeline.events();
+        }
+        return List.of();
+    }
+
+    /** Current event selected by the live presentation cursor or replay cursor. */
+    public final EventEnvelope currentPresentationEvent() {
+        EventEnvelope visible = presentationEvent.get();
+        if (visible != null) {
+            return visible;
+        }
+        if (lastTimeline != null && !lastTimeline.isEmpty()) {
+            int index = lastTimeline.currentIndex();
+            if (index < 0) {
+                index = lastTimeline.size() - 1;
+            }
+            return lastTimeline.event(Math.max(0, Math.min(index, lastTimeline.size() - 1)));
+        }
+        return null;
+    }
+
+    /** Presentation-only cursor used by the Workbench event inspector/timeline shell. */
+    public final ReadOnlyObjectProperty<EventEnvelope> presentationEventProperty() {
+        return presentationEvent;
+    }
+
+    public final int presentationEventIndex() {
+        EventEnvelope current = currentPresentationEvent();
+        if (current == null) return -1;
+        List<EventEnvelope> events = executionEvents();
+        for (int index = 0; index < events.size(); index++) {
+            if (events.get(index) == current || events.get(index).equals(current)) return index;
+        }
+        return events.isEmpty() ? -1 : events.size() - 1;
+    }
+
+    public final String latestRunId() {
+        List<EventEnvelope> events = executionEvents();
+        if (!events.isEmpty()) return events.getFirst().runId();
+        if (lastExecution != null) return lastExecution.recording().runId();
+        return null;
+    }
+
+    public final String latestExecutionStatus() {
+        if (lastExecution == null) return "IDLE";
+        return lastExecution.result().status().name();
+    }
+
+    public final String latestResultText() {
+        if (lastExecution == null) return "No result yet.";
+        ExecutionResult result = lastExecution.result();
+        if (result.failure().isPresent()) {
+            return result.failure().get().code() + "\n" + result.failure().get().message();
+        }
+        return result.output().map(String::valueOf).orElse(result.status().name());
+    }
+
+    /** Authoritative statistics at the current live/replay presentation cursor. */
+    public final ExecutionStatistics currentExecutionStatistics() {
+        return stats;
+    }
+
+    /** Family-specific structure summary for the presentation shell. */
+    public String structureSummaryText() {
+        return formatStatsMessage();
+    }
+
+    public String structurePrimaryCount() {
+        return "—";
+    }
+
+    public String structureSecondaryCount() {
+        return "—";
     }
 
     /** Returns the shared summary retained for the latest local execution. */

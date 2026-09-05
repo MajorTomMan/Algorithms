@@ -81,6 +81,11 @@ public final class ReducedEventTimeline<S> {
         return statistics;
     }
 
+    /** Read-only authoritative event stream retained for presentation inspection. */
+    public List<EventEnvelope> events() {
+        return events;
+    }
+
     public S initialState() {
         return Objects.requireNonNull(reducer.initialState(), "reducer initial state");
     }

@@ -27,8 +27,8 @@ import java.util.Objects;
 /** Tree-family-specific transient ELK adapter. Relationship semantics stay in the request. */
 public final class TreeElkLayout {
     private static final double PADDING = 36.0d;
-    private static final double NODE_SPACING = 34.0d;
-    private static final double LEVEL_SPACING = 58.0d;
+    private static final double NODE_SPACING = 42.0d;
+    private static final double LEVEL_SPACING = 68.0d;
     private static final int RANDOM_SEED = 1;
 
     public LayoutResult layout(LayoutRequest request) {

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public final class TreeController extends BaseModuleController<TreeViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GeneralTreeSnapshot<Integer>>,
@@ -39,6 +40,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private final List<String> algorithmIds = AlgorithmCatalog.treeAlgorithms();
     private Tree<Integer> tree;
     private StructureSnapshot<GeneralTreeSnapshot<Integer>> algorithmInputSnapshot;
+    private Consumer<NodeSelection> selectionListener = ignored -> { };
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -60,6 +62,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         super(new TreeVisualizer(), "/fxml/TreeControls.fxml");
         tree = module("structure.tree.Integer", Tree.class);
         initializeSampleTree();
+        ((TreeVisualizer) visualizer).setSelectionListener(this::handleVisualSelection);
         renderStructureState(currentStructureState());
     }
 
@@ -68,6 +71,48 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         super.initialize(location, resources);
         bindSelectors();
         EffectUtils.applyDynamicEffect(addRootBtn, addChildBtn, deleteBtn, findBtn, updateBtn, randomBtn);
+    }
+
+    public record NodeSelection(long id, int value, Long parentId, int childCount, int depth) { }
+
+    public void setSelectionListener(Consumer<NodeSelection> listener) {
+        selectionListener = listener == null ? ignored -> { } : listener;
+    }
+
+    private void handleVisualSelection(long nodeId) {
+        GeneralTreeNode<Integer> node = tree.findById(nodeId);
+        if (node == null) {
+            return;
+        }
+        nodeIdField.setText(Long.toString(nodeId));
+        valueField.setText(Integer.toString(node.getValue()));
+        GeneralTreeNode<Integer> parent = parentOf(tree.root(), node);
+        if (parent != null) {
+            parentIdField.setText(Long.toString(parent.getId()));
+        }
+        selectionListener.accept(new NodeSelection(
+                nodeId, node.getValue(), parent == null ? null : parent.getId(),
+                node.getChildren().size(), depthOf(tree.root(), node, 0)));
+    }
+
+    private GeneralTreeNode<Integer> parentOf(GeneralTreeNode<Integer> root, GeneralTreeNode<Integer> target) {
+        if (root == null) return null;
+        for (GeneralTreeNode<Integer> child : root.getChildren()) {
+            if (child == target) return root;
+            GeneralTreeNode<Integer> found = parentOf(child, target);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private int depthOf(GeneralTreeNode<Integer> root, GeneralTreeNode<Integer> target, int depth) {
+        if (root == null) return -1;
+        if (root == target) return depth;
+        for (GeneralTreeNode<Integer> child : root.getChildren()) {
+            int found = depthOf(child, target, depth + 1);
+            if (found >= 0) return found;
+        }
+        return -1;
     }
 
     @FXML
@@ -347,6 +392,23 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
+    public String structureSummaryText() {
+        GeneralTreeSnapshot<Integer> snapshot = currentSnapshot();
+        return String.format("Nodes          %d%nHeight         %d%nRoot           %s",
+                snapshot.size(), height(snapshot.root()), snapshot.root() == null ? "none" : snapshot.root().value());
+    }
+
+    @Override
+    public String structurePrimaryCount() {
+        return Integer.toString(tree.size());
+    }
+
+    @Override
+    public String structureSecondaryCount() {
+        return Integer.toString(height(currentSnapshot().root()));
+    }
+
+    @Override
     protected String formatStatsMessage() {
         return String.format("%s | %s | %s",
                 I18N.text("stats.size", tree.size()),
@@ -420,7 +482,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void bindButton(Button button, String key) {
         if (button != null) {
-            button.textProperty().bind(I18N.createStringBinding(key));
+            button.textProperty().bind(Bindings.createStringBinding(
+                    () -> I18N.text(key).toUpperCase(java.util.Locale.ROOT), I18N.localeProperty()));
         }
     }
 }

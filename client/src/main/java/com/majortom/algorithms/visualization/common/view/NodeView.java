@@ -31,6 +31,7 @@ public final class NodeView extends StackPane {
     private final BooleanProperty selected = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
     private final Text label = new Text();
+    private Shape selectionRing;
     private Shape shape;
 
     public NodeView(NodeGeometry geometry, String text) {
@@ -126,13 +127,18 @@ public final class NodeView extends StackPane {
     private void rebuildShape(NodeGeometry geometry) {
         if (geometry instanceof CircleGeometry circle) {
             shape = new Circle(circle.radius());
+            selectionRing = new Circle(circle.radius() + 5.0d);
         } else if (geometry instanceof RectangleGeometry rectangle) {
             shape = new Rectangle(rectangle.width(), rectangle.height());
+            selectionRing = new Rectangle(rectangle.width() + 10.0d, rectangle.height() + 10.0d);
         } else {
             throw new IllegalArgumentException("Unsupported geometry: " + geometry.getClass().getName());
         }
+        selectionRing.getStyleClass().add("visual-node-selection-ring");
+        selectionRing.setMouseTransparent(true);
+        selectionRing.visibleProperty().bind(selected);
         shape.getStyleClass().add("visual-node-shape");
-        getChildren().setAll(shape, label);
+        getChildren().setAll(selectionRing, shape, label);
         setMinSize(geometry.width(), geometry.height());
         setPrefSize(geometry.width(), geometry.height());
         setMaxSize(geometry.width(), geometry.height());
