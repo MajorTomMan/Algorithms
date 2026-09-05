@@ -36,6 +36,6 @@
             <Label fx:id="searchSectionLabel" styleClass="control-label"/><Region HBox.hgrow="ALWAYS"/><Label text="⌃" styleClass="section-chevron"/>
         </HBox>
         <TextField fx:id="patternField" maxWidth="Infinity" styleClass="dark-textfield"/>
-        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" maxWidth="Infinity" styleClass="btn-run-neon"/>
+        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false" maxWidth="Infinity" styleClass="btn-run-neon"/>
     </VBox>
 </VBox>
