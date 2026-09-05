@@ -93,7 +93,7 @@
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
         <Label fx:id="operationHintLabel" styleClass="operation-hint" wrapText="true" />
-        <HBox spacing="6" styleClass="operation-row">
+        <HBox spacing="6" styleClass="operation-row" visible="false" managed="false">
             <Button fx:id="buildBtn" onAction="#handleGenerate" maxWidth="Infinity">
                 <styleClass>
                     <String fx:value="btn-ran-blue" />
