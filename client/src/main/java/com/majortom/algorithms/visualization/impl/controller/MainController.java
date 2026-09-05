@@ -27,7 +27,9 @@ import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -740,7 +742,7 @@ public class MainController implements Initializable {
     private Button createCatalogButton(WorkbenchModuleDefinition definition) {
         Button button = createFamilyRailButton(definition);
         button.setOnAction(event -> switchToModule(definition));
-        structureButtons.computeIfAbsent(definition.id(), ignored -> new java.util.ArrayList<>()).add(button);
+        structureButtons.computeIfAbsent(definition.id(), ignored -> new ArrayList<>()).add(button);
         return button;
     }
 
@@ -799,9 +801,7 @@ public class MainController implements Initializable {
         };
     }
 
-    private Button createAlgorithmButton(
-            WorkbenchModuleDefinition definition,
-            AlgorithmNavigationItem item) {
+    private Button createAlgorithmButton(WorkbenchModuleDefinition definition, AlgorithmNavigationItem item) {
         Button button = new Button();
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("sidebar-algorithm-button");
@@ -809,8 +809,7 @@ public class MainController implements Initializable {
         button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
                 () -> AlgorithmLabels.text(item.id()), I18N.localeProperty()));
         button.setOnAction(event -> selectAlgorithm(definition, item.id()));
-        algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
-                .put(item.id(), button);
+        algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>()).put(item.id(), button);
         return button;
     }
 
@@ -819,8 +818,7 @@ public class MainController implements Initializable {
             switchToModule(definition);
         }
         setWorkspaceMode(false);
-        if (currentSubController instanceof AlgorithmSelectionSupport support
-                && support.selectAlgorithm(algorithmId)) {
+        if (currentSubController instanceof AlgorithmSelectionSupport support && support.selectAlgorithm(algorithmId)) {
             selectedAlgorithmId = algorithmId;
             selectAlgorithmButton(definition.id(), algorithmId);
             refreshTopContext();
@@ -873,11 +871,8 @@ public class MainController implements Initializable {
         }
     }
 
-    private record ValueTypeOption(String type, boolean available) {
-    }
-
-    private record AlgorithmNavigationItem(String id) {
-    }
+    private record ValueTypeOption(String type, boolean available) { }
+    private record AlgorithmNavigationItem(String id) { }
 
     private String structureLabelKey(String moduleId) {
         return switch (moduleId) {
@@ -990,31 +985,21 @@ public class MainController implements Initializable {
     }
 
     private void setPageVisibility(VBox page, boolean visible) {
-        if (page == null) {
-            return;
-        }
+        if (page == null) return;
         page.setManaged(visible);
         page.setVisible(visible);
     }
 
     private void resizeRail(Region rail, boolean compact) {
-        if (rail == null) {
-            return;
-        }
+        if (rail == null) return;
         double width = compact ? 182.0d : 196.0d;
-        if (uiFontScale >= 125) {
-            width += 8.0d;
-        }
-        if (uiFontScale >= 140) {
-            width += 8.0d;
-        }
+        if (uiFontScale >= 125) width += 8.0d;
+        if (uiFontScale >= 140) width += 8.0d;
         rail.setPrefWidth(Math.min(220.0d, width));
     }
 
     private void setControlVisibility(Node control, boolean visible) {
-        if (control == null) {
-            return;
-        }
+        if (control == null) return;
         control.setManaged(visible);
         control.setVisible(visible);
     }
@@ -1034,20 +1019,16 @@ public class MainController implements Initializable {
         selectFirstAlgorithmButton(definition.id());
     }
 
-
     private void updateAlgorithmWorkspaceAvailability(String moduleId) {
         boolean available = !algorithmNavigationItems(moduleId).isEmpty();
-        if (!available) {
-            setWorkspaceMode(true);
-        }
+        if (!available) setWorkspaceMode(true);
         refreshExecutionDockVisibility(isStructurePageVisible());
         updateWorkspaceInteractionState();
     }
 
     private void updateWorkspaceInteractionState() {
         boolean running = currentSubController != null && currentSubController.isRunning();
-        boolean algorithmAvailable = activeDefinition != null
-                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        boolean algorithmAvailable = activeDefinition != null && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
         structureWorkspaceBtn.setDisable(running);
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
         structureButtons.values().forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
@@ -1055,11 +1036,8 @@ public class MainController implements Initializable {
     }
 
     private void refreshExecutionDockVisibility(boolean structureMode) {
-        if (bottomDock == null) {
-            return;
-        }
-        boolean algorithmAvailable = activeDefinition != null
-                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        if (bottomDock == null) return;
+        boolean algorithmAvailable = activeDefinition != null && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
         boolean visible = !structureMode && algorithmAvailable;
         setPageVisibility(bottomDock, visible);
         bottomDock.setDisable(!visible);
@@ -1072,9 +1050,7 @@ public class MainController implements Initializable {
 
     private void selectFirstAlgorithmButton(String moduleId) {
         Map<String, Button> buttons = algorithmButtons.get(moduleId);
-        if (buttons == null || buttons.isEmpty()) {
-            return;
-        }
+        if (buttons == null || buttons.isEmpty()) return;
         Map.Entry<String, Button> first = buttons.entrySet().iterator().next();
         first.getValue().pseudoClassStateChanged(SELECTED, true);
         selectedAlgorithmId = first.getKey();
@@ -1088,19 +1064,9 @@ public class MainController implements Initializable {
         customControlBox.getChildren().clear();
 
         newController.setUIReferences(new WorkbenchControls(
-                statsLabel,
-                logView,
-                delaySlider,
-                timelineSlider,
-                customControlBox,
-                startBtn,
-                pauseBtn,
-                resetBtn,
-                replayBtn,
-                stepBackwardBtn,
-                stepForwardBtn,
-                exportBtn,
-                compareBtn));
+                statsLabel, logView, delaySlider, timelineSlider, customControlBox,
+                startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn, stepForwardBtn,
+                exportBtn, compareBtn));
 
         currentSubController = newController;
         currentSubController.pausedProperty().addListener((observable, oldValue, newValue) -> {
@@ -1128,9 +1094,7 @@ public class MainController implements Initializable {
         currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
 
         BaseVisualizer<?> visualizer = newController.getVisualizer();
-        if (visualizer != null) {
-            attachVisualizer(isStructurePageVisible());
-        }
+        if (visualizer != null) attachVisualizer(isStructurePageVisible());
         currentSubController.dispatchVisualizerAttached();
         refreshPauseText();
         refreshTopContext();
@@ -1139,9 +1103,7 @@ public class MainController implements Initializable {
     }
 
     private void detachCurrentController() {
-        if (currentSubController == null) {
-            return;
-        }
+        if (currentSubController == null) return;
         if (structureRevisionListener != null) {
             currentSubController.structureRevisionProperty().removeListener(structureRevisionListener);
             structureRevisionListener = null;
@@ -1157,31 +1119,16 @@ public class MainController implements Initializable {
         currentSubController = null;
     }
 
-    /**
-     * Places the one module visualizer in the currently visible page.
-     *
-     * <p>Keeping a single visualizer avoids two controllers or two event
-     * streams. Rebinding its size when the page changes also means structure
-     * edits remain visible on the structure page and algorithm frames remain
-     * visible on the algorithm page.</p>
-     */
     private void attachVisualizer(boolean structurePage) {
-        if (currentSubController == null || currentSubController.getVisualizer() == null) {
-            return;
-        }
+        if (currentSubController == null || currentSubController.getVisualizer() == null) return;
         BaseVisualizer<?> visualizer = currentSubController.getVisualizer();
         visualizer.prefWidthProperty().unbind();
         visualizer.prefHeightProperty().unbind();
         visualizationContainer.getChildren().remove(visualizer);
         structurePreviewViewport.getChildren().remove(visualizer);
 
-        StackPane target = visualizationContainer;
-        if (structurePage) {
-            target = structurePreviewViewport;
-        }
-        if (!target.getChildren().contains(visualizer)) {
-            target.getChildren().add(0, visualizer);
-        }
+        StackPane target = structurePage ? structurePreviewViewport : visualizationContainer;
+        if (!target.getChildren().contains(visualizer)) target.getChildren().add(0, visualizer);
         visualizer.prefWidthProperty().bind(target.widthProperty());
         visualizer.prefHeightProperty().bind(target.heightProperty());
         if (structurePreviewEmpty != null) {
@@ -1194,11 +1141,8 @@ public class MainController implements Initializable {
         return structureWorkspacePane != null && structureWorkspacePane.isManaged();
     }
 
-    /** Moves FXML sections into the structure and algorithm rails without duplicating controls. */
     private void distributeModuleControls() {
-        if (customControlBox.getChildren().isEmpty()) {
-            return;
-        }
+        if (customControlBox.getChildren().isEmpty()) return;
         Node modulePanel = customControlBox.getChildren().getFirst();
         customControlBox.getChildren().clear();
         if (!(modulePanel instanceof Pane pane)) {
@@ -1209,12 +1153,9 @@ public class MainController implements Initializable {
 
         List<Node> sections = List.copyOf(pane.getChildren());
         pane.getChildren().clear();
-        if (sections.isEmpty()) {
-            structureControlsHost.getChildren().add(modulePanel);
-        }
+        if (sections.isEmpty()) structureControlsHost.getChildren().add(modulePanel);
         for (Node section : sections) {
-            VBox target = isAlgorithmSection(section)
-                    ? algorithmControlsHost : structureControlsHost;
+            VBox target = isAlgorithmSection(section) ? algorithmControlsHost : structureControlsHost;
             target.getChildren().add(section);
         }
         stretchControls(structureControlsHost);
@@ -1222,23 +1163,18 @@ public class MainController implements Initializable {
     }
 
     private boolean isAlgorithmSection(Node section) {
-        return section.getStyleClass().contains("algorithm-section")
-                || section.getStyleClass().contains("execution-section");
+        return section.getStyleClass().contains("algorithm-section") || section.getStyleClass().contains("execution-section");
     }
 
     private void stretchControls(VBox host) {
         for (Node child : host.getChildren()) {
             VBox.setVgrow(child, Priority.NEVER);
-            if (child instanceof Region region) {
-                region.setMaxWidth(Double.MAX_VALUE);
-            }
+            if (child instanceof Region region) region.setMaxWidth(Double.MAX_VALUE);
         }
     }
 
     private void refreshWorkspaceContext() {
-        if (activeDefinition == null) {
-            return;
-        }
+        if (activeDefinition == null) return;
         String moduleName = I18N.text(activeDefinition.labelKey());
         structureWorkspaceSubtitleLabel.setText(moduleName);
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
@@ -1251,17 +1187,13 @@ public class MainController implements Initializable {
     }
 
     private void refreshSnapshotCards() {
-        if (activeDefinition == null || snapshotCards == null) {
-            return;
-        }
+        if (activeDefinition == null || snapshotCards == null) return;
         String moduleName = I18N.text(activeDefinition.labelKey());
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
         if (support == null) {
             snapshotCards.getChildren().clear();
             if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
-            snapshotCountLabel.setText(I18N.text(
-                    "label.workspace.snapshot.count", 0,
-                    structureSnapshotStore.maxSnapshotsPerModule()));
+            snapshotCountLabel.setText(I18N.text("label.workspace.snapshot.count", 0, structureSnapshotStore.maxSnapshotsPerModule()));
             updateSnapshotActionState();
             refreshStructureHistory();
             return;
@@ -1276,11 +1208,10 @@ public class MainController implements Initializable {
         List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
         for (StructureSnapshot<?> snapshot : saved) {
             snapshotCards.getChildren().add(createSnapshotCard(
-                    moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
-                    support, false));
+                    moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot, support, false));
             if (inspectorSnapshotCards != null && inspectorSnapshotCards.getChildren().size() < 2) {
                 inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
-                        snapshot, support, inspectorSnapshotCards.getChildren().size() == 0));
+                        snapshot, support, inspectorSnapshotCards.getChildren().isEmpty()));
             }
         }
         if (saved.isEmpty()) {
@@ -1289,17 +1220,13 @@ public class MainController implements Initializable {
             empty.setWrapText(true);
             snapshotCards.getChildren().add(empty);
         }
-        snapshotCountLabel.setText(I18N.text(
-                "label.workspace.snapshot.count", saved.size(),
-                structureSnapshotStore.maxSnapshotsPerModule()));
+        snapshotCountLabel.setText(I18N.text("label.workspace.snapshot.count", saved.size(), structureSnapshotStore.maxSnapshotsPerModule()));
         updateSnapshotActionState();
         refreshStructureHistory();
     }
 
     private void refreshStructureHistory() {
-        if (structureHistoryCards == null || structureHistoryCountLabel == null) {
-            return;
-        }
+        if (structureHistoryCards == null || structureHistoryCountLabel == null) return;
         structureHistoryCards.getChildren().clear();
         if (currentSubController == null) {
             structureHistoryCountLabel.setText("0");
@@ -1339,16 +1266,11 @@ public class MainController implements Initializable {
 
     private String shortOperationId(String operationId) {
         int lastDot = operationId.lastIndexOf('.');
-        if (lastDot < 0 || lastDot + 1 >= operationId.length()) {
-            return operationId;
-        }
+        if (lastDot < 0 || lastDot + 1 >= operationId.length()) return operationId;
         return operationId.substring(lastDot + 1);
     }
 
-    private Node createInspectorSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean newest) {
+    private Node createInspectorSnapshotCard(StructureSnapshot<?> snapshot, StructureSnapshotSupport<?> support, boolean newest) {
         VBox card = new VBox(5);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
@@ -1369,12 +1291,8 @@ public class MainController implements Initializable {
         return card;
     }
 
-    private Node createSnapshotCard(
-            String moduleName,
-            String status,
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean current) {
+    private Node createSnapshotCard(String moduleName, String status, StructureSnapshot<?> snapshot,
+            StructureSnapshotSupport<?> support, boolean current) {
         VBox card = new VBox(6);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
@@ -1420,11 +1338,8 @@ public class MainController implements Initializable {
             useInput.getStyleClass().add("snapshot-card-action");
             WorkbenchTheme.applyControl(useInput);
             useInput.setOnAction(event -> {
-                if (current) {
-                    algorithmInputSupport.useCurrentStructureAsAlgorithmInput();
-                } else {
-                    useSnapshotAsAlgorithmInputUnchecked(algorithmInputSupport, snapshot);
-                }
+                if (current) algorithmInputSupport.useCurrentStructureAsAlgorithmInput();
+                else useSnapshotAsAlgorithmInputUnchecked(algorithmInputSupport, snapshot);
                 refreshSnapshotCards();
                 refreshAlgorithmInputSource();
                 appendSystemLog(I18N.text(current
@@ -1433,18 +1348,14 @@ public class MainController implements Initializable {
             });
             actions.getChildren().add(useInput);
         }
-        if (!actions.getChildren().isEmpty()) {
-            card.getChildren().add(actions);
-        }
+        if (!actions.getChildren().isEmpty()) card.getChildren().add(actions);
         return card;
     }
 
     @FXML
     private void useCurrentStructureInput() {
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        if (support == null || currentSubController == null || currentSubController.isRunning()) {
-            return;
-        }
+        if (support == null || currentSubController == null || currentSubController.isRunning()) return;
         support.useCurrentStructureAsAlgorithmInput();
         refreshAlgorithmInputSource();
         refreshSnapshotCards();
@@ -1454,9 +1365,7 @@ public class MainController implements Initializable {
     @FXML
     private void useLatestSnapshotInput() {
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        if (support == null || activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
-            return;
-        }
+        if (support == null || activeDefinition == null || currentSubController == null || currentSubController.isRunning()) return;
         List<StructureSnapshot<?>> snapshots = structureSnapshotStore.snapshots(activeDefinition.id());
         if (snapshots.isEmpty()) {
             refreshAlgorithmInputSource();
@@ -1470,9 +1379,7 @@ public class MainController implements Initializable {
     }
 
     private void refreshAlgorithmInputSource() {
-        if (algorithmInputSourceLabel == null) {
-            return;
-        }
+        if (algorithmInputSourceLabel == null) return;
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
         boolean hasSaved = activeDefinition != null && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
         if (savedInputBtn != null) savedInputBtn.setDisable(!hasSaved || support == null);
@@ -1511,45 +1418,32 @@ public class MainController implements Initializable {
     }
 
     private String shortSnapshotId(String snapshotId) {
-        if (snapshotId == null || snapshotId.isBlank()) {
-            return "-";
-        }
+        if (snapshotId == null || snapshotId.isBlank()) return "-";
         return snapshotId.length() <= 8 ? snapshotId : snapshotId.substring(0, 8);
     }
 
     private StructureSnapshotSupport<?> currentSnapshotSupport() {
-        if (currentSubController instanceof StructureSnapshotSupport<?> support) {
-            return support;
-        }
+        if (currentSubController instanceof StructureSnapshotSupport<?> support) return support;
         return null;
     }
 
     private SnapshotAlgorithmInputSupport<?> currentAlgorithmInputSupport() {
-        if (currentSubController instanceof SnapshotAlgorithmInputSupport<?> support) {
-            return support;
-        }
+        if (currentSubController instanceof SnapshotAlgorithmInputSupport<?> support) return support;
         return null;
     }
 
     @SuppressWarnings("unchecked")
-    private void useSnapshotAsAlgorithmInputUnchecked(
-            SnapshotAlgorithmInputSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        SnapshotAlgorithmInputSupport<Object> typedSupport =
-                (SnapshotAlgorithmInputSupport<Object>) support;
+    private void useSnapshotAsAlgorithmInputUnchecked(SnapshotAlgorithmInputSupport<?> support, StructureSnapshot<?> snapshot) {
+        SnapshotAlgorithmInputSupport<Object> typedSupport = (SnapshotAlgorithmInputSupport<Object>) support;
         StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         typedSupport.useSnapshotAsAlgorithmInput(typedSnapshot);
     }
 
     @FXML
     private void saveStructureSnapshot() {
-        if (currentSubController == null || currentSubController.isRunning()) {
-            return;
-        }
+        if (currentSubController == null || currentSubController.isRunning()) return;
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
-        if (support == null || activeDefinition == null) {
-            return;
-        }
+        if (support == null || activeDefinition == null) return;
         StructureSnapshot<?> snapshot = support.captureStructureSnapshot();
         structureSnapshotStore.save(snapshot);
         currentSubController.recordAuxiliaryEvent(
@@ -1560,14 +1454,10 @@ public class MainController implements Initializable {
     }
 
     private void restoreSnapshot(StructureSnapshot<?> snapshot) {
-        if (currentSubController == null || currentSubController.isRunning()) {
-            return;
-        }
+        if (currentSubController == null || currentSubController.isRunning()) return;
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
-        if (support == null || activeDefinition == null
-                || !activeDefinition.id().equals(snapshot.moduleId())) {
-            return;
-        }
+        if (support == null || activeDefinition == null || !activeDefinition.id().equals(snapshot.moduleId())) return;
+        if (!confirmSnapshotRestore(snapshot)) return;
         try {
             restoreSnapshotUnchecked(support, snapshot);
             currentSubController.recordAuxiliaryEvent(
@@ -1580,31 +1470,31 @@ public class MainController implements Initializable {
         appendSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
     }
 
+    private boolean confirmSnapshotRestore(StructureSnapshot<?> snapshot) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(rootPane.getScene() == null ? null : rootPane.getScene().getWindow());
+        alert.setTitle("Restore Snapshot");
+        alert.setHeaderText("Restore snapshot / " + shortSnapshotId(snapshot) + "?");
+        alert.setContentText("This replaces the current live structure. The saved snapshot remains unchanged.");
+        return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
+    }
+
     @SuppressWarnings("unchecked")
-    private void restoreSnapshotUnchecked(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+    private void restoreSnapshotUnchecked(StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         typedSupport.restoreStructureSnapshot(typedSnapshot);
     }
 
     @SuppressWarnings("unchecked")
-    private String describeSnapshot(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+    private String describeSnapshot(StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         return typedSupport.describeStructureSnapshot(typedSnapshot.state());
     }
 
     private String formatSnapshotTime(StructureSnapshot<?> snapshot) {
-        return SNAPSHOT_TIME_FORMATTER.format(
-                snapshot.createdAt().atZone(ZoneId.systemDefault()));
+        return SNAPSHOT_TIME_FORMATTER.format(snapshot.createdAt().atZone(ZoneId.systemDefault()));
     }
 
     private String shortSnapshotId(StructureSnapshot<?> snapshot) {
@@ -1614,30 +1504,20 @@ public class MainController implements Initializable {
     }
 
     private void updateSnapshotActionState() {
-        if (saveSnapshotBtn == null) {
-            return;
-        }
-        saveSnapshotBtn.setDisable(
-                currentSubController == null
-                        || currentSubController.isRunning()
-                        || currentSnapshotSupport() == null);
+        if (saveSnapshotBtn == null) return;
+        saveSnapshotBtn.setDisable(currentSubController == null || currentSubController.isRunning() || currentSnapshotSupport() == null);
     }
 
     @FXML
     private void toggleLanguage() {
         Locale newLocale = Locale.CHINESE;
-        if (I18N.getLocale().getLanguage().equals("zh")) {
-            newLocale = Locale.ENGLISH;
-        }
+        if (I18N.getLocale().getLanguage().equals("zh")) newLocale = Locale.ENGLISH;
         I18N.setLocale(newLocale);
-        appendSystemLog(I18N.text(
-                "message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+        appendSystemLog(I18N.text("message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
     }
 
     private void appendSystemLog(String message) {
-        if (logView != null) {
-            logView.appendSystem(message);
-        }
+        if (logView != null) logView.appendSystem(message);
     }
 
     private String moduleAccentStyleClass(String moduleId) {
@@ -1652,7 +1532,6 @@ public class MainController implements Initializable {
         };
     }
 
-
     private void setupPlaybackSpeedButtons() {
         bindSpeedButton(speed1Btn, 1.0d, 50.0d);
         bindSpeedButton(speed2Btn, 2.0d, 25.0d);
@@ -1663,13 +1542,9 @@ public class MainController implements Initializable {
     }
 
     private void bindSpeedButton(Button button, double speed, double delayMillis) {
-        if (button == null) {
-            return;
-        }
+        if (button == null) return;
         button.setOnAction(event -> {
-            if (delaySlider != null) {
-                delaySlider.setValue(delayMillis);
-            }
+            if (delaySlider != null) delaySlider.setValue(delayMillis);
             if (currentSubController != null && currentSubController.getVisualizer() != null) {
                 currentSubController.getVisualizer().setPlaybackSpeed(speed);
                 currentSubController.getVisualizer().setScrubbing(speed >= 16.0d);
@@ -1680,16 +1555,12 @@ public class MainController implements Initializable {
 
     private void setSelectedSpeed(Button selected) {
         for (Button button : List.of(speed1Btn, speed2Btn, speed4Btn, speed8Btn, speed16Btn)) {
-            if (button != null) {
-                button.pseudoClassStateChanged(SELECTED, button == selected);
-            }
+            if (button != null) button.pseudoClassStateChanged(SELECTED, button == selected);
         }
     }
 
     private void refreshTopContext() {
-        if (topContextLabel == null) {
-            return;
-        }
+        if (topContextLabel == null) return;
         String family = activeDefinition == null ? "WORKBENCH" : I18N.text(activeDefinition.labelKey()).toUpperCase(Locale.ROOT);
         boolean structureMode = isStructurePageVisible();
         String suffix = structureMode ? "STRUCTURE EDITOR" : algorithmContextName();
@@ -1727,9 +1598,7 @@ public class MainController implements Initializable {
     }
 
     private String algorithmContextName() {
-        if (selectedAlgorithmId == null || selectedAlgorithmId.isBlank()) {
-            return "ALGORITHM";
-        }
+        if (selectedAlgorithmId == null || selectedAlgorithmId.isBlank()) return "ALGORITHM";
         return AlgorithmLabels.text(selectedAlgorithmId).toUpperCase(Locale.ROOT);
     }
 
@@ -1740,22 +1609,12 @@ public class MainController implements Initializable {
     }
 
     private void refreshStructureSummary() {
-        if (currentSubController == null) {
-            return;
-        }
+        if (currentSubController == null) return;
         String summary = currentSubController.structureSummaryText();
-        if (structureOverviewLabel != null) {
-            structureOverviewLabel.setText(summary == null || summary.isBlank() ? "Ready" : summary);
-        }
-        if (structureNodeCountLabel != null) {
-            structureNodeCountLabel.setText(currentSubController.structurePrimaryCount());
-        }
-        if (structureHeightLabel != null) {
-            structureHeightLabel.setText(currentSubController.structureSecondaryCount());
-        }
-        if (structureStateLabel != null) {
-            structureStateLabel.setText("READY");
-        }
+        if (structureOverviewLabel != null) structureOverviewLabel.setText(summary == null || summary.isBlank() ? "Ready" : summary);
+        if (structureNodeCountLabel != null) structureNodeCountLabel.setText(currentSubController.structurePrimaryCount());
+        if (structureHeightLabel != null) structureHeightLabel.setText(currentSubController.structureSecondaryCount());
+        if (structureStateLabel != null) structureStateLabel.setText("READY");
         if (overviewPrimaryValue != null) overviewPrimaryValue.setText(currentSubController.structurePrimaryCount());
         if (overviewSecondaryValue != null) overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
         if (overviewEventsValue != null) overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
@@ -1763,9 +1622,7 @@ public class MainController implements Initializable {
     }
 
     private void wireStructureSelection() {
-        if (currentSubController instanceof TreeController treeController) {
-            treeController.setSelectionListener(this::showTreeSelection);
-        }
+        if (currentSubController instanceof TreeController treeController) treeController.setSelectionListener(this::showTreeSelection);
     }
 
     private void showTreeSelection(TreeController.NodeSelection selection) {
@@ -1792,15 +1649,11 @@ public class MainController implements Initializable {
             structureSelectionOverlay.setManaged(false);
             structureSelectionOverlay.setVisible(false);
         }
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText("Select an element in the canvas.");
-        }
+        if (structureInspectorBody != null) structureInspectorBody.setText("Select an element in the canvas.");
     }
 
     private void refreshExecutionPresentation() {
-        if (currentSubController == null) {
-            return;
-        }
+        if (currentSubController == null) return;
         EventEnvelope current = currentSubController.currentPresentationEvent();
         if (current == null) {
             if (currentStepOverlay != null) {
@@ -1845,48 +1698,24 @@ public class MainController implements Initializable {
 
     private String describeCurrentStep(EventEnvelope envelope) {
         Object event = envelope.event();
-        if (event instanceof ObservationEvent.Visited visited) {
-            return "TARGET  " + formatReference(visited.ref());
-        }
+        if (event instanceof ObservationEvent.Visited visited) return "TARGET  " + formatReference(visited.ref());
         if (event instanceof ObservationEvent.Examined examined) {
             return "FROM    " + formatReference(examined.fromRef()) + "\nTO      " + formatReference(examined.toRef());
         }
         if (event instanceof ObservationEvent.Compared compared) {
             return "LEFT    " + formatReference(compared.leftRef()) + "\nRIGHT   " + formatReference(compared.rightRef());
         }
-        if (event instanceof ObservationEvent.Matched matched) {
-            return "INDEX   " + matched.index() + "\nLENGTH  " + matched.length();
-        }
-        if (event instanceof ObservationEvent.Fallback fallback) {
-            return "PATTERN " + fallback.fromIndex() + " → " + fallback.toIndex();
-        }
-        if (event instanceof ObservationEvent.Backtracked backtracked) {
-            return "TARGET  " + formatReference(backtracked.ref());
-        }
-        if (event instanceof TreeStructureEvent.NodeInserted inserted) {
-            return "NODE    #" + inserted.nodeId() + "\nVALUE   " + inserted.value();
-        }
-        if (event instanceof TreeStructureEvent.NodeRemoved removed) {
-            return "NODE    #" + removed.nodeId() + "\nVALUE   " + removed.value();
-        }
-        if (event instanceof TreeStructureEvent.ValueChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nVALUE   " + changed.previousValue() + " → " + changed.value();
-        }
-        if (event instanceof TreeStructureEvent.LeftChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nLEFT    " + formatIdChange(changed.previousChildId(), changed.childId());
-        }
-        if (event instanceof TreeStructureEvent.RightChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nRIGHT   " + formatIdChange(changed.previousChildId(), changed.childId());
-        }
-        if (event instanceof TreeStructureEvent.RootChanged changed) {
-            return "ROOT    " + formatIdChange(changed.previousRootId(), changed.rootId());
-        }
-        if (event instanceof TreeStructureEvent.ChildInserted inserted) {
-            return "PARENT  #" + inserted.parentId() + "\nCHILD   #" + inserted.childId() + "  @" + inserted.index();
-        }
-        if (event instanceof TreeStructureEvent.ChildRemoved removed) {
-            return "PARENT  #" + removed.parentId() + "\nCHILD   #" + removed.childId() + "  @" + removed.index();
-        }
+        if (event instanceof ObservationEvent.Matched matched) return "INDEX   " + matched.index() + "\nLENGTH  " + matched.length();
+        if (event instanceof ObservationEvent.Fallback fallback) return "PATTERN " + fallback.fromIndex() + " → " + fallback.toIndex();
+        if (event instanceof ObservationEvent.Backtracked backtracked) return "TARGET  " + formatReference(backtracked.ref());
+        if (event instanceof TreeStructureEvent.NodeInserted inserted) return "NODE    #" + inserted.nodeId() + "\nVALUE   " + inserted.value();
+        if (event instanceof TreeStructureEvent.NodeRemoved removed) return "NODE    #" + removed.nodeId() + "\nVALUE   " + removed.value();
+        if (event instanceof TreeStructureEvent.ValueChanged changed) return "NODE    #" + changed.nodeId() + "\nVALUE   " + changed.previousValue() + " → " + changed.value();
+        if (event instanceof TreeStructureEvent.LeftChanged changed) return "NODE    #" + changed.nodeId() + "\nLEFT    " + formatIdChange(changed.previousChildId(), changed.childId());
+        if (event instanceof TreeStructureEvent.RightChanged changed) return "NODE    #" + changed.nodeId() + "\nRIGHT   " + formatIdChange(changed.previousChildId(), changed.childId());
+        if (event instanceof TreeStructureEvent.RootChanged changed) return "ROOT    " + formatIdChange(changed.previousRootId(), changed.rootId());
+        if (event instanceof TreeStructureEvent.ChildInserted inserted) return "PARENT  #" + inserted.parentId() + "\nCHILD   #" + inserted.childId() + "  @" + inserted.index();
+        if (event instanceof TreeStructureEvent.ChildRemoved removed) return "PARENT  #" + removed.parentId() + "\nCHILD   #" + removed.childId() + "  @" + removed.index();
         String text = envelope.event().toString();
         if (text.length() > 120) text = text.substring(0, 117) + "...";
         return text;
@@ -1991,24 +1820,46 @@ public class MainController implements Initializable {
         }
     }
 
-    private record MetricDisplay(String title, String value) {}
+    private record MetricDisplay(String title, String value) { }
 
     private void rebuildTimelineMarkers() {
         if (timelineMarkers == null || currentSubController == null) return;
         timelineMarkers.getChildren().clear();
         List<EventEnvelope> events = currentSubController.executionEvents();
+        timelineMarkers.setMouseTransparent(events.isEmpty());
+        timelineMarkers.setPickOnBounds(false);
         if (events.isEmpty()) return;
         int max = 15;
         int step = Math.max(1, (int) Math.ceil(events.size() / (double) max));
         int currentIndex = currentSubController.presentationEventIndex();
+        boolean seekable = !currentSubController.isRunning() && currentSubController.hasExecutionData();
         for (int index = 0; index < events.size(); index += step) {
             EventEnvelope envelope = events.get(index);
             Label marker = new Label(eventMarker(envelope));
             marker.getStyleClass().add("timeline-marker");
             marker.getStyleClass().add(eventMarkerClass(envelope));
             if (index == currentIndex) marker.getStyleClass().add("timeline-marker-current");
+            if (seekable) {
+                int markerIndex = index;
+                marker.setOnMouseClicked(event -> {
+                    seekTimelineEvent(markerIndex, events.size());
+                    event.consume();
+                });
+            }
+            marker.setDisable(!seekable);
             timelineMarkers.getChildren().add(marker);
         }
+    }
+
+    private void seekTimelineEvent(int eventIndex, int eventCount) {
+        if (currentSubController == null || currentSubController.isRunning()
+                || !currentSubController.hasExecutionData() || eventCount <= 0) {
+            return;
+        }
+        int clampedIndex = Math.max(0, Math.min(eventIndex, eventCount - 1));
+        double progress = eventCount <= 1 ? 0.0d : clampedIndex / (double) (eventCount - 1);
+        currentSubController.seekTimeline(progress);
+        refreshExecutionPresentation();
     }
 
     private String eventMarker(EventEnvelope envelope) {
@@ -2026,14 +1877,9 @@ public class MainController implements Initializable {
     }
 
     private void refreshPauseText() {
-        if (pauseBtn == null) {
-            return;
-        }
+        if (pauseBtn == null) return;
         boolean paused = currentSubController != null && currentSubController.isPaused();
-        String key = "action.execution.pause";
-        if (paused) {
-            key = "action.execution.resume";
-        }
+        String key = paused ? "action.execution.resume" : "action.execution.pause";
         pauseBtn.setText(I18N.text(key).toUpperCase(Locale.ROOT));
     }
 }
