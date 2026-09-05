@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.Observations;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -29,13 +28,13 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
         boolean found = false;
         while (!frontier.isEmpty()) {
             GridPoint current = frontier.remove();
-            ExecutionEvents.observe(new ObservationEvent.Visited(ref(current)));
+            Observations.visited(current.row(), current.column());
             if (current.equals(goal)) {
                 found = true;
                 break;
             }
             for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-                ExecutionEvents.observe(new ObservationEvent.Examined(ref(current), ref(neighbor)));
+                Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
                 int candidate = distance.get(current) + 1;
                 if (candidate >= distance.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                     continue;
@@ -49,13 +48,8 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
         }
         if (!found) return List.of();
         List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
-        ExecutionEvents.observe(new ObservationEvent.PathFound(
-                path.stream().map(AStarArrayMazePathfinder::ref).map(ObservationEvent.Reference.class::cast).toList()));
+        Observations.pathFound(path, GridPoint::row, GridPoint::column);
         return path;
-    }
-
-    private static ObservationEvent.CoordinateRef ref(GridPoint point) {
-        return new ObservationEvent.CoordinateRef(point.row(), point.column());
     }
 
     private int manhattan(GridPoint left, GridPoint right) {
