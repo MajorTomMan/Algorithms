@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.graph;
 
-import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.library.structure.GraphStructure;
 
@@ -107,7 +106,7 @@ public final class Graph<T> implements GraphStructure<T> {
         Vertex<T> vertex = new Vertex<>(value);
         verticesByValue.put(value, vertex);
         adjacency.put(vertex, new LinkedHashSet<>());
-        ExecutionEvents.emit(new GraphStructureEvent.VertexAdded(vertex.id(), vertex.value()));
+        StructureEvents.graphVertexAdded(vertex.id(), vertex.value());
         return vertex;
     }
 
@@ -130,7 +129,7 @@ public final class Graph<T> implements GraphStructure<T> {
         for (Set<Vertex<T>> neighbors : adjacency.values()) {
             neighbors.remove(vertex);
         }
-        ExecutionEvents.emit(new GraphStructureEvent.VertexRemoved(vertex.id(), vertex.value()));
+        StructureEvents.graphVertexRemoved(vertex.id(), vertex.value());
         return true;
     }
 
@@ -148,7 +147,7 @@ public final class Graph<T> implements GraphStructure<T> {
         if (!directed) {
             adjacency.get(to).add(from);
         }
-        ExecutionEvents.emit(new GraphStructureEvent.EdgeAdded(edge.id(), from.id(), to.id()));
+        StructureEvents.graphEdgeAdded(edge.id(), from.id(), to.id());
         return edge;
     }
 
@@ -163,7 +162,7 @@ public final class Graph<T> implements GraphStructure<T> {
         if (!directed) {
             adjacency.get(to).remove(from);
         }
-        ExecutionEvents.emit(new GraphStructureEvent.EdgeRemoved(edge.id(), edge.from().id(), edge.to().id()));
+        StructureEvents.graphEdgeRemoved(edge.id(), edge.from().id(), edge.to().id());
         return true;
     }
 
