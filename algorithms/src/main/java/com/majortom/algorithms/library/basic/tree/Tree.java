@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.library.structure.GeneralTreeStructure;
 
@@ -46,10 +45,10 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
             throw new IllegalStateException("tree already has a root");
         }
         GeneralTreeNode<T> node = new GeneralTreeNode<>(value);
-        ExecutionEvents.emit(new TreeStructureEvent.NodeInserted(node.getId(), value));
+        StructureEvents.treeNodeInserted(node.getId(), value);
         root = node;
         size = 1;
-        ExecutionEvents.emit(new TreeStructureEvent.RootChanged(null, node.getId()));
+        StructureEvents.treeRootChanged(null, node.getId());
         return node;
     }
 
@@ -69,7 +68,7 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
             throw new IndexOutOfBoundsException("index=" + index + ", size=" + node.getChildren().size());
         }
         GeneralTreeNode<T> child = new GeneralTreeNode<>(value);
-        ExecutionEvents.emit(new TreeStructureEvent.NodeInserted(child.getId(), value));
+        StructureEvents.treeNodeInserted(child.getId(), value);
         node.addChild(index, child);
         size++;
         return child;
@@ -90,7 +89,7 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
             long rootId = root.getId();
             root = null;
             size = 0;
-            ExecutionEvents.emit(new TreeStructureEvent.RootChanged(rootId, null));
+            StructureEvents.treeRootChanged(rootId, null);
             emitRemovedSubtree(target);
             return true;
         }
@@ -231,7 +230,7 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         for (GeneralTreeNode<T> child : node.getChildren()) {
             emitRemovedSubtree(child);
         }
-        ExecutionEvents.emit(new TreeStructureEvent.NodeRemoved(node.getId(), node.getValue()));
+        StructureEvents.treeNodeRemoved(node.getId(), node.getValue());
     }
 
     private GeneralTreeNode<T> requireNode(GeneralTreeNode<T> node) {
