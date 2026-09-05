@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 
 import java.util.ArrayDeque;
@@ -27,7 +26,7 @@ public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> 
         long nextEdgeId = 1L;
         queue.add(0);
         discovered.add(0);
-        ExecutionEvents.observe(new ObservationEvent.Visited(ref(dimensions, 0)));
+        Observations.visited(row(dimensions, 0), column(dimensions, 0));
         while (!queue.isEmpty()) {
             int current = queue.removeFirst();
             List<Integer> neighbors = neighbors(dimensions, current);
@@ -36,19 +35,24 @@ public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> 
                 if (!discovered.add(neighbor)) {
                     continue;
                 }
-                ExecutionEvents.observe(new ObservationEvent.Examined(
-                        ref(dimensions, current), ref(dimensions, neighbor)));
+                Observations.examined(
+                        row(dimensions, current), column(dimensions, current),
+                        row(dimensions, neighbor), column(dimensions, neighbor));
                 edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L));
                 edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L));
                 queue.addLast(neighbor);
-                ExecutionEvents.observe(new ObservationEvent.Visited(ref(dimensions, neighbor)));
+                Observations.visited(row(dimensions, neighbor), column(dimensions, neighbor));
             }
         }
         return new GraphSnapshot<>(true, vertices, edges);
     }
 
-    private ObservationEvent.CoordinateRef ref(MazeDimensions dimensions, int node) {
-        return new ObservationEvent.CoordinateRef(node / dimensions.columns(), node % dimensions.columns());
+    private int row(MazeDimensions dimensions, int node) {
+        return node / dimensions.columns();
+    }
+
+    private int column(MazeDimensions dimensions, int node) {
+        return node % dimensions.columns();
     }
 
     private List<GraphSnapshot.Vertex<Integer>> vertices(MazeDimensions dimensions) {
