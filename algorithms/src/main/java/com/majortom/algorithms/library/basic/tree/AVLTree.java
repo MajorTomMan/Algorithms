@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.tree;
 
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.library.structure.SearchTreeStructure;
 
 import java.util.Collections;
@@ -87,7 +86,7 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         if (node == null) {
             AVLTreeNode<T> created = new AVLTreeNode<>(nextNodeId++, value);
             inserted[0] = true;
-            ExecutionEvents.emit(new TreeStructureEvent.NodeInserted(created.getId(), value));
+            StructureEvents.treeNodeInserted(created.getId(), value);
             return created;
         }
         int comparison = value.compareTo(node.getValue());
@@ -113,7 +112,7 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         } else if (left(node) == null || right(node) == null) {
             AVLTreeNode<T> replacement = left(node) != null ? left(node) : right(node);
             removed[0] = true;
-            ExecutionEvents.emit(new TreeStructureEvent.NodeRemoved(node.getId(), node.getValue()));
+            StructureEvents.treeNodeRemoved(node.getId(), node.getValue());
             return replacement;
         } else {
             AVLTreeNode<T> successor = minimum(right(node));
@@ -253,7 +252,7 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         }
         Long previousId = root == null ? null : root.getId();
         root = newRoot;
-        ExecutionEvents.emit(new TreeStructureEvent.RootChanged(previousId, root == null ? null : root.getId()));
+        StructureEvents.treeRootChanged(previousId, root == null ? null : root.getId());
     }
 
     private int height(AVLTreeNode<T> node) {
