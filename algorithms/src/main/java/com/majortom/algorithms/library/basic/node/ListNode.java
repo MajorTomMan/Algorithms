@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic.node;
 
-import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,7 +57,7 @@ public class ListNode<T> {
         }
         T previousValue = this.value;
         this.value = value;
-        ExecutionEvents.emit(new LinkedStructureEvent.ValueChanged(id, previousValue, value));
+        StructureEvents.linkedValueChanged(id, previousValue, value);
     }
 
     public void setNext(ListNode<T> next) {
@@ -67,7 +66,7 @@ public class ListNode<T> {
         }
         Long previousNextId = id(this.next);
         this.next = next;
-        ExecutionEvents.emit(new LinkedStructureEvent.NextChanged(id, previousNextId, id(next)));
+        StructureEvents.linkedNextChanged(id, previousNextId, id(next));
     }
 
     public void setPrevious(ListNode<T> previous) {
@@ -76,7 +75,7 @@ public class ListNode<T> {
         }
         Long previousPreviousId = id(this.previous);
         this.previous = previous;
-        ExecutionEvents.emit(new LinkedStructureEvent.PreviousChanged(id, previousPreviousId, id(previous)));
+        StructureEvents.linkedPreviousChanged(id, previousPreviousId, id(previous));
     }
 
     @Override
