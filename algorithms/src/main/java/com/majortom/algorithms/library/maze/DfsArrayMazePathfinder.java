@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.maze;
 
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.Observations;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,8 +19,7 @@ public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
         boolean found = visit(maze, start, goal, discovered, previous);
         if (!found) return List.of();
         List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
-        ExecutionEvents.observe(new ObservationEvent.PathFound(
-                path.stream().map(DfsArrayMazePathfinder::ref).map(ObservationEvent.Reference.class::cast).toList()));
+        Observations.pathFound(path, GridPoint::row, GridPoint::column);
         return path;
     }
 
@@ -31,12 +29,12 @@ public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
             GridPoint goal,
             Set<GridPoint> discovered,
             Map<GridPoint, GridPoint> previous) {
-        ExecutionEvents.observe(new ObservationEvent.Visited(ref(current)));
+        Observations.visited(current.row(), current.column());
         if (current.equals(goal)) {
             return true;
         }
         for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-            ExecutionEvents.observe(new ObservationEvent.Examined(ref(current), ref(neighbor)));
+            Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
             if (!discovered.add(neighbor)) {
                 continue;
             }
@@ -45,11 +43,7 @@ public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
                 return true;
             }
         }
-        ExecutionEvents.observe(new ObservationEvent.Backtracked(ref(current)));
+        Observations.backtracked(current.row(), current.column());
         return false;
-    }
-
-    private static ObservationEvent.CoordinateRef ref(GridPoint point) {
-        return new ObservationEvent.CoordinateRef(point.row(), point.column());
     }
 }
