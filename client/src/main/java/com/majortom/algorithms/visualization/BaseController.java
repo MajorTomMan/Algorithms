@@ -779,6 +779,12 @@ public abstract class BaseController<S> implements Initializable {
 
     private void updatePlaybackButtonState() {
         boolean playbackUnavailable = running.get() || !hasPlaybackData();
+        if (pauseBtn != null) {
+            boolean replayActive = !running.get()
+                    && replayController != null
+                    && (replayController.isPlaying() || paused.get());
+            pauseBtn.setDisable(!running.get() && !replayActive);
+        }
         if (replayBtn != null) {
             replayBtn.setDisable(playbackUnavailable);
         }

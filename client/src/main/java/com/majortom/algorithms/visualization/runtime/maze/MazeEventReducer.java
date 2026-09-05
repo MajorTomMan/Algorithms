@@ -11,13 +11,16 @@ import com.majortom.algorithms.visualization.runtime.Reduction;
 /** Reduces factual Maze observations and Runtime lifecycle into MazeViewState. */
 public final class MazeEventReducer implements EventReducer<MazeViewState> {
     private final MazeViewState initialState;
+    private final boolean generation;
 
     public MazeEventReducer(int rows, int columns, boolean graphBased) {
-        this.initialState = MazeViewState.empty(rows, columns, graphBased);
+        this.initialState = MazeViewState.generation(rows, columns, graphBased);
+        this.generation = true;
     }
 
     public MazeEventReducer(com.majortom.algorithms.core.snapshot.MazeSnapshot snapshot) {
         this.initialState = MazeViewState.source(snapshot);
+        this.generation = false;
     }
 
     @Override
@@ -31,7 +34,10 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         if (event instanceof ObservationEvent.Visited visited) {
             GridPoint point = point(visited.ref());
             if (point != null) {
-                return observation(previous.visit(point));
+                MazeViewState next = generation && !previous.graphBased()
+                        ? previous.open(point)
+                        : previous.visit(point);
+                return observation(next);
             }
         }
         if (event instanceof ObservationEvent.Examined examined) {

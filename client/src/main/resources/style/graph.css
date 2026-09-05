@@ -5,7 +5,7 @@ graph {
 
 node {
     size: 32px;
-    fill-color: #FF3333;
+    fill-color: #F51B23;
     stroke-mode: plain;
     stroke-color: #F0F0E6;
     stroke-width: 2px;
@@ -16,14 +16,14 @@ node {
 }
 
 node.highlight {
-    fill-color: #00A2FF;
+    fill-color: #1769D3;
     size: 45px;
     stroke-width: 4px;
     stroke-color: #FFFFFF;
 }
 
 node.secondary {
-    fill-color: #FFD700;
+    fill-color: #F5B400;
     size: 38px;
     stroke-width: 3px;
 }

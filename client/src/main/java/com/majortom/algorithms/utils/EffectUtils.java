@@ -105,12 +105,12 @@ public class EffectUtils {
 
     private static String resolveFromClass(String styleClass) {
         if (styleClass.contains("primary") || styleClass.contains("blue"))
-            return "#00A2FF";
+            return "#1769D3";
         if (styleClass.contains("gold") || styleClass.contains("warning"))
-            return "#FFD700";
+            return "#F5B400";
         if (styleClass.contains("red") || styleClass.contains("danger"))
-            return "#FF4B4B";
-        return "#666666"; // 中立灰
+            return "#F51B23";
+        return "#444444";
     }
 
     private static String toRGBCode(Color color) {

@@ -1469,12 +1469,12 @@
 }
 
 .visual-node:selected .visual-node-shape {
-    -fx-stroke: #00a2ff;
+    -fx-stroke: -ui-blue;
     -fx-stroke-width: 3px;
 }
 
 .visual-node:highlighted .visual-node-shape {
-    -fx-stroke: #ffd700;
+    -fx-stroke: -ui-yellow;
     -fx-stroke-width: 3px;
 }
 
@@ -1486,14 +1486,14 @@
 
 .visual-edge:highlighted .visual-edge-path,
 .visual-edge:highlighted .visual-edge-arrow {
-    -fx-stroke: #ffd700;
-    -fx-fill: #ffd700;
+    -fx-stroke: -ui-yellow;
+    -fx-fill: -ui-yellow;
 }
 
 .linked-next-edge .visual-edge-path,
 .linked-next-edge .visual-edge-arrow {
-    -fx-stroke: #00a2ff;
-    -fx-fill: #00a2ff;
+    -fx-stroke: -ui-blue;
+    -fx-fill: -ui-blue;
 }
 
 .linked-previous-edge .visual-edge-path,
@@ -1503,11 +1503,11 @@
 }
 
 .tree-left-edge .visual-edge-path {
-    -fx-stroke: #00a2ff;
+    -fx-stroke: -ui-blue;
 }
 
 .tree-right-edge .visual-edge-path {
-    -fx-stroke: #ffd700;
+    -fx-stroke: -ui-yellow;
 }
 
 .tree-child-edge .visual-edge-path {
@@ -1552,25 +1552,25 @@
 }
 
 .array-cell:highlighted .array-cell-body {
-    -fx-border-color: #ffd700;
+    -fx-border-color: -ui-yellow;
 }
 
 .string-cell:highlighted .string-cell-body {
-    -fx-stroke: #ffd700;
+    -fx-stroke: -ui-yellow;
 }
 
 .array-cell:completed .array-cell-body {
-    -fx-border-color: #00a2ff;
+    -fx-border-color: -ui-blue;
 }
 
 .string-cell:completed .string-cell-body {
-    -fx-stroke: #00a2ff;
+    -fx-stroke: -ui-blue;
 }
 
 .queue-order-edge .visual-edge-path,
 .queue-order-edge .visual-edge-arrow {
-    -fx-stroke: #00a2ff;
-    -fx-fill: #00a2ff;
+    -fx-stroke: -ui-blue;
+    -fx-fill: -ui-blue;
 }
 
 
@@ -2026,16 +2026,31 @@
 .visual-node:selected .visual-node-shape { -fx-stroke: -ui-red; -fx-stroke-width: 4px; }
 .visual-node:highlighted .visual-node-shape { -fx-stroke: -ui-yellow; -fx-stroke-width: 3px; }
 .visual-edge-path,
-.visual-edge-arrow,
 .tree-left-edge .visual-edge-path,
 .tree-right-edge .visual-edge-path,
-.tree-child-edge .visual-edge-path {
+.tree-child-edge .visual-edge-path,
+.linked-next-edge .visual-edge-path,
+.linked-previous-edge .visual-edge-path,
+.queue-order-edge .visual-edge-path {
     -fx-stroke: -ui-black;
-    -fx-fill: -ui-black;
+    -fx-fill: transparent;
     -fx-stroke-width: 1.8px;
 }
-.visual-edge:highlighted .visual-edge-path,
-.visual-edge:highlighted .visual-edge-arrow { -fx-stroke: -ui-yellow; -fx-fill: -ui-yellow; }
+.visual-edge-arrow,
+.linked-next-edge .visual-edge-arrow,
+.linked-previous-edge .visual-edge-arrow,
+.queue-order-edge .visual-edge-arrow {
+    -fx-stroke: -ui-black;
+    -fx-fill: -ui-black;
+}
+.visual-edge:highlighted .visual-edge-path {
+    -fx-stroke: -ui-yellow;
+    -fx-fill: transparent;
+}
+.visual-edge:highlighted .visual-edge-arrow {
+    -fx-stroke: -ui-yellow;
+    -fx-fill: -ui-yellow;
+}
 
 .selection-overlay,
 .current-step-overlay {
@@ -2202,7 +2217,7 @@
 }
 .selection-overlay { -fx-translate-x: -18px; -fx-translate-y: 18px; }
 .current-step-overlay { -fx-translate-x: 18px; -fx-translate-y: 18px; }
-.inspector-body { -fx-text-fill: -ui-gray-800; }
+.inspector-body { -fx-text-fill: -ui-gray-700; }
 /* Light diagnostics tabs must override AtlantaFX dark user-agent theme. */
 .inspector-tabs > .tab-header-area > .tab-header-background,
 .inspector-tabs > .tab-content-area,
@@ -2328,7 +2343,7 @@
 }
 .timeline-cursor-callout {
     -fx-background-color: -ui-white;
-    -fx-border-color: -ui-gray-400;
+    -fx-border-color: -ui-gray-300;
     -fx-border-width: 1px;
     -fx-border-radius: 3px;
     -fx-background-radius: 3px;

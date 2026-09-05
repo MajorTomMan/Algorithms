@@ -17,12 +17,12 @@ import javafx.util.Duration;
 public abstract class BaseVisualizer<S> extends StackPane {
 
     /* Canonical workbench palette: black, white, red, blue, yellow and gray. */
-    public static final Color RAN_BLACK = Color.rgb(5, 5, 8); // 极夜黑
-    public static final Color RAN_WHITE = Color.rgb(240, 240, 230); // 骨白
-    public static final Color RAN_RED = Color.rgb(255, 51, 51); // 太郎红
-    public static final Color RAN_BLUE = Color.rgb(0, 162, 255); // 次郎蓝
-    public static final Color RAN_YELLOW = Color.rgb(255, 215, 0); // 三郎黄
-    public static final Color RAN_GRAY = Color.rgb(112, 117, 122); // 工作台灰
+    public static final Color RAN_BLACK = Color.web("#08090A");
+    public static final Color RAN_WHITE = Color.WHITE;
+    public static final Color RAN_RED = Color.web("#F51B23");
+    public static final Color RAN_BLUE = Color.web("#1769D3");
+    public static final Color RAN_YELLOW = Color.web("#F5B400");
+    public static final Color RAN_GRAY = Color.web("#444444");
 
     /* Legacy semantic names remain as palette aliases for existing visualizers. */
     public static final Color RAN_VIOLET =

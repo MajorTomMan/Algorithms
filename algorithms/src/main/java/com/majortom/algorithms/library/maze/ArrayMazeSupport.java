@@ -1,5 +1,6 @@
 package com.majortom.algorithms.library.maze;
 
+import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 
 import java.util.ArrayDeque;
@@ -28,8 +29,9 @@ final class ArrayMazeSupport {
         if (open[index]) {
             return;
         }
-        ExecutionEvents.checkpoint();
         open[index] = true;
+        ExecutionEvents.observe(new ObservationEvent.Visited(
+                new ObservationEvent.CoordinateRef(point.row(), point.column())));
     }
 
     static GridMaze complete(MazeDimensions dimensions, GenerationState state) {

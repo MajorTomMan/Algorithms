@@ -104,7 +104,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
             EventSink eventSink = event -> {
                 authoritativeEvents.accept(event);
                 observerSink.accept(event);
-                sampleResourceUsage(resourceSampler);
+                resourceSampler.sample();
             };
             ExecutionScheduler scheduler = ExecutionScheduler.single("algorithm-run-" + runGeneration + "-");
             ExecutionSession session = new ExecutionSession(runGeneration, executionControl, authoritativeEvents,
@@ -139,9 +139,6 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
         if (closed) throw new IllegalStateException("Local algorithm execution is closed");
     }
 
-    private void sampleResourceUsage(ResourceSampler resourceSampler) {
-        try { resourceSampler.sample(); } catch (RuntimeException ignored) { }
-    }
 
     private ExecutionResult runWithEventLimit(String operationId, ExecutionOperation<?> operation, EventSink eventSink,
             DefaultExecutionControl executionControl, BoundedExecutionEventStore authoritativeEvents,

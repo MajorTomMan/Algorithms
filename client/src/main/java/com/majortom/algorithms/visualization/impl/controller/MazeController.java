@@ -241,9 +241,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private long mazeActionCount() {
-        return stats.metric("cells.opened") + stats.metric("edges.added")
-                + stats.metric("cells.visited") + stats.metric("backtracks")
-                + stats.metric("path.cells");
+        return stats.metric("nodesVisited") + stats.metric("edgesExamined") + stats.metric("backtracks");
     }
 
     @Override

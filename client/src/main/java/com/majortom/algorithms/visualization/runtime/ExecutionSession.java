@@ -51,7 +51,7 @@ public final class ExecutionSession implements AutoCloseable {
         workerFuture = scheduler.submit(() -> {
             long startedAtNanos = System.nanoTime();
             started.set(true);
-            startResourceSampling();
+            resourceSampler.start();
             ExecutionResult result = null;
             Throwable failure = null;
             try {
@@ -59,8 +59,8 @@ public final class ExecutionSession implements AutoCloseable {
             } catch (Throwable throwable) {
                 failure = throwable;
             } finally {
-                stopResourceSampling();
-                resourceUsage = sampleResources();
+                resourceSampler.stop();
+                resourceUsage = resourceSampler.sample();
                 totalDuration = Optional.of(elapsedSince(startedAtNanos));
                 finishAfterPlayback(result, failure);
                 scheduler.close();
@@ -155,19 +155,5 @@ public final class ExecutionSession implements AutoCloseable {
         return Duration.ofNanos(Math.max(0L, System.nanoTime() - startedAtNanos));
     }
 
-    private void startResourceSampling() {
-        try { resourceSampler.start(); } catch (RuntimeException ignored) { }
-    }
 
-    private void stopResourceSampling() {
-        try { resourceSampler.stop(); } catch (RuntimeException ignored) { }
-    }
-
-    private ResourceUsage sampleResources() {
-        try {
-            ResourceUsage usage = resourceSampler.sample();
-            if (usage != null) return usage;
-        } catch (RuntimeException ignored) { }
-        return ResourceUsage.empty();
-    }
 }

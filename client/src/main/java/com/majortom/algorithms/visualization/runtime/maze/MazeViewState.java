@@ -46,6 +46,26 @@ public record MazeViewState(
                 false);
     }
 
+    public static MazeViewState generation(int rows, int columns, boolean graphBased) {
+        MazeViewState empty = empty(rows, columns, graphBased);
+        if (graphBased) {
+            return empty;
+        }
+        return new MazeViewState(
+                rows,
+                columns,
+                empty.openCells(),
+                empty.path(),
+                empty.visited(),
+                null,
+                null,
+                new GridPoint(1, 1),
+                new GridPoint(rows - 2, columns - 2),
+                empty.graphEdges(),
+                false,
+                false);
+    }
+
     public static MazeViewState source(MazeSnapshot snapshot) {
         return new MazeViewState(
                 snapshot.rows(),
@@ -66,6 +86,19 @@ public record MazeViewState(
         LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
         nextVisited.add(point);
         return new MazeViewState(rows, columns, openCells, path, nextVisited, point, null,
+                entrance, exit, graphEdges, graphBased, false);
+    }
+
+    public MazeViewState open(GridPoint point) {
+        int index = point.row() * columns + point.column();
+        if (index < 0 || index >= openCells.size() || openCells.get(index)) {
+            return visit(point);
+        }
+        java.util.ArrayList<Boolean> nextOpenCells = new java.util.ArrayList<>(openCells);
+        nextOpenCells.set(index, true);
+        LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
+        nextVisited.add(point);
+        return new MazeViewState(rows, columns, nextOpenCells, path, nextVisited, point, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 

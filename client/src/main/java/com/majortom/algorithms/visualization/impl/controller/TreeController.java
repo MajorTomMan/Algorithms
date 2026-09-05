@@ -82,27 +82,17 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private void handleVisualSelection(long nodeId) {
         GeneralTreeNode<Integer> node = tree.findById(nodeId);
         if (node == null) {
-            clearVisualSelection();
             return;
         }
         nodeIdField.setText(Long.toString(nodeId));
         valueField.setText(Integer.toString(node.getValue()));
         GeneralTreeNode<Integer> parent = parentOf(tree.root(), node);
-        parentIdField.setText(parent == null ? "" : Long.toString(parent.getId()));
+        if (parent != null) {
+            parentIdField.setText(Long.toString(parent.getId()));
+        }
         selectionListener.accept(new NodeSelection(
                 nodeId, node.getValue(), parent == null ? null : parent.getId(),
                 node.getChildren().size(), depthOf(tree.root(), node, 0)));
-    }
-
-    private void clearVisualSelection() {
-        ((TreeVisualizer) visualizer).clearSelection();
-        selectionListener.accept(null);
-        if (nodeIdField != null) {
-            nodeIdField.clear();
-        }
-        if (parentIdField != null) {
-            parentIdField.clear();
-        }
     }
 
     private GeneralTreeNode<Integer> parentOf(GeneralTreeNode<Integer> root, GeneralTreeNode<Integer> target) {
@@ -168,9 +158,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
         if (executeStructureOperation("remove", () -> tree.remove(node))) {
-            if (nodeId.equals(((TreeVisualizer) visualizer).selectedNodeId())) {
-                clearVisualSelection();
-            }
             refreshStructureView();
         }
     }
@@ -270,7 +257,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
         tree = Tree.fromSnapshot(snapshot.state());
-        clearVisualSelection();
         invalidateExecutionForStructureChange();
         refreshStructureView();
     }
@@ -433,7 +419,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @Override
     protected void onResetData() {
         tree = new Tree<>();
-        clearVisualSelection();
         renderStructureState(currentStructureState());
     }
 
