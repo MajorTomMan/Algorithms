@@ -3,6 +3,7 @@ package com.majortom.algorithms.core.runtime;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 
 import java.util.List;
+import java.util.function.ToIntFunction;
 
 /** Thin construction/publishing helpers for explicit factual algorithm observations. */
 public final class Observations {
@@ -59,5 +60,16 @@ public final class Observations {
 
     public static void pathFound(List<ObservationEvent.Reference> refs) {
         ExecutionEvents.observe(new ObservationEvent.PathFound(refs));
+    }
+
+    public static <T> void pathFound(
+            List<T> values,
+            ToIntFunction<? super T> row,
+            ToIntFunction<? super T> column) {
+        List<ObservationEvent.Reference> refs = values.stream()
+                .map(value -> (ObservationEvent.Reference) new ObservationEvent.CoordinateRef(
+                        row.applyAsInt(value), column.applyAsInt(value)))
+                .toList();
+        pathFound(refs);
     }
 }
