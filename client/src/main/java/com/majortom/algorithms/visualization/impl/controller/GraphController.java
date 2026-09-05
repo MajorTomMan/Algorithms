@@ -325,7 +325,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return algorithmInputSnapshot == null;
     }
 
-
     @Override
     protected void restoreAlgorithmState() {
         if (latestViewState() != null) {
@@ -337,10 +336,19 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         renderViewState(GraphViewState.initial(GraphBfs.snapshot(mutableGraph(selected))));
     }
 
-
     @Override
     public String describeStructureSnapshot(GraphSnapshot<Integer> state) {
         return I18N.text("snapshot.graph.detail", state.vertices().size(), state.edges().size());
+    }
+
+    @Override
+    public String structurePrimaryCount() {
+        return Integer.toString(graph.vertexCount());
+    }
+
+    @Override
+    public String structureSecondaryCount() {
+        return Integer.toString(graph.edgeCount());
     }
 
     @Override
@@ -456,7 +464,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         return result;
     }
-
 
     public void setSelectionListener(Consumer<Selection> listener) {
         selectionListener = listener == null ? ignored -> { } : listener;
