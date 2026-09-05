@@ -127,7 +127,7 @@
                 <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
-        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" maxWidth="Infinity">
+        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false" maxWidth="Infinity">
             <styleClass>
                 <String fx:value="btn-run-neon" />
                 <String fx:value="operation-button" />
