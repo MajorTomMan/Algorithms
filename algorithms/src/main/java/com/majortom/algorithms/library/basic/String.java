@@ -1,7 +1,6 @@
 package com.majortom.algorithms.library.basic;
 
-import com.majortom.algorithms.core.event.structure.StringStructureEvent;
-import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.library.structure.StringStructure;
 
 import java.util.Objects;
@@ -42,7 +41,7 @@ public final class String implements StringStructure {
             return previous;
         }
         characters[index] = value;
-        ExecutionEvents.emit(new StringStructureEvent.Updated(index, previous, value));
+        StructureEvents.stringUpdated(index, previous, value);
         return previous;
     }
 
@@ -58,7 +57,7 @@ public final class String implements StringStructure {
         System.arraycopy(characters, index, characters, index + text.length(), length - index);
         text.getChars(0, text.length(), characters, index);
         length += text.length();
-        ExecutionEvents.emit(new StringStructureEvent.Inserted(index, text));
+        StructureEvents.stringInserted(index, text);
     }
 
     @Override
@@ -73,7 +72,7 @@ public final class String implements StringStructure {
             System.arraycopy(characters, index + removeLength, characters, index, moved);
         }
         length -= removeLength;
-        ExecutionEvents.emit(new StringStructureEvent.Removed(index, removed));
+        StructureEvents.stringRemoved(index, removed);
         return removed;
     }
 
@@ -94,7 +93,7 @@ public final class String implements StringStructure {
         }
         replacement.getChars(0, replacement.length(), characters, index);
         length = newLength;
-        ExecutionEvents.emit(new StringStructureEvent.Replaced(index, previous, replacement));
+        StructureEvents.stringReplaced(index, previous, replacement);
         return previous;
     }
 
