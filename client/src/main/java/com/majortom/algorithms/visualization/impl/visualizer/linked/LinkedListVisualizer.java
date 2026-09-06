@@ -179,7 +179,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitIfPristine();
+                surface.fitWithMinimumScale(0.78d);
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }

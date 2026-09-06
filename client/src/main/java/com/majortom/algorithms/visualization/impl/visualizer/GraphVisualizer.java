@@ -514,7 +514,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     private static GraphViewState emptyState() {
-        return new GraphViewState(false, List.of(), List.of(), GraphViewState.Observation.none(), false);
+        return new GraphViewState(false, List.of(), List.of(), Set.of(), GraphViewState.Observation.none(), false);
     }
 
     private static double quantize(double value) {

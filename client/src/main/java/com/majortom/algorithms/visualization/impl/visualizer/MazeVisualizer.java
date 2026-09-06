@@ -23,6 +23,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     private static final Color GRID_STROKE_COMPACT = Color.web("#E5E5E5");
     private static final double DENSE_CELL_THRESHOLD = 8.0d;
     private static final double COMPACT_CELL_THRESHOLD = 14.0d;
+    private static final double MIN_AUTO_FIT_SCALE = 0.10d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private Consumer<GridPoint> selectionListener = ignored -> { };
@@ -55,7 +56,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         fillBackground();
         if (state.rows() < 1 || state.columns() < 1
                 || state.openCells().size() < state.rows() * state.columns()) {
-            surface.fitIfPristine();
+            surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
             return;
         }
 
@@ -75,7 +76,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         drawCurrent(state, cellWidth, cellHeight);
         drawRoles(state, cellWidth, cellHeight);
         drawSelection(state, cellWidth, cellHeight);
-        surface.fitIfPristine();
+        surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
     }
 
     private void fillBackground() {

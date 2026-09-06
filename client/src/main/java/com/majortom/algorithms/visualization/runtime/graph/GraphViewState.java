@@ -25,12 +25,6 @@ public record GraphViewState(
         observation = Objects.requireNonNull(observation, "observation");
     }
 
-    /** Compatibility constructor for source-only callers. */
-    public GraphViewState(boolean directed, List<Node> nodes, List<Edge> edges,
-            Observation observation, boolean completed) {
-        this(directed, nodes, edges, Set.of(), observation, completed);
-    }
-
     public static GraphViewState initial(GraphSnapshot<Integer> graph) {
         Objects.requireNonNull(graph, "graph");
         List<Node> nodes = graph.vertices().stream()

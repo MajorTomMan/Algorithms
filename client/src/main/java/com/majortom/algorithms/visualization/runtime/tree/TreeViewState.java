@@ -29,13 +29,8 @@ public record TreeViewState(
         visitedNodeIds = Set.copyOf(Objects.requireNonNull(visitedNodeIds, "visitedNodeIds"));
     }
 
-    /** Compatibility constructor for source/base states without runtime overlays. */
-    public TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, boolean completed) {
-        this(kind, rootId, nodes, Set.of(), Set.of(), Set.of(), completed);
-    }
-
     public static TreeViewState empty(Kind kind) {
-        return new TreeViewState(kind, null, Map.of(), false);
+        return new TreeViewState(kind, null, Map.of(), Set.of(), Set.of(), Set.of(), false);
     }
 
     public static TreeViewState general(GeneralTreeSnapshot<Integer> snapshot) {
@@ -45,7 +40,7 @@ public record TreeViewState(
         }
         Map<Long, Node> nodes = new LinkedHashMap<>();
         collectGeneral(snapshot.root(), nodes);
-        return new TreeViewState(Kind.GENERAL, snapshot.root().id(), nodes, false);
+        return new TreeViewState(Kind.GENERAL, snapshot.root().id(), nodes, Set.of(), Set.of(), Set.of(), false);
     }
 
     public static TreeViewState binary(AvlNodeSnapshot root) {
@@ -54,7 +49,7 @@ public record TreeViewState(
         }
         Map<Long, Node> nodes = new LinkedHashMap<>();
         collectBinary(root, nodes);
-        return new TreeViewState(Kind.BINARY, root.id(), nodes, false);
+        return new TreeViewState(Kind.BINARY, root.id(), nodes, Set.of(), Set.of(), Set.of(), false);
     }
 
     public List<Integer> values() {

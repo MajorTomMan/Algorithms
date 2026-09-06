@@ -12,11 +12,6 @@ public record ArrayViewState(List<Integer> values, Mutation mutation, Observatio
         observation = Objects.requireNonNull(observation, "observation");
     }
 
-    /** Compatibility constructor for Structure-only presentation states. */
-    public ArrayViewState(List<Integer> values, Mutation mutation, boolean completed) {
-        this(values, mutation, Observation.none(), completed);
-    }
-
     public static ArrayViewState source(List<Integer> values) {
         return new ArrayViewState(values, Mutation.none(), Observation.none(), false);
     }

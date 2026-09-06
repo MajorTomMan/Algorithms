@@ -147,13 +147,6 @@ public final class VisualizationSurface extends StackPane {
     }
 
     /**
-     * Legacy pristine fit used by families that have not adopted a family-specific auto-fit floor yet.
-     */
-    public void fitIfPristine() {
-        fitWithMinimumScale(MIN_ZOOM);
-    }
-
-    /**
      * Initial/automatic fit with a readability floor. This never marks the viewport as user-modified.
      * Explicit {@link #fit()} ignores this floor and can fit the complete world at any supported scale.
      */

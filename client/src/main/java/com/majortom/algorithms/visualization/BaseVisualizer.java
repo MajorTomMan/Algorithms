@@ -24,39 +24,6 @@ public abstract class BaseVisualizer<S> extends StackPane {
     public static final Color RAN_YELLOW = Color.web("#F5B400");
     public static final Color RAN_GRAY = Color.web("#444444");
 
-    /* Legacy semantic names remain as palette aliases for existing visualizers. */
-    public static final Color RAN_VIOLET =
-            RAN_BLUE.deriveColor(0.0d, 1.0d, 0.62d, 1.0d); // 终焉紫 -> 深蓝（交换/出口）
-
-    public static final Color RAN_STEEL = RAN_GRAY; // 钢印 -> 灰
-    public static final Color RAN_IRON = Color.rgb(60, 60, 70); // 生铁 -> 深灰
-    public static final Color RAN_ASH = Color.rgb(42, 42, 48); // 灰烬 -> 深灰
-    public static final Color RAN_SILVER = RAN_WHITE; // 冷银 -> 白
-    public static final Color RAN_BRONZE = RAN_YELLOW.deriveColor(0.0d, 0.55d, 0.82d, 1.0d); // 古铜 -> 黄
-    public static final Color RAN_SLATE = RAN_GRAY; // 岩板 -> 灰
-
-    public static final Color RAN_DARK_RED = RAN_RED.deriveColor(0.0d, 1.0d, 0.45d, 1.0d); // 枯红
-    public static final Color RAN_DARK_BLUE = RAN_BLUE.deriveColor(0.0d, 1.0d, 0.45d, 1.0d); // 墨蓝
-    public static final Color RAN_DARK_GOLD = RAN_YELLOW.deriveColor(0.0d, 1.0d, 0.55d, 1.0d); // 暗金
-    public static final Color RAN_BURNED = RAN_BLACK; // 焦灼 -> 黑
-    public static final Color RAN_DEEP_VINE = RAN_BLACK; // 暗紫 -> 黑
-    public static final Color RAN_VOID = RAN_BLACK; // 虚无 (绝对禁区)
-
-    public static final Color RAN_GOLD = RAN_YELLOW.deriveColor(0.0d, 0.42d, 1.0d, 1.0d); // 描金 -> 黄
-    public static final Color RAN_CYAN = RAN_BLUE; // 荧蓝 -> 蓝
-    public static final Color RAN_BLOOD_VIVID = RAN_RED; // 鲜红 -> 红
-    public static final Color RAN_EMERALD = RAN_WHITE; // 翠绿 -> 白（排序完成）
-    public static final Color RAN_AMBER = RAN_YELLOW; // 琥珀 -> 黄
-    public static final Color RAN_GHOST_WHITE = RAN_WHITE.deriveColor(0.0d, 1.0d, 1.0d, 0.4d); // 幽灵白
-
-    public static final Color RAN_ENEMY_GREEN = RAN_GRAY; // 诡绿 -> 灰
-    public static final Color RAN_ENEMY_RUST = RAN_RED; // 铁锈红 -> 红
-    public static final Color RAN_ENEMY_SHADOW = RAN_BLACK; // 极暗紫 -> 黑
-    public static final Color RAN_LIME_VIVID = RAN_YELLOW; // 毒弩绿 -> 黄
-    public static final Color RAN_WALL_STONE = RAN_IRON; // 坚石 -> 深灰
-    public static final Color RAN_WALL_MOSS = RAN_ASH; // 苔藓 -> 深灰
-    public static final Color RAN_WALL_OBSIDIAN = RAN_BLACK; // 黑曜石
-    public static final Color RAN_WALL_CRACKED = RAN_GRAY; // 皲裂 -> 灰
     protected final Canvas canvas;
     protected final GraphicsContext gc;
 
@@ -154,7 +121,7 @@ public abstract class BaseVisualizer<S> extends StackPane {
     protected Color getContrastStrokeColor(Color background) {
         if (background.equals(RAN_WHITE))
             return RAN_BLACK;
-        if (background.equals(RAN_VIOLET))
+        if (background.equals(RAN_BLUE))
             return RAN_WHITE.deriveColor(0, 0.5, 1, 0.8);
         // 对于红、蓝、黄，返回极深色以模拟“刻痕”感
         return Color.rgb(10, 0, 0, 0.85);

@@ -368,6 +368,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 path,
                 state.visited(),
                 state.active(),
+                state.observed(),
                 state.backtracked(),
                 state.entrance(),
                 state.exit(),

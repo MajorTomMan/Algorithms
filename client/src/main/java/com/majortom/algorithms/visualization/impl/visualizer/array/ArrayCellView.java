@@ -116,10 +116,6 @@ public final class ArrayCellView extends StackPane {
         pseudoClassStateChanged(COMPLETED, completed);
     }
 
-    /** Compatibility alias for existing reducers that expose one highlighted mutation index. */
-    public void setHighlighted(boolean highlighted) {
-        setObserved(highlighted);
-    }
 
     public void setDensity(VisualDensity density, boolean importantIndex) {
         this.density = Objects.requireNonNull(density, "density");

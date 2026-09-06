@@ -139,7 +139,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     /** Projects the latest factual Array StructureEvent into the Structure presentation state. */
     private void renderLatestStructureMutation() {
         ArrayViewState.Mutation mutation = latestArrayMutation();
-        renderStructureState(new ArrayViewState(sourceValues(), mutation, false));
+        renderStructureState(new ArrayViewState(sourceValues(), mutation, ArrayViewState.Observation.none(), false));
     }
 
     private ArrayViewState.Mutation latestArrayMutation() {

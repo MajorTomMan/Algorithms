@@ -300,7 +300,7 @@ public final class StringController extends BaseModuleController<StringViewState
     /** Projects the latest factual String StructureEvent into Structure presentation state. */
     private void renderLatestStructureMutation() {
         renderStructureState(new StringViewState(source.value(), latestStringMutation(),
-                StringViewState.Observation.none(), false));
+                StringViewState.Observation.none(), 0, false));
         if (valueField != null && !valueField.isFocused()) valueField.setText(source.value());
         refreshStatsDisplay();
     }

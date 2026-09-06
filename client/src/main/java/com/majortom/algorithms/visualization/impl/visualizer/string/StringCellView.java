@@ -114,10 +114,6 @@ public final class StringCellView extends StackPane {
         pseudoClassStateChanged(COMPLETED, completed);
     }
 
-    /** Compatibility alias retained for presentation callers using the old one-highlight API. */
-    public void setHighlighted(boolean highlighted) {
-        setObserved(highlighted);
-    }
 
     public void setDensity(VisualDensity density, boolean importantIndex) {
         this.density = Objects.requireNonNull(density, "density");

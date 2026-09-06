@@ -31,23 +31,6 @@ public record MazeViewState(
         graphEdges = List.copyOf(graphEdges);
     }
 
-    /** Compatibility constructor for callers that predate the transient observed candidate. */
-    public MazeViewState(
-            int rows,
-            int columns,
-            List<Boolean> openCells,
-            Set<GridPoint> path,
-            Set<GridPoint> visited,
-            GridPoint active,
-            GridPoint backtracked,
-            GridPoint entrance,
-            GridPoint exit,
-            List<MazeSnapshot.Edge> graphEdges,
-            boolean graphBased,
-            boolean completed) {
-        this(rows, columns, openCells, path, visited, active, null, backtracked,
-                entrance, exit, graphEdges, graphBased, completed);
-    }
 
     public static MazeViewState empty(int rows, int columns, boolean graphBased) {
         return new MazeViewState(
