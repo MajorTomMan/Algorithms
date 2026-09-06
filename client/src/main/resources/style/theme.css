@@ -2936,3 +2936,265 @@
 .kmp-pattern-dense .kmp-pattern-value {
     -fx-font-size: 12px;
 }
+
+/* ========================================================================== */
+/* Workbench responsive density — notebook / HiDPI closure                    */
+/* AtlantaFX SMALL/DENSE is toggled by MainController; these rules only own   */
+/* project shell geometry and keep the VisualizationSurface as the priority.  */
+/* ========================================================================== */
+
+.root-pane:compact-layout .lab-top-bar {
+    -fx-padding: 0 12px;
+}
+.root-pane:compact-layout .brand-zone {
+    -fx-spacing: 9px;
+}
+.root-pane:compact-layout .brand-title-main {
+    -fx-font-size: 20px;
+}
+.root-pane:compact-layout .brand-subtitle {
+    -fx-font-size: 9px;
+}
+.root-pane:compact-layout .lab-mode-switch .workspace-mode-button {
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-padding: 0 14px;
+    -fx-font-size: 13px;
+}
+.root-pane:compact-layout .top-context-zone {
+    -fx-spacing: 10px;
+    -fx-padding: 0;
+}
+.root-pane:compact-layout .top-context-title {
+    -fx-font-size: 12px;
+}
+.root-pane:compact-layout .run-state-badge {
+    -fx-padding: 6px 10px;
+    -fx-font-size: 11px;
+}
+.root-pane:compact-layout .family-rail-button {
+    -fx-min-width: 104px;
+    -fx-pref-width: 104px;
+    -fx-max-width: 104px;
+    -fx-min-height: 60px;
+    -fx-pref-height: 60px;
+    -fx-padding: 0 10px;
+    -fx-font-size: 11px;
+}
+.root-pane:compact-layout .structure-control-panel,
+.root-pane:compact-layout .algorithm-control-panel {
+    -fx-padding: 0 10px 9px 12px;
+}
+.root-pane:compact-layout .panel-topline {
+    -fx-min-height: 40px;
+}
+.root-pane:compact-layout .structure-identity-block {
+    -fx-padding: 9px 2px 8px 2px;
+}
+.root-pane:compact-layout .structure-identity-title {
+    -fx-font-size: 16px;
+}
+.root-pane:compact-layout .input-source-block {
+    -fx-padding: 8px 0;
+}
+.root-pane:compact-layout .structure-control-panel .control-section,
+.root-pane:compact-layout .structure-control-panel .control-card,
+.root-pane:compact-layout .algorithm-control-panel .control-section,
+.root-pane:compact-layout .algorithm-control-panel .control-card,
+.root-pane:compact-layout .structure-control-panel .structure-section,
+.root-pane:compact-layout .algorithm-control-panel .algorithm-section,
+.root-pane:compact-layout .algorithm-control-panel .execution-section {
+    -fx-padding: 7px 0 8px 0;
+}
+.root-pane:compact-layout .primary-red-button {
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+}
+.root-pane:compact-layout .summary-strip {
+    -fx-padding: 6px 2px;
+}
+.root-pane:compact-layout .summary-number,
+.root-pane:compact-layout .summary-number-red,
+.root-pane:compact-layout .summary-number-blue {
+    -fx-font-size: 18px;
+}
+.root-pane:compact-layout .inspector-tabs {
+    -fx-tab-min-height: 34px;
+}
+.root-pane:compact-layout .inspector-content,
+.root-pane:compact-layout .snapshot-tab-content {
+    -fx-padding: 10px 9px;
+}
+.root-pane:compact-layout .inspector-section {
+    -fx-padding: 0 0 12px 0;
+}
+.root-pane:compact-layout .history-header {
+    -fx-padding: 7px 16px 5px 16px;
+}
+.root-pane:compact-layout .history-cards {
+    -fx-padding: 5px 20px 8px 20px;
+    -fx-spacing: 18px;
+}
+.root-pane:compact-layout .history-cards .snapshot-card {
+    -fx-min-width: 180px;
+    -fx-pref-width: 180px;
+}
+.root-pane:compact-layout .timeline-compact-row {
+    -fx-padding: 7px 12px;
+    -fx-spacing: 5px;
+    -fx-min-height: 52px;
+    -fx-pref-height: 52px;
+}
+.root-pane:compact-layout .timeline-compact-track {
+    -fx-min-width: 90px;
+    -fx-padding: 0 4px;
+}
+.root-pane:compact-layout .timeline-position-compact {
+    -fx-min-width: 64px;
+}
+
+.root-pane:narrow-layout .lab-top-bar {
+    -fx-padding: 0 8px;
+}
+.root-pane:narrow-layout .brand-zone {
+    -fx-spacing: 6px;
+}
+.root-pane:narrow-layout .brand-title-main {
+    -fx-font-size: 17px;
+}
+.root-pane:narrow-layout .lab-mode-switch .workspace-mode-button {
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-padding: 0 8px;
+    -fx-font-size: 11px;
+}
+.root-pane:narrow-layout .top-context-zone {
+    -fx-spacing: 6px;
+    -fx-padding: 0;
+}
+.root-pane:narrow-layout .run-state-badge {
+    -fx-padding: 5px 8px;
+    -fx-font-size: 10px;
+}
+.root-pane:narrow-layout .family-rail-button {
+    -fx-min-width: 84px;
+    -fx-pref-width: 84px;
+    -fx-max-width: 84px;
+    -fx-min-height: 52px;
+    -fx-pref-height: 52px;
+    -fx-padding: 0 7px;
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .structure-control-panel,
+.root-pane:narrow-layout .algorithm-control-panel {
+    -fx-padding: 0 8px 7px 9px;
+}
+.root-pane:narrow-layout .panel-topline {
+    -fx-min-height: 36px;
+}
+.root-pane:narrow-layout .structure-identity-block {
+    -fx-padding: 7px 1px 6px 1px;
+}
+.root-pane:narrow-layout .structure-identity-title {
+    -fx-font-size: 14px;
+}
+.root-pane:narrow-layout .structure-identity-meta,
+.root-pane:narrow-layout .live-label,
+.root-pane:narrow-layout .panel-section-title,
+.root-pane:narrow-layout .inspector-heading {
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .input-source-block {
+    -fx-padding: 6px 0;
+    -fx-spacing: 5px;
+}
+.root-pane:narrow-layout .algorithm-input-source-card {
+    -fx-padding: 7px 8px;
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .structure-control-panel .control-section,
+.root-pane:narrow-layout .structure-control-panel .control-card,
+.root-pane:narrow-layout .algorithm-control-panel .control-section,
+.root-pane:narrow-layout .algorithm-control-panel .control-card,
+.root-pane:narrow-layout .structure-control-panel .structure-section,
+.root-pane:narrow-layout .algorithm-control-panel .algorithm-section,
+.root-pane:narrow-layout .algorithm-control-panel .execution-section {
+    -fx-padding: 6px 0 7px 0;
+}
+.root-pane:narrow-layout .primary-red-button {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-font-size: 10px;
+}
+.root-pane:narrow-layout .summary-strip {
+    -fx-padding: 5px 1px;
+}
+.root-pane:narrow-layout .summary-caption {
+    -fx-font-size: 8px;
+}
+.root-pane:narrow-layout .summary-number,
+.root-pane:narrow-layout .summary-number-red,
+.root-pane:narrow-layout .summary-number-blue {
+    -fx-font-size: 15px;
+}
+.root-pane:narrow-layout .inspector-tabs {
+    -fx-tab-min-height: 30px;
+}
+.root-pane:narrow-layout .inspector-tabs .tab {
+    -fx-padding: 0 7px;
+}
+.root-pane:narrow-layout .inspector-tabs .tab .tab-label {
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .inspector-content,
+.root-pane:narrow-layout .snapshot-tab-content {
+    -fx-padding: 8px 6px;
+}
+.root-pane:narrow-layout .viewport-toolbar {
+    -fx-translate-x: -5px;
+    -fx-translate-y: -5px;
+}
+.root-pane:narrow-layout .viewport-toolbar-button {
+    -fx-min-width: 28px;
+    -fx-min-height: 28px;
+    -fx-padding: 0 4px;
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .viewport-zoom-label {
+    -fx-min-width: 36px;
+    -fx-padding: 0 3px;
+    -fx-font-size: 9px;
+}
+.root-pane:narrow-layout .timeline-compact-row {
+    -fx-padding: 5px 7px;
+    -fx-spacing: 3px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+}
+.root-pane:narrow-layout .timeline-compact-row .playback-button {
+    -fx-min-width: 48px;
+    -fx-padding: 0 5px;
+}
+.root-pane:narrow-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 30px;
+    -fx-pref-width: 30px;
+}
+.root-pane:narrow-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+}
+.root-pane:narrow-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 25px;
+    -fx-pref-width: 25px;
+}
+.root-pane:narrow-layout .timeline-compact-track {
+    -fx-min-width: 64px;
+    -fx-padding: 0 2px;
+}
+.root-pane:narrow-layout .timeline-position-compact {
+    -fx-min-width: 48px;
+    -fx-font-size: 8px;
+}
+.root-pane:narrow-layout .speed-label {
+    -fx-font-size: 8px;
+}

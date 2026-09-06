@@ -57,6 +57,7 @@ public final class VisualizationSurface extends StackPane {
     private boolean fitQueued;
     private double queuedMinimumAutoScale = MIN_ZOOM;
     private boolean queuedInitialFit;
+    private boolean resizeFitQueued;
 
     public VisualizationSurface() {
         getStyleClass().add("visualization-surface");
@@ -68,6 +69,8 @@ public final class VisualizationSurface extends StackPane {
         getChildren().setAll(gesturePane, viewportToolbar);
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
         viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        widthProperty().addListener((observable, oldValue, newValue) -> requestAutoFitAfterResize());
+        heightProperty().addListener((observable, oldValue, newValue) -> requestAutoFitAfterResize());
     }
 
     public Group edgeLayer() {
@@ -176,6 +179,20 @@ public final class VisualizationSurface extends StackPane {
 
     public void markViewportPristine() {
         userViewportChanged = false;
+    }
+
+
+    private void requestAutoFitAfterResize() {
+        if (userViewportChanged || resizeFitQueued) {
+            return;
+        }
+        resizeFitQueued = true;
+        Platform.runLater(() -> {
+            resizeFitQueued = false;
+            if (!userViewportChanged) {
+                requestFit(true, autoFitMinimumScale);
+            }
+        });
     }
 
     private void configureGesturePane() {

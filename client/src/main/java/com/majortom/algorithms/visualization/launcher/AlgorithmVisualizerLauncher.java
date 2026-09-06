@@ -44,8 +44,8 @@ public class AlgorithmVisualizerLauncher extends Application {
             // 3. 配置窗口属性
             primaryStage.setTitle("Algorithms");
             primaryStage.setScene(scene);
-            primaryStage.setMinWidth(ResponsiveStageScaler.MIN_WIDTH);
-            primaryStage.setMinHeight(ResponsiveStageScaler.MIN_HEIGHT);
+            primaryStage.setMinWidth(ResponsiveStageScaler.stageMinWidth());
+            primaryStage.setMinHeight(ResponsiveStageScaler.stageMinHeight());
 
             // 4. 优雅退出：确保程序关闭时停止所有后台算法线程
             primaryStage.setOnCloseRequest(event -> System.exit(0));

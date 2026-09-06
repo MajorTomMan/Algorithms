@@ -23,16 +23,21 @@ import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import atlantafx.base.theme.Styles;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -71,8 +76,10 @@ public class MainController implements Initializable {
     private static final PseudoClass NARROW_LAYOUT = PseudoClass.getPseudoClass("narrow-layout");
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
-    private static final double COMPACT_LAYOUT_WIDTH = 1180.0d;
-    private static final double NARROW_LAYOUT_WIDTH = 980.0d;
+    private static final double COMPACT_LAYOUT_WIDTH = 1500.0d;
+    private static final double COMPACT_LAYOUT_HEIGHT = 820.0d;
+    private static final double NARROW_LAYOUT_WIDTH = 1120.0d;
+    private static final double NARROW_LAYOUT_HEIGHT = 680.0d;
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
@@ -92,7 +99,13 @@ public class MainController implements Initializable {
     @FXML
     private HBox topBar;
     @FXML
+    private HBox brandZone;
+    @FXML
+    private Label brandSubtitle;
+    @FXML
     private HBox workspaceModeBox;
+    @FXML
+    private HBox topContextZone;
     @FXML
     private VBox structureNavigationBox;
     @FXML
@@ -128,6 +141,10 @@ public class MainController implements Initializable {
     @FXML
     private HBox algorithmWorkspaceBody;
     @FXML
+    private VBox structureFamilyRail;
+    @FXML
+    private VBox algorithmFamilyRail;
+    @FXML
     private VBox structureControlsHost;
     @FXML
     private VBox algorithmControlsHost;
@@ -147,6 +164,8 @@ public class MainController implements Initializable {
     private Label structureHistoryCountLabel;
     @FXML
     private HBox structureHistoryCards;
+    @FXML
+    private VBox structureHistoryDock;
     @FXML
     private VBox structureSelectionOverlay;
     @FXML
@@ -471,7 +490,7 @@ public class MainController implements Initializable {
         uiFontScale = scale;
         double fontSize = BASE_UI_FONT_SIZE * scale / 100.0d;
         rootPane.setStyle(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", fontSize));
-        updateResponsiveLayout(rootPane.getWidth());
+        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
         rootPane.requestLayout();
         if (persist) {
             UI_PREFERENCES.putInt(UI_FONT_SCALE_PREFERENCE, scale);
@@ -1040,27 +1059,113 @@ public class MainController implements Initializable {
             return;
         }
         rootPane.widthProperty().addListener((observable, oldValue, newValue) ->
-                updateResponsiveLayout(newValue.doubleValue()));
-        updateResponsiveLayout(rootPane.getWidth());
+                updateResponsiveLayout(newValue.doubleValue(), rootPane.getHeight()));
+        rootPane.heightProperty().addListener((observable, oldValue, newValue) ->
+                updateResponsiveLayout(rootPane.getWidth(), newValue.doubleValue()));
+        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
     }
 
-    private void updateResponsiveLayout(double width) {
+    private void updateResponsiveLayout(double width, double height) {
         if (rootPane == null) {
             return;
         }
-        boolean nextCompactLayout = width > 0.0d && width < COMPACT_LAYOUT_WIDTH;
-        boolean nextNarrowLayout = width > 0.0d && width < NARROW_LAYOUT_WIDTH;
+        boolean hasWidth = width > 0.0d;
+        boolean hasHeight = height > 0.0d;
+        boolean nextCompactLayout = (hasWidth && width < COMPACT_LAYOUT_WIDTH)
+                || (hasHeight && height < COMPACT_LAYOUT_HEIGHT);
+        boolean nextNarrowLayout = (hasWidth && width < NARROW_LAYOUT_WIDTH)
+                || (hasHeight && height < NARROW_LAYOUT_HEIGHT);
+
         rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, nextCompactLayout);
         rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
+
+        double familyWidth = nextNarrowLayout ? 84.0d : nextCompactLayout ? 104.0d : 142.0d;
+        double controlWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 250.0d : 320.0d;
+        double inspectorWidth = nextNarrowLayout ? 196.0d : nextCompactLayout ? 260.0d : 360.0d;
+        double topBarHeight = nextNarrowLayout ? 52.0d : nextCompactLayout ? 56.0d : 72.0d;
+        double brandWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 300.0d : 430.0d;
+        double modeWidth = nextNarrowLayout ? 250.0d : nextCompactLayout ? 300.0d : 420.0d;
+        double contextWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 320.0d : 500.0d;
+
+        setFixedWidth(structureFamilyRail, familyWidth);
+        setFixedWidth(algorithmFamilyRail, familyWidth);
+        setFixedWidth(structureControlRail, controlWidth);
+        setFixedWidth(algorithmControlRail, controlWidth);
+        setFixedWidth(snapshotPanel, inspectorWidth);
+        setFixedWidth(diagnosticsPanel, inspectorWidth);
+        setFixedWidth(brandZone, brandWidth);
+        setFixedWidth(workspaceModeBox, modeWidth);
+        setFixedWidth(topContextZone, contextWidth);
+        setFixedHeight(topBar, topBarHeight);
+
         snapshotPanel.setManaged(true);
         snapshotPanel.setVisible(true);
-        double sidePanelWidth = nextNarrowLayout ? 300.0d : nextCompactLayout ? 330.0d : 360.0d;
-        snapshotPanel.setPrefWidth(sidePanelWidth);
-        diagnosticsPanel.setPrefWidth(sidePanelWidth);
-        double controlWidth = nextNarrowLayout ? 270.0d : nextCompactLayout ? 300.0d : 320.0d;
-        structureControlRail.setPrefWidth(controlWidth);
-        algorithmControlRail.setPrefWidth(controlWidth);
+        setPageVisibility(diagnosticsPanel, !nextNarrowLayout);
+        setPageVisibility(structureHistoryDock, !nextNarrowLayout);
+        if (!nextNarrowLayout) {
+            double historyHeight = nextCompactLayout ? 104.0d : 150.0d;
+            structureHistoryDock.setMinHeight(historyHeight);
+            structureHistoryDock.setPrefHeight(historyHeight);
+            structureHistoryDock.setMaxHeight(nextCompactLayout ? 124.0d : 180.0d);
+        }
+
+        setControlVisibility(brandSubtitle, !nextNarrowLayout);
+        setControlVisibility(topContextLabel, !nextNarrowLayout);
+        setControlVisibility(runIdLabel, !nextCompactLayout);
         setControlVisibility(langBtn, false);
+        applyResponsiveControlDensity(nextCompactLayout);
+    }
+
+    private static void setFixedWidth(Region region, double width) {
+        if (region == null) {
+            return;
+        }
+        region.setMinWidth(width);
+        region.setPrefWidth(width);
+        region.setMaxWidth(width);
+    }
+
+    private static void setFixedHeight(Region region, double height) {
+        if (region == null) {
+            return;
+        }
+        region.setMinHeight(height);
+        region.setPrefHeight(height);
+        region.setMaxHeight(height);
+    }
+
+    private void applyResponsiveControlDensity(boolean compact) {
+        applyResponsiveControlDensity(rootPane, compact);
+    }
+
+    private void applyResponsiveControlDensity(Node node, boolean compact) {
+        if (node == null) {
+            return;
+        }
+        if (node instanceof TabPane) {
+            setStyleClass(node, Styles.DENSE, compact);
+        } else if (node instanceof Button
+                || node instanceof ComboBoxBase<?>
+                || node instanceof TextInputControl
+                || node instanceof Spinner<?>
+                || node instanceof Slider) {
+            setStyleClass(node, Styles.SMALL, compact);
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                applyResponsiveControlDensity(child, compact);
+            }
+        }
+    }
+
+    private static void setStyleClass(Node node, String styleClass, boolean enabled) {
+        if (enabled) {
+            if (!node.getStyleClass().contains(styleClass)) {
+                node.getStyleClass().add(styleClass);
+            }
+        } else {
+            node.getStyleClass().remove(styleClass);
+        }
     }
 
     private void setPageVisibility(VBox page, boolean visible) {
@@ -1210,6 +1315,7 @@ public class MainController implements Initializable {
         refreshTopContext();
         refreshExecutionPresentation();
         updateWorkspaceInteractionState();
+        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
     }
 
     private void detachCurrentController() {
