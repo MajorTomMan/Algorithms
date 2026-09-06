@@ -18,31 +18,36 @@ import org.eclipse.elk.graph.ElkEdgeSection;
 import org.eclipse.elk.graph.ElkNode;
 import org.eclipse.elk.graph.util.ElkGraphUtil;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Graph-specific presentation layout: compact undirected graphs use deterministic radial geometry; directed/large graphs use transient ELK Layered. */
+/**
+ * Graph-specific layout selector. Directed acyclic graphs use ELK's layered/Sugiyama geometry;
+ * every other graph uses deterministic force-directed topology geometry so cycles and branching
+ * remain visible without inventing tree semantics.
+ */
 public final class GraphElkLayout {
     private static final double PADDING = 42.0d;
     private static final double NODE_SPACING = 42.0d;
     private static final double LAYER_SPACING = 64.0d;
     private static final double COMPONENT_SPACING = 72.0d;
-    private static final int RADIAL_LAYOUT_MAX_NODES = 18;
-    private static final double RADIAL_MIN_RADIUS = 120.0d;
     private static final int RANDOM_SEED = 1;
+    private final GraphTopologyLayout topologyLayout = new GraphTopologyLayout();
 
     public LayoutResult layout(LayoutRequest request) {
         Objects.requireNonNull(request, "request");
-        if (request.nodes().isEmpty()) {
-            return new LayoutResult(Map.of(), Map.of());
-        }
-        if (!request.directed() && request.nodes().size() <= RADIAL_LAYOUT_MAX_NODES) {
-            return radialLayout(request.nodes());
-        }
+        if (request.nodes().isEmpty()) return new LayoutResult(Map.of(), Map.of());
+        return request.directed() && isDirectedAcyclic(request)
+                ? layeredLayout(request)
+                : topologyLayout.layout(request);
+    }
 
+    private LayoutResult layeredLayout(LayoutRequest request) {
         ElkNode graph = ElkGraphUtil.createGraph();
         graph.setProperty(CoreOptions.ALGORITHM, LayeredOptions.ALGORITHM_ID);
         graph.setProperty(CoreOptions.DIRECTION, Direction.RIGHT);
@@ -61,28 +66,21 @@ public final class GraphElkLayout {
             node.setDimensions(nodeSize.width(), nodeSize.height());
             elkNodes.put(nodeSize.id(), node);
         }
-
         for (Link link : request.links()) {
             ElkNode source = elkNodes.get(link.sourceId());
             ElkNode target = elkNodes.get(link.targetId());
-            if (source == null || target == null) {
-                continue;
-            }
+            if (source == null || target == null) continue;
             ElkEdge edge = ElkGraphUtil.createSimpleEdge(source, target);
             edge.setIdentifier(link.id());
         }
 
         new RecursiveGraphLayoutEngine().layout(graph, new BasicProgressMonitor());
-
         Map<String, ElementBounds> elements = new LinkedHashMap<>();
         elkNodes.forEach((id, node) -> elements.put(nodeId(id),
                 new ElementBounds(nodeId(id), node.getX(), node.getY(), node.getWidth(), node.getHeight())));
-
         Map<String, EdgeRoute> edges = new LinkedHashMap<>();
         for (ElkEdge edge : graph.getContainedEdges()) {
-            if (edge.getIdentifier() == null || edge.getSections().isEmpty()) {
-                continue;
-            }
+            if (edge.getIdentifier() == null || edge.getSections().isEmpty()) continue;
             ElkEdgeSection section = edge.getSections().getFirst();
             List<Point2D> points = new ArrayList<>();
             points.add(new Point2D(section.getStartX(), section.getStartY()));
@@ -95,31 +93,32 @@ public final class GraphElkLayout {
         return new LayoutResult(elements, edges);
     }
 
-    private LayoutResult radialLayout(List<NodeSize> nodes) {
-        int count = nodes.size();
-        if (count == 1) {
-            NodeSize node = nodes.getFirst();
-            return new LayoutResult(Map.of(nodeId(node.id()),
-                    new ElementBounds(nodeId(node.id()), PADDING, PADDING, node.width(), node.height())), Map.of());
+    private boolean isDirectedAcyclic(LayoutRequest request) {
+        Map<Long, Integer> indegree = new LinkedHashMap<>();
+        Map<Long, List<Long>> outgoing = new LinkedHashMap<>();
+        request.nodes().stream().sorted(Comparator.comparingLong(NodeSize::id)).forEach(node -> {
+            indegree.put(node.id(), 0);
+            outgoing.put(node.id(), new ArrayList<>());
+        });
+        for (Link link : request.links()) {
+            if (!indegree.containsKey(link.sourceId()) || !indegree.containsKey(link.targetId())) continue;
+            if (link.sourceId() == link.targetId()) return false;
+            outgoing.get(link.sourceId()).add(link.targetId());
+            indegree.compute(link.targetId(), (ignored, current) -> current + 1);
         }
-
-        double maxDiameter = nodes.stream()
-                .mapToDouble(node -> Math.max(node.width(), node.height()))
-                .max().orElse(48.0d);
-        double requiredRadius = count * (maxDiameter + NODE_SPACING) / (2.0d * Math.PI);
-        double radius = Math.max(RADIAL_MIN_RADIUS, requiredRadius);
-        double center = PADDING + radius + maxDiameter / 2.0d;
-        Map<String, ElementBounds> elements = new LinkedHashMap<>();
-        for (int index = 0; index < count; index++) {
-            NodeSize node = nodes.get(index);
-            double angle = -Math.PI / 2.0d + index * (2.0d * Math.PI / count);
-            double centerX = center + Math.cos(angle) * radius;
-            double centerY = center + Math.sin(angle) * radius;
-            elements.put(nodeId(node.id()), new ElementBounds(
-                    nodeId(node.id()), centerX - node.width() / 2.0d, centerY - node.height() / 2.0d,
-                    node.width(), node.height()));
+        ArrayDeque<Long> ready = new ArrayDeque<>();
+        indegree.entrySet().stream().filter(entry -> entry.getValue() == 0)
+                .map(Map.Entry::getKey).sorted().forEach(ready::addLast);
+        int visited = 0;
+        while (!ready.isEmpty()) {
+            long current = ready.removeFirst();
+            visited++;
+            outgoing.get(current).stream().sorted().forEach(target -> {
+                int next = indegree.compute(target, (ignored, value) -> value - 1);
+                if (next == 0) ready.addLast(target);
+            });
         }
-        return new LayoutResult(elements, Map.of());
+        return visited == indegree.size();
     }
 
     public record LayoutRequest(boolean directed, List<NodeSize> nodes, List<Link> links) {
@@ -127,34 +126,29 @@ public final class GraphElkLayout {
             nodes = List.copyOf(Objects.requireNonNull(nodes, "nodes"));
             links = List.copyOf(Objects.requireNonNull(links, "links"));
         }
-
-        public static LayoutRequest empty() {
-            return new LayoutRequest(false, List.of(), List.of());
-        }
+        public static LayoutRequest empty() { return new LayoutRequest(false, List.of(), List.of()); }
     }
 
     public record NodeSize(long id, double width, double height) {
         public NodeSize {
-            if (id <= 0) {
-                throw new IllegalArgumentException("node id must be positive");
-            }
+            if (id <= 0) throw new IllegalArgumentException("node id must be positive");
             if (!(width > 0.0d) || !(height > 0.0d)) {
                 throw new IllegalArgumentException("node size must be positive: " + id);
             }
         }
     }
 
-    public record Link(String id, long edgeId, long sourceId, long targetId) {
+    /** label is presentation-only and reserved for future weights/edge metadata. */
+    public record Link(String id, long edgeId, long sourceId, long targetId, String label) {
+        public Link(String id, long edgeId, long sourceId, long targetId) {
+            this(id, edgeId, sourceId, targetId, null);
+        }
         public Link {
             Objects.requireNonNull(id, "id");
+            label = label == null || label.isBlank() ? null : label;
         }
     }
 
-    public static String nodeId(long id) {
-        return "graph:node:" + id;
-    }
-
-    public static String edgeId(long id) {
-        return "graph:edge:" + id;
-    }
+    public static String nodeId(long id) { return "graph:node:" + id; }
+    public static String edgeId(long id) { return "graph:edge:" + id; }
 }

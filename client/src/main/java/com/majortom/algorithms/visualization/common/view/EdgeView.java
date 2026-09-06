@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
+import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.CubicCurveTo;
 import javafx.scene.shape.LineTo;
@@ -17,16 +18,18 @@ import javafx.scene.shape.QuadCurveTo;
 import java.util.List;
 import java.util.Objects;
 
-/** Edge primitive with boundary attachment, straight/curved/self-loop paths and optional arrow. */
+/** Edge primitive with boundary attachment, routes, arrows and an optional presentation label slot. */
 public final class EdgeView extends Group {
     private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+    private static final double LABEL_NORMAL_OFFSET = 14.0d;
 
     private final NodeView source;
     private final NodeView target;
     private final Path hitPath = new Path();
     private final Path path = new Path();
     private final Polygon arrow = new Polygon();
+    private final Label label = new Label();
     private final BooleanProperty directed = new SimpleBooleanProperty();
     private final BooleanProperty curved = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
@@ -48,9 +51,13 @@ public final class EdgeView extends Group {
         path.setStrokeWidth(2.0d);
         arrow.getStyleClass().add("visual-edge-arrow");
         arrow.fillProperty().bind(path.strokeProperty());
+        label.getStyleClass().add("visual-edge-label");
+        label.setManaged(false);
+        label.setVisible(false);
+        label.setMouseTransparent(true);
         path.setMouseTransparent(true);
         arrow.setMouseTransparent(true);
-        getChildren().addAll(hitPath, path, arrow);
+        getChildren().addAll(hitPath, path, arrow, label);
         setMouseTransparent(false);
 
         source.centerXProperty().addListener(geometryListener);
@@ -61,6 +68,7 @@ public final class EdgeView extends Group {
         target.geometryProperty().addListener(geometryListener);
         this.directed.addListener(geometryListener);
         curved.addListener(geometryListener);
+        label.layoutBoundsProperty().addListener(geometryListener);
         highlighted.addListener((observable, previous, current) -> {
             pseudoClassStateChanged(HIGHLIGHTED, current);
             path.setStrokeWidth(current ? 3.5d : 2.0d);
@@ -134,6 +142,23 @@ public final class EdgeView extends Group {
         return path;
     }
 
+    /** Optional presentation label reserved for edge metadata such as a future graph weight. */
+    public void setLabelText(String text) {
+        String normalized = text == null || text.isBlank() ? null : text;
+        label.setText(normalized == null ? "" : normalized);
+        label.setManaged(normalized != null);
+        label.setVisible(normalized != null);
+        updateGeometry();
+    }
+
+    public String labelText() {
+        return label.isVisible() ? label.getText() : null;
+    }
+
+    public Label labelNode() {
+        return label;
+    }
+
     /** Applies presentation-only route geometry, typically produced by ELK. */
     public void setRoute(List<Point2D> points) {
         route = List.copyOf(Objects.requireNonNull(points, "points"));
@@ -167,6 +192,7 @@ public final class EdgeView extends Group {
         }
         if (sourceCenter.equals(targetCenter)) {
             arrow.setVisible(false);
+            positionLabel(sourceCenter, new Point2D(1.0d, 0.0d), LABEL_NORMAL_OFFSET);
             syncHitPath();
             return;
         }
@@ -176,6 +202,7 @@ public final class EdgeView extends Group {
         path.getElements().add(new MoveTo(start.getX(), start.getY()));
 
         Point2D tangent;
+        Point2D labelAnchor;
         if (isCurved()) {
             Point2D delta = end.subtract(start);
             Point2D normal = new Point2D(-delta.getY(), delta.getX()).normalize();
@@ -183,11 +210,14 @@ public final class EdgeView extends Group {
             Point2D control = start.midpoint(end).add(normal.multiply(offset));
             path.getElements().add(new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
             tangent = end.subtract(control);
+            labelAnchor = quadraticPoint(start, control, end, 0.5d);
         } else {
             path.getElements().add(new LineTo(end.getX(), end.getY()));
             tangent = end.subtract(start);
+            labelAnchor = start.midpoint(end);
         }
         updateArrow(end, tangent);
+        positionLabel(labelAnchor, tangent, LABEL_NORMAL_OFFSET);
         syncHitPath();
     }
 
@@ -202,6 +232,8 @@ public final class EdgeView extends Group {
         Point2D end = route.getLast();
         Point2D tangent = end.subtract(route.get(route.size() - 2));
         updateArrow(end, tangent);
+        PolylineMidpoint midpoint = polylineMidpoint(route);
+        positionLabel(midpoint.point(), midpoint.tangent(), LABEL_NORMAL_OFFSET);
         syncHitPath();
     }
 
@@ -218,7 +250,48 @@ public final class EdgeView extends Group {
                 control2.getX(), control2.getY(),
                 end.getX(), end.getY()));
         updateArrow(end, end.subtract(control2));
+        positionLabel(center.add(0.0d, -height * 1.9d), new Point2D(1.0d, 0.0d), 0.0d);
         syncHitPath();
+    }
+
+    private void positionLabel(Point2D anchor, Point2D tangent, double normalOffset) {
+        if (!label.isVisible()) {
+            return;
+        }
+        Point2D direction = tangent.magnitude() == 0.0d ? new Point2D(1.0d, 0.0d) : tangent.normalize();
+        Point2D normal = new Point2D(-direction.getY(), direction.getX());
+        Point2D location = anchor.add(normal.multiply(normalOffset));
+        double width = Math.max(1.0d, label.prefWidth(-1.0d));
+        double height = Math.max(1.0d, label.prefHeight(width));
+        label.resizeRelocate(location.getX() - width / 2.0d, location.getY() - height / 2.0d, width, height);
+    }
+
+    private PolylineMidpoint polylineMidpoint(List<Point2D> points) {
+        double total = 0.0d;
+        for (int index = 1; index < points.size(); index++) {
+            total += points.get(index).distance(points.get(index - 1));
+        }
+        double remaining = total / 2.0d;
+        for (int index = 1; index < points.size(); index++) {
+            Point2D start = points.get(index - 1);
+            Point2D end = points.get(index);
+            double segment = start.distance(end);
+            if (remaining <= segment || index == points.size() - 1) {
+                double fraction = segment == 0.0d ? 0.5d : Math.max(0.0d, Math.min(1.0d, remaining / segment));
+                Point2D point = start.add(end.subtract(start).multiply(fraction));
+                return new PolylineMidpoint(point, end.subtract(start));
+            }
+            remaining -= segment;
+        }
+        return new PolylineMidpoint(points.getFirst().midpoint(points.getLast()),
+                points.getLast().subtract(points.getFirst()));
+    }
+
+    private Point2D quadraticPoint(Point2D start, Point2D control, Point2D end, double t) {
+        double inverse = 1.0d - t;
+        return start.multiply(inverse * inverse)
+                .add(control.multiply(2.0d * inverse * t))
+                .add(end.multiply(t * t));
     }
 
     private void syncHitPath() {
@@ -257,5 +330,8 @@ public final class EdgeView extends Group {
                 left.getX(), left.getY(),
                 right.getX(), right.getY());
         arrow.setVisible(true);
+    }
+
+    private record PolylineMidpoint(Point2D point, Point2D tangent) {
     }
 }
