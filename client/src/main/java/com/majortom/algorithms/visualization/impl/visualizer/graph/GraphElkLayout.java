@@ -24,18 +24,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Graph-specific transient ELK Layered adapter. GraphViewState remains the authoritative topology. */
+/** Graph-specific presentation layout: compact undirected graphs use deterministic radial geometry; directed/large graphs use transient ELK Layered. */
 public final class GraphElkLayout {
     private static final double PADDING = 42.0d;
     private static final double NODE_SPACING = 42.0d;
     private static final double LAYER_SPACING = 64.0d;
     private static final double COMPONENT_SPACING = 72.0d;
+    private static final int RADIAL_LAYOUT_MAX_NODES = 18;
+    private static final double RADIAL_MIN_RADIUS = 120.0d;
     private static final int RANDOM_SEED = 1;
 
     public LayoutResult layout(LayoutRequest request) {
         Objects.requireNonNull(request, "request");
         if (request.nodes().isEmpty()) {
             return new LayoutResult(Map.of(), Map.of());
+        }
+        if (!request.directed() && request.nodes().size() <= RADIAL_LAYOUT_MAX_NODES) {
+            return radialLayout(request.nodes());
         }
 
         ElkNode graph = ElkGraphUtil.createGraph();
@@ -88,6 +93,33 @@ public final class GraphElkLayout {
             edges.put(edge.getIdentifier(), new EdgeRoute(edge.getIdentifier(), points));
         }
         return new LayoutResult(elements, edges);
+    }
+
+    private LayoutResult radialLayout(List<NodeSize> nodes) {
+        int count = nodes.size();
+        if (count == 1) {
+            NodeSize node = nodes.getFirst();
+            return new LayoutResult(Map.of(nodeId(node.id()),
+                    new ElementBounds(nodeId(node.id()), PADDING, PADDING, node.width(), node.height())), Map.of());
+        }
+
+        double maxDiameter = nodes.stream()
+                .mapToDouble(node -> Math.max(node.width(), node.height()))
+                .max().orElse(48.0d);
+        double requiredRadius = count * (maxDiameter + NODE_SPACING) / (2.0d * Math.PI);
+        double radius = Math.max(RADIAL_MIN_RADIUS, requiredRadius);
+        double center = PADDING + radius + maxDiameter / 2.0d;
+        Map<String, ElementBounds> elements = new LinkedHashMap<>();
+        for (int index = 0; index < count; index++) {
+            NodeSize node = nodes.get(index);
+            double angle = -Math.PI / 2.0d + index * (2.0d * Math.PI / count);
+            double centerX = center + Math.cos(angle) * radius;
+            double centerY = center + Math.sin(angle) * radius;
+            elements.put(nodeId(node.id()), new ElementBounds(
+                    nodeId(node.id()), centerX - node.width() / 2.0d, centerY - node.height() / 2.0d,
+                    node.width(), node.height()));
+        }
+        return new LayoutResult(elements, Map.of());
     }
 
     public record LayoutRequest(boolean directed, List<NodeSize> nodes, List<Link> links) {

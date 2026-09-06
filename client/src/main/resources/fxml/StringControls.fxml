@@ -25,17 +25,18 @@
         <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true" onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
             <Label fx:id="editSectionLabel" styleClass="control-label"/><Region HBox.hgrow="ALWAYS"/><Label text="⌃" styleClass="section-chevron"/>
         </HBox>
-        <TextField fx:id="valueField" maxWidth="Infinity" styleClass="dark-textfield"/>
-        <HBox spacing="6"><Button fx:id="replaceBtn" onAction="#handleReplace" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-ran-blue"/><Button fx:id="insertBtn" onAction="#handleInsert" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-ran-gold"/></HBox>
-        <HBox spacing="6"><TextField fx:id="indexField" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="dark-textfield"/><TextField fx:id="lengthField" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="dark-textfield"/></HBox>
-        <HBox spacing="6"><TextField fx:id="characterField" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="dark-textfield"/><Button fx:id="updateBtn" onAction="#handleUpdate" styleClass="btn-ran-gold"/><Button fx:id="removeBtn" onAction="#handleRemove" styleClass="btn-ran-red"/></HBox>
+        <TextField fx:id="valueField" maxWidth="Infinity"><styleClass><String fx:value="dark-textfield"/><String fx:value="operation-input"/></styleClass></TextField>
+        <HBox spacing="6" styleClass="operation-row"><Button fx:id="replaceBtn" onAction="#handleReplace" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="btn-ran-blue"/><String fx:value="operation-button"/></styleClass></Button><Button fx:id="insertBtn" onAction="#handleInsert" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="btn-ran-gold"/><String fx:value="operation-button"/></styleClass></Button></HBox>
+        <HBox spacing="6" styleClass="operation-row"><TextField fx:id="indexField" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="dark-textfield"/><String fx:value="operation-input"/></styleClass></TextField><TextField fx:id="lengthField" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="dark-textfield"/><String fx:value="operation-input"/></styleClass></TextField></HBox>
+        <TextField fx:id="characterField" maxWidth="Infinity"><styleClass><String fx:value="dark-textfield"/><String fx:value="operation-input"/></styleClass></TextField>
+        <HBox spacing="6" styleClass="operation-row"><Button fx:id="updateBtn" onAction="#handleUpdate" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="btn-ran-gold"/><String fx:value="operation-button"/></styleClass></Button><Button fx:id="removeBtn" onAction="#handleRemove" maxWidth="Infinity" HBox.hgrow="ALWAYS"><styleClass><String fx:value="btn-ran-red"/><String fx:value="operation-button"/></styleClass></Button></HBox>
     </VBox>
     <VBox spacing="8">
         <styleClass><String fx:value="control-section"/><String fx:value="control-card"/><String fx:value="execution-section"/><String fx:value="algorithm-section"/></styleClass>
         <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true" onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
             <Label fx:id="searchSectionLabel" styleClass="control-label"/><Region HBox.hgrow="ALWAYS"/><Label text="⌃" styleClass="section-chevron"/>
         </HBox>
-        <TextField fx:id="patternField" maxWidth="Infinity" styleClass="dark-textfield"/>
-        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false" maxWidth="Infinity" styleClass="btn-run-neon"/>
+        <TextField fx:id="patternField" maxWidth="Infinity"><styleClass><String fx:value="dark-textfield"/><String fx:value="operation-input"/></styleClass></TextField>
+        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" maxWidth="Infinity" visible="false" managed="false" styleClass="btn-run-neon"/>
     </VBox>
 </VBox>

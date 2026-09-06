@@ -1,32 +1,40 @@
 package com.majortom.algorithms.library.maze;
 
-import java.util.ArrayDeque;
+import com.majortom.algorithms.core.runtime.Observations;
+
 import java.util.Random;
 
-/** Depth-first frontier perfect-maze generator. */
+/** Recursive-backtracker perfect-maze generator. */
 public final class DfsArrayMazeGenerator implements ArrayMazeGenerator {
     @Override
     public GridMaze generate(MazeDimensions dimensions, long seed) {
         Random random = new Random(seed);
         ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
-        ArrayDeque<GridPoint> frontier = new ArrayDeque<>();
         GridPoint start = new GridPoint(1, 1);
         ArrayMazeSupport.open(dimensions, state.open(), start);
-        frontier.add(start);
-        while (!frontier.isEmpty()) {
-            GridPoint current = frontier.removeLast();
-            for (int[] direction : ArrayMazeSupport.shuffledCellDirections(random)) {
-                int nextRow = current.row() + direction[0];
-                int nextColumn = current.column() + direction[1];
-                if (!ArrayMazeSupport.isInner(dimensions, nextRow, nextColumn)) continue;
-                GridPoint next = new GridPoint(nextRow, nextColumn);
-                if (state.open()[ArrayMazeSupport.index(dimensions.columns(), next)]) continue;
-                GridPoint corridor = new GridPoint(current.row() + direction[0] / 2, current.column() + direction[1] / 2);
-                ArrayMazeSupport.open(dimensions, state.open(), corridor);
-                ArrayMazeSupport.open(dimensions, state.open(), next);
-                frontier.addLast(next);
-            }
-        }
+        carve(dimensions, state.open(), start, random);
         return ArrayMazeSupport.complete(dimensions, state);
+    }
+
+    private void carve(MazeDimensions dimensions, boolean[] open, GridPoint current, Random random) {
+        for (int[] direction : ArrayMazeSupport.shuffledCellDirections(random)) {
+            int nextRow = current.row() + direction[0];
+            int nextColumn = current.column() + direction[1];
+            if (!ArrayMazeSupport.isInner(dimensions, nextRow, nextColumn)) {
+                continue;
+            }
+            GridPoint next = new GridPoint(nextRow, nextColumn);
+            Observations.examined(current.row(), current.column(), nextRow, nextColumn);
+            if (open[ArrayMazeSupport.index(dimensions.columns(), next)]) {
+                continue;
+            }
+            GridPoint corridor = new GridPoint(
+                    current.row() + direction[0] / 2,
+                    current.column() + direction[1] / 2);
+            ArrayMazeSupport.open(dimensions, open, corridor);
+            ArrayMazeSupport.open(dimensions, open, next);
+            carve(dimensions, open, next, random);
+            Observations.backtracked(current.row(), current.column());
+        }
     }
 }

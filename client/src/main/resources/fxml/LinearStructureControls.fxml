@@ -1,20 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="10" styleClass="control-section">
-    <Label fx:id="typeLabel" styleClass="section-title" />
-    <Label fx:id="operationsLabel" styleClass="control-label" />
-    <TextField fx:id="valueField" />
-    <TextField fx:id="indexField" />
-    <HBox spacing="6">
-        <Button fx:id="primaryBtn" onAction="#handlePrimary" />
-        <Button fx:id="secondaryBtn" onAction="#handleSecondary" />
-    </HBox>
-    <HBox spacing="6">
-        <Button fx:id="tertiaryBtn" onAction="#handleTertiary" />
-        <Button fx:id="quaternaryBtn" onAction="#handleQuaternary" />
-    </HBox>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.String?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    styleClass="module-control-panel" stylesheets="@../style/theme.css">
+    <VBox spacing="7">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="structure-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="typeLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+    </VBox>
+
+    <VBox spacing="8">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="operation-section" />
+            <String fx:value="structure-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="operationsLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <TextField fx:id="valueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <TextField fx:id="indexField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <Button fx:id="primaryBtn" onAction="#handlePrimary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+            <Button fx:id="secondaryBtn" onAction="#handleSecondary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <Button fx:id="tertiaryBtn" onAction="#handleTertiary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+            <Button fx:id="quaternaryBtn" onAction="#handleQuaternary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+    </VBox>
 </VBox>

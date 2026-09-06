@@ -41,6 +41,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private Tree<Integer> tree;
     private StructureSnapshot<GeneralTreeSnapshot<Integer>> algorithmInputSnapshot;
     private Consumer<NodeSelection> selectionListener = ignored -> { };
+    private Long selectedNodeId;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -48,8 +49,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @FXML private Label operationsSectionLabel;
     @FXML private ComboBox<String> algorithmSelector;
     @FXML private TextField valueField;
-    @FXML private TextField parentIdField;
-    @FXML private TextField nodeIdField;
+    @FXML private Label selectionHintLabel;
     @FXML private Button addRootBtn;
     @FXML private Button addChildBtn;
     @FXML private Button deleteBtn;
@@ -82,14 +82,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private void handleVisualSelection(long nodeId) {
         GeneralTreeNode<Integer> node = tree.findById(nodeId);
         if (node == null) {
+            selectedNodeId = null;
+            selectionListener.accept(null);
             return;
         }
-        nodeIdField.setText(Long.toString(nodeId));
+        selectedNodeId = nodeId;
         valueField.setText(Integer.toString(node.getValue()));
         GeneralTreeNode<Integer> parent = parentOf(tree.root(), node);
-        if (parent != null) {
-            parentIdField.setText(Long.toString(parent.getId()));
-        }
         selectionListener.accept(new NodeSelection(
                 nodeId, node.getValue(), parent == null ? null : parent.getId(),
                 node.getChildren().size(), depthOf(tree.root(), node, 0)));
@@ -132,13 +131,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @FXML
     private void handleAddChild() {
         Integer value = parseValue(valueField);
-        Long parentId = parseId(parentIdField);
-        if (value == null || parentId == null) {
-            return;
-        }
-        GeneralTreeNode<Integer> parent = tree.findById(parentId);
-        if (parent == null) {
-            logI18n("message.tree.node_id_not_found", parentId);
+        GeneralTreeNode<Integer> parent = selectedNode();
+        if (value == null || parent == null) {
             return;
         }
         if (executeStructureOperation("add-child", () -> tree.addChild(parent, value))) {
@@ -148,16 +142,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @FXML
     private void handleDelete() {
-        Long nodeId = parseId(nodeIdField);
-        if (nodeId == null) {
-            return;
-        }
-        GeneralTreeNode<Integer> node = tree.findById(nodeId);
+        GeneralTreeNode<Integer> node = selectedNode();
         if (node == null) {
-            logI18n("message.tree.node_id_not_found", nodeId);
             return;
         }
         if (executeStructureOperation("remove", () -> tree.remove(node))) {
+            clearNodeSelection();
             refreshStructureView();
         }
     }
@@ -186,14 +176,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             logI18n("message.error.operation_running");
             return;
         }
-        Long nodeId = parseId(nodeIdField);
+        GeneralTreeNode<Integer> node = selectedNode();
         Integer value = parseValue(valueField);
-        if (nodeId == null || value == null) {
-            return;
-        }
-        GeneralTreeNode<Integer> node = tree.findById(nodeId);
-        if (node == null) {
-            logI18n("message.tree.node_id_not_found", nodeId);
+        if (node == null || value == null) {
             return;
         }
         if (executeStructureOperation("update", () -> tree.set(node, value))) {
@@ -257,6 +242,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
         tree = Tree.fromSnapshot(snapshot.state());
+        clearNodeSelection();
         invalidateExecutionForStructureChange();
         refreshStructureView();
     }
@@ -372,17 +358,28 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
     }
 
-    private Long parseId(TextField field) {
-        try {
-            long value = Long.parseLong(field.getText().trim());
-            if (value <= 0) {
-                throw new NumberFormatException("id must be positive");
-            }
-            return value;
-        } catch (RuntimeException exception) {
-            logI18n("message.error.invalid_tree_node_id");
+    private GeneralTreeNode<Integer> selectedNode() {
+        if (selectedNodeId == null) {
+            logI18n("message.tree.select_node");
             return null;
         }
+        GeneralTreeNode<Integer> node = tree.findById(selectedNodeId);
+        if (node == null) {
+            clearNodeSelection();
+            logI18n("message.tree.select_node");
+            return null;
+        }
+        return node;
+    }
+
+    private void clearNodeSelection() {
+        selectedNodeId = null;
+        treeVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private TreeVisualizer treeVisualizer() {
+        return (TreeVisualizer) visualizer;
     }
 
     @Override
@@ -418,6 +415,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     protected void onResetData() {
+        clearNodeSelection();
         tree = new Tree<>();
         renderStructureState(currentStructureState());
     }
@@ -434,8 +432,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
         }
         bindPrompt(valueField, "prompt.tree.value");
-        bindPrompt(parentIdField, "prompt.tree.parent_id");
-        bindPrompt(nodeIdField, "prompt.tree.node_id");
+        if (selectionHintLabel != null) {
+            selectionHintLabel.textProperty().bind(I18N.createStringBinding("label.tree.selection_hint"));
+        }
         bindButton(addRootBtn, "action.tree.add_root");
         bindButton(addChildBtn, "action.tree.add_child");
         bindButton(deleteBtn, "action.tree.delete");

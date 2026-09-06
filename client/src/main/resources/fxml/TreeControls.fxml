@@ -57,30 +57,23 @@
                 <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
+        <Label fx:id="selectionHintLabel" styleClass="operation-hint" wrapText="true" />
         <HBox spacing="6" styleClass="operation-row">
-            <TextField fx:id="parentIdField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-            <TextField fx:id="nodeIdField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-        </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="addRootBtn" onAction="#handleAddRoot">
+            <Button fx:id="addRootBtn" onAction="#handleAddRoot" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="addChildBtn" onAction="#handleAddChild">
+            <Button fx:id="addChildBtn" onAction="#handleAddChild" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="deleteBtn" onAction="#handleDelete">
+            <Button fx:id="deleteBtn" onAction="#handleDelete" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="findBtn" onAction="#handleFind">
+            <Button fx:id="findBtn" onAction="#handleFind" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="updateBtn" onAction="#handleUpdate">
+            <Button fx:id="updateBtn" onAction="#handleUpdate" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
