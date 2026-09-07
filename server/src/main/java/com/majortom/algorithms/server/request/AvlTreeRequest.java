@@ -18,7 +18,12 @@ public record AvlTreeRequest(AvlNodeSnapshot initialRoot, List<Integer> initialV
         if (initialRoot != null && !initialValues.isEmpty()) {
             throw new IllegalArgumentException("initialRoot and initialValues are mutually exclusive");
         }
-        long initialCount = initialRoot == null ? initialValues.size() : count(initialRoot);
+        long initialCount;
+        if (initialRoot == null) {
+            initialCount = initialValues.size();
+        } else {
+            initialCount = count(initialRoot);
+        }
         if (initialCount + commands.size() > AvlTreeCommands.MAX_OPERATIONS) {
             throw new IllegalArgumentException("AVL input must contain at most " + AvlTreeCommands.MAX_OPERATIONS + " operations");
         }

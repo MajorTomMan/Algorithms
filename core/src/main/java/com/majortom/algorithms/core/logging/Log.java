@@ -19,6 +19,10 @@ public final class Log {
     public static void e(String tag, String message) { emit(LogLevel.ERROR, tag, message); }
 
     private static void emit(LogLevel level, String tag, String message) {
-        ExecutionEvents.emit(new LogEvent(level, tag == null ? "" : tag, Objects.requireNonNull(message, "message")));
+        if (tag == null) {
+            ExecutionEvents.emit(new LogEvent(level, "", Objects.requireNonNull(message, "message")));
+        } else {
+            ExecutionEvents.emit(new LogEvent(level, tag, Objects.requireNonNull(message, "message")));
+        }
     }
 }

@@ -94,7 +94,14 @@ final class GraphTopologyLayout {
                 .filter(link -> link.sourceId() != link.targetId()
                         && positions.containsKey(link.sourceId()) && positions.containsKey(link.targetId()))
                 .toList();
-        int iterations = ordered.size() <= 30 ? 180 : ordered.size() <= 80 ? 130 : 90;
+        int iterations;
+        if (ordered.size() <= 30) {
+            iterations = 180;
+        } else if (ordered.size() <= 80) {
+            iterations = 130;
+        } else {
+            iterations = 90;
+        }
         double temperature = ideal * 0.72d;
         for (int iteration = 0; iteration < iterations; iteration++) {
             Map<Long, Point> delta = new LinkedHashMap<>();

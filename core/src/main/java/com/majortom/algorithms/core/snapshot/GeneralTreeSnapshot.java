@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /** UI-neutral immutable snapshot of an ordered general/N-ary tree. */
-public record GeneralTreeSnapshot<T>(Node<T> root, int size) {
+public record GeneralTreeSnapshot<T>(Node<T> root, int size) implements TreeSnapshotState<T> {
     public GeneralTreeSnapshot {
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");

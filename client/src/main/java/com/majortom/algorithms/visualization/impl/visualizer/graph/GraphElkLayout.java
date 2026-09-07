@@ -42,9 +42,11 @@ public final class GraphElkLayout {
     public LayoutResult layout(LayoutRequest request) {
         Objects.requireNonNull(request, "request");
         if (request.nodes().isEmpty()) return new LayoutResult(Map.of(), Map.of());
-        return request.directed() && isDirectedAcyclic(request)
-                ? layeredLayout(request)
-                : topologyLayout.layout(request);
+        if (request.directed() && isDirectedAcyclic(request)) {
+            return layeredLayout(request);
+        } else {
+            return topologyLayout.layout(request);
+        }
     }
 
     private LayoutResult layeredLayout(LayoutRequest request) {
@@ -145,7 +147,11 @@ public final class GraphElkLayout {
         }
         public Link {
             Objects.requireNonNull(id, "id");
-            label = label == null || label.isBlank() ? null : label;
+            if (label == null || label.isBlank()) {
+                label = null;
+            } else {
+                label = label;
+            }
         }
     }
 

@@ -35,6 +35,10 @@ public class AVLTreeNode<T> extends BinaryTreeNode<T> {
     }
 
     private int count(AVLTreeNode<T> node) {
-        return node == null ? 0 : node.getSubTreeCount();
+        if (node == null) {
+            return 0;
+        } else {
+            return node.getSubTreeCount();
+        }
     }
 }

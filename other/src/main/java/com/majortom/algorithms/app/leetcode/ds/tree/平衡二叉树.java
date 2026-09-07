@@ -29,6 +29,10 @@ public class 平衡二叉树 {
         if (leftHeigh == -1 || rightHeigh == -1) {
             return -1;
         }
-        return Math.abs(leftHeigh - rightHeigh) < 2 ? Math.max(leftHeigh, rightHeigh) + 1 : -1;
+        if (Math.abs(leftHeigh - rightHeigh) < 2) {
+            return Math.max(leftHeigh, rightHeigh) + 1;
+        } else {
+            return -1;
+        }
     }
 }

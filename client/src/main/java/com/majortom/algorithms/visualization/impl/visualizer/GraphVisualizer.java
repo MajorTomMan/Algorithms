@@ -238,7 +238,12 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
         }
-        Set<Long> newNodeIds = pendingVersion == version ? pendingNewNodeIds : Set.of();
+        Set<Long> newNodeIds;
+        if (pendingVersion == version) {
+            newNodeIds = pendingNewNodeIds;
+        } else {
+            newNodeIds = Set.of();
+        }
 
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             ElementBounds bounds = result.elements().get(GraphElkLayout.nodeId(entry.getKey()));
@@ -283,7 +288,12 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
+        List<Animation> transitions;
+        if (pendingVersion == version) {
+            transitions = pendingTransitions;
+        } else {
+            transitions = List.of();
+        }
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
@@ -301,6 +311,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView existing = edgeViews.get(edge.id());
             if (existing != null) {
                 existing.setDirected(state.directed());
+                existing.setLabelText(weightText(edge.weight()));
                 existing.setHighlighted(isObservedEdge(state, edge));
                 continue;
             }
@@ -310,6 +321,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 continue;
             }
             EdgeView view = new EdgeView(source, target, state.directed());
+            view.setLabelText(weightText(edge.weight()));
             long visualEdgeId = edge.id();
             view.setOnMouseClicked(event -> {
                 selectedEdgeId = visualEdgeId;
@@ -345,11 +357,19 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public void setNodeSelectionListener(LongConsumer listener) {
-        nodeSelectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            nodeSelectionListener = ignored -> { };
+        } else {
+            nodeSelectionListener = listener;
+        }
     }
 
     public void setEdgeSelectionListener(LongConsumer listener) {
-        edgeSelectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            edgeSelectionListener = ignored -> { };
+        } else {
+            edgeSelectionListener = listener;
+        }
     }
 
     public void clearSelection() {
@@ -498,6 +518,16 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                     || (observation.secondNodeId() != null && observation.secondNodeId() == nodeId);
             case NONE -> false;
         };
+    }
+
+    private static String weightText(Double weight) {
+        if (weight == null) {
+            return null;
+        }
+        if (Math.rint(weight) == weight) {
+            return Long.toString(weight.longValue());
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", weight);
     }
 
     private static boolean isObservedEdge(GraphViewState state, GraphViewState.Edge edge) {

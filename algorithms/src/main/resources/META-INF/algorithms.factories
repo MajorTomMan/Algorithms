@@ -1,10 +1,12 @@
 # V2 startup registry. One key maps to one active implementation until restart.
 structure.array.Integer=com.majortom.algorithms.library.basic.Array
 structure.graph.Integer=com.majortom.algorithms.library.basic.graph.Graph
+structure.graph.weighted.Integer=com.majortom.algorithms.library.basic.graph.WeightedGraph
 structure.linked-list.Integer=com.majortom.algorithms.library.basic.LinkedList
 structure.stack.Integer=com.majortom.algorithms.library.basic.LinkedList
 structure.queue.Integer=com.majortom.algorithms.library.basic.LinkedList
 structure.tree.Integer=com.majortom.algorithms.library.basic.tree.Tree
+structure.tree.avl.Integer=com.majortom.algorithms.library.basic.tree.AVLTree
 
 algorithm.array.Integer.insertion-sort=com.majortom.algorithms.library.sort.insertion.IntegerInsertionSort
 algorithm.array.Integer.selection-sort=com.majortom.algorithms.library.sort.IntegerSelectionSort

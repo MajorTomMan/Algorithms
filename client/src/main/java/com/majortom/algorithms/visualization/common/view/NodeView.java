@@ -69,7 +69,11 @@ public final class NodeView extends StackPane {
     }
 
     public void setText(String text) {
-        label.setText(text == null ? "" : text);
+        if (text == null) {
+            label.setText("");
+        } else {
+            label.setText(text);
+        }
     }
 
     /** Current CSS-resolved label bounds for family-specific size measurement. */

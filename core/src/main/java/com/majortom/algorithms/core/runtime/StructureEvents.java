@@ -48,6 +48,10 @@ public final class StructureEvents {
         ExecutionEvents.emit(new GraphStructureEvent.EdgeRemoved(edgeId, fromId, toId));
     }
 
+    public static void graphEdgeWeightChanged(long edgeId, Double previousWeight, double weight) {
+        ExecutionEvents.emit(new GraphStructureEvent.EdgeWeightChanged(edgeId, previousWeight, weight));
+    }
+
     public static void linkedNodeInserted(long nodeId, Object value) {
         ExecutionEvents.emit(new LinkedStructureEvent.NodeInserted(nodeId, value));
     }

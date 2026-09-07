@@ -8,7 +8,11 @@ public record LinearStructureViewState(String kind, List<Integer> values, Mutati
     public LinearStructureViewState {
         kind = Objects.requireNonNull(kind, "kind");
         values = List.copyOf(Objects.requireNonNull(values, "values"));
-        mutation = mutation == null ? Mutation.none() : mutation;
+        if (mutation == null) {
+            mutation = Mutation.none();
+        } else {
+            mutation = mutation;
+        }
     }
 
     public LinearStructureViewState(String kind, List<Integer> values) {

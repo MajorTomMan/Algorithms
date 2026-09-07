@@ -1,13 +1,13 @@
 package com.majortom.algorithms.library.discovery;
 
 import com.majortom.algorithms.core.registry.ModuleDiscovery;
-import com.majortom.algorithms.library.graph.GraphTraversal;
+import com.majortom.algorithms.library.array.ArrayAlgorithm;
+import com.majortom.algorithms.library.graph.GraphFamilyAlgorithm;
 import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
 import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
 import com.majortom.algorithms.library.maze.GraphMazeGenerator;
-import com.majortom.algorithms.library.sort.Sort;
-import com.majortom.algorithms.library.string.StringSearch;
-import com.majortom.algorithms.library.tree.TreeAlgorithm;
+import com.majortom.algorithms.library.string.StringAlgorithm;
+import com.majortom.algorithms.library.tree.TreeFamilyAlgorithm;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -127,19 +127,19 @@ public final class AlgorithmModuleDiscovery implements ModuleDiscovery {
     }
 
     private Registration registration(Class<?> implementation) {
-        if (Sort.class.isAssignableFrom(implementation)) {
-            return registration("array", implementation, Sort.class, 0);
+        if (ArrayAlgorithm.class.isAssignableFrom(implementation)) {
+            return registration("array", implementation, ArrayAlgorithm.class, 0);
         }
-        if (GraphTraversal.class.isAssignableFrom(implementation)) {
-            return registration("graph", implementation, GraphTraversal.class, 0);
+        if (GraphFamilyAlgorithm.class.isAssignableFrom(implementation)) {
+            return registration("graph", implementation, GraphFamilyAlgorithm.class, 0);
         }
         if (GraphMazeGenerator.class.isAssignableFrom(implementation)) {
             return registration("graph", implementation, GraphMazeGenerator.class, 0);
         }
-        if (TreeAlgorithm.class.isAssignableFrom(implementation)) {
-            return registration("tree", implementation, TreeAlgorithm.class, 0);
+        if (TreeFamilyAlgorithm.class.isAssignableFrom(implementation)) {
+            return registration("tree", implementation, TreeFamilyAlgorithm.class, 0);
         }
-        if (StringSearch.class.isAssignableFrom(implementation)) {
+        if (StringAlgorithm.class.isAssignableFrom(implementation)) {
             return registration("string", "String", implementation);
         }
         if (ArrayMazeGenerator.class.isAssignableFrom(implementation)

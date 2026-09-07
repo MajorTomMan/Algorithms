@@ -6,6 +6,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.WorkbenchControls;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
@@ -38,6 +39,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -177,6 +179,8 @@ public class MainController implements Initializable {
     @FXML
     private Label selectedNodeValueLabel;
     @FXML
+    private Label selectedValueCaptionLabel;
+    @FXML
     private Label structureInspectorBody;
     @FXML
     private Label currentSelectionHeadingLabel;
@@ -185,19 +189,39 @@ public class MainController implements Initializable {
     @FXML
     private Label structureOverviewLabel;
     @FXML
+    private Label overviewPrimaryTitleLabel;
+    @FXML
     private Label overviewPrimaryValue;
+    @FXML
+    private Label overviewSecondaryTitleLabel;
     @FXML
     private Label overviewSecondaryValue;
     @FXML
+    private Label overviewEventsTitleLabel;
+    @FXML
     private Label overviewEventsValue;
+    @FXML
+    private Label overviewStateTitleLabel;
     @FXML
     private Label overviewStateValue;
     @FXML
+    private Label inspectorSnapshotsHeadingLabel;
+    @FXML
+    private Tab structureInspectorTab;
+    @FXML
+    private Tab structureSnapshotsTab;
+    @FXML
     private VBox inspectorSnapshotCards;
+    @FXML
+    private Label structurePrimaryMetricTitleLabel;
     @FXML
     private Label structureNodeCountLabel;
     @FXML
+    private Label structureSecondaryMetricTitleLabel;
+    @FXML
     private Label structureHeightLabel;
+    @FXML
+    private Label structureStateMetricTitleLabel;
     @FXML
     private Label structureStateLabel;
     @FXML
@@ -263,6 +287,22 @@ public class MainController implements Initializable {
     @FXML
     private TabPane algorithmInspectorTabs;
     @FXML
+    private Tab statisticsTab;
+    @FXML
+    private Tab eventTab;
+    @FXML
+    private Tab logTab;
+    @FXML
+    private Tab resultTab;
+    @FXML
+    private Label currentEventHeadingLabel;
+    @FXML
+    private Label eventRunSummaryHeadingLabel;
+    @FXML
+    private Label resultPreviewHeadingLabel;
+    @FXML
+    private Label resultHeadingLabel;
+    @FXML
     private Label timelinePositionLabel;
     @FXML
     private Pane timelineMarkers;
@@ -287,9 +327,13 @@ public class MainController implements Initializable {
     @FXML
     private Label structureControlsTitleLabel;
     @FXML
+    private Label structureLiveLabel;
+    @FXML
     private Label algorithmWorkspaceTitleLabel;
     @FXML
     private Label algorithmWorkspaceSubtitleLabel;
+    @FXML
+    private Label algorithmInputTitleLabel;
     @FXML
     private Label algorithmInputSourceLabel;
     @FXML
@@ -304,6 +348,8 @@ public class MainController implements Initializable {
     private Label structurePreviewHintLabel;
     @FXML
     private Label snapshotTitleLabel;
+    @FXML
+    private Label snapshotQuickTitleLabel;
     @FXML
     private Label snapshotCountLabel;
     @FXML
@@ -405,11 +451,25 @@ public class MainController implements Initializable {
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
         structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
+        structureLiveLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.live"));
+        algorithmInputTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
         structurePreviewTitleLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview"));
         structurePreviewHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview.hint"));
         snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        snapshotQuickTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.quick"));
+        structurePrimaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
+        structureSecondaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
+        structureStateMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
+        selectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
+        structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
+        structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        overviewPrimaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
+        overviewSecondaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
+        overviewEventsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.events"));
+        overviewStateTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
         structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
         saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
         currentSelectionHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.current"));
@@ -418,6 +478,14 @@ public class MainController implements Initializable {
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
+        statisticsTab.textProperty().bind(I18N.createStringBinding("label.workspace.statistics"));
+        eventTab.textProperty().bind(I18N.createStringBinding("label.workspace.event"));
+        logTab.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        resultTab.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
+        currentEventHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.event.current"));
+        eventRunSummaryHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
+        resultPreviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result.preview"));
+        resultHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
         logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
         liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
         startBtn.textProperty().bind(I18N.createStringBinding("action.execution.run_algorithm"));
@@ -441,8 +509,14 @@ public class MainController implements Initializable {
         I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
             refreshPauseText();
             refreshWorkspaceContext();
+            refreshTopContext();
             refreshAlgorithmInputSource();
             refreshValueTypeSelectors();
+            refreshStructureSummary();
+            refreshExecutionPresentation();
+            if (structureSelectionOverlay == null || !structureSelectionOverlay.isVisible()) {
+                clearStructureSelection();
+            }
         });
         refreshPauseText();
     }
@@ -625,7 +699,11 @@ public class MainController implements Initializable {
             List<String> available = availableValueTypes(moduleId);
             String selected = selectedValueTypes.get(moduleId);
             if (selected == null || !available.contains(selected)) {
-                selected = available.isEmpty() ? null : available.getFirst();
+                if (available.isEmpty()) {
+                    selected = null;
+                } else {
+                    selected = available.getFirst();
+                }
                 if (selected != null) {
                     selectedValueTypes.put(moduleId, selected);
                 }
@@ -651,7 +729,11 @@ public class MainController implements Initializable {
             }
         }
         if (selectedHashKeyType == null || !keyTypes.contains(selectedHashKeyType)) {
-            selectedHashKeyType = keyTypes.isEmpty() ? null : keyTypes.getFirst();
+            if (keyTypes.isEmpty()) {
+                selectedHashKeyType = null;
+            } else {
+                selectedHashKeyType = keyTypes.getFirst();
+            }
         }
         valueTypeSelector.getItems().setAll(valueTypeOptions(keyTypes));
         selectValueType(valueTypeSelector, selectedHashKeyType);
@@ -666,7 +748,11 @@ public class MainController implements Initializable {
             }
         }
         if (selectedHashValueType == null || !valueTypes.contains(selectedHashValueType)) {
-            selectedHashValueType = valueTypes.isEmpty() ? null : valueTypes.getFirst();
+            if (valueTypes.isEmpty()) {
+                selectedHashValueType = null;
+            } else {
+                selectedHashValueType = valueTypes.getFirst();
+            }
         }
         hashValueTypeSelector.getItems().setAll(valueTypeOptions(valueTypes));
         selectValueType(hashValueTypeSelector, selectedHashValueType);
@@ -730,7 +816,6 @@ public class MainController implements Initializable {
         }
         updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         clearAlgorithmSelection();
-        selectFirstAlgorithmButton(activeDefinition.id());
         List<AlgorithmNavigationItem> items = algorithmNavigationItems(activeDefinition.id());
         if (!items.isEmpty() && currentSubController instanceof AlgorithmSelectionSupport support) {
             support.selectAlgorithm(items.getFirst().id());
@@ -777,9 +862,6 @@ public class MainController implements Initializable {
             setWorkspaceMode(false);
             if (currentSubController instanceof AlgorithmSelectionSupport support) {
                 support.selectAlgorithm(first.id());
-                selectedAlgorithmId = first.id();
-                selectAlgorithmButton(definition.id(), first.id());
-                refreshTopContext();
             }
         });
         return button;
@@ -806,17 +888,7 @@ public class MainController implements Initializable {
     }
 
     private String familyName(String moduleId) {
-        return switch (moduleId) {
-            case "array" -> "ARRAY";
-            case "linked-list" -> "LINKED";
-            case "stack" -> "STACK";
-            case "queue" -> "QUEUE";
-            case "tree" -> "TREE";
-            case "graph" -> "GRAPH";
-            case "string" -> "STRING";
-            case "maze" -> "MAZE";
-            default -> moduleId.toUpperCase(Locale.ROOT);
-        };
+        return I18N.text(structureLabelKey(moduleId)).toUpperCase(Locale.ROOT);
     }
 
     private String familyIndex(String moduleId) {
@@ -867,11 +939,8 @@ public class MainController implements Initializable {
             switchToModule(definition);
         }
         setWorkspaceMode(false);
-        if (currentSubController instanceof AlgorithmSelectionSupport support
-                && support.selectAlgorithm(algorithmId)) {
-            selectedAlgorithmId = algorithmId;
-            selectAlgorithmButton(definition.id(), algorithmId);
-            refreshTopContext();
+        if (currentSubController instanceof AlgorithmSelectionSupport support) {
+            support.selectAlgorithm(algorithmId);
         }
     }
 
@@ -889,24 +958,12 @@ public class MainController implements Initializable {
 
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         List<String> algorithmIds = new ArrayList<>();
-        if ("maze".equals(moduleId)) {
-            addAlgorithmsForAllTypes(algorithmIds, "maze", null);
-            for (String valueType : MODULE_REGISTRY.algorithmValueTypes("graph")) {
-                for (String algorithmId : MODULE_REGISTRY.algorithmIds("graph", valueType)) {
-                    if (algorithmId.startsWith("graph-generator-")) {
-                        algorithmIds.add(algorithmId);
-                    }
-                }
-            }
+        if (activeDefinition != null
+                && activeDefinition.id().equals(moduleId)
+                && currentSubController instanceof AlgorithmSelectionSupport support) {
+            algorithmIds.addAll(support.algorithmIds());
         } else {
-            String valueType = selectedValueType(moduleId);
-            if (valueType != null) {
-                for (String algorithmId : MODULE_REGISTRY.algorithmIds(moduleId, valueType)) {
-                    if (!"graph".equals(moduleId) || !algorithmId.startsWith("graph-generator-")) {
-                        algorithmIds.add(algorithmId);
-                    }
-                }
-            }
+            algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId));
         }
         return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
     }
@@ -1015,13 +1072,29 @@ public class MainController implements Initializable {
             timelineDetails.setVisible(expanded);
         }
         if (bottomDock != null) {
-            bottomDock.setMinHeight(expanded ? 156.0d : 62.0d);
-            bottomDock.setPrefHeight(expanded ? 168.0d : 62.0d);
+            if (expanded) {
+                bottomDock.setMinHeight(156.0d);
+            } else {
+                bottomDock.setMinHeight(62.0d);
+            }
+            if (expanded) {
+                bottomDock.setPrefHeight(168.0d);
+            } else {
+                bottomDock.setPrefHeight(62.0d);
+            }
             bottomDock.getStyleClass().removeAll("timeline-collapsed", "timeline-expanded");
-            bottomDock.getStyleClass().add(expanded ? "timeline-expanded" : "timeline-collapsed");
+            if (expanded) {
+                bottomDock.getStyleClass().add("timeline-expanded");
+            } else {
+                bottomDock.getStyleClass().add("timeline-collapsed");
+            }
         }
         if (timelineToggleBtn != null) {
-            timelineToggleBtn.setText(expanded ? "▼" : "▲");
+            if (expanded) {
+                timelineToggleBtn.setText("▼");
+            } else {
+                timelineToggleBtn.setText("▲");
+            }
         }
     }
 
@@ -1079,13 +1152,62 @@ public class MainController implements Initializable {
         rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, nextCompactLayout);
         rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
 
-        double familyWidth = nextNarrowLayout ? 84.0d : nextCompactLayout ? 104.0d : 142.0d;
-        double controlWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 250.0d : 320.0d;
-        double inspectorWidth = nextNarrowLayout ? 196.0d : nextCompactLayout ? 260.0d : 360.0d;
-        double topBarHeight = nextNarrowLayout ? 52.0d : nextCompactLayout ? 56.0d : 72.0d;
-        double brandWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 300.0d : 430.0d;
-        double modeWidth = nextNarrowLayout ? 250.0d : nextCompactLayout ? 300.0d : 420.0d;
-        double contextWidth = nextNarrowLayout ? 220.0d : nextCompactLayout ? 320.0d : 500.0d;
+        double familyWidth;
+        if (nextNarrowLayout) {
+            familyWidth = 84.0d;
+        } else if (nextCompactLayout) {
+            familyWidth = 104.0d;
+        } else {
+            familyWidth = 142.0d;
+        }
+        double controlWidth;
+        if (nextNarrowLayout) {
+            controlWidth = 220.0d;
+        } else if (nextCompactLayout) {
+            controlWidth = 250.0d;
+        } else {
+            controlWidth = 320.0d;
+        }
+        double inspectorWidth;
+        if (nextNarrowLayout) {
+            inspectorWidth = 196.0d;
+        } else if (nextCompactLayout) {
+            inspectorWidth = 260.0d;
+        } else {
+            inspectorWidth = 360.0d;
+        }
+        double topBarHeight;
+        if (nextNarrowLayout) {
+            topBarHeight = 52.0d;
+        } else if (nextCompactLayout) {
+            topBarHeight = 56.0d;
+        } else {
+            topBarHeight = 72.0d;
+        }
+        double brandWidth;
+        if (nextNarrowLayout) {
+            brandWidth = 220.0d;
+        } else if (nextCompactLayout) {
+            brandWidth = 300.0d;
+        } else {
+            brandWidth = 430.0d;
+        }
+        double modeWidth;
+        if (nextNarrowLayout) {
+            modeWidth = 250.0d;
+        } else if (nextCompactLayout) {
+            modeWidth = 300.0d;
+        } else {
+            modeWidth = 420.0d;
+        }
+        double contextWidth;
+        if (nextNarrowLayout) {
+            contextWidth = 220.0d;
+        } else if (nextCompactLayout) {
+            contextWidth = 320.0d;
+        } else {
+            contextWidth = 500.0d;
+        }
 
         setFixedWidth(structureFamilyRail, familyWidth);
         setFixedWidth(algorithmFamilyRail, familyWidth);
@@ -1103,10 +1225,19 @@ public class MainController implements Initializable {
         setPageVisibility(diagnosticsPanel, !nextNarrowLayout);
         setPageVisibility(structureHistoryDock, !nextNarrowLayout);
         if (!nextNarrowLayout) {
-            double historyHeight = nextCompactLayout ? 104.0d : 150.0d;
+            double historyHeight;
+            if (nextCompactLayout) {
+                historyHeight = 104.0d;
+            } else {
+                historyHeight = 150.0d;
+            }
             structureHistoryDock.setMinHeight(historyHeight);
             structureHistoryDock.setPrefHeight(historyHeight);
-            structureHistoryDock.setMaxHeight(nextCompactLayout ? 124.0d : 180.0d);
+            if (nextCompactLayout) {
+                structureHistoryDock.setMaxHeight(124.0d);
+            } else {
+                structureHistoryDock.setMaxHeight(180.0d);
+            }
         }
 
         setControlVisibility(brandSubtitle, !nextNarrowLayout);
@@ -1180,7 +1311,12 @@ public class MainController implements Initializable {
         if (rail == null) {
             return;
         }
-        double width = compact ? 182.0d : 196.0d;
+        double width;
+        if (compact) {
+            width = 182.0d;
+        } else {
+            width = 196.0d;
+        }
         if (uiFontScale >= 125) {
             width += 8.0d;
         }
@@ -1203,14 +1339,13 @@ public class MainController implements Initializable {
         selectedAlgorithmId = null;
         clearStructureSelection();
         refreshValueTypeSelectors();
-        rebuildAlgorithmMenu();
         loadSubController(definition.controllerFactory().get());
+        rebuildAlgorithmMenu();
+        syncAlgorithmSelectionFromController();
         updateAlgorithmWorkspaceAvailability(definition.id());
         refreshWorkspaceContext();
         structureButtons.forEach((id, buttons) -> buttons.forEach(button ->
                 button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
-        clearAlgorithmSelection();
-        selectFirstAlgorithmButton(definition.id());
     }
 
 
@@ -1249,14 +1384,25 @@ public class MainController implements Initializable {
                 button.pseudoClassStateChanged(SELECTED, false)));
     }
 
-    private void selectFirstAlgorithmButton(String moduleId) {
-        Map<String, Button> buttons = algorithmButtons.get(moduleId);
-        if (buttons == null || buttons.isEmpty()) {
-            return;
+    private void syncAlgorithmSelectionFromController() {
+        String algorithmId = null;
+        if (currentSubController instanceof AlgorithmSelectionSupport support) {
+            algorithmId = support.selectedAlgorithmId();
         }
-        Map.Entry<String, Button> first = buttons.entrySet().iterator().next();
-        first.getValue().pseudoClassStateChanged(SELECTED, true);
-        selectedAlgorithmId = first.getKey();
+        handleAlgorithmSelectionChanged(algorithmId);
+    }
+
+    private void handleAlgorithmSelectionChanged(String algorithmId) {
+        selectedAlgorithmId = algorithmId;
+        rebuildAlgorithmMenu();
+        clearAlgorithmSelection();
+        if (activeDefinition != null && algorithmId != null) {
+            selectAlgorithmButton(activeDefinition.id(), algorithmId);
+        }
+        if (activeDefinition != null) {
+            updateAlgorithmWorkspaceAvailability(activeDefinition.id());
+        }
+        refreshTopContext();
     }
 
     private void loadSubController(BaseController<?> newController) {
@@ -1299,6 +1445,7 @@ public class MainController implements Initializable {
         });
         currentSubController.setupCustomControls(customControlBox);
         distributeModuleControls();
+        wireAlgorithmSelection();
         wireStructureSelection();
         structureRevisionListener = (observable, oldValue, newValue) -> {
             refreshSnapshotCards();
@@ -1393,8 +1540,12 @@ public class MainController implements Initializable {
             structureControlsHost.getChildren().add(modulePanel);
         }
         for (Node section : sections) {
-            VBox target = isAlgorithmSection(section)
-                    ? algorithmControlsHost : structureControlsHost;
+            VBox target;
+            if (isAlgorithmSection(section)) {
+                target = algorithmControlsHost;
+            } else {
+                target = structureControlsHost;
+            }
             target.getChildren().add(section);
         }
         stretchControls(structureControlsHost);
@@ -1558,9 +1709,18 @@ public class MainController implements Initializable {
         VBox card = new VBox(6);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add(current ? "snapshot-card-current" : "snapshot-card-saved");
+        if (current) {
+            card.getStyleClass().add("snapshot-card-current");
+        } else {
+            card.getStyleClass().add("snapshot-card-saved");
+        }
 
-        Label title = new Label(current ? moduleName : moduleName + " · " + shortSnapshotId(snapshot));
+        Label title;
+        if (current) {
+            title = new Label(moduleName);
+        } else {
+            title = new Label(moduleName + " · " + shortSnapshotId(snapshot));
+        }
         title.getStyleClass().add("snapshot-card-title");
         Label state = new Label(status);
         state.getStyleClass().add("snapshot-card-state");
@@ -1577,7 +1737,12 @@ public class MainController implements Initializable {
         SnapshotAlgorithmInputSupport<?> algorithmInputSupport = currentAlgorithmInputSupport();
         if (algorithmInputSupport != null) {
             String selectedSnapshotId = algorithmInputSupport.algorithmInputSnapshotId();
-            boolean selected = current ? selectedSnapshotId == null : snapshot.id().equals(selectedSnapshotId);
+            boolean selected;
+            if (current) {
+                selected = selectedSnapshotId == null;
+            } else {
+                selected = snapshot.id().equals(selectedSnapshotId);
+            }
             if (selected) {
                 card.getStyleClass().add("snapshot-card-algorithm-input");
                 Label inputState = new Label(I18N.text("label.workspace.snapshot.algorithm_input"));
@@ -1595,8 +1760,12 @@ public class MainController implements Initializable {
             actions.getChildren().add(restore);
         }
         if (algorithmInputSupport != null) {
-            Button useInput = new Button(I18N.text(current
-                    ? "action.workspace.use_current_input" : "action.workspace.use_snapshot_input"));
+            Button useInput;
+            if (current) {
+                useInput = new Button(I18N.text("action.workspace.use_current_input"));
+            } else {
+                useInput = new Button(I18N.text("action.workspace.use_snapshot_input"));
+            }
             useInput.getStyleClass().add("snapshot-card-action");
             WorkbenchTheme.applyControl(useInput);
             useInput.setOnAction(event -> {
@@ -1607,9 +1776,11 @@ public class MainController implements Initializable {
                 }
                 refreshSnapshotCards();
                 refreshAlgorithmInputSource();
-                appendSystemLog(I18N.text(current
-                        ? "message.snapshot.input_current" : "message.snapshot.input_saved",
-                        current ? "" : shortSnapshotId(snapshot)));
+                if (current) {
+                    appendSystemLog(I18N.text("message.snapshot.input_current", ""));
+                } else {
+                    appendSystemLog(I18N.text("message.snapshot.input_saved", shortSnapshotId(snapshot)));
+                }
             });
             actions.getChildren().add(useInput);
         }
@@ -1659,42 +1830,66 @@ public class MainController implements Initializable {
         if (currentInputBtn != null) currentInputBtn.setDisable(support == null);
         if (activeDefinition != null && "maze".equals(activeDefinition.id())) {
             algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.maze"));
-            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, true); currentInputBtn.setText("● CURRENT STRUCTURE"); }
-            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText("○ SAVED SNAPSHOT"); }
+            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, true); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", true)); }
+            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
             return;
         }
         if (support == null) {
             algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
-            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText("○ CURRENT STRUCTURE"); }
-            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText("○ SAVED SNAPSHOT"); }
+            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false)); }
+            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
             return;
         }
         String snapshotId = support.algorithmInputSnapshotId();
         boolean current = snapshotId == null;
         if (currentInputBtn != null) {
             currentInputBtn.pseudoClassStateChanged(SELECTED, current);
-            currentInputBtn.setText((current ? "● " : "○ ") + "CURRENT STRUCTURE");
+            if (current) {
+                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", true));
+            } else {
+                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false));
+            }
         }
         if (savedInputBtn != null) {
             savedInputBtn.pseudoClassStateChanged(SELECTED, !current);
-            savedInputBtn.setText((current ? "○ " : "● ") + "SAVED SNAPSHOT");
+            if (current) {
+                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false));
+            } else {
+                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", true));
+            }
         }
         if (current) {
-            algorithmInputSourceLabel.setText("CURRENT STRUCTURE SNAPSHOT");
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot"));
             return;
         }
         StructureSnapshot<?> selected = structureSnapshotStore.snapshots(activeDefinition.id()).stream()
                 .filter(snapshot -> snapshot.id().equals(snapshotId)).findFirst().orElse(null);
-        String detail = selected == null ? "SAVED SNAPSHOT / " + shortSnapshotId(snapshotId)
-                : "SAVED SNAPSHOT / " + shortSnapshotId(snapshotId) + "\n" + formatSnapshotTime(selected);
+        String detail;
+        if (selected == null) {
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId);
+        } else {
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId) + "\n" + formatSnapshotTime(selected);
+        }
         algorithmInputSourceLabel.setText(detail);
+    }
+
+    private String inputSourceButtonText(String key, boolean selected) {
+        String prefix = "○ ";
+        if (selected) {
+            prefix = "● ";
+        }
+        return prefix + I18N.text(key).toUpperCase(Locale.ROOT);
     }
 
     private String shortSnapshotId(String snapshotId) {
         if (snapshotId == null || snapshotId.isBlank()) {
             return "-";
         }
-        return snapshotId.length() <= 8 ? snapshotId : snapshotId.substring(0, 8);
+        if (snapshotId.length() <= 8) {
+            return snapshotId;
+        } else {
+            return snapshotId.substring(0, 8);
+        }
     }
 
     private StructureSnapshotSupport<?> currentSnapshotSupport() {
@@ -1870,9 +2065,19 @@ public class MainController implements Initializable {
         if (topContextLabel == null) {
             return;
         }
-        String family = activeDefinition == null ? "WORKBENCH" : I18N.text(activeDefinition.labelKey()).toUpperCase(Locale.ROOT);
+        String family;
+        if (activeDefinition == null) {
+            family = I18N.text("label.menu.title").toUpperCase(Locale.ROOT);
+        } else {
+            family = I18N.text(activeDefinition.labelKey()).toUpperCase(Locale.ROOT);
+        }
         boolean structureMode = isStructurePageVisible();
-        String suffix = structureMode ? "STRUCTURE EDITOR" : algorithmContextName();
+        String suffix;
+        if (structureMode) {
+            suffix = I18N.text("label.workspace.structure.editor").toUpperCase(Locale.ROOT);
+        } else {
+            suffix = algorithmContextName();
+        }
         topContextLabel.setText(family + " / " + suffix);
         if (activeDefinition != null) {
             String railFamily = familyName(activeDefinition.id());
@@ -1886,14 +2091,18 @@ public class MainController implements Initializable {
             String state = "EDITING";
             if (!structureMode) {
                 if (currentSubController != null && currentSubController.isRunning()) {
-                    state = currentSubController.isPaused() ? "PAUSED" : "RUNNING";
+                    if (currentSubController.isPaused()) {
+                        state = "PAUSED";
+                    } else {
+                        state = "RUNNING";
+                    }
                 } else if (currentSubController != null && currentSubController.hasExecutionRecord()) {
                     state = currentSubController.latestExecutionStatus();
                 } else {
                     state = "IDLE";
                 }
             }
-            runStateLabel.setText(state);
+            runStateLabel.setText(workspaceStatusText(state));
             runStateLabel.getStyleClass().removeAll("state-running", "state-paused", "state-completed", "state-failed");
             if ("RUNNING".equals(state)) runStateLabel.getStyleClass().add("state-running");
             if ("PAUSED".equals(state)) runStateLabel.getStyleClass().add("state-paused");
@@ -1901,16 +2110,29 @@ public class MainController implements Initializable {
             if ("FAILED".equals(state) || "CANCELLED".equals(state)) runStateLabel.getStyleClass().add("state-failed");
         }
         if (runIdLabel != null) {
-            String id = currentSubController == null ? null : currentSubController.latestRunId();
-            runIdLabel.setText(id == null ? "" : "RUN #" + shortRunId(id));
+            String id;
+            if (currentSubController == null) {
+                id = null;
+            } else {
+                id = currentSubController.latestRunId();
+            }
+            if (id == null) {
+                runIdLabel.setText("");
+            } else {
+                runIdLabel.setText("RUN #" + shortRunId(id));
+            }
         }
     }
 
     private String algorithmContextName() {
         if (selectedAlgorithmId == null || selectedAlgorithmId.isBlank()) {
-            return "ALGORITHM";
+            return I18N.text("label.workspace.algorithm").toUpperCase(Locale.ROOT);
         }
         return AlgorithmLabels.text(selectedAlgorithmId).toUpperCase(Locale.ROOT);
+    }
+
+    private String workspaceStatusText(String state) {
+        return I18N.text("status.workspace." + state.toLowerCase(Locale.ROOT));
     }
 
     private String shortRunId(String runId) {
@@ -1925,7 +2147,11 @@ public class MainController implements Initializable {
         }
         String summary = currentSubController.structureSummaryText();
         if (structureOverviewLabel != null) {
-            structureOverviewLabel.setText(summary == null || summary.isBlank() ? "Ready" : summary);
+            if (summary == null || summary.isBlank()) {
+                structureOverviewLabel.setText(workspaceStatusText("READY"));
+            } else {
+                structureOverviewLabel.setText(summary);
+            }
         }
         if (structureNodeCountLabel != null) {
             structureNodeCountLabel.setText(currentSubController.structurePrimaryCount());
@@ -1934,12 +2160,18 @@ public class MainController implements Initializable {
             structureHeightLabel.setText(currentSubController.structureSecondaryCount());
         }
         if (structureStateLabel != null) {
-            structureStateLabel.setText("READY");
+            structureStateLabel.setText(workspaceStatusText("READY"));
         }
         if (overviewPrimaryValue != null) overviewPrimaryValue.setText(currentSubController.structurePrimaryCount());
         if (overviewSecondaryValue != null) overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
         if (overviewEventsValue != null) overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
-        if (overviewStateValue != null) overviewStateValue.setText("READY");
+        if (overviewStateValue != null) overviewStateValue.setText(workspaceStatusText("READY"));
+    }
+
+    private void wireAlgorithmSelection() {
+        if (currentSubController instanceof AlgorithmSelectionSupport support) {
+            support.setAlgorithmSelectionListener(this::handleAlgorithmSelectionChanged);
+        }
     }
 
     private void wireStructureSelection() {
@@ -1974,13 +2206,25 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED NODE", "#" + selection.id(),
-                Integer.toString(selection.value()), "Ready to edit or remove this node.");
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.node"),
+                "#" + selection.id(),
+                Integer.toString(selection.value()),
+                I18N.text("label.workspace.selection.node.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Node ID        #%d%nValue          %d%nParent         %s%nChildren       %d%nDepth          %d",
-                    selection.id(), selection.value(), selection.parentId() == null ? "none" : "#" + selection.parentId(),
-                    selection.childCount(), selection.depth()));
+            String parent;
+            if (selection.parentId() == null) {
+                parent = I18N.text("label.workspace.selection.none");
+            } else {
+                parent = "#" + selection.parentId();
+            }
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.tree.detail",
+                    selection.id(),
+                    selection.value(),
+                    parent,
+                    selection.childCount(),
+                    selection.depth()));
         }
     }
 
@@ -1989,12 +2233,17 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED CELL", "[" + selection.index() + "]",
-                Integer.toString(selection.value()), "Index and operation fields follow this cell.");
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.cell"),
+                "[" + selection.index() + "]",
+                Integer.toString(selection.value()),
+                I18N.text("label.workspace.selection.array.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Index          %d%nValue          %d%nSize           %d",
-                    selection.index(), selection.value(), selection.size()));
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.array.detail",
+                    selection.index(),
+                    selection.value(),
+                    selection.size()));
         }
     }
 
@@ -2003,12 +2252,17 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED CHARACTER", "[" + selection.index() + "]",
-                Character.toString(selection.value()), "Index and character fields follow this position.");
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.character"),
+                "[" + selection.index() + "]",
+                Character.toString(selection.value()),
+                I18N.text("label.workspace.selection.string.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Index          %d%nCharacter      %s%nLength         %d",
-                    selection.index(), Character.toString(selection.value()), selection.length()));
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.string.detail",
+                    selection.index(),
+                    Character.toString(selection.value()),
+                    selection.length()));
         }
     }
 
@@ -2018,23 +2272,45 @@ public class MainController implements Initializable {
             return;
         }
         if (selection instanceof GraphController.NodeSelection node) {
-            showStructureSelectionOverlay("SELECTED NODE", "#" + node.id(),
-                    Integer.toString(node.value()), "Node editor fields follow this vertex.");
+            showStructureSelectionOverlay(
+                    I18N.text("label.workspace.selection.node"),
+                    "#" + node.id(),
+                    Integer.toString(node.value()),
+                    I18N.text("label.workspace.selection.graph.node.hint"));
             if (structureInspectorBody != null) {
-                structureInspectorBody.setText(String.format(Locale.ROOT,
-                        "Node ID        #%d%nValue          %d%nDegree         %d",
-                        node.id(), node.value(), node.degree()));
+                structureInspectorBody.setText(I18N.text(
+                        "label.workspace.selection.graph.node.detail",
+                        node.id(),
+                        node.value(),
+                        node.degree()));
             }
             return;
         }
         GraphController.EdgeSelection edge = (GraphController.EdgeSelection) selection;
-        String relation = edge.directed() ? " → " : " — ";
-        showStructureSelectionOverlay("SELECTED EDGE", "E#" + edge.id(),
-                edge.fromValue() + relation + edge.toValue(), "Edge editor fields follow this relation.");
+        String relation;
+        if (edge.directed()) {
+            relation = " → ";
+        } else {
+            relation = " — ";
+        }
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.edge"),
+                "E#" + edge.id(),
+                edge.fromValue() + relation + edge.toValue(),
+                I18N.text("label.workspace.selection.graph.edge.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Edge ID        #%d%nFrom           %d%nTo             %d%nDirected       %s",
-                    edge.id(), edge.fromValue(), edge.toValue(), edge.directed() ? "yes" : "no"));
+            String directed;
+            if (edge.directed()) {
+                directed = I18N.text("label.workspace.selection.yes");
+            } else {
+                directed = I18N.text("label.workspace.selection.no");
+            }
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.graph.edge.detail",
+                    edge.id(),
+                    edge.fromValue(),
+                    edge.toValue(),
+                    directed));
         }
     }
 
@@ -2043,14 +2319,32 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED NODE", "#" + selection.id(),
-                Integer.toString(selection.value()), "Linked pointer facts from the current ViewState.");
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.node"),
+                "#" + selection.id(),
+                Integer.toString(selection.value()),
+                I18N.text("label.workspace.selection.linked.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Node ID        #%d%nValue          %d%nIndex          %d%nPrevious       %s%nNext           %s%nSize           %d",
-                    selection.id(), selection.value(), selection.index(),
-                    selection.previousId() == null ? "none" : "#" + selection.previousId(),
-                    selection.nextId() == null ? "none" : "#" + selection.nextId(), selection.size()));
+            String previousText;
+            if (selection.previousId() == null) {
+                previousText = I18N.text("label.workspace.selection.none");
+            } else {
+                previousText = "#" + selection.previousId();
+            }
+            String nextText;
+            if (selection.nextId() == null) {
+                nextText = I18N.text("label.workspace.selection.none");
+            } else {
+                nextText = "#" + selection.nextId();
+            }
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.linked.detail",
+                    selection.id(),
+                    selection.value(),
+                    selection.index(),
+                    previousText,
+                    nextText,
+                    selection.size()));
         }
     }
 
@@ -2059,12 +2353,19 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED ITEM", "[" + selection.index() + "]",
-                Integer.toString(selection.value()), selection.role());
+        String role = linearRoleText(selection.role());
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.item"),
+                "[" + selection.index() + "]",
+                Integer.toString(selection.value()),
+                role);
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Index          %d%nValue          %d%nRole           %s%nSize           %d",
-                    selection.index(), selection.value(), selection.role(), selection.size()));
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.linear.detail",
+                    selection.index(),
+                    selection.value(),
+                    role,
+                    selection.size()));
         }
     }
 
@@ -2073,14 +2374,51 @@ public class MainController implements Initializable {
             clearStructureSelection();
             return;
         }
-        showStructureSelectionOverlay("SELECTED CELL",
+        String state = mazeCellStateText(selection.state());
+        showStructureSelectionOverlay(
+                I18N.text("label.workspace.selection.cell"),
                 "[" + selection.row() + "," + selection.column() + "]",
-                selection.state(), "Maze selection is presentation-only.");
+                state,
+                I18N.text("label.workspace.selection.maze.hint"));
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(String.format(Locale.ROOT,
-                    "Row            %d%nColumn         %d%nCell State     %s",
-                    selection.row(), selection.column(), selection.state()));
+            structureInspectorBody.setText(I18N.text(
+                    "label.workspace.selection.maze.detail",
+                    selection.row(),
+                    selection.column(),
+                    state));
         }
+    }
+
+    private String linearRoleText(String role) {
+        if ("TOP".equals(role)) {
+            return I18N.text("label.workspace.selection.role.top");
+        }
+        if ("FRONT / REAR".equals(role)) {
+            return I18N.text("label.workspace.selection.role.front_rear");
+        }
+        if ("FRONT".equals(role)) {
+            return I18N.text("label.workspace.selection.role.front");
+        }
+        if ("REAR".equals(role)) {
+            return I18N.text("label.workspace.selection.role.rear");
+        }
+        return I18N.text("label.workspace.selection.role.item");
+    }
+
+    private String mazeCellStateText(String state) {
+        if ("ENTRANCE".equals(state)) {
+            return I18N.text("label.workspace.selection.maze.entrance");
+        }
+        if ("EXIT".equals(state)) {
+            return I18N.text("label.workspace.selection.maze.exit");
+        }
+        if ("OPEN".equals(state)) {
+            return I18N.text("label.workspace.selection.maze.open");
+        }
+        if ("WALL".equals(state)) {
+            return I18N.text("label.workspace.selection.maze.wall");
+        }
+        return state;
     }
 
     private void showStructureSelectionOverlay(String title, String id, String value, String hint) {
@@ -2100,7 +2438,7 @@ public class MainController implements Initializable {
             structureSelectionOverlay.setVisible(false);
         }
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText("Select an element in the canvas.");
+            structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
         }
     }
 
@@ -2115,8 +2453,8 @@ public class MainController implements Initializable {
                 currentStepOverlay.setVisible(false);
             }
             updateVisualizationObstruction(false);
-            if (eventKindLabel != null) eventKindLabel.setText("NO EVENT");
-            if (eventDetailsLabel != null) eventDetailsLabel.setText("Run an algorithm or select a timeline event.");
+            if (eventKindLabel != null) eventKindLabel.setText(I18N.text("label.workspace.event.none"));
+            if (eventDetailsLabel != null) eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
             if (eventKindDot != null) setEventDotClass("event-dot-idle");
             if (timelineCursorLabel != null) { timelineCursorLabel.setManaged(false); timelineCursorLabel.setVisible(false); }
         } else {
@@ -2140,7 +2478,11 @@ public class MainController implements Initializable {
         if (timelinePositionLabel != null) {
             int index = currentSubController.presentationEventIndex();
             int count = currentSubController.executionEvents().size();
-            timelinePositionLabel.setText(count == 0 ? "#0000" : String.format(Locale.ROOT, "#%04d / %04d", Math.max(0, index + 1), count));
+            if (count == 0) {
+                timelinePositionLabel.setText("#0000");
+            } else {
+                timelinePositionLabel.setText(String.format(Locale.ROOT, "#%04d / %04d", Math.max(0, index + 1), count));
+            }
         }
         refreshRunSummary();
         rebuildTimelineMarkers();
@@ -2151,7 +2493,12 @@ public class MainController implements Initializable {
         if (currentSubController == null || currentSubController.getVisualizer() == null) {
             return;
         }
-        double left = currentStepVisible ? 254.0d : 0.0d;
+        double left;
+        if (currentStepVisible) {
+            left = 254.0d;
+        } else {
+            left = 0.0d;
+        }
         currentSubController.getVisualizer().setViewportObstructionInsets(
                 new javafx.geometry.Insets(0.0d, 0.0d, 0.0d, left));
     }
@@ -2180,6 +2527,9 @@ public class MainController implements Initializable {
         }
         if (event instanceof ObservationEvent.Backtracked backtracked) {
             return "TARGET  " + formatReference(backtracked.ref());
+        }
+        if (event instanceof ObservationEvent.PathTraced pathTraced) {
+            return "TARGET  " + formatReference(pathTraced.ref());
         }
         if (event instanceof TreeStructureEvent.NodeInserted inserted) {
             return "NODE    #" + inserted.nodeId() + "\nVALUE   " + inserted.value();
@@ -2246,8 +2596,18 @@ public class MainController implements Initializable {
     }
 
     private String formatIdChange(Long previous, Long next) {
-        String left = previous == null ? "none" : "#" + previous;
-        String right = next == null ? "none" : "#" + next;
+        String left;
+        if (previous == null) {
+            left = "none";
+        } else {
+            left = "#" + previous;
+        }
+        String right;
+        if (next == null) {
+            right = "none";
+        } else {
+            right = "#" + next;
+        }
         return left + " → " + right;
     }
 
@@ -2264,19 +2624,31 @@ public class MainController implements Initializable {
     private List<MetricDisplay> metricDisplays(ExecutionStatistics statistics) {
         Map<String, Long> values = statistics.metrics();
         List<MetricDisplay> metrics = new ArrayList<>();
-        addMetricIfPresent(metrics, values, "nodesVisited", "NODES VISITED");
-        addMetricIfPresent(metrics, values, "edgesExamined", "EDGES EXAMINED");
-        addMetricIfPresent(metrics, values, "comparisons", "COMPARISONS");
-        addMetricIfPresent(metrics, values, "writes", "WRITES");
-        addMetricIfPresent(metrics, values, "swaps", "SWAPS");
-        addMetricIfPresent(metrics, values, "matches", "MATCHES");
-        addMetricIfPresent(metrics, values, "fallbacks", "FALLBACKS");
-        addMetricIfPresent(metrics, values, "backtracks", "BACKTRACKS");
-        if (metrics.size() < 3) metrics.add(new MetricDisplay("DOMAIN EVENTS", Long.toString(statistics.domainEventCount())));
-        if (metrics.size() < 3) metrics.add(new MetricDisplay("TOTAL EVENTS", Long.toString(statistics.totalEventCount())));
-        while (metrics.size() < 3) metrics.add(new MetricDisplay("EVENTS", "0"));
+        addMetricIfPresent(metrics, values, "nodesVisited", I18N.text("label.workspace.metric.nodes_visited"));
+        addMetricIfPresent(metrics, values, "edgesExamined", I18N.text("label.workspace.metric.edges_examined"));
+        addMetricIfPresent(metrics, values, "comparisons", I18N.text("label.workspace.metric.comparisons"));
+        addMetricIfPresent(metrics, values, "writes", I18N.text("label.workspace.metric.writes"));
+        addMetricIfPresent(metrics, values, "swaps", I18N.text("label.workspace.metric.swaps"));
+        addMetricIfPresent(metrics, values, "matches", I18N.text("label.workspace.metric.matches"));
+        addMetricIfPresent(metrics, values, "fallbacks", I18N.text("label.workspace.metric.fallbacks"));
+        addMetricIfPresent(metrics, values, "backtracks", I18N.text("label.workspace.metric.backtracks"));
+        if (metrics.size() < 3) {
+            metrics.add(new MetricDisplay(
+                    I18N.text("label.workspace.metric.domain_events"),
+                    Long.toString(statistics.domainEventCount())));
+        }
+        if (metrics.size() < 3) {
+            metrics.add(new MetricDisplay(
+                    I18N.text("label.workspace.metric.total_events"),
+                    Long.toString(statistics.totalEventCount())));
+        }
+        while (metrics.size() < 3) {
+            metrics.add(new MetricDisplay(I18N.text("label.workspace.metric.events"), "0"));
+        }
         List<MetricDisplay> result = new ArrayList<>(metrics.subList(0, 3));
-        result.add(new MetricDisplay("DURATION", formatDuration(statistics.duration())));
+        result.add(new MetricDisplay(
+                I18N.text("label.workspace.metric.duration"),
+                formatDuration(statistics.duration())));
         return result;
     }
 
@@ -2316,7 +2688,12 @@ public class MainController implements Initializable {
         Region track = new Region();
         track.getStyleClass().add("timeline-marker-track");
         track.setManaged(false);
-        double paneWidth = timelineMarkers.getWidth() > 0.0d ? timelineMarkers.getWidth() : 700.0d;
+        double paneWidth;
+        if (timelineMarkers.getWidth() > 0.0d) {
+            paneWidth = timelineMarkers.getWidth();
+        } else {
+            paneWidth = 700.0d;
+        }
         track.resizeRelocate(14.0d, 14.0d, Math.max(1.0d, paneWidth - 28.0d), 1.0d);
         timelineMarkers.getChildren().add(track);
 
@@ -2341,7 +2718,12 @@ public class MainController implements Initializable {
             if (index == currentIndex) sequence.getStyleClass().add("timeline-marker-sequence-current");
             marker.getChildren().setAll(symbol, sequence);
 
-            double ratio = events.size() <= 1 ? 0.0d : index / (double) (events.size() - 1);
+            double ratio;
+            if (events.size() <= 1) {
+                ratio = 0.0d;
+            } else {
+                ratio = index / (double) (events.size() - 1);
+            }
             marker.relocate(14.0d + ratio * usableWidth - 21.0d, 8.0d);
             marker.setOnMouseClicked(event -> {
                 if (!currentSubController.isRunning()) {

@@ -34,9 +34,12 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         if (event instanceof ObservationEvent.Visited visited) {
             GridPoint point = point(visited.ref());
             if (point != null) {
-                MazeViewState next = generation && !previous.graphBased()
-                        ? previous.open(point)
-                        : previous.visit(point);
+                MazeViewState next;
+                if (generation && !previous.graphBased()) {
+                    next = previous.open(point);
+                } else {
+                    next = previous.visit(point);
+                }
                 return observation(next);
             }
         }
@@ -49,6 +52,12 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
                     next = next.connect(from, to);
                 }
                 return observation(next);
+            }
+        }
+        if (event instanceof ObservationEvent.PathTraced pathTraced) {
+            GridPoint point = point(pathTraced.ref());
+            if (point != null) {
+                return Reduction.changed(previous.tracePath(point), EventImportance.STATE_CHANGE, true);
             }
         }
         if (event instanceof ObservationEvent.PathFound pathFound) {

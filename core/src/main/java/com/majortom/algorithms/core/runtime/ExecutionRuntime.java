@@ -48,7 +48,12 @@ public final class ExecutionRuntime {
         Objects.requireNonNull(operation, "operation");
         RuntimeEventContext context = new RuntimeEventContext(
                 runIdSupplier.get(), operationId, source, sink, control, clock);
-        DefaultExecutionControl defaultControl = control instanceof DefaultExecutionControl value ? value : null;
+        DefaultExecutionControl defaultControl;
+        if (control instanceof DefaultExecutionControl value) {
+            defaultControl = value;
+        } else {
+            defaultControl = null;
+        }
         if (defaultControl != null) {
             defaultControl.bindLifecycle(context::emitLifecycle);
         }
@@ -87,8 +92,13 @@ public final class ExecutionRuntime {
 
     private ExecutionResult cancelled(RuntimeEventContext context, String reason) {
         try {
-            context.emitLifecycle(new RunCancelledEvent(
-                    reason == null ? "Execution cancelled" : reason));
+            if (reason == null) {
+                context.emitLifecycle(new RunCancelledEvent(
+                    "Execution cancelled"));
+            } else {
+                context.emitLifecycle(new RunCancelledEvent(
+                    reason));
+            }
         } catch (EventDeliveryException deliveryFailure) {
             return eventDeliveryFailure(deliveryFailure);
         }
@@ -102,6 +112,10 @@ public final class ExecutionRuntime {
 
     private static String message(Throwable throwable) {
         String message = throwable.getMessage();
-        return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
+        if (message == null || message.isBlank()) {
+            return throwable.getClass().getSimpleName();
+        } else {
+            return message;
+        }
     }
 }

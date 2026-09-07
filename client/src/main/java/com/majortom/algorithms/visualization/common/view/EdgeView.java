@@ -71,7 +71,11 @@ public final class EdgeView extends Group {
         label.layoutBoundsProperty().addListener(geometryListener);
         highlighted.addListener((observable, previous, current) -> {
             pseudoClassStateChanged(HIGHLIGHTED, current);
-            path.setStrokeWidth(current ? 3.5d : 2.0d);
+            if (current) {
+                path.setStrokeWidth(3.5d);
+            } else {
+                path.setStrokeWidth(2.0d);
+            }
         });
         selected.addListener((observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
         setDirected(directed);
@@ -144,15 +148,28 @@ public final class EdgeView extends Group {
 
     /** Optional presentation label reserved for edge metadata such as a future graph weight. */
     public void setLabelText(String text) {
-        String normalized = text == null || text.isBlank() ? null : text;
-        label.setText(normalized == null ? "" : normalized);
+        String normalized;
+        if (text == null || text.isBlank()) {
+            normalized = null;
+        } else {
+            normalized = text;
+        }
+        if (normalized == null) {
+            label.setText("");
+        } else {
+            label.setText(normalized);
+        }
         label.setManaged(normalized != null);
         label.setVisible(normalized != null);
         updateGeometry();
     }
 
     public String labelText() {
-        return label.isVisible() ? label.getText() : null;
+        if (label.isVisible()) {
+            return label.getText();
+        } else {
+            return null;
+        }
     }
 
     public Label labelNode() {
@@ -258,7 +275,12 @@ public final class EdgeView extends Group {
         if (!label.isVisible()) {
             return;
         }
-        Point2D direction = tangent.magnitude() == 0.0d ? new Point2D(1.0d, 0.0d) : tangent.normalize();
+        Point2D direction;
+        if (tangent.magnitude() == 0.0d) {
+            direction = new Point2D(1.0d, 0.0d);
+        } else {
+            direction = tangent.normalize();
+        }
         Point2D normal = new Point2D(-direction.getY(), direction.getX());
         Point2D location = anchor.add(normal.multiply(normalOffset));
         double width = Math.max(1.0d, label.prefWidth(-1.0d));
@@ -277,7 +299,12 @@ public final class EdgeView extends Group {
             Point2D end = points.get(index);
             double segment = start.distance(end);
             if (remaining <= segment || index == points.size() - 1) {
-                double fraction = segment == 0.0d ? 0.5d : Math.max(0.0d, Math.min(1.0d, remaining / segment));
+                double fraction;
+                if (segment == 0.0d) {
+                    fraction = 0.5d;
+                } else {
+                    fraction = Math.max(0.0d, Math.min(1.0d, remaining / segment));
+                }
                 Point2D point = start.add(end.subtract(start).multiply(fraction));
                 return new PolylineMidpoint(point, end.subtract(start));
             }

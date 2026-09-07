@@ -84,6 +84,13 @@ final class ArrayMazeSupport {
         return List.copyOf(path);
     }
 
+    static void tracePath(List<GridPoint> path) {
+        for (int index = path.size() - 1; index >= 0; index--) {
+            GridPoint point = path.get(index);
+            Observations.pathTraced(point.row(), point.column());
+        }
+    }
+
     static void requirePathEndpoints(GridMaze maze, GridPoint start, GridPoint goal) {
         java.util.Objects.requireNonNull(maze, "maze");
         java.util.Objects.requireNonNull(start, "start");

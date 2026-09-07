@@ -18,8 +18,18 @@ public record RectangleGeometry(double width, double height) implements NodeGeom
         }
         double halfWidth = width / 2.0d;
         double halfHeight = height / 2.0d;
-        double scaleX = dx == 0.0d ? Double.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
-        double scaleY = dy == 0.0d ? Double.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
+        double scaleX;
+        if (dx == 0.0d) {
+            scaleX = Double.POSITIVE_INFINITY;
+        } else {
+            scaleX = halfWidth / Math.abs(dx);
+        }
+        double scaleY;
+        if (dy == 0.0d) {
+            scaleY = Double.POSITIVE_INFINITY;
+        } else {
+            scaleY = halfHeight / Math.abs(dy);
+        }
         double scale = Math.min(scaleX, scaleY);
         return new Point2D(center.getX() + dx * scale, center.getY() + dy * scale);
     }

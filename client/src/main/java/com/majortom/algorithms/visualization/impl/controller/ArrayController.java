@@ -43,6 +43,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private int currentSize = 20;
     private boolean structureSelectionEnabled = true;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
+    private Consumer<String> algorithmSelectionListener = ignored -> { };
 
     @FXML private Label structureLabel;
     @FXML private Label algorithmLabel;
@@ -62,7 +63,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @FXML private TextField updateIndexField;
     @FXML private Button addElementBtn;
     @FXML private Button deleteElementBtn;
-    @FXML private Button findElementBtn;
     @FXML private Button updateElementBtn;
 
     @SuppressWarnings("unchecked")
@@ -83,8 +83,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         });
         sizeValueLabel.setText(String.valueOf(currentSize));
         EffectUtils.applyDynamicEffect(
-                generateBtn, sortBtn, addElementBtn, deleteElementBtn,
-                findElementBtn, updateElementBtn);
+                generateBtn, sortBtn, addElementBtn, deleteElementBtn, updateElementBtn);
         arrayVisualizer().setOnIndexSelected(this::handleArraySelection);
         renderSource();
     }
@@ -202,7 +201,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public String algorithmInputSnapshotId() {
-        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+        if (algorithmInputSnapshot == null) {
+            return null;
+        } else {
+            return algorithmInputSnapshot.id();
+        }
     }
 
     @Override
@@ -217,8 +220,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             super.restoreAlgorithmState();
             return;
         }
-        List<Integer> values = algorithmInputSnapshot == null
-                ? sourceValues() : algorithmInputSnapshot.state().values();
+        List<Integer> values;
+        if (algorithmInputSnapshot == null) {
+            values = sourceValues();
+        } else {
+            values = algorithmInputSnapshot.state().values();
+        }
         renderViewState(ArrayViewState.source(values));
     }
 
@@ -239,7 +246,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (index == null && !elementIndexField.getText().isBlank()) {
             return;
         }
-        int insertedIndex = index == null ? sourceArray.size() : index;
+        int insertedIndex;
+        if (index == null) {
+            insertedIndex = sourceArray.size();
+        } else {
+            insertedIndex = index;
+        }
         if (executeStructureOperation("insert", () -> {
             sourceArray.insert(insertedIndex, value);
             return null;
@@ -282,20 +294,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     @FXML
-    private void handleFindElement() {
-        Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
-        if (value == null) {
-            return;
-        }
-        int index = indexOf(value);
-        if (index < 0) {
-            logI18n("message.sort.not_found", value);
-            return;
-        }
-        logI18n("message.sort.found", value, index);
-    }
-
-    @FXML
     private void handleUpdateElement() {
         Integer index = parseOptionalIndex(updateIndexField, sourceArray.size() - 1);
         Integer value = parseInteger(updateValueField, "message.error.invalid_sort_value");
@@ -315,7 +313,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
-        this.selectionListener = selectionListener == null ? ignored -> { } : selectionListener;
+        if (selectionListener == null) {
+            this.selectionListener = ignored -> { };
+        } else {
+            this.selectionListener = selectionListener;
+        }
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
@@ -379,8 +381,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @Override
     public void handleAlgorithmStart() {
         if (isRunning()) return;
-        StructureSnapshot<SequenceSnapshot<Integer>> inputSnapshot =
-                algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
+        StructureSnapshot<SequenceSnapshot<Integer>> inputSnapshot;
+        if (algorithmInputSnapshot == null) {
+            inputSnapshot = captureStructureSnapshot();
+        } else {
+            inputSnapshot = algorithmInputSnapshot;
+        }
         List<Integer> values = inputSnapshot.state().values();
         if (values.isEmpty()) return;
         String algorithmId = selectedAlgorithmId();
@@ -405,7 +411,23 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmSelector != null) {
             algorithmSelector.getSelectionModel().select(index);
         }
+        notifyAlgorithmSelection();
         return true;
+    }
+
+    @Override
+    public List<String> algorithmIds() {
+        return algorithmIds;
+    }
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        if (listener == null) {
+            algorithmSelectionListener = ignored -> { };
+        } else {
+            algorithmSelectionListener = listener;
+        }
+        notifyAlgorithmSelection();
     }
 
     @FXML
@@ -469,7 +491,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         bindButton(addElementBtn, "action.sort.add");
         bindButton(deleteElementBtn, "action.sort.delete");
-        bindButton(findElementBtn, "action.sort.find");
         bindButton(updateElementBtn, "action.sort.update");
     }
 
@@ -484,12 +505,17 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return "array";
     }
 
-    private String selectedAlgorithmId() {
+    @Override
+    public String selectedAlgorithmId() {
         int index = 0;
         if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
             index = algorithmSelector.getSelectionModel().getSelectedIndex();
         }
-        return algorithmIds.isEmpty() ? null : algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        if (algorithmIds.isEmpty()) {
+            return null;
+        } else {
+            return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        }
     }
 
     private void bindAlgorithmSelector() {
@@ -500,7 +526,16 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             }
             return labels;
         }, I18N.localeProperty()));
-        Platform.runLater(() -> algorithmSelector.getSelectionModel().selectFirst());
+        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
+                (observable, previous, current) -> notifyAlgorithmSelection());
+        Platform.runLater(() -> {
+            algorithmSelector.getSelectionModel().selectFirst();
+            notifyAlgorithmSelection();
+        });
+    }
+
+    private void notifyAlgorithmSelection() {
+        algorithmSelectionListener.accept(selectedAlgorithmId());
     }
 
     private void bindStructureSelector() {

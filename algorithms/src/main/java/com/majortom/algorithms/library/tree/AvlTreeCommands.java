@@ -1,17 +1,17 @@
 package com.majortom.algorithms.library.tree;
 
 import com.majortom.algorithms.core.logging.Log;
-import com.majortom.algorithms.library.basic.tree.AVLTree;
+import com.majortom.algorithms.library.structure.AvlTreeStructure;
 
 import java.util.List;
 import java.util.Objects;
 
 /** Applies an ordered command batch directly to an isolated AVL tree. */
-public final class AvlTreeCommands implements TreeAlgorithm<Integer> {
+public final class AvlTreeCommands implements AvlCommandAlgorithm<Integer> {
 
     public static final int MAX_OPERATIONS = 100_000;
 
-    public void execute(AVLTree<Integer> tree, List<AvlCommand> commands) {
+    public void execute(AvlTreeStructure<Integer> tree, List<AvlCommand> commands) {
         Objects.requireNonNull(tree, "tree");
         Objects.requireNonNull(commands, "commands");
         if ((long) tree.size() + commands.size() > MAX_OPERATIONS) {

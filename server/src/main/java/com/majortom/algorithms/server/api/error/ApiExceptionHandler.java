@@ -41,6 +41,10 @@ public final class ApiExceptionHandler {
 
     private static String message(Throwable failure) {
         String message = failure.getMessage();
-        return message == null || message.isBlank() ? failure.getClass().getSimpleName() : message;
+        if (message == null || message.isBlank()) {
+            return failure.getClass().getSimpleName();
+        } else {
+            return message;
+        }
     }
 }

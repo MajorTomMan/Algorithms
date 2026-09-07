@@ -20,8 +20,18 @@ public record LinkedListViewState(Map<Long, Node> nodes) {
         Map<Long, Node> nodes = new LinkedHashMap<>();
         ListNode<Integer> current = head;
         while (current != null && !nodes.containsKey(current.getId())) {
-            Long nextId = current.getNext() == null ? null : current.getNext().getId();
-            Long previousId = current.getPrevious() == null ? null : current.getPrevious().getId();
+            Long nextId;
+            if (current.getNext() == null) {
+                nextId = null;
+            } else {
+                nextId = current.getNext().getId();
+            }
+            Long previousId;
+            if (current.getPrevious() == null) {
+                previousId = null;
+            } else {
+                previousId = current.getPrevious().getId();
+            }
             nodes.put(current.getId(), new Node(current.getId(), current.getValue(), nextId, previousId));
             current = current.getNext();
         }

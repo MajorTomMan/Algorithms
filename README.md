@@ -41,8 +41,9 @@ Array<T>                         -> ArrayStructure<T>
 LinkedList<T>                    -> LinkedStructure / StackStructure / QueueStructure
 Tree<T>                          -> GeneralTreeStructure<T>（General/N-ary Tree）
 Graph<T>                         -> GraphStructure<T>（directedness 为配置）
+WeightedGraph<T>                 -> WeightedGraphStructure<T>（复用 Graph topology）
 String                           -> StringStructure
-AVLTree<T>                       -> SearchTreeStructure<T>（Tree algorithm runtime 使用）
+AVLTree<T>                       -> AvlTreeStructure<T>
 HashTableStructure<K,V>          -> 仅 Contract，当前没有 concrete implementation
 ```
 
@@ -54,7 +55,9 @@ structure.linked-list.Integer
 structure.stack.Integer
 structure.queue.Integer
 structure.tree.Integer
+structure.tree.avl.Integer
 structure.graph.Integer
+structure.graph.weighted.Integer
 structure.string.String
 ```
 
@@ -87,6 +90,20 @@ move(node, newParent[, index])
 
 `move` 会维护树不变量并拒绝形成 cycle；不会通过 Controller 直接修改 children。
 
+### Structure API 与 Workbench 操作边界
+
+领域 Structure API 保留完整的 mutation + read/query 能力。`get / peek / front / rear / find` 等只读方法仍是正式 API，不因为 Workbench 精简操作按钮而删除。
+
+Workbench 的 Structure 模式只把真实 mutation 暴露为操作按钮，并通过 Visualizer / Selection / Inspector 直接展示当前结构事实：
+
+```text
+Domain / Structure API    CRUD + read/query
+Structure Workbench       mutation + direct inspect
+Algorithm Workbench       search / traverse / sort / pathfinding 等有执行过程的算法
+```
+
+因此 Queue 的 front/rear、Stack 的 top、Array 的 index/value、Tree/Graph 的节点关系属于可直接观察的结构状态，不再额外包装成“查询按钮”；真正需要逐步执行、ObservationEvent、Timeline 和回放的搜索/遍历才进入 Algorithm 模式。
+
 ## Event 边界
 
 Structure Contract 不暴露 `raw()` 或 mutable collection/array 逃生口。
@@ -109,7 +126,7 @@ Runtime / Timeline
 Array       Inserted / Removed / Updated / Swapped
 Linked      NodeInserted / NodeRemoved / ValueChanged / NextChanged / PreviousChanged
 Tree        NodeInserted / NodeRemoved / ValueChanged / RootChanged / ChildInserted / ChildRemoved / LeftChanged / RightChanged
-Graph       VertexAdded / VertexRemoved / EdgeAdded / EdgeRemoved
+Graph       VertexAdded / VertexRemoved / EdgeAdded / EdgeRemoved / EdgeWeightChanged
 String      Inserted / Removed / Updated / Replaced
 Runtime     Started / Paused / Resumed / Completed / Cancelled / Failed
 Snapshot    Created / Restored
@@ -145,8 +162,10 @@ Snapshot reconstruction 会验证 canonical invariant；Server execution catalog
 ```java
 void Sort<T>.sort(ArrayStructure<T> array);
 List<T> GraphTraversal<T>.traverse(GraphStructure<T> graph, T startNode);
+void MinimumSpanningAlgorithm<T>.build(WeightedGraphStructure<T> source, WeightedGraphStructure<T> result);
 List<Integer> StringSearch.search(StringStructure target, java.lang.String pattern);
-void AvlTreeCommands.execute(AVLTree<Integer> tree, List<AvlCommand> commands);
+SubstringRange LongestSubstringAlgorithm.find(StringStructure source);
+void AvlCommandAlgorithm<T>.execute(AvlTreeStructure<T> tree, List<AvlCommand> commands);
 GridMaze ArrayMazeGenerator.generate(MazeDimensions dimensions, long seed);
 List<GridPoint> ArrayMazePathfinder.findPath(GridMaze maze, GridPoint start, GridPoint goal);
 GraphSnapshot<T> GraphMazeGenerator<T>.generate(MazeDimensions dimensions, long seed);
@@ -185,6 +204,7 @@ SequenceSnapshot
 GeneralTreeSnapshot
 BinaryTreeSnapshot
 GraphSnapshot
+WeightedGraphSnapshot
 StringSnapshot
 MazeSnapshot
 ```

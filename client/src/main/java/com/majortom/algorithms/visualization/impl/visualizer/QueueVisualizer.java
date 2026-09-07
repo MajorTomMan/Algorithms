@@ -67,7 +67,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
-        surface.setSafeInsets(new javafx.geometry.Insets(24.0d, 16.0d, 68.0d, 16.0d));
+        surface.setSafeInsets(new javafx.geometry.Insets(34.0d, 16.0d, 82.0d, 16.0d));
         frontLabel.getStyleClass().addAll("linear-role-label", "queue-front-label");
         rearLabel.getStyleClass().addAll("linear-role-label", "queue-rear-label");
         dequeueLabel.getStyleClass().addAll("linear-flow-label", "queue-dequeue-label");
@@ -197,7 +197,12 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
         }
-        Set<Integer> newIndexes = pendingVersion == version ? pendingNewIndexes : Set.of();
+        Set<Integer> newIndexes;
+        if (pendingVersion == version) {
+            newIndexes = pendingNewIndexes;
+        } else {
+            newIndexes = Set.of();
+        }
 
         for (Map.Entry<Integer, NodeView> entry : items.entrySet()) {
             ElementBounds bounds = result.elements().get(id(entry.getKey()));
@@ -235,17 +240,48 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         }
         double top = Math.min(front.y(), rear.y());
         double bottom = Math.max(front.y() + front.height(), rear.y() + rear.height());
-        frontLabel.relocate(front.x() + 4.0d, Math.max(2.0d, top - 28.0d));
-        rearLabel.relocate(rear.x() + rear.width() - 44.0d, Math.max(2.0d, top - 28.0d));
+        if (items.size() == 1) {
+            frontLabel.setText("FRONT / REAR ↓");
+            frontLabel.setVisible(true);
+            rearLabel.setVisible(false);
+            relocateCentered(frontLabel, front.x() + front.width() / 2.0d, Math.max(2.0d, top - 28.0d));
+            dequeueLabel.relocate(front.x(), bottom + 14.0d);
+            enqueueLabel.relocate(
+                    Math.max(front.x(), front.x() + front.width() - textWidth(enqueueLabel)),
+                    bottom + 32.0d);
+            return;
+        }
+        frontLabel.setText("FRONT ↓");
+        rearLabel.setText("↓ REAR");
+        frontLabel.setVisible(true);
+        rearLabel.setVisible(true);
+        relocateCentered(frontLabel, front.x() + front.width() / 2.0d, Math.max(2.0d, top - 28.0d));
+        relocateCentered(rearLabel, rear.x() + rear.width() / 2.0d, Math.max(2.0d, top - 28.0d));
         dequeueLabel.relocate(front.x(), bottom + 14.0d);
-        enqueueLabel.relocate(rear.x() + rear.width() - 62.0d, bottom + 14.0d);
+        enqueueLabel.relocate(
+                Math.max(rear.x(), rear.x() + rear.width() - textWidth(enqueueLabel)),
+                bottom + 14.0d);
     }
 
     private void positionEmptyLabels() {
+        frontLabel.setText("FRONT ↓");
+        rearLabel.setText("↓ REAR");
+        frontLabel.setVisible(true);
+        rearLabel.setVisible(true);
         frontLabel.relocate(40.0d, 30.0d);
         rearLabel.relocate(130.0d, 30.0d);
         dequeueLabel.relocate(40.0d, 86.0d);
         enqueueLabel.relocate(130.0d, 86.0d);
+    }
+
+    private static void relocateCentered(Text label, double centerX, double y) {
+        label.applyCss();
+        label.relocate(centerX - textWidth(label) / 2.0d, y);
+    }
+
+    private static double textWidth(Text label) {
+        label.applyCss();
+        return Math.max(0.0d, label.getLayoutBounds().getWidth());
     }
 
     private void handleLayoutFailure(long version, Throwable failure) {
@@ -253,7 +289,12 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
             return;
         }
         LayoutFailureReporter.report("Queue", failure);
-        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
+        List<Animation> transitions;
+        if (pendingVersion == version) {
+            transitions = pendingTransitions;
+        } else {
+            transitions = List.of();
+        }
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewIndexes = Set.of();
@@ -299,7 +340,11 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     public void setSelectionListener(IntConsumer listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void clearSelection() {
@@ -371,7 +416,11 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     private static double positive(double value, double fallback) {
-        return value > 0.0d ? value : fallback;
+        if (value > 0.0d) {
+            return value;
+        } else {
+            return fallback;
+        }
     }
 
     private static String id(int index) {

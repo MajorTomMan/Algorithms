@@ -195,6 +195,7 @@ public final class Graph<T> implements GraphStructure<T> {
         return Collections.unmodifiableList(new ArrayList<>(neighbors));
     }
 
+    @Override
     public Vertex<T> vertex(T value) {
         return verticesByValue.get(value);
     }

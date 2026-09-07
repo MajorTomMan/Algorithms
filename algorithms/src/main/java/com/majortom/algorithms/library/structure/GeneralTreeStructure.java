@@ -12,7 +12,13 @@ public interface GeneralTreeStructure<T> extends TreeStructure<T> {
 
     GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, int index, T value);
 
+    GeneralTreeNode<T> addParent(GeneralTreeNode<T> node, T value);
+
     T set(GeneralTreeNode<T> node, T value);
+
+    GeneralTreeNode<T> findById(long id);
+
+    GeneralTreeNode<T> findFirstByValue(T value);
 
     boolean remove(GeneralTreeNode<T> node);
 

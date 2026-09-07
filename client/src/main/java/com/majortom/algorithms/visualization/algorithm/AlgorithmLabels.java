@@ -22,7 +22,10 @@ public final class AlgorithmLabels {
             Map.entry("maze-pathfinder-dfs", "algorithm.maze.solve.dfs"),
             Map.entry("tree-avl", "algorithm.tree.avl"),
             Map.entry("graph-bfs", "algorithm.graph.bfs"),
-            Map.entry("kmp", "algorithm.string.kmp"));
+            Map.entry("kruskal", "algorithm.graph.kruskal"),
+            Map.entry("kruskal-minimum-spanning", "algorithm.graph.kruskal"),
+            Map.entry("kmp", "algorithm.string.kmp"),
+            Map.entry("longest-unique-substring", "algorithm.string.longest_unique_substring"));
 
     private AlgorithmLabels() {
     }

@@ -1,7 +1,7 @@
 package com.majortom.algorithms.library.basic.tree;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
-import com.majortom.algorithms.library.structure.SearchTreeStructure;
+import com.majortom.algorithms.library.structure.AvlTreeStructure;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,7 +9,7 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
-public final class AVLTree<T extends Comparable<? super T>> implements SearchTreeStructure<T> {
+public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeStructure<T> {
     private AVLTreeNode<T> root;
     private int size;
     private long nextNodeId = 1L;
@@ -44,7 +44,11 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
             if (comparison == 0) {
                 return current;
             }
-            current = comparison < 0 ? left(current) : right(current);
+            if (comparison < 0) {
+                current = left(current);
+            } else {
+                current = right(current);
+            }
         }
         return null;
     }
@@ -110,7 +114,12 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         } else if (comparison > 0) {
             node.setRight(remove(right(node), value, removed));
         } else if (left(node) == null || right(node) == null) {
-            AVLTreeNode<T> replacement = left(node) != null ? left(node) : right(node);
+            AVLTreeNode<T> replacement;
+            if (left(node) != null) {
+                replacement = left(node);
+            } else {
+                replacement = right(node);
+            }
             removed[0] = true;
             StructureEvents.treeNodeRemoved(node.getId(), node.getValue());
             return replacement;
@@ -171,7 +180,11 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
             return null;
         }
         if (node.getId() == id) {
-            return leftRotation ? rotateLeftInternal(node) : rotateRightInternal(node);
+            if (leftRotation) {
+                return rotateLeftInternal(node);
+            } else {
+                return rotateRightInternal(node);
+            }
         }
         node.setLeft(rotateAt(left(node), id, leftRotation));
         node.setRight(rotateAt(right(node), id, leftRotation));
@@ -250,31 +263,60 @@ public final class AVLTree<T extends Comparable<? super T>> implements SearchTre
         if (root == newRoot) {
             return;
         }
-        Long previousId = root == null ? null : root.getId();
+        Long previousId;
+        if (root == null) {
+            previousId = null;
+        } else {
+            previousId = root.getId();
+        }
         root = newRoot;
-        StructureEvents.treeRootChanged(previousId, root == null ? null : root.getId());
+        if (root == null) {
+            StructureEvents.treeRootChanged(previousId, null);
+        } else {
+            StructureEvents.treeRootChanged(previousId, root.getId());
+        }
     }
 
     private int height(AVLTreeNode<T> node) {
-        return node == null ? 0 : node.getHeight();
+        if (node == null) {
+            return 0;
+        } else {
+            return node.getHeight();
+        }
     }
 
     private int count(AVLTreeNode<T> node) {
-        return node == null ? 0 : node.getSubTreeCount();
+        if (node == null) {
+            return 0;
+        } else {
+            return node.getSubTreeCount();
+        }
     }
 
     private long maxId(AVLTreeNode<T> node) {
-        return node == null ? 0L : Math.max(node.getId(), Math.max(maxId(left(node)), maxId(right(node))));
+        if (node == null) {
+            return 0L;
+        } else {
+            return Math.max(node.getId(), Math.max(maxId(left(node)), maxId(right(node))));
+        }
     }
 
     @SuppressWarnings("unchecked")
     private AVLTreeNode<T> left(AVLTreeNode<T> node) {
-        return node == null ? null : (AVLTreeNode<T>) node.getLeft();
+        if (node == null) {
+            return null;
+        } else {
+            return (AVLTreeNode<T>) node.getLeft();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private AVLTreeNode<T> right(AVLTreeNode<T> node) {
-        return node == null ? null : (AVLTreeNode<T>) node.getRight();
+        if (node == null) {
+            return null;
+        } else {
+            return (AVLTreeNode<T>) node.getRight();
+        }
     }
 
     @SuppressWarnings("unchecked")

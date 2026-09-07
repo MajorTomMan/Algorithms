@@ -168,7 +168,12 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
             return;
         }
         EventEnvelope next = pendingEvents.peekFirst();
-        long delay = next != null && next.event() instanceof ExecutionLifecycleEvent ? 0L : Math.max(0L, delayMillis);
+        long delay;
+        if (next != null && next.event() instanceof ExecutionLifecycleEvent) {
+            delay = 0L;
+        } else {
+            delay = Math.max(0L, delayMillis);
+        }
         dispatchInFlight = true;
         playbackScheduler.schedule(this::dispatchNext, delay, TimeUnit.MILLISECONDS);
     }
@@ -230,7 +235,12 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
                     completeDrainedIfIdle();
                     return;
                 }
-                long delay = event.event() instanceof ExecutionLifecycleEvent ? 0L : Math.max(0L, delayMillisSupplier.getAsLong());
+                long delay;
+                if (event.event() instanceof ExecutionLifecycleEvent) {
+                    delay = 0L;
+                } else {
+                    delay = Math.max(0L, delayMillisSupplier.getAsLong());
+                }
                 scheduleNextLocked(delay);
             }
         }

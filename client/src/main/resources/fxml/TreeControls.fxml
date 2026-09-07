@@ -66,12 +66,12 @@
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
+        <Button fx:id="addParentBtn" onAction="#handleAddParent" maxWidth="Infinity">
+            <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+        </Button>
         <HBox spacing="6" styleClass="operation-row">
             <Button fx:id="deleteBtn" onAction="#handleDelete" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
-            </Button>
-            <Button fx:id="findBtn" onAction="#handleFind" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
             </Button>
             <Button fx:id="updateBtn" onAction="#handleUpdate" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>

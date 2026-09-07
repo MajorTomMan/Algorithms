@@ -58,6 +58,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private Operation selectedOperation = Operation.GENERATE;
     private boolean structureSelectionEnabled = true;
     private Consumer<CellSelection> selectionListener = ignored -> { };
+    private Consumer<String> algorithmSelectionListener = ignored -> { };
 
     @FXML private ComboBox<String> structureSelector;
     @FXML private ComboBox<String> generatorSelector;
@@ -115,6 +116,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             if (selected) {
                 selectedOperation = Operation.GENERATE;
                 updateControlState();
+                notifyAlgorithmSelection();
             }
             return selected;
         }
@@ -123,10 +125,40 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             if (selected) {
                 selectedOperation = Operation.SOLVE;
                 updateControlState();
+                notifyAlgorithmSelection();
             }
             return selected;
         }
         return false;
+    }
+
+    @Override
+    public List<String> algorithmIds() {
+        List<String> result = new java.util.ArrayList<>();
+        result.addAll(allGenerators);
+        result.addAll(arrayPathfinders);
+        return List.copyOf(result);
+    }
+
+    @Override
+    public String selectedAlgorithmId() {
+        if (selectedOperation == Operation.SOLVE && !arrayPathfinders.isEmpty()) {
+            return selectedId(pathfinderSelector, arrayPathfinders);
+        }
+        if (!allGenerators.isEmpty()) {
+            return selectedId(generatorSelector, allGenerators);
+        }
+        return null;
+    }
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        if (listener == null) {
+            algorithmSelectionListener = ignored -> { };
+        } else {
+            algorithmSelectionListener = listener;
+        }
+        notifyAlgorithmSelection();
     }
 
     @FXML
@@ -307,7 +339,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     public String algorithmInputSnapshotId() {
-        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+        if (algorithmInputSnapshot == null) {
+            return null;
+        } else {
+            return algorithmInputSnapshot.id();
+        }
     }
 
     @Override
@@ -399,7 +435,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (algorithmResultSnapshot != null) {
             return algorithmResultSnapshot;
         }
-        return algorithmInputSnapshot == null ? mazeSnapshot() : algorithmInputSnapshot.state();
+        if (algorithmInputSnapshot == null) {
+            return mazeSnapshot();
+        } else {
+            return algorithmInputSnapshot.state();
+        }
     }
 
     private GridMaze gridMaze(MazeSnapshot state) {
@@ -413,9 +453,17 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private void applyStructureState(MazeSnapshot state, boolean render) {
         applyingStructureState = true;
         try {
-            structure = state.graphBased() ? Structure.GRAPH : Structure.ARRAY;
+            if (state.graphBased()) {
+                structure = Structure.GRAPH;
+            } else {
+                structure = Structure.ARRAY;
+            }
             if (structureSelector != null) {
-                structureSelector.getSelectionModel().select(structure == Structure.GRAPH ? 1 : 0);
+                if (structure == Structure.GRAPH) {
+                    structureSelector.getSelectionModel().select(1);
+                } else {
+                    structureSelector.getSelectionModel().select(0);
+                }
             }
             size = state.rows();
             if (sizeSlider != null) {
@@ -443,15 +491,27 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private MazeSnapshot.Cell cell(com.majortom.algorithms.library.maze.GridPoint point) {
-        return point == null ? null : new MazeSnapshot.Cell(point.row(), point.column());
+        if (point == null) {
+            return null;
+        } else {
+            return new MazeSnapshot.Cell(point.row(), point.column());
+        }
     }
 
     private com.majortom.algorithms.library.maze.GridPoint point(MazeSnapshot.Cell cell) {
-        return cell == null ? null : new com.majortom.algorithms.library.maze.GridPoint(cell.row(), cell.column());
+        if (cell == null) {
+            return null;
+        } else {
+            return new com.majortom.algorithms.library.maze.GridPoint(cell.row(), cell.column());
+        }
     }
 
     public void setSelectionListener(Consumer<CellSelection> listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
@@ -475,7 +535,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (point.equals(state.entrance())) return "ENTRANCE";
         if (point.equals(state.exit())) return "EXIT";
         int index = point.row() * state.columns() + point.column();
-        return state.openCells().get(index) ? "OPEN" : "WALL";
+        if (state.openCells().get(index)) {
+            return "OPEN";
+        } else {
+            return "WALL";
+        }
     }
 
     private void clearCellSelection() {
@@ -544,6 +608,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                     if (newValue.intValue() >= 0 && !isRunning()) {
                         selectedOperation = Operation.GENERATE;
                         updateControlState();
+                        notifyAlgorithmSelection();
                     }
                 });
         pathfinderSelector.getSelectionModel().selectedIndexProperty().addListener(
@@ -551,18 +616,21 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                     if (newValue.intValue() >= 0 && !isRunning()) {
                         selectedOperation = Operation.SOLVE;
                         updateControlState();
+                        notifyAlgorithmSelection();
                     }
                 });
         generatorSelector.showingProperty().addListener((observable, oldValue, showing) -> {
             if (showing && !isRunning()) {
                 selectedOperation = Operation.GENERATE;
                 updateControlState();
+                notifyAlgorithmSelection();
             }
         });
         pathfinderSelector.showingProperty().addListener((observable, oldValue, showing) -> {
             if (showing && !isRunning()) {
                 selectedOperation = Operation.SOLVE;
                 updateControlState();
+                notifyAlgorithmSelection();
             }
         });
         Platform.runLater(() -> {
@@ -583,6 +651,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (!generatorSelector.getItems().isEmpty()) generatorSelector.getSelectionModel().selectFirst();
         if (!pathfinderSelector.getItems().isEmpty()) pathfinderSelector.getSelectionModel().selectFirst();
         selectedOperation = Operation.GENERATE;
+        notifyAlgorithmSelection();
+    }
+
+    private void notifyAlgorithmSelection() {
+        algorithmSelectionListener.accept(selectedAlgorithmId());
     }
 
     private String selectedId(ComboBox<String> comboBox, List<String> ids) {

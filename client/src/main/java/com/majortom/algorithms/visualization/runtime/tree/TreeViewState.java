@@ -107,8 +107,18 @@ public record TreeViewState(
         if (node == null || nodes.containsKey(node.id())) {
             return;
         }
-        Long leftId = node.left() == null ? null : node.left().id();
-        Long rightId = node.right() == null ? null : node.right().id();
+        Long leftId;
+        if (node.left() == null) {
+            leftId = null;
+        } else {
+            leftId = node.left().id();
+        }
+        Long rightId;
+        if (node.right() == null) {
+            rightId = null;
+        } else {
+            rightId = node.right().id();
+        }
         nodes.put(node.id(), Node.binary(node.id(), node.value(), leftId, rightId));
         collectBinary(node.left(), nodes);
         collectBinary(node.right(), nodes);

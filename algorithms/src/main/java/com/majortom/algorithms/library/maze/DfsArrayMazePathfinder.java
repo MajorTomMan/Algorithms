@@ -19,6 +19,7 @@ public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
         boolean found = visit(maze, start, goal, discovered, previous);
         if (!found) return List.of();
         List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
+        ArrayMazeSupport.tracePath(path);
         Observations.pathFound(path, GridPoint::row, GridPoint::column);
         return path;
     }

@@ -204,8 +204,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             }
         }
 
-        TreeElkLayout.Kind kind = state.kind() == TreeViewState.Kind.GENERAL
-                ? TreeElkLayout.Kind.GENERAL : TreeElkLayout.Kind.BINARY;
+        TreeElkLayout.Kind kind;
+        if (state.kind() == TreeViewState.Kind.GENERAL) {
+            kind = TreeElkLayout.Kind.GENERAL;
+        } else {
+            kind = TreeElkLayout.Kind.BINARY;
+        }
         return new LayoutRequest(kind, nodes, links);
     }
 
@@ -214,8 +218,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             return;
         }
         EdgeKey key = new EdgeKey(sourceId, targetId, relation, index);
-        TreeElkLayout.Relation elkRelation = relation == Relation.LEFT
-                ? TreeElkLayout.Relation.LEFT : TreeElkLayout.Relation.RIGHT;
+        TreeElkLayout.Relation elkRelation;
+        if (relation == Relation.LEFT) {
+            elkRelation = TreeElkLayout.Relation.LEFT;
+        } else {
+            elkRelation = TreeElkLayout.Relation.RIGHT;
+        }
         links.add(new Link(routeId(key), sourceId, targetId, elkRelation, index));
     }
 
@@ -283,7 +291,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
         }
-        Set<Long> newNodeIds = pendingVersion == version ? pendingNewNodeIds : Set.of();
+        Set<Long> newNodeIds;
+        if (pendingVersion == version) {
+            newNodeIds = pendingNewNodeIds;
+        } else {
+            newNodeIds = Set.of();
+        }
 
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             ElementBounds bounds = result.elements().get(TreeElkLayout.nodeId(entry.getKey()));
@@ -329,7 +342,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
+        List<Animation> transitions;
+        if (pendingVersion == version) {
+            transitions = pendingTransitions;
+        } else {
+            transitions = List.of();
+        }
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
@@ -437,7 +455,11 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     }
 
     public void setSelectionListener(LongConsumer listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void clearSelection() {

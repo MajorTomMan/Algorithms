@@ -81,14 +81,20 @@ public class EffectUtils {
      */
     private static String getDynamicColor(Button button) {
         // 尝试获取背景颜色
-        Paint fill = button.getBackground() != null && !button.getBackground().getFills().isEmpty()
-                ? button.getBackground().getFills().get(0).getFill()
-                : null;
+        Paint fill;
+        if (button.getBackground() != null && !button.getBackground().getFills().isEmpty()) {
+            fill = button.getBackground().getFills().get(0).getFill();
+        } else {
+            fill = null;
+        }
 
         // 尝试获取边框颜色
-        Paint stroke = button.getBorder() != null && !button.getBorder().getStrokes().isEmpty()
-                ? button.getBorder().getStrokes().get(0).getTopStroke()
-                : null;
+        Paint stroke;
+        if (button.getBorder() != null && !button.getBorder().getStrokes().isEmpty()) {
+            stroke = button.getBorder().getStrokes().get(0).getTopStroke();
+        } else {
+            stroke = null;
+        }
 
         Paint target = fill;
         if (stroke instanceof Color) {

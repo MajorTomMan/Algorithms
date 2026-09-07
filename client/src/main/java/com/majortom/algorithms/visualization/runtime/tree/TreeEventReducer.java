@@ -38,9 +38,12 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
         Object event = envelope.event();
         if (event instanceof TreeStructureEvent.NodeInserted inserted) {
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
-            TreeViewState.Node node = previous.kind() == TreeViewState.Kind.GENERAL
-                    ? TreeViewState.Node.general(inserted.nodeId(), (Integer) inserted.value(), List.of())
-                    : TreeViewState.Node.binary(inserted.nodeId(), (Integer) inserted.value(), null, null);
+            TreeViewState.Node node;
+            if (previous.kind() == TreeViewState.Kind.GENERAL) {
+                node = TreeViewState.Node.general(inserted.nodeId(), (Integer) inserted.value(), List.of());
+            } else {
+                node = TreeViewState.Node.binary(inserted.nodeId(), (Integer) inserted.value(), null, null);
+            }
             nodes.put(inserted.nodeId(), node);
             return changed(copy(previous, previous.rootId(), nodes,
                     Set.of(inserted.nodeId()), Set.of(), previous.visitedNodeIds(), false));
@@ -101,9 +104,18 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             return relationChanged(previous, changed.nodeId(), changed.childId(), false);
         }
         if (event instanceof TreeStructureEvent.RootChanged changed) {
-            Set<Long> current = changed.rootId() == null ? Set.of() : Set.of(changed.rootId());
-            Set<Long> observed = changed.previousRootId() == null
-                    ? Set.of() : existing(previous, changed.previousRootId());
+            Set<Long> current;
+            if (changed.rootId() == null) {
+                current = Set.of();
+            } else {
+                current = Set.of(changed.rootId());
+            }
+            Set<Long> observed;
+            if (changed.previousRootId() == null) {
+                observed = Set.of();
+            } else {
+                observed = existing(previous, changed.previousRootId());
+            }
             return changed(copy(previous, changed.rootId(), previous.nodes(), current, observed,
                     previous.visitedNodeIds(), false));
         }
@@ -127,8 +139,18 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
         if (event instanceof ObservationEvent.Examined examined) {
             Long from = treeEntityId(examined.fromRef());
             Long to = treeEntityId(examined.toRef());
-            Set<Long> current = from != null && previous.nodes().containsKey(from) ? Set.of(from) : Set.of();
-            Set<Long> observed = to != null && previous.nodes().containsKey(to) ? Set.of(to) : Set.of();
+            Set<Long> current;
+            if (from != null && previous.nodes().containsKey(from)) {
+                current = Set.of(from);
+            } else {
+                current = Set.of();
+            }
+            Set<Long> observed;
+            if (to != null && previous.nodes().containsKey(to)) {
+                observed = Set.of(to);
+            } else {
+                observed = Set.of();
+            }
             if (current.isEmpty() && observed.isEmpty()) {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
@@ -148,10 +170,20 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             return Reduction.unchanged(previous, EventImportance.TRANSIENT);
         }
         Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
-        nodes.put(nodeId, left ? node.withLeft(childId) : node.withRight(childId));
-        return changed(copy(previous, previous.rootId(), nodes,
-                Set.of(nodeId), childId == null ? Set.of() : existing(previous, childId),
+        if (left) {
+            nodes.put(nodeId, node.withLeft(childId));
+        } else {
+            nodes.put(nodeId, node.withRight(childId));
+        }
+        if (childId == null) {
+            return changed(copy(previous, previous.rootId(), nodes,
+                Set.of(nodeId), Set.of(),
                 previous.visitedNodeIds(), false));
+        } else {
+            return changed(copy(previous, previous.rootId(), nodes,
+                Set.of(nodeId), existing(previous, childId),
+                previous.visitedNodeIds(), false));
+        }
     }
 
     private static TreeViewState copy(TreeViewState previous, Long rootId, Map<Long, TreeViewState.Node> nodes,
@@ -160,7 +192,11 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
     }
 
     private static Set<Long> existing(TreeViewState state, long id) {
-        return state.nodes().containsKey(id) ? Set.of(id) : Set.of();
+        if (state.nodes().containsKey(id)) {
+            return Set.of(id);
+        } else {
+            return Set.of();
+        }
     }
 
     private static Long treeEntityId(ObservationEvent.Reference reference) {

@@ -20,6 +20,21 @@
         </HBox>
     </VBox>
 
+    <VBox spacing="7">
+        <styleClass>
+            <String fx:value="control-section" />
+            <String fx:value="control-card" />
+            <String fx:value="structure-section" />
+        </styleClass>
+        <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
+            onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
+            <Label fx:id="structureLabel" styleClass="control-label" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="⌃" styleClass="section-chevron" />
+        </HBox>
+        <ComboBox fx:id="structureSelector" maxWidth="Infinity" />
+    </VBox>
+
     <VBox spacing="8">
         <styleClass>
             <String fx:value="control-section" />
@@ -49,13 +64,8 @@
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="tertiaryBtn" onAction="#handleTertiary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
-            </Button>
-            <Button fx:id="quaternaryBtn" onAction="#handleQuaternary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
-            </Button>
-        </HBox>
+        <Button fx:id="quaternaryBtn" maxWidth="Infinity">
+            <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+        </Button>
     </VBox>
 </VBox>

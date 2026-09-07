@@ -92,13 +92,21 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         }
 
         gc.setLineWidth(1.0d);
-        gc.setStroke(density == VisualDensity.DETAIL ? GRID_STROKE : GRID_STROKE_COMPACT);
+        if (density == VisualDensity.DETAIL) {
+            gc.setStroke(GRID_STROKE);
+        } else {
+            gc.setStroke(GRID_STROKE_COMPACT);
+        }
         for (int row = 0; row < state.rows(); row++) {
             for (int column = 0; column < state.columns(); column++) {
                 int index = row * state.columns() + column;
                 double x = column * cellWidth;
                 double y = row * cellHeight;
-                gc.setFill(state.openCells().get(index) ? RAN_WHITE : WALL_FILL);
+                if (state.openCells().get(index)) {
+                    gc.setFill(RAN_WHITE);
+                } else {
+                    gc.setFill(WALL_FILL);
+                }
                 gc.fillRect(x, y, cellWidth, cellHeight);
                 gc.strokeRect(x + 0.5d, y + 0.5d,
                         Math.max(0.0d, cellWidth - 1.0d),
@@ -149,7 +157,12 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
 
     private void drawVisited(MazeViewState state, double cellWidth, double cellHeight) {
         gc.setFill(RAN_BLUE);
-        double inset = density == VisualDensity.DENSE ? 0.0d : Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.12d);
+        double inset;
+        if (density == VisualDensity.DENSE) {
+            inset = 0.0d;
+        } else {
+            inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.12d);
+        }
         for (GridPoint point : state.visited()) {
             if (!inside(state, point)) continue;
             double x = point.column() * cellWidth;
@@ -255,7 +268,11 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     }
 
     public void setSelectionListener(Consumer<GridPoint> listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void clearSelection() {

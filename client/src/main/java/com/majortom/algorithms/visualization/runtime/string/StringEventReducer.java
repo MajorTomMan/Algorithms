@@ -13,7 +13,11 @@ public final class StringEventReducer implements EventReducer<StringViewState> {
     private final String initialValue;
 
     public StringEventReducer(String initialValue) {
-        this.initialValue = initialValue == null ? "" : initialValue;
+        if (initialValue == null) {
+            this.initialValue = "";
+        } else {
+            this.initialValue = initialValue;
+        }
     }
 
     @Override

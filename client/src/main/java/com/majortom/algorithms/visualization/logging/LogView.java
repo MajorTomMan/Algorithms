@@ -38,7 +38,12 @@ public final class LogView extends ListView<LogView.Line> {
     }
 
     private void append(Instant timestamp, LogLevel level, String tag, String message) {
-        String normalizedTag = tag == null ? "" : tag;
+        String normalizedTag;
+        if (tag == null) {
+            normalizedTag = "";
+        } else {
+            normalizedTag = tag;
+        }
         getItems().add(new Line(TIME_FORMAT.format(timestamp), level, normalizedTag, message));
         scrollTo(getItems().size() - 1);
     }
@@ -62,7 +67,12 @@ public final class LogView extends ListView<LogView.Line> {
 
             Text time = new Text(line.time() + "  ");
             time.getStyleClass().add("log-time");
-            String tag = line.tag().isBlank() ? "" : line.tag() + ": ";
+            String tag;
+            if (line.tag().isBlank()) {
+                tag = "";
+            } else {
+                tag = line.tag() + ": ";
+            }
             Text message = new Text(tag + line.message());
             message.getStyleClass().add("log-message");
             TextFlow flow = new TextFlow(time, message);

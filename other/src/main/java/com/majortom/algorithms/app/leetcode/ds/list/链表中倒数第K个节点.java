@@ -17,6 +17,10 @@ public class 链表中倒数第K个节点{
         }
         ListNode<Integer> result=getKthFromEnd(head.getNext(), k);
         end++;
-        return end==k?head:result;
+        if (end==k) {
+            return head;
+        } else {
+            return result;
+        }
     }
 }

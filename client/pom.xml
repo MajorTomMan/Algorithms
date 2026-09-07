@@ -91,6 +91,15 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
             </plugin>
+<plugin>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-maven-plugin</artifactId>
+    <version>0.0.8</version>
+    <configuration>
+        <!-- The fully qualified main class name or module path -->
+        <mainClass>com.majortom.algorithms.App</mainClass>
+    </configuration>
+</plugin>
 
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

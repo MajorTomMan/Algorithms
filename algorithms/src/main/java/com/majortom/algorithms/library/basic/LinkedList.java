@@ -32,8 +32,18 @@ public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T
     @Override
     public void insert(int index, T value) {
         checkInsertIndex(index);
-        ListNode<T> next = index == size ? null : nodeAt(index);
-        ListNode<T> previous = next == null ? tail : next.getPrevious();
+        ListNode<T> next;
+        if (index == size) {
+            next = null;
+        } else {
+            next = nodeAt(index);
+        }
+        ListNode<T> previous;
+        if (next == null) {
+            previous = tail;
+        } else {
+            previous = next.getPrevious();
+        }
         ListNode<T> inserted = new ListNode<>(value);
         StructureEvents.linkedNodeInserted(inserted.getId(), value);
         inserted.setPrevious(previous);

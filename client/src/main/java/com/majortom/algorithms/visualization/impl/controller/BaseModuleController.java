@@ -113,7 +113,11 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         }
         for (Node child : pane.getChildren()) {
             if (child instanceof Label label && label.getStyleClass().contains("section-chevron")) {
-                label.setText(expanded ? "⌃" : "⌄");
+                if (expanded) {
+                    label.setText("⌃");
+                } else {
+                    label.setText("⌄");
+                }
                 return;
             }
         }

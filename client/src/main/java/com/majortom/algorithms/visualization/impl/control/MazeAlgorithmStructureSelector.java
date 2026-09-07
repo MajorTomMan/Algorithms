@@ -39,7 +39,12 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
     @SuppressWarnings("unchecked")
     private void connectGenerator() {
         Parent root = rootOf(this);
-        Node node = root == null ? null : root.lookup("#generatorSelector");
+        Node node;
+        if (root == null) {
+            node = null;
+        } else {
+            node = root.lookup("#generatorSelector");
+        }
         if (!(node instanceof ComboBox<?> comboBox)) {
             return;
         }
@@ -57,7 +62,12 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
         if (syncing || generatorSelector == null) {
             return;
         }
-        List<String> candidates = getSelectionModel().getSelectedIndex() == 1 ? graphGenerators : arrayGenerators;
+        List<String> candidates;
+        if (getSelectionModel().getSelectedIndex() == 1) {
+            candidates = graphGenerators;
+        } else {
+            candidates = arrayGenerators;
+        }
         if (candidates.isEmpty()) {
             return;
         }
@@ -76,7 +86,11 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
         boolean graph = graphGenerators.stream().map(AlgorithmLabels::text).anyMatch(selectedGenerator::equals);
         syncing = true;
         try {
-            getSelectionModel().select(graph ? 1 : 0);
+            if (graph) {
+                getSelectionModel().select(1);
+            } else {
+                getSelectionModel().select(0);
+            }
         } finally {
             syncing = false;
         }

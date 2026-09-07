@@ -75,6 +75,41 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     }
 
     @Override
+    public GeneralTreeNode<T> addParent(GeneralTreeNode<T> node, T value) {
+        GeneralTreeNode<T> target = requireMember(node, "node");
+        GeneralTreeNode<T> previousParent = null;
+        int targetIndex = -1;
+        if (target != root) {
+            previousParent = parentOf(target);
+            if (previousParent == null) {
+                throw new IllegalArgumentException("node does not belong to this tree");
+            }
+            targetIndex = previousParent.getChildren().indexOf(target);
+            if (targetIndex < 0) {
+                throw new IllegalArgumentException("node does not belong to its parent");
+            }
+        }
+
+        GeneralTreeNode<T> newParent = new GeneralTreeNode<>(value);
+        StructureEvents.treeNodeInserted(newParent.getId(), value);
+
+        if (target == root) {
+            long previousRootId = root.getId();
+            root = newParent;
+            size++;
+            StructureEvents.treeRootChanged(previousRootId, newParent.getId());
+            newParent.addChild(0, target);
+            return newParent;
+        }
+
+        previousParent.addChild(targetIndex, newParent);
+        size++;
+        previousParent.removeChild(target);
+        newParent.addChild(0, target);
+        return newParent;
+    }
+
+    @Override
     public T set(GeneralTreeNode<T> node, T value) {
         GeneralTreeNode<T> target = requireMember(node, "node");
         T previous = target.getValue();
@@ -106,6 +141,7 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         return true;
     }
 
+    @Override
     public GeneralTreeNode<T> findById(long id) {
         if (root == null) {
             return null;
@@ -122,6 +158,7 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         return null;
     }
 
+    @Override
     public GeneralTreeNode<T> findFirstByValue(T value) {
         if (root == null) {
             return null;

@@ -76,7 +76,11 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     }
 
     public void setOnIndexSelected(IntConsumer onIndexSelected) {
-        this.onIndexSelected = onIndexSelected == null ? ignored -> { } : onIndexSelected;
+        if (onIndexSelected == null) {
+            this.onIndexSelected = ignored -> { };
+        } else {
+            this.onIndexSelected = onIndexSelected;
+        }
     }
 
     public void clearSelection() {
@@ -382,7 +386,12 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
         double startX = cell.getLayoutX();
         double startY = cell.getLayoutY();
-        double arc = x > startX ? -16.0d : 16.0d;
+        double arc;
+        if (x > startX) {
+            arc = -16.0d;
+        } else {
+            arc = 16.0d;
+        }
         return new Timeline(
                 new KeyFrame(Duration.ZERO,
                         new KeyValue(cell.layoutXProperty(), startX),
@@ -591,7 +600,11 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         if (actual > 0.0d) {
             return actual;
         }
-        return fallback > 0.0d ? fallback : 1.0d;
+        if (fallback > 0.0d) {
+            return fallback;
+        } else {
+            return 1.0d;
+        }
     }
 
     private static double quantize(double value) {

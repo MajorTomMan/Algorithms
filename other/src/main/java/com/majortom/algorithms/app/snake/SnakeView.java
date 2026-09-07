@@ -45,26 +45,33 @@ public class SnakeView {
     private void renderPlaying(StringBuilder sb, Snake snake, Food food, Map map, boolean paused) {
         Point head = snake.getHead();
         int score = Math.max(0, snake.length() - 1);
-
+        String title;
+        String help;
+        if (paused) {
+            title = "贪 吃 蛇  [已暂停]";
+            help = "按 P 继续，按 R 重开，按 Q 退出";
+        } else {
+            title = "贪 吃 蛇";
+            help = "WASD/方向键移动，P 暂停，R 重开，Q 退出";
+        }
         appendPanel(
-            sb,
-            paused ? "贪 吃 蛇  [已暂停]" : "贪 吃 蛇",
-            "分数   : " + score,
-            "长度   : " + snake.length(),
-            "蛇头坐标: (" + head.x + ", " + head.y + ")",
-            "食物坐标: (" + food.x + ", " + food.y + ")",
-            paused ? "按 P 继续，按 R 重开，按 Q 退出" :
-                "WASD/方向键移动，P 暂停，R 重开，Q 退出"
+                sb,
+                title,
+                "分数   : " + score,
+                "长度   : " + snake.length(),
+                "蛇头坐标: (" + head.x + ", " + head.y + ")",
+                "食物坐标: (" + food.x + ", " + food.y + ")",
+                help
         );
         sb.append("\n");
         appendBoard(sb, snake, food, map);
         if (paused) {
             sb.append("\n");
             appendPanel(
-                sb,
-                "已暂停",
-                "当前棋盘已冻结。",
-                "按 P 继续，或按 R 重新开始。"
+                    sb,
+                    "已暂停",
+                    "当前棋盘已冻结。",
+                    "按 P 继续，或按 R 重新开始。"
             );
         }
     }
@@ -72,14 +79,13 @@ public class SnakeView {
     private void renderGameOver(StringBuilder sb, Snake snake, Food food, Map map) {
         Point head = snake.getHead();
         int score = Math.max(0, snake.length() - 1);
-
         appendPanel(
-            sb,
-            "游 戏 结 束",
-            "分数     : " + score,
-            "长度     : " + snake.length(),
-            "最终蛇头坐标: (" + head.x + ", " + head.y + ")",
-            "按 R 重新开始，按 Q 退出"
+                sb,
+                "游 戏 结 束",
+                "分数     : " + score,
+                "长度     : " + snake.length(),
+                "最终蛇头坐标: (" + head.x + ", " + head.y + ")",
+                "按 R 重新开始，按 Q 退出"
         );
         sb.append("\n");
         appendBoard(sb, snake, food, map);
@@ -122,7 +128,11 @@ public class SnakeView {
             content.add(title);
         }
         for (String line : lines) {
-            content.add(line == null ? "" : line);
+            if (line == null) {
+                content.add("");
+            } else {
+                content.add(line);
+            }
         }
 
         sb.append(".").append(repeat('-', PANEL_WIDTH - 2)).append(".\n");

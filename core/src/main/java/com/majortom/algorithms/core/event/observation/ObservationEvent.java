@@ -14,7 +14,7 @@ import java.util.Objects;
 public sealed interface ObservationEvent extends ExecutionEvent, StatisticsContribution
         permits ObservationEvent.Compared, ObservationEvent.Visited, ObservationEvent.Examined,
         ObservationEvent.Matched, ObservationEvent.Fallback, ObservationEvent.Backtracked,
-        ObservationEvent.PathFound {
+        ObservationEvent.PathTraced, ObservationEvent.PathFound {
 
     /** Marker for stable references carried by observation facts. */
     sealed interface Reference permits EntityRef, IndexRef, CoordinateRef, ValueRef {
@@ -127,6 +127,18 @@ public sealed interface ObservationEvent extends ExecutionEvent, StatisticsContr
         @Override
         public Map<String, Long> metricDeltas() {
             return Map.of("backtracks", 1L);
+        }
+    }
+
+    /** One factual predecessor-chain step while reconstructing a discovered path. */
+    record PathTraced(Reference ref) implements ObservationEvent {
+        public PathTraced {
+            Objects.requireNonNull(ref, "ref");
+        }
+
+        @Override
+        public Map<String, Long> metricDeltas() {
+            return Map.of();
         }
     }
 

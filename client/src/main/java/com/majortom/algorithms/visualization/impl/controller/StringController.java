@@ -3,6 +3,8 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+import com.majortom.algorithms.library.string.LongestSubstringAlgorithm;
+import com.majortom.algorithms.library.string.StringAlgorithm;
 import com.majortom.algorithms.library.string.StringSearch;
 import com.majortom.algorithms.library.structure.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -32,11 +34,12 @@ import java.util.function.Consumer;
 public final class StringController extends BaseModuleController<StringViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
 
-    private final List<String> algorithmIds = AlgorithmCatalog.stringSearches();
+    private final List<String> algorithmIds = AlgorithmCatalog.stringAlgorithms();
     private final StringStructure source;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
     private boolean structureSelectionEnabled = true;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
+    private Consumer<String> algorithmSelectionListener = ignored -> { };
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -102,7 +105,6 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @FXML
     private void handleRemove() {
-        clearStringSelection();
         Integer index = parseIndex(indexField, false);
         Integer length = parsePositive(lengthField);
         if (index == null || length == null || index + length > source.length()) {
@@ -112,7 +114,10 @@ public final class StringController extends BaseModuleController<StringViewState
         if (executeStructureOperation("remove", () -> {
             source.remove(index, length);
             return null;
-        })) renderLatestStructureMutation();
+        })) {
+            clearStringSelection();
+            renderLatestStructureMutation();
+        }
     }
 
     @FXML
@@ -134,26 +139,64 @@ public final class StringController extends BaseModuleController<StringViewState
     @Override
     @FXML
     public void handleAlgorithmStart() {
-        if (isRunning()) return;
+        if (isRunning()) {
+            return;
+        }
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            return;
+        }
+        StructureSnapshot<StringSnapshot> inputSnapshot;
+        if (algorithmInputSnapshot == null) {
+            inputSnapshot = captureStructureSnapshot();
+        } else {
+            inputSnapshot = algorithmInputSnapshot;
+        }
+        String target = inputSnapshot.state().value();
+        StringStructure input = new com.majortom.algorithms.library.basic.String(target);
+        StringAlgorithm algorithm = module(
+                "algorithm.string.String." + algorithmId,
+                StringAlgorithm.class);
+        if (algorithm instanceof StringSearch search) {
+            runStringSearch(algorithmId, search, input, target);
+            return;
+        }
+        if (algorithm instanceof LongestSubstringAlgorithm longestSubstring) {
+            runLongestSubstring(algorithmId, longestSubstring, input, target);
+            return;
+        }
+        throw new IllegalStateException("Unsupported string algorithm contract: " + algorithm.getClass().getName());
+    }
+
+    private void runStringSearch(
+            String algorithmId,
+            StringSearch algorithm,
+            StringStructure input,
+            String target) {
         String pattern = patternField.getText();
         if (pattern == null || pattern.isEmpty()) {
             logI18n("message.string.pattern_required");
             return;
         }
-        StructureSnapshot<StringSnapshot> inputSnapshot =
-                algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
-        String target = inputSnapshot.state().value();
-        String algorithmId = selectedAlgorithmId();
-        if (algorithmId == null) {
-            return;
-        }
         stringVisualizer().setAlgorithmPattern(pattern);
-        StringStructure input = new com.majortom.algorithms.library.basic.String(target);
-        @SuppressWarnings("unchecked")
-        StringSearch algorithm = (StringSearch)
-                module("algorithm.string.String." + algorithmId, StringSearch.class);
-        startAlgorithm(algorithmId, Map.of("target", target, "pattern", pattern),
-                () -> algorithm.search(input, pattern), () -> new StringEventReducer(target));
+        startAlgorithm(
+                algorithmId,
+                Map.of("target", target, "pattern", pattern),
+                () -> algorithm.search(input, pattern),
+                () -> new StringEventReducer(target));
+    }
+
+    private void runLongestSubstring(
+            String algorithmId,
+            LongestSubstringAlgorithm algorithm,
+            StringStructure input,
+            String target) {
+        stringVisualizer().clearAlgorithmPattern();
+        startAlgorithm(
+                algorithmId,
+                Map.of("target", target),
+                () -> algorithm.find(input),
+                () -> new StringEventReducer(target));
     }
 
     @Override
@@ -165,7 +208,23 @@ public final class StringController extends BaseModuleController<StringViewState
         if (algorithmSelector != null) {
             algorithmSelector.getSelectionModel().select(index);
         }
+        notifyAlgorithmSelection();
         return true;
+    }
+
+    @Override
+    public List<String> algorithmIds() {
+        return algorithmIds;
+    }
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        if (listener == null) {
+            algorithmSelectionListener = ignored -> { };
+        } else {
+            algorithmSelectionListener = listener;
+        }
+        notifyAlgorithmSelection();
     }
 
     @Override
@@ -200,7 +259,11 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     public String algorithmInputSnapshotId() {
-        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+        if (algorithmInputSnapshot == null) {
+            return null;
+        } else {
+            return algorithmInputSnapshot.id();
+        }
     }
 
     @Override
@@ -215,8 +278,12 @@ public final class StringController extends BaseModuleController<StringViewState
             super.restoreAlgorithmState();
             return;
         }
-        String value = algorithmInputSnapshot == null
-                ? source.value() : algorithmInputSnapshot.state().value();
+        String value;
+        if (algorithmInputSnapshot == null) {
+            value = source.value();
+        } else {
+            value = algorithmInputSnapshot.state().value();
+        }
         renderViewState(StringViewState.source(value));
     }
 
@@ -224,7 +291,12 @@ public final class StringController extends BaseModuleController<StringViewState
     @Override
     public String describeStructureSnapshot(StringSnapshot state) {
         String value = state.value();
-        String preview = value.length() <= 18 ? value : value.substring(0, 18) + "…";
+        String preview;
+        if (value.length() <= 18) {
+            preview = value;
+        } else {
+            preview = value.substring(0, 18) + "…";
+        }
         return I18N.text("snapshot.string.detail", value.length(), preview);
     }
 
@@ -267,12 +339,22 @@ public final class StringController extends BaseModuleController<StringViewState
         return "string";
     }
 
-    private String selectedAlgorithmId() {
-        int index = algorithmSelector == null ? 0 : algorithmSelector.getSelectionModel().getSelectedIndex();
+    @Override
+    public String selectedAlgorithmId() {
+        int index;
+        if (algorithmSelector == null) {
+            index = 0;
+        } else {
+            index = algorithmSelector.getSelectionModel().getSelectedIndex();
+        }
         if (index < 0) {
             index = 0;
         }
-        return algorithmIds.isEmpty() ? null : algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        if (algorithmIds.isEmpty()) {
+            return null;
+        } else {
+            return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        }
     }
 
     private void bindSelectors() {
@@ -285,10 +367,44 @@ public final class StringController extends BaseModuleController<StringViewState
             }
             return labels;
         }, I18N.localeProperty()));
+        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
+            refreshAlgorithmControls();
+            notifyAlgorithmSelection();
+        });
         Platform.runLater(() -> {
             structureSelector.getSelectionModel().selectFirst();
             algorithmSelector.getSelectionModel().selectFirst();
+            refreshAlgorithmControls();
+            notifyAlgorithmSelection();
         });
+    }
+
+    private void notifyAlgorithmSelection() {
+        algorithmSelectionListener.accept(selectedAlgorithmId());
+    }
+
+    private void refreshAlgorithmControls() {
+        String algorithmId = selectedAlgorithmId();
+        boolean search = algorithmId != null && AlgorithmCatalog.stringSearches().contains(algorithmId);
+        if (patternField != null) {
+            patternField.setManaged(search);
+            patternField.setVisible(search);
+        }
+        if (searchSectionLabel != null) {
+            searchSectionLabel.textProperty().unbind();
+            String key;
+            if (search) {
+                key = "label.string.search";
+            } else {
+                key = "label.string.algorithm";
+            }
+            searchSectionLabel.textProperty().bind(I18N.createStringBinding(key));
+        }
+        if (!search) {
+            stringVisualizer().clearAlgorithmPattern();
+        } else if (!structureSelectionEnabled && patternField != null) {
+            stringVisualizer().setAlgorithmPattern(patternField.getText());
+        }
     }
 
     private void renderSource() {
@@ -326,7 +442,11 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
-        this.selectionListener = selectionListener == null ? ignored -> { } : selectionListener;
+        if (selectionListener == null) {
+            this.selectionListener = ignored -> { };
+        } else {
+            this.selectionListener = selectionListener;
+        }
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
@@ -336,8 +456,12 @@ public final class StringController extends BaseModuleController<StringViewState
             return;
         }
         clearStringSelection();
-        if (patternField != null) {
+        String algorithmId = selectedAlgorithmId();
+        boolean search = algorithmId != null && AlgorithmCatalog.stringSearches().contains(algorithmId);
+        if (search && patternField != null) {
             stringVisualizer().setAlgorithmPattern(patternField.getText());
+        } else {
+            stringVisualizer().clearAlgorithmPattern();
         }
     }
 
@@ -348,6 +472,7 @@ public final class StringController extends BaseModuleController<StringViewState
         char value = source.charAt(index);
         if (indexField != null) indexField.setText(Integer.toString(index));
         if (characterField != null) characterField.setText(Character.toString(value));
+        if (lengthField != null) lengthField.setText("1");
         selectionListener.accept(new IndexSelection(index, value, source.length()));
     }
 
@@ -366,7 +491,12 @@ public final class StringController extends BaseModuleController<StringViewState
     private Integer parseIndex(TextField field, boolean allowEnd) {
         try {
             int index = Integer.parseInt(field.getText().trim());
-            int max = allowEnd ? source.length() : source.length() - 1;
+            int max;
+            if (allowEnd) {
+                max = source.length();
+            } else {
+                max = source.length() - 1;
+            }
             if (index < 0 || index > max) throw new NumberFormatException();
             return index;
         } catch (RuntimeException exception) {
@@ -378,7 +508,11 @@ public final class StringController extends BaseModuleController<StringViewState
     private Integer parsePositive(TextField field) {
         try {
             int value = Integer.parseInt(field.getText().trim());
-            return value > 0 ? value : null;
+            if (value > 0) {
+                return value;
+            } else {
+                return null;
+            }
         } catch (RuntimeException exception) {
             return null;
         }

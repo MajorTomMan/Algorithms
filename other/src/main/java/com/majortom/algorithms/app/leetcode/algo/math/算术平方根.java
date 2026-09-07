@@ -10,6 +10,10 @@ public class 算术平方根 {
             return 0;
         }
         int ans = (int) Math.exp(0.5 * Math.log(x));
-        return (long) (ans + 1) * (ans + 1) <= x ? ans + 1 : ans;
+        if ((long) (ans + 1) * (ans + 1) <= x) {
+            return ans + 1;
+        } else {
+            return ans;
+        }
     }
 }

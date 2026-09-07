@@ -58,6 +58,14 @@ public final class Observations {
         ExecutionEvents.observe(new ObservationEvent.Backtracked(new ObservationEvent.CoordinateRef(row, column)));
     }
 
+    public static void pathTraced(String domain, long id) {
+        ExecutionEvents.observe(new ObservationEvent.PathTraced(new ObservationEvent.EntityRef(domain, id)));
+    }
+
+    public static void pathTraced(int row, int column) {
+        ExecutionEvents.observe(new ObservationEvent.PathTraced(new ObservationEvent.CoordinateRef(row, column)));
+    }
+
     public static void pathFound(List<ObservationEvent.Reference> refs) {
         ExecutionEvents.observe(new ObservationEvent.PathFound(refs));
     }

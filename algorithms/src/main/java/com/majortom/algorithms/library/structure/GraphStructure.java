@@ -12,6 +12,7 @@ public interface GraphStructure<T> {
     }
 
     boolean isDirected();
+    Vertex<T> vertex(T value);
     Vertex<T> addVertex(T value);
     boolean removeVertex(Vertex<T> vertex);
     Edge<T> addEdge(Vertex<T> from, Vertex<T> to);

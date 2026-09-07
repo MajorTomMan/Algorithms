@@ -5,6 +5,7 @@ import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;
@@ -17,9 +18,13 @@ import java.util.Set;
 /** Reduces factual Graph mutations, observations and Runtime lifecycle into GraphViewState. */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
     private static final String VERTEX_DOMAIN = "graph.vertex";
-    private final GraphSnapshot<Integer> initialGraph;
+    private final GraphSnapshotState<Integer> initialGraph;
 
     public GraphEventReducer(GraphSnapshot<Integer> graph) {
+        this((GraphSnapshotState<Integer>) graph);
+    }
+
+    public GraphEventReducer(GraphSnapshotState<Integer> graph) {
         initialGraph = graph;
     }
 
@@ -58,6 +63,23 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
             List<GraphViewState.Edge> edges = previous.edges().stream()
                     .filter(edge -> edge.id() != removed.edgeId())
                     .toList();
+            return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
+                    GraphViewState.Observation.none(), false));
+        }
+        if (event instanceof GraphStructureEvent.EdgeWeightChanged changed) {
+            List<GraphViewState.Edge> edges = new ArrayList<>(previous.edges().size());
+            boolean found = false;
+            for (GraphViewState.Edge edge : previous.edges()) {
+                if (edge.id() == changed.edgeId()) {
+                    edges.add(edge.withWeight(changed.weight()));
+                    found = true;
+                } else {
+                    edges.add(edge);
+                }
+            }
+            if (!found) {
+                return Reduction.unchanged(previous, EventImportance.TRANSIENT);
+            }
             return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
                     GraphViewState.Observation.none(), false));
         }

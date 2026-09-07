@@ -46,6 +46,10 @@ public abstract class BinaryTreeNode<T> extends TreeNode<T> {
     }
 
     private static Long id(BinaryTreeNode<?> node) {
-        return node == null ? null : node.getId();
+        if (node == null) {
+            return null;
+        } else {
+            return node.getId();
+        }
     }
 }

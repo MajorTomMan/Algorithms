@@ -13,6 +13,7 @@ import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -31,12 +32,13 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private Consumer<NodeSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
+    @FXML private Label structureLabel;
+    @FXML private ComboBox<String> structureSelector;
     @FXML private Label operationsLabel;
     @FXML private TextField valueField;
     @FXML private TextField indexField;
     @FXML private Button primaryBtn;
     @FXML private Button secondaryBtn;
-    @FXML private Button tertiaryBtn;
     @FXML private Button quaternaryBtn;
 
     @SuppressWarnings("unchecked")
@@ -51,6 +53,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         configureControls();
+        quaternaryBtn.setOnAction(event -> update());
         linkedVisualizer().setSelectionListener(this::handleVisualSelection);
     }
 
@@ -64,16 +67,6 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         remove();
     }
 
-    @FXML
-    private void handleTertiary() {
-        get();
-    }
-
-    @FXML
-    private void handleQuaternary() {
-        update();
-    }
-
     private void insert() {
         clearVisualSelection();
         Integer value = value();
@@ -84,7 +77,12 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (parsedIndex == null) {
             return;
         }
-        int target = indexField.getText().isBlank() ? linkedList.size() : parsedIndex;
+        int target;
+        if (indexField.getText().isBlank()) {
+            target = linkedList.size();
+        } else {
+            target = parsedIndex;
+        }
         if (target < 0 || target > linkedList.size()) {
             logI18n("message.error.invalid_linear_index");
             return;
@@ -106,15 +104,6 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (executeAndReduce("remove", () -> removed[0] = linkedList.remove(index))) {
             logI18n("message.linear.removed", removed[0], index);
         }
-    }
-
-    private void get() {
-        Integer target = index(false);
-        if (target == null || target < 0 || target >= linkedList.size()) {
-            logI18n("message.error.invalid_linear_index");
-            return;
-        }
-        logI18n("message.linear.value_at", target, linkedList.get(target));
     }
 
     private void update() {
@@ -250,7 +239,11 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     public void setSelectionListener(Consumer<NodeSelection> listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     private void handleVisualSelection(long nodeId) {
@@ -303,13 +296,16 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (typeLabel == null) {
             return;
         }
-        typeLabel.setText(I18N.text("label.linear.linked_list"));
+        typeLabel.setText(I18N.text("label.linear.feature.linked_list"));
+        structureLabel.setText(I18N.text("label.common.structure"));
+        structureSelector.setItems(javafx.collections.FXCollections.observableArrayList(
+                I18N.text("label.linear.structure.linked_list")));
+        structureSelector.getSelectionModel().selectFirst();
         operationsLabel.setText(I18N.text("label.linear.operations"));
         valueField.setPromptText(I18N.text("prompt.linear.value"));
         indexField.setPromptText(I18N.text("prompt.linear.index"));
         primaryBtn.setText(I18N.text("action.linked_list.insert"));
         secondaryBtn.setText(I18N.text("action.linked_list.remove"));
-        tertiaryBtn.setText(I18N.text("action.linked_list.get"));
         quaternaryBtn.setText(I18N.text("action.linked_list.update"));
         indexField.setVisible(true);
         indexField.setManaged(true);

@@ -92,12 +92,21 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     public void setOnIndexSelected(IntConsumer onIndexSelected) {
-        this.onIndexSelected = onIndexSelected == null ? ignored -> { } : onIndexSelected;
+        if (onIndexSelected == null) {
+            this.onIndexSelected = ignored -> { };
+        } else {
+            this.onIndexSelected = onIndexSelected;
+        }
     }
 
     /** Algorithm-only KMP overlay input. The logical String track remains unchanged. */
     public void setAlgorithmPattern(java.lang.String pattern) {
-        java.lang.String next = pattern == null ? "" : pattern;
+        java.lang.String next;
+        if (pattern == null) {
+            next = "";
+        } else {
+            next = pattern;
+        }
         if (next.equals(algorithmPattern)) {
             return;
         }
@@ -476,7 +485,12 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
         first.applyCss();
         first.autosize();
-        double slotWidth = first.getPrefWidth() > 0.0d ? first.getPrefWidth() : first.getLayoutBounds().getWidth();
+        double slotWidth;
+        if (first.getPrefWidth() > 0.0d) {
+            slotWidth = first.getPrefWidth();
+        } else {
+            slotWidth = first.getLayoutBounds().getWidth();
+        }
         double targetX = first.getLayoutX() + Math.max(0, state.patternStart()) * slotWidth;
         StringCellView aligned = cells.get(state.patternStart());
         if (aligned != null) {
@@ -684,7 +698,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         if (actual > 0.0d) {
             return actual;
         }
-        return fallback > 0.0d ? fallback : 1.0d;
+        if (fallback > 0.0d) {
+            return fallback;
+        } else {
+            return 1.0d;
+        }
     }
 
     private static double quantize(double value) {

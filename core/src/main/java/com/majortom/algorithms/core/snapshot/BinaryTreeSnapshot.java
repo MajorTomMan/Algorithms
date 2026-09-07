@@ -3,7 +3,7 @@ package com.majortom.algorithms.core.snapshot;
 import java.util.Objects;
 
 /** UI-neutral immutable snapshot of a generic binary tree. */
-public record BinaryTreeSnapshot<T>(Node<T> root, int size) {
+public record BinaryTreeSnapshot<T>(Node<T> root, int size) implements TreeSnapshotState<T> {
     public BinaryTreeSnapshot {
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");

@@ -82,6 +82,10 @@ final class LocalResourceSampler implements ResourceSampler {
 
     private long usedMemoryBytes() {
         long value = runtime.totalMemory() - runtime.freeMemory();
-        return value >= 0L ? value : -1L;
+        if (value >= 0L) {
+            return value;
+        } else {
+            return -1L;
+        }
     }
 }

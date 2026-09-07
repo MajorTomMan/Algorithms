@@ -84,6 +84,10 @@ public class ListNode<T> {
     }
 
     private static Long id(ListNode<?> node) {
-        return node == null ? null : node.id;
+        if (node == null) {
+            return null;
+        } else {
+            return node.id;
+        }
     }
 }

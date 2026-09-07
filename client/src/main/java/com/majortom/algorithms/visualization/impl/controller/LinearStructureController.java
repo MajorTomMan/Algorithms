@@ -5,12 +5,14 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.library.basic.LinkedList;
 import com.majortom.algorithms.library.structure.QueueStructure;
 import com.majortom.algorithms.library.structure.StackStructure;
+import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -33,23 +35,40 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private Consumer<ItemSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
+    @FXML private Label structureLabel;
+    @FXML private ComboBox<String> structureSelector;
     @FXML private Label operationsLabel;
     @FXML private TextField valueField;
     @FXML private TextField indexField;
     @FXML private Button primaryBtn;
     @FXML private Button secondaryBtn;
-    @FXML private Button tertiaryBtn;
     @FXML private Button quaternaryBtn;
 
     @SuppressWarnings("unchecked")
     private LinearStructureController(Kind kind, String moduleId) {
-        super(kind == Kind.STACK ? new StackVisualizer() : new QueueVisualizer(), "/fxml/LinearStructureControls.fxml");
+        super(visualizer(kind), "/fxml/LinearStructureControls.fxml");
         this.kind = kind;
         this.moduleId = moduleId;
-        stack = kind == Kind.STACK ? (StackStructure<Integer>) module("structure.stack.Integer", LinkedList.class) : null;
-        queue = kind == Kind.QUEUE ? (QueueStructure<Integer>) module("structure.queue.Integer", LinkedList.class) : null;
+        if (kind == Kind.STACK) {
+            stack = (StackStructure<Integer>) module("structure.stack.Integer", LinkedList.class);
+        } else {
+            stack = null;
+        }
+        if (kind == Kind.QUEUE) {
+            queue = (QueueStructure<Integer>) module("structure.queue.Integer", LinkedList.class);
+        } else {
+            queue = null;
+        }
         seed();
         renderStructureState(currentState());
+    }
+
+    private static BaseVisualizer<LinearStructureViewState> visualizer(Kind kind) {
+        if (kind == Kind.STACK) {
+            return new StackVisualizer();
+        } else {
+            return new QueueVisualizer();
+        }
     }
 
     public static LinearStructureController stack() {
@@ -86,22 +105,6 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
     }
 
-    @FXML
-    private void handleTertiary() {
-        if (kind == Kind.STACK) {
-            peek();
-        } else {
-            front();
-        }
-    }
-
-    @FXML
-    private void handleQuaternary() {
-        if (kind == Kind.QUEUE) {
-            rear();
-        }
-    }
-
     private void push() {
         clearVisualSelection();
         Integer value = value();
@@ -133,14 +136,6 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
     }
 
-    private void peek() {
-        if (stack.isEmpty()) {
-            logI18n("message.linear.empty");
-            return;
-        }
-        logI18n("message.stack.peek", stack.peek());
-    }
-
     private void enqueue() {
         clearVisualSelection();
         Integer value = value();
@@ -170,22 +165,6 @@ public final class LinearStructureController extends BaseModuleController<Linear
             renderMutation(LinearStructureViewState.Type.DEQUEUE, value[0]);
             logI18n("message.queue.dequeued", value[0]);
         }
-    }
-
-    private void front() {
-        if (queue.isEmpty()) {
-            logI18n("message.linear.empty");
-            return;
-        }
-        logI18n("message.queue.front", queue.front());
-    }
-
-    private void rear() {
-        if (queue.isEmpty()) {
-            logI18n("message.linear.empty");
-            return;
-        }
-        logI18n("message.queue.rear", queue.rear());
     }
 
     private Integer value() {
@@ -220,7 +199,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private List<Integer> values() {
         List<Integer> values = new ArrayList<>();
-        Iterable<Integer> source = kind == Kind.STACK ? stack : queue;
+        Iterable<Integer> source;
+        if (kind == Kind.STACK) {
+            source = stack;
+        } else {
+            source = queue;
+        }
         for (Integer value : source) {
             values.add(value);
         }
@@ -288,7 +272,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     public void setSelectionListener(Consumer<ItemSelection> listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     private void handleVisualSelection(int index) {
@@ -301,7 +289,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
         valueField.setText(Integer.toString(value));
         String role;
         if (kind == Kind.STACK) {
-            role = index == 0 ? "TOP" : "ITEM";
+            if (index == 0) {
+                role = "TOP";
+            } else {
+                role = "ITEM";
+            }
         } else if (current.size() == 1) {
             role = "FRONT / REAR";
         } else if (index == 0) {
@@ -347,25 +339,24 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (typeLabel == null) {
             return;
         }
+        structureLabel.setText(I18N.text("label.common.structure"));
+        structureSelector.setItems(javafx.collections.FXCollections.observableArrayList(
+                I18N.text("label.linear.structure.linked_list")));
+        structureSelector.getSelectionModel().selectFirst();
         operationsLabel.setText(I18N.text("label.linear.operations"));
         valueField.setPromptText(I18N.text("prompt.linear.value"));
         indexField.setVisible(false);
         indexField.setManaged(false);
         if (kind == Kind.STACK) {
-            typeLabel.setText(I18N.text("label.linear.stack"));
+            typeLabel.setText(I18N.text("label.linear.feature.stack"));
             primaryBtn.setText(I18N.text("action.stack.push"));
             secondaryBtn.setText(I18N.text("action.stack.pop"));
-            tertiaryBtn.setText(I18N.text("action.stack.peek"));
-            quaternaryBtn.setVisible(false);
-            quaternaryBtn.setManaged(false);
         } else {
-            typeLabel.setText(I18N.text("label.linear.queue"));
+            typeLabel.setText(I18N.text("label.linear.feature.queue"));
             primaryBtn.setText(I18N.text("action.queue.enqueue"));
             secondaryBtn.setText(I18N.text("action.queue.dequeue"));
-            tertiaryBtn.setText(I18N.text("action.queue.front"));
-            quaternaryBtn.setText(I18N.text("action.queue.rear"));
-            quaternaryBtn.setVisible(true);
-            quaternaryBtn.setManaged(true);
         }
+        quaternaryBtn.setVisible(false);
+        quaternaryBtn.setManaged(false);
     }
 }

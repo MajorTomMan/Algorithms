@@ -163,7 +163,12 @@ public final class VisualizationSurface extends StackPane {
 
     public void reset() {
         Bounds bounds = worldBounds();
-        Point2D pivot = hasWorld(bounds) ? worldCenter(bounds) : new Point2D(0.0d, 0.0d);
+        Point2D pivot;
+        if (hasWorld(bounds)) {
+            pivot = worldCenter(bounds);
+        } else {
+            pivot = new Point2D(0.0d, 0.0d);
+        }
         runProgrammatic(() -> {
             gesturePane.zoomTo(DEFAULT_ZOOM, pivot);
             if (hasWorld(bounds)) {
@@ -285,12 +290,25 @@ public final class VisualizationSurface extends StackPane {
         Insets insets = effectiveSafeInsets();
         double availableWidth = Math.max(1.0d, viewportWidth - insets.getLeft() - insets.getRight());
         double availableHeight = Math.max(1.0d, viewportHeight - insets.getTop() - insets.getBottom());
-        double scaleX = bounds.getWidth() <= 0.0d ? MAX_ZOOM : availableWidth / bounds.getWidth();
-        double scaleY = bounds.getHeight() <= 0.0d ? MAX_ZOOM : availableHeight / bounds.getHeight();
+        double scaleX;
+        if (bounds.getWidth() <= 0.0d) {
+            scaleX = MAX_ZOOM;
+        } else {
+            scaleX = availableWidth / bounds.getWidth();
+        }
+        double scaleY;
+        if (bounds.getHeight() <= 0.0d) {
+            scaleY = MAX_ZOOM;
+        } else {
+            scaleY = availableHeight / bounds.getHeight();
+        }
         double fitScale = clamp(Math.min(scaleX, scaleY));
-        double targetScale = initialFit
-                ? Math.min(MAX_AUTO_FIT_SCALE, Math.max(fitScale, minimumAutoScale))
-                : fitScale;
+        double targetScale;
+        if (initialFit) {
+            targetScale = Math.min(MAX_AUTO_FIT_SCALE, Math.max(fitScale, minimumAutoScale));
+        } else {
+            targetScale = fitScale;
+        }
         Point2D center = worldCenter(bounds);
         runProgrammatic(() -> {
             gesturePane.zoomTo(targetScale, center);

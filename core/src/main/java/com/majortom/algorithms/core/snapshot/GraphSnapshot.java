@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /** UI-neutral immutable graph snapshot with stable vertex/edge identity. */
-public record GraphSnapshot<T>(boolean directed, List<Vertex<T>> vertices, List<Edge> edges) {
+public record GraphSnapshot<T>(boolean directed, List<Vertex<T>> vertices, List<Edge> edges) implements GraphSnapshotState<T> {
     public GraphSnapshot {
         vertices = List.copyOf(Objects.requireNonNull(vertices, "vertices"));
         edges = List.copyOf(Objects.requireNonNull(edges, "edges"));

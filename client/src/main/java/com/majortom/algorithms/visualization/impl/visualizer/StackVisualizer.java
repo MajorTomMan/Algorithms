@@ -198,7 +198,12 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
         }
-        Set<Integer> newIndexes = pendingVersion == version ? pendingNewIndexes : Set.of();
+        Set<Integer> newIndexes;
+        if (pendingVersion == version) {
+            newIndexes = pendingNewIndexes;
+        } else {
+            newIndexes = Set.of();
+        }
 
         for (Map.Entry<Integer, NodeView> entry : items.entrySet()) {
             ElementBounds bounds = result.elements().get(id(entry.getKey()));
@@ -235,7 +240,12 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             return;
         }
         LayoutFailureReporter.report("Stack", failure);
-        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
+        List<Animation> transitions;
+        if (pendingVersion == version) {
+            transitions = pendingTransitions;
+        } else {
+            transitions = List.of();
+        }
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewIndexes = Set.of();
@@ -281,7 +291,11 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     public void setSelectionListener(IntConsumer listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void clearSelection() {
@@ -353,7 +367,11 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     private static double positive(double value, double fallback) {
-        return value > 0.0d ? value : fallback;
+        if (value > 0.0d) {
+            return value;
+        } else {
+            return fallback;
+        }
     }
 
     private static String id(int index) {

@@ -262,7 +262,12 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
         }
-        Set<Long> newNodeIds = pendingVersion == version ? pendingNewNodeIds : Set.of();
+        Set<Long> newNodeIds;
+        if (pendingVersion == version) {
+            newNodeIds = pendingNewNodeIds;
+        } else {
+            newNodeIds = Set.of();
+        }
 
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             ElementBounds bounds = result.elements().get(LinkedListElkLayout.nodeId(entry.getKey()));
@@ -325,7 +330,12 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
-        List<Animation> transitions = pendingVersion == version ? pendingTransitions : List.of();
+        List<Animation> transitions;
+        if (pendingVersion == version) {
+            transitions = pendingTransitions;
+        } else {
+            transitions = List.of();
+        }
         pendingVersion = -1L;
         pendingTransitions = List.of();
         pendingNewNodeIds = Set.of();
@@ -358,7 +368,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             }
             EdgeView edge = new EdgeView(source, target, true);
             edge.setCurved(spec.curved());
-            edge.getStyleClass().add(entry.getKey().relation() == Relation.NEXT ? "linked-next-edge" : "linked-previous-edge");
+            if (entry.getKey().relation() == Relation.NEXT) {
+                edge.getStyleClass().add("linked-next-edge");
+            } else {
+                edge.getStyleClass().add("linked-previous-edge");
+            }
             edgeViews.put(entry.getKey(), edge);
             surface.edgeLayer().getChildren().add(edge);
             if (!firstRender) {
@@ -434,7 +448,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     private String label(LinkedListViewState.Node node) {
-        return node.value() == null ? "null" : node.value().toString();
+        if (node.value() == null) {
+            return "null";
+        } else {
+            return node.value().toString();
+        }
     }
 
     private void stopActiveAnimation() {
@@ -445,7 +463,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     public void setSelectionListener(LongConsumer listener) {
-        selectionListener = listener == null ? ignored -> { } : listener;
+        if (listener == null) {
+            selectionListener = ignored -> { };
+        } else {
+            selectionListener = listener;
+        }
     }
 
     public void clearSelection() {
@@ -517,7 +539,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         if (actual > 0.0d) {
             return actual;
         }
-        return fallback > 0.0d ? fallback : 1.0d;
+        if (fallback > 0.0d) {
+            return fallback;
+        } else {
+            return 1.0d;
+        }
     }
 
     private static double quantize(double value) {

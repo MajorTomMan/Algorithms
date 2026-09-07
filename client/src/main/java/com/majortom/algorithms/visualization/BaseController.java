@@ -497,7 +497,11 @@ public abstract class BaseController<S> implements Initializable {
         if (running.get()) {
             return liveVisualFrameCount;
         }
-        return lastTimeline == null ? 0L : lastTimeline.size();
+        if (lastTimeline == null) {
+            return 0L;
+        } else {
+            return lastTimeline.size();
+        }
     }
 
     /**
@@ -1044,7 +1048,7 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     public final String latestResultText() {
-        if (lastExecution == null) return "No result yet.";
+        if (lastExecution == null) return I18N.text("label.workspace.result.none");
         ExecutionResult result = lastExecution.result();
         if (result.failure().isPresent()) {
             return result.failure().get().code() + "\n" + result.failure().get().message();

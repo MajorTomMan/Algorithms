@@ -108,13 +108,25 @@ public record MazeViewState(
     }
 
     public MazeViewState examine(GridPoint from, GridPoint to) {
-        GridPoint current = from == null ? active : from;
+        GridPoint current;
+        if (from == null) {
+            current = active;
+        } else {
+            current = from;
+        }
         return new MazeViewState(rows, columns, openCells, path, visited, current, to, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 
     public MazeViewState backtrack(GridPoint point) {
         return new MazeViewState(rows, columns, openCells, path, visited, point, null, point,
+                entrance, exit, graphEdges, graphBased, false);
+    }
+
+    public MazeViewState tracePath(GridPoint point) {
+        LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(path);
+        nextPath.add(point);
+        return new MazeViewState(rows, columns, openCells, nextPath, visited, point, null, null,
                 entrance, exit, graphEdges, graphBased, false);
     }
 
@@ -146,6 +158,10 @@ public record MazeViewState(
     }
 
     private static GridPoint point(MazeSnapshot.Cell cell) {
-        return cell == null ? null : new GridPoint(cell.row(), cell.column());
+        if (cell == null) {
+            return null;
+        } else {
+            return new GridPoint(cell.row(), cell.column());
+        }
     }
 }

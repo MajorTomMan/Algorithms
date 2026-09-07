@@ -84,7 +84,12 @@ final class WorkbenchTheme {
 
     private static void refreshMazeRunVisibility(VBox host) {
         Parent root = rootOf(host);
-        Node startNode = root == null ? null : root.lookup("#startBtn");
+        Node startNode;
+        if (root == null) {
+            startNode = null;
+        } else {
+            startNode = root.lookup("#startBtn");
+        }
         if (!(startNode instanceof Button startButton)) {
             return;
         }
@@ -109,7 +114,12 @@ final class WorkbenchTheme {
 
     private static void showSavedSnapshotMenu(Button source) {
         Parent root = rootOf(source);
-        Node cardsNode = root == null ? null : root.lookup("#snapshotCards");
+        Node cardsNode;
+        if (root == null) {
+            cardsNode = null;
+        } else {
+            cardsNode = root.lookup("#snapshotCards");
+        }
         if (!(cardsNode instanceof VBox snapshotCards)) {
             return;
         }

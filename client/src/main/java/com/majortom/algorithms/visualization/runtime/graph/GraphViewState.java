@@ -1,6 +1,8 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
+import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -25,13 +27,39 @@ public record GraphViewState(
         observation = Objects.requireNonNull(observation, "observation");
     }
 
+    public static GraphViewState initial(GraphSnapshotState<Integer> graph) {
+        Objects.requireNonNull(graph, "graph");
+        if (graph instanceof GraphSnapshot<?> basic) {
+            @SuppressWarnings("unchecked")
+            GraphSnapshot<Integer> typed = (GraphSnapshot<Integer>) basic;
+            return initial(typed);
+        }
+        if (graph instanceof WeightedGraphSnapshot<?> weighted) {
+            @SuppressWarnings("unchecked")
+            WeightedGraphSnapshot<Integer> typed = (WeightedGraphSnapshot<Integer>) weighted;
+            return initial(typed);
+        }
+        throw new IllegalArgumentException("unsupported graph snapshot type: " + graph.getClass().getName());
+    }
+
     public static GraphViewState initial(GraphSnapshot<Integer> graph) {
         Objects.requireNonNull(graph, "graph");
         List<Node> nodes = graph.vertices().stream()
                 .map(vertex -> new Node(vertex.id(), vertex.value()))
                 .toList();
         List<Edge> edges = graph.edges().stream()
-                .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId()))
+                .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), null))
+                .toList();
+        return new GraphViewState(graph.directed(), nodes, edges, Set.of(), Observation.none(), false);
+    }
+
+    public static GraphViewState initial(WeightedGraphSnapshot<Integer> graph) {
+        Objects.requireNonNull(graph, "graph");
+        List<Node> nodes = graph.vertices().stream()
+                .map(vertex -> new Node(vertex.id(), vertex.value()))
+                .toList();
+        List<Edge> edges = graph.edges().stream()
+                .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight()))
                 .toList();
         return new GraphViewState(graph.directed(), nodes, edges, Set.of(), Observation.none(), false);
     }
@@ -53,7 +81,14 @@ public record GraphViewState(
     public record Node(long id, int value) {
     }
 
-    public record Edge(long id, long fromId, long toId) {
+    public record Edge(long id, long fromId, long toId, Double weight) {
+        public Edge(long id, long fromId, long toId) {
+            this(id, fromId, toId, null);
+        }
+
+        public Edge withWeight(Double weight) {
+            return new Edge(id, fromId, toId, weight);
+        }
     }
 
     public record Observation(Type type, Long firstNodeId, Long secondNodeId) {

@@ -8,7 +8,11 @@ import java.util.Objects;
 public record LogEvent(LogLevel level, String tag, String message) implements ExecutionEvent {
     public LogEvent {
         Objects.requireNonNull(level, "level");
-        tag = tag == null ? "" : tag;
+        if (tag == null) {
+            tag = "";
+        } else {
+            tag = tag;
+        }
         Objects.requireNonNull(message, "message");
     }
 }

@@ -192,7 +192,12 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         if (!MODULES.contains(descriptor.registryKey())) {
             throw new AlgorithmNotFoundException(algorithmId);
         }
-        Map<String, Object> input = rawInput == null ? Map.of() : rawInput;
+        Map<String, Object> input;
+        if (rawInput == null) {
+            input = Map.of();
+        } else {
+            input = rawInput;
+        }
         return switch (algorithmId) {
             case "insertion-sort", "selection-sort", "quick-sort", "heap-sort" -> {
                 IntegerSortRequest request = objectMapper.convertValue(input, IntegerSortRequest.class);
@@ -281,7 +286,11 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     private static String message(Throwable failure) {
         String message = failure.getMessage();
-        return message == null || message.isBlank() ? failure.getClass().getSimpleName() : message;
+        if (message == null || message.isBlank()) {
+            return failure.getClass().getSimpleName();
+        } else {
+            return message;
+        }
     }
 
     private List<Integer> copy(com.majortom.algorithms.library.structure.ArrayStructure<Integer> array) {
@@ -302,12 +311,20 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     @SuppressWarnings("unchecked")
     private AVLTreeNode<Integer> left(AVLTreeNode<Integer> node) {
-        return node == null ? null : (AVLTreeNode<Integer>) node.getLeft();
+        if (node == null) {
+            return null;
+        } else {
+            return (AVLTreeNode<Integer>) node.getLeft();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private AVLTreeNode<Integer> right(AVLTreeNode<Integer> node) {
-        return node == null ? null : (AVLTreeNode<Integer>) node.getRight();
+        if (node == null) {
+            return null;
+        } else {
+            return (AVLTreeNode<Integer>) node.getRight();
+        }
     }
 
     private record PreparedExecution(ExecutionOperation<?> operation) {

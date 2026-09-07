@@ -72,7 +72,7 @@
                             <Label fx:id="structureControlsTitleLabel" text="LIVE STRUCTURE" styleClass="structure-identity-meta" />
                             <HBox alignment="CENTER_LEFT" spacing="8" styleClass="live-row">
                                 <Region minWidth="8.0" prefWidth="8.0" minHeight="8.0" prefHeight="8.0" styleClass="live-dot" />
-                                <Label text="LIVE STRUCTURE" styleClass="live-label" />
+                                <Label fx:id="structureLiveLabel" text="LIVE STRUCTURE" styleClass="live-label" />
                             </HBox>
                         </VBox>
                         <Separator />
@@ -88,12 +88,12 @@
                         </ScrollPane>
                         <VBox spacing="8" styleClass="snapshot-quick-block">
                             <Separator />
-                            <Label text="SNAPSHOT" styleClass="panel-section-title" />
+                            <Label fx:id="snapshotQuickTitleLabel" text="SNAPSHOT" styleClass="panel-section-title" />
                             <Button fx:id="saveSnapshotBtn" text="SAVE SNAPSHOT" onAction="#saveStructureSnapshot" maxWidth="Infinity" styleClass="primary-red-button" />
                             <HBox spacing="0" styleClass="summary-strip">
-                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label text="NODES" styleClass="summary-caption"/><Label fx:id="structureNodeCountLabel" text="—" styleClass="summary-number-red"/></VBox>
-                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label text="HEIGHT" styleClass="summary-caption"/><Label fx:id="structureHeightLabel" text="—" styleClass="summary-number"/></VBox>
-                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label text="STATE" styleClass="summary-caption"/><Label fx:id="structureStateLabel" text="READY" styleClass="summary-number-blue"/></VBox>
+                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label fx:id="structurePrimaryMetricTitleLabel" text="NODES" styleClass="summary-caption"/><Label fx:id="structureNodeCountLabel" text="—" styleClass="summary-number-red"/></VBox>
+                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label fx:id="structureSecondaryMetricTitleLabel" text="HEIGHT" styleClass="summary-caption"/><Label fx:id="structureHeightLabel" text="—" styleClass="summary-number"/></VBox>
+                                <VBox alignment="CENTER" HBox.hgrow="ALWAYS"><Label fx:id="structureStateMetricTitleLabel" text="STATE" styleClass="summary-caption"/><Label fx:id="structureStateLabel" text="READY" styleClass="summary-number-blue"/></VBox>
                             </HBox>
                         </VBox>
                     </VBox>
@@ -107,7 +107,7 @@
                             maxWidth="220.0" prefWidth="220.0" maxHeight="184.0" prefHeight="184.0"
                             StackPane.alignment="TOP_RIGHT" styleClass="selection-overlay">
                             <HBox alignment="CENTER_LEFT"><Label fx:id="selectedEntityTitleLabel" text="SELECTED NODE" styleClass="overlay-eyebrow"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="selectedNodeIdLabel" text="#—" styleClass="overlay-id"/></HBox>
-                            <Label text="VALUE" styleClass="overlay-caption"/>
+                            <Label fx:id="selectedValueCaptionLabel" text="VALUE" styleClass="overlay-caption"/>
                             <Label fx:id="selectedNodeValueLabel" text="—" styleClass="overlay-value"/>
                             <Separator />
                             <Label fx:id="selectedEntityHintLabel" text="Ready to edit or remove this node." wrapText="true" styleClass="overlay-hint"/>
@@ -117,7 +117,7 @@
                     <VBox fx:id="snapshotPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
                         <TabPane fx:id="structureInspectorTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="inspector-tabs">
                             <tabs>
-                                <Tab text="INSPECTOR">
+                                <Tab fx:id="structureInspectorTab" text="INSPECTOR">
                                     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="light-scroll-pane">
                                         <content>
                                             <VBox spacing="0" styleClass="inspector-content">
@@ -134,22 +134,22 @@
                                                             <ColumnConstraints percentWidth="25" halignment="CENTER"/>
                                                             <ColumnConstraints percentWidth="25" halignment="CENTER"/>
                                                         </columnConstraints>
-                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="0" styleClass="overview-tile"><Label text="NODES" styleClass="metric-title"/><Label fx:id="overviewPrimaryValue" text="—" styleClass="overview-value-blue"/></VBox>
-                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="1" styleClass="overview-tile"><Label text="HEIGHT" styleClass="metric-title"/><Label fx:id="overviewSecondaryValue" text="—" styleClass="overview-value"/></VBox>
-                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="2" styleClass="overview-tile"><Label text="EVENTS" styleClass="metric-title"/><Label fx:id="overviewEventsValue" text="0" styleClass="overview-value-yellow"/></VBox>
-                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="3" styleClass="overview-tile"><Label text="STATE" styleClass="metric-title"/><Label fx:id="overviewStateValue" text="READY" styleClass="overview-value"/></VBox>
+                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="0" styleClass="overview-tile"><Label fx:id="overviewPrimaryTitleLabel" text="NODES" styleClass="metric-title"/><Label fx:id="overviewPrimaryValue" text="—" styleClass="overview-value-blue"/></VBox>
+                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="1" styleClass="overview-tile"><Label fx:id="overviewSecondaryTitleLabel" text="HEIGHT" styleClass="metric-title"/><Label fx:id="overviewSecondaryValue" text="—" styleClass="overview-value"/></VBox>
+                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="2" styleClass="overview-tile"><Label fx:id="overviewEventsTitleLabel" text="EVENTS" styleClass="metric-title"/><Label fx:id="overviewEventsValue" text="0" styleClass="overview-value-yellow"/></VBox>
+                                                        <VBox alignment="CENTER" spacing="3" GridPane.columnIndex="3" styleClass="overview-tile"><Label fx:id="overviewStateTitleLabel" text="STATE" styleClass="metric-title"/><Label fx:id="overviewStateValue" text="READY" styleClass="overview-value"/></VBox>
                                                     </GridPane>
                                                     <Label fx:id="structureOverviewLabel" text="Ready" managed="false" visible="false" />
                                                 </VBox>
                                                 <VBox spacing="8" styleClass="inspector-section inspector-snapshot-section">
-                                                    <Label text="SNAPSHOTS" styleClass="inspector-heading" />
+                                                    <Label fx:id="inspectorSnapshotsHeadingLabel" text="SNAPSHOTS" styleClass="inspector-heading" />
                                                     <VBox fx:id="inspectorSnapshotCards" spacing="8" fillWidth="true" />
                                                 </VBox>
                                             </VBox>
                                         </content>
                                     </ScrollPane>
                                 </Tab>
-                                <Tab text="SNAPSHOTS">
+                                <Tab fx:id="structureSnapshotsTab" text="SNAPSHOTS">
                                     <VBox spacing="8" styleClass="snapshot-tab-content">
                                         <HBox alignment="CENTER_LEFT"><Label fx:id="snapshotTitleLabel" text="SNAPSHOTS" styleClass="inspector-heading"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="snapshotCountLabel" styleClass="snapshot-count"/></HBox>
                                         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" styleClass="light-scroll-pane">
@@ -191,7 +191,7 @@
                         </VBox>
                         <Separator />
                         <VBox spacing="8" styleClass="input-source-block">
-                            <Label text="INPUT SOURCE" styleClass="panel-section-title"/>
+                            <Label fx:id="algorithmInputTitleLabel" text="INPUT SOURCE" styleClass="panel-section-title"/>
                             <HBox spacing="6" styleClass="input-source-toggle-row">
                                 <Button fx:id="currentInputBtn" text="● CURRENT STRUCTURE" onAction="#useCurrentStructureInput" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="input-source-toggle" />
                                 <Button fx:id="savedInputBtn" text="○ SAVED SNAPSHOT" onAction="#useLatestSnapshotInput" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="input-source-toggle" />
@@ -223,7 +223,7 @@
                     <VBox fx:id="diagnosticsPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
                         <TabPane fx:id="algorithmInspectorTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="inspector-tabs algorithm-tabs">
                             <tabs>
-                                <Tab text="STATISTICS">
+                                <Tab fx:id="statisticsTab" text="STATISTICS">
                                     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="light-scroll-pane"><content>
                                         <VBox spacing="12" styleClass="inspector-content">
                                             <HBox alignment="CENTER_LEFT"><Label fx:id="statsTitleLabel" text="RUN SUMMARY" styleClass="inspector-heading"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="liveLabel" text="LIVE" styleClass="status-mini"/></HBox>
@@ -231,12 +231,12 @@
                                         </VBox>
                                     </content></ScrollPane>
                                 </Tab>
-                                <Tab text="EVENT">
+                                <Tab fx:id="eventTab" text="EVENT">
                                     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="light-scroll-pane">
                                         <content>
                                             <VBox spacing="12" styleClass="inspector-content event-inspector-content">
                                                 <VBox spacing="9" styleClass="event-card">
-                                                    <Label text="CURRENT EVENT" styleClass="inspector-heading"/>
+                                                    <Label fx:id="currentEventHeadingLabel" text="CURRENT EVENT" styleClass="inspector-heading"/>
                                                     <HBox alignment="CENTER_LEFT" spacing="9">
                                                         <Region fx:id="eventKindDot" minWidth="18.0" prefWidth="18.0" maxWidth="18.0" minHeight="18.0" prefHeight="18.0" maxHeight="18.0" styleClass="event-kind-dot"/>
                                                         <Label fx:id="eventKindLabel" text="NO EVENT" styleClass="event-kind"/>
@@ -245,7 +245,7 @@
                                                     <Label fx:id="eventDetailsLabel" text="Run an algorithm or select a timeline event." wrapText="true" styleClass="inspector-body event-detail-body"/>
                                                 </VBox>
                                                 <VBox spacing="8" styleClass="event-card">
-                                                    <Label text="RUN SUMMARY" styleClass="inspector-heading"/>
+                                                    <Label fx:id="eventRunSummaryHeadingLabel" text="RUN SUMMARY" styleClass="inspector-heading"/>
                                                     <GridPane hgap="0" vgap="0" styleClass="run-summary-grid">
                                                         <columnConstraints>
                                                             <ColumnConstraints percentWidth="50" halignment="CENTER"/>
@@ -262,22 +262,22 @@
                                                     </GridPane>
                                                 </VBox>
                                                 <VBox spacing="8" styleClass="event-card">
-                                                    <Label text="RESULT PREVIEW" styleClass="inspector-heading"/>
+                                                    <Label fx:id="resultPreviewHeadingLabel" text="RESULT PREVIEW" styleClass="inspector-heading"/>
                                                     <Label fx:id="resultPreviewLabel" text="No result yet." wrapText="true" maxWidth="Infinity" styleClass="result-preview-value"/>
                                                 </VBox>
                                             </VBox>
                                         </content>
                                     </ScrollPane>
                                 </Tab>
-                                <Tab text="LOG">
+                                <Tab fx:id="logTab" text="LOG">
                                     <VBox spacing="8" styleClass="snapshot-tab-content">
                                         <Label fx:id="logTitleLabel" text="LOG" styleClass="inspector-heading" />
                                         <LogView fx:id="logView" VBox.vgrow="ALWAYS" styleClass="log-view-light" />
                                     </VBox>
                                 </Tab>
-                                <Tab text="RESULT">
+                                <Tab fx:id="resultTab" text="RESULT">
                                     <VBox spacing="12" styleClass="inspector-content">
-                                        <Label text="RESULT" styleClass="inspector-heading"/>
+                                        <Label fx:id="resultHeadingLabel" text="RESULT" styleClass="inspector-heading"/>
                                         <Label fx:id="resultLabel" text="No result yet." wrapText="true" styleClass="result-value"/>
                                     </VBox>
                                 </Tab>

@@ -86,26 +86,21 @@
             </TextField>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="addElementBtn" onAction="#handleAddElement">
+            <Button fx:id="addElementBtn" onAction="#handleAddElement" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="deleteElementBtn" onAction="#handleDeleteElement">
+            <Button fx:id="deleteElementBtn" onAction="#handleDeleteElement" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="findElementBtn" onAction="#handleFindElement">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
-            </Button>
         </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <TextField fx:id="updateIndexField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-            <TextField fx:id="updateValueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-            <Button fx:id="updateElementBtn" onAction="#handleUpdateElement">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
-            </Button>
-        </HBox>
+        <TextField fx:id="updateIndexField" maxWidth="Infinity">
+            <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+        </TextField>
+        <TextField fx:id="updateValueField" maxWidth="Infinity">
+            <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+        </TextField>
+        <Button fx:id="updateElementBtn" onAction="#handleUpdateElement" maxWidth="Infinity">
+            <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+        </Button>
     </VBox>
 </VBox>

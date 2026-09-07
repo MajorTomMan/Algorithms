@@ -60,14 +60,6 @@
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <TextField fx:id="findNodeField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
-            </TextField>
-            <Button fx:id="findNodeBtn" onAction="#handleFindNode">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
-            </Button>
-        </HBox>
     </VBox>
 
     <VBox spacing="8">
@@ -92,10 +84,18 @@
             </TextField>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="addEdgeBtn" onAction="#handleAddEdge">
+            <TextField fx:id="weightField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+            </TextField>
+            <Button fx:id="setWeightBtn" onAction="#handleSetWeight">
+                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+            </Button>
+        </HBox>
+        <HBox spacing="6" styleClass="operation-row">
+            <Button fx:id="addEdgeBtn" onAction="#handleAddEdge" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
             </Button>
-            <Button fx:id="deleteEdgeBtn" onAction="#handleDeleteEdge">
+            <Button fx:id="deleteEdgeBtn" onAction="#handleDeleteEdge" maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
             </Button>
         </HBox>

@@ -11,7 +11,11 @@ public record StringViewState(
         boolean completed) {
 
     public StringViewState {
-        value = value == null ? "" : value;
+        if (value == null) {
+            value = "";
+        } else {
+            value = value;
+        }
         mutation = Objects.requireNonNull(mutation, "mutation");
         observation = Objects.requireNonNull(observation, "observation");
     }

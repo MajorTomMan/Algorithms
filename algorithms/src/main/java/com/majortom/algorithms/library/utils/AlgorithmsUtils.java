@@ -65,7 +65,11 @@ public abstract class AlgorithmsUtils {
     }
 
     public static Integer[] copy(Integer[] arr) {
-        return arr == null ? null : arr.clone();
+        if (arr == null) {
+            return null;
+        } else {
+            return arr.clone();
+        }
     }
 
     public static <T> void swap(T[] arr, int i, int j) {
@@ -200,7 +204,11 @@ public abstract class AlgorithmsUtils {
         int[][] maze = new int[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                maze[i][j] = (random.nextDouble() < wallProbability) ? 1 : 0;
+                if ((random.nextDouble() < wallProbability)) {
+                    maze[i][j] = 1;
+                } else {
+                    maze[i][j] = 0;
+                }
             }
         }
         maze[0][0] = 0;

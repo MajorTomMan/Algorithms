@@ -48,6 +48,7 @@ public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
         }
         if (!found) return List.of();
         List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
+        ArrayMazeSupport.tracePath(path);
         Observations.pathFound(path, GridPoint::row, GridPoint::column);
         return path;
     }

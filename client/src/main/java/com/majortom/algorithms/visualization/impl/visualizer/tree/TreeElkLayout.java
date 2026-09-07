@@ -59,8 +59,12 @@ public final class TreeElkLayout {
             elkNodes.put(nodeSize.id(), node);
         }
 
-        Map<String, ElkPort> sourcePorts = request.kind() == Kind.BINARY
-                ? createOrderedSourcePorts(request, elkNodes) : Map.of();
+        Map<String, ElkPort> sourcePorts;
+        if (request.kind() == Kind.BINARY) {
+            sourcePorts = createOrderedSourcePorts(request, elkNodes);
+        } else {
+            sourcePorts = Map.of();
+        }
         for (Link link : request.links()) {
             ElkNode source = elkNodes.get(link.sourceId());
             ElkNode target = elkNodes.get(link.targetId());
@@ -68,7 +72,12 @@ public final class TreeElkLayout {
                 continue;
             }
             ElkPort sourcePort = sourcePorts.get(link.id());
-            ElkEdge edge = ElkGraphUtil.createSimpleEdge(sourcePort == null ? source : sourcePort, target);
+            ElkEdge edge;
+            if (sourcePort == null) {
+                edge = ElkGraphUtil.createSimpleEdge(source, target);
+            } else {
+                edge = ElkGraphUtil.createSimpleEdge(sourcePort, target);
+            }
             edge.setIdentifier(link.id());
         }
 
