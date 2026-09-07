@@ -16,7 +16,7 @@ import java.util.Objects;
  */
 public final class InMemoryStructureSnapshotStore {
 
-    public static final int DEFAULT_MAX_SNAPSHOTS_PER_MODULE = 8;
+    public static final int DEFAULT_MAX_SNAPSHOTS_PER_MODULE = 30;
 
     private final int maxSnapshotsPerModule;
     private final Map<String, List<StructureSnapshot<?>>> snapshotsByModule = new LinkedHashMap<>();

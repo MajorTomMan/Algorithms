@@ -411,9 +411,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             refreshVariantControls();
             return;
         }
-        stopAlgorithm();
-        activeVariant = variant;
         algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+        activeVariant = variant;
         clearVisualSelection();
         syncStartNode(currentGraph());
         refreshAlgorithmIds();
@@ -476,8 +476,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void useSnapshotAsAlgorithmInput(StructureSnapshot<GraphSnapshotState<Integer>> snapshot) {
         requireGraphSnapshot(snapshot);
-        if (!snapshotMatchesActiveVariant(snapshot.state())) {
-            throw new IllegalArgumentException("snapshot variant does not match the active graph structure");
+        GraphSnapshotState<Integer> state = snapshot.state();
+        if (state instanceof GraphSnapshot<?>) {
+            activateVariant(GraphVariant.BASIC);
+        } else if (state instanceof WeightedGraphSnapshot<?>) {
+            activateVariant(GraphVariant.WEIGHTED);
+        } else {
+            throw new IllegalArgumentException("unsupported graph snapshot type: " + state.getClass().getName());
         }
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();

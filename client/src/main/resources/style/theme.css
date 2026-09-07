@@ -1086,6 +1086,7 @@
 
 .snapshot-card-saved {
     -fx-background-color: #151e25;
+    -fx-cursor: hand;
 }
 
 .snapshot-card-saved:pressed {
@@ -1099,7 +1100,16 @@
 
 .snapshot-card-current {
     -fx-background-color: #14283d;
-    -fx-border-color: #3f8cff;
+    -fx-cursor: hand;
+}
+
+.snapshot-card-selected {
+    -fx-border-color: #ff2d3d;
+    -fx-border-width: 2px;
+}
+
+.snapshot-card-selected:hover {
+    -fx-border-color: #ff2d3d;
 }
 
 .snapshot-card-title {
@@ -2094,7 +2104,11 @@
     -fx-border-radius: 2px;
     -fx-padding: 10px;
 }
-.snapshot-card-current { -fx-border-color: -ui-red; -fx-border-width: 1px 1px 1px 3px; }
+.snapshot-card-current { -fx-border-color: -ui-gray-300; -fx-border-width: 1px; -fx-cursor: hand; }
+.snapshot-card-saved { -fx-cursor: hand; }
+.snapshot-card-selected { -fx-border-color: -ui-red; -fx-border-width: 2px; }
+.snapshot-card-selected:hover { -fx-border-color: -ui-red; }
+.snapshot-card-selected.snapshot-card-algorithm-input { -fx-border-color: -ui-red; }
 .snapshot-card:hover { -fx-background-color: -ui-gray-050; -fx-border-color: -ui-gray-500; }
 .snapshot-card-title { -fx-text-fill: -ui-black; -fx-font-weight: 800; }
 .snapshot-card-state { -fx-text-fill: -ui-blue; }
@@ -3207,4 +3221,18 @@
 }
 .root-pane:narrow-layout .speed-label {
     -fx-font-size: 8px;
+}
+
+
+/* AVL command input is multiline; it must not inherit the single-line operation-input height. */
+.operation-text-area {
+    -fx-min-width: 0;
+    -fx-min-height: 92px;
+    -fx-pref-height: 108px;
+    -fx-max-height: 160px;
+    -fx-padding: 0;
+}
+
+.operation-text-area .content {
+    -fx-padding: 7px 8px;
 }

@@ -416,6 +416,8 @@ public class MainController implements Initializable {
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
     private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
+    /** Snapshot-card selection is independent from restore and algorithm execution. Null means live/current. */
+    private final Map<String, String> selectedSnapshotIds = new LinkedHashMap<>();
     private String selectedHashKeyType;
     private String selectedHashValueType;
     private boolean updatingValueTypeSelectors;
@@ -1647,6 +1649,7 @@ public class MainController implements Initializable {
         if (support == null) {
             snapshotCards.getChildren().clear();
             if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
+            selectedSnapshotIds.remove(activeDefinition.id());
             snapshotCountLabel.setText(I18N.text(
                     "label.workspace.snapshot.count", 0,
                     structureSnapshotStore.maxSnapshotsPerModule()));
@@ -1657,18 +1660,24 @@ public class MainController implements Initializable {
 
         snapshotCards.getChildren().clear();
         if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
+        List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
+        String selectedSnapshotId = validSelectedSnapshotId(saved);
+
         StructureSnapshot<?> current = support.captureStructureSnapshot();
         snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true));
+                moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true,
+                selectedSnapshotId == null));
 
-        List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
+        int inspectorCount = 0;
         for (StructureSnapshot<?> snapshot : saved) {
+            boolean selected = snapshot.id().equals(selectedSnapshotId);
             snapshotCards.getChildren().add(createSnapshotCard(
                     moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
-                    support, false));
-            if (inspectorSnapshotCards != null && inspectorSnapshotCards.getChildren().size() < 2) {
+                    support, false, selected));
+            if (inspectorSnapshotCards != null && inspectorCount < 2) {
                 inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
-                        snapshot, support, inspectorSnapshotCards.getChildren().size() == 0));
+                        snapshot, support, selected));
+                inspectorCount++;
             }
         }
         if (saved.isEmpty()) {
@@ -1682,6 +1691,68 @@ public class MainController implements Initializable {
                 structureSnapshotStore.maxSnapshotsPerModule()));
         updateSnapshotActionState();
         refreshStructureHistory();
+    }
+
+    private String validSelectedSnapshotId(List<StructureSnapshot<?>> snapshots) {
+        if (activeDefinition == null) {
+            return null;
+        }
+        String moduleId = activeDefinition.id();
+        String selectedId = selectedSnapshotIds.get(moduleId);
+        if (selectedId == null) {
+            return null;
+        }
+        for (StructureSnapshot<?> snapshot : snapshots) {
+            if (snapshot.id().equals(selectedId)) {
+                return selectedId;
+            }
+        }
+        selectedSnapshotIds.remove(moduleId);
+        return null;
+    }
+
+    private StructureSnapshot<?> selectedSavedSnapshot(boolean fallbackToNewest) {
+        if (activeDefinition == null) {
+            return null;
+        }
+        List<StructureSnapshot<?>> snapshots = structureSnapshotStore.snapshots(activeDefinition.id());
+        String selectedId = validSelectedSnapshotId(snapshots);
+        if (selectedId != null) {
+            for (StructureSnapshot<?> snapshot : snapshots) {
+                if (snapshot.id().equals(selectedId)) {
+                    return snapshot;
+                }
+            }
+        }
+        if (!fallbackToNewest || snapshots.isEmpty()) {
+            return null;
+        }
+        StructureSnapshot<?> newest = snapshots.getFirst();
+        selectedSnapshotIds.put(activeDefinition.id(), newest.id());
+        return newest;
+    }
+
+    private void selectCurrentSnapshotCard() {
+        if (activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        selectedSnapshotIds.remove(activeDefinition.id());
+        refreshSnapshotCards();
+    }
+
+    private void selectSavedSnapshotCard(StructureSnapshot<?> snapshot) {
+        if (snapshot == null || activeDefinition == null || currentSubController == null
+                || currentSubController.isRunning() || !activeDefinition.id().equals(snapshot.moduleId())) {
+            return;
+        }
+        selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
+        SnapshotAlgorithmInputSupport<?> inputSupport = currentAlgorithmInputSupport();
+        if (inputSupport != null && inputSupport.algorithmInputSnapshotId() != null) {
+            applySavedSnapshotAlgorithmInput(snapshot, false);
+            return;
+        }
+        refreshSnapshotCards();
+        refreshAlgorithmInputSource();
     }
 
     private void refreshStructureHistory() {
@@ -1736,11 +1807,13 @@ public class MainController implements Initializable {
     private Node createInspectorSnapshotCard(
             StructureSnapshot<?> snapshot,
             StructureSnapshotSupport<?> support,
-            boolean newest) {
+            boolean selected) {
         VBox card = new VBox(5);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
-        if (newest) card.getStyleClass().add("snapshot-card-current");
+        card.getStyleClass().add("snapshot-card-saved");
+        if (selected) card.getStyleClass().add("snapshot-card-selected");
+        card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
         HBox header = new HBox(8);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         Label title = new Label(I18N.text("label.workspace.snapshot.card", shortSnapshotId(snapshot)));
@@ -1762,14 +1835,20 @@ public class MainController implements Initializable {
             String status,
             StructureSnapshot<?> snapshot,
             StructureSnapshotSupport<?> support,
-            boolean current) {
+            boolean current,
+            boolean selected) {
         VBox card = new VBox(6);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
         if (current) {
             card.getStyleClass().add("snapshot-card-current");
+            card.setOnMouseClicked(event -> selectCurrentSnapshotCard());
         } else {
             card.getStyleClass().add("snapshot-card-saved");
+            card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
+        }
+        if (selected) {
+            card.getStyleClass().add("snapshot-card-selected");
         }
 
         Label title;
@@ -1793,14 +1872,14 @@ public class MainController implements Initializable {
 
         SnapshotAlgorithmInputSupport<?> algorithmInputSupport = currentAlgorithmInputSupport();
         if (algorithmInputSupport != null) {
-            String selectedSnapshotId = algorithmInputSupport.algorithmInputSnapshotId();
-            boolean selected;
+            String inputSnapshotId = algorithmInputSupport.algorithmInputSnapshotId();
+            boolean algorithmInput;
             if (current) {
-                selected = selectedSnapshotId == null;
+                algorithmInput = inputSnapshotId == null;
             } else {
-                selected = snapshot.id().equals(selectedSnapshotId);
+                algorithmInput = snapshot.id().equals(inputSnapshotId);
             }
-            if (selected) {
+            if (algorithmInput) {
                 card.getStyleClass().add("snapshot-card-algorithm-input");
                 Label inputState = new Label(I18N.text("label.workspace.snapshot.algorithm_input"));
                 inputState.getStyleClass().add("snapshot-card-input-state");
@@ -1827,54 +1906,79 @@ public class MainController implements Initializable {
             WorkbenchTheme.applyControl(useInput);
             useInput.setOnAction(event -> {
                 if (current) {
-                    algorithmInputSupport.useCurrentStructureAsAlgorithmInput();
+                    applyCurrentStructureAlgorithmInput(true);
                 } else {
-                    useSnapshotAsAlgorithmInputUnchecked(algorithmInputSupport, snapshot);
-                }
-                refreshSnapshotCards();
-                refreshAlgorithmInputSource();
-                if (current) {
-                    appendSystemLog(I18N.text("message.snapshot.input_current", ""));
-                } else {
-                    appendSystemLog(I18N.text("message.snapshot.input_saved", shortSnapshotId(snapshot)));
+                    selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
+                    applySavedSnapshotAlgorithmInput(snapshot, true);
                 }
             });
             actions.getChildren().add(useInput);
         }
         if (!actions.getChildren().isEmpty()) {
+            actions.setOnMouseClicked(event -> event.consume());
             card.getChildren().add(actions);
         }
         return card;
     }
 
-    @FXML
-    private void useCurrentStructureInput() {
+    private void applyCurrentStructureAlgorithmInput(boolean logSelection) {
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
         if (support == null || currentSubController == null || currentSubController.isRunning()) {
             return;
         }
         support.useCurrentStructureAsAlgorithmInput();
+        if (!isStructurePageVisible()) {
+            currentSubController.showAlgorithmState();
+        }
         refreshAlgorithmInputSource();
         refreshSnapshotCards();
-        appendSystemLog("Algorithm input: current structure snapshot");
+        refreshTopContext();
+        refreshExecutionPresentation();
+        if (logSelection) {
+            appendSystemLog(I18N.text("message.snapshot.input_current", ""));
+        }
+    }
+
+    private void applySavedSnapshotAlgorithmInput(StructureSnapshot<?> snapshot, boolean logSelection) {
+        SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
+        if (support == null || snapshot == null || currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
+        try {
+            useSnapshotAsAlgorithmInputUnchecked(support, snapshot);
+        } catch (RuntimeException exception) {
+            appendSystemLog(I18N.text("message.snapshot.input_failed"));
+            return;
+        }
+        if (!isStructurePageVisible()) {
+            currentSubController.showAlgorithmState();
+        }
+        refreshAlgorithmInputSource();
+        refreshSnapshotCards();
+        refreshTopContext();
+        refreshExecutionPresentation();
+        if (logSelection) {
+            appendSystemLog(I18N.text("message.snapshot.input_saved", shortSnapshotId(snapshot)));
+        }
+    }
+
+    @FXML
+    private void useCurrentStructureInput() {
+        applyCurrentStructureAlgorithmInput(true);
     }
 
     @FXML
     private void useLatestSnapshotInput() {
-        SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        if (support == null || activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
+        if (activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
             return;
         }
-        List<StructureSnapshot<?>> snapshots = structureSnapshotStore.snapshots(activeDefinition.id());
-        if (snapshots.isEmpty()) {
+        StructureSnapshot<?> snapshot = selectedSavedSnapshot(true);
+        if (snapshot == null) {
             refreshAlgorithmInputSource();
             return;
         }
-        StructureSnapshot<?> snapshot = snapshots.getFirst();
-        useSnapshotAsAlgorithmInputUnchecked(support, snapshot);
-        refreshAlgorithmInputSource();
-        refreshSnapshotCards();
-        appendSystemLog("Algorithm input: saved snapshot " + shortSnapshotId(snapshot));
+        applySavedSnapshotAlgorithmInput(snapshot, true);
     }
 
     private void refreshAlgorithmInputSource() {
@@ -1885,12 +1989,6 @@ public class MainController implements Initializable {
         boolean hasSaved = activeDefinition != null && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
         if (savedInputBtn != null) savedInputBtn.setDisable(!hasSaved || support == null);
         if (currentInputBtn != null) currentInputBtn.setDisable(support == null);
-        if (activeDefinition != null && "maze".equals(activeDefinition.id())) {
-            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.maze"));
-            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, true); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", true)); }
-            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
-            return;
-        }
         if (support == null) {
             algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
             if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false)); }
@@ -1898,6 +1996,9 @@ public class MainController implements Initializable {
             return;
         }
         String snapshotId = support.algorithmInputSnapshotId();
+        if (snapshotId != null && activeDefinition != null) {
+            selectedSnapshotIds.put(activeDefinition.id(), snapshotId);
+        }
         boolean current = snapshotId == null;
         if (currentInputBtn != null) {
             currentInputBtn.pseudoClassStateChanged(SELECTED, current);
@@ -1984,6 +2085,7 @@ public class MainController implements Initializable {
         }
         StructureSnapshot<?> snapshot = support.captureStructureSnapshot();
         structureSnapshotStore.save(snapshot);
+        selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
         currentSubController.recordAuxiliaryEvent(
                 "snapshot-created", new SnapshotLifecycleEvent.Created(snapshot.id(), snapshot.moduleId()));
         refreshSnapshotCards();

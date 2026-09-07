@@ -361,8 +361,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @Override
     public void useSnapshotAsAlgorithmInput(StructureSnapshot<TreeSnapshotState<Integer>> snapshot) {
         requireTreeSnapshot(snapshot);
-        if (!snapshotMatchesActiveVariant(snapshot.state())) {
-            throw new IllegalArgumentException("snapshot variant does not match the active tree structure");
+        TreeSnapshotState<Integer> state = snapshot.state();
+        if (state instanceof GeneralTreeSnapshot<?>) {
+            activateVariant(TreeVariant.GENERAL);
+        } else if (state instanceof BinaryTreeSnapshot<?>) {
+            activateVariant(TreeVariant.AVL);
+        } else {
+            throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
         }
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
@@ -437,9 +442,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             refreshVariantControls();
             return;
         }
-        stopAlgorithm();
-        activeVariant = variant;
         algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+        activeVariant = variant;
         clearNodeSelection();
         refreshAlgorithmIds();
         syncStructureSelectorSelection();

@@ -20,6 +20,7 @@ import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
@@ -46,6 +47,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
     private static final double NEW_NODE_ENTRY_DISTANCE = MIN_RADIUS * 2.0d + 8.0d;
     private static final double EDGE_LABEL_OFFSET = 20.0d;
+    private static final double EDGE_LABEL_OFFSET_STEP = 12.0d;
+    private static final double EDGE_LABEL_COLLISION_PADDING = 4.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
@@ -129,6 +132,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
         syncEdges(state, transitions);
         syncSelectionState();
+        resolveEdgeLabelCollisions();
 
         Set<Long> currentNodeIds = state.nodes().stream().map(GraphViewState.Node::id)
                 .collect(java.util.stream.Collectors.toSet());
@@ -289,6 +293,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 entry.getValue().setRoute(route.points());
             }
         }
+        resolveEdgeLabelCollisions();
     }
 
     private void handleLayoutFailure(long version, Throwable failure) {
@@ -577,6 +582,90 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             return EDGE_LABEL_OFFSET;
         }
         return -EDGE_LABEL_OFFSET;
+    }
+
+    /**
+     * Keeps weighted-edge labels readable without changing graph topology or route ownership.
+     * Labels first keep the deterministic side chosen by edge id, then move farther from the
+     * edge only when that position intersects a node, node-id label, or an already placed weight.
+     */
+    private void resolveEdgeLabelCollisions() {
+        List<Bounds> occupied = new ArrayList<>();
+        for (NodeView node : nodeViews.values()) {
+            occupied.add(expanded(node.getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
+        }
+        for (Label nodeIdLabel : nodeIdLabels.values()) {
+            if (nodeIdLabel.isVisible()) {
+                occupied.add(expanded(nodeIdLabel.getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
+            }
+        }
+
+        List<Map.Entry<Long, EdgeView>> ordered = new ArrayList<>(edgeViews.entrySet());
+        ordered.sort(Map.Entry.comparingByKey());
+        for (Map.Entry<Long, EdgeView> entry : ordered) {
+            EdgeView edge = entry.getValue();
+            if (edge.labelText() == null) {
+                continue;
+            }
+            double[] candidates = edgeLabelOffsetCandidates(entry.getKey());
+            double bestOffset = candidates[0];
+            double bestScore = Double.POSITIVE_INFINITY;
+            for (double candidate : candidates) {
+                edge.setLabelNormalOffset(candidate);
+                Bounds candidateBounds = expanded(edge.labelNode().getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING);
+                double score = overlapScore(candidateBounds, occupied);
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestOffset = candidate;
+                }
+                if (score == 0.0d) {
+                    break;
+                }
+            }
+            edge.setLabelNormalOffset(bestOffset);
+            occupied.add(expanded(edge.labelNode().getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
+        }
+    }
+
+    private double[] edgeLabelOffsetCandidates(long edgeId) {
+        double first = edgeLabelOffset(edgeId);
+        double opposite = -first;
+        double secondMagnitude = EDGE_LABEL_OFFSET + EDGE_LABEL_OFFSET_STEP;
+        double thirdMagnitude = secondMagnitude + EDGE_LABEL_OFFSET_STEP;
+        double sign = 1.0d;
+        if (first < 0.0d) {
+            sign = -1.0d;
+        }
+        return new double[] {
+                first,
+                opposite,
+                sign * secondMagnitude,
+                -sign * secondMagnitude,
+                sign * thirdMagnitude,
+                -sign * thirdMagnitude
+        };
+    }
+
+    private Bounds expanded(Bounds bounds, double padding) {
+        return new BoundingBox(
+                bounds.getMinX() - padding,
+                bounds.getMinY() - padding,
+                bounds.getWidth() + padding * 2.0d,
+                bounds.getHeight() + padding * 2.0d);
+    }
+
+    private double overlapScore(Bounds candidate, List<Bounds> occupied) {
+        double score = 0.0d;
+        for (Bounds other : occupied) {
+            double width = Math.min(candidate.getMaxX(), other.getMaxX())
+                    - Math.max(candidate.getMinX(), other.getMinX());
+            double height = Math.min(candidate.getMaxY(), other.getMaxY())
+                    - Math.max(candidate.getMinY(), other.getMinY());
+            if (width > 0.0d && height > 0.0d) {
+                score += width * height;
+            }
+        }
+        return score;
     }
 
     private static String weightText(Double weight) {
