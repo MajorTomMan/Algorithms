@@ -14,6 +14,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListEl
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListElkLayout.Link;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListElkLayout.NodeSize;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
+import com.majortom.algorithms.visualization.international.I18N;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
@@ -57,8 +58,8 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, LinkedNodeDecoration> nodeDecorations = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
-    private final Text headLabel = new Text("HEAD ↓");
-    private final Text tailLabel = new Text("↑ TAIL");
+    private final Text headLabel = new Text();
+    private final Text tailLabel = new Text();
     private boolean measuringElements;
     private final InvalidationListener elementSizeListener = observable -> {
         if (!measuringElements) {

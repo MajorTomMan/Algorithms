@@ -42,6 +42,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
+    private static final double NEW_NODE_ENTRY_DISTANCE = MIN_RADIUS * 2.0d + 8.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
@@ -286,7 +287,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             return;
         }
 
-        clearCurrentRoutes();
         List<Animation> transitions = new ArrayList<>();
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
@@ -306,8 +306,14 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             Point2D target = new Point2D(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
             settledTargets.put(entry.getKey(), target);
             NodeView view = entry.getValue();
-            if (!hasAppliedLayout || newNodeIds.contains(entry.getKey())) {
+            if (!hasAppliedLayout) {
                 view.setCenter(target.getX(), target.getY());
+            } else if (newNodeIds.contains(entry.getKey())) {
+                Point2D origin = newNodeOrigin(entry.getKey(), target);
+                view.setCenter(origin.getX(), origin.getY());
+                if (!close(origin, target)) {
+                    transitions.add(animations.move(view, target, MOVE_DURATION));
+                }
             } else if (!close(view.center(), target)) {
                 transitions.add(animations.move(view, target, MOVE_DURATION));
             }
@@ -412,8 +418,50 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         expected.put(key, new EdgeSpec(sourceId, targetId));
     }
 
-    private void clearCurrentRoutes() {
-        edgeViews.values().forEach(EdgeView::clearRoute);
+    private Point2D newNodeOrigin(long nodeId, Point2D fallback) {
+        Long parentId = parentId(renderedState, nodeId);
+        if (parentId == null) {
+            return fallback;
+        }
+        NodeView parent = nodeViews.get(parentId);
+        if (parent != null) {
+            return entryOrigin(parent.center(), fallback);
+        }
+        Point2D settled = settledTargets.get(parentId);
+        if (settled != null) {
+            return entryOrigin(settled, fallback);
+        }
+        return fallback;
+    }
+
+    private Point2D entryOrigin(Point2D parent, Point2D target) {
+        Point2D delta = target.subtract(parent);
+        double distance = delta.magnitude();
+        if (distance <= 0.01d) {
+            return parent.add(NEW_NODE_ENTRY_DISTANCE, 0.0d);
+        }
+        if (distance <= NEW_NODE_ENTRY_DISTANCE) {
+            return target;
+        }
+        return parent.add(delta.normalize().multiply(NEW_NODE_ENTRY_DISTANCE));
+    }
+
+    private Long parentId(TreeViewState state, long nodeId) {
+        for (TreeViewState.Node node : state.nodes().values()) {
+            if (state.kind() == TreeViewState.Kind.GENERAL) {
+                if (node.childIds().contains(nodeId)) {
+                    return node.id();
+                }
+            } else {
+                if (node.leftId() != null && node.leftId() == nodeId) {
+                    return node.id();
+                }
+                if (node.rightId() != null && node.rightId() == nodeId) {
+                    return node.id();
+                }
+            }
+        }
+        return null;
     }
 
     private List<Long> orderedNodeIds(TreeViewState state) {
@@ -524,13 +572,10 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             activeAnimation.stop();
             activeAnimation = null;
         }
-        // A new factual frame may arrive before a presentation fade/scale completes.
-        // Never allow an interrupted animation to become persistent geometry/style state.
-        nodeViews.forEach((id, view) -> {
-            Point2D target = settledTargets.get(id);
-            if (target != null) {
-                view.setCenter(target.getX(), target.getY());
-            }
+        // A newer factual topology may arrive before a prior transition completes.
+        // Keep the currently displayed geometry as the next transition origin; only
+        // normalize transient presentation properties.
+        nodeViews.values().forEach(view -> {
             view.setOpacity(1.0d);
             view.setScaleX(1.0d);
             view.setScaleY(1.0d);

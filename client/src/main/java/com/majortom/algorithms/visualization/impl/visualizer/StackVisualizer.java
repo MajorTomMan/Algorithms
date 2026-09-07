@@ -11,6 +11,7 @@ import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.StackQueueElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.StackQueueElkLayout.ElementSize;
+import com.majortom.algorithms.visualization.international.I18N;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
 import javafx.application.Platform;
@@ -48,7 +49,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
     private final List<NodeView> exitingItems = new ArrayList<>();
-    private final Text topLabel = new Text("TOP →");
+    private final Text topLabel = new Text();
 
     private List<ElementSize> lastLayoutInput = List.of();
     private List<Animation> pendingTransitions = List.of();
@@ -66,6 +67,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         surface.prefHeightProperty().bind(heightProperty());
         surface.setSafeInsets(new javafx.geometry.Insets(24.0d, 16.0d, 62.0d, 16.0d));
         topLabel.getStyleClass().addAll("linear-role-label", "stack-top-label");
+        topLabel.textProperty().bind(I18N.createStringBinding("label.visual.stack.top"));
         surface.decorationLayer().getChildren().add(topLabel);
     }
 

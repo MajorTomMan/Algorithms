@@ -11,6 +11,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCe
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringElkLayout.ElementSize;
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
@@ -63,9 +64,9 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private final Map<StringCellView, Point2D> settledPositions = new LinkedHashMap<>();
     private final Set<StringCellView> exitingCells = new LinkedHashSet<>();
     private final Set<Animation> activeAnimations = new LinkedHashSet<>();
-    private final Text emptyLabel = new Text("EMPTY STRING");
+    private final Text emptyLabel = new Text();
     private final Text observationLabel = new Text();
-    private final Label patternCaption = new Label("PATTERN");
+    private final Label patternCaption = new Label();
     private final HBox patternTrack = new HBox(0.0d);
     private final List<KmpPatternCellView> patternCells = new ArrayList<>();
 
@@ -83,9 +84,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
         emptyLabel.getStyleClass().add("visual-empty-label");
+        emptyLabel.textProperty().bind(I18N.createStringBinding("label.visual.string.empty"));
         observationLabel.getStyleClass().add("string-observation-label");
         observationLabel.setMouseTransparent(true);
         patternCaption.getStyleClass().add("kmp-pattern-caption");
+        patternCaption.textProperty().bind(I18N.createStringBinding("label.visual.string.pattern"));
         patternCaption.setMouseTransparent(true);
         patternTrack.getStyleClass().add("kmp-pattern-track");
         patternTrack.setMouseTransparent(true);

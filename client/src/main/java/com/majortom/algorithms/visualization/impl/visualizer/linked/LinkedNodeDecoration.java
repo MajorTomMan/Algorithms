@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
+import com.majortom.algorithms.visualization.international.I18N;
+
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import javafx.beans.InvalidationListener;
@@ -13,8 +15,8 @@ final class LinkedNodeDecoration extends Group {
     private final NodeView node;
     private final Line divider = new Line();
     private final Line portDivider = new Line();
-    private final Text previousLabel = new Text("prev");
-    private final Text nextLabel = new Text("next");
+    private final Text previousLabel = new Text();
+    private final Text nextLabel = new Text();
     private final Circle previousPort = new Circle(3.4d);
     private final Circle nextPort = new Circle(3.4d);
     private final InvalidationListener geometryListener = observable -> updateGeometry();

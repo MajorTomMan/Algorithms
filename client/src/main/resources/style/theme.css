@@ -2127,6 +2127,16 @@
 }
 .history-header,
 .timeline-header { -fx-padding: 10px 24px 8px 24px; }
+.history-toggle {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-size: 11px;
+    -fx-padding: 2px 6px;
+    -fx-cursor: hand;
+}
+.history-toggle:hover { -fx-background-color: -ui-gray-100; }
+.history-collapsed .history-header { -fx-padding: 10px 24px; }
 .history-scroll,
 .history-scroll > .viewport { -fx-background-color: -ui-white; -fx-padding: 0; }
 .history-cards { -fx-padding: 8px 30px 12px 30px; }

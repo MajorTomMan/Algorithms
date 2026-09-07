@@ -10,6 +10,7 @@ import com.majortom.algorithms.visualization.common.layout.LayoutResult;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayElkLayout.ElementSize;
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
@@ -60,7 +61,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     private final Map<ArrayCellView, Point2D> settledPositions = new LinkedHashMap<>();
     private final Set<ArrayCellView> exitingCells = new LinkedHashSet<>();
     private final Set<Animation> activeAnimations = new LinkedHashSet<>();
-    private final Text emptyLabel = new Text("EMPTY ARRAY");
+    private final Text emptyLabel = new Text();
 
     private List<ElementSize> lastLayoutInput = List.of();
     private List<Integer> lastRenderedValues = List.of();
@@ -73,6 +74,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
         emptyLabel.getStyleClass().add("visual-empty-label");
+        emptyLabel.textProperty().bind(I18N.createStringBinding("label.visual.array.empty"));
     }
 
     public void setOnIndexSelected(IntConsumer onIndexSelected) {

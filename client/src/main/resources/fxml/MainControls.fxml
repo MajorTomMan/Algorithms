@@ -162,13 +162,16 @@
                     </VBox>
                 </HBox>
 
-                <VBox fx:id="structureHistoryDock" minHeight="150.0" prefHeight="150.0" maxHeight="180.0" styleClass="history-dock">
+                <VBox fx:id="structureHistoryDock" minHeight="52.0" prefHeight="52.0" maxHeight="52.0" styleClass="history-dock">
                     <HBox alignment="CENTER_LEFT" styleClass="history-header">
                         <Label fx:id="structureHistoryTitleLabel" text="STRUCTURE HISTORY" styleClass="history-title"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Label fx:id="structureHistoryCountLabel" styleClass="history-count"/>
+                        <Button fx:id="structureHistoryToggleBtn" text="▲" onAction="#toggleStructureHistory" styleClass="history-toggle"/>
                     </HBox>
-                    <ScrollPane fitToHeight="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" styleClass="history-scroll">
+                    <ScrollPane fx:id="structureHistoryDetails" managed="false" visible="false"
+                        fitToHeight="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED"
+                        VBox.vgrow="ALWAYS" styleClass="history-scroll">
                         <content><HBox fx:id="structureHistoryCards" spacing="28" alignment="CENTER_LEFT" styleClass="history-cards" /></content>
                     </ScrollPane>
                 </VBox>

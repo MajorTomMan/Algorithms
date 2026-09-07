@@ -44,6 +44,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
     private static final Duration APPEAR_DURATION = Duration.millis(180.0d);
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
+    private static final double NEW_NODE_ENTRY_DISTANCE = MIN_RADIUS * 2.0d + 8.0d;
+    private static final double EDGE_LABEL_OFFSET = 20.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
@@ -86,7 +88,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     @Override
     protected void draw(GraphViewState state) {
-        stopActiveAnimation();
         cleanupDetachedViews();
         List<Animation> transitions = new ArrayList<>();
         Set<Long> newNodeIds = new HashSet<>();
@@ -153,6 +154,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         LayoutRequest request = buildLayoutInput(state);
         boolean layoutChanged = !request.equals(lastLayoutInput);
         if (layoutChanged) {
+            stopActiveAnimation();
             lastLayoutInput = request;
             if (request.nodes().isEmpty()) {
                 invalidateLayout();
@@ -233,7 +235,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             return;
         }
 
-        clearCurrentRoutes();
         List<Animation> transitions = new ArrayList<>();
         if (pendingVersion == version) {
             transitions.addAll(pendingTransitions);
@@ -252,8 +253,14 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             }
             Point2D target = new Point2D(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
             NodeView view = entry.getValue();
-            if (!hasAppliedLayout || newNodeIds.contains(entry.getKey())) {
+            if (!hasAppliedLayout) {
                 view.setCenter(target.getX(), target.getY());
+            } else if (newNodeIds.contains(entry.getKey())) {
+                Point2D origin = newNodeOrigin(entry.getKey(), target, newNodeIds);
+                view.setCenter(origin.getX(), origin.getY());
+                if (!close(origin, target)) {
+                    transitions.add(animations.move(view, target, MOVE_DURATION));
+                }
             } else if (!close(view.center(), target)) {
                 transitions.add(animations.move(view, target, MOVE_DURATION));
             }
@@ -312,6 +319,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             if (existing != null) {
                 existing.setDirected(state.directed());
                 existing.setLabelText(weightText(edge.weight()));
+                existing.setLabelNormalOffset(edgeLabelOffset(edge.id()));
                 existing.setHighlighted(isObservedEdge(state, edge));
                 continue;
             }
@@ -322,6 +330,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             }
             EdgeView view = new EdgeView(source, target, state.directed());
             view.setLabelText(weightText(edge.weight()));
+            view.setLabelNormalOffset(edgeLabelOffset(edge.id()));
             long visualEdgeId = edge.id();
             view.setOnMouseClicked(event -> {
                 selectedEdgeId = visualEdgeId;
@@ -425,8 +434,46 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         return VisualDensity.DENSE;
     }
 
-    private void clearCurrentRoutes() {
-        edgeViews.values().forEach(EdgeView::clearRoute);
+    private Point2D newNodeOrigin(long nodeId, Point2D fallback, Set<Long> newNodeIds) {
+        List<Point2D> neighbors = new ArrayList<>();
+        for (GraphViewState.Edge edge : renderedState.edges()) {
+            Long neighborId = null;
+            if (edge.fromId() == nodeId) {
+                neighborId = edge.toId();
+            } else if (edge.toId() == nodeId) {
+                neighborId = edge.fromId();
+            }
+            if (neighborId == null || neighborId == nodeId || newNodeIds.contains(neighborId)) {
+                continue;
+            }
+            NodeView neighbor = nodeViews.get(neighborId);
+            if (neighbor != null) {
+                neighbors.add(neighbor.center());
+            }
+        }
+        if (neighbors.isEmpty()) {
+            return fallback;
+        }
+        double x = 0.0d;
+        double y = 0.0d;
+        for (Point2D point : neighbors) {
+            x += point.getX();
+            y += point.getY();
+        }
+        Point2D anchor = new Point2D(x / neighbors.size(), y / neighbors.size());
+        return entryOrigin(anchor, fallback, NEW_NODE_ENTRY_DISTANCE);
+    }
+
+    private Point2D entryOrigin(Point2D anchor, Point2D target, double preferredDistance) {
+        Point2D delta = target.subtract(anchor);
+        double distance = delta.magnitude();
+        if (distance <= 0.01d) {
+            return anchor.add(preferredDistance, 0.0d);
+        }
+        if (distance <= preferredDistance) {
+            return target;
+        }
+        return anchor.add(delta.normalize().multiply(preferredDistance));
     }
 
     private void cleanupDetachedViews() {
@@ -448,10 +495,15 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
         ParallelTransition parallel = new ParallelTransition();
         parallel.getChildren().addAll(transitions);
-        if (onFinished != null) {
-            parallel.setOnFinished(event -> onFinished.run());
-        }
         activeAnimation = parallel;
+        parallel.setOnFinished(event -> {
+            if (activeAnimation == parallel) {
+                activeAnimation = null;
+            }
+            if (onFinished != null) {
+                onFinished.run();
+            }
+        });
         parallel.play();
     }
 
@@ -518,6 +570,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                     || (observation.secondNodeId() != null && observation.secondNodeId() == nodeId);
             case NONE -> false;
         };
+    }
+
+    private double edgeLabelOffset(long edgeId) {
+        if ((edgeId & 1L) == 0L) {
+            return EDGE_LABEL_OFFSET;
+        }
+        return -EDGE_LABEL_OFFSET;
     }
 
     private static String weightText(Double weight) {

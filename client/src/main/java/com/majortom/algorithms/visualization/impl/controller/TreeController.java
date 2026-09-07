@@ -8,6 +8,7 @@ import com.majortom.algorithms.library.basic.tree.AVLTree;
 import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
 import com.majortom.algorithms.library.basic.tree.GeneralTreeNode;
 import com.majortom.algorithms.library.basic.tree.Tree;
+import com.majortom.algorithms.library.tree.AvlCommand;
 import com.majortom.algorithms.library.tree.AvlCommandAlgorithm;
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -27,6 +28,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
@@ -53,6 +55,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @FXML private Label algorithmLabel;
     @FXML private Label operationsSectionLabel;
     @FXML private ComboBox<String> algorithmSelector;
+    @FXML private Label algorithmCommandsHintLabel;
+    @FXML private TextArea algorithmCommandsField;
     @FXML private TextField valueField;
     @FXML private Label selectionHintLabel;
     @FXML private Button addRootBtn;
@@ -277,11 +281,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 "algorithm.tree.Integer." + algorithmId,
                 AvlCommandAlgorithm.class);
         TreeViewState initialState = TreeViewState.binary(avlNodeSnapshot(runtimeTree.root()));
+        List<AvlCommand> commands = parseAvlCommands();
+        if (commands.isEmpty()) {
+            logI18n("message.tree.avl.commands_required");
+            return;
+        }
         startAlgorithm(
                 algorithmId,
                 inputSnapshot,
                 () -> {
-                    algorithm.execute(runtimeTree, List.of());
+                    algorithm.execute(runtimeTree, commands);
                     return null;
                 },
                 () -> new TreeEventReducer(initialState));
@@ -567,6 +576,45 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
     }
 
+    private List<AvlCommand> parseAvlCommands() {
+        if (algorithmCommandsField == null) {
+            return List.of();
+        }
+        String source = algorithmCommandsField.getText();
+        if (source == null || source.isBlank()) {
+            return List.of();
+        }
+        java.util.ArrayList<AvlCommand> commands = new java.util.ArrayList<>();
+        String[] lines = source.split("\\R");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            String[] parts = trimmed.split("\\s+");
+            if (parts.length != 2) {
+                logI18n("message.tree.avl.command_invalid", trimmed);
+                return List.of();
+            }
+            AvlCommand.Operation operation;
+            if ("INSERT".equalsIgnoreCase(parts[0])) {
+                operation = AvlCommand.Operation.INSERT;
+            } else if ("REMOVE".equalsIgnoreCase(parts[0])) {
+                operation = AvlCommand.Operation.REMOVE;
+            } else {
+                logI18n("message.tree.avl.command_invalid", trimmed);
+                return List.of();
+            }
+            try {
+                commands.add(new AvlCommand(operation, Integer.parseInt(parts[1])));
+            } catch (NumberFormatException exception) {
+                logI18n("message.tree.avl.command_invalid", trimmed);
+                return List.of();
+            }
+        }
+        return List.copyOf(commands);
+    }
+
     private GeneralTreeNode<Integer> selectedGeneralNode() {
         if (selectedNodeId == null) {
             logI18n("message.tree.select_node");
@@ -701,6 +749,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         refreshAlgorithmSelector();
         refreshOperationVisibility();
         refreshOperationLabels();
+        refreshAlgorithmCommandVisibility();
         refreshOperationAvailability();
     }
 
@@ -761,6 +810,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             }
             selectionHintLabel.textProperty().bind(I18N.createStringBinding(key));
         }
+    }
+
+    private void refreshAlgorithmCommandVisibility() {
+        boolean visible = activeVariant == TreeVariant.AVL;
+        setVisibleManaged(algorithmCommandsHintLabel, visible);
+        setVisibleManaged(algorithmCommandsField, visible);
     }
 
     private void refreshOperationAvailability() {
@@ -827,19 +882,19 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     public String structureSummaryText() {
         if (activeVariant == TreeVariant.GENERAL) {
             GeneralTreeSnapshot<Integer> snapshot = currentGeneralSnapshot();
-            Object rootValue = "none";
+            Object rootValue = I18N.text("label.workspace.selection.none");
             if (snapshot.root() != null) {
                 rootValue = snapshot.root().value();
             }
-            return String.format("Nodes          %d%nHeight         %d%nRoot           %s",
+            return I18N.text("label.workspace.structure.summary.tree",
                     snapshot.size(), generalHeight(snapshot.root()), rootValue);
         }
         BinaryTreeSnapshot<Integer> snapshot = currentAvlSnapshot();
-        Object rootValue = "none";
+        Object rootValue = I18N.text("label.workspace.selection.none");
         if (snapshot.root() != null) {
             rootValue = snapshot.root().value();
         }
-        return String.format("Nodes          %d%nHeight         %d%nRoot           %s",
+        return I18N.text("label.workspace.structure.summary.tree",
                 snapshot.size(), binaryHeight(snapshot.root()), rootValue);
     }
 
@@ -899,6 +954,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
         }
         bindPrompt(valueField, "prompt.tree.value");
+        if (algorithmCommandsField != null) {
+            algorithmCommandsField.promptTextProperty().bind(I18N.createStringBinding("prompt.tree.avl.commands"));
+        }
+        if (algorithmCommandsHintLabel != null) {
+            algorithmCommandsHintLabel.textProperty().bind(I18N.createStringBinding("label.tree.avl.commands"));
+        }
         bindButton(addChildBtn, "action.tree.add_child");
         bindButton(addParentBtn, "action.tree.add_parent");
         bindButton(deleteBtn, "action.tree.delete");

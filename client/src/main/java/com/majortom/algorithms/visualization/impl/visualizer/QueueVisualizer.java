@@ -11,6 +11,7 @@ import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.StackQueueElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.StackQueueElkLayout.ElementSize;
+import com.majortom.algorithms.visualization.international.I18N;
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
 import javafx.application.Platform;
@@ -48,10 +49,10 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     private final AtomicLong layoutVersion = new AtomicLong();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
     private final List<NodeView> exitingItems = new ArrayList<>();
-    private final Text frontLabel = new Text("FRONT ↓");
-    private final Text rearLabel = new Text("↓ REAR");
-    private final Text dequeueLabel = new Text("← DEQUEUE");
-    private final Text enqueueLabel = new Text("ENQUEUE ←");
+    private final Text frontLabel = new Text();
+    private final Text rearLabel = new Text();
+    private final Text dequeueLabel = new Text();
+    private final Text enqueueLabel = new Text();
 
     private List<ElementSize> lastLayoutInput = List.of();
     private List<Animation> pendingTransitions = List.of();
@@ -72,6 +73,9 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         rearLabel.getStyleClass().addAll("linear-role-label", "queue-rear-label");
         dequeueLabel.getStyleClass().addAll("linear-flow-label", "queue-dequeue-label");
         enqueueLabel.getStyleClass().addAll("linear-flow-label", "queue-enqueue-label");
+        dequeueLabel.textProperty().bind(I18N.createStringBinding("label.visual.queue.dequeue"));
+        enqueueLabel.textProperty().bind(I18N.createStringBinding("label.visual.queue.enqueue"));
+        I18N.localeProperty().addListener((observable, oldLocale, newLocale) -> requestRender());
         surface.decorationLayer().getChildren().addAll(frontLabel, rearLabel, dequeueLabel, enqueueLabel);
     }
 
@@ -241,7 +245,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         double top = Math.min(front.y(), rear.y());
         double bottom = Math.max(front.y() + front.height(), rear.y() + rear.height());
         if (items.size() == 1) {
-            frontLabel.setText("FRONT / REAR ↓");
+            frontLabel.setText(I18N.text("label.visual.queue.front_rear"));
             frontLabel.setVisible(true);
             rearLabel.setVisible(false);
             relocateCentered(frontLabel, front.x() + front.width() / 2.0d, Math.max(2.0d, top - 28.0d));
@@ -251,8 +255,8 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
                     bottom + 32.0d);
             return;
         }
-        frontLabel.setText("FRONT ↓");
-        rearLabel.setText("↓ REAR");
+        frontLabel.setText(I18N.text("label.visual.queue.front"));
+        rearLabel.setText(I18N.text("label.visual.queue.rear"));
         frontLabel.setVisible(true);
         rearLabel.setVisible(true);
         relocateCentered(frontLabel, front.x() + front.width() / 2.0d, Math.max(2.0d, top - 28.0d));
@@ -264,8 +268,8 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     private void positionEmptyLabels() {
-        frontLabel.setText("FRONT ↓");
-        rearLabel.setText("↓ REAR");
+        frontLabel.setText(I18N.text("label.visual.queue.front"));
+        rearLabel.setText(I18N.text("label.visual.queue.rear"));
         frontLabel.setVisible(true);
         rearLabel.setVisible(true);
         frontLabel.relocate(40.0d, 30.0d);

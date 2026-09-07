@@ -30,12 +30,15 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextInputControl;
@@ -56,6 +59,8 @@ import java.net.URL;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -168,6 +173,10 @@ public class MainController implements Initializable {
     private HBox structureHistoryCards;
     @FXML
     private VBox structureHistoryDock;
+    @FXML
+    private ScrollPane structureHistoryDetails;
+    @FXML
+    private Button structureHistoryToggleBtn;
     @FXML
     private VBox structureSelectionOverlay;
     @FXML
@@ -415,6 +424,13 @@ public class MainController implements Initializable {
     private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
     private String selectedAlgorithmId;
+    private final Set<Node> responsiveAddedSmall =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Node> responsiveAddedDense =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+    private boolean compactLayout;
+    private boolean narrowLayout;
+    private boolean structureHistoryExpanded;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -432,6 +448,7 @@ public class MainController implements Initializable {
         setupGlobalEffects();
         setupLayoutClips();
         setupResponsiveLayout();
+        setStructureHistoryExpanded(false);
         WorkbenchTheme.apply(rootPane);
         WorkbenchTheme.leftPill(structureWorkspaceBtn);
         WorkbenchTheme.rightPill(algorithmWorkspaceBtn);
@@ -474,7 +491,7 @@ public class MainController implements Initializable {
         saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
         currentSelectionHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.current"));
         structureOverviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.overview"));
-        algorithmViewTitleLabel.setText(I18N.text("label.workspace.algorithm.preview"));
+        algorithmViewTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.current_step"));
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
@@ -1098,6 +1115,52 @@ public class MainController implements Initializable {
         }
     }
 
+    @FXML
+    private void toggleStructureHistory() {
+        setStructureHistoryExpanded(!structureHistoryExpanded);
+    }
+
+    private void setStructureHistoryExpanded(boolean expanded) {
+        structureHistoryExpanded = expanded;
+        if (structureHistoryDetails != null) {
+            structureHistoryDetails.setManaged(expanded);
+            structureHistoryDetails.setVisible(expanded);
+        }
+        if (structureHistoryToggleBtn != null) {
+            if (expanded) {
+                structureHistoryToggleBtn.setText("▼");
+            } else {
+                structureHistoryToggleBtn.setText("▲");
+            }
+        }
+        updateStructureHistoryGeometry();
+    }
+
+    private void updateStructureHistoryGeometry() {
+        if (structureHistoryDock == null || narrowLayout) {
+            return;
+        }
+        double height;
+        if (structureHistoryExpanded) {
+            if (compactLayout) {
+                height = 124.0d;
+            } else {
+                height = 168.0d;
+            }
+        } else {
+            height = 52.0d;
+        }
+        structureHistoryDock.setMinHeight(height);
+        structureHistoryDock.setPrefHeight(height);
+        structureHistoryDock.setMaxHeight(height);
+        structureHistoryDock.getStyleClass().removeAll("history-collapsed", "history-expanded");
+        if (structureHistoryExpanded) {
+            structureHistoryDock.getStyleClass().add("history-expanded");
+        } else {
+            structureHistoryDock.getStyleClass().add("history-collapsed");
+        }
+    }
+
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(
                 structureWorkspaceBtn, algorithmWorkspaceBtn, langBtn,
@@ -1149,8 +1212,10 @@ public class MainController implements Initializable {
         boolean nextNarrowLayout = (hasWidth && width < NARROW_LAYOUT_WIDTH)
                 || (hasHeight && height < NARROW_LAYOUT_HEIGHT);
 
-        rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, nextCompactLayout);
-        rootPane.pseudoClassStateChanged(NARROW_LAYOUT, nextNarrowLayout);
+        compactLayout = nextCompactLayout;
+        narrowLayout = nextNarrowLayout;
+        rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, compactLayout);
+        rootPane.pseudoClassStateChanged(NARROW_LAYOUT, narrowLayout);
 
         double familyWidth;
         if (nextNarrowLayout) {
@@ -1222,23 +1287,9 @@ public class MainController implements Initializable {
 
         snapshotPanel.setManaged(true);
         snapshotPanel.setVisible(true);
-        setPageVisibility(diagnosticsPanel, !nextNarrowLayout);
-        setPageVisibility(structureHistoryDock, !nextNarrowLayout);
-        if (!nextNarrowLayout) {
-            double historyHeight;
-            if (nextCompactLayout) {
-                historyHeight = 104.0d;
-            } else {
-                historyHeight = 150.0d;
-            }
-            structureHistoryDock.setMinHeight(historyHeight);
-            structureHistoryDock.setPrefHeight(historyHeight);
-            if (nextCompactLayout) {
-                structureHistoryDock.setMaxHeight(124.0d);
-            } else {
-                structureHistoryDock.setMaxHeight(180.0d);
-            }
-        }
+        setPageVisibility(diagnosticsPanel, !narrowLayout);
+        setPageVisibility(structureHistoryDock, !narrowLayout);
+        updateStructureHistoryGeometry();
 
         setControlVisibility(brandSubtitle, !nextNarrowLayout);
         setControlVisibility(topContextLabel, !nextNarrowLayout);
@@ -1274,13 +1325,13 @@ public class MainController implements Initializable {
             return;
         }
         if (node instanceof TabPane) {
-            setStyleClass(node, Styles.DENSE, compact);
+            setResponsiveStyleClass(node, Styles.DENSE, compact, responsiveAddedDense);
         } else if (node instanceof Button
                 || node instanceof ComboBoxBase<?>
                 || node instanceof TextInputControl
                 || node instanceof Spinner<?>
                 || node instanceof Slider) {
-            setStyleClass(node, Styles.SMALL, compact);
+            setResponsiveStyleClass(node, Styles.SMALL, compact, responsiveAddedSmall);
         }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
@@ -1289,12 +1340,19 @@ public class MainController implements Initializable {
         }
     }
 
-    private static void setStyleClass(Node node, String styleClass, boolean enabled) {
+    private static void setResponsiveStyleClass(
+            Node node,
+            String styleClass,
+            boolean enabled,
+            Set<Node> ownedNodes) {
         if (enabled) {
             if (!node.getStyleClass().contains(styleClass)) {
                 node.getStyleClass().add(styleClass);
+                ownedNodes.add(node);
             }
-        } else {
+            return;
+        }
+        if (ownedNodes.remove(node)) {
             node.getStyleClass().remove(styleClass);
         }
     }
@@ -1573,7 +1631,6 @@ public class MainController implements Initializable {
         String moduleName = I18N.text(activeDefinition.labelKey());
         structureWorkspaceSubtitleLabel.setText(moduleName);
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
-        algorithmViewTitleLabel.setText("CURRENT STEP");
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
         refreshTopContext();
@@ -1686,7 +1743,7 @@ public class MainController implements Initializable {
         if (newest) card.getStyleClass().add("snapshot-card-current");
         HBox header = new HBox(8);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label("SNAPSHOT / " + shortSnapshotId(snapshot));
+        Label title = new Label(I18N.text("label.workspace.snapshot.card", shortSnapshotId(snapshot)));
         title.getStyleClass().add("snapshot-card-title");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -1943,6 +2000,9 @@ public class MainController implements Initializable {
                 || !activeDefinition.id().equals(snapshot.moduleId())) {
             return;
         }
+        if (!confirmSnapshotRestore(snapshot)) {
+            return;
+        }
         try {
             restoreSnapshotUnchecked(support, snapshot);
             currentSubController.recordAuxiliaryEvent(
@@ -1952,7 +2012,19 @@ public class MainController implements Initializable {
             return;
         }
         refreshSnapshotCards();
+        refreshAlgorithmInputSource();
+        refreshStructureSummary();
+        clearStructureSelection();
         appendSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
+    }
+
+    private boolean confirmSnapshotRestore(StructureSnapshot<?> snapshot) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(I18N.text("confirm.snapshot.restore.title"));
+        alert.setHeaderText(I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
+        alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
+        OperationDialogTheme.apply(alert, 460.0d);
+        return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
     }
 
     @SuppressWarnings("unchecked")
@@ -2119,7 +2191,7 @@ public class MainController implements Initializable {
             if (id == null) {
                 runIdLabel.setText("");
             } else {
-                runIdLabel.setText("RUN #" + shortRunId(id));
+                runIdLabel.setText(I18N.text("label.workspace.run.id", shortRunId(id)));
             }
         }
     }

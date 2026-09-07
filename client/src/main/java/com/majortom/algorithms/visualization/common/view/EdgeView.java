@@ -15,6 +15,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.QuadCurveTo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,6 +35,7 @@ public final class EdgeView extends Group {
     private final BooleanProperty curved = new SimpleBooleanProperty();
     private final BooleanProperty highlighted = new SimpleBooleanProperty();
     private final BooleanProperty selected = new SimpleBooleanProperty();
+    private double labelNormalOffset = LABEL_NORMAL_OFFSET;
     private final InvalidationListener geometryListener = observable -> updateGeometry();
     private List<Point2D> route = List.of();
 
@@ -176,6 +178,16 @@ public final class EdgeView extends Group {
         return label;
     }
 
+    /** Presentation-only label offset used to separate dense graph edge metadata. */
+    public void setLabelNormalOffset(double offset) {
+        labelNormalOffset = offset;
+        updateGeometry();
+    }
+
+    public double labelNormalOffset() {
+        return labelNormalOffset;
+    }
+
     /** Applies presentation-only route geometry, typically produced by ELK. */
     public void setRoute(List<Point2D> points) {
         route = List.copyOf(Objects.requireNonNull(points, "points"));
@@ -209,7 +221,7 @@ public final class EdgeView extends Group {
         }
         if (sourceCenter.equals(targetCenter)) {
             arrow.setVisible(false);
-            positionLabel(sourceCenter, new Point2D(1.0d, 0.0d), LABEL_NORMAL_OFFSET);
+            positionLabel(sourceCenter, new Point2D(1.0d, 0.0d), labelNormalOffset);
             syncHitPath();
             return;
         }
@@ -234,23 +246,52 @@ public final class EdgeView extends Group {
             labelAnchor = start.midpoint(end);
         }
         updateArrow(end, tangent);
-        positionLabel(labelAnchor, tangent, LABEL_NORMAL_OFFSET);
+        positionLabel(labelAnchor, tangent, labelNormalOffset);
         syncHitPath();
     }
 
     private void updateRoutedGeometry() {
         path.getElements().clear();
-        Point2D start = route.getFirst();
+        if (source == target) {
+            updateSelfLoop(source.center());
+            return;
+        }
+
+        List<Point2D> points = new ArrayList<>(route);
+        Point2D sourceDirection;
+        if (route.size() > 2) {
+            sourceDirection = route.get(1);
+        } else {
+            sourceDirection = target.center();
+        }
+        if (source.center().equals(sourceDirection)) {
+            sourceDirection = target.center();
+        }
+
+        Point2D targetDirection;
+        if (route.size() > 2) {
+            targetDirection = route.get(route.size() - 2);
+        } else {
+            targetDirection = source.center();
+        }
+        if (target.center().equals(targetDirection)) {
+            targetDirection = source.center();
+        }
+
+        Point2D start = source.boundaryPointToward(sourceDirection);
+        Point2D end = target.boundaryPointToward(targetDirection);
+        points.set(0, start);
+        points.set(points.size() - 1, end);
+
         path.getElements().add(new MoveTo(start.getX(), start.getY()));
-        for (int index = 1; index < route.size(); index++) {
-            Point2D point = route.get(index);
+        for (int index = 1; index < points.size(); index++) {
+            Point2D point = points.get(index);
             path.getElements().add(new LineTo(point.getX(), point.getY()));
         }
-        Point2D end = route.getLast();
-        Point2D tangent = end.subtract(route.get(route.size() - 2));
+        Point2D tangent = end.subtract(points.get(points.size() - 2));
         updateArrow(end, tangent);
-        PolylineMidpoint midpoint = polylineMidpoint(route);
-        positionLabel(midpoint.point(), midpoint.tangent(), LABEL_NORMAL_OFFSET);
+        PolylineMidpoint midpoint = polylineMidpoint(points);
+        positionLabel(midpoint.point(), midpoint.tangent(), labelNormalOffset);
         syncHitPath();
     }
 
