@@ -533,6 +533,13 @@ public abstract class BaseController<S> implements Initializable {
         }
     }
 
+    /** Renders a transient read-only preview without changing structure or algorithm cursors. */
+    protected final void renderPreviewState(S state) {
+        if (state != null && visualizer != null) {
+            visualizer.render(state);
+        }
+    }
+
     /** Stores an editable structure state without changing the algorithm cursor. */
     protected final void renderStructureState(S state) {
         storeStructureState(state);

@@ -99,6 +99,11 @@
                     </VBox>
 
                     <StackPane fx:id="structurePreviewViewport" minWidth="260.0" HBox.hgrow="ALWAYS" styleClass="lab-canvas">
+                        <HBox fx:id="structureSnapshotPreviewBadge" managed="false" visible="false" mouseTransparent="true"
+                            alignment="CENTER_LEFT" spacing="8" StackPane.alignment="TOP_LEFT" styleClass="snapshot-preview-badge">
+                            <Label fx:id="structureSnapshotPreviewBadgeLabel" text="SNAPSHOT PREVIEW · READ ONLY" styleClass="snapshot-preview-badge-title" />
+                            <Label fx:id="structureSnapshotPreviewIdLabel" styleClass="snapshot-preview-badge-id" />
+                        </HBox>
                         <VBox fx:id="structurePreviewEmpty" alignment="CENTER" spacing="10" mouseTransparent="true" styleClass="structure-preview-empty">
                             <Label fx:id="structurePreviewTitleLabel" styleClass="structure-preview-title" />
                             <Label fx:id="structurePreviewHintLabel" wrapText="true" maxWidth="320.0" styleClass="structure-preview-hint" />
@@ -115,6 +120,15 @@
                     </StackPane>
 
                     <VBox fx:id="snapshotPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">
+                        <VBox fx:id="snapshotPreviewNotice" managed="false" visible="false" spacing="7" styleClass="snapshot-preview-notice">
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label fx:id="snapshotPreviewNoticeTitleLabel" text="SNAPSHOT PREVIEW · READ ONLY" styleClass="snapshot-preview-notice-title" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="snapshotPreviewNoticeIdLabel" styleClass="snapshot-preview-notice-id" />
+                            </HBox>
+                            <Label fx:id="snapshotPreviewNoticeHintLabel" text="This is a frozen snapshot. Restore it to the live structure before editing." wrapText="true" styleClass="snapshot-preview-notice-hint" />
+                            <Button fx:id="snapshotPreviewRestoreBtn" text="RESTORE STRUCTURE" onAction="#restoreSelectedPreviewSnapshot" maxWidth="Infinity" styleClass="snapshot-preview-restore-button" />
+                        </VBox>
                         <TabPane fx:id="structureInspectorTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="inspector-tabs">
                             <tabs>
                                 <Tab fx:id="structureInspectorTab" text="INSPECTOR">

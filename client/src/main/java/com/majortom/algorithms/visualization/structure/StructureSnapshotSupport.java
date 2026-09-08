@@ -16,6 +16,19 @@ public interface StructureSnapshotSupport<S> {
     /** Replaces the module's editable input with a previously captured state. */
     void restoreStructureSnapshot(StructureSnapshot<S> snapshot);
 
+    /** Renders a saved snapshot as a read-only preview without mutating the live structure. */
+    void previewStructureSnapshot(StructureSnapshot<S> snapshot);
+
     /** Returns a short, localized description for a snapshot card. */
     String describeStructureSnapshot(S state);
+
+    /** Primary overview value used while previewing a saved snapshot. */
+    default String snapshotPrimaryCount(S state) {
+        return "—";
+    }
+
+    /** Secondary overview value used while previewing a saved snapshot. */
+    default String snapshotSecondaryCount(S state) {
+        return "—";
+    }
 }

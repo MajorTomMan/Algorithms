@@ -361,9 +361,29 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<MazeSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearCellSelection();
+        renderPreviewState(viewState(snapshot.state()));
+    }
+
+    @Override
     public String describeStructureSnapshot(MazeSnapshot state) {
         long openCells = state.openCells().stream().filter(Boolean::booleanValue).count();
         return I18N.text("snapshot.maze.detail", state.rows(), state.columns(), openCells);
+    }
+
+    @Override
+    public String snapshotPrimaryCount(MazeSnapshot state) {
+        return Integer.toString(state.rows() * state.columns());
+    }
+
+    @Override
+    public String snapshotSecondaryCount(MazeSnapshot state) {
+        long openCells = state.openCells().stream().filter(Boolean::booleanValue).count();
+        return Long.toString(openCells);
     }
 
     private MazeSnapshot snapshot(GridMaze maze) {

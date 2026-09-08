@@ -517,6 +517,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<GraphSnapshotState<Integer>> snapshot) {
+        requireGraphSnapshot(snapshot);
+        clearVisualSelection();
+        renderPreviewState(GraphViewState.initial(snapshot.state()));
+    }
+
+    @Override
     public String describeStructureSnapshot(GraphSnapshotState<Integer> state) {
         if (state instanceof GraphSnapshot<?> basic) {
             return I18N.text("snapshot.graph.detail", basic.vertices().size(), basic.edges().size());
@@ -525,6 +532,28 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return I18N.text("snapshot.graph.detail", weighted.vertices().size(), weighted.edges().size());
         }
         throw new IllegalArgumentException("unsupported graph snapshot type: " + state.getClass().getName());
+    }
+
+    @Override
+    public String snapshotPrimaryCount(GraphSnapshotState<Integer> state) {
+        if (state instanceof GraphSnapshot<?> basic) {
+            return Integer.toString(basic.vertices().size());
+        }
+        if (state instanceof WeightedGraphSnapshot<?> weighted) {
+            return Integer.toString(weighted.vertices().size());
+        }
+        return "—";
+    }
+
+    @Override
+    public String snapshotSecondaryCount(GraphSnapshotState<Integer> state) {
+        if (state instanceof GraphSnapshot<?> basic) {
+            return Integer.toString(basic.edges().size());
+        }
+        if (state instanceof WeightedGraphSnapshot<?> weighted) {
+            return Integer.toString(weighted.edges().size());
+        }
+        return "—";
     }
 
     @Override

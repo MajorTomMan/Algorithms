@@ -231,8 +231,22 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearArraySelection();
+        renderPreviewState(ArrayViewState.source(snapshot.state().values()));
+    }
+
+    @Override
     public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.sort.detail", state.values().size());
+    }
+
+    @Override
+    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+        return Integer.toString(state.values().size());
     }
 
     @FXML

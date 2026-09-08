@@ -34,10 +34,6 @@
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
         <ComboBox fx:id="algorithmSelector" maxWidth="Infinity" />
-        <Label fx:id="algorithmCommandsHintLabel" styleClass="operation-hint" wrapText="true" />
-        <TextArea fx:id="algorithmCommandsField" prefRowCount="4" wrapText="false" maxWidth="Infinity">
-            <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-text-area" /></styleClass>
-        </TextArea>
     </VBox>
 
     <VBox spacing="8">

@@ -234,8 +234,22 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+        if (!MODULE_ID.equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearVisualSelection();
+        renderPreviewState(LinkedListViewState.fromValues(snapshot.state().values()));
+    }
+
+    @Override
     public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
+    }
+
+    @Override
+    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+        return Integer.toString(state.values().size());
     }
 
     public void setSelectionListener(Consumer<NodeSelection> listener) {

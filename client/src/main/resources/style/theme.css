@@ -2132,6 +2132,57 @@
 .log-view-light .log-time { -fx-fill: -ui-gray-500; }
 .log-view-light .log-message { -fx-fill: -ui-black; }
 
+
+
+/* ---------- read-only Snapshot preview ---------- */
+.snapshot-preview-badge {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-red;
+    -fx-border-width: 0 0 0 4px;
+    -fx-padding: 8px 12px;
+    -fx-translate-x: 18px;
+    -fx-translate-y: 18px;
+}
+.snapshot-preview-badge-title {
+    -fx-text-fill: -ui-red;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+}
+.snapshot-preview-badge-id {
+    -fx-text-fill: -ui-gray-600;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.snapshot-preview-notice {
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: transparent transparent -ui-gray-300 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 12px;
+}
+.snapshot-preview-notice-title {
+    -fx-text-fill: -ui-red;
+    -fx-font-size: 11px;
+    -fx-font-weight: 900;
+}
+.snapshot-preview-notice-id {
+    -fx-text-fill: -ui-gray-600;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.snapshot-preview-notice-hint {
+    -fx-text-fill: -ui-gray-700;
+    -fx-font-size: 11px;
+}
+.snapshot-preview-restore-button {
+    -fx-background-color: -ui-red;
+    -fx-text-fill: -ui-white;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+}
+.snapshot-preview-restore-button:hover {
+    -fx-opacity: 0.90;
+}
+
 /* ---------- Structure history / Algorithm timeline ---------- */
 .history-dock,
 .algorithm-dock {
@@ -3224,15 +3275,3 @@
 }
 
 
-/* AVL command input is multiline; it must not inherit the single-line operation-input height. */
-.operation-text-area {
-    -fx-min-width: 0;
-    -fx-min-height: 92px;
-    -fx-pref-height: 108px;
-    -fx-max-height: 160px;
-    -fx-padding: 0;
-}
-
-.operation-text-area .content {
-    -fx-padding: 7px 8px;
-}

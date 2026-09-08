@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.runtime.linked;
 import com.majortom.algorithms.library.basic.node.ListNode;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -14,6 +15,25 @@ public record LinkedListViewState(Map<Long, Node> nodes) {
 
     public static LinkedListViewState empty() {
         return new LinkedListViewState(Map.of());
+    }
+
+    /** Builds a read-only preview state from a value-only sequence snapshot. */
+    public static LinkedListViewState fromValues(List<Integer> values) {
+        List<Integer> source = List.copyOf(Objects.requireNonNull(values, "values"));
+        Map<Long, Node> nodes = new LinkedHashMap<>();
+        for (int index = 0; index < source.size(); index++) {
+            long id = index + 1L;
+            Long previousId = null;
+            if (index > 0) {
+                previousId = id - 1L;
+            }
+            Long nextId = null;
+            if (index + 1 < source.size()) {
+                nextId = id + 1L;
+            }
+            nodes.put(id, new Node(id, source.get(index), nextId, previousId));
+        }
+        return new LinkedListViewState(nodes);
     }
 
     public static LinkedListViewState source(ListNode<Integer> head) {

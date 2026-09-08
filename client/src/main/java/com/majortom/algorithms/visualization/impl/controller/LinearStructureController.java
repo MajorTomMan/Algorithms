@@ -267,8 +267,22 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+        if (!moduleId.equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearVisualSelection();
+        renderPreviewState(new LinearStructureViewState(moduleId, snapshot.state().values()));
+    }
+
+    @Override
     public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
+    }
+
+    @Override
+    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+        return Integer.toString(state.values().size());
     }
 
     public void setSelectionListener(Consumer<ItemSelection> listener) {

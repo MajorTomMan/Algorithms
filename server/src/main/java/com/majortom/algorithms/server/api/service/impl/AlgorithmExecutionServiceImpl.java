@@ -19,7 +19,6 @@ import com.majortom.algorithms.library.maze.GridMaze;
 import com.majortom.algorithms.library.maze.GridPoint;
 import com.majortom.algorithms.library.maze.MazeDimensions;
 import com.majortom.algorithms.library.sort.Sort;
-import com.majortom.algorithms.library.tree.AvlTreeCommands;
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.library.basic.tree.AVLTree;
 import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
@@ -35,7 +34,6 @@ import com.majortom.algorithms.server.request.ExecutionRequest;
 import com.majortom.algorithms.server.request.IntegerSortRequest;
 import com.majortom.algorithms.server.request.MazeGenerationRequest;
 import com.majortom.algorithms.server.request.MazePathRequest;
-import com.majortom.algorithms.server.request.AvlTreeRequest;
 import com.majortom.algorithms.server.request.GraphBfsRequest;
 import com.majortom.algorithms.server.request.StringSearchRequest;
 import jakarta.annotation.PreDestroy;
@@ -69,7 +67,6 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             new AlgorithmApiDescriptor("graph-generator-bfs", "maze", "algorithm.graph.Integer.graph-generator-bfs", MazeGenerationRequest.class, GraphSnapshot.class),
             new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", "algorithm.maze.Boolean.maze-pathfinder-astar", MazePathRequest.class, List.class),
             new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", "algorithm.maze.Boolean.maze-pathfinder-dfs", MazePathRequest.class, List.class),
-            new AlgorithmApiDescriptor("tree-avl", "tree", "algorithm.tree.Integer.tree-avl", AvlTreeRequest.class, AvlNodeSnapshot.class),
             new AlgorithmApiDescriptor("graph-bfs", "graph", "algorithm.graph.Integer.graph-bfs", GraphBfsRequest.class, List.class),
             new AlgorithmApiDescriptor("kmp", "string", "algorithm.string.String.kmp", StringSearchRequest.class, List.class));
 
@@ -230,16 +227,6 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
                 ArrayMazePathfinder algorithm = MODULES.create(
                         "algorithm.maze.Boolean." + algorithmId, ArrayMazePathfinder.class);
                 yield new PreparedExecution(() -> algorithm.findPath(request.maze(), request.start(), request.goal()));
-            }
-            case "tree-avl" -> {
-                AvlTreeRequest request = objectMapper.convertValue(input, AvlTreeRequest.class);
-                AvlTreeCommands algorithm = MODULES.create(
-                        "algorithm.tree.Integer.tree-avl", AvlTreeCommands.class);
-                yield new PreparedExecution(() -> {
-                    AVLTree<Integer> tree = request.toTree();
-                    algorithm.execute(tree, request.commands());
-                    return snapshot(tree.root());
-                });
             }
             case "graph-bfs" -> {
                 GraphBfsRequest request = objectMapper.convertValue(input, GraphBfsRequest.class);

@@ -20,7 +20,6 @@ public final class AlgorithmLabels {
             Map.entry("graph-generator-bfs", "algorithm.graph.generate.bfs"),
             Map.entry("maze-pathfinder-astar", "algorithm.maze.solve.astar"),
             Map.entry("maze-pathfinder-dfs", "algorithm.maze.solve.dfs"),
-            Map.entry("tree-avl", "algorithm.tree.avl"),
             Map.entry("graph-bfs", "algorithm.graph.bfs"),
             Map.entry("kruskal", "algorithm.graph.kruskal"),
             Map.entry("kruskal-minimum-spanning", "algorithm.graph.kruskal"),

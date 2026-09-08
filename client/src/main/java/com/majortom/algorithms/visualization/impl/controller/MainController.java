@@ -164,6 +164,22 @@ public class MainController implements Initializable {
     @FXML
     private VBox snapshotPanel;
     @FXML
+    private HBox structureSnapshotPreviewBadge;
+    @FXML
+    private Label structureSnapshotPreviewBadgeLabel;
+    @FXML
+    private Label structureSnapshotPreviewIdLabel;
+    @FXML
+    private VBox snapshotPreviewNotice;
+    @FXML
+    private Label snapshotPreviewNoticeTitleLabel;
+    @FXML
+    private Label snapshotPreviewNoticeIdLabel;
+    @FXML
+    private Label snapshotPreviewNoticeHintLabel;
+    @FXML
+    private Button snapshotPreviewRestoreBtn;
+    @FXML
     private VBox snapshotCards;
     @FXML
     private Label structureHistoryTitleLabel;
@@ -433,6 +449,8 @@ public class MainController implements Initializable {
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
+    /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
+    private boolean structureSnapshotPreviewActive;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -441,6 +459,7 @@ public class MainController implements Initializable {
         }
 
         setupI18n();
+        setupSnapshotPreviewPresentation();
         setupFontScaleSelector();
         setupValueTypeSelectors();
         setupModuleMenu();
@@ -485,6 +504,14 @@ public class MainController implements Initializable {
         structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
         structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        structureSnapshotPreviewBadgeLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
+        snapshotPreviewNoticeTitleLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
+        snapshotPreviewNoticeHintLabel.textProperty().bind(
+                I18N.createStringBinding("label.workspace.snapshot.preview_hint"));
+        snapshotPreviewRestoreBtn.textProperty().bind(
+                I18N.createStringBinding("action.workspace.restore_snapshot"));
         overviewPrimaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
         overviewSecondaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
         overviewEventsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.events"));
@@ -538,6 +565,13 @@ public class MainController implements Initializable {
             }
         });
         refreshPauseText();
+    }
+
+    private void setupSnapshotPreviewPresentation() {
+        if (structureSnapshotPreviewBadge == null) {
+            return;
+        }
+        structureSnapshotPreviewBadge.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
     }
 
     private void setupFontScaleSelector() {
@@ -1041,6 +1075,7 @@ public class MainController implements Initializable {
         setPageVisibility(algorithmWorkspacePane, !structure);
         refreshExecutionDockVisibility(structure);
         attachVisualizer(structure);
+        structureSnapshotPreviewActive = false;
         if (currentSubController instanceof ArrayController arrayController) {
             arrayController.setStructureSelectionEnabled(structure);
         }
@@ -1051,11 +1086,19 @@ public class MainController implements Initializable {
             mazeController.setStructureSelectionEnabled(structure);
         }
         if (structure && currentSubController != null) {
+            if (activeDefinition != null) {
+                selectedSnapshotIds.remove(activeDefinition.id());
+            }
+            clearStructureSelection();
             currentSubController.showStructureState();
         }
         if (!structure && currentSubController != null) {
+            syncSnapshotSelectionFromAlgorithmInput();
             currentSubController.showAlgorithmState();
         }
+        refreshSnapshotCards();
+        refreshAlgorithmInputSource();
+        updateWorkspaceInteractionState();
         refreshTopContext();
         refreshExecutionPresentation();
         if (structure) {
@@ -1397,6 +1440,7 @@ public class MainController implements Initializable {
     private void switchToModule(WorkbenchModuleDefinition definition) {
         activeDefinition = definition;
         selectedAlgorithmId = null;
+        structureSnapshotPreviewActive = false;
         clearStructureSelection();
         refreshValueTypeSelectors();
         loadSubController(definition.controllerFactory().get());
@@ -1426,6 +1470,59 @@ public class MainController implements Initializable {
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
         structureButtons.values().forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
         algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
+        if (structureControlsHost != null) {
+            structureControlsHost.setDisable(running || structureSnapshotPreviewActive);
+        }
+        refreshSnapshotPreviewPresentation();
+    }
+
+
+    private void refreshSnapshotPreviewPresentation() {
+        boolean visible = isStructurePageVisible() && structureSnapshotPreviewActive;
+        StructureSnapshot<?> snapshot = null;
+        if (visible) {
+            snapshot = selectedSavedSnapshot(false);
+            if (snapshot == null) {
+                visible = false;
+                structureSnapshotPreviewActive = false;
+            }
+        }
+
+        if (structureSnapshotPreviewBadge != null) {
+            structureSnapshotPreviewBadge.setManaged(visible);
+            structureSnapshotPreviewBadge.setVisible(visible);
+        }
+        if (snapshotPreviewNotice != null) {
+            snapshotPreviewNotice.setManaged(visible);
+            snapshotPreviewNotice.setVisible(visible);
+        }
+        if (snapshotPreviewRestoreBtn != null) {
+            snapshotPreviewRestoreBtn.setDisable(!visible);
+        }
+
+        String snapshotId = "";
+        if (snapshot != null) {
+            snapshotId = I18N.text("label.workspace.snapshot.preview_id", shortSnapshotId(snapshot));
+        }
+        if (structureSnapshotPreviewIdLabel != null) {
+            structureSnapshotPreviewIdLabel.setText(snapshotId);
+        }
+        if (snapshotPreviewNoticeIdLabel != null) {
+            snapshotPreviewNoticeIdLabel.setText(snapshotId);
+        }
+    }
+
+    @FXML
+    private void restoreSelectedPreviewSnapshot() {
+        if (!structureSnapshotPreviewActive) {
+            return;
+        }
+        StructureSnapshot<?> snapshot = selectedSavedSnapshot(false);
+        if (snapshot == null) {
+            return;
+        }
+        restoreSnapshot(snapshot);
+        updateWorkspaceInteractionState();
     }
 
     private void refreshExecutionDockVisibility(boolean structureMode) {
@@ -1508,8 +1605,15 @@ public class MainController implements Initializable {
         wireAlgorithmSelection();
         wireStructureSelection();
         structureRevisionListener = (observable, oldValue, newValue) -> {
+            if (isStructurePageVisible()) {
+                structureSnapshotPreviewActive = false;
+                if (activeDefinition != null) {
+                    selectedSnapshotIds.remove(activeDefinition.id());
+                }
+            }
             refreshSnapshotCards();
             refreshStructureSummary();
+            updateWorkspaceInteractionState();
         };
         currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
 
@@ -1668,16 +1772,18 @@ public class MainController implements Initializable {
                 moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true,
                 selectedSnapshotId == null));
 
-        int inspectorCount = 0;
+        if (inspectorSnapshotCards != null) {
+            inspectorSnapshotCards.getChildren().add(createInspectorCurrentSnapshotCard(
+                    current, support, selectedSnapshotId == null));
+        }
         for (StructureSnapshot<?> snapshot : saved) {
             boolean selected = snapshot.id().equals(selectedSnapshotId);
             snapshotCards.getChildren().add(createSnapshotCard(
                     moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
                     support, false, selected));
-            if (inspectorSnapshotCards != null && inspectorCount < 2) {
+            if (inspectorSnapshotCards != null) {
                 inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
                         snapshot, support, selected));
-                inspectorCount++;
             }
         }
         if (saved.isEmpty()) {
@@ -1737,7 +1843,18 @@ public class MainController implements Initializable {
             return;
         }
         selectedSnapshotIds.remove(activeDefinition.id());
-        refreshSnapshotCards();
+        if (isStructurePageVisible()) {
+            structureSnapshotPreviewActive = false;
+            clearStructureSelection();
+            currentSubController.showStructureState();
+            refreshSnapshotCards();
+            refreshStructureSummary();
+            updateSnapshotActionState();
+            updateWorkspaceInteractionState();
+            refreshTopContext();
+            return;
+        }
+        applyCurrentStructureAlgorithmInput(false);
     }
 
     private void selectSavedSnapshotCard(StructureSnapshot<?> snapshot) {
@@ -1746,8 +1863,12 @@ public class MainController implements Initializable {
             return;
         }
         selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
+        if (isStructurePageVisible()) {
+            previewSavedStructureSnapshot(snapshot);
+            return;
+        }
         SnapshotAlgorithmInputSupport<?> inputSupport = currentAlgorithmInputSupport();
-        if (inputSupport != null && inputSupport.algorithmInputSnapshotId() != null) {
+        if (inputSupport != null) {
             applySavedSnapshotAlgorithmInput(snapshot, false);
             return;
         }
@@ -1802,6 +1923,34 @@ public class MainController implements Initializable {
             return operationId;
         }
         return operationId.substring(lastDot + 1);
+    }
+
+    private Node createInspectorCurrentSnapshotCard(
+            StructureSnapshot<?> snapshot,
+            StructureSnapshotSupport<?> support,
+            boolean selected) {
+        VBox card = new VBox(5);
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.getStyleClass().add("snapshot-card");
+        card.getStyleClass().add("snapshot-card-current");
+        if (selected) {
+            card.getStyleClass().add("snapshot-card-selected");
+        }
+        card.setOnMouseClicked(event -> selectCurrentSnapshotCard());
+        HBox header = new HBox(8);
+        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        Label title = new Label(I18N.text("label.workspace.snapshot.current"));
+        title.getStyleClass().add("snapshot-card-title");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label state = new Label(I18N.text("label.workspace.snapshot.current_state"));
+        state.getStyleClass().add("snapshot-card-state");
+        header.getChildren().addAll(title, spacer, state);
+        Label detail = new Label(describeSnapshot(support, snapshot));
+        detail.setWrapText(true);
+        detail.getStyleClass().add("snapshot-card-detail");
+        card.getChildren().addAll(header, detail);
+        return card;
     }
 
     private Node createInspectorSnapshotCard(
@@ -1921,12 +2070,35 @@ public class MainController implements Initializable {
         return card;
     }
 
+    private void previewSavedStructureSnapshot(StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<?> support = currentSnapshotSupport();
+        if (support == null || snapshot == null || currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        try {
+            previewSnapshotUnchecked(support, snapshot);
+        } catch (RuntimeException exception) {
+            appendSystemLog(I18N.text("message.snapshot.preview_failed"));
+            return;
+        }
+        structureSnapshotPreviewActive = true;
+        clearStructureSelection();
+        refreshSnapshotCards();
+        refreshStructureSummary();
+        updateSnapshotActionState();
+        updateWorkspaceInteractionState();
+        refreshTopContext();
+    }
+
     private void applyCurrentStructureAlgorithmInput(boolean logSelection) {
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
         if (support == null || currentSubController == null || currentSubController.isRunning()) {
             return;
         }
         support.useCurrentStructureAsAlgorithmInput();
+        if (activeDefinition != null) {
+            selectedSnapshotIds.remove(activeDefinition.id());
+        }
         if (!isStructurePageVisible()) {
             currentSubController.showAlgorithmState();
         }
@@ -1981,6 +2153,23 @@ public class MainController implements Initializable {
         applySavedSnapshotAlgorithmInput(snapshot, true);
     }
 
+    private void syncSnapshotSelectionFromAlgorithmInput() {
+        if (activeDefinition == null) {
+            return;
+        }
+        SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
+        if (support == null) {
+            selectedSnapshotIds.remove(activeDefinition.id());
+            return;
+        }
+        String snapshotId = support.algorithmInputSnapshotId();
+        if (snapshotId == null) {
+            selectedSnapshotIds.remove(activeDefinition.id());
+        } else {
+            selectedSnapshotIds.put(activeDefinition.id(), snapshotId);
+        }
+    }
+
     private void refreshAlgorithmInputSource() {
         if (algorithmInputSourceLabel == null) {
             return;
@@ -1996,9 +2185,6 @@ public class MainController implements Initializable {
             return;
         }
         String snapshotId = support.algorithmInputSnapshotId();
-        if (snapshotId != null && activeDefinition != null) {
-            selectedSnapshotIds.put(activeDefinition.id(), snapshotId);
-        }
         boolean current = snapshotId == null;
         if (currentInputBtn != null) {
             currentInputBtn.pseudoClassStateChanged(SELECTED, current);
@@ -2074,6 +2260,17 @@ public class MainController implements Initializable {
         typedSupport.useSnapshotAsAlgorithmInput(typedSnapshot);
     }
 
+    @SuppressWarnings("unchecked")
+    private void previewSnapshotUnchecked(
+            StructureSnapshotSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
+        typedSupport.previewStructureSnapshot(typedSnapshot);
+    }
+
     @FXML
     private void saveStructureSnapshot() {
         if (currentSubController == null || currentSubController.isRunning()) {
@@ -2113,10 +2310,17 @@ public class MainController implements Initializable {
             appendSystemLog(I18N.text("message.snapshot.restore_failed"));
             return;
         }
+        if (isStructurePageVisible()) {
+            structureSnapshotPreviewActive = false;
+            selectedSnapshotIds.remove(activeDefinition.id());
+        }
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
         refreshStructureSummary();
         clearStructureSelection();
+        updateSnapshotActionState();
+        updateWorkspaceInteractionState();
+        refreshTopContext();
         appendSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
     }
 
@@ -2169,7 +2373,8 @@ public class MainController implements Initializable {
         saveSnapshotBtn.setDisable(
                 currentSubController == null
                         || currentSubController.isRunning()
-                        || currentSnapshotSupport() == null);
+                        || currentSnapshotSupport() == null
+                        || structureSnapshotPreviewActive);
     }
 
     @FXML
@@ -2262,7 +2467,14 @@ public class MainController implements Initializable {
             if (algorithmControlsTitleLabel != null) algorithmControlsTitleLabel.setText(familyMeta);
         }
         if (runStateLabel != null) {
-            String state = "EDITING";
+            String state;
+            if (structureMode && structureSnapshotPreviewActive) {
+                state = "PREVIEW";
+            } else if (structureMode) {
+                state = "EDITING";
+            } else {
+                state = "IDLE";
+            }
             if (!structureMode) {
                 if (currentSubController != null && currentSubController.isRunning()) {
                     if (currentSubController.isPaused()) {
@@ -2319,6 +2531,44 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
+        StructureSnapshot<?> previewSnapshot = null;
+        StructureSnapshotSupport<?> snapshotSupport = null;
+        if (structureSnapshotPreviewActive && activeDefinition != null) {
+            previewSnapshot = selectedSavedSnapshot(false);
+            snapshotSupport = currentSnapshotSupport();
+            if (previewSnapshot == null || snapshotSupport == null) {
+                structureSnapshotPreviewActive = false;
+            }
+        }
+        if (structureSnapshotPreviewActive && previewSnapshot != null && snapshotSupport != null) {
+            String primary = snapshotPrimaryCount(snapshotSupport, previewSnapshot);
+            String secondary = snapshotSecondaryCount(snapshotSupport, previewSnapshot);
+            if (structureOverviewLabel != null) {
+                structureOverviewLabel.setText(describeSnapshot(snapshotSupport, previewSnapshot));
+            }
+            if (structureNodeCountLabel != null) {
+                structureNodeCountLabel.setText(primary);
+            }
+            if (structureHeightLabel != null) {
+                structureHeightLabel.setText(secondary);
+            }
+            if (structureStateLabel != null) {
+                structureStateLabel.setText(workspaceStatusText("PREVIEW"));
+            }
+            if (overviewPrimaryValue != null) {
+                overviewPrimaryValue.setText(primary);
+            }
+            if (overviewSecondaryValue != null) {
+                overviewSecondaryValue.setText(secondary);
+            }
+            if (overviewEventsValue != null) {
+                overviewEventsValue.setText("—");
+            }
+            if (overviewStateValue != null) {
+                overviewStateValue.setText(workspaceStatusText("PREVIEW"));
+            }
+            return;
+        }
         String summary = currentSubController.structureSummaryText();
         if (structureOverviewLabel != null) {
             if (summary == null || summary.isBlank()) {
@@ -2336,10 +2586,40 @@ public class MainController implements Initializable {
         if (structureStateLabel != null) {
             structureStateLabel.setText(workspaceStatusText("READY"));
         }
-        if (overviewPrimaryValue != null) overviewPrimaryValue.setText(currentSubController.structurePrimaryCount());
-        if (overviewSecondaryValue != null) overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
-        if (overviewEventsValue != null) overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
-        if (overviewStateValue != null) overviewStateValue.setText(workspaceStatusText("READY"));
+        if (overviewPrimaryValue != null) {
+            overviewPrimaryValue.setText(currentSubController.structurePrimaryCount());
+        }
+        if (overviewSecondaryValue != null) {
+            overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
+        }
+        if (overviewEventsValue != null) {
+            overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
+        }
+        if (overviewStateValue != null) {
+            overviewStateValue.setText(workspaceStatusText("READY"));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String snapshotPrimaryCount(
+            StructureSnapshotSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
+        return typedSupport.snapshotPrimaryCount(typedSnapshot.state());
+    }
+
+    @SuppressWarnings("unchecked")
+    private String snapshotSecondaryCount(
+            StructureSnapshotSupport<?> support,
+            StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
+        return typedSupport.snapshotSecondaryCount(typedSnapshot.state());
     }
 
     private void wireAlgorithmSelection() {

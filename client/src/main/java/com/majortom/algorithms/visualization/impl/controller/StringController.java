@@ -289,6 +289,15 @@ public final class StringController extends BaseModuleController<StringViewState
 
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearStringSelection();
+        renderPreviewState(StringViewState.source(snapshot.state().value()));
+    }
+
+    @Override
     public String describeStructureSnapshot(StringSnapshot state) {
         String value = state.value();
         String preview;
@@ -298,6 +307,11 @@ public final class StringController extends BaseModuleController<StringViewState
             preview = value.substring(0, 18) + "…";
         }
         return I18N.text("snapshot.string.detail", value.length(), preview);
+    }
+
+    @Override
+    public String snapshotPrimaryCount(StringSnapshot state) {
+        return Integer.toString(state.value().length());
     }
 
     @Override

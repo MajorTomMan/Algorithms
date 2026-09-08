@@ -8,8 +8,6 @@ import com.majortom.algorithms.library.basic.tree.AVLTree;
 import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
 import com.majortom.algorithms.library.basic.tree.GeneralTreeNode;
 import com.majortom.algorithms.library.basic.tree.Tree;
-import com.majortom.algorithms.library.tree.AvlCommand;
-import com.majortom.algorithms.library.tree.AvlCommandAlgorithm;
 import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -28,7 +26,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
@@ -55,8 +52,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @FXML private Label algorithmLabel;
     @FXML private Label operationsSectionLabel;
     @FXML private ComboBox<String> algorithmSelector;
-    @FXML private Label algorithmCommandsHintLabel;
-    @FXML private TextArea algorithmCommandsField;
     @FXML private TextField valueField;
     @FXML private Label selectionHintLabel;
     @FXML private Button addRootBtn;
@@ -264,36 +259,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public void handleAlgorithmStart() {
-        if (isRunning()) {
-            return;
-        }
-        String algorithmId = selectedAlgorithmId();
-        if (algorithmId == null) {
-            return;
-        }
-        if (activeVariant != TreeVariant.AVL) {
-            throw new IllegalStateException("No executable general-tree algorithm is registered");
-        }
-        BinaryTreeSnapshot<Integer> inputSnapshot = selectedAvlAlgorithmSnapshot();
-        AVLTree<Integer> runtimeTree = avlFromSnapshot(inputSnapshot);
-        @SuppressWarnings("unchecked")
-        AvlCommandAlgorithm<Integer> algorithm = (AvlCommandAlgorithm<Integer>) module(
-                "algorithm.tree.Integer." + algorithmId,
-                AvlCommandAlgorithm.class);
-        TreeViewState initialState = TreeViewState.binary(avlNodeSnapshot(runtimeTree.root()));
-        List<AvlCommand> commands = parseAvlCommands();
-        if (commands.isEmpty()) {
-            logI18n("message.tree.avl.commands_required");
-            return;
-        }
-        startAlgorithm(
-                algorithmId,
-                inputSnapshot,
-                () -> {
-                    algorithm.execute(runtimeTree, commands);
-                    return null;
-                },
-                () -> new TreeEventReducer(initialState));
+        logI18n("message.tree.no_algorithm");
     }
 
     @Override
@@ -406,6 +372,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
+    public void previewStructureSnapshot(StructureSnapshot<TreeSnapshotState<Integer>> snapshot) {
+        requireTreeSnapshot(snapshot);
+        clearNodeSelection();
+        renderPreviewState(viewState(snapshot.state()));
+    }
+
+    @Override
     public String describeStructureSnapshot(TreeSnapshotState<Integer> state) {
         if (state instanceof GeneralTreeSnapshot<?> general) {
             @SuppressWarnings("unchecked")
@@ -418,6 +391,32 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return I18N.text("snapshot.tree.detail", typed.size(), binaryHeight(typed.root()));
         }
         throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+    }
+
+    @Override
+    public String snapshotPrimaryCount(TreeSnapshotState<Integer> state) {
+        if (state instanceof GeneralTreeSnapshot<?> general) {
+            return Integer.toString(general.size());
+        }
+        if (state instanceof BinaryTreeSnapshot<?> binary) {
+            return Integer.toString(binary.size());
+        }
+        return "—";
+    }
+
+    @Override
+    public String snapshotSecondaryCount(TreeSnapshotState<Integer> state) {
+        if (state instanceof GeneralTreeSnapshot<?> general) {
+            @SuppressWarnings("unchecked")
+            GeneralTreeSnapshot<Integer> typed = (GeneralTreeSnapshot<Integer>) general;
+            return Integer.toString(generalHeight(typed.root()));
+        }
+        if (state instanceof BinaryTreeSnapshot<?> binary) {
+            @SuppressWarnings("unchecked")
+            BinaryTreeSnapshot<Integer> typed = (BinaryTreeSnapshot<Integer>) binary;
+            return Integer.toString(binaryHeight(typed.root()));
+        }
+        return "—";
     }
 
     private void initializeSampleGeneralTree() {
@@ -510,17 +509,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 snapshotBinaryNode(right(node)));
     }
 
-    private BinaryTreeSnapshot<Integer> selectedAvlAlgorithmSnapshot() {
-        if (algorithmInputSnapshot == null) {
-            return currentAvlSnapshot();
-        }
-        if (!(algorithmInputSnapshot.state() instanceof BinaryTreeSnapshot<?> binary)) {
-            throw new IllegalStateException("AVL algorithm input is not a binary-tree snapshot");
-        }
-        @SuppressWarnings("unchecked")
-        BinaryTreeSnapshot<Integer> typed = (BinaryTreeSnapshot<Integer>) binary;
-        return typed;
-    }
 
     private AVLTree<Integer> avlFromSnapshot(BinaryTreeSnapshot<Integer> snapshot) {
         AVLTreeNode<Integer> root = restoreAvlNode(snapshot.root());
@@ -581,44 +569,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
     }
 
-    private List<AvlCommand> parseAvlCommands() {
-        if (algorithmCommandsField == null) {
-            return List.of();
-        }
-        String source = algorithmCommandsField.getText();
-        if (source == null || source.isBlank()) {
-            return List.of();
-        }
-        java.util.ArrayList<AvlCommand> commands = new java.util.ArrayList<>();
-        String[] lines = source.split("\\R");
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) {
-                continue;
-            }
-            String[] parts = trimmed.split("\\s+");
-            if (parts.length != 2) {
-                logI18n("message.tree.avl.command_invalid", trimmed);
-                return List.of();
-            }
-            AvlCommand.Operation operation;
-            if ("INSERT".equalsIgnoreCase(parts[0])) {
-                operation = AvlCommand.Operation.INSERT;
-            } else if ("REMOVE".equalsIgnoreCase(parts[0])) {
-                operation = AvlCommand.Operation.REMOVE;
-            } else {
-                logI18n("message.tree.avl.command_invalid", trimmed);
-                return List.of();
-            }
-            try {
-                commands.add(new AvlCommand(operation, Integer.parseInt(parts[1])));
-            } catch (NumberFormatException exception) {
-                logI18n("message.tree.avl.command_invalid", trimmed);
-                return List.of();
-            }
-        }
-        return List.copyOf(commands);
-    }
 
     private GeneralTreeNode<Integer> selectedGeneralNode() {
         if (selectedNodeId == null) {
@@ -754,7 +704,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         refreshAlgorithmSelector();
         refreshOperationVisibility();
         refreshOperationLabels();
-        refreshAlgorithmCommandVisibility();
         refreshOperationAvailability();
     }
 
@@ -817,11 +766,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
     }
 
-    private void refreshAlgorithmCommandVisibility() {
-        boolean visible = activeVariant == TreeVariant.AVL;
-        setVisibleManaged(algorithmCommandsHintLabel, visible);
-        setVisibleManaged(algorithmCommandsField, visible);
-    }
 
     private void refreshOperationAvailability() {
         boolean hasSelection = selectedNodeId != null;
@@ -959,12 +903,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
         }
         bindPrompt(valueField, "prompt.tree.value");
-        if (algorithmCommandsField != null) {
-            algorithmCommandsField.promptTextProperty().bind(I18N.createStringBinding("prompt.tree.avl.commands"));
-        }
-        if (algorithmCommandsHintLabel != null) {
-            algorithmCommandsHintLabel.textProperty().bind(I18N.createStringBinding("label.tree.avl.commands"));
-        }
         bindButton(addChildBtn, "action.tree.add_child");
         bindButton(addParentBtn, "action.tree.add_parent");
         bindButton(deleteBtn, "action.tree.delete");
