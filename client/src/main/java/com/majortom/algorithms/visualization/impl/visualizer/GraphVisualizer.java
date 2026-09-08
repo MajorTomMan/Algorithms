@@ -79,6 +79,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private boolean hasAppliedLayout;
     private Long selectedNodeId;
     private Long selectedEdgeId;
+    private Long pendingSelectedNodeId;
+    private Long pendingSelectedEdgeId;
     private LongConsumer nodeSelectionListener = ignored -> { };
     private LongConsumer edgeSelectionListener = ignored -> { };
     private VisualDensity density = VisualDensity.DETAIL;
@@ -131,7 +133,32 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
 
         syncEdges(state, transitions);
+        boolean pendingNodeSelectionApplied = false;
+        boolean pendingEdgeSelectionApplied = false;
+        if (pendingSelectedNodeId != null) {
+            boolean exists = state.nodes().stream().anyMatch(node -> node.id() == pendingSelectedNodeId);
+            if (exists) {
+                selectedNodeId = pendingSelectedNodeId;
+                selectedEdgeId = null;
+                pendingNodeSelectionApplied = true;
+            }
+            pendingSelectedNodeId = null;
+            pendingSelectedEdgeId = null;
+        } else if (pendingSelectedEdgeId != null) {
+            boolean exists = state.edges().stream().anyMatch(edge -> edge.id() == pendingSelectedEdgeId);
+            if (exists) {
+                selectedEdgeId = pendingSelectedEdgeId;
+                selectedNodeId = null;
+                pendingEdgeSelectionApplied = true;
+            }
+            pendingSelectedEdgeId = null;
+        }
         syncSelectionState();
+        if (pendingNodeSelectionApplied) {
+            nodeSelectionListener.accept(selectedNodeId);
+        } else if (pendingEdgeSelectionApplied) {
+            edgeSelectionListener.accept(selectedEdgeId);
+        }
         resolveEdgeLabelCollisions();
 
         Set<Long> currentNodeIds = state.nodes().stream().map(GraphViewState.Node::id)
@@ -389,6 +416,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     public void clearSelection() {
         selectedNodeId = null;
         selectedEdgeId = null;
+        pendingSelectedNodeId = null;
+        pendingSelectedEdgeId = null;
         syncSelectionState();
     }
 
@@ -398,6 +427,44 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     public Long selectedEdgeId() {
         return selectedEdgeId;
+    }
+
+    public void selectNode(long nodeId) {
+        GraphViewState state = currentState();
+        if (!nodeViews.containsKey(nodeId)) {
+            boolean exists = state != null && state.nodes().stream().anyMatch(node -> node.id() == nodeId);
+            if (exists) {
+                pendingSelectedNodeId = nodeId;
+                pendingSelectedEdgeId = null;
+                requestRender();
+            }
+            return;
+        }
+        pendingSelectedNodeId = null;
+        pendingSelectedEdgeId = null;
+        selectedNodeId = nodeId;
+        selectedEdgeId = null;
+        syncSelectionState();
+        nodeSelectionListener.accept(nodeId);
+    }
+
+    public void selectEdge(long edgeId) {
+        GraphViewState state = currentState();
+        if (!edgeViews.containsKey(edgeId)) {
+            boolean exists = state != null && state.edges().stream().anyMatch(edge -> edge.id() == edgeId);
+            if (exists) {
+                pendingSelectedEdgeId = edgeId;
+                pendingSelectedNodeId = null;
+                requestRender();
+            }
+            return;
+        }
+        pendingSelectedEdgeId = null;
+        pendingSelectedNodeId = null;
+        selectedEdgeId = edgeId;
+        selectedNodeId = null;
+        syncSelectionState();
+        edgeSelectionListener.accept(edgeId);
     }
 
     private void syncSelectionState() {
@@ -552,6 +619,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         hasAppliedLayout = false;
         selectedNodeId = null;
         selectedEdgeId = null;
+        pendingSelectedNodeId = null;
+        pendingSelectedEdgeId = null;
         firstRender = true;
         surface.reset();
         surface.markViewportPristine();

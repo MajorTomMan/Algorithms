@@ -2149,7 +2149,7 @@
     -fx-font-weight: 900;
 }
 .snapshot-preview-badge-id {
-    -fx-text-fill: -ui-gray-600;
+    -fx-text-fill: -ui-gray-700;
     -fx-font-size: 10px;
     -fx-font-weight: 700;
 }
@@ -2165,7 +2165,7 @@
     -fx-font-weight: 900;
 }
 .snapshot-preview-notice-id {
-    -fx-text-fill: -ui-gray-600;
+    -fx-text-fill: -ui-gray-700;
     -fx-font-size: 10px;
     -fx-font-weight: 700;
 }

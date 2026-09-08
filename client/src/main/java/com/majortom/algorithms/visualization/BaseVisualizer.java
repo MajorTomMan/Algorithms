@@ -71,14 +71,17 @@ public abstract class BaseVisualizer<S> extends StackPane {
     }
 
     protected final void requestRender() {
-        if (renderQueued || disposed) {
+        if (renderQueued || disposed || !moduleAttached) {
             return;
         }
         renderQueued = true;
 
         Runnable renderTask = () -> {
             renderQueued = false;
-            if (disposed) {
+            if (disposed || !moduleAttached) {
+                return;
+            }
+            if (getWidth() <= 1.0d || getHeight() <= 1.0d) {
                 return;
             }
             drawCurrent();
@@ -88,7 +91,7 @@ public abstract class BaseVisualizer<S> extends StackPane {
     }
 
     private void handleSizeInvalidated() {
-        if (disposed) {
+        if (disposed || !moduleAttached) {
             return;
         }
         if (!resizeInProgress) {
@@ -171,6 +174,8 @@ public abstract class BaseVisualizer<S> extends StackPane {
      * 默认留空，子类可在此恢复动画、重建监听器或刷新局部缓存。
      */
     public void onModuleAttached(String moduleId) {
+        resizeSettleTransition.stop();
+        resizeInProgress = false;
         moduleAttached = true;
         requestRender();
     }
@@ -181,6 +186,8 @@ public abstract class BaseVisualizer<S> extends StackPane {
      */
     public void onModuleDetached(String moduleId) {
         moduleAttached = false;
+        resizeSettleTransition.stop();
+        resizeInProgress = false;
     }
 
     /** Definitively releases listeners, animation and canvas bindings. */

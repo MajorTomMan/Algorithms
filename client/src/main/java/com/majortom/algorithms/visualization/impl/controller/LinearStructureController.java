@@ -116,6 +116,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return null;
         })) {
             renderMutation(LinearStructureViewState.Type.PUSH, value);
+            stackVisualizer().selectIndex(0);
             logI18n("message.stack.pushed", value);
         }
     }
@@ -132,6 +133,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return null;
         })) {
             renderMutation(LinearStructureViewState.Type.POP, value[0]);
+            selectFirstAfterRemoval();
             logI18n("message.stack.popped", value[0]);
         }
     }
@@ -147,6 +149,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return null;
         })) {
             renderMutation(LinearStructureViewState.Type.ENQUEUE, value);
+            queueVisualizer().selectIndex(values().size() - 1);
             logI18n("message.queue.enqueued", value);
         }
     }
@@ -163,7 +166,24 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return null;
         })) {
             renderMutation(LinearStructureViewState.Type.DEQUEUE, value[0]);
+            selectFirstAfterRemoval();
             logI18n("message.queue.dequeued", value[0]);
+        }
+    }
+
+    private void selectFirstAfterRemoval() {
+        if (values().isEmpty()) {
+            clearVisualSelection();
+            valueField.clear();
+            if (indexField != null) {
+                indexField.clear();
+            }
+            return;
+        }
+        if (kind == Kind.STACK) {
+            stackVisualizer().selectIndex(0);
+        } else {
+            queueVisualizer().selectIndex(0);
         }
     }
 

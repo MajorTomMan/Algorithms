@@ -5,7 +5,6 @@ import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.library.basic.graph.Edge;
-import com.majortom.algorithms.library.basic.graph.Graph;
 import com.majortom.algorithms.library.basic.graph.Vertex;
 import com.majortom.algorithms.library.basic.graph.WeightedGraph;
 import com.majortom.algorithms.library.graph.GraphFamilyAlgorithm;
@@ -45,9 +44,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshotState<Integer>>,
         SnapshotAlgorithmInputSupport<GraphSnapshotState<Integer>> {
 
-    private Graph<Integer> basicGraph;
-    private WeightedGraph<Integer> weightedGraph;
-    private GraphVariant activeVariant = GraphVariant.BASIC;
+    private WeightedGraph<Integer> undirectedGraph;
+    private WeightedGraph<Integer> directedGraph;
+    private GraphVariant activeVariant = GraphVariant.UNDIRECTED;
     private List<String> algorithmIds = List.of();
     private StructureSnapshot<GraphSnapshotState<Integer>> algorithmInputSnapshot;
     private int startNode;
@@ -76,17 +75,15 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @FXML private Button runBtn;
 
     private enum GraphVariant {
-        BASIC,
-        WEIGHTED
+        UNDIRECTED,
+        DIRECTED
     }
 
     public GraphController() {
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
-        basicGraph = module("structure.graph.Integer", Graph.class);
-        weightedGraph = module("structure.graph.weighted.Integer", WeightedGraph.class);
-        basicGraph = randomGraph(10, 16, false);
-        weightedGraph = randomWeightedGraph(10, 16, false);
-        startNode = firstVertexValue(basicGraph);
+        undirectedGraph = randomWeightedGraph(10, 16, false);
+        directedGraph = randomWeightedGraph(10, 16, true);
+        startNode = firstVertexValue(undirectedGraph);
         graphVisualizer().setNodeSelectionListener(this::handleVisualNodeSelection);
         graphVisualizer().setEdgeSelectionListener(this::handleVisualEdgeSelection);
         refreshAlgorithmIds();
@@ -238,45 +235,52 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (from == null || to == null) {
             return;
         }
-        if (graph.vertex(from) == null || graph.vertex(to) == null) {
+        Vertex<Integer> fromVertex = graph.vertex(from);
+        Vertex<Integer> toVertex = graph.vertex(to);
+        if (fromVertex == null || toVertex == null) {
             logI18n("message.error.graph_node_missing");
             return;
         }
-        if (!graph.containsEdge(graph.vertex(from), graph.vertex(to))) {
+        if (!graph.containsEdge(fromVertex, toVertex)) {
             logI18n("message.graph.edge_not_found", from, to);
             return;
         }
-        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(graph.vertex(from), graph.vertex(to)))) {
+        GraphSnapshotState<Integer> previousSnapshot = currentSnapshot();
+        List<Long> previousEdgeOrder = snapshotEdgeIds(previousSnapshot);
+        Long removedEdgeId = snapshotEdgeIdBetween(previousSnapshot, fromVertex.id(), toVertex.id());
+        int removedIndex = -1;
+        if (removedEdgeId != null) {
+            removedIndex = previousEdgeOrder.indexOf(removedEdgeId);
+        }
+        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(fromVertex, toVertex))) {
             return;
         }
-        clearVisualSelection();
         renderGraph();
+        selectGraphEdgeAfterRemoval(previousEdgeOrder, removedIndex);
         logI18n("message.graph.edge_deleted", from, to);
     }
 
     @FXML
     private void handleSetWeight() {
-        if (activeVariant != GraphVariant.WEIGHTED) {
-            return;
-        }
         Integer from = parseNode(fromField.getText());
         Integer to = parseNode(toField.getText());
         Double weight = parseWeight(weightField.getText());
         if (from == null || to == null || weight == null) {
             return;
         }
-        Vertex<Integer> fromVertex = weightedGraph.vertex(from);
-        Vertex<Integer> toVertex = weightedGraph.vertex(to);
+        WeightedGraph<Integer> graph = currentWeightedGraph();
+        Vertex<Integer> fromVertex = graph.vertex(from);
+        Vertex<Integer> toVertex = graph.vertex(to);
         if (fromVertex == null || toVertex == null) {
             logI18n("message.error.graph_node_missing");
             return;
         }
-        Edge<Integer> edge = weightedGraph.edge(fromVertex, toVertex);
+        Edge<Integer> edge = graph.edge(fromVertex, toVertex);
         if (edge == null) {
             logI18n("message.graph.edge_not_found", from, to);
             return;
         }
-        if (executeStructureOperation("set-weight", () -> weightedGraph.setWeight(edge, weight))) {
+        if (executeStructureOperation("set-weight", () -> graph.setWeight(edge, weight))) {
             renderGraph();
         }
     }
@@ -308,6 +312,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             startField.setText(Integer.toString(startNode));
         }
         renderGraph();
+        Vertex<Integer> addedVertex = graph.vertex(id);
+        if (addedVertex != null) {
+            graphVisualizer().selectNode(addedVertex.id());
+        }
         logI18n("message.graph.node_added", id);
     }
 
@@ -317,56 +325,117 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        if (graph.vertex(id) == null) {
+        Vertex<Integer> removedVertex = graph.vertex(id);
+        if (removedVertex == null) {
             logI18n("message.graph.not_found", id);
             return;
         }
-        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(graph.vertex(id)))) {
+        List<Long> previousNodeOrder = snapshotVertexIds(currentSnapshot());
+        int removedIndex = previousNodeOrder.indexOf(removedVertex.id());
+        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(removedVertex))) {
             return;
         }
-        clearVisualSelection();
         syncStartNode(graph);
         renderGraph();
+        selectGraphNodeAfterRemoval(previousNodeOrder, removedIndex);
         logI18n("message.graph.node_deleted", id);
     }
 
     private void linkNodes(String fromText, String toText) {
         Integer from = parseNode(fromText);
         Integer to = parseNode(toText);
-        GraphStructure<Integer> graph = currentGraph();
+        WeightedGraph<Integer> graph = currentWeightedGraph();
         if (from == null || to == null || graph.vertex(from) == null || graph.vertex(to) == null) {
             logI18n("message.error.graph_node_missing");
+            return;
+        }
+        Double weight = parseWeight(weightField.getText());
+        if (weight == null) {
             return;
         }
         if (graph.containsEdge(graph.vertex(from), graph.vertex(to))) {
             logI18n("message.graph.edge_exists", from, to);
             return;
         }
-        if (activeVariant == GraphVariant.WEIGHTED) {
-            Double weight = parseWeight(weightField.getText());
-            if (weight == null) {
-                return;
-            }
-            if (!executeStructureOperation("add-edge", () -> {
-                weightedGraph.addEdge(weightedGraph.vertex(from), weightedGraph.vertex(to), weight);
-                return null;
-            })) {
-                return;
-            }
-        } else {
-            if (!executeStructureOperation("add-edge", () -> {
-                basicGraph.addEdge(basicGraph.vertex(from), basicGraph.vertex(to));
-                return null;
-            })) {
-                return;
-            }
+        if (!executeStructureOperation("add-edge", () -> {
+            graph.addEdge(graph.vertex(from), graph.vertex(to), weight);
+            return null;
+        })) {
+            return;
         }
         renderGraph();
+        Vertex<Integer> fromVertex = graph.vertex(from);
+        Vertex<Integer> toVertex = graph.vertex(to);
+        Long addedEdgeId = snapshotEdgeIdBetween(currentSnapshot(), fromVertex.id(), toVertex.id());
+        if (addedEdgeId != null) {
+            graphVisualizer().selectEdge(addedEdgeId);
+        }
         if (graph.isDirected()) {
             logI18n("message.graph.link.directed", from, to, 1);
         } else {
             logI18n("message.graph.link.undirected", from, to, 1);
         }
+    }
+
+    private void selectGraphNodeAfterRemoval(List<Long> previousOrder, int removedIndex) {
+        GraphSnapshotState<Integer> snapshot = currentSnapshot();
+        List<Long> currentOrder = snapshotVertexIds(snapshot);
+        if (currentOrder.isEmpty()) {
+            clearVisualSelection();
+            nodeField.clear();
+            fromField.clear();
+            toField.clear();
+            if (weightField != null) {
+                weightField.clear();
+            }
+            return;
+        }
+        Long candidate = survivingGraphSelection(previousOrder, removedIndex, currentOrder);
+        if (candidate == null) {
+            clearVisualSelection();
+            return;
+        }
+        graphVisualizer().selectNode(candidate);
+    }
+
+    private void selectGraphEdgeAfterRemoval(List<Long> previousOrder, int removedIndex) {
+        GraphSnapshotState<Integer> snapshot = currentSnapshot();
+        List<Long> currentOrder = snapshotEdgeIds(snapshot);
+        if (currentOrder.isEmpty()) {
+            clearVisualSelection();
+            fromField.clear();
+            toField.clear();
+            if (weightField != null) {
+                weightField.clear();
+            }
+            return;
+        }
+        Long candidate = survivingGraphSelection(previousOrder, removedIndex, currentOrder);
+        if (candidate == null) {
+            clearVisualSelection();
+            return;
+        }
+        graphVisualizer().selectEdge(candidate);
+    }
+
+    private Long survivingGraphSelection(List<Long> previousOrder, int removedIndex, List<Long> currentOrder) {
+        int startIndex = removedIndex;
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int index = startIndex; index < previousOrder.size(); index++) {
+            Long candidate = previousOrder.get(index);
+            if (currentOrder.contains(candidate)) {
+                return candidate;
+            }
+        }
+        for (int index = startIndex - 1; index >= 0; index--) {
+            Long candidate = previousOrder.get(index);
+            if (currentOrder.contains(candidate)) {
+                return candidate;
+            }
+        }
+        return currentOrder.get(0);
     }
 
     private void setStartNode(String text) {
@@ -451,19 +520,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void restoreStructureSnapshot(StructureSnapshot<GraphSnapshotState<Integer>> snapshot) {
         requireGraphSnapshot(snapshot);
-        GraphSnapshotState<Integer> state = snapshot.state();
-        if (state instanceof GraphSnapshot<?> basic) {
-            @SuppressWarnings("unchecked")
-            GraphSnapshot<Integer> typed = (GraphSnapshot<Integer>) basic;
-            basicGraph = Graph.fromSnapshot(typed);
-            activateVariant(GraphVariant.BASIC);
-        } else if (state instanceof WeightedGraphSnapshot<?> weighted) {
-            @SuppressWarnings("unchecked")
-            WeightedGraphSnapshot<Integer> typed = (WeightedGraphSnapshot<Integer>) weighted;
-            weightedGraph = WeightedGraph.fromSnapshot(typed);
-            activateVariant(GraphVariant.WEIGHTED);
+        WeightedGraphSnapshot<Integer> state = asWeightedSnapshot(snapshot.state());
+        if (state.directed()) {
+            directedGraph = WeightedGraph.fromSnapshot(state);
+            activateVariant(GraphVariant.DIRECTED);
         } else {
-            throw new IllegalArgumentException("unsupported graph snapshot type: " + state.getClass().getName());
+            undirectedGraph = WeightedGraph.fromSnapshot(state);
+            activateVariant(GraphVariant.UNDIRECTED);
         }
         algorithmInputSnapshot = null;
         syncStartNode(currentGraph());
@@ -477,12 +540,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public void useSnapshotAsAlgorithmInput(StructureSnapshot<GraphSnapshotState<Integer>> snapshot) {
         requireGraphSnapshot(snapshot);
         GraphSnapshotState<Integer> state = snapshot.state();
-        if (state instanceof GraphSnapshot<?>) {
-            activateVariant(GraphVariant.BASIC);
-        } else if (state instanceof WeightedGraphSnapshot<?>) {
-            activateVariant(GraphVariant.WEIGHTED);
+        if (state.directed()) {
+            activateVariant(GraphVariant.DIRECTED);
         } else {
-            throw new IllegalArgumentException("unsupported graph snapshot type: " + state.getClass().getName());
+            activateVariant(GraphVariant.UNDIRECTED);
         }
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
@@ -635,17 +696,17 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void bindSelectors() {
         structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
                 () -> FXCollections.observableArrayList(
-                        I18N.text("label.graph.structure.basic"),
-                        I18N.text("label.graph.structure.weighted")),
+                        I18N.text("label.graph.structure.undirected"),
+                        I18N.text("label.graph.structure.directed")),
                 I18N.localeProperty()));
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             if (current == null || current.intValue() < 0) {
                 return;
             }
             if (current.intValue() == 0) {
-                activateVariant(GraphVariant.BASIC);
+                activateVariant(GraphVariant.UNDIRECTED);
             } else {
-                activateVariant(GraphVariant.WEIGHTED);
+                activateVariant(GraphVariant.DIRECTED);
             }
         });
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
@@ -666,17 +727,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void refreshVariantControls() {
         refreshAlgorithmIds();
         refreshAlgorithmSelector();
-        boolean weighted = activeVariant == GraphVariant.WEIGHTED;
-        setVisibleManaged(weightField, weighted);
-        setVisibleManaged(setWeightBtn, weighted);
+        setVisibleManaged(weightField, true);
+        setVisibleManaged(setWeightBtn, true);
         refreshAlgorithmControls();
     }
 
     private void refreshAlgorithmIds() {
-        if (activeVariant == GraphVariant.BASIC) {
-            algorithmIds = AlgorithmCatalog.basicGraphAlgorithms();
-        } else {
+        if (activeVariant == GraphVariant.UNDIRECTED) {
             algorithmIds = AlgorithmCatalog.weightedGraphAlgorithms();
+        } else {
+            algorithmIds = AlgorithmCatalog.basicGraphAlgorithms();
         }
     }
 
@@ -718,7 +778,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (structureSelector == null) {
             return;
         }
-        if (activeVariant == GraphVariant.BASIC) {
+        if (activeVariant == GraphVariant.UNDIRECTED) {
             structureSelector.getSelectionModel().select(0);
         } else {
             structureSelector.getSelectionModel().select(1);
@@ -751,8 +811,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         node.setVisible(visible);
     }
 
-    private Graph<Integer> randomGraph(int nodeCount, int edgeCount, boolean directed) {
-        Graph<Integer> result = new Graph<>(directed);
+    private WeightedGraph<Integer> randomWeightedGraph(int nodeCount, int edgeCount, boolean directed) {
+        WeightedGraph<Integer> result = new WeightedGraph<>(directed);
         for (int node = 0; node < nodeCount; node++) {
             result.addVertex(node);
         }
@@ -775,29 +835,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
             edges.add(key);
         }
+        int weightIndex = 0;
         for (String edge : edges) {
             String[] parts = edge.split(":", 2);
             int from = Integer.parseInt(parts[0]);
             int to = Integer.parseInt(parts[1]);
-            result.addEdge(result.vertex(from), result.vertex(to));
+            double weight = 1.0d + ((weightIndex * 7) % 19);
+            result.addEdge(result.vertex(from), result.vertex(to), weight);
+            weightIndex++;
         }
         return result;
-    }
-
-    private WeightedGraph<Integer> randomWeightedGraph(int nodeCount, int edgeCount, boolean directed) {
-        Graph<Integer> topology = randomGraph(nodeCount, edgeCount, directed);
-        GraphSnapshot<Integer> snapshot = graphSnapshot(topology);
-        List<WeightedGraphSnapshot.Vertex<Integer>> vertices = snapshot.vertices().stream()
-                .map(vertex -> new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
-                .toList();
-        List<WeightedGraphSnapshot.Edge> edges = new ArrayList<>();
-        int index = 0;
-        for (GraphSnapshot.Edge edge : snapshot.edges()) {
-            double weight = 1.0d + ((index * 7) % 19);
-            edges.add(new WeightedGraphSnapshot.Edge(edge.id(), edge.fromId(), edge.toId(), weight));
-            index++;
-        }
-        return WeightedGraph.fromSnapshot(new WeightedGraphSnapshot<>(directed, vertices, edges));
     }
 
     public void setSelectionListener(Consumer<Selection> listener) {
@@ -880,17 +927,18 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private GraphStructure<Integer> currentGraph() {
-        if (activeVariant == GraphVariant.BASIC) {
-            return basicGraph;
+        return currentWeightedGraph();
+    }
+
+    private WeightedGraph<Integer> currentWeightedGraph() {
+        if (activeVariant == GraphVariant.UNDIRECTED) {
+            return undirectedGraph;
         }
-        return weightedGraph;
+        return directedGraph;
     }
 
     private GraphSnapshotState<Integer> currentSnapshot() {
-        if (activeVariant == GraphVariant.BASIC) {
-            return graphSnapshot(basicGraph);
-        }
-        return weightedGraph.snapshot();
+        return currentWeightedGraph().snapshot();
     }
 
     private GraphSnapshotState<Integer> selectedAlgorithmSnapshot() {
@@ -901,16 +949,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             state = algorithmInputSnapshot.state();
         }
         if (!snapshotMatchesActiveVariant(state)) {
-            throw new IllegalStateException("algorithm input graph variant does not match active structure");
+            throw new IllegalStateException("algorithm input graph direction does not match active structure");
         }
-        return state;
+        return asWeightedSnapshot(state);
     }
 
     private boolean snapshotMatchesActiveVariant(GraphSnapshotState<Integer> state) {
-        if (activeVariant == GraphVariant.BASIC) {
-            return state instanceof GraphSnapshot<?>;
-        }
-        return state instanceof WeightedGraphSnapshot<?>;
+        boolean directed = activeVariant == GraphVariant.DIRECTED;
+        return state.directed() == directed;
     }
 
     private void requireGraphSnapshot(StructureSnapshot<GraphSnapshotState<Integer>> snapshot) {
@@ -920,29 +966,83 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private GraphStructure<Integer> graphFromSnapshot(GraphSnapshotState<Integer> snapshot) {
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            @SuppressWarnings("unchecked")
-            GraphSnapshot<Integer> typed = (GraphSnapshot<Integer>) basic;
-            return Graph.fromSnapshot(typed);
-        }
+        return WeightedGraph.fromSnapshot(asWeightedSnapshot(snapshot));
+    }
+
+    private WeightedGraphSnapshot<Integer> asWeightedSnapshot(GraphSnapshotState<Integer> snapshot) {
         if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
             @SuppressWarnings("unchecked")
             WeightedGraphSnapshot<Integer> typed = (WeightedGraphSnapshot<Integer>) weighted;
-            return WeightedGraph.fromSnapshot(typed);
+            return typed;
+        }
+        if (snapshot instanceof GraphSnapshot<?> basic) {
+            @SuppressWarnings("unchecked")
+            GraphSnapshot<Integer> typed = (GraphSnapshot<Integer>) basic;
+            List<WeightedGraphSnapshot.Vertex<Integer>> vertices = typed.vertices().stream()
+                    .map(vertex -> new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
+                    .toList();
+            List<WeightedGraphSnapshot.Edge> edges = typed.edges().stream()
+                    .map(edge -> new WeightedGraphSnapshot.Edge(
+                            edge.id(), edge.fromId(), edge.toId(), 1.0d))
+                    .toList();
+            return new WeightedGraphSnapshot<>(typed.directed(), vertices, edges);
         }
         throw new IllegalArgumentException("unsupported graph snapshot type: " + snapshot.getClass().getName());
     }
 
-    private GraphSnapshot<Integer> graphSnapshot(GraphStructure<Integer> graph) {
-        List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
-        for (Vertex<Integer> vertex : graph.vertices()) {
-            vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
+    private List<Long> snapshotVertexIds(GraphSnapshotState<Integer> snapshot) {
+        List<Long> ids = new ArrayList<>();
+        if (snapshot instanceof GraphSnapshot<?> basic) {
+            for (GraphSnapshot.Vertex<?> vertex : basic.vertices()) {
+                ids.add(vertex.id());
+            }
+        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
+            for (WeightedGraphSnapshot.Vertex<?> vertex : weighted.vertices()) {
+                ids.add(vertex.id());
+            }
         }
-        List<GraphSnapshot.Edge> edges = new ArrayList<>();
-        for (Edge<Integer> edge : graph.edges()) {
-            edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
+        return List.copyOf(ids);
+    }
+
+    private List<Long> snapshotEdgeIds(GraphSnapshotState<Integer> snapshot) {
+        List<Long> ids = new ArrayList<>();
+        if (snapshot instanceof GraphSnapshot<?> basic) {
+            for (GraphSnapshot.Edge edge : basic.edges()) {
+                ids.add(edge.id());
+            }
+        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
+            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
+                ids.add(edge.id());
+            }
         }
-        return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
+        return List.copyOf(ids);
+    }
+
+    private Long snapshotEdgeIdBetween(GraphSnapshotState<Integer> snapshot, long fromId, long toId) {
+        if (snapshot instanceof GraphSnapshot<?> basic) {
+            for (GraphSnapshot.Edge edge : basic.edges()) {
+                if (edgeConnects(snapshot.directed(), edge.fromId(), edge.toId(), fromId, toId)) {
+                    return edge.id();
+                }
+            }
+        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
+            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
+                if (edgeConnects(snapshot.directed(), edge.fromId(), edge.toId(), fromId, toId)) {
+                    return edge.id();
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean edgeConnects(boolean directed, long edgeFrom, long edgeTo, long fromId, long toId) {
+        if (edgeFrom == fromId && edgeTo == toId) {
+            return true;
+        }
+        if (!directed && edgeFrom == toId && edgeTo == fromId) {
+            return true;
+        }
+        return false;
     }
 
     private Integer snapshotVertexValue(GraphSnapshotState<Integer> snapshot, long nodeId) {

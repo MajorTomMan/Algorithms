@@ -75,6 +75,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
     private Long selectedNodeId;
+    private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> { };
 
     public TreeVisualizer() {
@@ -124,7 +125,18 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             view.setVisited(state.visitedNodeIds().contains(node.id()));
         }
 
+        boolean pendingSelectionApplied = false;
+        if (pendingSelectedNodeId != null) {
+            if (state.nodes().containsKey(pendingSelectedNodeId)) {
+                selectedNodeId = pendingSelectedNodeId;
+                pendingSelectionApplied = true;
+            }
+            pendingSelectedNodeId = null;
+        }
         syncSelectionState();
+        if (pendingSelectionApplied) {
+            selectionListener.accept(selectedNodeId);
+        }
         syncEdges(state, transitions);
 
         List<Long> removedIds = nodeViews.keySet().stream()
@@ -512,11 +524,27 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
 
     public void clearSelection() {
         selectedNodeId = null;
+        pendingSelectedNodeId = null;
         syncSelectionState();
     }
 
     public Long selectedNodeId() {
         return selectedNodeId;
+    }
+
+    public void selectNode(long nodeId) {
+        TreeViewState state = currentState();
+        if (!nodeViews.containsKey(nodeId)) {
+            if (state != null && state.nodes().containsKey(nodeId)) {
+                pendingSelectedNodeId = nodeId;
+                requestRender();
+            }
+            return;
+        }
+        pendingSelectedNodeId = null;
+        selectedNodeId = nodeId;
+        syncSelectionState();
+        selectionListener.accept(nodeId);
     }
 
     private void syncSelectionState() {
@@ -615,6 +643,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         pendingVersion = -1L;
         hasAppliedLayout = false;
         selectedNodeId = null;
+        pendingSelectedNodeId = null;
         firstRender = true;
         surface.reset();
         surface.markViewportPristine();

@@ -489,7 +489,7 @@ public class MainController implements Initializable {
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
         structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
-        structureLiveLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.live"));
+        structureLiveLabel.setText(I18N.text("label.workspace.structure.live"));
         algorithmInputTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
         structurePreviewTitleLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview"));
@@ -557,6 +557,7 @@ public class MainController implements Initializable {
             refreshWorkspaceContext();
             refreshTopContext();
             refreshAlgorithmInputSource();
+            refreshSnapshotPreviewPresentation();
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
@@ -1499,6 +1500,13 @@ public class MainController implements Initializable {
         if (snapshotPreviewRestoreBtn != null) {
             snapshotPreviewRestoreBtn.setDisable(!visible);
         }
+        if (structureLiveLabel != null) {
+            if (visible) {
+                structureLiveLabel.setText(I18N.text("label.workspace.structure.preview"));
+            } else {
+                structureLiveLabel.setText(I18N.text("label.workspace.structure.live"));
+            }
+        }
 
         String snapshotId = "";
         if (snapshot != null) {
@@ -2325,12 +2333,14 @@ public class MainController implements Initializable {
     }
 
     private boolean confirmSnapshotRestore(StructureSnapshot<?> snapshot) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        ButtonType cancel = new ButtonType(I18N.text("action.common.cancel"));
+        ButtonType restore = new ButtonType(I18N.text("action.workspace.restore_snapshot"));
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "", cancel, restore);
         alert.setTitle(I18N.text("confirm.snapshot.restore.title"));
         alert.setHeaderText(I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
         alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
         OperationDialogTheme.apply(alert, 460.0d);
-        return alert.showAndWait().filter(ButtonType.OK::equals).isPresent();
+        return alert.showAndWait().filter(restore::equals).isPresent();
     }
 
     @SuppressWarnings("unchecked")

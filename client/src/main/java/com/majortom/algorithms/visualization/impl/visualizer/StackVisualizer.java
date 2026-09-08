@@ -59,6 +59,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
     private int selectedIndex = -1;
+    private int pendingSelectedIndex = -1;
     private IntConsumer selectionListener = ignored -> { };
 
     public StackVisualizer() {
@@ -82,6 +83,15 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             surface.markViewportPristine();
         }
 
+        boolean pendingSelectionApplied = false;
+        if (pendingSelectedIndex >= 0) {
+            if (pendingSelectedIndex < state.values().size()) {
+                selectedIndex = pendingSelectedIndex;
+                pendingSelectionApplied = true;
+            }
+            pendingSelectedIndex = -1;
+        }
+
         for (int index = 0; index < state.values().size(); index++) {
             NodeView item = items.get(index);
             if (item == null) {
@@ -103,6 +113,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             item.setHighlighted(index == 0 && state.mutation().type() != LinearStructureViewState.Type.NONE);
         }
         syncSelection();
+        if (pendingSelectionApplied) {
+            selectionListener.accept(selectedIndex);
+        }
 
         List<Integer> stale = items.keySet().stream().filter(index -> index >= state.values().size()).toList();
         for (Integer index : stale) {
@@ -285,6 +298,10 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             activeAnimation.stop();
             activeAnimation = null;
         }
+        if (!exitingItems.isEmpty()) {
+            surface.nodeLayer().getChildren().removeAll(List.copyOf(exitingItems));
+            exitingItems.clear();
+        }
     }
 
     private void invalidateLayout() {
@@ -302,7 +319,33 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     public void clearSelection() {
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         syncSelection();
+    }
+
+    public void selectIndex(int index) {
+        if (index < 0) {
+            return;
+        }
+        LinearStructureViewState state = currentState();
+        int currentSize;
+        if (state == null) {
+            currentSize = items.size();
+        } else {
+            currentSize = state.values().size();
+        }
+        if (index >= currentSize) {
+            return;
+        }
+        if (!items.containsKey(index)) {
+            pendingSelectedIndex = index;
+            requestRender();
+            return;
+        }
+        pendingSelectedIndex = -1;
+        selectedIndex = index;
+        syncSelection();
+        selectionListener.accept(index);
     }
 
     private void syncSelection() {
@@ -331,6 +374,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         stopActiveAnimation();
         invalidateLayout();
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         items.clear();
         exitingItems.clear();
         surface.nodeLayer().getChildren().clear();

@@ -74,6 +74,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private java.lang.String lastRenderedValue = "";
     private boolean firstRender = true;
     private int selectedIndex = -1;
+    private int pendingSelectedIndex = -1;
     private java.lang.String algorithmPattern = "";
     private double settledPatternX;
     private double settledPatternY;
@@ -131,6 +132,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
     public void clearSelection() {
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         applySelectionState();
     }
 
@@ -156,6 +158,14 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
         if (selectedIndex >= size) {
             selectedIndex = -1;
+        }
+        boolean pendingSelectionApplied = false;
+        if (pendingSelectedIndex >= 0) {
+            if (pendingSelectedIndex < size) {
+                selectedIndex = pendingSelectedIndex;
+                pendingSelectionApplied = true;
+            }
+            pendingSelectedIndex = -1;
         }
 
         List<Animation> immediateTransitions = new ArrayList<>();
@@ -202,6 +212,9 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             cell.setDensity(density, mutationIndex || observationIndex || index == selectedIndex);
         }
         normalizeCellOrder();
+        if (pendingSelectionApplied) {
+            onIndexSelected.accept(selectedIndex);
+        }
 
         List<Integer> strayIndexes = cells.keySet().stream().filter(index -> index >= size).toList();
         for (Integer index : strayIndexes) {
@@ -229,10 +242,26 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         return cell;
     }
 
-    private void selectIndex(int index) {
-        if (index < 0 || index >= lastRenderedValue.length()) {
+    public void selectIndex(int index) {
+        if (index < 0) {
             return;
         }
+        StringViewState state = currentState();
+        int currentSize;
+        if (state == null) {
+            currentSize = lastRenderedValue.length();
+        } else {
+            currentSize = state.value().length();
+        }
+        if (index >= currentSize) {
+            return;
+        }
+        if (!cells.containsKey(index)) {
+            pendingSelectedIndex = index;
+            requestRender();
+            return;
+        }
+        pendingSelectedIndex = -1;
         selectedIndex = index;
         applySelectionState();
         onIndexSelected.accept(index);
@@ -677,6 +706,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         settledPatternX = 0.0d;
         settledPatternY = 0.0d;
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         lastRenderedValue = "";
         firstRender = true;
         surface.reset();

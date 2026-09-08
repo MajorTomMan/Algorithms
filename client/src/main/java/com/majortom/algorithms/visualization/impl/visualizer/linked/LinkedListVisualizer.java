@@ -76,6 +76,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
     private Long selectedNodeId;
+    private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> { };
 
     public LinkedListVisualizer() {
@@ -142,7 +143,18 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             }
         }
 
+        boolean pendingSelectionApplied = false;
+        if (pendingSelectedNodeId != null) {
+            if (state.nodes().containsKey(pendingSelectedNodeId)) {
+                selectedNodeId = pendingSelectedNodeId;
+                pendingSelectionApplied = true;
+            }
+            pendingSelectedNodeId = null;
+        }
         syncSelection();
+        if (pendingSelectionApplied) {
+            selectionListener.accept(selectedNodeId);
+        }
         syncEdges(state, transitions);
 
         List<Long> removedIds = nodeViews.keySet().stream()
@@ -473,7 +485,23 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
 
     public void clearSelection() {
         selectedNodeId = null;
+        pendingSelectedNodeId = null;
         syncSelection();
+    }
+
+    public void selectNode(long nodeId) {
+        LinkedListViewState state = currentState();
+        if (!nodeViews.containsKey(nodeId)) {
+            if (state != null && state.nodes().containsKey(nodeId)) {
+                pendingSelectedNodeId = nodeId;
+                requestRender();
+            }
+            return;
+        }
+        pendingSelectedNodeId = null;
+        selectedNodeId = nodeId;
+        syncSelection();
+        selectionListener.accept(nodeId);
     }
 
     private void syncSelection() {
@@ -504,6 +532,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         renderedState = LinkedListViewState.empty();
         nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         selectedNodeId = null;
+        pendingSelectedNodeId = null;
         nodeViews.clear();
         edgeViews.clear();
         surface.nodeLayer().getChildren().clear();

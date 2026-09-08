@@ -271,6 +271,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return null;
         })) {
             renderLatestStructureMutation();
+            arrayVisualizer().selectIndex(insertedIndex);
             refreshStatsDisplay();
             logI18n("message.sort.added", value, insertedIndex);
         }
@@ -278,7 +279,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @FXML
     private void handleDeleteElement() {
-        clearArraySelection();
         String indexText = elementIndexField.getText().trim();
         Integer index = parseOptionalIndex(elementIndexField, sourceArray.size() - 1);
         if (index == null && !indexText.isBlank()) {
@@ -302,9 +302,26 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return null;
         })) {
             renderLatestStructureMutation();
+            selectArrayAfterRemoval(removedIndex);
             refreshStatsDisplay();
             logI18n("message.sort.deleted", removed, removedIndex);
         }
+    }
+
+    private void selectArrayAfterRemoval(int removedIndex) {
+        if (sourceArray.size() == 0) {
+            clearArraySelection();
+            elementIndexField.clear();
+            updateIndexField.clear();
+            elementValueField.clear();
+            updateValueField.clear();
+            return;
+        }
+        int nextIndex = removedIndex;
+        if (nextIndex >= sourceArray.size()) {
+            nextIndex = sourceArray.size() - 1;
+        }
+        arrayVisualizer().selectIndex(nextIndex);
     }
 
     @FXML
@@ -321,6 +338,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return null;
         })) {
             renderLatestStructureMutation();
+            arrayVisualizer().selectIndex(updateIndex);
             refreshStatsDisplay();
             logI18n("message.sort.updated", updateIndex, previous, value);
         }

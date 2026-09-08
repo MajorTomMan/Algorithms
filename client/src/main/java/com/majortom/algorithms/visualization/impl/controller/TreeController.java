@@ -29,6 +29,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
@@ -167,6 +168,10 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 return null;
             })) {
                 refreshStructureView();
+                AVLTreeNode<Integer> inserted = (AVLTreeNode<Integer>) avlTree.find(value);
+                if (inserted != null) {
+                    treeVisualizer().selectNode(inserted.getId());
+                }
             }
             return;
         }
@@ -176,6 +181,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         if (executeStructureOperation("add-root", () -> generalTree.addRoot(value))) {
             refreshStructureView();
+            treeVisualizer().selectNode(generalTree.root().getId());
         }
     }
 
@@ -189,8 +195,14 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (value == null || parent == null) {
             return;
         }
-        if (executeStructureOperation("add-child", () -> generalTree.addChild(parent, value))) {
+        long[] addedNodeId = {-1L};
+        if (executeStructureOperation("add-child", () -> {
+            GeneralTreeNode<Integer> child = generalTree.addChild(parent, value);
+            addedNodeId[0] = child.getId();
+            return child;
+        })) {
             refreshStructureView();
+            treeVisualizer().selectNode(addedNodeId[0]);
         }
     }
 
@@ -204,8 +216,14 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (value == null || node == null) {
             return;
         }
-        if (executeStructureOperation("add-parent", () -> generalTree.addParent(node, value))) {
+        long[] addedNodeId = {-1L};
+        if (executeStructureOperation("add-parent", () -> {
+            GeneralTreeNode<Integer> parent = generalTree.addParent(node, value);
+            addedNodeId[0] = parent.getId();
+            return parent;
+        })) {
             refreshStructureView();
+            treeVisualizer().selectNode(addedNodeId[0]);
         }
     }
 
@@ -216,9 +234,11 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             if (node == null) {
                 return;
             }
+            List<Long> previousOrder = generalNodeOrder(generalTree.root());
+            int removedIndex = previousOrder.indexOf(node.getId());
             if (executeStructureOperation("remove", () -> generalTree.remove(node))) {
-                clearNodeSelection();
                 refreshStructureView();
+                selectTreeAfterRemoval(previousOrder, removedIndex);
             }
             return;
         }
@@ -226,11 +246,79 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (node == null) {
             return;
         }
+        List<Long> previousOrder = avlNodeOrder(avlTree.root());
+        int removedIndex = previousOrder.indexOf(node.getId());
         int value = node.getValue();
         if (executeStructureOperation("remove", () -> avlTree.remove(value))) {
-            clearNodeSelection();
             refreshStructureView();
+            selectTreeAfterRemoval(previousOrder, removedIndex);
         }
+    }
+
+    private void selectTreeAfterRemoval(List<Long> previousOrder, int removedIndex) {
+        if (previousOrder.isEmpty()) {
+            clearNodeSelection();
+            valueField.clear();
+            return;
+        }
+        int startIndex = removedIndex;
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int index = startIndex; index < previousOrder.size(); index++) {
+            long candidateId = previousOrder.get(index);
+            if (treeNodeExists(candidateId)) {
+                treeVisualizer().selectNode(candidateId);
+                return;
+            }
+        }
+        for (int index = startIndex - 1; index >= 0; index--) {
+            long candidateId = previousOrder.get(index);
+            if (treeNodeExists(candidateId)) {
+                treeVisualizer().selectNode(candidateId);
+                return;
+            }
+        }
+        clearNodeSelection();
+        valueField.clear();
+    }
+
+    private boolean treeNodeExists(long nodeId) {
+        if (activeVariant == TreeVariant.GENERAL) {
+            return generalTree.findById(nodeId) != null;
+        }
+        return avlNodeById(avlTree.root(), nodeId) != null;
+    }
+
+    private List<Long> generalNodeOrder(GeneralTreeNode<Integer> root) {
+        List<Long> order = new ArrayList<>();
+        appendGeneralNodeOrder(root, order);
+        return List.copyOf(order);
+    }
+
+    private void appendGeneralNodeOrder(GeneralTreeNode<Integer> node, List<Long> order) {
+        if (node == null) {
+            return;
+        }
+        order.add(node.getId());
+        for (GeneralTreeNode<Integer> child : node.getChildren()) {
+            appendGeneralNodeOrder(child, order);
+        }
+    }
+
+    private List<Long> avlNodeOrder(AVLTreeNode<Integer> root) {
+        List<Long> order = new ArrayList<>();
+        appendAvlNodeOrder(root, order);
+        return List.copyOf(order);
+    }
+
+    private void appendAvlNodeOrder(AVLTreeNode<Integer> node, List<Long> order) {
+        if (node == null) {
+            return;
+        }
+        appendAvlNodeOrder(left(node), order);
+        order.add(node.getId());
+        appendAvlNodeOrder(right(node), order);
     }
 
     @FXML
@@ -248,7 +336,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
         if (executeStructureOperation("update", () -> generalTree.set(node, value))) {
+            long nodeId = node.getId();
             refreshStructureView();
+            treeVisualizer().selectNode(nodeId);
         }
     }
 

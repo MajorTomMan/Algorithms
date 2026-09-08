@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.common;
 
 import com.majortom.algorithms.visualization.international.I18N;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
@@ -21,6 +22,7 @@ import javafx.scene.input.ZoomEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
 import net.kurobako.gesturefx.GesturePane;
 
 import java.util.Locale;
@@ -38,6 +40,7 @@ public final class VisualizationSurface extends StackPane {
     private static final double DEFAULT_ZOOM = 1.00d;
     private static final double MAX_AUTO_FIT_SCALE = 1.35d;
     private static final double TOOLBAR_ZOOM_FACTOR = 1.15d;
+    private static final double AUTO_FIT_SETTLE_MS = 120.0d;
     private static final Insets DEFAULT_SAFE_INSETS = new Insets(16.0d, 16.0d, 62.0d, 16.0d);
 
     private final Group edgeLayer = layer("visualization-edge-layer");
@@ -48,6 +51,8 @@ public final class VisualizationSurface extends StackPane {
     private final HBox viewportToolbar = new HBox(0.0d);
     private final Label zoomLabel = new Label();
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
+    private final PauseTransition autoFitSettleTransition =
+            new PauseTransition(Duration.millis(AUTO_FIT_SETTLE_MS));
 
     private Insets safeInsets = DEFAULT_SAFE_INSETS;
     private Insets obstructionInsets = Insets.EMPTY;
@@ -57,7 +62,7 @@ public final class VisualizationSurface extends StackPane {
     private boolean fitQueued;
     private double queuedMinimumAutoScale = MIN_ZOOM;
     private boolean queuedInitialFit;
-    private boolean resizeFitQueued;
+    private boolean initialAutoFitPending;
 
     public VisualizationSurface() {
         getStyleClass().add("visualization-surface");
@@ -67,6 +72,7 @@ public final class VisualizationSurface extends StackPane {
         installInteractionTracking();
         installShortcuts();
         getChildren().setAll(gesturePane, viewportToolbar);
+        autoFitSettleTransition.setOnFinished(event -> performSettledAutoFit());
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
         viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         widthProperty().addListener((observable, oldValue, newValue) -> requestAutoFitAfterResize());
@@ -158,7 +164,7 @@ public final class VisualizationSurface extends StackPane {
         if (userViewportChanged) {
             return;
         }
-        requestFit(true, autoFitMinimumScale);
+        requestSettledAutoFit();
     }
 
     public void reset() {
@@ -184,20 +190,29 @@ public final class VisualizationSurface extends StackPane {
 
     public void markViewportPristine() {
         userViewportChanged = false;
+        autoFitSettleTransition.stop();
+        initialAutoFitPending = true;
+        worldPane.setOpacity(0.0d);
+        worldPane.setMouseTransparent(true);
     }
 
 
     private void requestAutoFitAfterResize() {
-        if (userViewportChanged || resizeFitQueued) {
+        requestSettledAutoFit();
+    }
+
+    private void requestSettledAutoFit() {
+        if (userViewportChanged) {
             return;
         }
-        resizeFitQueued = true;
-        Platform.runLater(() -> {
-            resizeFitQueued = false;
-            if (!userViewportChanged) {
-                requestFit(true, autoFitMinimumScale);
-            }
-        });
+        autoFitSettleTransition.playFromStart();
+    }
+
+    private void performSettledAutoFit() {
+        if (userViewportChanged) {
+            return;
+        }
+        fitNow(true, autoFitMinimumScale);
     }
 
     private void configureGesturePane() {
@@ -317,7 +332,17 @@ public final class VisualizationSurface extends StackPane {
         if (!initialFit) {
             userViewportChanged = true;
         }
+        revealWorldAfterInitialFit();
         return true;
+    }
+
+    private void revealWorldAfterInitialFit() {
+        if (!initialAutoFitPending) {
+            return;
+        }
+        initialAutoFitPending = false;
+        worldPane.setOpacity(1.0d);
+        worldPane.setMouseTransparent(false);
     }
 
     private void centerOnSafeViewport(Point2D worldCenter) {

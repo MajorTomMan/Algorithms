@@ -87,7 +87,16 @@ public final class StringController extends BaseModuleController<StringViewState
         if (executeStructureOperation("replace", () -> {
             source.replace(0, source.length(), value);
             return null;
-        })) renderLatestStructureMutation();
+        })) {
+            renderLatestStructureMutation();
+            if (source.length() > 0) {
+                stringVisualizer().selectIndex(0);
+            } else {
+                indexField.clear();
+                characterField.clear();
+                lengthField.clear();
+            }
+        }
     }
 
     @FXML
@@ -100,7 +109,10 @@ public final class StringController extends BaseModuleController<StringViewState
         if (executeStructureOperation("insert", () -> {
             source.insert(index, value);
             return null;
-        })) renderLatestStructureMutation();
+        })) {
+            renderLatestStructureMutation();
+            stringVisualizer().selectIndex(index);
+        }
     }
 
     @FXML
@@ -115,9 +127,24 @@ public final class StringController extends BaseModuleController<StringViewState
             source.remove(index, length);
             return null;
         })) {
-            clearStringSelection();
             renderLatestStructureMutation();
+            selectStringAfterRemoval(index);
         }
+    }
+
+    private void selectStringAfterRemoval(int removedIndex) {
+        if (source.length() == 0) {
+            clearStringSelection();
+            indexField.clear();
+            characterField.clear();
+            lengthField.clear();
+            return;
+        }
+        int nextIndex = removedIndex;
+        if (nextIndex >= source.length()) {
+            nextIndex = source.length() - 1;
+        }
+        stringVisualizer().selectIndex(nextIndex);
     }
 
     @FXML
@@ -133,7 +160,10 @@ public final class StringController extends BaseModuleController<StringViewState
         if (executeStructureOperation("update", () -> {
             source.set(index, character);
             return null;
-        })) renderLatestStructureMutation();
+        })) {
+            renderLatestStructureMutation();
+            stringVisualizer().selectIndex(index);
+        }
     }
 
     @Override

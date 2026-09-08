@@ -67,6 +67,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     private List<Integer> lastRenderedValues = List.of();
     private boolean firstRender = true;
     private int selectedIndex = -1;
+    private int pendingSelectedIndex = -1;
     private IntConsumer onIndexSelected = ignored -> { };
 
     public ArrayVisualizer() {
@@ -87,6 +88,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
 
     public void clearSelection() {
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         applySelectionState();
     }
 
@@ -111,6 +113,18 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
         if (selectedIndex >= size) {
             selectedIndex = -1;
+        }
+        if (state.completed()) {
+            selectedIndex = -1;
+            pendingSelectedIndex = -1;
+        }
+        boolean pendingSelectionApplied = false;
+        if (pendingSelectedIndex >= 0) {
+            if (pendingSelectedIndex < size) {
+                selectedIndex = pendingSelectedIndex;
+                pendingSelectionApplied = true;
+            }
+            pendingSelectedIndex = -1;
         }
 
         List<Animation> immediateTransitions = new ArrayList<>();
@@ -156,6 +170,9 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             cell.setDensity(density, mutationIndex || observationIndex || index == selectedIndex);
         }
         normalizeCellOrder();
+        if (pendingSelectionApplied) {
+            onIndexSelected.accept(selectedIndex);
+        }
 
         List<Integer> strayIndexes = cells.keySet().stream().filter(index -> index >= size).toList();
         for (Integer index : strayIndexes) {
@@ -181,10 +198,26 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         return cell;
     }
 
-    private void selectIndex(int index) {
-        if (index < 0 || index >= lastRenderedValues.size()) {
+    public void selectIndex(int index) {
+        if (index < 0) {
             return;
         }
+        ArrayViewState state = currentState();
+        int currentSize;
+        if (state == null) {
+            currentSize = lastRenderedValues.size();
+        } else {
+            currentSize = state.values().size();
+        }
+        if (index >= currentSize) {
+            return;
+        }
+        if (!cells.containsKey(index)) {
+            pendingSelectedIndex = index;
+            requestRender();
+            return;
+        }
+        pendingSelectedIndex = -1;
         selectedIndex = index;
         applySelectionState();
         onIndexSelected.accept(index);
@@ -555,6 +588,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         settledPositions.clear();
         exitingCells.clear();
         selectedIndex = -1;
+        pendingSelectedIndex = -1;
         lastRenderedValues = List.of();
         surface.nodeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
