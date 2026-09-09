@@ -59,11 +59,15 @@
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />
                 <HBox fx:id="topContextZone" minWidth="500.0" prefWidth="500.0"
-                    alignment="CENTER_RIGHT" spacing="18" styleClass="top-context-zone">
+                    alignment="CENTER_RIGHT" spacing="14" styleClass="top-context-zone">
                     <Label fx:id="topContextLabel" text="ARRAY / STRUCTURE EDITOR"
                         styleClass="top-context-title" />
                     <Label fx:id="runStateLabel" text="EDITING" styleClass="run-state-badge" />
                     <Label fx:id="runIdLabel" text="" styleClass="run-id-label" />
+                    <Separator orientation="VERTICAL" minHeight="26.0" prefHeight="26.0" maxHeight="26.0"
+                        styleClass="font-settings-divider" />
+                    <Button fx:id="fontSettingsBtn" text="Aa" onAction="#toggleFontSettings"
+                        styleClass="font-settings-button" />
                 </HBox>
                 <!-- Kept for existing product controls, intentionally hidden in the visual shell. -->
                 <HBox fx:id="valueTypeBox" managed="false" visible="false">
@@ -72,12 +76,6 @@
                     <Label fx:id="hashValueTypeLabel" />
                     <ComboBox fx:id="hashValueTypeSelector" />
                 </HBox>
-                <HBox managed="false" visible="false">
-                    <Label fx:id="fontScaleLabel" />
-                    <ComboBox fx:id="fontScaleSelector" />
-                </HBox>
-                <Button fx:id="langBtn" managed="false" visible="false" text="EN / 中文"
-                    onAction="#toggleLanguage" />
                 <Label fx:id="menuTitleLabel" managed="false" visible="false" />
             </HBox>
         </VBox>

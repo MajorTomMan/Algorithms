@@ -1,45 +1,50 @@
 /* Focused Workbench closure styles loaded by WorkbenchTheme. */
+/*
+ * ComboBox and ContextMenu content is rendered in separate JavaFX Popup scenes.
+ * Root looked-up colors from theme.css are not guaranteed to cross that scene boundary,
+ * so popup paint properties intentionally use concrete palette values here.
+ */
 .combo-box-popup .list-view {
-    -fx-background-color: -ui-white;
+    -fx-background-color: #ffffff;
     -fx-background-insets: 0;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 8, 0.08, 0, 2);
-    -fx-control-inner-background: -ui-white;
-    -fx-border-color: -ui-gray-300;
+    -fx-control-inner-background: #ffffff;
+    -fx-border-color: #d7dce1;
     -fx-border-width: 1px;
     -fx-border-radius: 2px;
     -fx-background-radius: 2px;
     -fx-padding: 2px;
 }
 .combo-box-popup .list-cell {
-    -fx-background-color: -ui-white;
-    -fx-text-fill: -ui-black;
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #202124;
     -fx-padding: 7px 9px;
 }
 .combo-box-popup .list-cell:filled:hover {
-    -fx-background-color: -ui-gray-100;
-    -fx-text-fill: -ui-black;
+    -fx-background-color: #f3f5f7;
+    -fx-text-fill: #202124;
 }
 .combo-box-popup .list-cell:filled:selected {
-    -fx-background-color: -ui-red;
-    -fx-text-fill: -ui-white;
+    -fx-background-color: #ff1f2d;
+    -fx-text-fill: #ffffff;
 }
 .context-menu.algorithm-snapshot-menu {
-    -fx-background-color: -ui-white;
-    -fx-border-color: -ui-gray-300;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d7dce1;
     -fx-border-width: 1px;
     -fx-padding: 3px;
 }
 .context-menu.algorithm-snapshot-menu .menu-item {
-    -fx-background-color: -ui-white;
+    -fx-background-color: #ffffff;
 }
 .context-menu.algorithm-snapshot-menu .menu-item:focused {
-    -fx-background-color: -ui-red;
+    -fx-background-color: #ff1f2d;
 }
 .context-menu.algorithm-snapshot-menu .menu-item .label {
-    -fx-text-fill: -ui-black;
+    -fx-text-fill: #202124;
 }
 .context-menu.algorithm-snapshot-menu .menu-item:focused .label {
-    -fx-text-fill: -ui-white;
+    -fx-text-fill: #ffffff;
 }
 
 /* Edge metadata slot reserved for future weighted-graph labels. */

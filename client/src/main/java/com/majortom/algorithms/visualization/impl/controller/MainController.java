@@ -24,6 +24,8 @@ import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.settings.FontSettings;
+import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import atlantafx.base.theme.Styles;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
@@ -36,9 +38,11 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextInputControl;
@@ -53,8 +57,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Popup;
+import javafx.geometry.Bounds;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 
 import java.net.URL;
 import java.time.ZoneId;
@@ -68,7 +73,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.prefs.Preferences;
 
 /**
  * 单 Workbench JavaFX 外壳。
@@ -92,11 +96,7 @@ public class MainController implements Initializable {
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final List<String> OFFICIAL_VALUE_TYPES = ModuleRegistry.valueTypes();
-    private static final List<Integer> UI_FONT_SCALES = List.of(90, 100, 110, 125, 140);
-    private static final int DEFAULT_UI_FONT_SCALE = 125;
-    private static final double BASE_UI_FONT_SIZE = 13.0d;
-    private static final String UI_FONT_SCALE_PREFERENCE = "ui.font.scale";
-    private static final Preferences UI_PREFERENCES = Preferences.userNodeForPackage(MainController.class);
+    private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
     private static final ModuleRegistry MODULE_REGISTRY = ModuleLoader.load();
 
     @FXML
@@ -122,8 +122,6 @@ public class MainController implements Initializable {
     @FXML
     private Button algorithmWorkspaceBtn;
     @FXML
-    private Button langBtn;
-    @FXML
     private HBox valueTypeBox;
     @FXML
     private Label valueTypeLabel;
@@ -134,9 +132,7 @@ public class MainController implements Initializable {
     @FXML
     private ComboBox<ValueTypeOption> hashValueTypeSelector;
     @FXML
-    private Label fontScaleLabel;
-    @FXML
-    private ComboBox<String> fontScaleSelector;
+    private Button fontSettingsBtn;
     @FXML
     private StackPane workspaceLayer;
     @FXML
@@ -449,7 +445,8 @@ public class MainController implements Initializable {
     private String selectedHashKeyType;
     private String selectedHashValueType;
     private boolean updatingValueTypeSelectors;
-    private int uiFontScale = DEFAULT_UI_FONT_SCALE;
+    private FontSettings appliedFontSettings;
+    private Popup fontSettingsPopup;
     private BaseController<?> currentSubController;
     private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
@@ -475,7 +472,7 @@ public class MainController implements Initializable {
 
         setupI18n();
         setupSnapshotPreviewPresentation();
-        setupFontScaleSelector();
+        setupFontSettings();
         setupValueTypeSelectors();
         setupModuleMenu();
         setupWorkspaceMode();
@@ -499,7 +496,9 @@ public class MainController implements Initializable {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
         valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
         hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
-        fontScaleLabel.textProperty().bind(I18N.createStringBinding("label.ui_font_scale"));
+        if (fontSettingsBtn != null) {
+            fontSettingsBtn.accessibleTextProperty().bind(I18N.createStringBinding("settings.text.open"));
+        }
         structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
         structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
@@ -569,6 +568,9 @@ public class MainController implements Initializable {
         stepForwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.forward"));
         I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
+            if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
+                fontSettingsPopup.hide();
+            }
             refreshPauseText();
             refreshWorkspaceContext();
             refreshTopContext();
@@ -595,89 +597,274 @@ public class MainController implements Initializable {
         structureSnapshotPreviewBadge.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
     }
 
-    private void setupFontScaleSelector() {
-        if (fontScaleSelector == null || rootPane == null) {
+    private void setupFontSettings() {
+        if (rootPane == null) {
             return;
         }
+        appliedFontSettings = FONT_SETTINGS_SERVICE.load();
+        FONT_SETTINGS_SERVICE.apply(rootPane, appliedFontSettings);
+    }
 
-        List<String> options = new ArrayList<>();
-        for (int scale : UI_FONT_SCALES) {
-            options.add(scale + "%");
+    @FXML
+    private void toggleFontSettings() {
+        if (fontSettingsBtn == null) {
+            return;
         }
-        fontScaleSelector.getItems().setAll(options);
-
-        int savedScale = UI_PREFERENCES.getInt(UI_FONT_SCALE_PREFERENCE, DEFAULT_UI_FONT_SCALE);
-        if (!UI_FONT_SCALES.contains(savedScale)) {
-            savedScale = DEFAULT_UI_FONT_SCALE;
+        if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
+            fontSettingsPopup.hide();
+            return;
         }
-        fontScaleSelector.getSelectionModel().select(savedScale + "%");
-        applyUiFontScale(savedScale, false);
-
-        fontScaleSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            int scale = parseUiFontScale(newValue);
-            applyUiFontScale(scale, true);
+        Popup popup = createFontSettingsPopup();
+        Bounds anchor = fontSettingsBtn.localToScreen(fontSettingsBtn.getBoundsInLocal());
+        if (anchor == null) {
+            return;
+        }
+        fontSettingsPopup = popup;
+        popup.setOnHidden(event -> {
+            if (fontSettingsPopup == popup) {
+                fontSettingsPopup = null;
+            }
         });
-        rootPane.addEventFilter(KeyEvent.KEY_PRESSED, this::handleUiFontScaleShortcut);
+        popup.show(fontSettingsBtn, anchor.getMaxX() - 380.0d, anchor.getMaxY());
     }
 
-    private int parseUiFontScale(String value) {
-        if (value == null || value.isBlank()) {
-            return DEFAULT_UI_FONT_SCALE;
+    private Popup createFontSettingsPopup() {
+        Popup popup = new Popup();
+        popup.setAutoFix(true);
+        popup.setAutoHide(true);
+        popup.setHideOnEscape(true);
+
+        VBox popupShell = new VBox(0.0d);
+        popupShell.setAlignment(javafx.geometry.Pos.TOP_RIGHT);
+        popupShell.setMinWidth(360.0d);
+        popupShell.setPrefWidth(380.0d);
+        popupShell.setMaxWidth(380.0d);
+        popupShell.getStyleClass().add("font-settings-popup-shell");
+        popupShell.getStylesheets().addAll(rootPane.getStylesheets());
+
+        Region arrow = new Region();
+        arrow.getStyleClass().add("font-settings-arrow");
+        VBox.setMargin(arrow, new javafx.geometry.Insets(0.0d, 18.0d, 0.0d, 0.0d));
+
+        VBox content = new VBox(14.0d);
+        content.setMinWidth(360.0d);
+        content.setPrefWidth(380.0d);
+        content.setMaxWidth(380.0d);
+        content.getStyleClass().add("font-settings-popover");
+
+        FontSettings initial = appliedFontSettings;
+        if (initial == null) {
+            initial = FONT_SETTINGS_SERVICE.load();
         }
-        try {
-            return Integer.parseInt(value.replace("%", "").trim());
-        } catch (NumberFormatException ignored) {
-            return DEFAULT_UI_FONT_SCALE;
+        FontSettings[] draft = new FontSettings[] { initial };
+        boolean[] updatingControls = new boolean[] { false };
+
+        Label title = new Label();
+        title.textProperty().bind(I18N.createStringBinding("settings.text.title"));
+        title.getStyleClass().add("font-settings-title");
+
+        Label languageLabel = new Label();
+        languageLabel.textProperty().bind(I18N.createStringBinding("settings.language"));
+        languageLabel.getStyleClass().add("font-settings-row-label");
+        ComboBox<String> languageSelector = new ComboBox<>();
+        languageSelector.setMaxWidth(Double.MAX_VALUE);
+        languageSelector.getStyleClass().addAll("font-settings-combo", "font-settings-language-combo");
+        languageSelector.getItems().setAll("中文", "English");
+        if (I18N.getLocale().getLanguage().equals("zh")) {
+            languageSelector.getSelectionModel().select("中文");
+        } else {
+            languageSelector.getSelectionModel().select("English");
         }
+        HBox languageRow = fontSettingsRow(languageLabel, languageSelector);
+
+        Label familyLabel = new Label();
+        familyLabel.textProperty().bind(I18N.createStringBinding("settings.text.font"));
+        familyLabel.getStyleClass().add("font-settings-row-label");
+        ComboBox<String> familySelector = new ComboBox<>();
+        familySelector.setMaxWidth(Double.MAX_VALUE);
+        familySelector.getStyleClass().add("font-settings-combo");
+        String projectDefault = I18N.text("settings.text.fontDefault");
+        List<String> families = new ArrayList<>();
+        families.add(projectDefault);
+        families.addAll(FONT_SETTINGS_SERVICE.availableFamilies());
+        familySelector.getItems().setAll(families);
+        if (initial.family().isBlank()) {
+            familySelector.getSelectionModel().select(projectDefault);
+        } else {
+            familySelector.getSelectionModel().select(initial.family());
+        }
+        HBox familyRow = fontSettingsRow(familyLabel, familySelector);
+
+        Label sizeLabel = new Label();
+        sizeLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontSize"));
+        sizeLabel.getStyleClass().add("font-settings-row-label");
+        Button decreaseSize = new Button("−");
+        decreaseSize.getStyleClass().add("font-settings-size-button");
+        decreaseSize.setAccessibleText(I18N.text("settings.text.decrease"));
+        Button increaseSize = new Button("+");
+        increaseSize.getStyleClass().add("font-settings-size-button");
+        increaseSize.setAccessibleText(I18N.text("settings.text.increase"));
+        Label sizeValue = new Label(formatFontSize(initial.size()));
+        sizeValue.setMaxWidth(Double.MAX_VALUE);
+        sizeValue.getStyleClass().add("font-settings-size-value");
+        HBox.setHgrow(sizeValue, Priority.ALWAYS);
+        HBox sizeControl = new HBox(0.0d, decreaseSize, sizeValue, increaseSize);
+        sizeControl.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        sizeControl.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(sizeControl, Priority.ALWAYS);
+        sizeControl.getStyleClass().add("font-settings-size-control");
+        HBox sizeRow = fontSettingsRow(sizeLabel, sizeControl);
+
+        Label colorLabel = new Label();
+        colorLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontColor"));
+        colorLabel.getStyleClass().add("font-settings-row-label");
+        ColorPicker colorPicker = new ColorPicker(FONT_SETTINGS_SERVICE.colorForPicker(initial));
+        colorPicker.setMaxWidth(Double.MAX_VALUE);
+        colorPicker.getStyleClass().add("font-settings-color-picker");
+        HBox colorRow = fontSettingsRow(colorLabel, colorPicker);
+
+        Label previewTitle = new Label();
+        previewTitle.textProperty().bind(I18N.createStringBinding("settings.text.preview"));
+        previewTitle.getStyleClass().add("font-settings-preview-title");
+        Label previewPrimary = new Label();
+        previewPrimary.textProperty().bind(I18N.createStringBinding("settings.text.preview.primary"));
+        previewPrimary.getStyleClass().add("font-settings-preview-primary");
+        Label previewArray = new Label();
+        previewArray.textProperty().bind(I18N.createStringBinding("settings.text.preview.array"));
+        Label previewStep = new Label();
+        previewStep.textProperty().bind(I18N.createStringBinding("settings.text.preview.step"));
+        VBox preview = new VBox(4.0d, previewPrimary, previewArray, previewStep);
+        preview.getStyleClass().add("font-settings-preview");
+
+        Runnable refreshPreview = () -> FONT_SETTINGS_SERVICE.applyPreview(preview, draft[0]);
+
+        languageSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingControls[0] || newValue == null) {
+                return;
+            }
+            Locale newLocale = Locale.CHINESE;
+            if ("English".equals(newValue)) {
+                newLocale = Locale.ENGLISH;
+            }
+            if (I18N.getLocale().getLanguage().equals(newLocale.getLanguage())) {
+                return;
+            }
+            boolean defaultFamilySelected = familySelector.getSelectionModel().getSelectedIndex() == 0;
+            I18N.setLocale(newLocale);
+            updatingControls[0] = true;
+            String localizedDefault = I18N.text("settings.text.fontDefault");
+            familySelector.getItems().set(0, localizedDefault);
+            if (defaultFamilySelected) {
+                familySelector.getSelectionModel().select(0);
+            }
+            updatingControls[0] = false;
+            appendSystemLog(I18N.text(
+                    "message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+        });
+
+        familySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingControls[0] || newValue == null) {
+                return;
+            }
+            String family = newValue;
+            if (familySelector.getSelectionModel().getSelectedIndex() == 0) {
+                family = "";
+            }
+            draft[0] = new FontSettings(family, draft[0].size(), draft[0].color());
+            refreshPreview.run();
+        });
+        decreaseSize.setOnAction(event -> {
+            double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() - 1.0d);
+            draft[0] = new FontSettings(draft[0].family(), size, draft[0].color());
+            sizeValue.setText(formatFontSize(size));
+            refreshPreview.run();
+        });
+        increaseSize.setOnAction(event -> {
+            double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() + 1.0d);
+            draft[0] = new FontSettings(draft[0].family(), size, draft[0].color());
+            sizeValue.setText(formatFontSize(size));
+            refreshPreview.run();
+        });
+        colorPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingControls[0] || newValue == null) {
+                return;
+            }
+            draft[0] = new FontSettings(
+                    draft[0].family(), draft[0].size(), FONT_SETTINGS_SERVICE.toCssColor(newValue));
+            refreshPreview.run();
+        });
+
+        Button reset = new Button();
+        reset.textProperty().bind(I18N.createStringBinding("settings.text.reset"));
+        reset.getStyleClass().add("font-settings-reset-button");
+        reset.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(reset, Priority.ALWAYS);
+        Button apply = new Button();
+        apply.textProperty().bind(I18N.createStringBinding("settings.text.apply"));
+        apply.getStyleClass().add("font-settings-apply-button");
+        HBox footer = new HBox(10.0d, reset, apply);
+        footer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        footer.getStyleClass().add("font-settings-footer");
+
+        reset.setOnAction(event -> {
+            FontSettings defaults = FONT_SETTINGS_SERVICE.defaults();
+            updatingControls[0] = true;
+            familySelector.getSelectionModel().select(projectDefault);
+            sizeValue.setText(formatFontSize(defaults.size()));
+            colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
+            updatingControls[0] = false;
+            draft[0] = defaults;
+            refreshPreview.run();
+        });
+        apply.setOnAction(event -> {
+            FontSettings normalized = FONT_SETTINGS_SERVICE.normalize(draft[0]);
+            FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
+            FONT_SETTINGS_SERVICE.save(normalized);
+            appliedFontSettings = normalized;
+            updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
+            boolean timelineExpanded = timelineDetails != null && timelineDetails.isVisible();
+            setTimelineExpanded(timelineExpanded);
+            rootPane.requestLayout();
+            popup.hide();
+        });
+
+        content.getChildren().setAll(
+                title,
+                languageRow,
+                familyRow,
+                sizeRow,
+                colorRow,
+                new Separator(),
+                previewTitle,
+                preview,
+                new Separator(),
+                footer);
+        popupShell.getChildren().setAll(arrow, content);
+        FONT_SETTINGS_SERVICE.apply(popupShell, initial);
+        FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
+        WorkbenchTheme.apply(popupShell);
+        popup.getContent().setAll(popupShell);
+        return popup;
     }
 
-    private void applyUiFontScale(int scale, boolean persist) {
-        if (!UI_FONT_SCALES.contains(scale)) {
-            scale = DEFAULT_UI_FONT_SCALE;
-        }
-        uiFontScale = scale;
-        double fontSize = BASE_UI_FONT_SIZE * scale / 100.0d;
-        rootPane.setStyle(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", fontSize));
-        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
-        rootPane.requestLayout();
-        if (persist) {
-            UI_PREFERENCES.putInt(UI_FONT_SCALE_PREFERENCE, scale);
-        }
+    private HBox fontSettingsRow(Label label, Node control) {
+        label.setMinWidth(104.0d);
+        label.setPrefWidth(104.0d);
+        label.setMaxWidth(104.0d);
+        label.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
+        HBox.setHgrow(control, Priority.ALWAYS);
+        HBox row = new HBox(12.0d, label, control);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        row.getStyleClass().add("font-settings-row");
+        return row;
     }
 
-    private void handleUiFontScaleShortcut(KeyEvent event) {
-        if (!event.isControlDown()) {
-            return;
+    private String formatFontSize(double size) {
+        double rounded = Math.rint(size);
+        if (Math.abs(size - rounded) < 0.001d) {
+            return String.format(Locale.ROOT, "%.0f px", rounded);
         }
-        KeyCode code = event.getCode();
-        if (code == KeyCode.EQUALS || code == KeyCode.ADD) {
-            changeUiFontScale(1);
-            event.consume();
-            return;
-        }
-        if (code == KeyCode.MINUS || code == KeyCode.SUBTRACT) {
-            changeUiFontScale(-1);
-            event.consume();
-            return;
-        }
-        if (code == KeyCode.DIGIT0 || code == KeyCode.NUMPAD0) {
-            selectUiFontScale(DEFAULT_UI_FONT_SCALE);
-            event.consume();
-        }
-    }
-
-    private void changeUiFontScale(int direction) {
-        int currentScale = parseUiFontScale(fontScaleSelector.getValue());
-        int index = UI_FONT_SCALES.indexOf(currentScale);
-        if (index < 0) {
-            index = UI_FONT_SCALES.indexOf(DEFAULT_UI_FONT_SCALE);
-        }
-        int nextIndex = Math.max(0, Math.min(UI_FONT_SCALES.size() - 1, index + direction));
-        selectUiFontScale(UI_FONT_SCALES.get(nextIndex));
-    }
-
-    private void selectUiFontScale(int scale) {
-        fontScaleSelector.getSelectionModel().select(scale + "%");
+        return String.format(Locale.ROOT, "%.2f px", size);
     }
 
     private void setupValueTypeSelectors() {
@@ -950,6 +1137,8 @@ public class MainController implements Initializable {
 
     private Button createFamilyRailButton(WorkbenchModuleDefinition definition) {
         Button button = new Button();
+        button.setMinWidth(0.0d);
+        button.setPrefWidth(Region.USE_COMPUTED_SIZE);
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("family-rail-button");
         button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
@@ -1212,15 +1401,25 @@ public class MainController implements Initializable {
             timelineDetails.setVisible(expanded);
         }
         if (bottomDock != null) {
-            if (expanded) {
-                bottomDock.setMinHeight(96.0d);
-            } else {
-                bottomDock.setMinHeight(62.0d);
+            FontSettingsService.LayoutTier tier = currentTypographyTier();
+            double collapsedHeight = 62.0d;
+            double expandedMinHeight = 96.0d;
+            double expandedPrefHeight = 104.0d;
+            if (tier == FontSettingsService.LayoutTier.LARGE) {
+                collapsedHeight = 70.0d;
+                expandedMinHeight = 110.0d;
+                expandedPrefHeight = 120.0d;
+            } else if (tier == FontSettingsService.LayoutTier.XLARGE) {
+                collapsedHeight = 78.0d;
+                expandedMinHeight = 124.0d;
+                expandedPrefHeight = 136.0d;
             }
             if (expanded) {
-                bottomDock.setPrefHeight(104.0d);
+                bottomDock.setMinHeight(expandedMinHeight);
+                bottomDock.setPrefHeight(expandedPrefHeight);
             } else {
-                bottomDock.setPrefHeight(62.0d);
+                bottomDock.setMinHeight(collapsedHeight);
+                bottomDock.setPrefHeight(collapsedHeight);
             }
             bottomDock.getStyleClass().removeAll("timeline-collapsed", "timeline-expanded");
             if (expanded) {
@@ -1263,15 +1462,28 @@ public class MainController implements Initializable {
         if (structureHistoryDock == null || narrowLayout) {
             return;
         }
+        FontSettingsService.LayoutTier tier = currentTypographyTier();
+        double collapsedHeight = 52.0d;
+        double compactExpandedHeight = 124.0d;
+        double expandedHeight = 168.0d;
+        if (tier == FontSettingsService.LayoutTier.LARGE) {
+            collapsedHeight = 60.0d;
+            compactExpandedHeight = 146.0d;
+            expandedHeight = 190.0d;
+        } else if (tier == FontSettingsService.LayoutTier.XLARGE) {
+            collapsedHeight = 68.0d;
+            compactExpandedHeight = 168.0d;
+            expandedHeight = 214.0d;
+        }
         double height;
         if (structureHistoryExpanded) {
             if (compactLayout) {
-                height = 124.0d;
+                height = compactExpandedHeight;
             } else {
-                height = 168.0d;
+                height = expandedHeight;
             }
         } else {
-            height = 52.0d;
+            height = collapsedHeight;
         }
         structureHistoryDock.setMinHeight(height);
         structureHistoryDock.setPrefHeight(height);
@@ -1286,7 +1498,7 @@ public class MainController implements Initializable {
 
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(
-                structureWorkspaceBtn, algorithmWorkspaceBtn, langBtn,
+                structureWorkspaceBtn, algorithmWorkspaceBtn, fontSettingsBtn,
                 startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn,
                 stepForwardBtn, exportBtn, compareBtn, saveSnapshotBtn,
                 speed1Btn, speed2Btn, speed4Btn, speed8Btn, speed16Btn);
@@ -1340,62 +1552,14 @@ public class MainController implements Initializable {
         rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, compactLayout);
         rootPane.pseudoClassStateChanged(NARROW_LAYOUT, narrowLayout);
 
-        double familyWidth;
-        if (nextNarrowLayout) {
-            familyWidth = 84.0d;
-        } else if (nextCompactLayout) {
-            familyWidth = 104.0d;
-        } else {
-            familyWidth = 142.0d;
-        }
-        double controlWidth;
-        if (nextNarrowLayout) {
-            controlWidth = 220.0d;
-        } else if (nextCompactLayout) {
-            controlWidth = 250.0d;
-        } else {
-            controlWidth = 320.0d;
-        }
-        double inspectorWidth;
-        if (nextNarrowLayout) {
-            inspectorWidth = 196.0d;
-        } else if (nextCompactLayout) {
-            inspectorWidth = 260.0d;
-        } else {
-            inspectorWidth = 360.0d;
-        }
-        double topBarHeight;
-        if (nextNarrowLayout) {
-            topBarHeight = 52.0d;
-        } else if (nextCompactLayout) {
-            topBarHeight = 56.0d;
-        } else {
-            topBarHeight = 72.0d;
-        }
-        double brandWidth;
-        if (nextNarrowLayout) {
-            brandWidth = 220.0d;
-        } else if (nextCompactLayout) {
-            brandWidth = 300.0d;
-        } else {
-            brandWidth = 430.0d;
-        }
-        double modeWidth;
-        if (nextNarrowLayout) {
-            modeWidth = 250.0d;
-        } else if (nextCompactLayout) {
-            modeWidth = 300.0d;
-        } else {
-            modeWidth = 420.0d;
-        }
-        double contextWidth;
-        if (nextNarrowLayout) {
-            contextWidth = 220.0d;
-        } else if (nextCompactLayout) {
-            contextWidth = 320.0d;
-        } else {
-            contextWidth = 500.0d;
-        }
+        ResponsiveGeometry geometry = responsiveGeometry(nextCompactLayout, nextNarrowLayout);
+        double familyWidth = geometry.familyWidth();
+        double controlWidth = geometry.controlWidth();
+        double inspectorWidth = geometry.inspectorWidth();
+        double topBarHeight = geometry.topBarHeight();
+        double brandWidth = geometry.brandWidth();
+        double modeWidth = geometry.modeWidth();
+        double contextWidth = geometry.contextWidth();
 
         setFixedWidth(structureFamilyRail, familyWidth);
         setFixedWidth(algorithmFamilyRail, familyWidth);
@@ -1407,6 +1571,9 @@ public class MainController implements Initializable {
         setFixedWidth(workspaceModeBox, modeWidth);
         setFixedWidth(topContextZone, contextWidth);
         setFixedHeight(topBar, topBarHeight);
+        setOverlayGeometry(structureSelectionOverlay, geometry.overlayWidth());
+        setOverlayGeometry(currentStepOverlay, geometry.overlayWidth());
+        setOverlayGeometry(algorithmSelectionOverlay, geometry.overlayWidth());
 
         snapshotPanel.setManaged(true);
         snapshotPanel.setVisible(true);
@@ -1417,8 +1584,64 @@ public class MainController implements Initializable {
         setControlVisibility(brandSubtitle, !nextNarrowLayout);
         setControlVisibility(topContextLabel, !nextNarrowLayout);
         setControlVisibility(runIdLabel, !nextCompactLayout);
-        setControlVisibility(langBtn, false);
+        setControlVisibility(fontSettingsBtn, true);
         applyResponsiveControlDensity(nextCompactLayout);
+    }
+
+    private FontSettingsService.LayoutTier currentTypographyTier() {
+        return FONT_SETTINGS_SERVICE.layoutTier(appliedFontSettings);
+    }
+
+    private ResponsiveGeometry responsiveGeometry(boolean compact, boolean narrow) {
+        FontSettingsService.LayoutTier tier = currentTypographyTier();
+        if (narrow) {
+            if (tier == FontSettingsService.LayoutTier.XLARGE) {
+                return new ResponsiveGeometry(132.0d, 300.0d, 280.0d, 64.0d, 220.0d, 250.0d, 220.0d, 270.0d);
+            }
+            if (tier == FontSettingsService.LayoutTier.LARGE) {
+                return new ResponsiveGeometry(108.0d, 280.0d, 240.0d, 58.0d, 220.0d, 250.0d, 220.0d, 240.0d);
+            }
+            return new ResponsiveGeometry(84.0d, 220.0d, 196.0d, 52.0d, 220.0d, 250.0d, 220.0d, 220.0d);
+        }
+        if (compact) {
+            if (tier == FontSettingsService.LayoutTier.XLARGE) {
+                return new ResponsiveGeometry(166.0d, 340.0d, 360.0d, 72.0d, 300.0d, 300.0d, 320.0d, 290.0d);
+            }
+            if (tier == FontSettingsService.LayoutTier.LARGE) {
+                return new ResponsiveGeometry(138.0d, 300.0d, 320.0d, 64.0d, 300.0d, 300.0d, 320.0d, 260.0d);
+            }
+            return new ResponsiveGeometry(104.0d, 250.0d, 260.0d, 56.0d, 300.0d, 300.0d, 320.0d, 220.0d);
+        }
+        if (tier == FontSettingsService.LayoutTier.XLARGE) {
+            return new ResponsiveGeometry(208.0d, 420.0d, 460.0d, 86.0d, 430.0d, 420.0d, 500.0d, 320.0d);
+        }
+        if (tier == FontSettingsService.LayoutTier.LARGE) {
+            return new ResponsiveGeometry(172.0d, 360.0d, 410.0d, 78.0d, 430.0d, 420.0d, 500.0d, 280.0d);
+        }
+        return new ResponsiveGeometry(142.0d, 320.0d, 360.0d, 72.0d, 430.0d, 420.0d, 500.0d, 220.0d);
+    }
+
+    private static void setOverlayGeometry(Region overlay, double width) {
+        if (overlay == null) {
+            return;
+        }
+        overlay.setMinWidth(width);
+        overlay.setPrefWidth(width);
+        overlay.setMaxWidth(width);
+        overlay.setMinHeight(Region.USE_COMPUTED_SIZE);
+        overlay.setPrefHeight(Region.USE_COMPUTED_SIZE);
+        overlay.setMaxHeight(Region.USE_PREF_SIZE);
+    }
+
+    private record ResponsiveGeometry(
+            double familyWidth,
+            double controlWidth,
+            double inspectorWidth,
+            double topBarHeight,
+            double brandWidth,
+            double modeWidth,
+            double contextWidth,
+            double overlayWidth) {
     }
 
     private static void setFixedWidth(Region region, double width) {
@@ -1494,15 +1717,9 @@ public class MainController implements Initializable {
         }
         double width;
         if (compact) {
-            width = 182.0d;
+            width = 190.0d;
         } else {
-            width = 196.0d;
-        }
-        if (uiFontScale >= 125) {
-            width += 8.0d;
-        }
-        if (uiFontScale >= 140) {
-            width += 8.0d;
+            width = 204.0d;
         }
         rail.setPrefWidth(Math.min(220.0d, width));
     }
