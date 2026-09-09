@@ -146,6 +146,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         java.lang.String value = state.value();
         int size = value.length();
         boolean sourceReplacement = !firstRender
+                && !animations.isScrubbing()
                 && state.mutation().type() == StringViewState.Type.NONE
                 && !state.completed()
                 && !value.equals(lastRenderedValue);
@@ -170,8 +171,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
         List<Animation> immediateTransitions = new ArrayList<>();
         Set<StringCellView> enteringCells = new LinkedHashSet<>();
-        boolean geometryMutation = prepareCellIdentityForMutation(
-                state.mutation(), lastRenderedValue.length(), size, immediateTransitions);
+        boolean geometryMutation = false;
+        if (!animations.isScrubbing()) {
+            geometryMutation = prepareCellIdentityForMutation(
+                    state.mutation(), lastRenderedValue.length(), size, immediateTransitions);
+        }
 
         if (size == 0) {
             invalidateLayout();
@@ -243,8 +247,16 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     public void selectIndex(int index) {
-        if (index < 0) {
+        if (!showSelection(index)) {
             return;
+        }
+        onIndexSelected.accept(index);
+    }
+
+    /** Keeps a presentation selection on the same character index without re-firing the click callback. */
+    public boolean showSelection(int index) {
+        if (index < 0) {
+            return false;
         }
         StringViewState state = currentState();
         int currentSize;
@@ -254,17 +266,17 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             currentSize = state.value().length();
         }
         if (index >= currentSize) {
-            return;
+            return false;
         }
+        selectedIndex = index;
         if (!cells.containsKey(index)) {
             pendingSelectedIndex = index;
             requestRender();
-            return;
+            return true;
         }
         pendingSelectedIndex = -1;
-        selectedIndex = index;
         applySelectionState();
-        onIndexSelected.accept(index);
+        return true;
     }
 
     private void applySelectionState() {

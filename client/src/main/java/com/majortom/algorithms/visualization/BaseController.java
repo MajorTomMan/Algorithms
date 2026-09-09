@@ -134,7 +134,25 @@ public abstract class BaseController<S> implements Initializable {
             (observable, oldValue, newValue) -> {
                 if (!updatingTimelineSlider && !running.get()
                         && timelineSlider != null && timelineSlider.isValueChanging()) {
-                    seekTimeline(newValue.doubleValue());
+                    seekTimelineDuringDrag(newValue.doubleValue());
+                }
+            };
+    private boolean timelineDragScrubbing;
+    private long scrubGeneration;
+    private final ChangeListener<Boolean> timelineSliderChangingListener =
+            (observable, oldValue, newValue) -> {
+                if (updatingTimelineSlider || running.get() || timelineSlider == null) {
+                    return;
+                }
+                if (Boolean.TRUE.equals(newValue)) {
+                    timelineDragScrubbing = true;
+                    beginScrubbing();
+                    return;
+                }
+                if (timelineDragScrubbing) {
+                    timelineDragScrubbing = false;
+                    seekTimelineDuringDrag(timelineSlider.getValue());
+                    releaseScrubbingAfterQueuedRender(scrubGeneration);
                 }
             };
     private boolean disposed;
@@ -337,37 +355,53 @@ public abstract class BaseController<S> implements Initializable {
         if (!hasExecutionData()) {
             return;
         }
+        boolean dragActive = timelineSlider != null && timelineSlider.isValueChanging();
+        if (!dragActive) {
+            beginScrubbing();
+        }
+        seekTimelineDuringDrag(progress);
+        if (!dragActive) {
+            releaseScrubbingAfterQueuedRender(scrubGeneration);
+        }
+    }
+
+    private void seekTimelineDuringDrag(double progress) {
+        if (!hasExecutionData()) {
+            return;
+        }
         stopReplay();
         int size = lastTimeline.size();
         int index = (int) Math.round(progress * (size - 1));
         index = Math.max(0, Math.min(size - 1, index));
-        if (visualizer != null) {
-            visualizer.setScrubbing(true);
-        }
-        boolean sought;
-        try {
-            sought = seekReplayFrame(index);
-        } finally {
-            releaseScrubbingAfterQueuedRender();
-        }
-        if (!sought) {
+        if (!seekReplayFrame(index)) {
             return;
         }
         paused.set(true);
         syncTimelineSlider(index, size);
     }
 
+    private void beginScrubbing() {
+        scrubGeneration++;
+        if (visualizer != null) {
+            visualizer.setScrubbing(true);
+        }
+    }
 
     /**
-     * Visualizers render through Platform.runLater. Keep scrub mode active until that queued draw
-     * has consumed the absolute replay state, then release it on the following FX queue turn.
+     * Visualizers render through Platform.runLater. A generation token prevents a stale seek from
+     * ending a newer scrub session while the slider is being dragged quickly.
      */
-    private void releaseScrubbingAfterQueuedRender() {
+    private void releaseScrubbingAfterQueuedRender(long generation) {
         BaseVisualizer<S> scrubVisualizer = visualizer;
         if (scrubVisualizer == null) {
             return;
         }
-        Platform.runLater(() -> scrubVisualizer.setScrubbing(false));
+        Platform.runLater(() -> {
+            if (generation != scrubGeneration || timelineDragScrubbing) {
+                return;
+            }
+            scrubVisualizer.setScrubbing(false);
+        });
     }
 
     public final boolean hasExecutionData() {
@@ -448,6 +482,7 @@ public abstract class BaseController<S> implements Initializable {
             int lastFrame = timeline.size() - 1;
             if (seekReplayFrame(lastFrame)) {
                 syncTimelineSlider(lastFrame, timeline.size());
+                refreshPresentationSelection();
             }
         }
         if (error != null) {
@@ -530,6 +565,18 @@ public abstract class BaseController<S> implements Initializable {
         latestViewState = state;
         if (visualizer != null) {
             visualizer.render(state);
+        }
+        onPresentationStateChanged(state);
+    }
+
+    /** Called whenever the visible Algorithm presentation state advances or seeks to another frame. */
+    protected void onPresentationStateChanged(S state) {
+    }
+
+    /** Re-resolves a persistent user selection against the currently visible Algorithm frame. */
+    private void refreshPresentationSelection() {
+        if (latestViewState != null) {
+            onPresentationStateChanged(latestViewState);
         }
     }
 
@@ -791,6 +838,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (timelineSlider != null) {
             timelineSlider.valueProperty().removeListener(timelineSliderListener);
+            timelineSlider.valueChangingProperty().removeListener(timelineSliderChangingListener);
         }
         if (delayMs.isBound()) {
             delayMs.unbind();
@@ -945,6 +993,7 @@ public abstract class BaseController<S> implements Initializable {
         if (this.timelineSlider != null) {
             timelineSlider.setDisable(true);
             timelineSlider.valueProperty().addListener(timelineSliderListener);
+            timelineSlider.valueChangingProperty().addListener(timelineSliderChangingListener);
         }
         setupGlobalButtonActions();
         refreshStatsDisplay();
@@ -1022,9 +1071,8 @@ public abstract class BaseController<S> implements Initializable {
         int exactEventIndex = Math.max(0, Math.min(lastTimeline.events().size() - 1, eventIndex));
         int frameIndex = lastTimeline.frameIndexAtOrBeforeEvent(exactEventIndex);
         stopReplay();
-        if (visualizer != null) {
-            visualizer.setScrubbing(true);
-        }
+        beginScrubbing();
+        long generation = scrubGeneration;
         try {
             if (frameIndex >= 0) {
                 if (!seekReplayFrame(frameIndex)) {
@@ -1035,7 +1083,7 @@ public abstract class BaseController<S> implements Initializable {
                 renderState(lastTimeline.initialState());
             }
         } finally {
-            releaseScrubbingAfterQueuedRender();
+            releaseScrubbingAfterQueuedRender(generation);
         }
         paused.set(true);
         presentationEventIndex = exactEventIndex;

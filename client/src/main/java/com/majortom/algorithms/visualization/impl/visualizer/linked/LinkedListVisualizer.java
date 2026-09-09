@@ -134,11 +134,15 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
                 }
                 view.setHighlighted(false);
                 if (previous != null && !java.util.Objects.equals(previous.value(), node.value())) {
-                    view.setHighlighted(true);
-                    PauseTransition clearHighlight = new PauseTransition(Duration.millis(360.0d));
-                    NodeView highlightedView = view;
-                    clearHighlight.setOnFinished(event -> highlightedView.setHighlighted(false));
-                    transitions.add(clearHighlight);
+                    if (animations.isScrubbing()) {
+                        view.setHighlighted(false);
+                    } else {
+                        view.setHighlighted(true);
+                        PauseTransition clearHighlight = new PauseTransition(Duration.millis(360.0d));
+                        NodeView highlightedView = view;
+                        clearHighlight.setOnFinished(event -> highlightedView.setHighlighted(false));
+                        transitions.add(clearHighlight);
+                    }
                 }
             }
         }
@@ -490,18 +494,26 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     public void selectNode(long nodeId) {
-        LinkedListViewState state = currentState();
-        if (!nodeViews.containsKey(nodeId)) {
-            if (state != null && state.nodes().containsKey(nodeId)) {
-                pendingSelectedNodeId = nodeId;
-                requestRender();
-            }
+        if (!showSelection(nodeId)) {
             return;
         }
-        pendingSelectedNodeId = null;
-        selectedNodeId = nodeId;
-        syncSelection();
         selectionListener.accept(nodeId);
+    }
+
+    public boolean showSelection(long nodeId) {
+        LinkedListViewState state = currentState();
+        if (state == null || !state.nodes().containsKey(nodeId)) {
+            return false;
+        }
+        selectedNodeId = nodeId;
+        if (!nodeViews.containsKey(nodeId)) {
+            pendingSelectedNodeId = nodeId;
+            requestRender();
+            return true;
+        }
+        pendingSelectedNodeId = null;
+        syncSelection();
+        return true;
     }
 
     private void syncSelection() {

@@ -57,6 +57,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private boolean solving;
     private Operation selectedOperation = Operation.GENERATE;
     private boolean structureSelectionEnabled = true;
+    private GridPoint algorithmSelectedCell;
     private Consumer<CellSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
 
@@ -555,7 +556,25 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             return;
         }
         String cellState = cellState(state, point);
+        if (!structureSelectionEnabled) {
+            algorithmSelectedCell = point;
+        }
         selectionListener.accept(new CellSelection(point.row(), point.column(), cellState));
+    }
+
+    @Override
+    protected void onPresentationStateChanged(MazeViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedCell == null) {
+            return;
+        }
+        GridPoint point = algorithmSelectedCell;
+        if (point.row() < 0 || point.row() >= state.rows()
+                || point.column() < 0 || point.column() >= state.columns()) {
+            clearCellSelection();
+            return;
+        }
+        mazeVisualizer().showSelection(point);
+        selectionListener.accept(new CellSelection(point.row(), point.column(), cellState(state, point)));
     }
 
     private String cellState(MazeViewState state, GridPoint point) {
@@ -570,6 +589,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private void clearCellSelection() {
+        algorithmSelectedCell = null;
         mazeVisualizer().clearSelection();
         selectionListener.accept(null);
     }

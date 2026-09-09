@@ -101,6 +101,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         stopActiveAnimation();
         int size = state.values().size();
         boolean sourceReplacement = !firstRender
+                && !animations.isScrubbing()
                 && state.mutation().type() == ArrayViewState.Type.NONE
                 && !state.completed()
                 && !state.values().equals(lastRenderedValues);
@@ -114,10 +115,6 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         if (selectedIndex >= size) {
             selectedIndex = -1;
         }
-        if (state.completed()) {
-            selectedIndex = -1;
-            pendingSelectedIndex = -1;
-        }
         boolean pendingSelectionApplied = false;
         if (pendingSelectedIndex >= 0) {
             if (pendingSelectedIndex < size) {
@@ -130,8 +127,11 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         List<Animation> immediateTransitions = new ArrayList<>();
         Set<ArrayCellView> enteringCells = new LinkedHashSet<>();
         Set<ArrayCellView> swappedCells = new LinkedHashSet<>();
-        boolean geometryMutation = prepareCellIdentityForMutation(
-                state.mutation(), lastRenderedValues.size(), size, immediateTransitions, swappedCells);
+        boolean geometryMutation = false;
+        if (!animations.isScrubbing()) {
+            geometryMutation = prepareCellIdentityForMutation(
+                    state.mutation(), lastRenderedValues.size(), size, immediateTransitions, swappedCells);
+        }
 
         if (size == 0) {
             invalidateLayout();
@@ -199,8 +199,16 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     }
 
     public void selectIndex(int index) {
-        if (index < 0) {
+        if (!showSelection(index)) {
             return;
+        }
+        onIndexSelected.accept(index);
+    }
+
+    /** Keeps a presentation selection on the same Array index without re-firing the user click callback. */
+    public boolean showSelection(int index) {
+        if (index < 0) {
+            return false;
         }
         ArrayViewState state = currentState();
         int currentSize;
@@ -210,17 +218,17 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             currentSize = state.values().size();
         }
         if (index >= currentSize) {
-            return;
+            return false;
         }
+        selectedIndex = index;
         if (!cells.containsKey(index)) {
             pendingSelectedIndex = index;
             requestRender();
-            return;
+            return true;
         }
         pendingSelectedIndex = -1;
-        selectedIndex = index;
         applySelectionState();
-        onIndexSelected.accept(index);
+        return true;
     }
 
     private void applySelectionState() {

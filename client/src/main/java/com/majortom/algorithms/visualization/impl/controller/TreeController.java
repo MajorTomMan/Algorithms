@@ -46,7 +46,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private StructureSnapshot<TreeSnapshotState<Integer>> algorithmInputSnapshot;
     private Consumer<NodeSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private boolean structureSelectionEnabled = true;
     private Long selectedNodeId;
+    private Long algorithmSelectedNodeId;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -97,11 +99,60 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
     }
 
+    public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearNodeSelection();
+        }
+        structureSelectionEnabled = enabled;
+    }
+
     private void handleVisualSelection(long nodeId) {
+        if (!structureSelectionEnabled) {
+            handleAlgorithmSelection(nodeId);
+            return;
+        }
         if (activeVariant == TreeVariant.GENERAL) {
             handleGeneralSelection(nodeId);
         } else {
             handleAvlSelection(nodeId);
+        }
+    }
+
+    private void handleAlgorithmSelection(long nodeId) {
+        TreeViewState state = latestViewState();
+        if (state == null) {
+            return;
+        }
+        algorithmSelectedNodeId = nodeId;
+        if (!publishAlgorithmSelection(state, nodeId)) {
+            clearNodeSelection();
+        }
+    }
+
+    private boolean publishAlgorithmSelection(TreeViewState state, long nodeId) {
+        TreeViewState.Node node = state.nodes().get(nodeId);
+        if (node == null) {
+            return false;
+        }
+        Long parentId = presentationParentId(state, nodeId);
+        int depth = presentationDepth(state, nodeId);
+        selectionListener.accept(new NodeSelection(
+                nodeId,
+                node.value(),
+                parentId,
+                state.childrenOf(node).size(),
+                depth));
+        return true;
+    }
+
+    @Override
+    protected void onPresentationStateChanged(TreeViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedNodeId == null) {
+            return;
+        }
+        long nodeId = algorithmSelectedNodeId;
+        if (!treeVisualizer().showSelection(nodeId) || !publishAlgorithmSelection(state, nodeId)) {
+            clearNodeSelection();
         }
     }
 
@@ -849,6 +900,44 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return avlDepthOf(right(root), target, depth + 1);
     }
 
+    private Long presentationParentId(TreeViewState state, long nodeId) {
+        for (TreeViewState.Node candidate : state.nodes().values()) {
+            if (state.childrenOf(candidate).contains(nodeId)) {
+                return candidate.id();
+            }
+        }
+        return null;
+    }
+
+    private int presentationDepth(TreeViewState state, long nodeId) {
+        return presentationDepth(state, state.rootId(), nodeId, 0, new java.util.HashSet<>());
+    }
+
+    private int presentationDepth(
+            TreeViewState state,
+            Long currentId,
+            long targetId,
+            int depth,
+            java.util.Set<Long> visited) {
+        if (currentId == null || !visited.add(currentId)) {
+            return -1;
+        }
+        if (currentId == targetId) {
+            return depth;
+        }
+        TreeViewState.Node current = state.nodes().get(currentId);
+        if (current == null) {
+            return -1;
+        }
+        for (Long childId : state.childrenOf(current)) {
+            int found = presentationDepth(state, childId, targetId, depth + 1, visited);
+            if (found >= 0) {
+                return found;
+            }
+        }
+        return -1;
+    }
+
     private int generalHeight(GeneralTreeSnapshot.Node<Integer> node) {
         if (node == null) {
             return 0;
@@ -869,6 +958,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void clearNodeSelection() {
         selectedNodeId = null;
+        algorithmSelectedNodeId = null;
         treeVisualizer().clearSelection();
         selectionListener.accept(null);
         refreshOperationAvailability();

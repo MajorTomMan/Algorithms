@@ -51,6 +51,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private StructureSnapshot<GraphSnapshotState<Integer>> algorithmInputSnapshot;
     private int startNode;
     private boolean structureSelectionEnabled = true;
+    private Long algorithmSelectedNodeId;
+    private Long algorithmSelectedEdgeId;
     private Consumer<Selection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
 
@@ -1050,6 +1052,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (state == null) {
             return;
         }
+        algorithmSelectedNodeId = nodeId;
+        algorithmSelectedEdgeId = null;
+        if (!publishAlgorithmNodeSelection(state, nodeId)) {
+            clearVisualSelection();
+        }
+    }
+
+    private boolean publishAlgorithmNodeSelection(GraphViewState state, long nodeId) {
         GraphViewState.Node selected = null;
         for (GraphViewState.Node node : state.nodes()) {
             if (node.id() == nodeId) {
@@ -1058,8 +1068,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         }
         if (selected == null) {
-            clearVisualSelection();
-            return;
+            return false;
         }
         int degree = 0;
         for (GraphViewState.Edge edge : state.edges()) {
@@ -1068,6 +1077,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         }
         selectionListener.accept(new NodeSelection(nodeId, selected.value(), degree));
+        return true;
     }
 
     private void handleVisualEdgeSelection(long edgeId) {
@@ -1104,6 +1114,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (state == null) {
             return;
         }
+        algorithmSelectedEdgeId = edgeId;
+        algorithmSelectedNodeId = null;
+        if (!publishAlgorithmEdgeSelection(state, edgeId)) {
+            clearVisualSelection();
+        }
+    }
+
+    private boolean publishAlgorithmEdgeSelection(GraphViewState state, long edgeId) {
         GraphViewState.Edge selected = null;
         for (GraphViewState.Edge edge : state.edges()) {
             if (edge.id() == edgeId) {
@@ -1112,16 +1130,35 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         }
         if (selected == null) {
-            clearVisualSelection();
-            return;
+            return false;
         }
         GraphViewState.Node from = state.nodesById().get(selected.fromId());
         GraphViewState.Node to = state.nodesById().get(selected.toId());
         if (from == null || to == null) {
-            clearVisualSelection();
-            return;
+            return false;
         }
         selectionListener.accept(new EdgeSelection(edgeId, from.value(), to.value(), state.directed()));
+        return true;
+    }
+
+    @Override
+    protected void onPresentationStateChanged(GraphViewState state) {
+        if (structureSelectionEnabled) {
+            return;
+        }
+        if (algorithmSelectedNodeId != null) {
+            long nodeId = algorithmSelectedNodeId;
+            if (!graphVisualizer().showNodeSelection(nodeId) || !publishAlgorithmNodeSelection(state, nodeId)) {
+                clearVisualSelection();
+            }
+            return;
+        }
+        if (algorithmSelectedEdgeId != null) {
+            long edgeId = algorithmSelectedEdgeId;
+            if (!graphVisualizer().showEdgeSelection(edgeId) || !publishAlgorithmEdgeSelection(state, edgeId)) {
+                clearVisualSelection();
+            }
+        }
     }
 
     private String formatWeight(double weight) {
@@ -1132,6 +1169,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void clearVisualSelection() {
+        algorithmSelectedNodeId = null;
+        algorithmSelectedEdgeId = null;
         graphVisualizer().clearSelection();
         selectionListener.accept(null);
     }

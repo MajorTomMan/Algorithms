@@ -29,6 +29,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private static final String MODULE_ID = "linked-list";
 
     private final LinkedStructure<Integer> linkedList;
+    private boolean structureSelectionEnabled = true;
+    private Long algorithmSelectedNodeId;
     private Consumer<NodeSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
@@ -342,13 +344,26 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         }
     }
 
+    public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearVisualSelection();
+        }
+        structureSelectionEnabled = enabled;
+    }
+
     private void handleVisualSelection(long nodeId) {
         if (nodeId <= 0L) {
             clearVisualSelection();
             return;
         }
+        if (!structureSelectionEnabled) {
+            handleAlgorithmSelection(nodeId);
+            return;
+        }
         LinkedListViewState state = latestStructureState();
-        if (state == null) state = currentState();
+        if (state == null) {
+            state = currentState();
+        }
         LinkedListViewState.Node node = state.nodes().get(nodeId);
         if (node == null) {
             clearVisualSelection();
@@ -357,8 +372,44 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         List<Long> order = orderedNodeIds(state);
         int index = order.indexOf(nodeId);
         valueField.setText(Integer.toString(node.value()));
-        if (index >= 0) indexField.setText(Integer.toString(index));
-        selectionListener.accept(new NodeSelection(node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+        if (index >= 0) {
+            indexField.setText(Integer.toString(index));
+        }
+        selectionListener.accept(new NodeSelection(
+                node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+    }
+
+    private void handleAlgorithmSelection(long nodeId) {
+        LinkedListViewState state = latestViewState();
+        if (state == null) {
+            return;
+        }
+        algorithmSelectedNodeId = nodeId;
+        if (!publishAlgorithmSelection(state, nodeId)) {
+            clearVisualSelection();
+        }
+    }
+
+    private boolean publishAlgorithmSelection(LinkedListViewState state, long nodeId) {
+        LinkedListViewState.Node node = state.nodes().get(nodeId);
+        if (node == null) {
+            return false;
+        }
+        int index = orderedNodeIds(state).indexOf(nodeId);
+        selectionListener.accept(new NodeSelection(
+                node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+        return true;
+    }
+
+    @Override
+    protected void onPresentationStateChanged(LinkedListViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedNodeId == null) {
+            return;
+        }
+        long nodeId = algorithmSelectedNodeId;
+        if (!linkedVisualizer().showSelection(nodeId) || !publishAlgorithmSelection(state, nodeId)) {
+            clearVisualSelection();
+        }
     }
 
     private List<Long> orderedNodeIds(LinkedListViewState state) {
@@ -376,6 +427,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void clearVisualSelection() {
+        algorithmSelectedNodeId = null;
         linkedVisualizer().clearSelection();
         selectionListener.accept(null);
     }

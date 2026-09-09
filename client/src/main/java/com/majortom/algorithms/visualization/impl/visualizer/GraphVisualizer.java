@@ -430,41 +430,57 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public void selectNode(long nodeId) {
-        GraphViewState state = currentState();
-        if (!nodeViews.containsKey(nodeId)) {
-            boolean exists = state != null && state.nodes().stream().anyMatch(node -> node.id() == nodeId);
-            if (exists) {
-                pendingSelectedNodeId = nodeId;
-                pendingSelectedEdgeId = null;
-                requestRender();
-            }
+        if (!showNodeSelection(nodeId)) {
             return;
         }
-        pendingSelectedNodeId = null;
-        pendingSelectedEdgeId = null;
-        selectedNodeId = nodeId;
-        selectedEdgeId = null;
-        syncSelectionState();
         nodeSelectionListener.accept(nodeId);
     }
 
-    public void selectEdge(long edgeId) {
+    public boolean showNodeSelection(long nodeId) {
         GraphViewState state = currentState();
-        if (!edgeViews.containsKey(edgeId)) {
-            boolean exists = state != null && state.edges().stream().anyMatch(edge -> edge.id() == edgeId);
-            if (exists) {
-                pendingSelectedEdgeId = edgeId;
-                pendingSelectedNodeId = null;
-                requestRender();
-            }
+        boolean exists = state != null && state.nodes().stream().anyMatch(node -> node.id() == nodeId);
+        if (!exists) {
+            return false;
+        }
+        selectedNodeId = nodeId;
+        selectedEdgeId = null;
+        if (!nodeViews.containsKey(nodeId)) {
+            pendingSelectedNodeId = nodeId;
+            pendingSelectedEdgeId = null;
+            requestRender();
+            return true;
+        }
+        pendingSelectedNodeId = null;
+        pendingSelectedEdgeId = null;
+        syncSelectionState();
+        return true;
+    }
+
+    public void selectEdge(long edgeId) {
+        if (!showEdgeSelection(edgeId)) {
             return;
+        }
+        edgeSelectionListener.accept(edgeId);
+    }
+
+    public boolean showEdgeSelection(long edgeId) {
+        GraphViewState state = currentState();
+        boolean exists = state != null && state.edges().stream().anyMatch(edge -> edge.id() == edgeId);
+        if (!exists) {
+            return false;
+        }
+        selectedEdgeId = edgeId;
+        selectedNodeId = null;
+        if (!edgeViews.containsKey(edgeId)) {
+            pendingSelectedEdgeId = edgeId;
+            pendingSelectedNodeId = null;
+            requestRender();
+            return true;
         }
         pendingSelectedEdgeId = null;
         pendingSelectedNodeId = null;
-        selectedEdgeId = edgeId;
-        selectedNodeId = null;
         syncSelectionState();
-        edgeSelectionListener.accept(edgeId);
+        return true;
     }
 
     private void syncSelectionState() {

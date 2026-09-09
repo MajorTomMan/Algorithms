@@ -4,7 +4,8 @@
 <?import java.lang.String?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0"
+    maxWidth="Infinity"
     styleClass="module-control-panel" stylesheets="@../style/theme.css">
     <VBox spacing="7">
         <styleClass>
@@ -51,13 +52,22 @@
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="nodeField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <Button fx:id="addNodeBtn" onAction="#handleAddNode">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
             <Button fx:id="deleteNodeBtn" onAction="#handleDeleteNode">
-                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+                <styleClass>
+                    <String fx:value="btn-ran-red" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
     </VBox>
@@ -77,26 +87,46 @@
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="fromField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <TextField fx:id="toField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="weightField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <Button fx:id="setWeightBtn" onAction="#handleSetWeight">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+                <styleClass>
+                    <String fx:value="btn-ran-gold" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="addEdgeBtn" onAction="#handleAddEdge" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="addEdgeBtn" onAction="#handleAddEdge" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
-            <Button fx:id="deleteEdgeBtn" onAction="#handleDeleteEdge" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="deleteEdgeBtn" onAction="#handleDeleteEdge" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-red" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
     </VBox>
@@ -121,13 +151,20 @@
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="startField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <Button fx:id="setStartBtn" onAction="#handleSetStart">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+                <styleClass>
+                    <String fx:value="btn-ran-gold" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
-        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false" maxWidth="Infinity">
+        <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false"
+            maxWidth="Infinity">
             <styleClass>
                 <String fx:value="btn-run-neon" />
                 <String fx:value="operation-button" />

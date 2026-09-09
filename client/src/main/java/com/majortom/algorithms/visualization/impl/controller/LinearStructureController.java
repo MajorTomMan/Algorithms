@@ -32,6 +32,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private final String moduleId;
     private final StackStructure<Integer> stack;
     private final QueueStructure<Integer> queue;
+    private boolean structureSelectionEnabled = true;
+    private int algorithmSelectedIndex = -1;
     private Consumer<ItemSelection> selectionListener = ignored -> { };
 
     @FXML private Label typeLabel;
@@ -365,7 +367,18 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
     }
 
+    public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearVisualSelection();
+        }
+        structureSelectionEnabled = enabled;
+    }
+
     private void handleVisualSelection(int index) {
+        if (!structureSelectionEnabled) {
+            handleAlgorithmSelection(index);
+            return;
+        }
         List<Integer> current = values();
         if (index < 0 || index >= current.size()) {
             clearVisualSelection();
@@ -373,26 +386,67 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
         int value = current.get(index);
         valueField.setText(Integer.toString(value));
-        String role;
+        selectionListener.accept(new ItemSelection(index, value, selectionRole(index, current.size()), current.size()));
+    }
+
+    private void handleAlgorithmSelection(int index) {
+        LinearStructureViewState state = latestViewState();
+        if (state == null || index < 0 || index >= state.values().size()) {
+            return;
+        }
+        algorithmSelectedIndex = index;
+        publishAlgorithmSelection(state, index);
+    }
+
+    private void publishAlgorithmSelection(LinearStructureViewState state, int index) {
+        int size = state.values().size();
+        int value = state.values().get(index);
+        selectionListener.accept(new ItemSelection(index, value, selectionRole(index, size), size));
+    }
+
+    @Override
+    protected void onPresentationStateChanged(LinearStructureViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedIndex < 0) {
+            return;
+        }
+        if (algorithmSelectedIndex >= state.values().size()) {
+            clearVisualSelection();
+            return;
+        }
+        boolean shown;
+        if (kind == Kind.STACK) {
+            shown = stackVisualizer().showSelection(algorithmSelectedIndex);
+        } else {
+            shown = queueVisualizer().showSelection(algorithmSelectedIndex);
+        }
+        if (!shown) {
+            clearVisualSelection();
+            return;
+        }
+        publishAlgorithmSelection(state, algorithmSelectedIndex);
+    }
+
+    private String selectionRole(int index, int size) {
         if (kind == Kind.STACK) {
             if (index == 0) {
-                role = "TOP";
-            } else {
-                role = "ITEM";
+                return "TOP";
             }
-        } else if (current.size() == 1) {
-            role = "FRONT / REAR";
-        } else if (index == 0) {
-            role = "FRONT";
-        } else if (index == current.size() - 1) {
-            role = "REAR";
-        } else {
-            role = "ITEM";
+            return "ITEM";
         }
-        selectionListener.accept(new ItemSelection(index, value, role, current.size()));
+        if (size == 1) {
+            return "FRONT / REAR";
+        }
+        if (index == 0) {
+            return "FRONT";
+        }
+        if (index == size - 1) {
+            return "REAR";
+        }
+        return "ITEM";
     }
 
     private void clearVisualSelection() {
+        algorithmSelectedIndex = -1;
         if (kind == Kind.STACK) stackVisualizer().clearSelection();
         else queueVisualizer().clearSelection();
         selectionListener.accept(null);

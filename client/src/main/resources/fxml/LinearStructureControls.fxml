@@ -4,7 +4,8 @@
 <?import java.lang.String?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0"
+    maxWidth="Infinity"
     styleClass="module-control-panel" stylesheets="@../style/theme.css">
     <VBox spacing="7">
         <styleClass>
@@ -50,22 +51,39 @@
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="valueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <TextField fx:id="indexField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="primaryBtn" onAction="#handlePrimary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="primaryBtn" onAction="#handlePrimary" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
-            <Button fx:id="secondaryBtn" onAction="#handleSecondary" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="secondaryBtn" onAction="#handleSecondary" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-red" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
         <Button fx:id="quaternaryBtn" maxWidth="Infinity">
-            <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <styleClass>
+                <String fx:value="btn-ran-blue" />
+                <String fx:value="operation-button" />
+            </styleClass>
         </Button>
     </VBox>
 </VBox>

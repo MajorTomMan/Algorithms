@@ -77,7 +77,10 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         stopActiveAnimation();
         normalizeViews();
         List<Animation> transitions = new ArrayList<>();
-        Set<Integer> newIndexes = prepareIdentity(state.mutation(), transitions);
+        Set<Integer> newIndexes = Set.of();
+        if (!animations.isScrubbing()) {
+            newIndexes = prepareIdentity(state.mutation(), transitions);
+        }
 
         if (firstRender) {
             surface.markViewportPristine();
@@ -324,8 +327,15 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     public void selectIndex(int index) {
-        if (index < 0) {
+        if (!showSelection(index)) {
             return;
+        }
+        selectionListener.accept(index);
+    }
+
+    public boolean showSelection(int index) {
+        if (index < 0) {
+            return false;
         }
         LinearStructureViewState state = currentState();
         int currentSize;
@@ -335,17 +345,17 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             currentSize = state.values().size();
         }
         if (index >= currentSize) {
-            return;
+            return false;
         }
+        selectedIndex = index;
         if (!items.containsKey(index)) {
             pendingSelectedIndex = index;
             requestRender();
-            return;
+            return true;
         }
         pendingSelectedIndex = -1;
-        selectedIndex = index;
         syncSelection();
-        selectionListener.accept(index);
+        return true;
     }
 
     private void syncSelection() {

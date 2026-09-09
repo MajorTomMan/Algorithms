@@ -5,7 +5,8 @@
 <?import com.majortom.algorithms.visualization.impl.control.MazeAlgorithmStructureSelector?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0"
+    maxWidth="Infinity"
     styleClass="module-control-panel" stylesheets="@../style/theme.css">
     <VBox spacing="7">
         <styleClass>
@@ -110,7 +111,8 @@
         </HBox>
         <Label fx:id="operationHintLabel" styleClass="operation-hint" wrapText="true" />
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="buildBtn" onAction="#handleGenerate" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            <Button fx:id="buildBtn" onAction="#handleGenerate" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
                 <styleClass>
                     <String fx:value="btn-ran-blue" />
                     <String fx:value="operation-button" />

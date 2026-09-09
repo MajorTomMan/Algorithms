@@ -4,7 +4,8 @@
 <?import java.lang.String?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0" maxWidth="Infinity"
+    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0"
+    maxWidth="Infinity"
     styleClass="module-control-panel" stylesheets="@../style/theme.css">
     <VBox spacing="7">
         <styleClass>
@@ -51,30 +52,55 @@
         </HBox>
         <HBox spacing="6" styleClass="operation-row">
             <TextField fx:id="valueField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="dark-textfield" /><String fx:value="operation-input" /></styleClass>
+                <styleClass>
+                    <String fx:value="dark-textfield" />
+                    <String fx:value="operation-input" />
+                </styleClass>
             </TextField>
             <Button fx:id="randomBtn" onAction="#handleRandom">
-                <styleClass><String fx:value="btn-ran-gold" /><String fx:value="operation-button" /></styleClass>
+                <styleClass>
+                    <String fx:value="btn-ran-gold" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
         <Label fx:id="selectionHintLabel" styleClass="operation-hint" wrapText="true" />
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="addRootBtn" onAction="#handleAddRoot" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="addRootBtn" onAction="#handleAddRoot" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
-            <Button fx:id="addChildBtn" onAction="#handleAddChild" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="addChildBtn" onAction="#handleAddChild" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
         <Button fx:id="addParentBtn" onAction="#handleAddParent" maxWidth="Infinity">
-            <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <styleClass>
+                <String fx:value="btn-ran-blue" />
+                <String fx:value="operation-button" />
+            </styleClass>
         </Button>
         <HBox spacing="6" styleClass="operation-row">
-            <Button fx:id="deleteBtn" onAction="#handleDelete" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-red" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="deleteBtn" onAction="#handleDelete" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-red" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
-            <Button fx:id="updateBtn" onAction="#handleUpdate" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass><String fx:value="btn-ran-blue" /><String fx:value="operation-button" /></styleClass>
+            <Button fx:id="updateBtn" onAction="#handleUpdate" maxWidth="Infinity"
+                HBox.hgrow="ALWAYS">
+                <styleClass>
+                    <String fx:value="btn-ran-blue" />
+                    <String fx:value="operation-button" />
+                </styleClass>
             </Button>
         </HBox>
     </VBox>

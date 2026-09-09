@@ -42,6 +42,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
@@ -67,7 +68,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.prefs.Preferences;
 
 /**
@@ -461,6 +461,9 @@ public class MainController implements Initializable {
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
+    private boolean timelineRuntimeVisible = true;
+    private boolean timelineStructureVisible = true;
+    private boolean timelineObservationVisible = true;
     /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
 
@@ -1094,6 +1097,9 @@ public class MainController implements Initializable {
         refreshExecutionDockVisibility(structure);
         attachVisualizer(structure);
         structureSnapshotPreviewActive = false;
+        if (currentSubController instanceof TreeController treeController) {
+            treeController.setStructureSelectionEnabled(structure);
+        }
         if (currentSubController instanceof ArrayController arrayController) {
             arrayController.setStructureSelectionEnabled(structure);
         }
@@ -1105,6 +1111,12 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof GraphController graphController) {
             graphController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof LinkedListController linkedController) {
+            linkedController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof LinearStructureController linearController) {
+            linearController.setStructureSelectionEnabled(structure);
         }
         if (structure && currentSubController != null) {
             if (activeDefinition != null) {
@@ -1131,13 +1143,58 @@ public class MainController implements Initializable {
 
     private void setupTimelinePresentation() {
         if (timelineMarkers != null) {
-            timelineMarkers.widthProperty().addListener((observable, oldValue, newValue) -> {
-                if (timelineDetails != null && timelineDetails.isVisible()) {
-                    rebuildTimelineMarkers();
-                }
-            });
+            timelineMarkers.widthProperty().addListener((observable, oldValue, newValue) -> rebuildTimelineMarkers());
         }
+        configureTimelineLegendToggle(timelineRuntimeLegendLabel, TimelineMarkerCategory.RUNTIME);
+        configureTimelineLegendToggle(timelineStructureLegendLabel, TimelineMarkerCategory.STRUCTURE);
+        configureTimelineLegendToggle(timelineObservationLegendLabel, TimelineMarkerCategory.OBSERVATION);
+        refreshTimelineLegendState();
         setTimelineExpanded(false);
+    }
+
+    private void configureTimelineLegendToggle(Label label, TimelineMarkerCategory category) {
+        if (label == null) {
+            return;
+        }
+        label.getStyleClass().add("timeline-legend-toggle");
+        label.setFocusTraversable(true);
+        label.setOnMouseClicked(event -> {
+            toggleTimelineMarkerCategory(category);
+            event.consume();
+        });
+        label.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                toggleTimelineMarkerCategory(category);
+                event.consume();
+            }
+        });
+    }
+
+    private void toggleTimelineMarkerCategory(TimelineMarkerCategory category) {
+        switch (category) {
+            case RUNTIME -> timelineRuntimeVisible = !timelineRuntimeVisible;
+            case STRUCTURE -> timelineStructureVisible = !timelineStructureVisible;
+            case OBSERVATION -> timelineObservationVisible = !timelineObservationVisible;
+        }
+        refreshTimelineLegendState();
+        rebuildTimelineMarkers();
+    }
+
+    private void refreshTimelineLegendState() {
+        updateTimelineLegendState(timelineRuntimeLegendLabel, timelineRuntimeVisible);
+        updateTimelineLegendState(timelineStructureLegendLabel, timelineStructureVisible);
+        updateTimelineLegendState(timelineObservationLegendLabel, timelineObservationVisible);
+    }
+
+    private void updateTimelineLegendState(Label label, boolean visible) {
+        if (label == null) {
+            return;
+        }
+        if (visible) {
+            label.getStyleClass().remove("timeline-legend-muted");
+        } else if (!label.getStyleClass().contains("timeline-legend-muted")) {
+            label.getStyleClass().add("timeline-legend-muted");
+        }
     }
 
     @FXML
@@ -1156,12 +1213,12 @@ public class MainController implements Initializable {
         }
         if (bottomDock != null) {
             if (expanded) {
-                bottomDock.setMinHeight(156.0d);
+                bottomDock.setMinHeight(96.0d);
             } else {
                 bottomDock.setMinHeight(62.0d);
             }
             if (expanded) {
-                bottomDock.setPrefHeight(168.0d);
+                bottomDock.setPrefHeight(104.0d);
             } else {
                 bottomDock.setPrefHeight(62.0d);
             }
@@ -2661,6 +2718,7 @@ public class MainController implements Initializable {
     private void wireStructureSelection() {
         if (currentSubController instanceof TreeController treeController) {
             treeController.setSelectionListener(this::showTreeSelection);
+            treeController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof ArrayController arrayController) {
             arrayController.setSelectionListener(this::showArraySelection);
@@ -2680,9 +2738,11 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof LinkedListController linkedController) {
             linkedController.setSelectionListener(this::showLinkedSelection);
+            linkedController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof LinearStructureController linearController) {
             linearController.setSelectionListener(this::showLinearSelection);
+            linearController.setStructureSelectionEnabled(isStructurePageVisible());
         }
     }
 
@@ -3200,96 +3260,204 @@ public class MainController implements Initializable {
     private record MetricDisplay(String title, String value) {}
 
     private void rebuildTimelineMarkers() {
-        if (timelineMarkers == null || currentSubController == null
-                || timelineDetails == null || !timelineDetails.isVisible()) {
+        if (timelineMarkers == null || currentSubController == null) {
             return;
         }
         timelineMarkers.getChildren().clear();
         List<EventEnvelope> events = currentSubController.executionEvents();
-        if (events.isEmpty()) return;
+        if (events.isEmpty()) {
+            return;
+        }
 
-        Region track = new Region();
-        track.getStyleClass().add("timeline-marker-track");
-        track.setManaged(false);
         double paneWidth;
         if (timelineMarkers.getWidth() > 0.0d) {
             paneWidth = timelineMarkers.getWidth();
         } else {
             paneWidth = 700.0d;
         }
-        track.resizeRelocate(14.0d, 14.0d, Math.max(1.0d, paneWidth - 28.0d), 1.0d);
-        timelineMarkers.getChildren().add(track);
+        double horizontalInset = 8.0d;
+        double usableWidth = Math.max(1.0d, paneWidth - horizontalInset * 2.0d);
 
         int currentIndex = currentSubController.presentationEventIndex();
-        Set<Integer> indexes = timelineMarkerIndexes(events, currentIndex);
-        double usableWidth = Math.max(1.0d, paneWidth - 28.0d);
-        for (int index : indexes) {
-            EventEnvelope envelope = events.get(index);
-            VBox marker = new VBox(3.0d);
-            marker.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-            marker.setPrefWidth(42.0d);
-            marker.setMinWidth(42.0d);
-            marker.setMaxWidth(42.0d);
+        if (currentIndex >= 0 && currentIndex < events.size()) {
+            Region cursor = new Region();
+            cursor.getStyleClass().add("timeline-marker-cursor");
+            cursor.setManaged(false);
+            cursor.setMouseTransparent(true);
+            double ratio = eventRatio(currentIndex, events.size());
+            cursor.resizeRelocate(horizontalInset + ratio * usableWidth - 1.0d, 3.0d, 2.0d, 26.0d);
+            timelineMarkers.getChildren().add(cursor);
+        }
+
+        List<TimelineMarkerGroup> groups = timelineMarkerGroups(events, currentIndex, usableWidth);
+        for (TimelineMarkerGroup group : groups) {
+            int representativeIndex = group.representativeIndex();
+            EventEnvelope envelope = events.get(representativeIndex);
+            VBox marker = new VBox(1.0d);
+            marker.setAlignment(javafx.geometry.Pos.CENTER);
+            marker.setPrefWidth(24.0d);
+            marker.setMinWidth(24.0d);
+            marker.setMaxWidth(24.0d);
+            marker.setPrefHeight(28.0d);
+            marker.setMinHeight(28.0d);
             marker.setManaged(false);
+            marker.setFocusTraversable(true);
             marker.getStyleClass().add("timeline-marker-node");
+            if (group.eventIndexes().size() > 1) {
+                marker.getStyleClass().add("timeline-marker-aggregate");
+            }
 
             Region symbol = new Region();
             symbol.getStyleClass().addAll("timeline-marker-symbol", eventMarkerClass(envelope));
-            if (index == currentIndex) symbol.getStyleClass().add("timeline-marker-current");
-            Label sequence = new Label(Integer.toString(index + 1));
-            sequence.getStyleClass().add("timeline-marker-sequence");
-            if (index == currentIndex) sequence.getStyleClass().add("timeline-marker-sequence-current");
-            marker.getChildren().setAll(symbol, sequence);
-
-            double ratio;
-            if (events.size() <= 1) {
-                ratio = 0.0d;
-            } else {
-                ratio = index / (double) (events.size() - 1);
+            if (group.eventIndexes().contains(currentIndex)) {
+                symbol.getStyleClass().add("timeline-marker-current");
             }
-            marker.relocate(14.0d + ratio * usableWidth - 21.0d, 8.0d);
-            marker.setOnMouseClicked(event -> {
-                if (!currentSubController.isRunning()) {
-                    currentSubController.seekEventIndex(index);
-                    refreshExecutionPresentation();
+            marker.getChildren().setAll(symbol);
+            if (group.eventIndexes().size() > 1) {
+                Label aggregate = new Label("×" + group.eventIndexes().size());
+                aggregate.getStyleClass().add("timeline-marker-sequence");
+                if (group.eventIndexes().contains(currentIndex)) {
+                    aggregate.getStyleClass().add("timeline-marker-sequence-current");
                 }
+                marker.getChildren().add(aggregate);
+            }
+
+            double ratio = eventRatio(representativeIndex, events.size());
+            marker.relocate(horizontalInset + ratio * usableWidth - 12.0d, 2.0d);
+            String tooltipText = timelineMarkerTooltip(events, group);
+            Tooltip.install(marker, new Tooltip(tooltipText));
+            marker.setAccessibleText(tooltipText);
+            marker.setOnMouseClicked(event -> {
+                jumpToTimelineMarkerGroup(group);
                 event.consume();
+            });
+            marker.setOnKeyPressed(event -> {
+                if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                    jumpToTimelineMarkerGroup(group);
+                    event.consume();
+                }
             });
             timelineMarkers.getChildren().add(marker);
         }
     }
 
-    private Set<Integer> timelineMarkerIndexes(List<EventEnvelope> events, int currentIndex) {
-        TreeSet<Integer> indexes = new TreeSet<>();
-        int last = events.size() - 1;
-        indexes.add(0);
-        indexes.add(last);
-        if (currentIndex >= 0 && currentIndex <= last) indexes.add(currentIndex);
-        for (int index = 0; index < events.size(); index++) {
-            if (events.get(index).event() instanceof ExecutionLifecycleEvent) {
-                indexes.add(index);
+    private void jumpToTimelineMarkerGroup(TimelineMarkerGroup group) {
+        if (currentSubController == null || currentSubController.isRunning()) {
+            return;
+        }
+        int currentIndex = currentSubController.presentationEventIndex();
+        int targetIndex = group.eventIndexes().getFirst();
+        if (group.eventIndexes().size() > 1) {
+            for (int eventIndex : group.eventIndexes()) {
+                if (eventIndex > currentIndex) {
+                    targetIndex = eventIndex;
+                    break;
+                }
             }
+        }
+        currentSubController.seekEventIndex(targetIndex);
+        refreshExecutionPresentation();
+    }
+
+    private List<TimelineMarkerGroup> timelineMarkerGroups(
+            List<EventEnvelope> events,
+            int currentIndex,
+            double usableWidth) {
+        List<Integer> candidates = new ArrayList<>();
+        for (int index = 0; index < events.size(); index++) {
+            if (isTimelineMarkerVisible(events.get(index))) {
+                candidates.add(index);
+            }
+        }
+        if (currentIndex >= 0 && currentIndex < events.size() && !candidates.contains(currentIndex)) {
+            candidates.add(currentIndex);
+            candidates.sort(Integer::compareTo);
+        }
+        if (candidates.isEmpty()) {
+            return List.of();
         }
 
-        int budget = Math.max(13, indexes.size());
-        List<Integer> domainCandidates = new ArrayList<>();
-        for (int index = 0; index < events.size(); index++) {
-            Object event = events.get(index).event();
-            if ((event instanceof com.majortom.algorithms.core.event.structure.StructureEvent
-                    || event instanceof ObservationEvent) && !indexes.contains(index)) {
-                domainCandidates.add(index);
+        int markerBudget = (int) Math.floor(usableWidth / 30.0d);
+        markerBudget = Math.max(13, Math.min(48, markerBudget));
+        if (candidates.size() <= markerBudget) {
+            List<TimelineMarkerGroup> groups = new ArrayList<>(candidates.size());
+            for (int index : candidates) {
+                groups.add(new TimelineMarkerGroup(index, List.of(index)));
+            }
+            return List.copyOf(groups);
+        }
+
+        Map<Integer, List<Integer>> buckets = new LinkedHashMap<>();
+        for (int eventIndex : candidates) {
+            double ratio = eventRatio(eventIndex, events.size());
+            int bucket = (int) Math.floor(ratio * (markerBudget - 1));
+            buckets.computeIfAbsent(bucket, ignored -> new ArrayList<>()).add(eventIndex);
+        }
+        List<TimelineMarkerGroup> groups = new ArrayList<>(buckets.size());
+        for (List<Integer> eventIndexes : buckets.values()) {
+            int representative = representativeTimelineEvent(events, eventIndexes, currentIndex);
+            groups.add(new TimelineMarkerGroup(representative, List.copyOf(eventIndexes)));
+        }
+        groups.sort((left, right) -> Integer.compare(left.representativeIndex(), right.representativeIndex()));
+        return List.copyOf(groups);
+    }
+
+    private int representativeTimelineEvent(
+            List<EventEnvelope> events,
+            List<Integer> eventIndexes,
+            int currentIndex) {
+        if (eventIndexes.contains(currentIndex)) {
+            return currentIndex;
+        }
+        for (int eventIndex : eventIndexes) {
+            if (events.get(eventIndex).event() instanceof ExecutionLifecycleEvent) {
+                return eventIndex;
             }
         }
-        int remaining = Math.max(0, budget - indexes.size());
-        if (remaining > 0 && !domainCandidates.isEmpty()) {
-            double step = domainCandidates.size() / (double) remaining;
-            for (int slot = 0; slot < remaining; slot++) {
-                int candidate = domainCandidates.get(Math.min(domainCandidates.size() - 1,
-                        (int) Math.floor(slot * step)));
-                indexes.add(candidate);
+        for (int eventIndex : eventIndexes) {
+            if (events.get(eventIndex).event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
+                return eventIndex;
             }
         }
-        return indexes;
+        return eventIndexes.get(eventIndexes.size() / 2);
+    }
+
+    private boolean isTimelineMarkerVisible(EventEnvelope envelope) {
+        if (envelope.event() instanceof ExecutionLifecycleEvent) {
+            return timelineRuntimeVisible;
+        }
+        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
+            return timelineStructureVisible;
+        }
+        if (envelope.event() instanceof ObservationEvent) {
+            return timelineObservationVisible;
+        }
+        return false;
+    }
+
+    private double eventRatio(int eventIndex, int eventCount) {
+        if (eventCount <= 1) {
+            return 0.0d;
+        }
+        return eventIndex / (double) (eventCount - 1);
+    }
+
+    private String timelineMarkerTooltip(List<EventEnvelope> events, TimelineMarkerGroup group) {
+        EventEnvelope envelope = events.get(group.representativeIndex());
+        String base = String.format(Locale.ROOT, "#%04d  %s", envelope.sequence(), eventDisplayName(envelope));
+        if (group.eventIndexes().size() <= 1) {
+            return base;
+        }
+        return base + "  ·  ×" + group.eventIndexes().size();
+    }
+
+    private record TimelineMarkerGroup(int representativeIndex, List<Integer> eventIndexes) {
+    }
+
+    private enum TimelineMarkerCategory {
+        RUNTIME,
+        STRUCTURE,
+        OBSERVATION
     }
 
     private String eventMarkerClass(EventEnvelope envelope) {

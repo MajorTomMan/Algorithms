@@ -42,6 +42,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
     private int currentSize = 20;
     private boolean structureSelectionEnabled = true;
+    private int algorithmSelectedIndex = -1;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
 
@@ -399,7 +400,24 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (state == null || index < 0 || index >= state.values().size()) {
             return;
         }
+        algorithmSelectedIndex = index;
         selectionListener.accept(new IndexSelection(index, state.values().get(index), state.values().size()));
+    }
+
+    @Override
+    protected void onPresentationStateChanged(ArrayViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedIndex < 0) {
+            return;
+        }
+        if (algorithmSelectedIndex >= state.values().size()) {
+            clearArraySelection();
+            return;
+        }
+        arrayVisualizer().showSelection(algorithmSelectedIndex);
+        selectionListener.accept(new IndexSelection(
+                algorithmSelectedIndex,
+                state.values().get(algorithmSelectedIndex),
+                state.values().size()));
     }
 
     private void handleStructureArraySelection(int index) {
@@ -415,6 +433,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void clearArraySelection() {
+        algorithmSelectedIndex = -1;
         arrayVisualizer().clearSelection();
         selectionListener.accept(null);
     }

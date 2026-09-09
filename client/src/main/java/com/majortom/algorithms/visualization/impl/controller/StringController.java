@@ -38,6 +38,7 @@ public final class StringController extends BaseModuleController<StringViewState
     private final StringStructure source;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
     private boolean structureSelectionEnabled = true;
+    private int algorithmSelectedIndex = -1;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
 
@@ -567,7 +568,24 @@ public final class StringController extends BaseModuleController<StringViewState
         if (state == null || index < 0 || index >= state.value().length()) {
             return;
         }
+        algorithmSelectedIndex = index;
         selectionListener.accept(new IndexSelection(index, state.value().charAt(index), state.value().length()));
+    }
+
+    @Override
+    protected void onPresentationStateChanged(StringViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedIndex < 0) {
+            return;
+        }
+        if (algorithmSelectedIndex >= state.value().length()) {
+            clearStringSelection();
+            return;
+        }
+        stringVisualizer().showSelection(algorithmSelectedIndex);
+        selectionListener.accept(new IndexSelection(
+                algorithmSelectedIndex,
+                state.value().charAt(algorithmSelectedIndex),
+                state.value().length()));
     }
 
     private void handleStructureStringSelection(int index) {
@@ -582,6 +600,7 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void clearStringSelection() {
+        algorithmSelectedIndex = -1;
         stringVisualizer().clearSelection();
         selectionListener.accept(null);
     }

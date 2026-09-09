@@ -533,18 +533,26 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     }
 
     public void selectNode(long nodeId) {
-        TreeViewState state = currentState();
-        if (!nodeViews.containsKey(nodeId)) {
-            if (state != null && state.nodes().containsKey(nodeId)) {
-                pendingSelectedNodeId = nodeId;
-                requestRender();
-            }
+        if (!showSelection(nodeId)) {
             return;
         }
-        pendingSelectedNodeId = null;
-        selectedNodeId = nodeId;
-        syncSelectionState();
         selectionListener.accept(nodeId);
+    }
+
+    public boolean showSelection(long nodeId) {
+        TreeViewState state = currentState();
+        if (state == null || !state.nodes().containsKey(nodeId)) {
+            return false;
+        }
+        selectedNodeId = nodeId;
+        if (!nodeViews.containsKey(nodeId)) {
+            pendingSelectedNodeId = nodeId;
+            requestRender();
+            return true;
+        }
+        pendingSelectedNodeId = null;
+        syncSelectionState();
+        return true;
     }
 
     private void syncSelectionState() {

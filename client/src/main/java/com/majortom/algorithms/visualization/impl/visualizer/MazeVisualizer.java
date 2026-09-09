@@ -280,6 +280,16 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         requestRender();
     }
 
+    public boolean showSelection(GridPoint point) {
+        MazeViewState state = currentState();
+        if (state == null || !inside(state, point)) {
+            return false;
+        }
+        selectedCell = point;
+        requestRender();
+        return true;
+    }
+
     public GridPoint selectedCell() {
         return selectedCell;
     }
