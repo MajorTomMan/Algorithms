@@ -208,6 +208,58 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
     }
 
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        List<Integer> values = parseIntegerBatchInput(input);
+        if (values == null) {
+            return;
+        }
+        replaceValues(values, "bulk-replace", "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        java.util.Random random = new java.util.Random();
+        List<Integer> values = new ArrayList<>();
+        for (int index = 0; index < 8; index++) {
+            values.add(random.nextInt(100) + 1);
+        }
+        replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
+    }
+
+    private void replaceValues(List<Integer> values, String operationId, String messageKey) {
+        clearVisualSelection();
+        if (!executeStructureOperation(operationId, () -> {
+            clearWithoutRuntime();
+            if (kind == Kind.STACK) {
+                for (int index = values.size() - 1; index >= 0; index--) {
+                    stack.push(values.get(index));
+                }
+            } else {
+                for (Integer value : values) {
+                    queue.enqueue(value);
+                }
+            }
+            return null;
+        })) {
+            return;
+        }
+        renderStructureState(currentState());
+        if (values.isEmpty()) {
+            valueField.clear();
+        } else if (kind == Kind.STACK) {
+            stackVisualizer().selectIndex(0);
+        } else {
+            queueVisualizer().selectIndex(0);
+        }
+        logI18n(messageKey, values.size());
+    }
+
     private LinearStructureViewState currentState() {
         return new LinearStructureViewState(moduleId, values());
     }

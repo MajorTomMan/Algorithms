@@ -7,12 +7,15 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
@@ -41,6 +44,7 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
             loader.setResources(I18N.getBundle());
             loader.setController(this);
             controlPanel = loader.load();
+            installDataTools();
             WorkbenchTheme.apply(controlPanel);
         } catch (IOException exception) {
             throw new IllegalStateException("Module control panel load failed: " + fxmlPath, exception);
@@ -66,6 +70,102 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
 
     protected final String formatMetric(String key, long value) {
         return I18N.text(key, value);
+    }
+
+    protected boolean supportsDataTools() {
+        return false;
+    }
+
+    protected boolean showRandomDataTool() {
+        return true;
+    }
+
+    protected String bulkInputPromptKey() {
+        return "prompt.data.bulk.values";
+    }
+
+    protected void applyBulkData(String input) {
+    }
+
+    protected void randomizeData() {
+    }
+
+    protected final java.util.List<Integer> parseIntegerBatchInput(String input) {
+        if (input == null || input.isBlank()) {
+            logI18n("message.error.bulk_input_empty");
+            return null;
+        }
+        String[] tokens = input.trim().split("[,;\\s]+");
+        java.util.List<Integer> values = new java.util.ArrayList<>(tokens.length);
+        try {
+            for (String token : tokens) {
+                if (!token.isBlank()) {
+                    values.add(Integer.valueOf(token));
+                }
+            }
+        } catch (NumberFormatException exception) {
+            logI18n("message.error.bulk_input_invalid");
+            return null;
+        }
+        if (values.isEmpty()) {
+            logI18n("message.error.bulk_input_empty");
+            return null;
+        }
+        return java.util.List.copyOf(values);
+    }
+
+    private void installDataTools() {
+        if (!supportsDataTools() || !(controlPanel instanceof VBox root)) {
+            return;
+        }
+
+        VBox section = new VBox(8);
+        section.getStyleClass().addAll(
+                "control-section", "control-card", "operation-section", "structure-section");
+
+        HBox header = new HBox();
+        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        header.setFocusTraversable(true);
+        header.getStyleClass().add("control-section-header");
+        header.setOnMouseClicked(this::toggleSection);
+        header.setOnKeyPressed(this::handleSectionKey);
+
+        Label title = new Label();
+        title.textProperty().bind(I18N.createStringBinding("label.data.tools"));
+        title.getStyleClass().add("control-label");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+        Label chevron = new Label("⌃");
+        chevron.getStyleClass().add("section-chevron");
+        header.getChildren().addAll(title, spacer, chevron);
+
+        TextField bulkInput = new TextField();
+        bulkInput.setMaxWidth(Double.MAX_VALUE);
+        bulkInput.promptTextProperty().bind(I18N.createStringBinding(bulkInputPromptKey()));
+        bulkInput.getStyleClass().addAll("dark-textfield", "operation-input");
+
+        Button applyButton = new Button();
+        applyButton.setMaxWidth(Double.MAX_VALUE);
+        applyButton.textProperty().bind(I18N.createStringBinding("action.data.apply"));
+        applyButton.getStyleClass().addAll("btn-ran-blue", "operation-button");
+        applyButton.setOnAction(event -> applyBulkData(bulkInput.getText()));
+        HBox.setHgrow(applyButton, javafx.scene.layout.Priority.ALWAYS);
+
+        HBox actions = new HBox(6);
+        actions.getStyleClass().add("operation-row");
+        actions.getChildren().add(applyButton);
+        if (showRandomDataTool()) {
+            Button randomButton = new Button();
+            randomButton.setMaxWidth(Double.MAX_VALUE);
+            randomButton.textProperty().bind(I18N.createStringBinding("action.data.random"));
+            randomButton.getStyleClass().addAll("btn-ran-gold", "operation-button");
+            randomButton.setOnAction(event -> randomizeData());
+            HBox.setHgrow(randomButton, javafx.scene.layout.Priority.ALWAYS);
+            actions.getChildren().add(randomButton);
+        }
+
+        section.getChildren().addAll(header, bulkInput, actions);
+        root.getChildren().add(section);
     }
 
     /** Toggles the controls that belong to the section whose header was clicked. */

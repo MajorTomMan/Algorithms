@@ -235,6 +235,15 @@
                             <Label fx:id="currentStepDetailLabel" text="" wrapText="true" styleClass="current-step-detail"/>
                             <Label fx:id="viewportHintLabel" managed="false" visible="false" />
                         </VBox>
+                        <VBox fx:id="algorithmSelectionOverlay" mouseTransparent="true" managed="false" visible="false"
+                            maxWidth="220.0" prefWidth="220.0" maxHeight="184.0" prefHeight="184.0"
+                            StackPane.alignment="TOP_RIGHT" styleClass="selection-overlay">
+                            <HBox alignment="CENTER_LEFT"><Label fx:id="algorithmSelectedEntityTitleLabel" text="SELECTED ITEM" styleClass="overlay-eyebrow"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="algorithmSelectedNodeIdLabel" text="#—" styleClass="overlay-id"/></HBox>
+                            <Label fx:id="algorithmSelectedValueCaptionLabel" text="VALUE" styleClass="overlay-caption"/>
+                            <Label fx:id="algorithmSelectedNodeValueLabel" text="—" styleClass="overlay-value"/>
+                            <Separator />
+                            <Label fx:id="algorithmSelectedEntityHintLabel" text="Current algorithm frame · read only" wrapText="true" styleClass="overlay-hint"/>
+                        </VBox>
                     </StackPane>
 
                     <VBox fx:id="diagnosticsPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0" styleClass="inspector-panel">

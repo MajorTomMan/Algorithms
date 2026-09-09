@@ -110,6 +110,37 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return List.copyOf(values);
     }
 
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected boolean showRandomDataTool() {
+        return false;
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        List<Integer> values = parseIntegerBatchInput(input);
+        if (values == null) {
+            return;
+        }
+        clearArraySelection();
+        if (!executeStructureOperation("bulk-replace", () -> {
+            replaceArrayContents(values);
+            return null;
+        })) {
+            return;
+        }
+        renderSource();
+        refreshStatsDisplay();
+        if (!values.isEmpty()) {
+            arrayVisualizer().selectIndex(0);
+        }
+        logI18n("message.data.bulk_applied", values.size());
+    }
+
     private void replaceArrayContents(List<Integer> values) {
         while (sourceArray.size() > 0) {
             sourceArray.remove(sourceArray.size() - 1);
@@ -353,14 +384,26 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
-        structureSelectionEnabled = enabled;
-        if (!enabled) {
+        if (structureSelectionEnabled != enabled) {
             clearArraySelection();
         }
+        structureSelectionEnabled = enabled;
     }
 
     private void handleArraySelection(int index) {
-        if (!structureSelectionEnabled || index < 0 || index >= sourceArray.size()) {
+        if (structureSelectionEnabled) {
+            handleStructureArraySelection(index);
+            return;
+        }
+        ArrayViewState state = latestViewState();
+        if (state == null || index < 0 || index >= state.values().size()) {
+            return;
+        }
+        selectionListener.accept(new IndexSelection(index, state.values().get(index), state.values().size()));
+    }
+
+    private void handleStructureArraySelection(int index) {
+        if (index < 0 || index >= sourceArray.size()) {
             return;
         }
         int value = sourceArray.get(index);

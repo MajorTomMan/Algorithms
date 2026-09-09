@@ -535,13 +535,20 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearCellSelection();
+        }
         structureSelectionEnabled = enabled;
-        if (!enabled) clearCellSelection();
     }
 
     private void handleCellSelection(GridPoint point) {
-        if (!structureSelectionEnabled || point == null) return;
-        MazeViewState state = latestStructureState();
+        if (point == null) return;
+        MazeViewState state;
+        if (structureSelectionEnabled) {
+            state = latestStructureState();
+        } else {
+            state = latestViewState();
+        }
         if (state == null || point.row() < 0 || point.row() >= state.rows()
                 || point.column() < 0 || point.column() >= state.columns()) {
             clearCellSelection();

@@ -99,6 +99,53 @@ public final class StringController extends BaseModuleController<StringViewState
         }
     }
 
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected String bulkInputPromptKey() {
+        return "prompt.data.bulk.string";
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        replaceFromDataTool(input == null ? "" : input, "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        java.util.Random random = new java.util.Random();
+        StringBuilder builder = new StringBuilder(20);
+        for (int index = 0; index < 20; index++) {
+            builder.append((char) ('A' + random.nextInt(26)));
+        }
+        replaceFromDataTool(builder.toString(), "message.data.randomized");
+    }
+
+    private void replaceFromDataTool(String value, String messageKey) {
+        clearStringSelection();
+        if (!executeStructureOperation("bulk-replace", () -> {
+            source.replace(0, source.length(), value);
+            return null;
+        })) {
+            return;
+        }
+        if (valueField != null) {
+            valueField.setText(value);
+        }
+        renderLatestStructureMutation();
+        if (source.length() > 0) {
+            stringVisualizer().selectIndex(0);
+        } else {
+            indexField.clear();
+            characterField.clear();
+            lengthField.clear();
+        }
+        logI18n(messageKey, value.length());
+    }
+
     @FXML
     private void handleInsert() {
         clearStringSelection();
@@ -494,12 +541,14 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearStringSelection();
+        }
         structureSelectionEnabled = enabled;
         if (enabled) {
             stringVisualizer().clearAlgorithmPattern();
             return;
         }
-        clearStringSelection();
         String algorithmId = selectedAlgorithmId();
         boolean search = algorithmId != null && AlgorithmCatalog.stringSearches().contains(algorithmId);
         if (search && patternField != null) {
@@ -510,7 +559,19 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void handleStringSelection(int index) {
-        if (!structureSelectionEnabled || index < 0 || index >= source.length()) {
+        if (structureSelectionEnabled) {
+            handleStructureStringSelection(index);
+            return;
+        }
+        StringViewState state = latestViewState();
+        if (state == null || index < 0 || index >= state.value().length()) {
+            return;
+        }
+        selectionListener.accept(new IndexSelection(index, state.value().charAt(index), state.value().length()));
+    }
+
+    private void handleStructureStringSelection(int index) {
+        if (index < 0 || index >= source.length()) {
             return;
         }
         char value = source.charAt(index);

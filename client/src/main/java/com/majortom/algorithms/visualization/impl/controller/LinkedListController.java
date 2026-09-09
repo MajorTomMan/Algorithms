@@ -210,6 +210,51 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         linkedList.insert(2, 36);
     }
 
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        List<Integer> values = parseIntegerBatchInput(input);
+        if (values == null) {
+            return;
+        }
+        replaceValues(values, "bulk-replace", "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        java.util.Random random = new java.util.Random();
+        List<Integer> values = new ArrayList<>();
+        for (int index = 0; index < 8; index++) {
+            values.add(random.nextInt(100) + 1);
+        }
+        replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
+    }
+
+    private void replaceValues(List<Integer> values, String operationId, String messageKey) {
+        clearVisualSelection();
+        if (!executeStructureOperation(operationId, () -> {
+            clearWithoutRuntime();
+            for (int index = 0; index < values.size(); index++) {
+                linkedList.insert(index, values.get(index));
+            }
+            return null;
+        })) {
+            return;
+        }
+        renderStructureState(currentState());
+        if (values.isEmpty()) {
+            valueField.clear();
+            indexField.clear();
+        } else {
+            selectLinkedAtIndex(0);
+        }
+        logI18n(messageKey, values.size());
+    }
+
     private LinkedListViewState currentState() {
         return LinkedListViewState.source(linkedList.head());
     }

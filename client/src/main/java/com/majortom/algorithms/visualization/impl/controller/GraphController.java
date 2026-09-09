@@ -50,6 +50,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private List<String> algorithmIds = List.of();
     private StructureSnapshot<GraphSnapshotState<Integer>> algorithmInputSnapshot;
     private int startNode;
+    private boolean structureSelectionEnabled = true;
     private Consumer<Selection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
 
@@ -847,6 +848,166 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return result;
     }
 
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected String bulkInputPromptKey() {
+        return "prompt.data.bulk.graph";
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        GraphBatch batch = parseGraphBatch(input);
+        if (batch == null) {
+            return;
+        }
+        replaceGraphData(batch, "bulk-replace", "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        replaceGraphData(randomGraphBatch(10, 16), "randomize", "message.data.randomized");
+    }
+
+    private GraphBatch parseGraphBatch(String input) {
+        if (input == null || input.isBlank()) {
+            logI18n("message.error.bulk_input_empty");
+            return null;
+        }
+        String[] sections = input.split("\\|", -1);
+        if (sections.length > 2) {
+            logI18n("message.error.bulk_input_invalid");
+            return null;
+        }
+        List<Integer> nodes = parseIntegerBatchInput(sections[0]);
+        if (nodes == null) {
+            return null;
+        }
+        Set<Integer> nodeSet = new LinkedHashSet<>(nodes);
+        if (nodeSet.size() != nodes.size()) {
+            logI18n("message.error.bulk_duplicates");
+            return null;
+        }
+        List<GraphBatchEdge> edges = new ArrayList<>();
+        if (sections.length == 2 && !sections[1].isBlank()) {
+            String[] edgeTokens = sections[1].trim().split("[,;\\s]+");
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                    "^(-?\\d+)\\s*(?:->|>|-)\\s*(-?\\d+)$");
+            for (String token : edgeTokens) {
+                if (token.isBlank()) {
+                    continue;
+                }
+                String[] weighted = token.split(":", 2);
+                java.util.regex.Matcher matcher = pattern.matcher(weighted[0]);
+                if (!matcher.matches()) {
+                    logI18n("message.error.bulk_input_invalid");
+                    return null;
+                }
+                int from;
+                int to;
+                double weight = 1.0d;
+                try {
+                    from = Integer.parseInt(matcher.group(1));
+                    to = Integer.parseInt(matcher.group(2));
+                    if (weighted.length == 2) {
+                        weight = Double.parseDouble(weighted[1]);
+                    }
+                } catch (NumberFormatException exception) {
+                    logI18n("message.error.bulk_input_invalid");
+                    return null;
+                }
+                if (!Double.isFinite(weight)) {
+                    logI18n("message.error.invalid_graph_weight");
+                    return null;
+                }
+                if (!nodeSet.contains(from) || !nodeSet.contains(to)) {
+                    logI18n("message.error.graph_bulk_endpoint", token);
+                    return null;
+                }
+                edges.add(new GraphBatchEdge(from, to, weight));
+            }
+        }
+        return new GraphBatch(List.copyOf(nodes), List.copyOf(edges));
+    }
+
+    private GraphBatch randomGraphBatch(int nodeCount, int edgeCount) {
+        List<Integer> nodes = new ArrayList<>();
+        for (int node = 0; node < nodeCount; node++) {
+            nodes.add(node);
+        }
+        Random random = new Random();
+        Set<String> edges = new LinkedHashSet<>();
+        for (int node = 1; node < nodeCount; node++) {
+            edges.add((node - 1) + ":" + node);
+        }
+        boolean directed = activeVariant == GraphVariant.DIRECTED;
+        while (edges.size() < edgeCount) {
+            int from = random.nextInt(nodeCount);
+            int to = random.nextInt(nodeCount);
+            if (from == to) {
+                continue;
+            }
+            String key;
+            if (directed || from < to) {
+                key = from + ":" + to;
+            } else {
+                key = to + ":" + from;
+            }
+            edges.add(key);
+        }
+        List<GraphBatchEdge> batchEdges = new ArrayList<>();
+        for (String edge : edges) {
+            String[] parts = edge.split(":", 2);
+            batchEdges.add(new GraphBatchEdge(
+                    Integer.parseInt(parts[0]),
+                    Integer.parseInt(parts[1]),
+                    1.0d + random.nextInt(20)));
+        }
+        return new GraphBatch(List.copyOf(nodes), List.copyOf(batchEdges));
+    }
+
+    private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
+        WeightedGraph<Integer> graph = currentWeightedGraph();
+        clearVisualSelection();
+        if (!executeStructureOperation(operationId, () -> {
+            List<Vertex<Integer>> existing = new ArrayList<>();
+            for (Vertex<Integer> vertex : graph.vertices()) {
+                existing.add(vertex);
+            }
+            for (Vertex<Integer> vertex : existing) {
+                graph.removeVertex(vertex);
+            }
+            for (Integer node : batch.nodes()) {
+                graph.addVertex(node);
+            }
+            for (GraphBatchEdge edge : batch.edges()) {
+                graph.addEdge(graph.vertex(edge.from()), graph.vertex(edge.to()), edge.weight());
+            }
+            return null;
+        })) {
+            return;
+        }
+        syncStartNode(graph);
+        renderGraph();
+        refreshStatsDisplay();
+        if (!batch.nodes().isEmpty()) {
+            Vertex<Integer> selected = graph.vertex(batch.nodes().get(0));
+            if (selected != null) {
+                graphVisualizer().selectNode(selected.id());
+            }
+        }
+        logI18n(messageKey, batch.nodes().size());
+    }
+
+    private record GraphBatch(List<Integer> nodes, List<GraphBatchEdge> edges) {
+    }
+
+    private record GraphBatchEdge(int from, int to, double weight) {
+    }
+
     public void setSelectionListener(Consumer<Selection> listener) {
         if (listener == null) {
             selectionListener = ignored -> { };
@@ -855,7 +1016,18 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
     }
 
+    public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearVisualSelection();
+        }
+        structureSelectionEnabled = enabled;
+    }
+
     private void handleVisualNodeSelection(long nodeId) {
+        if (!structureSelectionEnabled) {
+            handleAlgorithmNodeSelection(nodeId);
+            return;
+        }
         GraphSnapshotState<Integer> snapshot = currentSnapshot();
         Integer value = snapshotVertexValue(snapshot, nodeId);
         if (value == null) {
@@ -873,7 +1045,36 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         selectionListener.accept(new NodeSelection(nodeId, value, degree));
     }
 
+    private void handleAlgorithmNodeSelection(long nodeId) {
+        GraphViewState state = latestViewState();
+        if (state == null) {
+            return;
+        }
+        GraphViewState.Node selected = null;
+        for (GraphViewState.Node node : state.nodes()) {
+            if (node.id() == nodeId) {
+                selected = node;
+                break;
+            }
+        }
+        if (selected == null) {
+            clearVisualSelection();
+            return;
+        }
+        int degree = 0;
+        for (GraphViewState.Edge edge : state.edges()) {
+            if (edge.fromId() == nodeId || edge.toId() == nodeId) {
+                degree++;
+            }
+        }
+        selectionListener.accept(new NodeSelection(nodeId, selected.value(), degree));
+    }
+
     private void handleVisualEdgeSelection(long edgeId) {
+        if (!structureSelectionEnabled) {
+            handleAlgorithmEdgeSelection(edgeId);
+            return;
+        }
         GraphSnapshotState<Integer> snapshot = currentSnapshot();
         SnapshotEdge edge = snapshotEdge(snapshot, edgeId);
         if (edge == null) {
@@ -896,6 +1097,31 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             weightField.setText(formatWeight(edge.weight()));
         }
         selectionListener.accept(new EdgeSelection(edgeId, from, to, snapshot.directed()));
+    }
+
+    private void handleAlgorithmEdgeSelection(long edgeId) {
+        GraphViewState state = latestViewState();
+        if (state == null) {
+            return;
+        }
+        GraphViewState.Edge selected = null;
+        for (GraphViewState.Edge edge : state.edges()) {
+            if (edge.id() == edgeId) {
+                selected = edge;
+                break;
+            }
+        }
+        if (selected == null) {
+            clearVisualSelection();
+            return;
+        }
+        GraphViewState.Node from = state.nodesById().get(selected.fromId());
+        GraphViewState.Node to = state.nodesById().get(selected.toId());
+        if (from == null || to == null) {
+            clearVisualSelection();
+            return;
+        }
+        selectionListener.accept(new EdgeSelection(edgeId, from.value(), to.value(), state.directed()));
     }
 
     private String formatWeight(double weight) {

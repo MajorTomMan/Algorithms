@@ -348,6 +348,91 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
+    protected boolean supportsDataTools() {
+        return true;
+    }
+
+    @Override
+    protected String bulkInputPromptKey() {
+        return "prompt.data.bulk.tree";
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        List<Integer> values = parseIntegerBatchInput(input);
+        if (values == null) {
+            return;
+        }
+        if (activeVariant == TreeVariant.AVL
+                && new java.util.HashSet<>(values).size() != values.size()) {
+            logI18n("message.error.bulk_duplicates");
+            return;
+        }
+        replaceTreeValues(values, "bulk-replace", "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        Random random = new Random();
+        java.util.LinkedHashSet<Integer> unique = new java.util.LinkedHashSet<>();
+        while (unique.size() < 10) {
+            unique.add(random.nextInt(100));
+        }
+        replaceTreeValues(new ArrayList<>(unique), "randomize", "message.data.randomized");
+    }
+
+    private void replaceTreeValues(List<Integer> values, String operationId, String messageKey) {
+        clearNodeSelection();
+        if (!executeStructureOperation(operationId, () -> {
+            if (activeVariant == TreeVariant.GENERAL) {
+                replaceGeneralTreeValues(values);
+            } else {
+                replaceAvlTreeValues(values);
+            }
+            return null;
+        })) {
+            return;
+        }
+        refreshStructureView();
+        int count;
+        if (activeVariant == TreeVariant.GENERAL) {
+            count = generalTree.size();
+            if (generalTree.root() != null) {
+                treeVisualizer().selectNode(generalTree.root().getId());
+            }
+        } else {
+            count = avlTree.size();
+            AVLTreeNode<Integer> selected = (AVLTreeNode<Integer>) avlTree.find(values.get(0));
+            if (selected != null) {
+                treeVisualizer().selectNode(selected.getId());
+            }
+        }
+        logI18n(messageKey, count);
+    }
+
+    private void replaceGeneralTreeValues(List<Integer> values) {
+        if (generalTree.root() != null) {
+            generalTree.remove(generalTree.root());
+        }
+        GeneralTreeNode<Integer> root = generalTree.addRoot(values.get(0));
+        List<GeneralTreeNode<Integer>> nodes = new ArrayList<>();
+        nodes.add(root);
+        for (int index = 1; index < values.size(); index++) {
+            GeneralTreeNode<Integer> parent = nodes.get((index - 1) / 3);
+            nodes.add(generalTree.addChild(parent, values.get(index)));
+        }
+    }
+
+    private void replaceAvlTreeValues(List<Integer> values) {
+        while (avlTree.root() != null) {
+            avlTree.remove(avlTree.root().getValue());
+        }
+        for (Integer value : values) {
+            avlTree.insert(value);
+        }
+    }
+
+    @Override
     public void handleAlgorithmStart() {
         logI18n("message.tree.no_algorithm");
     }

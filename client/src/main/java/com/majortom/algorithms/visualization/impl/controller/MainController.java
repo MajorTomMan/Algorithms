@@ -282,6 +282,18 @@ public class MainController implements Initializable {
     @FXML
     private VBox currentStepOverlay;
     @FXML
+    private VBox algorithmSelectionOverlay;
+    @FXML
+    private Label algorithmSelectedEntityTitleLabel;
+    @FXML
+    private Label algorithmSelectedEntityHintLabel;
+    @FXML
+    private Label algorithmSelectedNodeIdLabel;
+    @FXML
+    private Label algorithmSelectedNodeValueLabel;
+    @FXML
+    private Label algorithmSelectedValueCaptionLabel;
+    @FXML
     private Label eventKindLabel;
     @FXML
     private Region eventKindDot;
@@ -501,6 +513,7 @@ public class MainController implements Initializable {
         structureSecondaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
         structureStateMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
         selectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
+        algorithmSelectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
         structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
         structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
@@ -561,7 +574,11 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
-            if (structureSelectionOverlay == null || !structureSelectionOverlay.isVisible()) {
+            boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
+            if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
+                selectionVisible = true;
+            }
+            if (!selectionVisible) {
                 clearStructureSelection();
             }
         });
@@ -1085,6 +1102,9 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof MazeController mazeController) {
             mazeController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof GraphController graphController) {
+            graphController.setStructureSelectionEnabled(structure);
         }
         if (structure && currentSubController != null) {
             if (activeDefinition != null) {
@@ -2652,6 +2672,7 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof GraphController graphController) {
             graphController.setSelectionListener(this::showGraphSelection);
+            graphController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof MazeController mazeController) {
             mazeController.setSelectionListener(this::showMazeSelection);
@@ -2886,14 +2907,41 @@ public class MainController implements Initializable {
     }
 
     private void showStructureSelectionOverlay(String title, String id, String value, String hint) {
+        if (!isStructurePageVisible()) {
+            showAlgorithmSelectionOverlay(title, id, value);
+            return;
+        }
         if (structureSelectionOverlay != null) {
             structureSelectionOverlay.setManaged(true);
             structureSelectionOverlay.setVisible(true);
+        }
+        if (algorithmSelectionOverlay != null) {
+            algorithmSelectionOverlay.setManaged(false);
+            algorithmSelectionOverlay.setVisible(false);
         }
         if (selectedEntityTitleLabel != null) selectedEntityTitleLabel.setText(title);
         if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
         if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
         if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
+        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
+    }
+
+    private void showAlgorithmSelectionOverlay(String title, String id, String value) {
+        if (algorithmSelectionOverlay != null) {
+            algorithmSelectionOverlay.setManaged(true);
+            algorithmSelectionOverlay.setVisible(true);
+        }
+        if (structureSelectionOverlay != null) {
+            structureSelectionOverlay.setManaged(false);
+            structureSelectionOverlay.setVisible(false);
+        }
+        if (algorithmSelectedEntityTitleLabel != null) algorithmSelectedEntityTitleLabel.setText(title);
+        if (algorithmSelectedEntityHintLabel != null) {
+            algorithmSelectedEntityHintLabel.setText(I18N.text("label.workspace.selection.algorithm.hint"));
+        }
+        if (algorithmSelectedNodeIdLabel != null) algorithmSelectedNodeIdLabel.setText(id);
+        if (algorithmSelectedNodeValueLabel != null) algorithmSelectedNodeValueLabel.setText(value);
+        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
     private void clearStructureSelection() {
@@ -2901,9 +2949,14 @@ public class MainController implements Initializable {
             structureSelectionOverlay.setManaged(false);
             structureSelectionOverlay.setVisible(false);
         }
+        if (algorithmSelectionOverlay != null) {
+            algorithmSelectionOverlay.setManaged(false);
+            algorithmSelectionOverlay.setVisible(false);
+        }
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
         }
+        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
     private void refreshExecutionPresentation() {
@@ -2963,8 +3016,14 @@ public class MainController implements Initializable {
         } else {
             left = 0.0d;
         }
+        double right;
+        if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
+            right = 254.0d;
+        } else {
+            right = 0.0d;
+        }
         currentSubController.getVisualizer().setViewportObstructionInsets(
-                new javafx.geometry.Insets(0.0d, 0.0d, 0.0d, left));
+                new javafx.geometry.Insets(0.0d, right, 0.0d, left));
     }
 
     private String eventDisplayName(EventEnvelope envelope) {
