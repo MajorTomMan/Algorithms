@@ -65,6 +65,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @FXML private ComboBox<String> generatorSelector;
     @FXML private ComboBox<String> pathfinderSelector;
     @FXML private Label structureTitleLabel;
+    @FXML private Label algorithmStructureLabel;
     @FXML private Label generatorTitleLabel;
     @FXML private Label pathfinderTitleLabel;
     @FXML private Label sizeSectionLabel;
@@ -604,6 +605,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @Override
     protected void setupI18n() {
         if (structureTitleLabel != null) structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
+        if (algorithmStructureLabel != null) algorithmStructureLabel.textProperty().bind(I18N.createStringBinding("label.maze.algorithm_structure"));
         if (generatorTitleLabel != null) generatorTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.generator"));
         if (pathfinderTitleLabel != null) pathfinderTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.solver"));
         if (sizeSectionLabel != null) sizeSectionLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));

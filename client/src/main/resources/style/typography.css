@@ -52,13 +52,15 @@
 .root-pane .algorithm-control-panel .text-field,
 .root-pane .structure-control-panel .combo-box,
 .root-pane .algorithm-control-panel .combo-box { -fx-font-size: 1em; }
-.root-pane .primary-red-button { -fx-font-size: 0.80em; }
+.root-pane .primary-red-button,
+.root-pane .algorithm-control-panel .primary-red-button { -fx-font-size: 0.80em; }
 .root-pane .summary-caption { -fx-font-size: 0.62em; }
 .root-pane .summary-number,
 .root-pane .summary-number-red,
 .root-pane .summary-number-blue { -fx-font-size: 1.35em; }
 .root-pane .algorithm-input-source-card { -fx-font-size: 0.68em; }
-.root-pane .input-source-toggle { -fx-font-size: 0.62em; }
+.root-pane .input-source-toggle,
+.root-pane .algorithm-control-panel .input-source-toggle { -fx-font-size: 0.62em; }
 .root-pane .operation-slider .axis { -fx-tick-label-font-size: 0.62em; }
 
 /* ---------- inspector / snapshot / diagnostics ---------- */
@@ -78,6 +80,7 @@
 .root-pane .snapshot-card-action { -fx-font-size: 0.69em; }
 .root-pane .stats-text,
 .root-pane .stats-text-light { -fx-font-size: 0.85em; }
+.root-pane .status-mini { -fx-font-size: 0.68em; }
 .root-pane .event-detail-body { -fx-font-size: 0.68em; }
 .root-pane .event-kind { -fx-font-size: 1.11em; }
 .root-pane .metric-title { -fx-font-size: 0.58em; }
@@ -119,134 +122,6 @@
 .root-pane .log-time { -fx-font-size: 0.85em; }
 .root-pane .log-message { -fx-font-size: 0.92em; }
 
-/* ---------- font-aware geometry ---------- */
-.root-pane.font-size-large .top-shell,
-.root-pane.font-size-large .lab-top-bar {
-    -fx-min-height: 78px;
-    -fx-pref-height: 78px;
-    -fx-max-height: 78px;
-}
-.root-pane.font-size-xlarge .top-shell,
-.root-pane.font-size-xlarge .lab-top-bar {
-    -fx-min-height: 86px;
-    -fx-pref-height: 86px;
-    -fx-max-height: 86px;
-}
-.root-pane.font-size-large .lab-mode-switch .workspace-mode-button {
-    -fx-min-height: 54px;
-    -fx-pref-height: 54px;
-}
-.root-pane.font-size-xlarge .lab-mode-switch .workspace-mode-button {
-    -fx-min-height: 58px;
-    -fx-pref-height: 58px;
-}
-.root-pane.font-size-large .run-state-badge { -fx-padding: 9px 14px; }
-.root-pane.font-size-xlarge .run-state-badge { -fx-padding: 10px 16px; }
-
-.root-pane.font-size-large .family-rail,
-.root-pane.font-size-large .family-rail-button {
-    -fx-min-width: 158px;
-    -fx-pref-width: 158px;
-    -fx-max-width: 158px;
-}
-.root-pane.font-size-large .family-rail-button {
-    -fx-min-height: 82px;
-    -fx-pref-height: 82px;
-    -fx-padding: 0 15px;
-}
-.root-pane.font-size-xlarge .family-rail,
-.root-pane.font-size-xlarge .family-rail-button {
-    -fx-min-width: 178px;
-    -fx-pref-width: 178px;
-    -fx-max-width: 178px;
-}
-.root-pane.font-size-xlarge .family-rail-button {
-    -fx-min-height: 90px;
-    -fx-pref-height: 90px;
-    -fx-padding: 0 16px;
-}
-
-.root-pane.font-size-large .structure-control-panel,
-.root-pane.font-size-large .algorithm-control-panel {
-    -fx-min-width: 340px;
-    -fx-pref-width: 350px;
-    -fx-max-width: 380px;
-}
-.root-pane.font-size-xlarge .structure-control-panel,
-.root-pane.font-size-xlarge .algorithm-control-panel {
-    -fx-min-width: 370px;
-    -fx-pref-width: 390px;
-    -fx-max-width: 430px;
-}
-.root-pane.font-size-large .inspector-panel {
-    -fx-min-width: 380px;
-    -fx-pref-width: 400px;
-    -fx-max-width: 430px;
-}
-.root-pane.font-size-xlarge .inspector-panel {
-    -fx-min-width: 410px;
-    -fx-pref-width: 440px;
-    -fx-max-width: 480px;
-}
-
-.root-pane.font-size-large .inspector-tabs { -fx-tab-min-height: 48px; }
-.root-pane.font-size-xlarge .inspector-tabs { -fx-tab-min-height: 54px; }
-.root-pane.font-size-large .inspector-tabs .tab { -fx-padding: 0 10px; }
-.root-pane.font-size-xlarge .inspector-tabs .tab { -fx-padding: 0 9px; }
-.root-pane.font-size-large .structure-overview-grid { -fx-min-height: 90px; -fx-pref-height: 90px; }
-.root-pane.font-size-xlarge .structure-overview-grid { -fx-min-height: 104px; -fx-pref-height: 104px; }
-.root-pane.font-size-large .run-summary-grid { -fx-min-height: 132px; -fx-pref-height: 132px; }
-.root-pane.font-size-xlarge .run-summary-grid { -fx-min-height: 150px; -fx-pref-height: 150px; }
-
-.root-pane.font-size-large .timeline-compact-row {
-    -fx-min-height: 66px;
-    -fx-pref-height: 66px;
-}
-.root-pane.font-size-xlarge .timeline-compact-row {
-    -fx-min-height: 74px;
-    -fx-pref-height: 74px;
-}
-.root-pane.font-size-large .timeline-compact-row .playback-button {
-    -fx-min-width: 92px;
-    -fx-pref-width: 92px;
-    -fx-max-width: 92px;
-}
-.root-pane.font-size-xlarge .timeline-compact-row .playback-button {
-    -fx-min-width: 108px;
-    -fx-pref-width: 108px;
-    -fx-max-width: 108px;
-}
-.root-pane.font-size-large .timeline-compact-row .playback-primary {
-    -fx-min-width: 112px;
-    -fx-pref-width: 112px;
-    -fx-max-width: 112px;
-}
-.root-pane.font-size-xlarge .timeline-compact-row .playback-primary {
-    -fx-min-width: 132px;
-    -fx-pref-width: 132px;
-    -fx-max-width: 132px;
-}
-.root-pane.font-size-large .timeline-compact-row .speed-button {
-    -fx-min-width: 36px;
-    -fx-pref-width: 36px;
-    -fx-max-width: 36px;
-}
-.root-pane.font-size-xlarge .timeline-compact-row .speed-button {
-    -fx-min-width: 42px;
-    -fx-pref-width: 42px;
-    -fx-max-width: 42px;
-}
-.root-pane.font-size-large .timeline-position-compact {
-    -fx-min-width: 98px;
-    -fx-pref-width: 98px;
-    -fx-max-width: 98px;
-}
-.root-pane.font-size-xlarge .timeline-position-compact {
-    -fx-min-width: 112px;
-    -fx-pref-width: 112px;
-    -fx-max-width: 112px;
-}
-
 /* ---------- compact / narrow density keeps the same typography roles ---------- */
 .root-pane:compact-layout .brand-title-main { -fx-font-size: 1.23em; }
 .root-pane:compact-layout .brand-subtitle { -fx-font-size: 0.55em; }
@@ -280,43 +155,6 @@
 .root-pane:narrow-layout .viewport-zoom-label { -fx-font-size: 0.55em; }
 .root-pane:narrow-layout .timeline-position-compact,
 .root-pane:narrow-layout .speed-label { -fx-font-size: 0.49em; }
-
-.root-pane.font-size-large:compact-layout .family-rail,
-.root-pane.font-size-large:compact-layout .family-rail-button {
-    -fx-min-width: 124px;
-    -fx-pref-width: 124px;
-    -fx-max-width: 124px;
-}
-.root-pane.font-size-large:compact-layout .family-rail-button { -fx-min-height: 68px; -fx-pref-height: 68px; }
-.root-pane.font-size-xlarge:compact-layout .family-rail,
-.root-pane.font-size-xlarge:compact-layout .family-rail-button {
-    -fx-min-width: 142px;
-    -fx-pref-width: 142px;
-    -fx-max-width: 142px;
-}
-.root-pane.font-size-xlarge:compact-layout .family-rail-button { -fx-min-height: 76px; -fx-pref-height: 76px; }
-
-.root-pane.font-size-large:narrow-layout .family-rail,
-.root-pane.font-size-large:narrow-layout .family-rail-button {
-    -fx-min-width: 100px;
-    -fx-pref-width: 100px;
-    -fx-max-width: 100px;
-}
-.root-pane.font-size-large:narrow-layout .family-rail-button { -fx-min-height: 60px; -fx-pref-height: 60px; }
-.root-pane.font-size-xlarge:narrow-layout .family-rail,
-.root-pane.font-size-xlarge:narrow-layout .family-rail-button {
-    -fx-min-width: 116px;
-    -fx-pref-width: 116px;
-    -fx-max-width: 116px;
-}
-.root-pane.font-size-xlarge:narrow-layout .family-rail-button { -fx-min-height: 68px; -fx-pref-height: 68px; }
-
-.root-pane.font-size-large:narrow-layout .structure-control-panel,
-.root-pane.font-size-large:narrow-layout .algorithm-control-panel { -fx-min-width: 280px; -fx-pref-width: 300px; -fx-max-width: 320px; }
-.root-pane.font-size-xlarge:narrow-layout .structure-control-panel,
-.root-pane.font-size-xlarge:narrow-layout .algorithm-control-panel { -fx-min-width: 300px; -fx-pref-width: 320px; -fx-max-width: 350px; }
-.root-pane.font-size-large:narrow-layout .inspector-panel { -fx-min-width: 310px; -fx-pref-width: 320px; -fx-max-width: 340px; }
-.root-pane.font-size-xlarge:narrow-layout .inspector-panel { -fx-min-width: 330px; -fx-pref-width: 340px; -fx-max-width: 370px; }
 
 /* ---------- font-aware text fitting closure ---------- */
 .root-pane .top-context-title,

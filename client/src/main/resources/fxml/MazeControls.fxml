@@ -31,7 +31,7 @@
         </styleClass>
         <HBox styleClass="control-section-header" alignment="CENTER_LEFT" focusTraversable="true"
             onMouseClicked="#toggleSection" onKeyPressed="#handleSectionKey">
-            <Label text="%label.maze.algorithm_structure" styleClass="control-label" />
+            <Label fx:id="algorithmStructureLabel" styleClass="control-label" />
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>

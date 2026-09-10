@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -70,6 +71,19 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
 
     protected final String formatMetric(String key, long value) {
         return I18N.text(key, value);
+    }
+
+    /** Keeps a one-option selector translated when the application locale changes. */
+    protected final void bindSingleLocalizedChoice(ComboBox<String> selector, String key) {
+        if (selector == null) {
+            return;
+        }
+        Runnable refresh = () -> {
+            selector.getItems().setAll(I18N.text(key));
+            selector.getSelectionModel().selectFirst();
+        };
+        refresh.run();
+        I18N.localeProperty().addListener((observable, oldLocale, newLocale) -> refresh.run());
     }
 
     protected boolean supportsDataTools() {

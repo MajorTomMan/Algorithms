@@ -297,9 +297,22 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     protected void setupI18n() {
-        if (typeLabel != null) {
-            configureControls();
+        if (typeLabel == null) {
+            return;
         }
+        structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
+        operationsLabel.textProperty().bind(I18N.createStringBinding("label.linear.operations"));
+        valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.value"));
+        if (kind == Kind.STACK) {
+            typeLabel.textProperty().bind(I18N.createStringBinding("label.linear.feature.stack"));
+            primaryBtn.textProperty().bind(I18N.createStringBinding("action.stack.push"));
+            secondaryBtn.textProperty().bind(I18N.createStringBinding("action.stack.pop"));
+        } else {
+            typeLabel.textProperty().bind(I18N.createStringBinding("label.linear.feature.queue"));
+            primaryBtn.textProperty().bind(I18N.createStringBinding("action.queue.enqueue"));
+            secondaryBtn.textProperty().bind(I18N.createStringBinding("action.queue.dequeue"));
+        }
+        bindSingleLocalizedChoice(structureSelector, "label.linear.structure.linked_list");
     }
 
     @Override
@@ -479,23 +492,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (typeLabel == null) {
             return;
         }
-        structureLabel.setText(I18N.text("label.common.structure"));
-        structureSelector.setItems(javafx.collections.FXCollections.observableArrayList(
-                I18N.text("label.linear.structure.linked_list")));
-        structureSelector.getSelectionModel().selectFirst();
-        operationsLabel.setText(I18N.text("label.linear.operations"));
-        valueField.setPromptText(I18N.text("prompt.linear.value"));
         indexField.setVisible(false);
         indexField.setManaged(false);
-        if (kind == Kind.STACK) {
-            typeLabel.setText(I18N.text("label.linear.feature.stack"));
-            primaryBtn.setText(I18N.text("action.stack.push"));
-            secondaryBtn.setText(I18N.text("action.stack.pop"));
-        } else {
-            typeLabel.setText(I18N.text("label.linear.feature.queue"));
-            primaryBtn.setText(I18N.text("action.queue.enqueue"));
-            secondaryBtn.setText(I18N.text("action.queue.dequeue"));
-        }
         quaternaryBtn.setVisible(false);
         quaternaryBtn.setManaged(false);
     }

@@ -31,7 +31,7 @@ final class WorkbenchTheme {
         if (root == null) {
             return;
         }
-        installWorkbenchFixes(root);
+        installPopupStyles(root);
         applyControl(root);
         if (root instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
@@ -40,11 +40,11 @@ final class WorkbenchTheme {
         }
     }
 
-    private static void installWorkbenchFixes(Node root) {
+    private static void installPopupStyles(Node root) {
         if (!(root instanceof Parent parent) || root.getParent() != null) {
             return;
         }
-        java.net.URL resource = WorkbenchTheme.class.getResource("/style/workbench-fixes.css");
+        java.net.URL resource = WorkbenchTheme.class.getResource("/style/popup.css");
         if (resource == null) {
             return;
         }

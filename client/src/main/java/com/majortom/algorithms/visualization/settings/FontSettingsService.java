@@ -33,7 +33,10 @@ public final class FontSettingsService {
     private static final String XLARGE_FONT_CLASS = "font-size-xlarge";
     private static final double LARGE_FONT_THRESHOLD = 18.0d;
     private static final double XLARGE_FONT_THRESHOLD = 21.0d;
-    private static final String TYPOGRAPHY_STYLESHEET = "/style/typography.css";
+    private static final List<String> FONT_STYLESHEETS = List.of(
+            "/style/typography.css",
+            "/style/font-layout.css",
+            "/style/font-settings.css");
     private static final Preferences PREFERENCES = Preferences.userRoot().node(
             "/com/majortom/algorithms/visualization/impl/controller");
 
@@ -66,7 +69,7 @@ public final class FontSettingsService {
             return;
         }
         FontSettings normalized = normalize(settings);
-        ensureTypographyStylesheet(root);
+        ensureFontStylesheets(root);
         root.setStyle(mergeManagedStyle(root.getStyle(), normalized, false));
         setCustomColorClass(root, !normalized.color().isBlank());
         setFontSizeClass(root, normalized.size());
@@ -78,7 +81,7 @@ public final class FontSettingsService {
             return;
         }
         FontSettings normalized = normalize(settings);
-        ensureTypographyStylesheet(previewRoot);
+        ensureFontStylesheets(previewRoot);
         String family = normalized.family();
         if (family.isBlank()) {
             family = projectDefaultFamily();
@@ -216,14 +219,16 @@ public final class FontSettingsService {
     }
 
 
-    private void ensureTypographyStylesheet(Parent root) {
-        java.net.URL resource = FontSettingsService.class.getResource(TYPOGRAPHY_STYLESHEET);
-        if (resource == null) {
-            return;
-        }
-        String stylesheet = resource.toExternalForm();
-        if (!root.getStylesheets().contains(stylesheet)) {
-            root.getStylesheets().add(stylesheet);
+    private void ensureFontStylesheets(Parent root) {
+        for (String resourcePath : FONT_STYLESHEETS) {
+            java.net.URL resource = FontSettingsService.class.getResource(resourcePath);
+            if (resource == null) {
+                continue;
+            }
+            String stylesheet = resource.toExternalForm();
+            if (!root.getStylesheets().contains(stylesheet)) {
+                root.getStylesheets().add(stylesheet);
+            }
         }
     }
 

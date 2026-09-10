@@ -1,0 +1,321 @@
+/*
+ * Font-aware Workbench geometry.
+ *
+ * Typography roles live in typography.css. This file only changes physical
+ * layout when FontSettingsService promotes the root to LARGE / XLARGE.
+ */
+
+/* ---------- font-aware geometry ---------- */
+.root-pane.font-size-large .top-shell,
+.root-pane.font-size-large .lab-top-bar {
+    -fx-min-height: 78px;
+    -fx-pref-height: 78px;
+    -fx-max-height: 78px;
+}
+.root-pane.font-size-xlarge .top-shell,
+.root-pane.font-size-xlarge .lab-top-bar {
+    -fx-min-height: 86px;
+    -fx-pref-height: 86px;
+    -fx-max-height: 86px;
+}
+.root-pane.font-size-large .lab-mode-switch .workspace-mode-button {
+    -fx-min-height: 54px;
+    -fx-pref-height: 54px;
+}
+.root-pane.font-size-xlarge .lab-mode-switch .workspace-mode-button {
+    -fx-min-height: 58px;
+    -fx-pref-height: 58px;
+}
+.root-pane.font-size-large .run-state-badge { -fx-padding: 9px 14px; }
+.root-pane.font-size-xlarge .run-state-badge { -fx-padding: 10px 16px; }
+
+.root-pane.font-size-large .family-rail,
+.root-pane.font-size-large .family-rail-button {
+    -fx-min-width: 158px;
+    -fx-pref-width: 158px;
+    -fx-max-width: 158px;
+}
+.root-pane.font-size-large .family-rail-button {
+    -fx-min-height: 82px;
+    -fx-pref-height: 82px;
+    -fx-padding: 0 15px;
+}
+.root-pane.font-size-xlarge .family-rail,
+.root-pane.font-size-xlarge .family-rail-button {
+    -fx-min-width: 178px;
+    -fx-pref-width: 178px;
+    -fx-max-width: 178px;
+}
+.root-pane.font-size-xlarge .family-rail-button {
+    -fx-min-height: 90px;
+    -fx-pref-height: 90px;
+    -fx-padding: 0 16px;
+}
+
+.root-pane.font-size-large .structure-control-panel,
+.root-pane.font-size-large .algorithm-control-panel {
+    -fx-min-width: 340px;
+    -fx-pref-width: 350px;
+    -fx-max-width: 380px;
+}
+.root-pane.font-size-xlarge .structure-control-panel,
+.root-pane.font-size-xlarge .algorithm-control-panel {
+    -fx-min-width: 370px;
+    -fx-pref-width: 390px;
+    -fx-max-width: 430px;
+}
+.root-pane.font-size-large .inspector-panel {
+    -fx-min-width: 380px;
+    -fx-pref-width: 400px;
+    -fx-max-width: 430px;
+}
+.root-pane.font-size-xlarge .inspector-panel {
+    -fx-min-width: 410px;
+    -fx-pref-width: 440px;
+    -fx-max-width: 480px;
+}
+
+.root-pane.font-size-large .inspector-tabs { -fx-tab-min-height: 48px; }
+.root-pane.font-size-xlarge .inspector-tabs { -fx-tab-min-height: 54px; }
+.root-pane.font-size-large .inspector-tabs .tab { -fx-padding: 0 10px; }
+.root-pane.font-size-xlarge .inspector-tabs .tab { -fx-padding: 0 9px; }
+.root-pane.font-size-large .structure-overview-grid { -fx-min-height: 90px; -fx-pref-height: 90px; }
+.root-pane.font-size-xlarge .structure-overview-grid { -fx-min-height: 104px; -fx-pref-height: 104px; }
+.root-pane.font-size-large .run-summary-grid { -fx-min-height: 132px; -fx-pref-height: 132px; }
+.root-pane.font-size-xlarge .run-summary-grid { -fx-min-height: 150px; -fx-pref-height: 150px; }
+
+.root-pane.font-size-large .timeline-compact-row {
+    -fx-min-height: 66px;
+    -fx-pref-height: 66px;
+}
+.root-pane.font-size-xlarge .timeline-compact-row {
+    -fx-min-height: 74px;
+    -fx-pref-height: 74px;
+}
+.root-pane.font-size-large .timeline-compact-row .playback-button {
+    -fx-min-width: 92px;
+    -fx-pref-width: 92px;
+    -fx-max-width: 92px;
+}
+.root-pane.font-size-xlarge .timeline-compact-row .playback-button {
+    -fx-min-width: 108px;
+    -fx-pref-width: 108px;
+    -fx-max-width: 108px;
+}
+.root-pane.font-size-large .timeline-compact-row .playback-primary {
+    -fx-min-width: 112px;
+    -fx-pref-width: 112px;
+    -fx-max-width: 112px;
+}
+.root-pane.font-size-xlarge .timeline-compact-row .playback-primary {
+    -fx-min-width: 132px;
+    -fx-pref-width: 132px;
+    -fx-max-width: 132px;
+}
+.root-pane.font-size-large .timeline-compact-row .speed-button {
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-max-width: 36px;
+}
+.root-pane.font-size-xlarge .timeline-compact-row .speed-button {
+    -fx-min-width: 42px;
+    -fx-pref-width: 42px;
+    -fx-max-width: 42px;
+}
+.root-pane.font-size-large .timeline-position-compact {
+    -fx-min-width: 98px;
+    -fx-pref-width: 98px;
+    -fx-max-width: 98px;
+}
+.root-pane.font-size-xlarge .timeline-position-compact {
+    -fx-min-width: 112px;
+    -fx-pref-width: 112px;
+    -fx-max-width: 112px;
+}
+
+.root-pane.font-size-large:compact-layout .family-rail,
+.root-pane.font-size-large:compact-layout .family-rail-button {
+    -fx-min-width: 124px;
+    -fx-pref-width: 124px;
+    -fx-max-width: 124px;
+}
+.root-pane.font-size-large:compact-layout .family-rail-button { -fx-min-height: 68px; -fx-pref-height: 68px; }
+.root-pane.font-size-xlarge:compact-layout .family-rail,
+.root-pane.font-size-xlarge:compact-layout .family-rail-button {
+    -fx-min-width: 142px;
+    -fx-pref-width: 142px;
+    -fx-max-width: 142px;
+}
+.root-pane.font-size-xlarge:compact-layout .family-rail-button { -fx-min-height: 76px; -fx-pref-height: 76px; }
+
+.root-pane.font-size-large:narrow-layout .family-rail,
+.root-pane.font-size-large:narrow-layout .family-rail-button {
+    -fx-min-width: 100px;
+    -fx-pref-width: 100px;
+    -fx-max-width: 100px;
+}
+.root-pane.font-size-large:narrow-layout .family-rail-button { -fx-min-height: 60px; -fx-pref-height: 60px; }
+.root-pane.font-size-xlarge:narrow-layout .family-rail,
+.root-pane.font-size-xlarge:narrow-layout .family-rail-button {
+    -fx-min-width: 116px;
+    -fx-pref-width: 116px;
+    -fx-max-width: 116px;
+}
+.root-pane.font-size-xlarge:narrow-layout .family-rail-button { -fx-min-height: 68px; -fx-pref-height: 68px; }
+
+.root-pane.font-size-large:narrow-layout .structure-control-panel,
+.root-pane.font-size-large:narrow-layout .algorithm-control-panel { -fx-min-width: 280px; -fx-pref-width: 300px; -fx-max-width: 320px; }
+.root-pane.font-size-xlarge:narrow-layout .structure-control-panel,
+.root-pane.font-size-xlarge:narrow-layout .algorithm-control-panel { -fx-min-width: 300px; -fx-pref-width: 320px; -fx-max-width: 350px; }
+.root-pane.font-size-large:narrow-layout .inspector-panel { -fx-min-width: 310px; -fx-pref-width: 320px; -fx-max-width: 340px; }
+.root-pane.font-size-xlarge:narrow-layout .inspector-panel { -fx-min-width: 330px; -fx-pref-width: 340px; -fx-max-width: 370px; }
+
+/* ---------- font-aware text control height ---------- */
+/*
+ * Text-bearing operation controls used fixed 30-34px heights in theme.css.
+ * At 21-24px base text that clips CJK glyphs and button descenders. Keep the
+ * normal density unchanged, but let LARGE / XLARGE controls grow with text.
+ */
+.root-pane.font-size-large .structure-control-panel .operation-button,
+.root-pane.font-size-large .algorithm-control-panel .operation-button {
+    -fx-min-height: 1.90em;
+    -fx-pref-height: 1.90em;
+}
+.root-pane.font-size-xlarge .structure-control-panel .operation-button,
+.root-pane.font-size-xlarge .algorithm-control-panel .operation-button {
+    -fx-min-height: 1.90em;
+    -fx-pref-height: 1.90em;
+}
+.root-pane.font-size-large .primary-red-button {
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+}
+.root-pane.font-size-xlarge .primary-red-button {
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+}
+
+/* ---------- density-aware execution dock ---------- */
+/*
+ * Generic LARGE / XLARGE timeline widths are correct on wide layouts, but
+ * font-layout.css is loaded after theme.css and would otherwise override the
+ * compact / narrow widths from theme.css. Re-state the combined cases here so
+ * the execution dock stays inside the viewport at large font sizes.
+ */
+.root-pane.font-size-large:compact-layout .timeline-compact-row {
+    -fx-min-height: 58px;
+    -fx-pref-height: 58px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row {
+    -fx-min-height: 60px;
+    -fx-pref-height: 60px;
+}
+.root-pane.font-size-large:compact-layout .timeline-compact-row .playback-button {
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+    -fx-max-width: 72px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row .playback-button {
+    -fx-min-width: 76px;
+    -fx-pref-width: 76px;
+    -fx-max-width: 76px;
+}
+.root-pane.font-size-large:compact-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 44px;
+    -fx-pref-width: 44px;
+    -fx-max-width: 44px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 46px;
+    -fx-pref-width: 46px;
+    -fx-max-width: 46px;
+}
+.root-pane.font-size-large:compact-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 88px;
+    -fx-pref-width: 88px;
+    -fx-max-width: 88px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 94px;
+    -fx-pref-width: 94px;
+    -fx-max-width: 94px;
+}
+.root-pane.font-size-large:compact-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 31px;
+    -fx-pref-width: 31px;
+    -fx-max-width: 31px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 33px;
+    -fx-pref-width: 33px;
+    -fx-max-width: 33px;
+}
+.root-pane.font-size-large:compact-layout .timeline-position-compact {
+    -fx-min-width: 84px;
+    -fx-pref-width: 84px;
+    -fx-max-width: 84px;
+}
+.root-pane.font-size-xlarge:compact-layout .timeline-position-compact {
+    -fx-min-width: 88px;
+    -fx-pref-width: 88px;
+    -fx-max-width: 88px;
+}
+
+.root-pane.font-size-large:narrow-layout .timeline-compact-row {
+    -fx-min-height: 50px;
+    -fx-pref-height: 50px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row {
+    -fx-min-height: 54px;
+    -fx-pref-height: 54px;
+}
+.root-pane.font-size-large:narrow-layout .timeline-compact-row .playback-button {
+    -fx-min-width: 56px;
+    -fx-pref-width: 56px;
+    -fx-max-width: 56px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row .playback-button {
+    -fx-min-width: 62px;
+    -fx-pref-width: 62px;
+    -fx-max-width: 62px;
+}
+.root-pane.font-size-large:narrow-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-max-width: 34px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-max-width: 36px;
+}
+.root-pane.font-size-large:narrow-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+    -fx-max-width: 72px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 78px;
+    -fx-pref-width: 78px;
+    -fx-max-width: 78px;
+}
+.root-pane.font-size-large:narrow-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 26px;
+    -fx-pref-width: 26px;
+    -fx-max-width: 26px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 28px;
+    -fx-pref-width: 28px;
+    -fx-max-width: 28px;
+}
+.root-pane.font-size-large:narrow-layout .timeline-position-compact {
+    -fx-min-width: 70px;
+    -fx-pref-width: 70px;
+    -fx-max-width: 70px;
+}
+.root-pane.font-size-xlarge:narrow-layout .timeline-position-compact {
+    -fx-min-width: 74px;
+    -fx-pref-width: 74px;
+    -fx-max-width: 74px;
+}

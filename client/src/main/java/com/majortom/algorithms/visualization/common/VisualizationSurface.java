@@ -41,6 +41,9 @@ public final class VisualizationSurface extends StackPane {
     private static final double MAX_AUTO_FIT_SCALE = 1.35d;
     private static final double TOOLBAR_ZOOM_FACTOR = 1.15d;
     private static final double AUTO_FIT_SETTLE_MS = 120.0d;
+    private static final double AUTO_FIT_RESIZE_EPSILON = 0.75d;
+    private static final double INITIAL_FIT_RETRY_MS = 40.0d;
+    private static final int INITIAL_FIT_RETRY_LIMIT = 8;
     private static final Insets DEFAULT_SAFE_INSETS = new Insets(16.0d, 16.0d, 62.0d, 16.0d);
 
     private final Group edgeLayer = layer("visualization-edge-layer");
@@ -53,6 +56,8 @@ public final class VisualizationSurface extends StackPane {
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
     private final PauseTransition autoFitSettleTransition =
             new PauseTransition(Duration.millis(AUTO_FIT_SETTLE_MS));
+    private final PauseTransition initialFitRetryTransition =
+            new PauseTransition(Duration.millis(INITIAL_FIT_RETRY_MS));
 
     private Insets safeInsets = DEFAULT_SAFE_INSETS;
     private Insets obstructionInsets = Insets.EMPTY;
@@ -63,6 +68,9 @@ public final class VisualizationSurface extends StackPane {
     private double queuedMinimumAutoScale = MIN_ZOOM;
     private boolean queuedInitialFit;
     private boolean initialAutoFitPending;
+    private int initialFitRetryCount;
+    private double lastObservedWidth = -1.0d;
+    private double lastObservedHeight = -1.0d;
 
     public VisualizationSurface() {
         getStyleClass().add("visualization-surface");
@@ -73,10 +81,13 @@ public final class VisualizationSurface extends StackPane {
         installShortcuts();
         getChildren().setAll(gesturePane, viewportToolbar);
         autoFitSettleTransition.setOnFinished(event -> performSettledAutoFit());
+        initialFitRetryTransition.setOnFinished(event -> requestInitialAutoFit());
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
         viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        widthProperty().addListener((observable, oldValue, newValue) -> requestAutoFitAfterResize());
-        heightProperty().addListener((observable, oldValue, newValue) -> requestAutoFitAfterResize());
+        widthProperty().addListener((observable, oldValue, newValue) ->
+                requestAutoFitAfterResize(true, newValue.doubleValue()));
+        heightProperty().addListener((observable, oldValue, newValue) ->
+                requestAutoFitAfterResize(false, newValue.doubleValue()));
     }
 
     public Group edgeLayer() {
@@ -164,6 +175,11 @@ public final class VisualizationSurface extends StackPane {
         if (userViewportChanged) {
             return;
         }
+        if (initialAutoFitPending) {
+            initialFitRetryCount = 0;
+            requestInitialAutoFit();
+            return;
+        }
         requestSettledAutoFit();
     }
 
@@ -191,14 +207,46 @@ public final class VisualizationSurface extends StackPane {
     public void markViewportPristine() {
         userViewportChanged = false;
         autoFitSettleTransition.stop();
+        initialFitRetryTransition.stop();
+        initialFitRetryCount = 0;
         initialAutoFitPending = true;
         worldPane.setOpacity(0.0d);
         worldPane.setMouseTransparent(true);
     }
 
-
-    private void requestAutoFitAfterResize() {
+    private void requestAutoFitAfterResize(boolean widthChanged, double value) {
+        double previous;
+        if (widthChanged) {
+            previous = lastObservedWidth;
+            lastObservedWidth = value;
+        } else {
+            previous = lastObservedHeight;
+            lastObservedHeight = value;
+        }
+        if (previous >= 0.0d && Math.abs(value - previous) < AUTO_FIT_RESIZE_EPSILON) {
+            return;
+        }
+        if (initialAutoFitPending) {
+            requestInitialAutoFit();
+            return;
+        }
         requestSettledAutoFit();
+    }
+
+    private void requestInitialAutoFit() {
+        if (userViewportChanged || !initialAutoFitPending) {
+            return;
+        }
+        if (fitNow(true, autoFitMinimumScale)) {
+            initialFitRetryTransition.stop();
+            initialFitRetryCount = 0;
+            return;
+        }
+        if (getScene() == null || initialFitRetryCount >= INITIAL_FIT_RETRY_LIMIT) {
+            return;
+        }
+        initialFitRetryCount++;
+        initialFitRetryTransition.playFromStart();
     }
 
     private void requestSettledAutoFit() {
@@ -212,7 +260,9 @@ public final class VisualizationSurface extends StackPane {
         if (userViewportChanged) {
             return;
         }
-        fitNow(true, autoFitMinimumScale);
+        if (!fitNow(true, autoFitMinimumScale) && initialAutoFitPending) {
+            requestInitialAutoFit();
+        }
     }
 
     private void configureGesturePane() {
@@ -242,11 +292,19 @@ public final class VisualizationSurface extends StackPane {
         zoomLabel.setMinWidth(46.0d);
         zoomLabel.setAlignment(Pos.CENTER);
         Button zoomIn = button("+", "action.viewport.zoom_in", this::zoomIn);
-        Button fit = button("FIT", "action.viewport.fit", this::fit);
-        Button center = button("CENTER", "action.viewport.center", this::center);
+        Button fit = localizedButton("action.viewport.fit", this::fit);
+        Button center = localizedButton("action.viewport.center", this::center);
         Button reset = button("⌂", "action.viewport.reset", this::reset);
         reset.getStyleClass().add("viewport-toolbar-last");
         viewportToolbar.getChildren().setAll(zoomOut, zoomLabel, zoomIn, fit, center, reset);
+    }
+
+    private Button localizedButton(String textKey, Runnable action) {
+        Button button = button("", textKey, action);
+        button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
+                () -> I18N.text(textKey).toUpperCase(Locale.ROOT),
+                I18N.localeProperty()));
+        return button;
     }
 
     private Button button(String text, String tooltipKey, Runnable action) {

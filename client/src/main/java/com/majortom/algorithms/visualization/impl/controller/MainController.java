@@ -565,6 +565,9 @@ public class MainController implements Initializable {
         logView.setPlaceholder(logPlaceholder);
         stepBackwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.backward"));
+        stepForwardBtn.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
+                () -> I18N.text("action.execution.step.forward").toUpperCase(Locale.ROOT) + "  ▶|",
+                I18N.localeProperty()));
         stepForwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.forward"));
         I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
@@ -625,7 +628,7 @@ public class MainController implements Initializable {
                 fontSettingsPopup = null;
             }
         });
-        popup.show(fontSettingsBtn, anchor.getMaxX() - 380.0d, anchor.getMaxY());
+        popup.show(fontSettingsBtn, anchor.getMaxX(), anchor.getMaxY());
     }
 
     private Popup createFontSettingsPopup() {
@@ -633,12 +636,10 @@ public class MainController implements Initializable {
         popup.setAutoFix(true);
         popup.setAutoHide(true);
         popup.setHideOnEscape(true);
+        popup.setAnchorLocation(javafx.stage.PopupWindow.AnchorLocation.CONTENT_TOP_RIGHT);
 
         VBox popupShell = new VBox(0.0d);
         popupShell.setAlignment(javafx.geometry.Pos.TOP_RIGHT);
-        popupShell.setMinWidth(360.0d);
-        popupShell.setPrefWidth(380.0d);
-        popupShell.setMaxWidth(380.0d);
         popupShell.getStyleClass().add("font-settings-popup-shell");
         popupShell.getStylesheets().addAll(rootPane.getStylesheets());
 
@@ -647,9 +648,6 @@ public class MainController implements Initializable {
         VBox.setMargin(arrow, new javafx.geometry.Insets(0.0d, 18.0d, 0.0d, 0.0d));
 
         VBox content = new VBox(14.0d);
-        content.setMinWidth(360.0d);
-        content.setPrefWidth(380.0d);
-        content.setMaxWidth(380.0d);
         content.getStyleClass().add("font-settings-popover");
 
         FontSettings initial = appliedFontSettings;
@@ -657,6 +655,7 @@ public class MainController implements Initializable {
             initial = FONT_SETTINGS_SERVICE.load();
         }
         FontSettings[] draft = new FontSettings[] { initial };
+        Locale[] draftLocale = new Locale[] { I18N.getLocale() };
         boolean[] updatingControls = new boolean[] { false };
 
         Label title = new Label();
@@ -742,24 +741,11 @@ public class MainController implements Initializable {
             if (updatingControls[0] || newValue == null) {
                 return;
             }
-            Locale newLocale = Locale.CHINESE;
+            Locale selectedLocale = Locale.CHINESE;
             if ("English".equals(newValue)) {
-                newLocale = Locale.ENGLISH;
+                selectedLocale = Locale.ENGLISH;
             }
-            if (I18N.getLocale().getLanguage().equals(newLocale.getLanguage())) {
-                return;
-            }
-            boolean defaultFamilySelected = familySelector.getSelectionModel().getSelectedIndex() == 0;
-            I18N.setLocale(newLocale);
-            updatingControls[0] = true;
-            String localizedDefault = I18N.text("settings.text.fontDefault");
-            familySelector.getItems().set(0, localizedDefault);
-            if (defaultFamilySelected) {
-                familySelector.getSelectionModel().select(0);
-            }
-            updatingControls[0] = false;
-            appendSystemLog(I18N.text(
-                    "message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+            draftLocale[0] = selectedLocale;
         });
 
         familySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -812,19 +798,44 @@ public class MainController implements Initializable {
             familySelector.getSelectionModel().select(projectDefault);
             sizeValue.setText(formatFontSize(defaults.size()));
             colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
+            draftLocale[0] = I18N.getLocale();
+            if ("zh".equals(draftLocale[0].getLanguage())) {
+                languageSelector.getSelectionModel().select("中文");
+            } else {
+                languageSelector.getSelectionModel().select("English");
+            }
             updatingControls[0] = false;
             draft[0] = defaults;
             refreshPreview.run();
         });
         apply.setOnAction(event -> {
             FontSettings normalized = FONT_SETTINGS_SERVICE.normalize(draft[0]);
+            Locale selectedLocale = draftLocale[0];
+            boolean languageChanged = selectedLocale != null
+                    && !I18N.getLocale().getLanguage().equals(selectedLocale.getLanguage());
             FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
             FONT_SETTINGS_SERVICE.save(normalized);
             appliedFontSettings = normalized;
+            if (languageChanged) {
+                I18N.setLocale(selectedLocale);
+                appendSystemLog(I18N.text(
+                        "message.system.language_switched",
+                        selectedLocale.getDisplayLanguage(selectedLocale)));
+            }
+            rootPane.applyCss();
+            rootPane.layout();
             updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
             boolean timelineExpanded = timelineDetails != null && timelineDetails.isVisible();
             setTimelineExpanded(timelineExpanded);
             rootPane.requestLayout();
+            javafx.application.Platform.runLater(() -> {
+                if (rootPane == null) {
+                    return;
+                }
+                rootPane.applyCss();
+                rootPane.layout();
+                updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
+            });
             popup.hide();
         });
 
@@ -848,9 +859,6 @@ public class MainController implements Initializable {
     }
 
     private HBox fontSettingsRow(Label label, Node control) {
-        label.setMinWidth(104.0d);
-        label.setPrefWidth(104.0d);
-        label.setMaxWidth(104.0d);
         label.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
         HBox.setHgrow(control, Priority.ALWAYS);
         HBox row = new HBox(12.0d, label, control);

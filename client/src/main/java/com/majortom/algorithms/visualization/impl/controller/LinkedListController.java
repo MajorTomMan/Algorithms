@@ -281,9 +281,18 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     protected void setupI18n() {
-        if (typeLabel != null) {
-            configureControls();
+        if (typeLabel == null) {
+            return;
         }
+        typeLabel.textProperty().bind(I18N.createStringBinding("label.linear.feature.linked_list"));
+        structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
+        operationsLabel.textProperty().bind(I18N.createStringBinding("label.linear.operations"));
+        valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.value"));
+        indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.index"));
+        primaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.insert"));
+        secondaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.remove"));
+        quaternaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.update"));
+        bindSingleLocalizedChoice(structureSelector, "label.linear.structure.linked_list");
     }
 
     @Override
@@ -449,17 +458,6 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (typeLabel == null) {
             return;
         }
-        typeLabel.setText(I18N.text("label.linear.feature.linked_list"));
-        structureLabel.setText(I18N.text("label.common.structure"));
-        structureSelector.setItems(javafx.collections.FXCollections.observableArrayList(
-                I18N.text("label.linear.structure.linked_list")));
-        structureSelector.getSelectionModel().selectFirst();
-        operationsLabel.setText(I18N.text("label.linear.operations"));
-        valueField.setPromptText(I18N.text("prompt.linear.value"));
-        indexField.setPromptText(I18N.text("prompt.linear.index"));
-        primaryBtn.setText(I18N.text("action.linked_list.insert"));
-        secondaryBtn.setText(I18N.text("action.linked_list.remove"));
-        quaternaryBtn.setText(I18N.text("action.linked_list.update"));
         indexField.setVisible(true);
         indexField.setManaged(true);
         quaternaryBtn.setVisible(true);

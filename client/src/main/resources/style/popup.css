@@ -1,4 +1,4 @@
-/* Focused Workbench closure styles loaded by WorkbenchTheme. */
+/* JavaFX popup-scene paint and density, loaded by WorkbenchTheme. */
 /*
  * ComboBox and ContextMenu content is rendered in separate JavaFX Popup scenes.
  * Root looked-up colors from theme.css are not guaranteed to cross that scene boundary,
@@ -18,7 +18,7 @@
 .combo-box-popup .list-cell {
     -fx-background-color: #ffffff;
     -fx-text-fill: #202124;
-    -fx-padding: 7px 9px;
+    -fx-padding: 0.42em 0.58em;
 }
 .combo-box-popup .list-cell:filled:hover {
     -fx-background-color: #f3f5f7;
@@ -45,25 +45,4 @@
 }
 .context-menu.algorithm-snapshot-menu .menu-item:focused .label {
     -fx-text-fill: #ffffff;
-}
-
-/* Edge metadata slot reserved for future weighted-graph labels. */
-.visual-edge-label {
-    -fx-background-color: rgba(255, 255, 255, 0.96);
-    -fx-border-color: -ui-gray-300;
-    -fx-border-width: 1px;
-    -fx-border-radius: 3px;
-    -fx-background-radius: 3px;
-    -fx-padding: 2px 5px;
-    -fx-text-fill: -ui-black;
-    -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 10px;
-    -fx-font-weight: 700;
-}
-.visual-edge:highlighted .visual-edge-label {
-    -fx-border-color: -ui-yellow;
-}
-.visual-edge:selected .visual-edge-label {
-    -fx-border-color: -ui-red;
-    -fx-text-fill: -ui-red;
 }

@@ -15,271 +15,6 @@
     -fx-font-size: 13px;
 }
 
-/* ---------- text display settings ---------- */
-.font-settings-divider {
-    -fx-padding: 0 2px;
-}
-
-.font-settings-divider .line {
-    -fx-border-color: #4b5157;
-    -fx-border-width: 0 0 0 1px;
-}
-
-.lab-top-bar .font-settings-button {
-    -fx-min-height: 36px;
-    -fx-pref-height: 36px;
-    -fx-max-height: 36px;
-    -fx-padding: 0;
-    -fx-background-color: transparent;
-    -fx-border-color: #4b5157;
-    -fx-border-width: 1px;
-    -fx-border-radius: 3px;
-    -fx-background-radius: 3px;
-    -fx-text-fill: #f2f3f4;
-    -fx-font-weight: 700;
-}
-
-.lab-top-bar .font-settings-button {
-    -fx-min-width: 36px;
-    -fx-pref-width: 36px;
-    -fx-max-width: 36px;
-    -fx-font-size: 1.05em;
-}
-
-.lab-top-bar .font-settings-button:hover {
-    -fx-background-color: #2d3237;
-    -fx-border-color: #697178;
-}
-
-.font-settings-popup-shell {
-    -fx-background-color: transparent;
-}
-
-.font-settings-arrow {
-    -fx-min-width: 20px;
-    -fx-pref-width: 20px;
-    -fx-max-width: 20px;
-    -fx-min-height: 10px;
-    -fx-pref-height: 10px;
-    -fx-max-height: 10px;
-    -fx-background-color: #ffffff;
-    -fx-shape: "M 0 10 L 10 0 L 20 10 Z";
-}
-
-.font-settings-popover {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #d6dce2;
-    -fx-border-width: 1px;
-    -fx-background-radius: 6px;
-    -fx-border-radius: 6px;
-    -fx-padding: 18px 20px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 24, 0.12, 0, 5);
-}
-
-.font-settings-title {
-    -fx-text-fill: #202124;
-    -fx-font-size: 1.16em;
-    -fx-font-weight: 800;
-    -fx-padding: 0 0 4px 0;
-}
-
-.font-settings-row {
-    -fx-alignment: center-left;
-    -fx-min-height: 42px;
-}
-
-.font-settings-row-label,
-.font-settings-preview-title {
-    -fx-text-fill: #202124;
-    -fx-font-size: 0.92em;
-    -fx-font-weight: 700;
-}
-
-.font-settings-popover .font-settings-combo,
-.font-settings-popover .font-settings-color-picker {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
-    -fx-background-color: #f8fafb;
-    -fx-border-color: #d7dde3;
-    -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-}
-
-.font-settings-popover .font-settings-combo .list-cell,
-.font-settings-popover .font-settings-color-picker .label {
-    -fx-text-fill: #202124;
-}
-
-.font-settings-popover .font-settings-language-combo {
-    -fx-pref-width: 230px;
-}
-
-.font-settings-size-control {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
-    -fx-border-color: #d7dde3;
-    -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-    -fx-background-color: #ffffff;
-}
-
-.font-settings-popover .font-settings-size-button {
-    -fx-min-width: 48px;
-    -fx-pref-width: 48px;
-    -fx-max-width: 48px;
-    -fx-min-height: 36px;
-    -fx-pref-height: 36px;
-    -fx-max-height: 36px;
-    -fx-padding: 0;
-    -fx-background-color: #eef2f5;
-    -fx-border-color: transparent;
-    -fx-text-fill: #202124;
-    -fx-font-size: 1.12em;
-    -fx-font-weight: 700;
-}
-
-.font-settings-popover .font-settings-size-button:hover {
-    -fx-background-color: #e4e9ed;
-}
-
-.font-settings-size-value {
-    -fx-alignment: center;
-    -fx-text-fill: #202124;
-    -fx-font-weight: 700;
-    -fx-background-color: #ffffff;
-}
-
-.font-settings-popover .separator .line {
-    -fx-border-color: #e1e5e9;
-    -fx-border-width: 1px 0 0 0;
-}
-
-.font-settings-preview-title {
-    -fx-padding: 0 0 1px 0;
-}
-
-.font-settings-preview {
-    -ui-user-text: #202124;
-    -fx-background-color: #f1f3f5;
-    -fx-background-radius: 4px;
-    -fx-border-color: #e1e5e9;
-    -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-padding: 12px 14px;
-}
-
-.font-settings-preview .label {
-    -fx-text-fill: #3c4043;
-}
-
-.font-settings-preview .font-settings-preview-primary {
-    -fx-text-fill: #202124;
-    -fx-font-weight: 700;
-}
-
-.font-settings-preview.font-color-custom .label {
-    -fx-text-fill: -ui-user-text;
-}
-
-.font-settings-footer {
-    -fx-padding: 2px 0 0 0;
-}
-
-.font-settings-popover .font-settings-reset-button,
-.font-settings-popover .font-settings-apply-button {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
-    -fx-max-height: 38px;
-    -fx-padding: 0 14px;
-}
-
-.font-settings-popover .font-settings-reset-button {
-    -fx-min-width: 112px;
-    -fx-pref-width: 0;
-    -fx-max-width: Infinity;
-    -fx-background-color: #f0f2f4;
-    -fx-border-color: #dde2e7;
-    -fx-text-fill: #202124;
-}
-
-.font-settings-popover .font-settings-apply-button {
-    -fx-min-width: 96px;
-    -fx-pref-width: 96px;
-    -fx-max-width: 96px;
-    -fx-background-color: #ff1f2d;
-    -fx-border-color: #ff1f2d;
-    -fx-text-fill: #ffffff;
-    -fx-font-weight: 700;
-}
-
-/* User text color applies only to ordinary Workbench text. Semantic colors keep their rules. */
-.root-pane.font-color-custom .brand-title-main,
-.root-pane.font-color-custom .brand-subtitle,
-.root-pane.font-color-custom .top-context-title,
-.root-pane.font-color-custom .run-id-label,
-.root-pane.font-color-custom .font-settings-button,
-.root-pane.font-color-custom .family-rail-button,
-.root-pane.font-color-custom .panel-eyebrow,
-.root-pane.font-color-custom .panel-section-title,
-.root-pane.font-color-custom .inspector-heading,
-.root-pane.font-color-custom .history-title,
-.root-pane.font-color-custom .panel-gear,
-.root-pane.font-color-custom .structure-identity-title,
-.root-pane.font-color-custom .structure-identity-meta,
-.root-pane.font-color-custom .live-label,
-.root-pane.font-color-custom .control-section-title,
-.root-pane.font-color-custom .operation-label,
-.root-pane.font-color-custom .operation-hint,
-.root-pane.font-color-custom .operation-button,
-.root-pane.font-color-custom .summary-caption,
-.root-pane.font-color-custom .summary-number,
-.root-pane.font-color-custom .algorithm-input-source-card,
-.root-pane.font-color-custom .viewport-toolbar-button,
-.root-pane.font-color-custom .viewport-zoom-label,
-.root-pane.font-color-custom .overlay-caption,
-.root-pane.font-color-custom .overlay-hint,
-.root-pane.font-color-custom .current-step-detail,
-.root-pane.font-color-custom .current-step-sequence,
-.root-pane.font-color-custom .inspector-tabs .tab .tab-label,
-.root-pane.font-color-custom .inspector-body,
-.root-pane.font-color-custom .snapshot-count,
-.root-pane.font-color-custom .history-count,
-.root-pane.font-color-custom .snapshot-card-title,
-.root-pane.font-color-custom .snapshot-card-detail,
-.root-pane.font-color-custom .stats-text-light,
-.root-pane.font-color-custom .result-value,
-.root-pane.font-color-custom .timeline-position-compact,
-.root-pane.font-color-custom .speed-label,
-.root-pane.font-color-custom .playback-button,
-.root-pane.font-color-custom .speed-button,
-.root-pane.font-color-custom .timeline-toggle-button,
-.root-pane.font-color-custom .text-field,
-.root-pane.font-color-custom .combo-box .list-cell,
-.root-pane.font-color-custom .spinner .text-field {
-    -fx-text-fill: -ui-user-text;
-}
-
-.root-pane.font-color-custom .family-rail-button:selected,
-.root-pane.font-color-custom .speed-button:selected {
-    -fx-text-fill: -ui-white;
-}
-
-.font-scale-box {
-    -fx-alignment: center-right;
-}
-
-.font-scale-label {
-    -fx-text-fill: #8e979e;
-    -fx-font-size: 0.85em;
-}
-
-.font-scale-selector {
-    -fx-min-width: 78px;
-    -fx-pref-width: 92px;
-}
-
 /* ---------- application shell ---------- */
 
 .top-shell,
@@ -3623,3 +3358,25 @@
 }
 
 
+
+
+/* Edge metadata slot reserved for future weighted-graph labels. */
+.visual-edge-label {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 2px 5px;
+    -fx-text-fill: -ui-black;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.visual-edge:highlighted .visual-edge-label {
+    -fx-border-color: -ui-yellow;
+}
+.visual-edge:selected .visual-edge-label {
+    -fx-border-color: -ui-red;
+    -fx-text-fill: -ui-red;
+}
