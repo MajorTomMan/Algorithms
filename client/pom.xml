@@ -82,6 +82,13 @@
             <scope>runtime</scope>
         </dependency>
 
+    
+        <dependency>
+            <groupId>com.majortom.algorithms</groupId>
+            <artifactId>algorithms-structures</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>

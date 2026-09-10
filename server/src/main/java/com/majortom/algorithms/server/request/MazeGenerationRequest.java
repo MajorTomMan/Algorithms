@@ -1,6 +1,6 @@
 package com.majortom.algorithms.server.request;
 
-import com.majortom.algorithms.library.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
 
 /** HTTP request body for deterministic maze generation. */
 public record MazeGenerationRequest(int rows, int columns, long seed) {

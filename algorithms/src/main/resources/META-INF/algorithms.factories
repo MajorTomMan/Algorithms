@@ -1,23 +1,13 @@
-# V2 startup registry. One key maps to one active implementation until restart.
-structure.array.Integer=com.majortom.algorithms.library.basic.Array
-structure.graph.Integer=com.majortom.algorithms.library.basic.graph.Graph
-structure.graph.weighted.Integer=com.majortom.algorithms.library.basic.graph.WeightedGraph
-structure.linked-list.Integer=com.majortom.algorithms.library.basic.LinkedList
-structure.stack.Integer=com.majortom.algorithms.library.basic.LinkedList
-structure.queue.Integer=com.majortom.algorithms.library.basic.LinkedList
-structure.tree.Integer=com.majortom.algorithms.library.basic.tree.Tree
-structure.tree.avl.Integer=com.majortom.algorithms.library.basic.tree.AVLTree
-
-algorithm.array.Integer.insertion-sort=com.majortom.algorithms.library.sort.insertion.IntegerInsertionSort
-algorithm.array.Integer.selection-sort=com.majortom.algorithms.library.sort.IntegerSelectionSort
-algorithm.array.Integer.quick-sort=com.majortom.algorithms.library.sort.IntegerQuickSort
-algorithm.array.Integer.heap-sort=com.majortom.algorithms.library.sort.IntegerHeapSort
-algorithm.graph.Integer.graph-bfs=com.majortom.algorithms.library.graph.GraphBfs
-algorithm.graph.Integer.graph-generator-bfs=com.majortom.algorithms.library.maze.GraphMazeBfsGenerator
-algorithm.maze.Boolean.maze-generator-bfs=com.majortom.algorithms.library.maze.BfsArrayMazeGenerator
-algorithm.maze.Boolean.maze-generator-dfs=com.majortom.algorithms.library.maze.DfsArrayMazeGenerator
-algorithm.maze.Boolean.maze-generator-union-find=com.majortom.algorithms.library.maze.UnionFindArrayMazeGenerator
-algorithm.maze.Boolean.maze-pathfinder-astar=com.majortom.algorithms.library.maze.AStarArrayMazePathfinder
-algorithm.maze.Boolean.maze-pathfinder-dfs=com.majortom.algorithms.library.maze.DfsArrayMazePathfinder
-structure.string.String=com.majortom.algorithms.library.basic.String
-algorithm.string.String.kmp=com.majortom.algorithms.library.string.KmpSearch
+# Reusable Algorithm registrations. Keys intentionally unchanged by module reorganization.
+algorithm.array.Integer.insertion-sort=com.majortom.algorithms.algorithm.array.sort.insertion.IntegerInsertionSort
+algorithm.array.Integer.selection-sort=com.majortom.algorithms.algorithm.array.sort.IntegerSelectionSort
+algorithm.array.Integer.quick-sort=com.majortom.algorithms.algorithm.array.sort.IntegerQuickSort
+algorithm.array.Integer.heap-sort=com.majortom.algorithms.algorithm.array.sort.IntegerHeapSort
+algorithm.graph.Integer.graph-bfs=com.majortom.algorithms.algorithm.graph.GraphBfs
+algorithm.graph.Integer.graph-generator-bfs=com.majortom.algorithms.algorithm.maze.GraphMazeBfsGenerator
+algorithm.maze.Boolean.maze-generator-bfs=com.majortom.algorithms.algorithm.maze.BfsArrayMazeGenerator
+algorithm.maze.Boolean.maze-generator-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazeGenerator
+algorithm.maze.Boolean.maze-generator-union-find=com.majortom.algorithms.algorithm.maze.UnionFindArrayMazeGenerator
+algorithm.maze.Boolean.maze-pathfinder-astar=com.majortom.algorithms.algorithm.maze.AStarArrayMazePathfinder
+algorithm.maze.Boolean.maze-pathfinder-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazePathfinder
+algorithm.string.String.kmp=com.majortom.algorithms.algorithm.string.KmpSearch

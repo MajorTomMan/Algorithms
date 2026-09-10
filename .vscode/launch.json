@@ -12,15 +12,15 @@
       "type": "java",
       "name": "Game",
       "request": "launch",
-      "mainClass": "com.majortom.algorithms.app.snake.Game",
-      "projectName": "algorithms-other"
+      "mainClass": "com.majortom.algorithms.practice.exercises.snake.Game",
+      "projectName": "algorithms-practice"
     },
     {
       "type": "java",
       "name": "LinkedList",
       "request": "launch",
-      "mainClass": "com.majortom.algorithms.core.basic.LinkedList",
-      "projectName": "algorithms-core"
+      "mainClass": "com.majortom.algorithms.structure.linked.LinkedList",
+      "projectName": "algorithms-structures"
     },
     {
       "type": "java",

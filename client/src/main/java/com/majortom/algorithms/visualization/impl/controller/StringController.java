@@ -3,10 +3,10 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.library.string.LongestSubstringAlgorithm;
-import com.majortom.algorithms.library.string.StringAlgorithm;
-import com.majortom.algorithms.library.string.StringSearch;
-import com.majortom.algorithms.library.structure.StringStructure;
+import com.majortom.algorithms.algorithm.string.LongestSubstringAlgorithm;
+import com.majortom.algorithms.algorithm.string.StringAlgorithm;
+import com.majortom.algorithms.algorithm.string.StringSearch;
+import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
@@ -61,7 +61,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     public StringController() {
         super(new StringVisualizer(), "/fxml/StringControls.fxml");
-        source = module("structure.string.String", com.majortom.algorithms.library.basic.String.class);
+        source = module("structure.string.String", com.majortom.algorithms.structure.string.String.class);
         source.replace(0, source.length(), "ABABDABACDABABCABAB");
         renderSource();
     }
@@ -231,7 +231,7 @@ public final class StringController extends BaseModuleController<StringViewState
             inputSnapshot = algorithmInputSnapshot;
         }
         String target = inputSnapshot.state().value();
-        StringStructure input = new com.majortom.algorithms.library.basic.String(target);
+        StringStructure input = new com.majortom.algorithms.structure.string.String(target);
         StringAlgorithm algorithm = module(
                 "algorithm.string.String." + algorithmId,
                 StringAlgorithm.class);

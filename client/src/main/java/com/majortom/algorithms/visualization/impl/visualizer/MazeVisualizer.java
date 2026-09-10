@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
-import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;

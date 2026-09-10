@@ -6,10 +6,11 @@ Algorithms 是一个数据结构与算法实验室。当前 V2 的主线是：**
 
 ```text
 core/        Runtime、Event Contract、Registry、Timeline、Snapshot、Statistics、Logging、Scheduler
-algorithms/  canonical 数据结构、算法实现、Algorithm auto-discovery provider
+structures/  canonical 数据结构、节点模型、Structure Contract / Implementation
+algorithms/  可复用算法契约、算法实现、Algorithm auto-discovery provider
+practice/    LeetCode / 学习练习 / Snake / Concurrency；不进入 production registry
 client/      JavaFX + AtlantaFX Workbench、Reducer/ViewState、Layout、Visualizer、Playback
 server/      Spring Boot headless API
-other/       历史练习/教学代码，不属于 V2 production registry
 ```
 
 依赖方向：
@@ -17,9 +18,13 @@ other/       历史练习/教学代码，不属于 V2 production registry
 ```text
 core
  ↑
+structures
+ ↑
 algorithms
  ↑       ↑
 client  server
+
+practice -> structures + algorithms
 ```
 
 `core` 不依赖 `algorithms`、JavaFX、AtlantaFX 或 Spring。`core` 只定义跨模块 SPI/Contract；例如 `ModuleDiscovery` 在 core，真正认识 `Sort/TreeAlgorithm/GraphTraversal` 的 `AlgorithmModuleDiscovery` 在 algorithms。
@@ -34,7 +39,7 @@ Integer / Long / Double / Float / Boolean / Character / Byte / Short / String
 
 ## Canonical Structure
 
-`algorithms/src/main/java` 当前正式基础结构：
+`structures/src/main/java` 当前正式基础结构：
 
 ```text
 Array<T>                         -> ArrayStructure<T>
@@ -76,7 +81,7 @@ Tree<T>                     -> General/N-ary Tree
 AVLTree<T>                  -> AVL Search Tree
 ```
 
-`RedBlackTree` 与 canonical `HuffmanTree` **本轮未实现，明确列为 future implementation**。旧 `basic/HuffmanTree` 已从 production source 删除；历史 Huffman 练习保留在 `other`，不代表 V2 Tree family 已支持 Huffman。
+`RedBlackTree` 与 canonical `HuffmanTree` **本轮未实现，明确列为 future implementation**。旧 `basic/HuffmanTree` 已从 production source 删除；历史 Huffman 练习保留在 `practice`，不代表 V2 Tree family 已支持 Huffman。
 
 `GeneralTreeStructure` 的真实领域能力包括：
 
@@ -263,9 +268,9 @@ Algorithm
 
 Server 可以把返回值转换为 HTTP 表达，但不会要求 `algorithms` 再维护一套 Input/Output。`ExecutionRequest`、`core.runtime.ExecutionResult` 与 `core.snapshot.*` 保留各自边界职责。
 
-## `other` 模块
+## Practice 模块
 
-`other` 仅保存练习、历史代码和第三方教材示例，不属于 canonical family。生产源码中已经删除的旧重复实现不会为了让 `other` 编译而加回 compatibility layer；示例应迁移到当前 API，或在 `other` 内自包含。直接依赖 Princeton `algs4.jar` 的教材专项示例保留在 `other/examples/princeton/`，不进入默认 Maven reactor compile。
+`practice` 保存 LeetCode、学习练习、Snake 与并发示例，不属于 production registry。直接依赖 Princeton `algs4.jar` 的教材专项源码保留在 `practice/src/princeton/`，仍不进入默认 Maven reactor compile；这是 Practice 内的可选教材 source set。
 
 ## 开发约束
 

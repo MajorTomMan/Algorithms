@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.runtime.maze;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;

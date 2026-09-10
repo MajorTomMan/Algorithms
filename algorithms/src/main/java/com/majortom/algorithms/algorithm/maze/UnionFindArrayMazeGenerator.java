@@ -1,0 +1,91 @@
+package com.majortom.algorithms.algorithm.maze;
+
+
+
+
+import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+/** Randomized Kruskal/union-find perfect-maze generator. */
+public final class UnionFindArrayMazeGenerator implements ArrayMazeGenerator {
+    @Override
+    public GridMaze generate(MazeDimensions dimensions, long seed) {
+        Random random = new Random(seed);
+        ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
+        List<GridPoint> cells = logicalCells(dimensions);
+        for (GridPoint cell : cells) ArrayMazeSupport.open(dimensions, state.open(), cell);
+        List<CellEdge> edges = new ArrayList<>();
+        for (GridPoint cell : cells) {
+            addEdgeIfInside(dimensions, edges, cell, 0, 2);
+            addEdgeIfInside(dimensions, edges, cell, 2, 0);
+        }
+        Collections.shuffle(edges, random);
+        DisjointSet sets = new DisjointSet(dimensions.rows() * dimensions.columns());
+        for (CellEdge edge : edges) {
+            int left = ArrayMazeSupport.index(dimensions.columns(), edge.left());
+            int right = ArrayMazeSupport.index(dimensions.columns(), edge.right());
+            if (!sets.union(left, right)) continue;
+            GridPoint corridor = new GridPoint(
+                    (edge.left().row() + edge.right().row()) / 2,
+                    (edge.left().column() + edge.right().column()) / 2);
+            ArrayMazeSupport.open(dimensions, state.open(), corridor);
+        }
+        return ArrayMazeSupport.complete(dimensions, state);
+    }
+
+    private List<GridPoint> logicalCells(MazeDimensions dimensions) {
+        List<GridPoint> cells = new ArrayList<>();
+        for (int row = 1; row < dimensions.rows(); row += 2) {
+            for (int column = 1; column < dimensions.columns(); column += 2) cells.add(new GridPoint(row, column));
+        }
+        return cells;
+    }
+
+    private void addEdgeIfInside(MazeDimensions dimensions, List<CellEdge> edges, GridPoint left, int rowDelta, int columnDelta) {
+        int rightRow = left.row() + rowDelta;
+        int rightColumn = left.column() + columnDelta;
+        if (ArrayMazeSupport.isInner(dimensions, rightRow, rightColumn)) {
+            edges.add(new CellEdge(left, new GridPoint(rightRow, rightColumn)));
+        }
+    }
+
+    private record CellEdge(GridPoint left, GridPoint right) {}
+
+    private static final class DisjointSet {
+        private final int[] parent;
+        private final byte[] rank;
+
+        private DisjointSet(int size) {
+            parent = new int[size];
+            rank = new byte[size];
+            for (int index = 0; index < size; index++) parent[index] = index;
+        }
+
+        private boolean union(int left, int right) {
+            int leftRoot = find(left);
+            int rightRoot = find(right);
+            if (leftRoot == rightRoot) return false;
+            if (rank[leftRoot] < rank[rightRoot]) parent[leftRoot] = rightRoot;
+            else if (rank[leftRoot] > rank[rightRoot]) parent[rightRoot] = leftRoot;
+            else { parent[rightRoot] = leftRoot; rank[leftRoot]++; }
+            return true;
+        }
+
+        private int find(int value) {
+            int root = value;
+            while (parent[root] != root) root = parent[root];
+            int current = value;
+            while (parent[current] != current) {
+                int next = parent[current];
+                parent[current] = root;
+                current = next;
+            }
+            return root;
+        }
+    }
+}

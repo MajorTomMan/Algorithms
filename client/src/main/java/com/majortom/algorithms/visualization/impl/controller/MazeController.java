@@ -1,11 +1,11 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
-import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
-import com.majortom.algorithms.library.maze.GraphMazeGenerator;
-import com.majortom.algorithms.library.maze.GridMaze;
-import com.majortom.algorithms.library.maze.GridPoint;
-import com.majortom.algorithms.library.maze.MazeDimensions;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
+import com.majortom.algorithms.algorithm.maze.GraphMazeGenerator;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -417,7 +417,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 true);
     }
 
-    private MazeViewState completedViewState(MazeSnapshot snapshot, java.util.Set<com.majortom.algorithms.library.maze.GridPoint> path) {
+    private MazeViewState completedViewState(MazeSnapshot snapshot, java.util.Set<com.majortom.algorithms.structure.maze.GridPoint> path) {
         MazeViewState state = MazeViewState.source(snapshot);
         return new MazeViewState(
                 state.rows(),
@@ -512,7 +512,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         return MazeViewState.source(state);
     }
 
-    private MazeSnapshot.Cell cell(com.majortom.algorithms.library.maze.GridPoint point) {
+    private MazeSnapshot.Cell cell(com.majortom.algorithms.structure.maze.GridPoint point) {
         if (point == null) {
             return null;
         } else {
@@ -520,11 +520,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         }
     }
 
-    private com.majortom.algorithms.library.maze.GridPoint point(MazeSnapshot.Cell cell) {
+    private com.majortom.algorithms.structure.maze.GridPoint point(MazeSnapshot.Cell cell) {
         if (cell == null) {
             return null;
         } else {
-            return new com.majortom.algorithms.library.maze.GridPoint(cell.row(), cell.column());
+            return new com.majortom.algorithms.structure.maze.GridPoint(cell.row(), cell.column());
         }
     }
 

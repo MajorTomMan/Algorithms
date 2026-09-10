@@ -1,6 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.linked;
 
-import com.majortom.algorithms.library.basic.node.ListNode;
+import com.majortom.algorithms.structure.linked.ListNode;
 
 import java.util.LinkedHashMap;
 import java.util.List;

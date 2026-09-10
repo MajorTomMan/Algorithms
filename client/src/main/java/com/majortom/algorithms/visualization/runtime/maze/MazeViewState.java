@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.maze;
 
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
-import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.GridPoint;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;

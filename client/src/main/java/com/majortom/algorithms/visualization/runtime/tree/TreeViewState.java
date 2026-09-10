@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.tree;
 
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
-import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
+import com.majortom.algorithms.structure.tree.AvlNodeSnapshot;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

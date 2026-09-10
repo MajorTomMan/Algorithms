@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.library.sort.Sort;
-import com.majortom.algorithms.library.basic.Array;
+import com.majortom.algorithms.algorithm.array.sort.Sort;
+import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
@@ -155,7 +155,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return sourceValues(sourceArray);
     }
 
-    private List<Integer> sourceValues(com.majortom.algorithms.library.structure.ArrayStructure<Integer> array) {
+    private List<Integer> sourceValues(com.majortom.algorithms.structure.array.ArrayStructure<Integer> array) {
         List<Integer> values = new ArrayList<>(array.size());
         for (Integer value : array) {
             values.add(value);

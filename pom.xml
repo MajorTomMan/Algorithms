@@ -19,10 +19,11 @@
 
     <modules>
         <module>core</module>
+        <module>structures</module>
         <module>algorithms</module>
+        <module>practice</module>
         <module>client</module>
         <module>server</module>
-        <module>other</module>
     </modules>
 
     <properties>

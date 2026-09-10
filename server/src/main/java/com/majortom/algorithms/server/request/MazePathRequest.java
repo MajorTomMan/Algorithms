@@ -1,7 +1,7 @@
 package com.majortom.algorithms.server.request;
 
-import com.majortom.algorithms.library.maze.GridMaze;
-import com.majortom.algorithms.library.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
 
 import java.util.Objects;
 

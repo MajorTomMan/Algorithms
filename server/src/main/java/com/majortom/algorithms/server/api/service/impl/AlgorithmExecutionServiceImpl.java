@@ -8,20 +8,20 @@ import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.RecordingEventSink;
-import com.majortom.algorithms.library.graph.GraphBfs;
-import com.majortom.algorithms.library.basic.graph.Graph;
-import com.majortom.algorithms.library.structure.StringStructure;
-import com.majortom.algorithms.library.string.KmpSearch;
-import com.majortom.algorithms.library.maze.ArrayMazeGenerator;
-import com.majortom.algorithms.library.maze.ArrayMazePathfinder;
-import com.majortom.algorithms.library.maze.GraphMazeBfsGenerator;
-import com.majortom.algorithms.library.maze.GridMaze;
-import com.majortom.algorithms.library.maze.GridPoint;
-import com.majortom.algorithms.library.maze.MazeDimensions;
-import com.majortom.algorithms.library.sort.Sort;
-import com.majortom.algorithms.library.tree.AvlNodeSnapshot;
-import com.majortom.algorithms.library.basic.tree.AVLTree;
-import com.majortom.algorithms.library.basic.tree.AVLTreeNode;
+import com.majortom.algorithms.algorithm.graph.GraphBfs;
+import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.string.StringStructure;
+import com.majortom.algorithms.algorithm.string.KmpSearch;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
+import com.majortom.algorithms.algorithm.maze.GraphMazeBfsGenerator;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.algorithm.array.sort.Sort;
+import com.majortom.algorithms.structure.tree.AvlNodeSnapshot;
+import com.majortom.algorithms.structure.tree.AVLTree;
+import com.majortom.algorithms.structure.tree.AVLTreeNode;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.server.api.constant.ExecutionState;
 import com.majortom.algorithms.server.api.entity.ExecutionUnit;
@@ -201,8 +201,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
                 @SuppressWarnings("unchecked")
                 Sort<Integer> algorithm = (Sort<Integer>) MODULES.create(
                         "algorithm.array.Integer." + algorithmId, Sort.class);
-                com.majortom.algorithms.library.basic.Array<Integer> array =
-                        new com.majortom.algorithms.library.basic.Array<>(request.values());
+                com.majortom.algorithms.structure.array.Array<Integer> array =
+                        new com.majortom.algorithms.structure.array.Array<>(request.values());
                 yield new PreparedExecution(() -> {
                     algorithm.sort(array);
                     return copy(array);
@@ -236,7 +236,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             }
             case "kmp" -> {
                 StringSearchRequest request = objectMapper.convertValue(input, StringSearchRequest.class);
-                StringStructure target = new com.majortom.algorithms.library.basic.String(request.target());
+                StringStructure target = new com.majortom.algorithms.structure.string.String(request.target());
                 KmpSearch algorithm = MODULES.create("algorithm.string.String.kmp", KmpSearch.class);
                 yield new PreparedExecution(() -> algorithm.search(target, request.pattern()));
             }
@@ -280,7 +280,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         }
     }
 
-    private List<Integer> copy(com.majortom.algorithms.library.structure.ArrayStructure<Integer> array) {
+    private List<Integer> copy(com.majortom.algorithms.structure.array.ArrayStructure<Integer> array) {
         java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
         for (Integer value : array) {
             values.add(value);

@@ -2,9 +2,9 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.library.basic.LinkedList;
-import com.majortom.algorithms.library.structure.QueueStructure;
-import com.majortom.algorithms.library.structure.StackStructure;
+import com.majortom.algorithms.structure.linked.LinkedList;
+import com.majortom.algorithms.structure.linked.QueueStructure;
+import com.majortom.algorithms.structure.linked.StackStructure;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
