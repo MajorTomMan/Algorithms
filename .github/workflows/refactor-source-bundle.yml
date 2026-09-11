@@ -1,0 +1,19 @@
+name: Refactor Source Bundle
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create source archive
+        run: zip -qr Algorithms-dev.zip . -x '.git/*' 'Algorithms-dev.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: algorithms-dev-source
+          path: Algorithms-dev.zip
+          retention-days: 1
