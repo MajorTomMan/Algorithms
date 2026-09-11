@@ -1,8 +1,8 @@
 package com.majortom.algorithms.structure.graph;
 
+import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
-import com.majortom.algorithms.structure.graph.GraphStructure;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+@Structure(id = "graph", contract = GraphStructure.class)
 public final class Graph<T> implements GraphStructure<T> {
     private final boolean directed;
     private final LinkedHashMap<T, Vertex<T>> verticesByValue = new LinkedHashMap<>();
