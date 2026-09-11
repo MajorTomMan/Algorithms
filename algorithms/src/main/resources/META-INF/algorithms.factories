@@ -1,13 +1,7 @@
-# Reusable Algorithm registrations. Keys intentionally unchanged by module reorganization.
-algorithm.array.Integer.insertion-sort=com.majortom.algorithms.algorithm.array.sort.insertion.IntegerInsertionSort
-algorithm.array.Integer.selection-sort=com.majortom.algorithms.algorithm.array.sort.IntegerSelectionSort
-algorithm.array.Integer.quick-sort=com.majortom.algorithms.algorithm.array.sort.IntegerQuickSort
-algorithm.array.Integer.heap-sort=com.majortom.algorithms.algorithm.array.sort.IntegerHeapSort
-algorithm.graph.Integer.graph-bfs=com.majortom.algorithms.algorithm.graph.GraphBfs
+# Legacy-only registrations retained while GridMaze and graph-backed maze generation remain outside annotation resolution.
 algorithm.graph.Integer.graph-generator-bfs=com.majortom.algorithms.algorithm.maze.GraphMazeBfsGenerator
 algorithm.maze.Boolean.maze-generator-bfs=com.majortom.algorithms.algorithm.maze.BfsArrayMazeGenerator
 algorithm.maze.Boolean.maze-generator-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazeGenerator
 algorithm.maze.Boolean.maze-generator-union-find=com.majortom.algorithms.algorithm.maze.UnionFindArrayMazeGenerator
 algorithm.maze.Boolean.maze-pathfinder-astar=com.majortom.algorithms.algorithm.maze.AStarArrayMazePathfinder
 algorithm.maze.Boolean.maze-pathfinder-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazePathfinder
-algorithm.string.String.kmp=com.majortom.algorithms.algorithm.string.KmpSearch

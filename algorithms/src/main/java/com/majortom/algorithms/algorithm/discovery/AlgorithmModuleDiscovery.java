@@ -1,6 +1,5 @@
 package com.majortom.algorithms.algorithm.discovery;
 
-import com.majortom.algorithms.core.registry.ModuleDiscovery;
 import com.majortom.algorithms.algorithm.array.ArrayAlgorithm;
 import com.majortom.algorithms.algorithm.graph.GraphFamilyAlgorithm;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
@@ -8,165 +7,114 @@ import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
 import com.majortom.algorithms.algorithm.maze.GraphMazeGenerator;
 import com.majortom.algorithms.algorithm.string.StringAlgorithm;
 import com.majortom.algorithms.algorithm.tree.TreeFamilyAlgorithm;
+import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
+import com.majortom.algorithms.core.registry.FrameworkClassScanner;
+import com.majortom.algorithms.core.registry.ModuleDiscovery;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.net.JarURLConnection;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
-/** Discovers concrete project algorithms from the algorithms module at application startup. */
+/** Transitional legacy-key bridge backed by annotation discovery for migrated algorithms. */
 public final class AlgorithmModuleDiscovery implements ModuleDiscovery {
-
-    private static final String PACKAGE_NAME = "com.majortom.algorithms.algorithm";
-    private static final String PACKAGE_PATH = PACKAGE_NAME.replace('.', '/');
+    private final AlgorithmDiscovery annotationDiscovery = new AlgorithmDiscovery();
+    private final FrameworkClassScanner scanner = new FrameworkClassScanner();
 
     @Override
     public Map<String, Class<?>> discover(ClassLoader classLoader) {
         Objects.requireNonNull(classLoader, "classLoader");
         Map<String, Class<?>> registrations = new LinkedHashMap<>();
-        for (Class<?> implementation : algorithmClasses(classLoader)) {
-            Registration registration = registration(implementation);
-            if (registration == null) {
+        for (AlgorithmDescriptor descriptor : annotationDiscovery.discover(classLoader)) {
+            add(registrations, annotatedRegistration(descriptor));
+        }
+        for (Class<?> implementation : scanner.scan(AlgorithmDiscovery.ROOT_PACKAGE, classLoader)) {
+            if (implementation.isAnnotationPresent(Algorithm.class)
+                    || implementation.isInterface()
+                    || Modifier.isAbstract(implementation.getModifiers())) {
                 continue;
             }
-            Class<?> previous = registrations.putIfAbsent(registration.key(), implementation);
-            if (previous != null && !previous.equals(implementation)) {
-                throw new IllegalStateException("Auto-discovered algorithm key collision '"
-                        + registration.key() + "': " + previous.getName() + " vs " + implementation.getName());
-            }
+            add(registrations, legacyRegistration(implementation));
         }
         return Map.copyOf(registrations);
     }
 
-    private List<Class<?>> algorithmClasses(ClassLoader classLoader) {
-        List<String> classNames = classNames(classLoader);
-        List<Class<?>> classes = new ArrayList<>();
-        for (String className : classNames) {
-            try {
-                Class<?> type = Class.forName(className, false, classLoader);
-                if (!type.isInterface() && !Modifier.isAbstract(type.getModifiers())) {
-                    classes.add(type);
-                }
-            } catch (ClassNotFoundException exception) {
-                throw new IllegalStateException("Unable to load auto-discovered algorithm class: " + className, exception);
-            }
+    private Registration annotatedRegistration(AlgorithmDescriptor descriptor) {
+        String family = legacyFamily(descriptor.implementation());
+        if (family == null) {
+            return null;
         }
-        classes.sort(java.util.Comparator.comparing(Class::getName));
-        return classes;
+        return new Registration(
+                "algorithm." + family + "." + descriptor.valueType().getSimpleName() + "." + descriptor.id(),
+                descriptor.implementation());
     }
 
-    private List<String> classNames(ClassLoader classLoader) {
-        try {
-            Enumeration<URL> resources = classLoader.getResources(PACKAGE_PATH);
-            List<String> names = new ArrayList<>();
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                if ("file".equals(resource.getProtocol())) {
-                    collectDirectory(resource, names);
-                } else if ("jar".equals(resource.getProtocol())) {
-                    collectJar(resource, names);
-                }
-            }
-            return names.stream().distinct().sorted().toList();
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to scan algorithm package " + PACKAGE_NAME, exception);
-        }
-    }
-
-    private void collectDirectory(URL resource, List<String> names) {
-        try {
-            Path packageRoot = Path.of(resource.toURI());
-            try (var paths = Files.walk(packageRoot)) {
-                paths.filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().endsWith(".class"))
-                        .filter(path -> !path.getFileName().toString().contains("$"))
-                        .forEach(path -> names.add(className(packageRoot, path)));
-            }
-        } catch (IOException | URISyntaxException exception) {
-            throw new IllegalStateException("Unable to scan algorithm class directory: " + resource, exception);
-        }
-    }
-
-    private String className(Path packageRoot, Path classFile) {
-        String relative = packageRoot.relativize(classFile).toString().replace(java.io.File.separatorChar, '.');
-        return PACKAGE_NAME + "." + relative.substring(0, relative.length() - ".class".length());
-    }
-
-    private void collectJar(URL resource, List<String> names) {
-        try {
-            JarURLConnection connection = (JarURLConnection) resource.openConnection();
-            try (JarFile jar = connection.getJarFile()) {
-                Enumeration<JarEntry> entries = jar.entries();
-                while (entries.hasMoreElements()) {
-                    String name = entries.nextElement().getName();
-                    if (!name.startsWith(PACKAGE_PATH + "/") || !name.endsWith(".class") || name.contains("$")) {
-                        continue;
-                    }
-                    names.add(name.substring(0, name.length() - ".class".length()).replace('/', '.'));
-                }
-            }
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to scan algorithm jar: " + resource, exception);
-        }
-    }
-
-    private Registration registration(Class<?> implementation) {
+    private String legacyFamily(Class<?> implementation) {
         if (ArrayAlgorithm.class.isAssignableFrom(implementation)) {
-            return registration("array", implementation, ArrayAlgorithm.class, 0);
+            return "array";
         }
         if (GraphFamilyAlgorithm.class.isAssignableFrom(implementation)) {
-            return registration("graph", implementation, GraphFamilyAlgorithm.class, 0);
-        }
-        if (GraphMazeGenerator.class.isAssignableFrom(implementation)) {
-            return registration("graph", implementation, GraphMazeGenerator.class, 0);
+            return "graph";
         }
         if (TreeFamilyAlgorithm.class.isAssignableFrom(implementation)) {
-            return registration("tree", implementation, TreeFamilyAlgorithm.class, 0);
+            return "tree";
         }
         if (StringAlgorithm.class.isAssignableFrom(implementation)) {
-            return registration("string", "String", implementation);
-        }
-        if (ArrayMazeGenerator.class.isAssignableFrom(implementation)
-                || ArrayMazePathfinder.class.isAssignableFrom(implementation)) {
-            return registration("maze", "Boolean", implementation);
+            return "string";
         }
         return null;
     }
 
-    private Registration registration(String family, Class<?> implementation, Class<?> contract, int typeIndex) {
-        Class<?> valueType = genericTypeArgument(implementation, contract, typeIndex);
-        return registration(family, valueType.getSimpleName(), implementation);
+    private Registration legacyRegistration(Class<?> implementation) {
+        if (ArrayAlgorithm.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("array", implementation, ArrayAlgorithm.class, 0);
+        }
+        if (GraphFamilyAlgorithm.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("graph", implementation, GraphFamilyAlgorithm.class, 0);
+        }
+        if (GraphMazeGenerator.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("graph", implementation, GraphMazeGenerator.class, 0);
+        }
+        if (TreeFamilyAlgorithm.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("tree", implementation, TreeFamilyAlgorithm.class, 0);
+        }
+        if (StringAlgorithm.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("string", "String", implementation);
+        }
+        if (ArrayMazeGenerator.class.isAssignableFrom(implementation)
+                || ArrayMazePathfinder.class.isAssignableFrom(implementation)) {
+            return legacyRegistration("maze", "Boolean", implementation);
+        }
+        return null;
     }
 
-    private Registration registration(String family, String valueType, Class<?> implementation) {
+    private Registration legacyRegistration(
+            String family,
+            Class<?> implementation,
+            Class<?> contract,
+            int typeIndex) {
+        Class<?> valueType = genericTypeArgument(implementation, contract, typeIndex);
+        return legacyRegistration(family, valueType.getSimpleName(), implementation);
+    }
+
+    private Registration legacyRegistration(String family, String valueType, Class<?> implementation) {
         String id = derivedId(implementation.getSimpleName(), valueType);
-        return new Registration("algorithm." + family + "." + valueType + "." + id);
+        return new Registration("algorithm." + family + "." + valueType + "." + id, implementation);
     }
 
     private String derivedId(String simpleName, String valueType) {
         String kebab = simpleName
                 .replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2")
                 .replaceAll("([a-z0-9])([A-Z])", "$1-$2")
-                .toLowerCase(Locale.ROOT);
-        String prefix = valueType.toLowerCase(Locale.ROOT) + "-";
+                .toLowerCase(java.util.Locale.ROOT);
+        String prefix = valueType.toLowerCase(java.util.Locale.ROOT) + "-";
         if (kebab.startsWith(prefix)) {
-            kebab = kebab.substring(prefix.length());
+            return kebab.substring(prefix.length());
         }
         return kebab;
     }
@@ -180,7 +128,10 @@ public final class AlgorithmModuleDiscovery implements ModuleDiscovery {
                 + " through " + contract.getName());
     }
 
-    private Type findTypeArgument(Type current, Class<?> contract, int typeIndex,
+    private Type findTypeArgument(
+            Type current,
+            Class<?> contract,
+            int typeIndex,
             Map<TypeVariable<?>, Type> bindings) {
         if (current instanceof ParameterizedType parameterizedType) {
             Class<?> rawType = (Class<?>) parameterizedType.getRawType();
@@ -209,7 +160,10 @@ public final class AlgorithmModuleDiscovery implements ModuleDiscovery {
         return null;
     }
 
-    private Type findInHierarchy(Class<?> type, Class<?> contract, int typeIndex,
+    private Type findInHierarchy(
+            Class<?> type,
+            Class<?> contract,
+            int typeIndex,
             Map<TypeVariable<?>, Type> bindings) {
         for (Type interfaceType : type.getGenericInterfaces()) {
             Type found = findTypeArgument(interfaceType, contract, typeIndex, bindings);
@@ -232,6 +186,17 @@ public final class AlgorithmModuleDiscovery implements ModuleDiscovery {
         return resolved;
     }
 
-    private record Registration(String key) {
+    private void add(Map<String, Class<?>> registrations, Registration registration) {
+        if (registration == null) {
+            return;
+        }
+        Class<?> previous = registrations.putIfAbsent(registration.key(), registration.implementation());
+        if (previous != null && !previous.equals(registration.implementation())) {
+            throw new IllegalStateException("Algorithm key collision '" + registration.key()
+                    + "': " + previous.getName() + " vs " + registration.implementation().getName());
+        }
+    }
+
+    private record Registration(String key, Class<?> implementation) {
     }
 }
