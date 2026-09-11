@@ -1,5 +1,6 @@
 package com.majortom.algorithms.algorithm.graph;
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@Algorithm(id = "graph-bfs", type = Integer.class, structure = GraphStructure.class)
 public final class GraphBfs implements GraphTraversal<Integer> {
     private static final String VERTEX_DOMAIN = "graph.vertex";
 
