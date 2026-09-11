@@ -1,5 +1,6 @@
 package com.majortom.algorithms.algorithm.string;
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.string.StringStructure;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Algorithm(id = "kmp", type = String.class, structure = StringStructure.class)
 public final class KmpSearch implements StringSearch {
     @Override
     public List<Integer> search(StringStructure target, String pattern) {
