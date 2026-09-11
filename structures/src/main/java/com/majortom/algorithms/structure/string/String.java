@@ -1,10 +1,11 @@
 package com.majortom.algorithms.structure.string;
 
+import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
-import com.majortom.algorithms.structure.string.StringStructure;
 
 import java.util.Objects;
 
+@Structure(id = "string", contract = StringStructure.class)
 public final class String implements StringStructure {
     private static final int DEFAULT_CAPACITY = 16;
 
