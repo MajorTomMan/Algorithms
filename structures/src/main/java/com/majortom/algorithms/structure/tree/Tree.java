@@ -1,8 +1,8 @@
 package com.majortom.algorithms.structure.tree;
 
+import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
-import com.majortom.algorithms.structure.tree.GeneralTreeStructure;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -11,6 +11,7 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
+@Structure(id = "tree", contract = GeneralTreeStructure.class)
 public final class Tree<T> implements GeneralTreeStructure<T> {
     private GeneralTreeNode<T> root;
     private int size;
