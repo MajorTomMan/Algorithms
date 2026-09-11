@@ -1,9 +1,11 @@
 package com.majortom.algorithms.algorithm.array.sort.insertion;
 
 import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Insertion sort over an ArrayStructure<Integer>. */
+@Algorithm(id = "insertion-sort", type = Integer.class, structure = ArrayStructure.class)
 public final class IntegerInsertionSort extends AbstractIntegerSort {
 
     @Override
