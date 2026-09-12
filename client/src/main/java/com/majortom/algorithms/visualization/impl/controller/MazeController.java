@@ -177,13 +177,13 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             long seed = System.nanoTime();
             @SuppressWarnings("unchecked")
             GraphMazeGenerator<Integer> algorithm = (GraphMazeGenerator<Integer>)
-                    algorithm(id, GraphMazeGenerator.class);
+                    algorithm(id, Integer.class, GraphMazeGenerator.class);
             startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
                     () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, true));
         } else {
             MazeDimensions dimensions = new MazeDimensions(size, size);
             long seed = System.nanoTime();
-            ArrayMazeGenerator algorithm = algorithm(id, ArrayMazeGenerator.class);
+            ArrayMazeGenerator algorithm = algorithm(id, Boolean.class, ArrayMazeGenerator.class);
             startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
                     () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, false));
         }
@@ -201,7 +201,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         String id = selectedId(pathfinderSelector, arrayPathfinders);
         GridPoint start = inputMaze.entrance();
         GridPoint goal = inputMaze.exit();
-        ArrayMazePathfinder algorithm = algorithm(id, ArrayMazePathfinder.class);
+        ArrayMazePathfinder algorithm = algorithm(id, Boolean.class, ArrayMazePathfinder.class);
         startAlgorithm(id, Map.of("maze", inputMaze, "start", start, "goal", goal),
                 () -> algorithm.findPath(inputMaze, start, goal),
                 () -> new MazeEventReducer(selectedSnapshot));

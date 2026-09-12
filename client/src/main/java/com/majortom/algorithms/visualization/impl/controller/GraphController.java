@@ -135,7 +135,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @SuppressWarnings("unchecked")
     private GraphFamilyAlgorithm<Integer> graphAlgorithm(String algorithmId) {
-        return (GraphFamilyAlgorithm<Integer>) algorithm(algorithmId, GraphFamilyAlgorithm.class);
+        return (GraphFamilyAlgorithm<Integer>) algorithm(algorithmId, Integer.class, GraphFamilyAlgorithm.class);
     }
 
     @SuppressWarnings("unchecked")

@@ -50,13 +50,15 @@ public final class RegistrationValidator {
         }
     }
 
-    public static void validateUniqueAlgorithmIds(List<AlgorithmDescriptor> descriptors) {
+    public static void validateUniqueAlgorithmKeys(List<AlgorithmDescriptor> descriptors) {
         Objects.requireNonNull(descriptors, "descriptors");
-        Set<String> ids = new HashSet<>();
+        Set<AlgorithmKey> keys = new HashSet<>();
         for (AlgorithmDescriptor descriptor : descriptors) {
             validate(descriptor);
-            if (!ids.add(descriptor.id())) {
-                throw new RegistrationException("Duplicate Algorithm id: " + descriptor.id());
+            AlgorithmKey key = descriptor.key();
+            if (!keys.add(key)) {
+                throw new RegistrationException("Duplicate Algorithm registration: module=" + key.moduleId()
+                        + ", type=" + key.valueType().getName() + ", id=" + key.algorithmId());
             }
         }
     }

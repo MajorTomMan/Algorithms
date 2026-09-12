@@ -52,8 +52,11 @@ public final class AlgorithmDiscovery {
             validateValueType(descriptor);
             descriptors.add(descriptor);
         }
-        descriptors.sort(Comparator.comparing(AlgorithmDescriptor::id));
-        RegistrationValidator.validateUniqueAlgorithmIds(descriptors);
+        descriptors.sort(Comparator
+                .comparing(AlgorithmDescriptor::moduleId)
+                .thenComparing(descriptor -> descriptor.valueType().getName())
+                .thenComparing(AlgorithmDescriptor::id));
+        RegistrationValidator.validateUniqueAlgorithmKeys(descriptors);
         return List.copyOf(descriptors);
     }
 

@@ -223,8 +223,8 @@ public abstract class BaseController<S> implements Initializable {
         return COMPONENTS.createStructure(id, contract);
     }
 
-    protected final <T> T algorithm(String id, Class<T> contract) {
-        return COMPONENTS.createAlgorithm(id, contract);
+    protected final <T> T algorithm(String id, Class<?> valueType, Class<T> contract) {
+        return COMPONENTS.createAlgorithm(moduleId(), valueType, id, contract);
     }
 
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */

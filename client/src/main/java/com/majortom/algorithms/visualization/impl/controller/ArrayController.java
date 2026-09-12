@@ -489,7 +489,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         @SuppressWarnings("unchecked")
-        Sort<Integer> algorithm = (Sort<Integer>) algorithm(algorithmId, Sort.class);
+        Sort<Integer> algorithm = (Sort<Integer>) algorithm(algorithmId, Integer.class, Sort.class);
         Array<Integer> runtimeArray = new Array<>(values);
         startAlgorithm(algorithmId, values, () -> {
             algorithm.sort(runtimeArray);

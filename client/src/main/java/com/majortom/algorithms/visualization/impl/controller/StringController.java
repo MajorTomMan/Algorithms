@@ -232,7 +232,7 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
-        StringAlgorithm algorithm = algorithm(algorithmId, StringAlgorithm.class);
+        StringAlgorithm algorithm = algorithm(algorithmId, java.lang.String.class, StringAlgorithm.class);
         if (algorithm instanceof StringSearch search) {
             runStringSearch(algorithmId, search, input, target);
             return;

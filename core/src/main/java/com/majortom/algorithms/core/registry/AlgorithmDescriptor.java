@@ -18,6 +18,10 @@ public record AlgorithmDescriptor(
         Objects.requireNonNull(implementation, "implementation");
     }
 
+    public AlgorithmKey key() {
+        return AlgorithmKey.of(this);
+    }
+
     public boolean hasStructureContract() {
         return structureContract != Void.class;
     }
