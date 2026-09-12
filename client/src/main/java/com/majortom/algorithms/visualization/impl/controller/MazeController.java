@@ -8,7 +8,7 @@ import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -269,9 +269,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     protected String formatStatsMessage() {
-        String structureName = I18N.text("label.maze.structure.array");
+        String structureName = StructureCatalog.name("array");
         if (!solving && graphGenerators.contains(selectedId(generatorSelector, allGenerators))) {
-            structureName = I18N.text("label.maze.structure.graph");
+            structureName = StructureCatalog.name("graph");
         }
         String mode = "Generation";
         if (solving) {
@@ -629,9 +629,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private void bindSelectors() {
-        structureSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> FXCollections.observableArrayList(
-                I18N.text("label.maze.structure.array"), I18N.text("label.maze.structure.graph")),
-                I18N.localeProperty()));
+        structureSelector.setItems(FXCollections.observableArrayList(
+                StructureCatalog.name("array"), StructureCatalog.name("graph")));
         generatorSelector.itemsProperty().bind(Bindings.createObjectBinding(
                 () -> labels(allGenerators), I18N.localeProperty()));
         pathfinderSelector.itemsProperty().bind(Bindings.createObjectBinding(
@@ -691,7 +690,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private javafx.collections.ObservableList<String> labels(List<String> ids) {
         javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
         for (String id : ids) {
-            labels.add(AlgorithmLabels.text(id));
+            labels.add(AlgorithmCatalog.name(id));
         }
         return labels;
     }

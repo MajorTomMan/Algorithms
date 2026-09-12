@@ -11,7 +11,7 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
-@Structure(id = "tree", contract = GeneralTreeStructure.class)
+@Structure(id = "tree", name = "Tree", contract = GeneralTreeStructure.class)
 public final class Tree<T> implements GeneralTreeStructure<T> {
     private GeneralTreeNode<T> root;
     private int size;
@@ -33,6 +33,13 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void initialize(GeneralTreeStructure.NodeInput<T> input) {
+        BulkTree<T> initialized = initializeNode(input);
+        root = initialized.node();
+        size = initialized.size();
     }
 
     @Override
@@ -275,6 +282,20 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
         return Objects.requireNonNull(node, "node");
     }
 
+    private static <T> BulkTree<T> initializeNode(GeneralTreeStructure.NodeInput<T> input) {
+        if (input == null) {
+            return new BulkTree<>(null, 0);
+        }
+        java.util.List<GeneralTreeNode<T>> children = new java.util.ArrayList<>(input.children().size());
+        int size = 1;
+        for (GeneralTreeStructure.NodeInput<T> child : input.children()) {
+            BulkTree<T> initializedChild = initializeNode(Objects.requireNonNull(child, "child"));
+            children.add(initializedChild.node());
+            size += initializedChild.size();
+        }
+        return new BulkTree<>(new GeneralTreeNode<>(input.value(), children), size);
+    }
+
     private static <T> Restoration<T> restoreNode(
             GeneralTreeSnapshot.Node<T> node,
             Set<GeneralTreeSnapshot.Node<T>> identities,
@@ -299,6 +320,9 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
             size += restoredChild.size();
         }
         return new Restoration<>(new GeneralTreeNode<>(node.id(), node.value(), children), size);
+    }
+
+    private record BulkTree<T>(GeneralTreeNode<T> node, int size) {
     }
 
     private record Restoration<T>(GeneralTreeNode<T> node, int size) {

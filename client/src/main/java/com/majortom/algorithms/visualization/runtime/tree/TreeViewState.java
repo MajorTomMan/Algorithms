@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.tree;
 
+import com.majortom.algorithms.core.snapshot.BinaryTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
-import com.majortom.algorithms.structure.tree.AvlNodeSnapshot;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 
 import java.util.ArrayList;
@@ -32,11 +32,12 @@ public record TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, Set<L
         return new TreeViewState(Kind.GENERAL, snapshot.root().id(), nodes, Set.of(), Set.of(), Set.of(), false);
     }
 
-    public static TreeViewState binary(AvlNodeSnapshot root) {
-        if (root == null) return empty(Kind.BINARY);
+    public static <T> TreeViewState binary(BinaryTreeSnapshot<T> snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (snapshot.root() == null) return empty(Kind.BINARY);
         Map<Long, Node> nodes = new LinkedHashMap<>();
-        collectBinary(root, nodes);
-        return new TreeViewState(Kind.BINARY, root.id(), nodes, Set.of(), Set.of(), Set.of(), false);
+        collectBinary(snapshot.root(), nodes);
+        return new TreeViewState(Kind.BINARY, snapshot.root().id(), nodes, Set.of(), Set.of(), Set.of(), false);
     }
 
     public List<VisualValue> values() {
@@ -71,12 +72,13 @@ public record TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, Set<L
         for (GeneralTreeSnapshot.Node<T> child : node.children()) collectGeneral(child, nodes);
     }
 
-    private static void collectBinary(AvlNodeSnapshot node, Map<Long, Node> nodes) {
+    private static <T> void collectBinary(BinaryTreeSnapshot.Node<T> node, Map<Long, Node> nodes) {
         if (node == null || nodes.containsKey(node.id())) return;
         Long leftId = node.left() == null ? null : node.left().id();
         Long rightId = node.right() == null ? null : node.right().id();
         nodes.put(node.id(), Node.binary(node.id(), node.value(), leftId, rightId));
-        collectBinary(node.left(), nodes); collectBinary(node.right(), nodes);
+        collectBinary(node.left(), nodes);
+        collectBinary(node.right(), nodes);
     }
 
     public enum Kind { GENERAL, BINARY }

@@ -14,6 +14,9 @@ public @interface Algorithm {
     /** Stable algorithm id within the {@code (module, type)} namespace. */
     String id();
 
+    /** Human-readable component name. Blank uses the implementation class name fallback. */
+    String name() default "";
+
     /** Workbench/domain grouping such as {@code array}, {@code graph} or {@code maze}. */
     String module();
 

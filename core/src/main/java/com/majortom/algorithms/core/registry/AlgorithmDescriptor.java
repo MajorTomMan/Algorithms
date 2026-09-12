@@ -5,6 +5,7 @@ import java.util.Optional;
 
 public record AlgorithmDescriptor(
         String id,
+        String name,
         String moduleId,
         Class<?> valueType,
         Class<?> structureContract,
@@ -12,6 +13,10 @@ public record AlgorithmDescriptor(
 
     public AlgorithmDescriptor {
         Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(name, "name");
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
         Objects.requireNonNull(moduleId, "moduleId");
         Objects.requireNonNull(valueType, "valueType");
         Objects.requireNonNull(structureContract, "structureContract");

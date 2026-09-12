@@ -3,12 +3,14 @@ package com.majortom.algorithms.structure.linked;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-@Structure(id = "linked-list", contract = LinkedStructure.class)
-@Structure(id = "stack", contract = StackStructure.class)
-@Structure(id = "queue", contract = QueueStructure.class)
+@Structure(id = "linked-list", name = "Linked List", contract = LinkedStructure.class)
+@Structure(id = "stack", name = "Stack", contract = StackStructure.class)
+@Structure(id = "queue", name = "Queue", contract = QueueStructure.class)
 public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T>, QueueStructure<T> {
     private ListNode<T> head;
     private ListNode<T> tail;
@@ -17,6 +19,23 @@ public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void initialize(Collection<? extends T> values) {
+        java.util.Objects.requireNonNull(values, "values");
+        ArrayList<ListNode<T>> nodes = new ArrayList<>(values.size());
+        for (T value : values) {
+            nodes.add(new ListNode<>(value));
+        }
+        for (int index = 0; index < nodes.size(); index++) {
+            ListNode<T> previous = index == 0 ? null : nodes.get(index - 1);
+            ListNode<T> next = index + 1 == nodes.size() ? null : nodes.get(index + 1);
+            nodes.get(index).initializeLinks(next, previous);
+        }
+        head = nodes.isEmpty() ? null : nodes.getFirst();
+        tail = nodes.isEmpty() ? null : nodes.getLast();
+        size = nodes.size();
     }
 
     @Override

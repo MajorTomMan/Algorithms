@@ -6,13 +6,14 @@ import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /** Weighted graph variant that reuses the canonical Graph topology implementation. */
-@Structure(id = "weighted-graph", contract = WeightedGraphStructure.class)
+@Structure(id = "weighted-graph", name = "Weighted Graph", contract = WeightedGraphStructure.class)
 public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
     private final Graph<T> graph;
     private final LinkedHashMap<Long, Double> weightsByEdgeId = new LinkedHashMap<>();
@@ -62,6 +63,39 @@ public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
     @Override
     public int vertexCount() {
         return graph.vertexCount();
+    }
+
+    @Override
+    public void initialize(Map<T, ? extends Collection<T>> adjacency) {
+        graph.initialize(adjacency);
+        weightsByEdgeId.clear();
+        for (Edge<T> edge : graph.edges()) {
+            weightsByEdgeId.put(edge.id(), 1.0d);
+        }
+    }
+
+    @Override
+    public void initializeWeighted(Map<T, ? extends Map<T, Double>> adjacency) {
+        Objects.requireNonNull(adjacency, "adjacency");
+        LinkedHashMap<T, Collection<T>> topology = new LinkedHashMap<>();
+        for (Map.Entry<T, ? extends Map<T, Double>> entry : adjacency.entrySet()) {
+            Map<T, Double> neighbors = Objects.requireNonNull(entry.getValue(), "neighbors");
+            topology.put(entry.getKey(), List.copyOf(neighbors.keySet()));
+        }
+        graph.initialize(topology);
+        weightsByEdgeId.clear();
+        for (Edge<T> edge : graph.edges()) {
+            Double weight = lookupWeight(adjacency, edge.from().value(), edge.to().value());
+            if (weight == null && !graph.isDirected()) {
+                weight = lookupWeight(adjacency, edge.to().value(), edge.from().value());
+            }
+            if (weight == null) {
+                throw new IllegalArgumentException("weighted adjacency is missing edge weight for "
+                        + edge.from().value() + " -> " + edge.to().value());
+            }
+            requireFinite(weight);
+            weightsByEdgeId.put(edge.id(), weight);
+        }
     }
 
     @Override
@@ -193,6 +227,15 @@ public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
             }
         }
         return null;
+    }
+
+    private static <T> Double lookupWeight(
+            Map<T, ? extends Map<T, Double>> adjacency, T from, T to) {
+        Map<T, Double> neighbors = adjacency.get(from);
+        if (neighbors == null) {
+            return null;
+        }
+        return neighbors.get(to);
     }
 
     private boolean containsEdgeInstance(Edge<T> target) {

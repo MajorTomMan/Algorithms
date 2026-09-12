@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Algorithm(id = "graph-bfs", module = "graph", type = Integer.class, structure = GraphStructure.class)
+@Algorithm(id = "graph-bfs", name = "Breadth-First Search", module = "graph", type = Integer.class, structure = GraphStructure.class)
 public final class GraphBfs implements GraphTraversal<Integer> {
     private static final String VERTEX_DOMAIN = "graph.vertex";
 

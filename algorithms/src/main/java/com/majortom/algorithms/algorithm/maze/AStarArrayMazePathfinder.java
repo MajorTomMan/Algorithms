@@ -16,7 +16,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
-@Algorithm(id = "maze-pathfinder-astar", module = "maze", type = Boolean.class)
+@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", module = "maze", type = Boolean.class)
 public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
     public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {

@@ -5,10 +5,11 @@ Algorithms 是一个数据结构与算法实验室。当前 V2 的主线是：**
 ## 模块
 
 ```text
-core/        Runtime、Event Contract、Registry、Timeline、Snapshot、Statistics、Logging、Scheduler
+core/        Runtime、Event Contract、Registry、Timeline、Snapshot、Statistics、Logging、Scheduler、Problem metadata
 structures/  canonical 数据结构、节点模型、Structure Contract / Implementation
 algorithms/  可复用算法契约、算法实现、Algorithm auto-discovery provider
-practice/    LeetCode / 学习练习 / Snake / Concurrency；不进入 production registry
+practice/    Problem discovery / registry / runner / JDI Worker；另保留本地学习实验
+leetcode/    LeetCode 题目与解法；不包含 Discovery / Runner / JDI 等运行架构
 client/      JavaFX + AtlantaFX Workbench、Reducer/ViewState、Layout、Visualizer、Playback
 server/      Spring Boot headless API
 ```
@@ -24,7 +25,9 @@ algorithms
  ↑       ↑
 client  server
 
-practice -> structures + algorithms
+practice -> core + structures
+leetcode -> core + structures + algorithms
+leetcode -X-> practice
 ```
 
 `core` 不依赖 `algorithms`、JavaFX、AtlantaFX 或 Spring。`core` 只定义跨模块 SPI/Contract；例如 `ModuleDiscovery` 在 core，真正认识 `Sort/TreeAlgorithm/GraphTraversal` 的 `AlgorithmModuleDiscovery` 在 algorithms。
@@ -158,9 +161,9 @@ CANCELLED               -> abort
 
 Log/Snapshot 等辅助事件仍可进入 Timeline，但不会消费 Live Step permit。Statistics 只从 StructureEvent / ObservationEvent 的 `StatisticsContribution` 聚合，不由 UI 推测。
 
-Snapshot reconstruction 会验证 canonical invariant；Server execution catalog 以 ModuleRegistry availability 为 implementation truth，并对 scheduler reject、bounded retention、result/failure query 和 HTTP error contract 做显式处理。
+Snapshot reconstruction 会验证 canonical invariant；Server execution catalog 以 `ComponentRegistry / AlgorithmDescriptor` 为实现与组件元数据的唯一事实来源，并对 scheduler reject、bounded retention、result/failure query 和 HTTP error contract 做显式处理。
 
-## Algorithm I/O / Registry / auto-discovery
+## Algorithm I/O / Annotation Discovery / Registry
 
 `algorithms` 不维护为了框架统一而存在的 `AlgorithmInput / AlgorithmOutput / XxxInput / XxxOutput`。Java 方法签名本身就是算法 I/O Contract。当前正式算法 API：
 
@@ -177,15 +180,23 @@ GraphSnapshot<T> GraphMazeGenerator<T>.generate(MazeDimensions dimensions, long 
 
 `GridMaze`、`GridPoint`、`MazeDimensions`、Structure 与 Snapshot 是有独立领域/边界语义的对象，不属于 I/O wrapper。
 
-显式实现可继续通过：
+Structure / Algorithm 的正式发现路径固定为：
 
 ```text
-META-INF/algorithms.factories
+@Structure / @Algorithm
+        ↓
+FrameworkClassScanner
+        ↓
+StructureDiscovery / AlgorithmDiscovery
+        ↓
+StructureDescriptor / AlgorithmDescriptor
+        ↓
+ComponentRegistry
 ```
 
-注册。Algorithm 还通过 `ServiceLoader<ModuleDiscovery>` 自动发现 family interface implementation；显式 registry key 优先覆盖自动发现结果。
+组件名称直接来自注解 `name`；未填写时由 `ComponentNames` 使用实现类名生成可读 fallback。组件名称不通过 I18N、Labels Map、`META-INF/algorithms.factories` 或 `ServiceLoader` 维护。
 
-新增算法不要求修改 `MainController`。Workbench 从 `ModuleRegistry` 读取 family / value type / algorithm id。
+新增复用现有 Structure 与执行 Contract 的普通 Algorithm 不要求修改 `MainController`、公共 Registry、名称映射或 algorithm-id switch。Workbench 从 `ComponentRegistry` / Descriptor 读取 module、value type、algorithm id 与显示名称。
 
 ## Snapshot 与隔离
 
@@ -250,7 +261,7 @@ Playback speed 是 presentation-only：x8 按基础动画时长的 `1/8` 播放�
 
 ## Server
 
-Server 与 Client 共用 `ModuleRegistry + ExecutionRuntime + algorithms`，但不依赖 client。
+Server 与 Client 共用注解 Discovery 产生的 `ComponentRegistry`、`ExecutionRuntime` 与 algorithms，实现和元数据不维护第二份人工目录；Server 不依赖 client。
 
 HTTP DTO 只属于 server 边界；进入 algorithms 后使用真实领域 Structure / 参数对象。
 
@@ -270,7 +281,7 @@ Server 可以把返回值转换为 HTTP 表达，但不会要求 `algorithms` �
 
 ## Practice 模块
 
-`practice` 保存 LeetCode、学习练习、Snake 与并发示例，不属于 production registry。直接依赖 Princeton `algs4.jar` 的教材专项源码保留在 `practice/src/princeton/`，仍不进入默认 Maven reactor compile；这是 Practice 内的可选教材 source set。
+`practice` 保存题目发现/执行/JDI Worker 等运行架构以及 Snake、并发等本地学习实验，不保存 LeetCode 题库。`leetcode` 只保存题目、解法与题目侧 helper，不依赖 `practice`；当前历史题目仍复用 `structures`，个别示例复用正式 `algorithms`。直接依赖 Princeton `algs4.jar` 的教材专项源码继续保留在 `practice/src/princeton/`，不进入默认 Maven reactor compile。
 
 ## 开发约束
 
@@ -284,10 +295,10 @@ Server 可以把返回值转换为 HTTP 表达，但不会要求 `algorithms` �
 
 ## 验证
 
-Execution Closure 在验收阶段使用最小 contract regression tests 验证 Runtime / Snapshot / Server 正式语义；这些临时测试在验证通过后删除，正式源码不保留 `src/test`。最终交付以 production reactor `clean compile` 与运行级 smoke 为准：
+验收同时使用 contract regression tests、production reactor 构建与运行级 smoke。测试用于保护 Registry / Runtime / Snapshot / Practice 等稳定契约，不因完成一次验证而统一删除。最终交付至少执行：
 
 ```bash
-mvn clean compile
+mvn clean test
 ```
 
 Closure 至少验证：

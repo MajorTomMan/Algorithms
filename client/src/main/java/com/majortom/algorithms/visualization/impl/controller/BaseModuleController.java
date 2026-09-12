@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -105,19 +106,39 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     }
 
     protected final java.util.List<Integer> parseIntegerBatchInput(String input) {
+        return parseBatchInput(input, new ValueAdapter<>() {
+            @Override
+            public Class<Integer> type() {
+                return Integer.class;
+            }
+
+            @Override
+            public Integer parse(String text) {
+                return Integer.valueOf(text.trim());
+            }
+
+            @Override
+            public String format(Integer value) {
+                return String.valueOf(value);
+            }
+        });
+    }
+
+    protected final <T> java.util.List<T> parseBatchInput(String input, ValueAdapter<T> adapter) {
         if (input == null || input.isBlank()) {
             logI18n("message.error.bulk_input_empty");
             return null;
         }
+        java.util.Objects.requireNonNull(adapter, "adapter");
         String[] tokens = input.trim().split("[,;\\s]+");
-        java.util.List<Integer> values = new java.util.ArrayList<>(tokens.length);
+        java.util.List<T> values = new java.util.ArrayList<>(tokens.length);
         try {
             for (String token : tokens) {
                 if (!token.isBlank()) {
-                    values.add(Integer.valueOf(token));
+                    values.add(adapter.parse(token));
                 }
             }
-        } catch (NumberFormatException exception) {
+        } catch (RuntimeException exception) {
             logI18n("message.error.bulk_input_invalid");
             return null;
         }

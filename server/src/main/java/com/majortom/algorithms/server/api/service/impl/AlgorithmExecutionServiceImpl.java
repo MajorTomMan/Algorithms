@@ -1,6 +1,13 @@
 package com.majortom.algorithms.server.api.service.impl;
 
+import com.majortom.algorithms.algorithm.array.sort.Sort;
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.algorithm.graph.GraphTraversal;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
+import com.majortom.algorithms.algorithm.maze.GraphMazeGenerator;
+import com.majortom.algorithms.algorithm.string.StringSearch;
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionRecording;
@@ -8,20 +15,6 @@ import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.RecordingEventSink;
-import com.majortom.algorithms.algorithm.graph.GraphBfs;
-import com.majortom.algorithms.structure.graph.Graph;
-import com.majortom.algorithms.structure.string.StringStructure;
-import com.majortom.algorithms.algorithm.string.KmpSearch;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
-import com.majortom.algorithms.algorithm.maze.GraphMazeBfsGenerator;
-import com.majortom.algorithms.structure.maze.GridMaze;
-import com.majortom.algorithms.structure.maze.GridPoint;
-import com.majortom.algorithms.structure.maze.MazeDimensions;
-import com.majortom.algorithms.algorithm.array.sort.Sort;
-import com.majortom.algorithms.structure.tree.AvlNodeSnapshot;
-import com.majortom.algorithms.structure.tree.AVLTree;
-import com.majortom.algorithms.structure.tree.AVLTreeNode;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.server.api.constant.ExecutionState;
 import com.majortom.algorithms.server.api.entity.ExecutionUnit;
@@ -31,20 +24,24 @@ import com.majortom.algorithms.server.api.error.ExecutionRejectedException;
 import com.majortom.algorithms.server.api.service.AlgorithmExecutionService;
 import com.majortom.algorithms.server.dto.AlgorithmInformationDto;
 import com.majortom.algorithms.server.request.ExecutionRequest;
+import com.majortom.algorithms.server.request.GraphBfsRequest;
 import com.majortom.algorithms.server.request.IntegerSortRequest;
 import com.majortom.algorithms.server.request.MazeGenerationRequest;
 import com.majortom.algorithms.server.request.MazePathRequest;
-import com.majortom.algorithms.server.request.GraphBfsRequest;
 import com.majortom.algorithms.server.request.StringSearchRequest;
+import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.string.StringStructure;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Comparator;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -56,19 +53,18 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static final String VERSION = "2.0";
     private static final int MAX_RETAINED_EXECUTIONS = 512;
     private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
-    private static final List<AlgorithmApiDescriptor> ALGORITHMS = List.of(
-            new AlgorithmApiDescriptor("insertion-sort", "array", Integer.class, IntegerSortRequest.class, List.class),
-            new AlgorithmApiDescriptor("selection-sort", "array", Integer.class, IntegerSortRequest.class, List.class),
-            new AlgorithmApiDescriptor("quick-sort", "array", Integer.class, IntegerSortRequest.class, List.class),
-            new AlgorithmApiDescriptor("heap-sort", "array", Integer.class, IntegerSortRequest.class, List.class),
-            new AlgorithmApiDescriptor("maze-generator-bfs", "maze", Boolean.class, MazeGenerationRequest.class, GridMaze.class),
-            new AlgorithmApiDescriptor("maze-generator-dfs", "maze", Boolean.class, MazeGenerationRequest.class, GridMaze.class),
-            new AlgorithmApiDescriptor("maze-generator-union-find", "maze", Boolean.class, MazeGenerationRequest.class, GridMaze.class),
-            new AlgorithmApiDescriptor("graph-generator-bfs", "maze", Integer.class, MazeGenerationRequest.class, GraphSnapshot.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-astar", "maze", Boolean.class, MazePathRequest.class, List.class),
-            new AlgorithmApiDescriptor("maze-pathfinder-dfs", "maze", Boolean.class, MazePathRequest.class, List.class),
-            new AlgorithmApiDescriptor("graph-bfs", "graph", Integer.class, GraphBfsRequest.class, List.class),
-            new AlgorithmApiDescriptor("kmp", "string", java.lang.String.class, StringSearchRequest.class, List.class));
+
+    /**
+     * Server transport protocols. This list describes API request/output contracts, not Algorithm identities.
+     * Algorithm identity and metadata come exclusively from ComponentRegistry/AlgorithmDescriptor.
+     */
+    private static final List<ApiExecutionHandler> API_PROTOCOLS = List.of(
+            new IntegerSortHandler(),
+            new ArrayMazeGeneratorHandler(),
+            new GraphMazeGeneratorHandler(),
+            new ArrayMazePathfinderHandler(),
+            new GraphTraversalHandler(),
+            new StringSearchHandler());
 
     private final ObjectMapper objectMapper;
     private final ExecutionScheduler executionScheduler;
@@ -162,16 +158,14 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     @Override
     public List<AlgorithmInformationDto> getAlgorithms() {
-        return ALGORITHMS.stream()
-                .filter(descriptor -> COMPONENTS.hasAlgorithm(
-                        descriptor.moduleId(), descriptor.valueType(), descriptor.id()))
-                .map(descriptor -> {
+        return exposedAlgorithms().stream().map(exposed -> {
             AlgorithmInformationDto dto = new AlgorithmInformationDto();
-            dto.setId(descriptor.id());
-            dto.setModuleId(descriptor.moduleId());
+            dto.setId(exposed.descriptor().id());
+            dto.setName(exposed.descriptor().name());
+            dto.setModuleId(exposed.descriptor().moduleId());
             dto.setVersion(VERSION);
-            dto.setInputType(descriptor.inputType().getName());
-            dto.setOutputType(descriptor.outputType().getName());
+            dto.setInputType(exposed.handler().inputType().getName());
+            dto.setOutputType(exposed.handler().outputType().getName());
             return dto;
         }).toList();
     }
@@ -186,74 +180,45 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     }
 
     private PreparedExecution prepareExecution(String algorithmId, Map<String, Object> rawInput) {
-        AlgorithmApiDescriptor descriptor = descriptor(algorithmId);
-        if (!COMPONENTS.hasAlgorithm(descriptor.moduleId(), descriptor.valueType(), descriptor.id())) {
-            throw new AlgorithmNotFoundException(algorithmId);
-        }
-        Map<String, Object> input;
-        if (rawInput == null) {
-            input = Map.of();
-        } else {
-            input = rawInput;
-        }
-        return switch (algorithmId) {
-            case "insertion-sort", "selection-sort", "quick-sort", "heap-sort" -> {
-                IntegerSortRequest request = objectMapper.convertValue(input, IntegerSortRequest.class);
-                @SuppressWarnings("unchecked")
-                Sort<Integer> algorithm = (Sort<Integer>) createAlgorithm(descriptor, Sort.class);
-                com.majortom.algorithms.structure.array.Array<Integer> array =
-                        new com.majortom.algorithms.structure.array.Array<>(request.values());
-                yield new PreparedExecution(() -> {
-                    algorithm.sort(array);
-                    return copy(array);
-                });
-            }
-            case "maze-generator-bfs", "maze-generator-dfs", "maze-generator-union-find" -> {
-                MazeGenerationRequest request = objectMapper.convertValue(input, MazeGenerationRequest.class);
-                MazeDimensions dimensions = request.dimensions();
-                ArrayMazeGenerator algorithm = createAlgorithm(descriptor, ArrayMazeGenerator.class);
-                yield new PreparedExecution(() -> algorithm.generate(dimensions, request.seed()));
-            }
-            case "graph-generator-bfs" -> {
-                MazeGenerationRequest request = objectMapper.convertValue(input, MazeGenerationRequest.class);
-                MazeDimensions dimensions = request.dimensions();
-                GraphMazeBfsGenerator algorithm = createAlgorithm(descriptor, GraphMazeBfsGenerator.class);
-                yield new PreparedExecution(() -> algorithm.generate(dimensions, request.seed()));
-            }
-            case "maze-pathfinder-astar", "maze-pathfinder-dfs" -> {
-                MazePathRequest request = objectMapper.convertValue(input, MazePathRequest.class);
-                ArrayMazePathfinder algorithm = createAlgorithm(descriptor, ArrayMazePathfinder.class);
-                yield new PreparedExecution(() -> algorithm.findPath(request.maze(), request.start(), request.goal()));
-            }
-            case "graph-bfs" -> {
-                GraphBfsRequest request = objectMapper.convertValue(input, GraphBfsRequest.class);
-                Graph<Integer> graph = Graph.fromSnapshot(request.graph());
-                GraphBfs algorithm = createAlgorithm(descriptor, GraphBfs.class);
-                yield new PreparedExecution(() -> algorithm.traverse(graph, request.startNode()));
-            }
-            case "kmp" -> {
-                StringSearchRequest request = objectMapper.convertValue(input, StringSearchRequest.class);
-                StringStructure target = new com.majortom.algorithms.structure.string.String(request.target());
-                KmpSearch algorithm = createAlgorithm(descriptor, KmpSearch.class);
-                yield new PreparedExecution(() -> algorithm.search(target, request.pattern()));
-            }
-            default -> throw new AlgorithmNotFoundException(algorithmId);
-        };
+        ExposedAlgorithm exposed = requireExposedAlgorithm(algorithmId);
+        Map<String, Object> input = rawInput == null ? Map.of() : rawInput;
+        return exposed.handler().prepare(exposed.descriptor(), input, objectMapper);
     }
 
-    private <T> T createAlgorithm(AlgorithmApiDescriptor descriptor, Class<T> contract) {
-        return COMPONENTS.createAlgorithm(
-                descriptor.moduleId(), descriptor.valueType(), descriptor.id(), contract);
+    private static List<ExposedAlgorithm> exposedAlgorithms() {
+        return COMPONENTS.algorithms().stream()
+                .map(descriptor -> handlerFor(descriptor)
+                        .map(handler -> new ExposedAlgorithm(descriptor, handler)))
+                .flatMap(Optional::stream)
+                .sorted(Comparator
+                        .comparing((ExposedAlgorithm value) -> value.descriptor().moduleId())
+                        .thenComparing(value -> value.descriptor().valueType().getName())
+                        .thenComparing(value -> value.descriptor().id()))
+                .toList();
     }
 
-    private AlgorithmApiDescriptor descriptor(String algorithmId) {
+    private static ExposedAlgorithm requireExposedAlgorithm(String algorithmId) {
         if (algorithmId == null || algorithmId.isBlank()) {
             throw new IllegalArgumentException("algorithmId must not be blank");
         }
-        return ALGORITHMS.stream()
-                .filter(candidate -> candidate.id().equals(algorithmId))
-                .findFirst()
-                .orElseThrow(() -> new AlgorithmNotFoundException(algorithmId));
+        List<ExposedAlgorithm> matches = exposedAlgorithms().stream()
+                .filter(candidate -> candidate.descriptor().id().equals(algorithmId))
+                .toList();
+        if (matches.isEmpty()) {
+            throw new AlgorithmNotFoundException(algorithmId);
+        }
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("Algorithm id is ambiguous for the Server API: " + algorithmId);
+        }
+        return matches.getFirst();
+    }
+
+    private static Optional<ApiExecutionHandler> handlerFor(AlgorithmDescriptor descriptor) {
+        return API_PROTOCOLS.stream().filter(handler -> handler.supports(descriptor)).findFirst();
+    }
+
+    private static <T> T createAlgorithm(AlgorithmDescriptor descriptor, Class<T> contract) {
+        return COMPONENTS.createAlgorithm(descriptor.key(), contract);
     }
 
     private void pruneExecutions() {
@@ -277,53 +242,193 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         String message = failure.getMessage();
         if (message == null || message.isBlank()) {
             return failure.getClass().getSimpleName();
-        } else {
-            return message;
         }
-    }
-
-    private List<Integer> copy(com.majortom.algorithms.structure.array.ArrayStructure<Integer> array) {
-        java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
-        for (Integer value : array) {
-            values.add(value);
-        }
-        return List.copyOf(values);
-    }
-
-    private AvlNodeSnapshot snapshot(AVLTreeNode<Integer> node) {
-        if (node == null) {
-            return null;
-        }
-        return new AvlNodeSnapshot(node.getId(), node.getValue(), node.getHeight(),
-                snapshot(left(node)), snapshot(right(node)));
-    }
-
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Integer> left(AVLTreeNode<Integer> node) {
-        if (node == null) {
-            return null;
-        } else {
-            return (AVLTreeNode<Integer>) node.getLeft();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Integer> right(AVLTreeNode<Integer> node) {
-        if (node == null) {
-            return null;
-        } else {
-            return (AVLTreeNode<Integer>) node.getRight();
-        }
+        return message;
     }
 
     private record PreparedExecution(ExecutionOperation<?> operation) {
     }
 
-    private record AlgorithmApiDescriptor(
-            String id,
-            String moduleId,
-            Class<?> valueType,
-            Class<?> inputType,
-            Class<?> outputType) {
+    private record ExposedAlgorithm(AlgorithmDescriptor descriptor, ApiExecutionHandler handler) {
+    }
+
+    private interface ApiExecutionHandler {
+        boolean supports(AlgorithmDescriptor descriptor);
+        Class<?> inputType();
+        Class<?> outputType();
+        PreparedExecution prepare(AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper);
+    }
+
+    private static final class IntegerSortHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(Integer.class)
+                    && Sort.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return IntegerSortRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return List.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            IntegerSortRequest request = mapper.convertValue(input, IntegerSortRequest.class);
+            @SuppressWarnings("unchecked")
+            Sort<Integer> algorithm = (Sort<Integer>) createAlgorithm(descriptor, Sort.class);
+            com.majortom.algorithms.structure.array.Array<Integer> array =
+                    new com.majortom.algorithms.structure.array.Array<>(request.values());
+            return new PreparedExecution(() -> {
+                algorithm.sort(array);
+                java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
+                for (Integer value : array) {
+                    values.add(value);
+                }
+                return List.copyOf(values);
+            });
+        }
+    }
+
+    private static final class ArrayMazeGeneratorHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(Boolean.class)
+                    && ArrayMazeGenerator.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return MazeGenerationRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return GridMaze.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
+            ArrayMazeGenerator algorithm = createAlgorithm(descriptor, ArrayMazeGenerator.class);
+            return new PreparedExecution(() -> algorithm.generate(request.dimensions(), request.seed()));
+        }
+    }
+
+    private static final class GraphMazeGeneratorHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(Integer.class)
+                    && GraphMazeGenerator.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return MazeGenerationRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return GraphSnapshot.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
+            @SuppressWarnings("unchecked")
+            GraphMazeGenerator<Integer> algorithm =
+                    (GraphMazeGenerator<Integer>) createAlgorithm(descriptor, GraphMazeGenerator.class);
+            return new PreparedExecution(() -> algorithm.generate(request.dimensions(), request.seed()));
+        }
+    }
+
+    private static final class ArrayMazePathfinderHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(Boolean.class)
+                    && ArrayMazePathfinder.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return MazePathRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return List.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            MazePathRequest request = mapper.convertValue(input, MazePathRequest.class);
+            ArrayMazePathfinder algorithm = createAlgorithm(descriptor, ArrayMazePathfinder.class);
+            return new PreparedExecution(() ->
+                    algorithm.findPath(request.maze(), request.start(), request.goal()));
+        }
+    }
+
+    private static final class GraphTraversalHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(Integer.class)
+                    && GraphTraversal.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return GraphBfsRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return List.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            GraphBfsRequest request = mapper.convertValue(input, GraphBfsRequest.class);
+            Graph<Integer> graph = Graph.fromSnapshot(request.graph());
+            @SuppressWarnings("unchecked")
+            GraphTraversal<Integer> algorithm =
+                    (GraphTraversal<Integer>) createAlgorithm(descriptor, GraphTraversal.class);
+            return new PreparedExecution(() -> algorithm.traverse(graph, request.startNode()));
+        }
+    }
+
+    private static final class StringSearchHandler implements ApiExecutionHandler {
+        @Override
+        public boolean supports(AlgorithmDescriptor descriptor) {
+            return descriptor.valueType().equals(String.class)
+                    && StringSearch.class.isAssignableFrom(descriptor.implementation());
+        }
+
+        @Override
+        public Class<?> inputType() {
+            return StringSearchRequest.class;
+        }
+
+        @Override
+        public Class<?> outputType() {
+            return List.class;
+        }
+
+        @Override
+        public PreparedExecution prepare(
+                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
+            StringSearchRequest request = mapper.convertValue(input, StringSearchRequest.class);
+            StringStructure target = new com.majortom.algorithms.structure.string.String(request.target());
+            StringSearch algorithm = createAlgorithm(descriptor, StringSearch.class);
+            return new PreparedExecution(() -> algorithm.search(target, request.pattern()));
+        }
     }
 }

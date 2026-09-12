@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@Structure(id = "graph", contract = GraphStructure.class)
+@Structure(id = "graph", name = "Graph", contract = GraphStructure.class)
 public final class Graph<T> implements GraphStructure<T> {
     private final boolean directed;
     private final LinkedHashMap<T, Vertex<T>> verticesByValue = new LinkedHashMap<>();
@@ -85,6 +85,48 @@ public final class Graph<T> implements GraphStructure<T> {
     @Override
     public int vertexCount() {
         return adjacency.size();
+    }
+
+    @Override
+    public void initialize(Map<T, ? extends java.util.Collection<T>> source) {
+        Objects.requireNonNull(source, "adjacency");
+
+        LinkedHashMap<T, Vertex<T>> initializedVertices = new LinkedHashMap<>();
+        for (Map.Entry<T, ? extends java.util.Collection<T>> entry : source.entrySet()) {
+            T value = Objects.requireNonNull(entry.getKey(), "vertex value");
+            initializedVertices.computeIfAbsent(value, Vertex::new);
+            java.util.Collection<T> neighbors = Objects.requireNonNull(entry.getValue(), "neighbors");
+            for (T neighborValue : neighbors) {
+                T neighbor = Objects.requireNonNull(neighborValue, "neighbor value");
+                initializedVertices.computeIfAbsent(neighbor, Vertex::new);
+            }
+        }
+
+        verticesByValue.clear();
+        verticesByValue.putAll(initializedVertices);
+        adjacency.clear();
+        for (Vertex<T> vertex : verticesByValue.values()) {
+            adjacency.put(vertex, new LinkedHashSet<>());
+        }
+        edges.clear();
+
+        Set<EdgeKey> initializedEdges = new HashSet<>();
+        for (Map.Entry<T, ? extends java.util.Collection<T>> entry : source.entrySet()) {
+            Vertex<T> from = verticesByValue.get(entry.getKey());
+            for (T neighborValue : entry.getValue()) {
+                Vertex<T> to = verticesByValue.get(neighborValue);
+                EdgeKey key = EdgeKey.of(from.id(), to.id(), directed);
+                if (!initializedEdges.add(key)) {
+                    continue;
+                }
+                Edge<T> edge = new Edge<>(from, to);
+                edges.add(edge);
+                adjacency.get(from).add(to);
+                if (!directed) {
+                    adjacency.get(to).add(from);
+                }
+            }
+        }
     }
 
     @Override

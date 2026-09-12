@@ -2,12 +2,13 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
+import com.majortom.algorithms.practice.runtime.PracticeProblemRegistry;
+import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -24,6 +25,8 @@ import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import atlantafx.base.theme.Styles;
@@ -41,6 +44,7 @@ import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
@@ -96,8 +100,10 @@ public class MainController implements Initializable {
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
-    private static final List<String> OFFICIAL_VALUE_TYPES = COMPONENTS.valueTypeNames();
+    private static final List<String> OFFICIAL_VALUE_TYPES = ValueAdapters.supportedTypeNames();
     private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
+    private static final PracticeProblemRegistry PRACTICE_PROBLEMS =
+            PracticeProblemRegistry.discover("com.majortom.algorithms");
 
     @FXML
     private BorderPane rootPane;
@@ -122,6 +128,8 @@ public class MainController implements Initializable {
     @FXML
     private Button algorithmWorkspaceBtn;
     @FXML
+    private Button practiceWorkspaceBtn;
+    @FXML
     private HBox valueTypeBox;
     @FXML
     private Label valueTypeLabel;
@@ -139,6 +147,24 @@ public class MainController implements Initializable {
     private VBox structureWorkspacePane;
     @FXML
     private VBox algorithmWorkspacePane;
+    @FXML
+    private VBox practiceWorkspacePane;
+    @FXML
+    private Label practiceWorkspaceTitleLabel;
+    @FXML
+    private Label practiceCatalogTitleLabel;
+    @FXML
+    private Label practiceCatalogHintLabel;
+    @FXML
+    private ListView<ProblemDescriptor> practiceProblemList;
+    @FXML
+    private Label practiceProblemNameLabel;
+    @FXML
+    private Label practiceProblemMetaLabel;
+    @FXML
+    private Label practiceProblemEntryLabel;
+    @FXML
+    private Label practiceEmptyLabel;
     @FXML
     private HBox structureWorkspaceBody;
     @FXML
@@ -475,6 +501,7 @@ public class MainController implements Initializable {
         setupFontSettings();
         setupValueTypeSelectors();
         setupModuleMenu();
+        setupPracticeWorkspace();
         setupWorkspaceMode();
         setupPlaybackSpeedButtons();
         setupTimelinePresentation();
@@ -484,7 +511,7 @@ public class MainController implements Initializable {
         setStructureHistoryExpanded(false);
         WorkbenchTheme.apply(rootPane);
         WorkbenchTheme.leftPill(structureWorkspaceBtn);
-        WorkbenchTheme.rightPill(algorithmWorkspaceBtn);
+        WorkbenchTheme.rightPill(practiceWorkspaceBtn);
 
         if (!moduleDefinitions.isEmpty()) {
             switchToModule(moduleDefinitions.getFirst());
@@ -501,8 +528,13 @@ public class MainController implements Initializable {
         }
         structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
+        practiceWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.practice"));
         structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
         algorithmWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
+        practiceWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice"));
+        practiceCatalogTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.catalog"));
+        practiceCatalogHintLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.hint"));
+        practiceEmptyLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.empty"));
         structureLiveLabel.setText(I18N.text("label.workspace.structure.live"));
         algorithmInputTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
         structurePreviewTitleLabel.textProperty().bind(
@@ -945,7 +977,7 @@ public class MainController implements Initializable {
         }
         String moduleId = activeDefinition.id();
         boolean maze = "maze".equals(moduleId);
-        setControlVisibility(valueTypeBox, false);
+        setControlVisibility(valueTypeBox, !maze);
         if (maze) {
             return;
         }
@@ -992,7 +1024,11 @@ public class MainController implements Initializable {
     }
 
     private List<String> availableValueTypes(String moduleId) {
-        return COMPONENTS.algorithmValueTypes(moduleId);
+        return switch (moduleId) {
+            case "array", "linked-list", "stack", "queue", "tree", "graph" -> ValueAdapters.supportedTypeNames();
+            case "string" -> List.of(String.class.getSimpleName());
+            default -> COMPONENTS.algorithmValueTypes(moduleId);
+        };
     }
 
     private List<ValueTypeOption> valueTypeOptions(List<String> available) {
@@ -1032,10 +1068,11 @@ public class MainController implements Initializable {
 
     private void refreshAfterValueTypeChange() {
         refreshValueTypeSelectors();
-        rebuildAlgorithmMenu();
         if (activeDefinition == null) {
             return;
         }
+        configureRuntimeValueType(activeDefinition.id(), currentSubController);
+        rebuildAlgorithmMenu();
         updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         clearAlgorithmSelection();
         List<AlgorithmNavigationItem> items = algorithmNavigationItems(activeDefinition.id());
@@ -1112,7 +1149,12 @@ public class MainController implements Initializable {
     }
 
     private String familyName(String moduleId) {
-        return I18N.text(structureLabelKey(moduleId)).toUpperCase(Locale.ROOT);
+        return moduleDefinitions.stream()
+                .filter(definition -> definition.id().equals(moduleId))
+                .map(WorkbenchModuleDefinition::name)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown Workbench module: " + moduleId))
+                .toUpperCase(Locale.ROOT);
     }
 
     private String familyIndex(String moduleId) {
@@ -1150,8 +1192,7 @@ public class MainController implements Initializable {
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("sidebar-algorithm-button");
         button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
-        button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
-                () -> AlgorithmLabels.text(item.id()), I18N.localeProperty()));
+        button.setText(AlgorithmCatalog.name(item.id()));
         button.setOnAction(event -> selectAlgorithm(definition, item.id()));
         algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
                 .put(item.id(), button);
@@ -1182,12 +1223,23 @@ public class MainController implements Initializable {
 
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         List<String> algorithmIds = new ArrayList<>();
-        if (activeDefinition != null
-                && activeDefinition.id().equals(moduleId)
-                && currentSubController instanceof AlgorithmSelectionSupport support) {
-            algorithmIds.addAll(support.algorithmIds());
-        } else {
+        if ("maze".equals(moduleId)) {
             algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId));
+        } else {
+            String selected = selectedValueType(moduleId);
+            if (selected == null) {
+                return List.of();
+            }
+            Class<?> valueType = ValueAdapters.requireType(selected);
+            if (activeDefinition != null
+                    && activeDefinition.id().equals(moduleId)
+                    && currentSubController instanceof AlgorithmSelectionSupport support) {
+                algorithmIds.addAll(support.algorithmIds());
+            } else {
+                algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
+            }
+            List<String> registered = COMPONENTS.algorithmIds(moduleId, valueType.getSimpleName());
+            algorithmIds.removeIf(id -> !registered.contains(id));
         }
         return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
     }
@@ -1202,25 +1254,16 @@ public class MainController implements Initializable {
         }
     }
 
+    private enum WorkspaceMode {
+        STRUCTURE,
+        ALGORITHM,
+        PRACTICE
+    }
+
     private record ValueTypeOption(String type, boolean available) {
     }
 
     private record AlgorithmNavigationItem(String id) {
-    }
-
-    private String structureLabelKey(String moduleId) {
-        return switch (moduleId) {
-            case "array" -> "label.structure.array";
-            case "linked-list" -> "label.structure.linked_list";
-            case "stack" -> "label.structure.stack";
-            case "queue" -> "label.structure.queue";
-            case "maze" -> "label.structure.grid";
-            case "tree" -> "label.structure.tree";
-            case "graph" -> "label.structure.graph";
-            case "hash-table" -> "label.structure.hash_table";
-            case "string" -> "label.structure.string";
-            default -> "label.workspace.structure";
-        };
     }
 
     private void setupWorkspaceMode() {
@@ -1238,14 +1281,32 @@ public class MainController implements Initializable {
     }
 
     private void setWorkspaceMode(boolean structure) {
+        setWorkspaceMode(structure ? WorkspaceMode.STRUCTURE : WorkspaceMode.ALGORITHM);
+    }
+
+    @FXML
+    private void selectPracticeWorkspace() {
+        setWorkspaceMode(WorkspaceMode.PRACTICE);
+    }
+
+    private void setWorkspaceMode(WorkspaceMode mode) {
+        boolean structure = mode == WorkspaceMode.STRUCTURE;
+        boolean algorithm = mode == WorkspaceMode.ALGORITHM;
+        boolean practice = mode == WorkspaceMode.PRACTICE;
+
         structureWorkspaceBtn.pseudoClassStateChanged(SELECTED, structure);
-        algorithmWorkspaceBtn.pseudoClassStateChanged(SELECTED, !structure);
+        algorithmWorkspaceBtn.pseudoClassStateChanged(SELECTED, algorithm);
+        practiceWorkspaceBtn.pseudoClassStateChanged(SELECTED, practice);
         structureWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, structure);
-        algorithmWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, !structure);
+        algorithmWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, algorithm);
+        practiceWorkspacePane.pseudoClassStateChanged(WORKSPACE_FOCUS, practice);
         setPageVisibility(structureWorkspacePane, structure);
-        setPageVisibility(algorithmWorkspacePane, !structure);
-        refreshExecutionDockVisibility(structure);
-        attachVisualizer(structure);
+        setPageVisibility(algorithmWorkspacePane, algorithm);
+        setPageVisibility(practiceWorkspacePane, practice);
+        refreshExecutionDockVisibility(!algorithm);
+        if (!practice) {
+            attachVisualizer(structure);
+        }
         structureSnapshotPreviewActive = false;
         if (currentSubController instanceof TreeController treeController) {
             treeController.setStructureSelectionEnabled(structure);
@@ -1275,7 +1336,7 @@ public class MainController implements Initializable {
             clearStructureSelection();
             currentSubController.showStructureState();
         }
-        if (!structure && currentSubController != null) {
+        if (algorithm && currentSubController != null) {
             syncSnapshotSelectionFromAlgorithmInput();
             currentSubController.showAlgorithmState();
         }
@@ -1284,11 +1345,62 @@ public class MainController implements Initializable {
         updateWorkspaceInteractionState();
         refreshTopContext();
         refreshExecutionPresentation();
-        if (structure) {
+        if (practice) {
+            practiceWorkspacePane.requestFocus();
+        } else if (structure) {
             structureWorkspacePane.requestFocus();
+        } else {
+            algorithmWorkspacePane.requestFocus();
+        }
+    }
+
+    private void setupPracticeWorkspace() {
+        List<ProblemDescriptor> problems = PRACTICE_PROBLEMS.problems();
+        practiceProblemList.getItems().setAll(problems);
+        practiceProblemList.setCellFactory(ignored -> new ListCell<>() {
+            @Override
+            protected void updateItem(ProblemDescriptor item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    return;
+                }
+                String number = item.number().isBlank() ? item.id() : item.number();
+                setText(item.name() + "  ·  " + item.source().name() + " #" + number);
+            }
+        });
+        practiceProblemList.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> showPracticeProblem(selected));
+        if (problems.isEmpty()) {
+            showPracticeProblem(null);
+        } else {
+            practiceProblemList.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void showPracticeProblem(ProblemDescriptor problem) {
+        boolean selected = problem != null;
+        practiceProblemNameLabel.setVisible(selected);
+        practiceProblemNameLabel.setManaged(selected);
+        practiceProblemMetaLabel.setVisible(selected);
+        practiceProblemMetaLabel.setManaged(selected);
+        practiceProblemEntryLabel.setVisible(selected);
+        practiceProblemEntryLabel.setManaged(selected);
+        practiceEmptyLabel.setVisible(!selected);
+        practiceEmptyLabel.setManaged(!selected);
+        if (!selected) {
+            practiceProblemNameLabel.setText("—");
+            practiceProblemMetaLabel.setText("");
+            practiceProblemEntryLabel.setText("");
             return;
         }
-        algorithmWorkspacePane.requestFocus();
+        String number = problem.number().isBlank() ? problem.id() : problem.number();
+        String tags = problem.tags().isEmpty() ? "" : "  ·  " + String.join(", ", problem.tags());
+        practiceProblemNameLabel.setText(problem.name());
+        practiceProblemMetaLabel.setText(
+                problem.source().name() + " #" + number + "  ·  " + problem.difficulty().name() + tags);
+        practiceProblemEntryLabel.setText(
+                problem.implementation().getName() + "#" + problem.entryPoint().getName());
     }
 
     private void setupTimelinePresentation() {
@@ -1699,7 +1811,9 @@ public class MainController implements Initializable {
         structureSnapshotPreviewActive = false;
         clearStructureSelection();
         refreshValueTypeSelectors();
-        loadSubController(definition.controllerFactory().get());
+        BaseController<?> nextController = definition.controllerFactory().get();
+        configureRuntimeValueType(definition.id(), nextController);
+        loadSubController(nextController);
         rebuildAlgorithmMenu();
         syncAlgorithmSelectionFromController();
         updateAlgorithmWorkspaceAvailability(definition.id());
@@ -1724,6 +1838,7 @@ public class MainController implements Initializable {
                 && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
         structureWorkspaceBtn.setDisable(running);
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
+        practiceWorkspaceBtn.setDisable(running);
         structureButtons.values().forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
         algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
         if (structureControlsHost != null) {
@@ -1823,6 +1938,22 @@ public class MainController implements Initializable {
             updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         }
         refreshTopContext();
+    }
+
+    private void configureRuntimeValueType(String moduleId, BaseController<?> controller) {
+        if (!(controller instanceof RuntimeValueTypeSupport support)) {
+            return;
+        }
+        String selected = selectedValueType(moduleId);
+        if (selected == null) {
+            return;
+        }
+        Class<?> valueType = ValueAdapters.requireType(selected);
+        if (!support.supportedValueTypes().contains(valueType)) {
+            throw new IllegalArgumentException("Controller for " + moduleId
+                    + " does not support runtime value type " + valueType.getName());
+        }
+        support.setRuntimeValueType(valueType);
     }
 
     private void loadSubController(BaseController<?> newController) {
@@ -1948,6 +2079,10 @@ public class MainController implements Initializable {
         return structureWorkspacePane != null && structureWorkspacePane.isManaged();
     }
 
+    private boolean isPracticePageVisible() {
+        return practiceWorkspacePane != null && practiceWorkspacePane.isManaged();
+    }
+
     /** Moves FXML sections into the structure and algorithm rails without duplicating controls. */
     private void distributeModuleControls() {
         if (customControlBox.getChildren().isEmpty()) {
@@ -1997,7 +2132,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null) {
             return;
         }
-        String moduleName = I18N.text(activeDefinition.labelKey());
+        String moduleName = activeDefinition.name();
         structureWorkspaceSubtitleLabel.setText(moduleName);
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
         refreshSnapshotCards();
@@ -2011,7 +2146,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null || snapshotCards == null) {
             return;
         }
-        String moduleName = I18N.text(activeDefinition.labelKey());
+        String moduleName = activeDefinition.name();
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
         if (support == null) {
             snapshotCards.getChildren().clear();
@@ -2709,11 +2844,25 @@ public class MainController implements Initializable {
         if (topContextLabel == null) {
             return;
         }
+        if (isPracticePageVisible()) {
+            topContextLabel.setText(
+                    I18N.text("label.workspace.practice").toUpperCase(Locale.ROOT) + " / "
+                            + I18N.text("label.workspace.practice.catalog").toUpperCase(Locale.ROOT));
+            if (runStateLabel != null) {
+                runStateLabel.setText(workspaceStatusText("READY"));
+                runStateLabel.getStyleClass().removeAll(
+                        "state-running", "state-paused", "state-completed", "state-failed");
+            }
+            if (runIdLabel != null) {
+                runIdLabel.setText("");
+            }
+            return;
+        }
         String family;
         if (activeDefinition == null) {
             family = I18N.text("label.menu.title").toUpperCase(Locale.ROOT);
         } else {
-            family = I18N.text(activeDefinition.labelKey()).toUpperCase(Locale.ROOT);
+            family = activeDefinition.name().toUpperCase(Locale.ROOT);
         }
         boolean structureMode = isStructurePageVisible();
         String suffix;
@@ -2779,7 +2928,7 @@ public class MainController implements Initializable {
         if (selectedAlgorithmId == null || selectedAlgorithmId.isBlank()) {
             return I18N.text("label.workspace.algorithm").toUpperCase(Locale.ROOT);
         }
-        return AlgorithmLabels.text(selectedAlgorithmId).toUpperCase(Locale.ROOT);
+        return AlgorithmCatalog.name(selectedAlgorithmId).toUpperCase(Locale.ROOT);
     }
 
     private String workspaceStatusText(String state) {

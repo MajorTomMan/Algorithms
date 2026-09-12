@@ -6,10 +6,11 @@ import com.majortom.algorithms.core.runtime.StructureEvents;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Structure(id = "avl-tree", contract = AvlTreeStructure.class)
+@Structure(id = "avl-tree", name = "AVL Tree", contract = AvlTreeStructure.class)
 public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeStructure<T> {
     private AVLTreeNode<T> root;
     private int size;
@@ -34,6 +35,26 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
     @Override
     public AVLTreeNode<T> root() {
         return root;
+    }
+
+    @Override
+    public void initializeSorted(List<? extends T> sortedUniqueValues) {
+        Objects.requireNonNull(sortedUniqueValues, "sortedUniqueValues");
+        nextNodeId = 1L;
+        root = buildBalanced(sortedUniqueValues, 0, sortedUniqueValues.size());
+        size = sortedUniqueValues.size();
+    }
+
+    private AVLTreeNode<T> buildBalanced(List<? extends T> values, int fromInclusive, int toExclusive) {
+        if (fromInclusive >= toExclusive) {
+            return null;
+        }
+        int middle = fromInclusive + (toExclusive - fromInclusive) / 2;
+        T value = Objects.requireNonNull(values.get(middle), "bulk AVL node value");
+        AVLTreeNode<T> left = buildBalanced(values, fromInclusive, middle);
+        AVLTreeNode<T> right = buildBalanced(values, middle + 1, toExclusive);
+        int height = Math.max(height(left), height(right)) + 1;
+        return new AVLTreeNode<>(nextNodeId++, value, height, left, right);
     }
 
     @Override

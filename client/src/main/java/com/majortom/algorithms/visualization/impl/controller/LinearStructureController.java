@@ -10,7 +10,10 @@ import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -25,14 +28,17 @@ import java.util.function.Consumer;
 
 /** Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7. */
 public final class LinearStructureController extends BaseModuleController<LinearStructureViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Integer>> {
+        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
 
     private enum Kind { STACK, QUEUE }
 
     private final Kind kind;
     private final String moduleId;
-    private final StackStructure<Integer> stack;
-    private final QueueStructure<Integer> queue;
+    private final LinkedList<Object> linkedList;
+    private final StackStructure<Object> stack;
+    private final QueueStructure<Object> queue;
+    private Class<?> runtimeValueType = Integer.class;
+    private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
     private Consumer<ItemSelection> selectionListener = ignored -> { };
@@ -52,16 +58,9 @@ public final class LinearStructureController extends BaseModuleController<Linear
         super(visualizer(kind), "/fxml/LinearStructureControls.fxml");
         this.kind = kind;
         this.moduleId = moduleId;
-        if (kind == Kind.STACK) {
-            stack = (StackStructure<Integer>) structure("stack", LinkedList.class);
-        } else {
-            stack = null;
-        }
-        if (kind == Kind.QUEUE) {
-            queue = (QueueStructure<Integer>) structure("queue", LinkedList.class);
-        } else {
-            queue = null;
-        }
+        linkedList = (LinkedList<Object>) structure(moduleId, LinkedList.class);
+        stack = kind == Kind.STACK ? linkedList : null;
+        queue = kind == Kind.QUEUE ? linkedList : null;
         seed();
         renderStructureState(currentState());
     }
@@ -110,7 +109,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void push() {
         clearVisualSelection();
-        Integer value = value();
+        Object value = value();
         if (value == null) {
             return;
         }
@@ -130,7 +129,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             logI18n("message.linear.empty");
             return;
         }
-        int[] value = new int[1];
+        Object[] value = new Object[1];
         if (executeStructureOperation("pop", () -> {
             value[0] = stack.pop();
             return null;
@@ -143,7 +142,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void enqueue() {
         clearVisualSelection();
-        Integer value = value();
+        Object value = value();
         if (value == null) {
             return;
         }
@@ -163,7 +162,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             logI18n("message.linear.empty");
             return;
         }
-        int[] value = new int[1];
+        Object[] value = new Object[1];
         if (executeStructureOperation("dequeue", () -> {
             value[0] = queue.dequeue();
             return null;
@@ -190,9 +189,9 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
     }
 
-    private Integer value() {
+    private Object value() {
         try {
-            return Integer.valueOf(valueField.getText().trim());
+            return valueAdapter.parse(valueField.getText());
         } catch (RuntimeException exception) {
             logI18n("message.error.invalid_linear_value");
             return null;
@@ -200,15 +199,14 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void seed() {
-        if (kind == Kind.STACK) {
-            stack.push(12);
-            stack.push(24);
-            stack.push(36);
-        } else {
-            queue.enqueue(12);
-            queue.enqueue(24);
-            queue.enqueue(36);
+        linkedList.initialize(defaultValues());
+    }
+
+    private List<Object> defaultValues() {
+        if (runtimeValueType == Integer.class) {
+            return List.of(36, 24, 12);
         }
+        return List.of("gamma", "beta", "alpha");
     }
 
     @Override
@@ -218,7 +216,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     protected void applyBulkData(String input) {
-        List<Integer> values = parseIntegerBatchInput(input);
+        List<Object> values = parseBatchInput(input, valueAdapter);
         if (values == null) {
             return;
         }
@@ -228,26 +226,21 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     protected void randomizeData() {
         java.util.Random random = new java.util.Random();
-        List<Integer> values = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
         for (int index = 0; index < 8; index++) {
-            values.add(random.nextInt(100) + 1);
+            if (runtimeValueType == Integer.class) {
+                values.add(random.nextInt(100) + 1);
+            } else {
+                values.add("value-" + (random.nextInt(90) + 10));
+            }
         }
         replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
     }
 
-    private void replaceValues(List<Integer> values, String operationId, String messageKey) {
+    private void replaceValues(List<Object> values, String operationId, String messageKey) {
         clearVisualSelection();
         if (!executeStructureOperation(operationId, () -> {
-            clearWithoutRuntime();
-            if (kind == Kind.STACK) {
-                for (int index = values.size() - 1; index >= 0; index--) {
-                    stack.push(values.get(index));
-                }
-            } else {
-                for (Integer value : values) {
-                    queue.enqueue(value);
-                }
-            }
+            linkedList.initialize(values);
             return null;
         })) {
             return;
@@ -267,22 +260,14 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return new LinearStructureViewState(moduleId, values());
     }
 
-    private void renderMutation(LinearStructureViewState.Type type, Integer value) {
-        renderStructureState(new LinearStructureViewState(
+    private void renderMutation(LinearStructureViewState.Type type, Object value) {
+        renderStructureState(LinearStructureViewState.of(
                 moduleId, values(), LinearStructureViewState.Mutation.of(type, value)));
     }
 
-    private List<Integer> values() {
-        List<Integer> values = new ArrayList<>();
-        Iterable<Integer> source;
-        if (kind == Kind.STACK) {
-            source = stack;
-        } else {
-            source = queue;
-        }
-        for (Integer value : source) {
-            values.add(value);
-        }
+    private List<Object> values() {
+        List<Object> values = new ArrayList<>();
+        linkedList.forEach(values::add);
         return List.copyOf(values);
     }
 
@@ -324,52 +309,43 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     protected void onResetData() {
         clearVisualSelection();
-        clearWithoutRuntime();
         seed();
         renderStructureState(currentState());
     }
 
     @Override
-    public StructureSnapshot<SequenceSnapshot<Integer>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId, new SequenceSnapshot<>(values()));
+    public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId, runtimeValueType, new SequenceSnapshot<>(values()));
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!moduleId.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
-        clearWithoutRuntime();
-        List<Integer> snapshotValues = snapshot.state().values();
-        if (kind == Kind.STACK) {
-            for (int index = snapshotValues.size() - 1; index >= 0; index--) {
-                stack.push(snapshotValues.get(index));
-            }
-        } else {
-            for (Integer value : snapshotValues) {
-                queue.enqueue(value);
-            }
-        }
+        linkedList.initialize(snapshot.state().values());
         renderStructureState(currentState());
     }
 
     @Override
-    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!moduleId.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
         renderPreviewState(new LinearStructureViewState(moduleId, snapshot.state().values()));
     }
 
     @Override
-    public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
+    public String describeStructureSnapshot(SequenceSnapshot<Object> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
     }
 
     @Override
-    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+    public String snapshotPrimaryCount(SequenceSnapshot<Object> state) {
         return Integer.toString(state.values().size());
     }
 
@@ -393,13 +369,13 @@ public final class LinearStructureController extends BaseModuleController<Linear
             handleAlgorithmSelection(index);
             return;
         }
-        List<Integer> current = values();
+        List<Object> current = values();
         if (index < 0 || index >= current.size()) {
             clearVisualSelection();
             return;
         }
-        int value = current.get(index);
-        valueField.setText(Integer.toString(value));
+        Object value = current.get(index);
+        valueField.setText(valueAdapter.format(value));
         selectionListener.accept(new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
     }
 
@@ -414,8 +390,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void publishAlgorithmSelection(LinearStructureViewState state, int index) {
         int size = state.values().size();
-        int value = state.values().get(index);
-        selectionListener.accept(new ItemSelection(index, VisualValue.of(value), selectionRole(index, size), size));
+        VisualValue value = state.values().get(index);
+        selectionListener.accept(new ItemSelection(index, value, selectionRole(index, size), size));
     }
 
     @Override
@@ -478,14 +454,35 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void clearWithoutRuntime() {
-        if (kind == Kind.STACK) {
-            while (!stack.isEmpty()) {
-                stack.pop();
-            }
-        } else {
-            while (!queue.isEmpty()) {
-                queue.dequeue();
-            }
+        linkedList.initialize(List.of());
+    }
+
+    @Override
+    public Class<?> runtimeValueType() {
+        return runtimeValueType;
+    }
+
+    @Override
+    public List<Class<?>> supportedValueTypes() {
+        return ValueAdapters.supportedTypes();
+    }
+
+    @Override
+    public void setRuntimeValueType(Class<?> valueType) {
+        if (!supportedValueTypes().contains(valueType)) {
+            throw new IllegalArgumentException("Unsupported " + moduleId + " value type: " + valueType.getName());
+        }
+        if (runtimeValueType.equals(valueType)) {
+            return;
+        }
+        runtimeValueType = valueType;
+        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        clearVisualSelection();
+        seed();
+        invalidateExecutionForStructureChange();
+        if (controlPanel != null) {
+            renderStructureState(currentState());
+            refreshStatsDisplay();
         }
     }
 

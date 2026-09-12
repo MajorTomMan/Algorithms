@@ -1,8 +1,7 @@
 package com.majortom.algorithms.visualization.impl.control;
 
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
-import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -24,16 +23,10 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
         getSelectionModel().selectFirst();
         valueProperty().addListener((observable, oldValue, newValue) -> selectMatchingGenerator());
         parentProperty().addListener((observable, oldValue, newValue) -> Platform.runLater(this::connectGenerator));
-        I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
-            int selected = Math.max(0, getSelectionModel().getSelectedIndex());
-            refreshItems();
-            getSelectionModel().select(Math.min(selected, getItems().size() - 1));
-            Platform.runLater(this::syncFromGenerator);
-        });
     }
 
     private void refreshItems() {
-        getItems().setAll(I18N.text("label.maze.structure.array"), I18N.text("label.maze.structure.graph"));
+        getItems().setAll(StructureCatalog.name("array"), StructureCatalog.name("graph"));
     }
 
     @SuppressWarnings("unchecked")
@@ -71,7 +64,7 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
         if (candidates.isEmpty()) {
             return;
         }
-        String label = AlgorithmLabels.text(candidates.getFirst());
+        String label = AlgorithmCatalog.name(candidates.getFirst());
         int index = generatorSelector.getItems().indexOf(label);
         if (index >= 0) {
             generatorSelector.getSelectionModel().select(index);
@@ -83,7 +76,7 @@ public final class MazeAlgorithmStructureSelector extends ComboBox<String> {
             return;
         }
         String selectedGenerator = generatorSelector.getValue();
-        boolean graph = graphGenerators.stream().map(AlgorithmLabels::text).anyMatch(selectedGenerator::equals);
+        boolean graph = graphGenerators.stream().map(AlgorithmCatalog::name).anyMatch(selectedGenerator::equals);
         syncing = true;
         try {
             if (graph) {

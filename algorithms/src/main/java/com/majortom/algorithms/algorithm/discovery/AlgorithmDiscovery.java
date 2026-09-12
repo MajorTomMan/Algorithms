@@ -1,6 +1,7 @@
 package com.majortom.algorithms.algorithm.discovery;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationException;
@@ -43,6 +44,7 @@ public final class AlgorithmDiscovery {
             }
             AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
                     annotation.id(),
+                    ComponentNames.resolve(annotation.name(), implementation),
                     annotation.module(),
                     annotation.type(),
                     annotation.structure(),

@@ -8,7 +8,7 @@ import com.majortom.algorithms.algorithm.string.StringAlgorithm;
 import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -448,15 +448,12 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void bindSelectors() {
-        structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text("label.structure.string")), I18N.localeProperty()));
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds) {
-                labels.add(AlgorithmLabels.text(id));
-            }
-            return labels;
-        }, I18N.localeProperty()));
+        structureSelector.setItems(FXCollections.observableArrayList(StructureCatalog.name("string")));
+        javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
+        for (String id : algorithmIds) {
+            algorithmLabels.add(AlgorithmCatalog.name(id));
+        }
+        algorithmSelector.setItems(algorithmLabels);
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             refreshAlgorithmControls();
             notifyAlgorithmSelection();

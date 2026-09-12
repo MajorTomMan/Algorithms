@@ -5,7 +5,7 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Insertion sort over an ArrayStructure<Integer>. */
-@Algorithm(id = "insertion-sort", module = "array", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(id = "insertion-sort", name = "Insertion Sort", module = "array", type = Integer.class, structure = ArrayStructure.class)
 public final class IntegerInsertionSort extends AbstractIntegerSort {
 
     @Override

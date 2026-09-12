@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Algorithm(id = "kmp", module = "string", type = String.class, structure = StringStructure.class)
+@Algorithm(id = "kmp", name = "KMP Search", module = "string", type = String.class, structure = StringStructure.class)
 public final class KmpSearch implements StringSearch {
     @Override
     public List<Integer> search(StringStructure target, String pattern) {

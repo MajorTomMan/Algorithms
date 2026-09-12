@@ -1,7 +1,7 @@
 package com.majortom.algorithms.structure.graph;
 
-import com.majortom.algorithms.structure.graph.Edge;
-import com.majortom.algorithms.structure.graph.Vertex;
+import java.util.Collection;
+import java.util.Map;
 
 public interface GraphStructure<T> {
     int vertexCount();
@@ -12,6 +12,10 @@ public interface GraphStructure<T> {
     }
 
     boolean isDirected();
+
+    /** Replaces the complete graph through the trusted bulk-load path. */
+    void initialize(Map<T, ? extends Collection<T>> adjacency);
+
     Vertex<T> vertex(T value);
     Vertex<T> addVertex(T value);
     boolean removeVertex(Vertex<T> vertex);

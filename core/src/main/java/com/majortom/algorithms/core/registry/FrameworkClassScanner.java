@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -74,7 +76,11 @@ public final class FrameworkClassScanner {
     }
 
     private String className(String rootPackage, Path packageRoot, Path classFile) {
-        String relative = packageRoot.relativize(classFile).toString().replace(java.io.File.separatorChar, '.');
+        String rawRelative = packageRoot.toUri().relativize(classFile.toUri()).getRawPath();
+        // Path#toString uses the native platform encoding and can replace Unicode names with '?'
+        // under a POSIX/C locale. File URI raw paths preserve the original UTF-8 bytes.
+        String relative = URLDecoder.decode(rawRelative.replace("+", "%2B"), StandardCharsets.UTF_8)
+                .replace('/', '.');
         return rootPackage + "." + relative.substring(0, relative.length() - ".class".length());
     }
 

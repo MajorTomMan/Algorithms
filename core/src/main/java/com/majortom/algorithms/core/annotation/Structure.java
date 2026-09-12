@@ -16,6 +16,9 @@ public @interface Structure {
     /** Stable id used when an implementation must be selected explicitly. */
     String id();
 
+    /** Human-readable component name. Blank uses the implementation class name fallback. */
+    String name() default "";
+
     /** Structure capability/API contract implemented by the annotated class. */
     Class<?> contract();
 }

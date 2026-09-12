@@ -12,6 +12,9 @@ import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListEventReducer;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -26,10 +29,12 @@ import java.util.function.Consumer;
 
 /** Linked-list workbench backed by factual node/link events and the family-specific linked visualizer. */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Integer>> {
+        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
     private static final String MODULE_ID = "linked-list";
 
-    private final LinkedStructure<Integer> linkedList;
+    private final LinkedStructure<Object> linkedList;
+    private Class<?> runtimeValueType = Integer.class;
+    private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
     private boolean structureSelectionEnabled = true;
     private Long algorithmSelectedNodeId;
     private Consumer<NodeSelection> selectionListener = ignored -> { };
@@ -47,7 +52,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @SuppressWarnings("unchecked")
     public LinkedListController() {
         super(new LinkedListVisualizer(), "/fxml/LinearStructureControls.fxml");
-        linkedList = (LinkedStructure<Integer>) structure("linked-list", LinkedList.class);
+        linkedList = (LinkedStructure<Object>) structure("linked-list", LinkedList.class);
         seed();
         renderStructureState(currentState());
     }
@@ -72,7 +77,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     private void insert() {
         clearVisualSelection();
-        Integer value = value();
+        Object value = value();
         if (value == null) {
             return;
         }
@@ -103,7 +108,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
             return;
         }
         int index = target;
-        int[] removed = new int[1];
+        Object[] removed = new Object[1];
         if (executeAndReduce("remove", () -> removed[0] = linkedList.remove(index))) {
             selectLinkedAfterRemoval(index);
             logI18n("message.linear.removed", removed[0], index);
@@ -148,13 +153,13 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private void update() {
         clearVisualSelection();
         Integer target = index(false);
-        Integer value = value();
+        Object value = value();
         if (target == null || value == null || target < 0 || target >= linkedList.size()) {
             logI18n("message.error.invalid_linear_index");
             return;
         }
         int index = target;
-        int[] previous = new int[1];
+        Object[] previous = new Object[1];
         if (executeAndReduce("update", () -> previous[0] = linkedList.set(index, value))) {
             selectLinkedAtIndex(index);
             logI18n("message.linear.updated", index, previous[0], value);
@@ -185,9 +190,9 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         return true;
     }
 
-    private Integer value() {
+    private Object value() {
         try {
-            return Integer.valueOf(valueField.getText().trim());
+            return valueAdapter.parse(valueField.getText());
         } catch (RuntimeException exception) {
             logI18n("message.error.invalid_linear_value");
             return null;
@@ -208,9 +213,17 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void seed() {
-        linkedList.insert(0, 12);
-        linkedList.insert(1, 24);
-        linkedList.insert(2, 36);
+        linkedList.initialize(defaultValues());
+    }
+
+    private List<Object> defaultValues() {
+        if (runtimeValueType == Integer.class) {
+            return List.of(12, 24, 36);
+        }
+        if (runtimeValueType == String.class) {
+            return List.of("alpha", "beta", "gamma");
+        }
+        throw new IllegalStateException("Unsupported LinkedList value type: " + runtimeValueType.getName());
     }
 
     @Override
@@ -220,7 +233,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     protected void applyBulkData(String input) {
-        List<Integer> values = parseIntegerBatchInput(input);
+        List<Object> values = parseBatchInput(input, valueAdapter);
         if (values == null) {
             return;
         }
@@ -230,20 +243,21 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     protected void randomizeData() {
         java.util.Random random = new java.util.Random();
-        List<Integer> values = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
         for (int index = 0; index < 8; index++) {
-            values.add(random.nextInt(100) + 1);
+            if (runtimeValueType == Integer.class) {
+                values.add(random.nextInt(100) + 1);
+            } else {
+                values.add("V" + (random.nextInt(100) + 1));
+            }
         }
         replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
     }
 
-    private void replaceValues(List<Integer> values, String operationId, String messageKey) {
+    private void replaceValues(List<Object> values, String operationId, String messageKey) {
         clearVisualSelection();
         if (!executeStructureOperation(operationId, () -> {
-            clearWithoutRuntime();
-            for (int index = 0; index < values.size(); index++) {
-                linkedList.insert(index, values.get(index));
-            }
+            linkedList.initialize(values);
             return null;
         })) {
             return;
@@ -262,9 +276,9 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         return LinkedListViewState.source(linkedList.head());
     }
 
-    private List<Integer> values() {
-        List<Integer> values = new ArrayList<>();
-        for (Integer value : linkedList) {
+    private List<Object> values() {
+        List<Object> values = new ArrayList<>();
+        for (Object value : linkedList) {
             values.add(value);
         }
         return List.copyOf(values);
@@ -310,39 +324,38 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     @Override
-    public StructureSnapshot<SequenceSnapshot<Integer>> captureStructureSnapshot() {
-        return StructureSnapshot.create(MODULE_ID, new SequenceSnapshot<>(values()));
+    public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
+        return StructureSnapshot.create(MODULE_ID, runtimeValueType, new SequenceSnapshot<>(values()));
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!MODULE_ID.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
-        clearWithoutRuntime();
-        for (Integer value : snapshot.state().values()) {
-            linkedList.insert(linkedList.size(), value);
-        }
+        linkedList.initialize(snapshot.state().values());
         renderStructureState(currentState());
     }
 
     @Override
-    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!MODULE_ID.equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
         renderPreviewState(LinkedListViewState.fromValues(snapshot.state().values()));
     }
 
     @Override
-    public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
+    public String describeStructureSnapshot(SequenceSnapshot<Object> state) {
         return I18N.text("snapshot.linear.detail", state.values().size());
     }
 
     @Override
-    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+    public String snapshotPrimaryCount(SequenceSnapshot<Object> state) {
         return Integer.toString(state.values().size());
     }
 
@@ -450,9 +463,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void clearWithoutRuntime() {
-        while (!linkedList.isEmpty()) {
-            linkedList.remove(linkedList.size() - 1);
-        }
+        linkedList.initialize(List.of());
     }
 
     private void configureControls() {
@@ -464,4 +475,33 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         quaternaryBtn.setVisible(true);
         quaternaryBtn.setManaged(true);
     }
+    @Override
+    public Class<?> runtimeValueType() {
+        return runtimeValueType;
+    }
+
+    @Override
+    public List<Class<?>> supportedValueTypes() {
+        return ValueAdapters.supportedTypes();
+    }
+
+    @Override
+    public void setRuntimeValueType(Class<?> valueType) {
+        if (!supportedValueTypes().contains(valueType)) {
+            throw new IllegalArgumentException("Unsupported LinkedList value type: " + valueType.getName());
+        }
+        if (runtimeValueType.equals(valueType)) {
+            return;
+        }
+        runtimeValueType = valueType;
+        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        clearVisualSelection();
+        seed();
+        invalidateExecutionForStructureChange();
+        if (controlPanel != null) {
+            renderStructureState(currentState());
+            refreshStatsDisplay();
+        }
+    }
+
 }

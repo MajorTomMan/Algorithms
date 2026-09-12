@@ -106,13 +106,13 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         for (int index = 0; index < state.values().size(); index++) {
             NodeView item = items.get(index);
             if (item == null) {
-                item = new NodeView(ITEM_GEOMETRY, Integer.toString(state.values().get(index)));
+                item = new NodeView(ITEM_GEOMETRY, state.values().get(index).text());
                 item.getStyleClass().add("queue-item");
                 items.put(index, item);
                 surface.nodeLayer().getChildren().add(item);
                 newIndexes = withIndex(newIndexes, index);
             } else {
-                item.setText(Integer.toString(state.values().get(index)));
+                item.setText(state.values().get(index).text());
             }
             int itemIndex = index;
             item.setOnMouseClicked(event -> {

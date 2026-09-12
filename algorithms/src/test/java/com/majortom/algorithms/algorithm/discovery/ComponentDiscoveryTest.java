@@ -25,6 +25,8 @@ class ComponentDiscoveryTest {
         var string = registry.requireAlgorithm("array", String.class, "insertion-sort");
 
         assertEquals("insertion-sort", integer.id());
+        assertEquals("Insertion Sort", integer.name());
+        assertEquals(integer.name(), string.name());
         assertEquals(integer.id(), string.id());
         assertEquals(Integer.class, integer.valueType());
         assertEquals(String.class, string.valueType());

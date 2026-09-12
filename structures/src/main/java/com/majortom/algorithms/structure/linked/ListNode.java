@@ -78,6 +78,12 @@ public class ListNode<T> {
         StructureEvents.linkedPreviousChanged(id, previousPreviousId, id(previous));
     }
 
+    /** Internal trusted bulk-load hook. It deliberately emits no mutation events. */
+    void initializeLinks(ListNode<T> next, ListNode<T> previous) {
+        this.next = next;
+        this.previous = previous;
+    }
+
     @Override
     public java.lang.String toString() {
         return "ListNode{id=" + id + ", value=" + value + "}";

@@ -1,5 +1,7 @@
 package com.majortom.algorithms.structure.linked;
 
+import java.util.Collection;
+
 import com.majortom.algorithms.structure.linked.ListNode;
 
 public interface LinkedStructure<T> extends Iterable<T> {
@@ -8,6 +10,9 @@ public interface LinkedStructure<T> extends Iterable<T> {
     default boolean isEmpty() {
         return size() == 0;
     }
+
+    /** Replaces the complete linked topology through the trusted bulk-load path. */
+    void initialize(Collection<? extends T> values);
 
     T get(int index);
     void insert(int index, T value);

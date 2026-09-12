@@ -4,7 +4,6 @@ import com.majortom.algorithms.algorithm.array.sort.Sort;
 import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
@@ -16,9 +15,15 @@ import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -29,18 +34,21 @@ import javafx.scene.control.TextField;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
 public final class ArrayController extends BaseModuleController<ArrayViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Integer>>, SnapshotAlgorithmInputSupport<SequenceSnapshot<Integer>> {
-
-    private final List<String> algorithmIds = AlgorithmCatalog.arraySorts();
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Object>>,
+        SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
 
     private final Random random = new Random();
-    private final Array<Integer> sourceArray;
-    private StructureSnapshot<SequenceSnapshot<Integer>> algorithmInputSnapshot;
+    private final Array<Object> sourceArray;
+    private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
+    private Class<?> runtimeValueType = Integer.class;
+    private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
+    private final LongProperty valueTypeRevision = new SimpleLongProperty();
     private int currentSize = 20;
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
@@ -93,7 +101,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @FXML
     private void handleGenerate() {
         clearArraySelection();
-        List<Integer> values = randomValues();
+        List<Object> values = randomValues();
         if (executeStructureOperation("generate", () -> {
             replaceArrayContents(values);
             return null;
@@ -104,10 +112,16 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
     }
 
-    private List<Integer> randomValues() {
-        List<Integer> values = new ArrayList<>(currentSize);
+    private List<Object> randomValues() {
+        List<Object> values = new ArrayList<>(currentSize);
         for (int index = 0; index < currentSize; index++) {
-            values.add(random.nextInt(100) + 1);
+            if (runtimeValueType == Integer.class) {
+                values.add(random.nextInt(100) + 1);
+            } else if (runtimeValueType == String.class) {
+                values.add("V" + (random.nextInt(100) + 1));
+            } else {
+                throw new IllegalStateException("No random generator for " + runtimeValueType.getName());
+            }
         }
         return List.copyOf(values);
     }
@@ -124,7 +138,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     protected void applyBulkData(String input) {
-        List<Integer> values = parseIntegerBatchInput(input);
+        List<Object> values = parseBatchInput(input, valueAdapter);
         if (values == null) {
             return;
         }
@@ -143,22 +157,17 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         logI18n("message.data.bulk_applied", values.size());
     }
 
-    private void replaceArrayContents(List<Integer> values) {
-        while (sourceArray.size() > 0) {
-            sourceArray.remove(sourceArray.size() - 1);
-        }
-        for (int index = 0; index < values.size(); index++) {
-            sourceArray.insert(index, values.get(index));
-        }
+    private void replaceArrayContents(List<?> values) {
+        sourceArray.initialize(values);
     }
 
-    private List<Integer> sourceValues() {
+    private List<Object> sourceValues() {
         return sourceValues(sourceArray);
     }
 
-    private List<Integer> sourceValues(com.majortom.algorithms.structure.array.ArrayStructure<Integer> array) {
-        List<Integer> values = new ArrayList<>(array.size());
-        for (Integer value : array) {
+    private List<Object> sourceValues(com.majortom.algorithms.structure.array.ArrayStructure<?> array) {
+        List<Object> values = new ArrayList<>(array.size());
+        for (Object value : array) {
             values.add(value);
         }
         return List.copyOf(values);
@@ -195,15 +204,16 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     @Override
-    public StructureSnapshot<SequenceSnapshot<Integer>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), new SequenceSnapshot<>(sourceValues()));
+    public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), runtimeValueType, new SequenceSnapshot<>(sourceValues()));
     }
 
     @Override
-    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearArraySelection();
         replaceArrayContents(snapshot.state().values());
         currentSize = sourceArray.size();
@@ -220,8 +230,9 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     @Override
-    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        snapshot.requireValueType(runtimeValueType);
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
     }
@@ -253,7 +264,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             super.restoreAlgorithmState();
             return;
         }
-        List<Integer> values;
+        List<Object> values;
         if (algorithmInputSnapshot == null) {
             values = sourceValues();
         } else {
@@ -264,28 +275,29 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
 
     @Override
-    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Integer>> snapshot) {
+    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
         if (!moduleId().equals(snapshot.moduleId())) {
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
+        snapshot.requireValueType(runtimeValueType);
         clearArraySelection();
         renderPreviewState(ArrayViewState.source(snapshot.state().values()));
     }
 
     @Override
-    public String describeStructureSnapshot(SequenceSnapshot<Integer> state) {
+    public String describeStructureSnapshot(SequenceSnapshot<Object> state) {
         return I18N.text("snapshot.sort.detail", state.values().size());
     }
 
     @Override
-    public String snapshotPrimaryCount(SequenceSnapshot<Integer> state) {
+    public String snapshotPrimaryCount(SequenceSnapshot<Object> state) {
         return Integer.toString(state.values().size());
     }
 
     @FXML
     private void handleAddElement() {
         clearArraySelection();
-        Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
+        Object value = parseValue(elementValueField, "message.error.invalid_sort_value");
         if (value == null) {
             return;
         }
@@ -318,7 +330,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         if (index == null) {
-            Integer value = parseInteger(elementValueField, "message.error.invalid_sort_value");
+            Object value = parseValue(elementValueField, "message.error.invalid_sort_value");
             if (value == null) {
                 return;
             }
@@ -328,7 +340,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
                 return;
             }
         }
-        int removed = sourceArray.get(index);
+        Object removed = sourceArray.get(index);
         int removedIndex = index;
         if (executeStructureOperation("remove", () -> {
             sourceArray.remove(removedIndex);
@@ -360,11 +372,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @FXML
     private void handleUpdateElement() {
         Integer index = parseOptionalIndex(updateIndexField, sourceArray.size() - 1);
-        Integer value = parseInteger(updateValueField, "message.error.invalid_sort_value");
+        Object value = parseValue(updateValueField, "message.error.invalid_sort_value");
         if (index == null || value == null) {
             return;
         }
-        int previous = sourceArray.get(index);
+        Object previous = sourceArray.get(index);
         int updateIndex = index;
         if (executeStructureOperation("update", () -> {
             sourceArray.set(updateIndex, value);
@@ -425,11 +437,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (index < 0 || index >= sourceArray.size()) {
             return;
         }
-        int value = sourceArray.get(index);
+        Object value = sourceArray.get(index);
         if (elementIndexField != null) elementIndexField.setText(Integer.toString(index));
         if (updateIndexField != null) updateIndexField.setText(Integer.toString(index));
-        if (elementValueField != null) elementValueField.setText(Integer.toString(value));
-        if (updateValueField != null) updateValueField.setText(Integer.toString(value));
+        if (elementValueField != null) elementValueField.setText(valueAdapter.format(value));
+        if (updateValueField != null) updateValueField.setText(valueAdapter.format(value));
         selectionListener.accept(new IndexSelection(index, VisualValue.of(value), sourceArray.size()));
     }
 
@@ -446,9 +458,9 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     public record IndexSelection(int index, VisualValue value, int size) {
     }
 
-    private Integer parseInteger(TextField field, String errorKey) {
+    private Object parseValue(TextField field, String errorKey) {
         try {
-            return Integer.valueOf(field.getText().trim());
+            return valueAdapter.parse(field.getText());
         } catch (RuntimeException exception) {
             logI18n(errorKey);
             return null;
@@ -476,21 +488,21 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @Override
     public void handleAlgorithmStart() {
         if (isRunning()) return;
-        StructureSnapshot<SequenceSnapshot<Integer>> inputSnapshot;
+        StructureSnapshot<SequenceSnapshot<Object>> inputSnapshot;
         if (algorithmInputSnapshot == null) {
             inputSnapshot = captureStructureSnapshot();
         } else {
             inputSnapshot = algorithmInputSnapshot;
         }
-        List<Integer> values = inputSnapshot.state().values();
+        List<Object> values = inputSnapshot.state().values();
         if (values.isEmpty()) return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             return;
         }
         @SuppressWarnings("unchecked")
-        Sort<Integer> algorithm = (Sort<Integer>) algorithm(algorithmId, Integer.class, Sort.class);
-        Array<Integer> runtimeArray = new Array<>(values);
+        Sort<Object> algorithm = (Sort<Object>) algorithm(algorithmId, runtimeValueType, Sort.class);
+        Array<Object> runtimeArray = new Array<>(values);
         startAlgorithm(algorithmId, values, () -> {
             algorithm.sort(runtimeArray);
             return sourceValues(runtimeArray);
@@ -499,6 +511,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
+        List<String> algorithmIds = algorithmIds();
         int index = algorithmIds.indexOf(algorithmId);
         if (index < 0) {
             return false;
@@ -512,7 +525,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public List<String> algorithmIds() {
-        return algorithmIds;
+        return AlgorithmCatalog.arraySorts(runtimeValueType);
     }
 
     @Override
@@ -606,6 +619,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
             index = algorithmSelector.getSelectionModel().getSelectedIndex();
         }
+        List<String> algorithmIds = algorithmIds();
         if (algorithmIds.isEmpty()) {
             return null;
         } else {
@@ -616,11 +630,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private void bindAlgorithmSelector() {
         algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
             javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds) {
-                labels.add(AlgorithmLabels.text(id));
+            for (String id : algorithmIds()) {
+                labels.add(AlgorithmCatalog.name(id));
             }
             return labels;
-        }, I18N.localeProperty()));
+        }, valueTypeRevision));
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
                 (observable, previous, current) -> notifyAlgorithmSelection());
         Platform.runLater(() -> {
@@ -634,16 +648,50 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void bindStructureSelector() {
-        structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(I18N.text("label.sort.structure.array")),
-                I18N.localeProperty()));
+        structureSelector.setItems(FXCollections.observableArrayList(StructureCatalog.name("array")));
         Platform.runLater(() -> structureSelector.getSelectionModel().selectFirst());
     }
-    private int indexOf(int value) {
+    private int indexOf(Object value) {
         for (int index = 0; index < sourceArray.size(); index++) {
-            if (sourceArray.get(index) == value) return index;
+            if (Objects.equals(sourceArray.get(index), value)) return index;
         }
         return -1;
+    }
+
+    @Override
+    public Class<?> runtimeValueType() {
+        return runtimeValueType;
+    }
+
+    @Override
+    public List<Class<?>> supportedValueTypes() {
+        return ValueAdapters.supportedTypes();
+    }
+
+    @Override
+    public void setRuntimeValueType(Class<?> valueType) {
+        if (!supportedValueTypes().contains(valueType)) {
+            throw new IllegalArgumentException("Unsupported Array value type: " + valueType.getName());
+        }
+        if (runtimeValueType.equals(valueType)) {
+            return;
+        }
+        runtimeValueType = valueType;
+        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        valueTypeRevision.set(valueTypeRevision.get() + 1L);
+        algorithmInputSnapshot = null;
+        clearArraySelection();
+        sourceArray.initialize(randomValues());
+        invalidateExecutionForStructureChange();
+        if (algorithmSelector != null) {
+            algorithmSelector.getSelectionModel().clearSelection();
+            algorithmSelector.getSelectionModel().selectFirst();
+            notifyAlgorithmSelection();
+        }
+        if (controlPanel != null) {
+            renderSource();
+            refreshStatsDisplay();
+        }
     }
 
 }

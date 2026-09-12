@@ -5,7 +5,7 @@ import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.Objects;
 
-@Structure(id = "string", contract = StringStructure.class)
+@Structure(id = "string", name = "String", contract = StringStructure.class)
 public final class String implements StringStructure {
     private static final int DEFAULT_CAPACITY = 16;
 

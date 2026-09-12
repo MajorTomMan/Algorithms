@@ -6,6 +6,6 @@ import java.util.function.Supplier;
 
 public record WorkbenchModuleDefinition(
         String id,
-        String labelKey,
+        String name,
         Supplier<BaseController<?>> controllerFactory) {
 }

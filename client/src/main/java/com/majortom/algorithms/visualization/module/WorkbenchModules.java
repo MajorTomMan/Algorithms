@@ -20,22 +20,28 @@ public final class WorkbenchModules {
     public static List<WorkbenchModuleDefinition> available(ComponentRegistry registry) {
         List<WorkbenchModuleDefinition> modules = new ArrayList<>();
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("array", "label.structure.array", ArrayController::new));
+                new WorkbenchModuleDefinition("array", moduleName(registry, "array", "Array"), ArrayController::new));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("linked-list", "module.linked_list", LinkedListController::new));
+                new WorkbenchModuleDefinition("linked-list", moduleName(registry, "linked-list", "Linked List"), LinkedListController::new));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("stack", "module.stack", LinearStructureController::stack));
+                new WorkbenchModuleDefinition("stack", moduleName(registry, "stack", "Stack"), LinearStructureController::stack));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("queue", "module.queue", LinearStructureController::queue));
+                new WorkbenchModuleDefinition("queue", moduleName(registry, "queue", "Queue"), LinearStructureController::queue));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("tree", "module.tree", TreeController::new));
+                new WorkbenchModuleDefinition("tree", moduleName(registry, "tree", "Tree"), TreeController::new));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("graph", "module.graph", GraphController::new));
+                new WorkbenchModuleDefinition("graph", moduleName(registry, "graph", "Graph"), GraphController::new));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("string", "module.string", StringController::new));
+                new WorkbenchModuleDefinition("string", moduleName(registry, "string", "String"), StringController::new));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition("maze", "module.maze", MazeController::new));
+                new WorkbenchModuleDefinition("maze", moduleName(registry, "maze", "Maze"), MazeController::new));
         return List.copyOf(modules);
+    }
+
+    private static String moduleName(ComponentRegistry registry, String id, String fallbackName) {
+        return registry.findStructure(id)
+                .map(descriptor -> descriptor.name())
+                .orElse(fallbackName);
     }
 
     private static void addIfAvailable(

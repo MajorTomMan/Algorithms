@@ -1,31 +1,70 @@
 package com.majortom.algorithms.practice.runtime.discovery;
 
+import com.majortom.algorithms.core.annotation.Problem;
+import com.majortom.algorithms.core.annotation.ProblemEntry;
+import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationException;
-import com.majortom.algorithms.practice.runtime.annotation.Problem;
-import com.majortom.algorithms.practice.runtime.annotation.ProblemEntry;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class ProblemDiscovery {
-    public static final String ROOT_PACKAGE = "com.majortom.algorithms.practice";
-    private final FrameworkClassScanner scanner = new FrameworkClassScanner();
+    private final List<String> rootPackages;
+    private final FrameworkClassScanner scanner;
+
+    public ProblemDiscovery(String... rootPackages) {
+        this(Arrays.asList(rootPackages));
+    }
+
+    public ProblemDiscovery(List<String> rootPackages) {
+        this(rootPackages, new FrameworkClassScanner());
+    }
+
+    ProblemDiscovery(List<String> rootPackages, FrameworkClassScanner scanner) {
+        Objects.requireNonNull(rootPackages, "rootPackages");
+        this.scanner = Objects.requireNonNull(scanner, "scanner");
+        LinkedHashSet<String> roots = new LinkedHashSet<>();
+        for (String rootPackage : rootPackages) {
+            Objects.requireNonNull(rootPackage, "rootPackage");
+            if (rootPackage.isBlank()) {
+                throw new IllegalArgumentException("rootPackage must not be blank");
+            }
+            roots.add(rootPackage);
+        }
+        if (roots.isEmpty()) {
+            throw new IllegalArgumentException("At least one problem root package is required");
+        }
+        this.rootPackages = List.copyOf(roots);
+    }
+
+    public List<String> rootPackages() {
+        return rootPackages;
+    }
 
     public List<ProblemDescriptor> discover(ClassLoader classLoader) {
+        Objects.requireNonNull(classLoader, "classLoader");
+        LinkedHashSet<Class<?>> candidates = new LinkedHashSet<>();
+        for (String rootPackage : rootPackages) {
+            candidates.addAll(scanner.scan(rootPackage, classLoader));
+        }
+
         List<ProblemDescriptor> descriptors = new ArrayList<>();
-        for (Class<?> candidate : scanner.scan(ROOT_PACKAGE, classLoader)) {
+        for (Class<?> candidate : candidates) {
             Problem problem = candidate.getAnnotation(Problem.class);
-            if (problem == null) continue;
+            if (problem == null) {
+                continue;
+            }
             validateConcrete(candidate);
             Method entry = findEntry(candidate);
-            descriptors.add(new ProblemDescriptor(problem.source(), problem.id(), problem.title(), candidate, entry));
+            descriptors.add(new ProblemDescriptor(problem.source(), problem.id(), ComponentNames.resolve(problem.name(), candidate), problem.number(), problem.difficulty(), Arrays.asList(problem.tags()), candidate, entry));
         }
         descriptors.sort(Comparator.comparing(ProblemDescriptor::stableId));
         validateUniqueIds(descriptors);

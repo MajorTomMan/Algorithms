@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-@Structure(id = "array", contract = ArrayStructure.class)
+@Structure(id = "array", name = "Array", contract = ArrayStructure.class)
 public final class Array<T> implements ArrayStructure<T> {
     private static final int DEFAULT_CAPACITY = 10;
 
@@ -20,11 +20,19 @@ public final class Array<T> implements ArrayStructure<T> {
     }
 
     public Array(Collection<? extends T> values) {
+        initialize(values);
+    }
+
+    @Override
+    public void initialize(Collection<? extends T> values) {
         Objects.requireNonNull(values, "values");
-        elements = new Object[Math.max(DEFAULT_CAPACITY, values.size())];
+        Object[] initialized = new Object[Math.max(DEFAULT_CAPACITY, values.size())];
+        int index = 0;
         for (T value : values) {
-            elements[size++] = value;
+            initialized[index++] = value;
         }
+        elements = initialized;
+        size = index;
     }
 
     @Override

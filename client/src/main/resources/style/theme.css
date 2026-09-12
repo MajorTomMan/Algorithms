@@ -1775,6 +1775,21 @@
     -fx-text-fill: -ui-white;
 }
 
+/* Three-way workspace segmented control. Keep the existing switch visual language. */
+.lab-mode-switch .workspace-mode-first {
+    -fx-background-radius: 4px 0 0 4px;
+    -fx-border-radius: 4px 0 0 4px;
+}
+.lab-mode-switch .workspace-mode-middle {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.lab-mode-switch .workspace-mode-last {
+    -fx-background-radius: 0 4px 4px 0;
+    -fx-border-radius: 0 4px 4px 0;
+}
+
+
 .top-context-zone { -fx-padding: 0 0 0 12px; }
 .top-context-title {
     -fx-text-fill: -ui-white;
@@ -1976,6 +1991,61 @@
     -fx-padding: 11px 12px;
     -fx-text-fill: -ui-black;
     -fx-font-size: 11px;
+}
+
+/* ---------- practice workspace ---------- */
+.practice-control-panel {
+    -fx-background-color: -ui-white;
+}
+.practice-problem-list {
+    -fx-background-color: -ui-white;
+    -fx-control-inner-background: -ui-white;
+    -fx-background-insets: 0;
+    -fx-border-color: -ui-gray-300 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 4px 0 0 0;
+}
+.practice-problem-list .virtual-flow,
+.practice-problem-list .clipped-container,
+.practice-problem-list .sheet {
+    -fx-background-color: -ui-white;
+}
+.practice-problem-list .list-cell {
+    -fx-background-color: -ui-white;
+    -fx-text-fill: -ui-black;
+    -fx-font-weight: 700;
+    -fx-padding: 11px 10px;
+    -fx-border-color: transparent transparent -ui-gray-200 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.practice-problem-list .list-cell:filled:hover {
+    -fx-background-color: -ui-gray-100;
+}
+.practice-problem-list .list-cell:filled:selected,
+.practice-problem-list .list-cell:filled:selected:focused {
+    -fx-background-color: -ui-red;
+    -fx-text-fill: -ui-white;
+}
+.practice-detail-pane {
+    -fx-padding: 36px 48px;
+}
+.practice-problem-name {
+    -fx-text-fill: -ui-black;
+}
+.practice-problem-meta {
+    -fx-text-fill: -ui-gray-700;
+}
+.practice-problem-entry {
+    -fx-text-fill: -ui-black;
+    -fx-background-color: -ui-gray-050;
+    -fx-border-color: -ui-gray-300;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 14px 16px;
+}
+.practice-empty-state {
+    -fx-text-fill: -ui-gray-500;
 }
 
 /* ---------- central visualization canvas ---------- */

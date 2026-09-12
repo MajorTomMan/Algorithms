@@ -6,16 +6,23 @@ import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
+import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.core.timeline.Timeline;
 import com.majortom.algorithms.structure.array.Array;
+import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.WeightedGraph;
 import com.majortom.algorithms.visualization.runtime.array.ArrayEventReducer;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
+import com.majortom.algorithms.visualization.runtime.graph.GraphEventReducer;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -66,11 +73,92 @@ class DynamicValueReplayTest {
         assertEquals(2L, graph.edges().getFirst().toId());
     }
 
+
+    @Test
+    void structureSnapshotCarriesValueTypeAndRejectsMismatches() {
+        StructureSnapshot<SequenceSnapshot<String>> snapshot = StructureSnapshot.create(
+                "array", String.class, new SequenceSnapshot<>(List.of("alpha", "beta")));
+
+        assertTrue(snapshot.matchesValueType(String.class));
+        assertDoesNotThrow(() -> snapshot.requireValueType(String.class));
+        IllegalArgumentException mismatch = assertThrows(
+                IllegalArgumentException.class, () -> snapshot.requireValueType(Integer.class));
+        assertTrue(mismatch.getMessage().contains("value type mismatch"));
+    }
+
+    @Test
+    void customCityGraphAndWeightedGraphReuseTheSameGraphProjectionAndReducer() {
+        City tokyo = new City("Tokyo", 35.6762d, 139.6503d);
+        City yokohama = new City("Yokohama", 35.4437d, 139.6380d);
+        City chiba = new City("Chiba", 35.6074d, 140.1065d);
+
+        Graph<City> graph = new Graph<>(false);
+        LinkedHashMap<City, java.util.Collection<City>> adjacency = new LinkedHashMap<>();
+        adjacency.put(tokyo, List.of(yokohama));
+        adjacency.put(yokohama, List.of(tokyo));
+        graph.initialize(adjacency);
+
+        GraphSnapshot<City> initial = snapshot(graph);
+        Timeline timeline = new Timeline();
+        new ExecutionRuntime().execute("city-graph-mutation", timeline, () -> {
+            graph.addVertex(chiba);
+            graph.addEdge(graph.vertex(tokyo), graph.vertex(chiba));
+            return null;
+        });
+
+        GraphViewState replayed = replay(new GraphEventReducer(initial), timeline);
+        assertEquals(3, replayed.nodes().size());
+        assertTrue(replayed.nodes().stream().anyMatch(node -> node.value().value().equals(chiba)));
+        assertEquals(chiba.toString(), replayed.nodes().stream()
+                .filter(node -> node.value().value().equals(chiba))
+                .findFirst().orElseThrow().value().text());
+
+        WeightedGraph<City> weighted = new WeightedGraph<>(false);
+        LinkedHashMap<City, Map<City, Double>> weightedAdjacency = new LinkedHashMap<>();
+        weightedAdjacency.put(tokyo, Map.of(yokohama, 29.5d));
+        weightedAdjacency.put(yokohama, Map.of(tokyo, 29.5d));
+        weighted.initializeWeighted(weightedAdjacency);
+        WeightedGraphSnapshot<City> weightedSnapshot = weighted.snapshot();
+        GraphViewState weightedState = GraphViewState.initial(weightedSnapshot);
+
+        assertEquals(2, weightedState.nodes().size());
+        assertEquals(29.5d, weightedState.edges().getFirst().weight());
+        assertTrue(weightedState.nodes().stream().allMatch(node -> node.value().value() instanceof City));
+    }
+
+
+    private static <T> GraphSnapshot<T> snapshot(Graph<T> graph) {
+        java.util.ArrayList<GraphSnapshot.Vertex<T>> vertices = new java.util.ArrayList<>();
+        for (var vertex : graph.vertices()) {
+            vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
+        }
+        java.util.ArrayList<GraphSnapshot.Edge> edges = new java.util.ArrayList<>();
+        for (var edge : graph.edges()) {
+            edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
+        }
+        return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
+    }
+
     private static ArrayViewState replay(ArrayEventReducer reducer, Timeline timeline) {
         ArrayViewState state = reducer.initialState();
         for (var envelope : timeline.events()) {
             state = reducer.reduce(state, envelope).state();
         }
         return state;
+    }
+
+    private static GraphViewState replay(GraphEventReducer reducer, Timeline timeline) {
+        GraphViewState state = reducer.initialState();
+        for (var envelope : timeline.events()) {
+            state = reducer.reduce(state, envelope).state();
+        }
+        return state;
+    }
+
+    private record City(String name, double latitude, double longitude) {
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 }

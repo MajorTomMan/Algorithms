@@ -17,7 +17,7 @@ class RegistrationValidatorTest {
 
     @Test
     void rejectsDuplicateStructureIds() {
-        StructureDescriptor descriptor = new StructureDescriptor("sample", Contract.class, Component.class);
+        StructureDescriptor descriptor = new StructureDescriptor("sample", "Sample", Contract.class, Component.class);
         assertThrows(RegistrationException.class,
                 () -> RegistrationValidator.validateUniqueStructureIds(List.of(descriptor, descriptor)));
     }
@@ -25,7 +25,7 @@ class RegistrationValidatorTest {
     @Test
     void rejectsPrimitiveAlgorithmValueTypes() {
         AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
-                "sample", "array", int.class, Contract.class, Component.class);
+                "sample", "Sample", "array", int.class, Contract.class, Component.class);
         assertThrows(RegistrationException.class, () -> RegistrationValidator.validate(descriptor));
     }
 
@@ -72,8 +72,8 @@ class RegistrationValidatorTest {
 
     @Test
     void structureResolverSupportsExplicitImplementationSelection() {
-        StructureDescriptor primary = new StructureDescriptor("primary", Contract.class, Component.class);
-        StructureDescriptor alternate = new StructureDescriptor("alternate", Contract.class, AlternateComponent.class);
+        StructureDescriptor primary = new StructureDescriptor("primary", "Primary", Contract.class, Component.class);
+        StructureDescriptor alternate = new StructureDescriptor("alternate", "Alternate", Contract.class, AlternateComponent.class);
         StructureResolver resolver = new StructureResolver(
                 new ComponentRegistry(List.of(primary, alternate), List.of()));
 
@@ -91,6 +91,6 @@ class RegistrationValidatorTest {
 
     private static AlgorithmDescriptor algorithm(
             String id, String moduleId, Class<?> valueType, Class<?> implementation) {
-        return new AlgorithmDescriptor(id, moduleId, valueType, Void.class, implementation);
+        return new AlgorithmDescriptor(id, "Sample", moduleId, valueType, Void.class, implementation);
     }
 }

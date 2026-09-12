@@ -14,6 +14,11 @@ public final class GeneralTreeNode<T> extends TreeNode<T> {
         super(Objects.requireNonNull(value, "value"));
     }
 
+    GeneralTreeNode(T value, List<GeneralTreeNode<T>> children) {
+        super(Objects.requireNonNull(value, "value"));
+        this.children.addAll(Objects.requireNonNull(children, "children"));
+    }
+
     public GeneralTreeNode(long id, T value) {
         this(id, value, List.of());
     }

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.discovery;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationValidator;
 import com.majortom.algorithms.core.registry.StructureDescriptor;
@@ -30,7 +31,8 @@ public final class StructureDiscovery {
         for (Class<?> implementation : scanner.scan(ROOT_PACKAGE, classLoader)) {
             for (Structure annotation : implementation.getAnnotationsByType(Structure.class)) {
                 StructureDescriptor descriptor = new StructureDescriptor(
-                        annotation.id(), annotation.contract(), implementation);
+                        annotation.id(), ComponentNames.resolve(annotation.name(), implementation),
+                        annotation.contract(), implementation);
                 descriptors.add(RegistrationValidator.validate(descriptor));
             }
         }

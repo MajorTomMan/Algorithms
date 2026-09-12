@@ -1,11 +1,16 @@
 package com.majortom.algorithms.structure.array;
 
+import java.util.Collection;
+
 public interface ArrayStructure<T> extends Iterable<T> {
     int size();
 
     default boolean isEmpty() {
         return size() == 0;
     }
+
+    /** Replaces the complete array state through the trusted bulk-load path. */
+    void initialize(Collection<? extends T> values);
 
     T get(int index);
     T set(int index, T value);

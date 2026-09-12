@@ -52,10 +52,28 @@
                     styleClass="lab-mode-switch" alignment="CENTER" spacing="0">
                     <Button fx:id="structureWorkspaceBtn" text="STRUCTURE"
                         onAction="#selectStructureWorkspace"
-                        maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
+                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="workspace-mode-button" />
+                            <String fx:value="workspace-mode-first" />
+                        </styleClass>
+                    </Button>
                     <Button fx:id="algorithmWorkspaceBtn" text="ALGORITHM"
                         onAction="#selectAlgorithmWorkspace"
-                        maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
+                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="workspace-mode-button" />
+                            <String fx:value="workspace-mode-middle" />
+                        </styleClass>
+                    </Button>
+                    <Button fx:id="practiceWorkspaceBtn" text="PRACTICE"
+                        onAction="#selectPracticeWorkspace"
+                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="workspace-mode-button" />
+                            <String fx:value="workspace-mode-last" />
+                        </styleClass>
+                    </Button>
                 </HBox>
                 <Region HBox.hgrow="ALWAYS" />
                 <HBox fx:id="topContextZone" minWidth="500.0" prefWidth="500.0"
@@ -653,6 +671,66 @@
                     </VBox>
                     <HBox fx:id="timelineRow" managed="false" visible="false" />
                 </VBox>
+            </VBox>
+
+
+            <!-- =========================== PRACTICE MODE =========================== -->
+            <VBox fx:id="practiceWorkspacePane" focusTraversable="true" managed="false" visible="false">
+                <styleClass>
+                    <String fx:value="lab-workspace" />
+                    <String fx:value="practice-workspace" />
+                </styleClass>
+                <HBox VBox.vgrow="ALWAYS" styleClass="lab-workspace-body">
+                    <VBox minWidth="360.0" prefWidth="420.0" maxWidth="480.0">
+                        <styleClass>
+                            <String fx:value="structure-control-panel" />
+                            <String fx:value="practice-control-panel" />
+                        </styleClass>
+                        <HBox minHeight="48.0" alignment="CENTER_LEFT" styleClass="panel-topline">
+                            <Label fx:id="practiceWorkspaceTitleLabel" text="PRACTICE"
+                                styleClass="panel-eyebrow" />
+                        </HBox>
+                        <VBox spacing="4" styleClass="structure-identity-block">
+                            <Label fx:id="practiceCatalogTitleLabel" text="PROBLEM CATALOG"
+                                styleClass="structure-identity-title" />
+                            <Label fx:id="practiceCatalogHintLabel" text="Discovered @Problem components"
+                                wrapText="true" styleClass="structure-identity-meta" />
+                        </VBox>
+                        <Separator />
+                        <ListView fx:id="practiceProblemList" VBox.vgrow="ALWAYS" styleClass="practice-problem-list" />
+                    </VBox>
+                    <VBox alignment="CENTER" spacing="14" HBox.hgrow="ALWAYS">
+                        <styleClass>
+                            <String fx:value="lab-canvas" />
+                            <String fx:value="practice-detail-pane" />
+                        </styleClass>
+                        <Label fx:id="practiceProblemNameLabel" text="—">
+                            <styleClass>
+                                <String fx:value="brand-title-main" />
+                                <String fx:value="practice-problem-name" />
+                            </styleClass>
+                        </Label>
+                        <Label fx:id="practiceProblemMetaLabel" text="" wrapText="true">
+                            <styleClass>
+                                <String fx:value="structure-identity-meta" />
+                                <String fx:value="practice-problem-meta" />
+                            </styleClass>
+                        </Label>
+                        <Separator maxWidth="520.0" />
+                        <Label fx:id="practiceProblemEntryLabel" text="" wrapText="true" maxWidth="720.0">
+                            <styleClass>
+                                <String fx:value="result-value" />
+                                <String fx:value="practice-problem-entry" />
+                            </styleClass>
+                        </Label>
+                        <Label fx:id="practiceEmptyLabel" text="" wrapText="true">
+                            <styleClass>
+                                <String fx:value="structure-identity-meta" />
+                                <String fx:value="practice-empty-state" />
+                            </styleClass>
+                        </Label>
+                    </VBox>
+                </HBox>
             </VBox>
         </StackPane>
     </center>

@@ -34,6 +34,18 @@
         </dependency>
 
         <dependency>
+            <groupId>com.majortom.algorithms</groupId>
+            <artifactId>algorithms-practice</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.majortom.algorithms</groupId>
+            <artifactId>algorithms-leetcode</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>

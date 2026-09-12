@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Sliding-window longest substring without repeated characters. */
-@Algorithm(id = "longest-unique-substring", module = "string", type = java.lang.String.class, structure = StringStructure.class)
+@Algorithm(id = "longest-unique-substring", name = "Longest Unique Substring", module = "string", type = java.lang.String.class, structure = StringStructure.class)
 public final class LongestUniqueSubstring implements LongestSubstringAlgorithm {
 
     @Override

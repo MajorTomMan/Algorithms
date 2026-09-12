@@ -29,47 +29,96 @@ public final class AlgorithmCatalog {
     private AlgorithmCatalog() {
     }
 
+
+    /** Resolves display metadata from the discovered descriptor, never from I18N or an id map. */
+    public static String name(String algorithmId) {
+        List<AlgorithmDescriptor> matches = REGISTRY.algorithms().stream()
+                .filter(descriptor -> descriptor.id().equals(algorithmId))
+                .toList();
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException("No Algorithm registered for id: " + algorithmId);
+        }
+        List<String> names = matches.stream().map(AlgorithmDescriptor::name).distinct().toList();
+        if (names.size() != 1) {
+            throw new IllegalArgumentException("Algorithm id has multiple display names across registrations: "
+                    + algorithmId + " -> " + names);
+        }
+        return names.getFirst();
+    }
+
+    public static String name(String moduleId, Class<?> valueType, String algorithmId) {
+        return REGISTRY.requireAlgorithm(moduleId, valueType, algorithmId).name();
+    }
+
     public static List<String> forWorkbenchModule(String moduleId) {
+        return forWorkbenchModule(moduleId, Integer.class);
+    }
+
+    public static List<String> forWorkbenchModule(String moduleId, Class<?> valueType) {
         return switch (moduleId) {
-            case "array" -> arraySorts();
+            case "array" -> arraySorts(valueType);
             case "maze" -> concat(arrayMazeGenerators(), graphMazeGenerators(), arrayMazePathfinders());
-            case "tree" -> generalTreeAlgorithms();
-            case "graph" -> basicGraphAlgorithms();
+            case "tree" -> generalTreeAlgorithms(valueType);
+            case "graph" -> basicGraphAlgorithms(valueType);
             case "string" -> stringAlgorithms();
             default -> List.of();
         };
     }
 
     public static List<String> arraySorts() {
-        return ids("array", Integer.class, Sort.class);
+        return arraySorts(Integer.class);
+    }
+
+    public static List<String> arraySorts(Class<?> valueType) {
+        return ids("array", valueType, Sort.class);
     }
 
     public static List<String> basicGraphAlgorithms() {
-        return ids("graph", Integer.class, GraphAlgorithm.class);
+        return basicGraphAlgorithms(Integer.class);
+    }
+
+    public static List<String> basicGraphAlgorithms(Class<?> valueType) {
+        return ids("graph", valueType, GraphAlgorithm.class);
     }
 
     public static List<String> weightedGraphAlgorithms() {
+        return weightedGraphAlgorithms(Integer.class);
+    }
+
+    public static List<String> weightedGraphAlgorithms(Class<?> valueType) {
         return concat(
-                ids("graph", Integer.class, GraphAlgorithm.class),
-                ids("graph", Integer.class, WeightedGraphAlgorithm.class));
+                ids("graph", valueType, GraphAlgorithm.class),
+                ids("graph", valueType, WeightedGraphAlgorithm.class));
     }
 
     public static List<String> graphTraversals() {
-        return ids("graph", Integer.class, GraphTraversal.class);
+        return graphTraversals(Integer.class);
+    }
+
+    public static List<String> graphTraversals(Class<?> valueType) {
+        return ids("graph", valueType, GraphTraversal.class);
     }
 
     public static List<String> generalTreeAlgorithms() {
+        return generalTreeAlgorithms(Integer.class);
+    }
+
+    public static List<String> generalTreeAlgorithms(Class<?> valueType) {
         return concat(
-                ids("tree", Integer.class, TreeAlgorithm.class),
-                ids("tree", Integer.class, GeneralTreeAlgorithm.class));
+                ids("tree", valueType, TreeAlgorithm.class),
+                ids("tree", valueType, GeneralTreeAlgorithm.class));
     }
 
     public static List<String> avlTreeAlgorithms() {
+        return avlTreeAlgorithms(Integer.class);
+    }
+
+    public static List<String> avlTreeAlgorithms(Class<?> valueType) {
         return concat(
-                ids("tree", Integer.class, TreeAlgorithm.class),
-                ids("tree", Integer.class, BinaryTreeAlgorithm.class),
-                ids("tree", Integer.class, SearchTreeAlgorithm.class),
-                ids("tree", Integer.class, AvlTreeAlgorithm.class));
+                ids("tree", valueType, TreeAlgorithm.class),
+                ids("tree", valueType, BinaryTreeAlgorithm.class),
+                ids("tree", valueType, SearchTreeAlgorithm.class),
+                ids("tree", valueType, AvlTreeAlgorithm.class));
     }
 
     public static List<String> treeAlgorithms() {

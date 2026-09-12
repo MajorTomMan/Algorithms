@@ -12,7 +12,7 @@ import com.majortom.algorithms.core.runtime.Observations;
 import java.util.Random;
 
 /** Recursive-backtracker perfect-maze generator. */
-@Algorithm(id = "maze-generator-dfs", module = "maze", type = Boolean.class)
+@Algorithm(id = "maze-generator-dfs", name = "Recursive Backtracker", module = "maze", type = Boolean.class)
 public final class DfsArrayMazeGenerator implements ArrayMazeGenerator {
     @Override
     public GridMaze generate(MazeDimensions dimensions, long seed) {

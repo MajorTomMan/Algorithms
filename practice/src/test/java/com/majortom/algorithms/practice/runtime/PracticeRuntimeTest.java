@@ -1,21 +1,28 @@
 package com.majortom.algorithms.practice.runtime;
 
-import com.majortom.algorithms.practice.runtime.model.ProblemSource;
+import com.majortom.algorithms.core.problem.ProblemSource;
 import com.majortom.algorithms.practice.runtime.worker.PracticeWorkerLauncher;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PracticeRuntimeTest {
-    private final PracticeProblemRegistry registry = PracticeProblemRegistry.discover(getClass().getClassLoader());
+    private static final String FIXTURE_ROOT = "com.majortom.algorithms.practice.runtime.fixture";
+    private final PracticeProblemRegistry registry = PracticeProblemRegistry.discover(
+            getClass().getClassLoader(), List.of(FIXTURE_ROOT));
 
     @Test
-    void discoversProblemsAndRunsResolvedEntryDirectly() {
-        assertTrue(registry.problems().size() >= 3);
+    void discoversConfiguredProblemRootsAndRunsResolvedEntryDirectly() {
+        assertEquals(3, registry.problems().size());
+        assertEquals("Search Insert Problem",
+                registry.require(ProblemSource.LOCAL, "search-insert-probe").name());
         Object result = new PracticeRunner().run(
-                registry.require(ProblemSource.LEETCODE, "35"),
+                registry.require(ProblemSource.LOCAL, "search-insert-probe"),
                 new Integer[] {1, 3, 5, 6}, 5);
         assertEquals(2, result);
     }
@@ -23,7 +30,7 @@ class PracticeRuntimeTest {
     @Test
     void jdiWorkerProducesImmutableRecordingThatSurvivesWorkerExit() {
         var recording = new PracticeWorkerLauncher().run(
-                registry.require(ProblemSource.LEETCODE, "70"), Duration.ofSeconds(4), 5);
+                registry.require(ProblemSource.LOCAL, "climbing-stairs-probe"), Duration.ofSeconds(4), 5);
         assertFalse(recording.timedOut());
         assertEquals(0, recording.exitCode());
         assertEquals(8, recording.result());
