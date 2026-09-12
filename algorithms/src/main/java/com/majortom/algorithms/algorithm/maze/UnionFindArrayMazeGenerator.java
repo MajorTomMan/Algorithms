@@ -3,6 +3,7 @@ package com.majortom.algorithms.algorithm.maze;
 
 
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Random;
 
 /** Randomized Kruskal/union-find perfect-maze generator. */
+@Algorithm(id = "maze-generator-union-find", module = "maze", type = Boolean.class)
 public final class UnionFindArrayMazeGenerator implements ArrayMazeGenerator {
     @Override
     public GridMaze generate(MazeDimensions dimensions, long seed) {

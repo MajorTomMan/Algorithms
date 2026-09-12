@@ -2,6 +2,7 @@ package com.majortom.algorithms.algorithm.maze;
 
 
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
@@ -15,6 +16,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
+@Algorithm(id = "maze-pathfinder-astar", module = "maze", type = Boolean.class)
 public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
     public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {

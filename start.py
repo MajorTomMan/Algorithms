@@ -51,6 +51,7 @@ def install_client_dependencies(mvn: str) -> None:
     run(
         [
             mvn,
+            "clean",
             "-pl",
             "client",
             "-am",

@@ -465,11 +465,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     private String label(LinkedListViewState.Node node) {
-        if (node.value() == null) {
-            return "null";
-        } else {
-            return node.value().toString();
-        }
+        return node.value().text();
     }
 
     private void stopActiveAnimation() {

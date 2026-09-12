@@ -1,5 +1,6 @@
 package com.majortom.algorithms.algorithm.string;
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.string.StringStructure;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Sliding-window longest substring without repeated characters. */
+@Algorithm(id = "longest-unique-substring", module = "string", type = java.lang.String.class, structure = StringStructure.class)
 public final class LongestUniqueSubstring implements LongestSubstringAlgorithm {
 
     @Override

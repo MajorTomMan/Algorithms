@@ -61,7 +61,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     public StringController() {
         super(new StringVisualizer(), "/fxml/StringControls.fxml");
-        source = module("structure.string.String", com.majortom.algorithms.structure.string.String.class);
+        source = structure("string", com.majortom.algorithms.structure.string.String.class);
         source.replace(0, source.length(), "ABABDABACDABABCABAB");
         renderSource();
     }
@@ -232,9 +232,7 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
-        StringAlgorithm algorithm = module(
-                "algorithm.string.String." + algorithmId,
-                StringAlgorithm.class);
+        StringAlgorithm algorithm = algorithm(algorithmId, StringAlgorithm.class);
         if (algorithm instanceof StringSearch search) {
             runStringSearch(algorithmId, search, input, target);
             return;

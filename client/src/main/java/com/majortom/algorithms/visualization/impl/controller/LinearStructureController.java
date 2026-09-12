@@ -9,6 +9,7 @@ import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -52,12 +53,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
         this.kind = kind;
         this.moduleId = moduleId;
         if (kind == Kind.STACK) {
-            stack = (StackStructure<Integer>) module("structure.stack.Integer", LinkedList.class);
+            stack = (StackStructure<Integer>) structure("stack", LinkedList.class);
         } else {
             stack = null;
         }
         if (kind == Kind.QUEUE) {
-            queue = (QueueStructure<Integer>) module("structure.queue.Integer", LinkedList.class);
+            queue = (QueueStructure<Integer>) structure("queue", LinkedList.class);
         } else {
             queue = null;
         }
@@ -399,7 +400,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
         int value = current.get(index);
         valueField.setText(Integer.toString(value));
-        selectionListener.accept(new ItemSelection(index, value, selectionRole(index, current.size()), current.size()));
+        selectionListener.accept(new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
     }
 
     private void handleAlgorithmSelection(int index) {
@@ -414,7 +415,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private void publishAlgorithmSelection(LinearStructureViewState state, int index) {
         int size = state.values().size();
         int value = state.values().get(index);
-        selectionListener.accept(new ItemSelection(index, value, selectionRole(index, size), size));
+        selectionListener.accept(new ItemSelection(index, VisualValue.of(value), selectionRole(index, size), size));
     }
 
     @Override
@@ -473,7 +474,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return (QueueVisualizer) visualizer;
     }
 
-    public record ItemSelection(int index, int value, String role, int size) {
+    public record ItemSelection(int index, VisualValue value, String role, int size) {
     }
 
     private void clearWithoutRuntime() {

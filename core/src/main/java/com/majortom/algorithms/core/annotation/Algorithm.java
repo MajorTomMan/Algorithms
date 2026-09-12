@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 public @interface Algorithm {
     String id();
 
+    String module();
+
     Class<?> type();
 
-    Class<?> structure();
+    Class<?> structure() default Void.class;
 }

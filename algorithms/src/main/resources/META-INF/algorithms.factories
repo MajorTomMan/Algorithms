@@ -1,7 +1,0 @@
-# Legacy-only registrations retained while GridMaze and graph-backed maze generation remain outside annotation resolution.
-algorithm.graph.Integer.graph-generator-bfs=com.majortom.algorithms.algorithm.maze.GraphMazeBfsGenerator
-algorithm.maze.Boolean.maze-generator-bfs=com.majortom.algorithms.algorithm.maze.BfsArrayMazeGenerator
-algorithm.maze.Boolean.maze-generator-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazeGenerator
-algorithm.maze.Boolean.maze-generator-union-find=com.majortom.algorithms.algorithm.maze.UnionFindArrayMazeGenerator
-algorithm.maze.Boolean.maze-pathfinder-astar=com.majortom.algorithms.algorithm.maze.AStarArrayMazePathfinder
-algorithm.maze.Boolean.maze-pathfinder-dfs=com.majortom.algorithms.algorithm.maze.DfsArrayMazePathfinder

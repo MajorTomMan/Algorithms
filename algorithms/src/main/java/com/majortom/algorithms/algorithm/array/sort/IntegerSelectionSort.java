@@ -4,7 +4,7 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Selection sort over an ArrayStructure<Integer>. */
-@Algorithm(id = "selection-sort", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(id = "selection-sort", module = "array", type = Integer.class, structure = ArrayStructure.class)
 public final class IntegerSelectionSort extends AbstractIntegerSort {
 
     @Override

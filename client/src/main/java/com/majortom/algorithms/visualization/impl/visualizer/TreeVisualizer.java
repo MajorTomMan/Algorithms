@@ -100,7 +100,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         for (TreeViewState.Node node : state.nodes().values()) {
             NodeView view = nodeViews.get(node.id());
             if (view == null) {
-                view = new NodeView(new CircleGeometry(MIN_RADIUS), Integer.toString(node.value()));
+                view = new NodeView(new CircleGeometry(MIN_RADIUS), node.value().text());
                 view.layoutBoundsProperty().addListener(elementSizeListener);
                 long visualNodeId = node.id();
                 view.setOnMouseClicked(event -> {
@@ -118,7 +118,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                             animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
-                view.setText(Integer.toString(node.value()));
+                view.setText(node.value().text());
             }
             view.setCurrent(state.currentNodeIds().contains(node.id()));
             view.setHighlighted(state.observedNodeIds().contains(node.id()));

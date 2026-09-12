@@ -1,5 +1,10 @@
 package com.majortom.algorithms.practice.leetcode.algo.search;
 
+import com.majortom.algorithms.practice.runtime.annotation.Problem;
+import com.majortom.algorithms.practice.runtime.annotation.ProblemEntry;
+import com.majortom.algorithms.practice.runtime.model.ProblemSource;
+
+@Problem(source = ProblemSource.LEETCODE, id = "35", title = "搜索插入位置")
 public class 搜索插入位置 {
     public static void main(String[] args) {
         Integer[] nums = {1,3,5,6};
@@ -17,6 +22,7 @@ public class 搜索插入位置 {
         }
         return nums.length;
     }
+    @ProblemEntry
     public static int BinarysearchInsert(Integer[] nums, int target){
         int lo=0;
         int hi=nums.length-1;

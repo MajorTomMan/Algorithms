@@ -12,6 +12,11 @@
     <dependencies>
         <dependency>
             <groupId>com.majortom.algorithms</groupId>
+            <artifactId>algorithms-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.majortom.algorithms</groupId>
             <artifactId>algorithms-structures</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -29,6 +34,12 @@
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal</artifactId>
             <version>4.0.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

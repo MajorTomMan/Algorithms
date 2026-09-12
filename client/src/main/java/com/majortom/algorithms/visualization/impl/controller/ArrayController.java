@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.array.ArrayEventReducer;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
 import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
@@ -69,7 +70,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @SuppressWarnings("unchecked")
     public ArrayController() {
         super(new ArrayVisualizer(), "/fxml/ArrayControls.fxml");
-        sourceArray = module("structure.array.Integer", Array.class);
+        sourceArray = structure("array", Array.class);
         replaceArrayContents(randomValues());
     }
 
@@ -170,7 +171,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     /** Projects the latest factual Array StructureEvent into the Structure presentation state. */
     private void renderLatestStructureMutation() {
         ArrayViewState.Mutation mutation = latestArrayMutation();
-        renderStructureState(new ArrayViewState(sourceValues(), mutation, ArrayViewState.Observation.none(), false));
+        renderStructureState(ArrayViewState.source(sourceValues(), mutation));
     }
 
     private ArrayViewState.Mutation latestArrayMutation() {
@@ -429,7 +430,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (updateIndexField != null) updateIndexField.setText(Integer.toString(index));
         if (elementValueField != null) elementValueField.setText(Integer.toString(value));
         if (updateValueField != null) updateValueField.setText(Integer.toString(value));
-        selectionListener.accept(new IndexSelection(index, value, sourceArray.size()));
+        selectionListener.accept(new IndexSelection(index, VisualValue.of(value), sourceArray.size()));
     }
 
     private void clearArraySelection() {
@@ -442,7 +443,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return (ArrayVisualizer) visualizer;
     }
 
-    public record IndexSelection(int index, int value, int size) {
+    public record IndexSelection(int index, VisualValue value, int size) {
     }
 
     private Integer parseInteger(TextField field, String errorKey) {
@@ -488,7 +489,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         @SuppressWarnings("unchecked")
-        Sort<Integer> algorithm = (Sort<Integer>) module("algorithm.array.Integer." + algorithmId, Sort.class);
+        Sort<Integer> algorithm = (Sort<Integer>) algorithm(algorithmId, Sort.class);
         Array<Integer> runtimeArray = new Array<>(values);
         startAlgorithm(algorithmId, values, () -> {
             algorithm.sort(runtimeArray);

@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.core.registry.ModuleLoader;
-import com.majortom.algorithms.core.registry.ModuleRegistry;
+import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
@@ -95,9 +95,9 @@ public class MainController implements Initializable {
             DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final List<String> OFFICIAL_VALUE_TYPES = ModuleRegistry.valueTypes();
+    private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
+    private static final List<String> OFFICIAL_VALUE_TYPES = COMPONENTS.valueTypeNames();
     private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
-    private static final ModuleRegistry MODULE_REGISTRY = ModuleLoader.load();
 
     @FXML
     private BorderPane rootPane;
@@ -434,7 +434,7 @@ public class MainController implements Initializable {
     @FXML
     private Slider timelineSlider;
 
-    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(MODULE_REGISTRY);
+    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(COMPONENTS);
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
@@ -985,61 +985,14 @@ public class MainController implements Initializable {
     }
 
     private void refreshHashTableTypeSelectors() {
-        List<String> signatures = MODULE_REGISTRY.structureTypeSignatures("hash-table");
-        List<String> keyTypes = new ArrayList<>();
-        for (String signature : signatures) {
-            int separator = signature.indexOf('.');
-            if (separator <= 0) {
-                continue;
-            }
-            String keyType = signature.substring(0, separator);
-            if (!keyTypes.contains(keyType)) {
-                keyTypes.add(keyType);
-            }
-        }
-        if (selectedHashKeyType == null || !keyTypes.contains(selectedHashKeyType)) {
-            if (keyTypes.isEmpty()) {
-                selectedHashKeyType = null;
-            } else {
-                selectedHashKeyType = keyTypes.getFirst();
-            }
-        }
-        valueTypeSelector.getItems().setAll(valueTypeOptions(keyTypes));
-        selectValueType(valueTypeSelector, selectedHashKeyType);
-
-        List<String> valueTypes = new ArrayList<>();
-        if (selectedHashKeyType != null) {
-            String prefix = selectedHashKeyType + ".";
-            for (String signature : signatures) {
-                if (signature.startsWith(prefix)) {
-                    valueTypes.add(signature.substring(prefix.length()));
-                }
-            }
-        }
-        if (selectedHashValueType == null || !valueTypes.contains(selectedHashValueType)) {
-            if (valueTypes.isEmpty()) {
-                selectedHashValueType = null;
-            } else {
-                selectedHashValueType = valueTypes.getFirst();
-            }
-        }
-        hashValueTypeSelector.getItems().setAll(valueTypeOptions(valueTypes));
-        selectValueType(hashValueTypeSelector, selectedHashValueType);
+        selectedHashKeyType = null;
+        selectedHashValueType = null;
+        valueTypeSelector.getItems().clear();
+        hashValueTypeSelector.getItems().clear();
     }
 
     private List<String> availableValueTypes(String moduleId) {
-        List<String> available = new ArrayList<>();
-        for (String signature : MODULE_REGISTRY.structureTypeSignatures(moduleId)) {
-            if (!signature.contains(".") && !available.contains(signature)) {
-                available.add(signature);
-            }
-        }
-        for (String valueType : MODULE_REGISTRY.algorithmValueTypes(moduleId)) {
-            if (!available.contains(valueType)) {
-                available.add(valueType);
-            }
-        }
-        return List.copyOf(available);
+        return COMPONENTS.algorithmValueTypes(moduleId);
     }
 
     private List<ValueTypeOption> valueTypeOptions(List<String> available) {
@@ -1240,8 +1193,8 @@ public class MainController implements Initializable {
     }
 
     private void addAlgorithmsForAllTypes(List<String> target, String family, String excludedPrefix) {
-        for (String valueType : MODULE_REGISTRY.algorithmValueTypes(family)) {
-            for (String algorithmId : MODULE_REGISTRY.algorithmIds(family, valueType)) {
+        for (String valueType : COMPONENTS.algorithmValueTypes(family)) {
+            for (String algorithmId : COMPONENTS.algorithmIds(family, valueType)) {
                 if (excludedPrefix == null || !algorithmId.startsWith(excludedPrefix)) {
                     target.add(algorithmId);
                 }
@@ -2979,7 +2932,7 @@ public class MainController implements Initializable {
         showStructureSelectionOverlay(
                 I18N.text("label.workspace.selection.node"),
                 "#" + selection.id(),
-                Integer.toString(selection.value()),
+                selection.value().text(),
                 I18N.text("label.workspace.selection.node.hint"));
         if (structureInspectorBody != null) {
             String parent;
@@ -2991,7 +2944,7 @@ public class MainController implements Initializable {
             structureInspectorBody.setText(I18N.text(
                     "label.workspace.selection.tree.detail",
                     selection.id(),
-                    selection.value(),
+                    selection.value().text(),
                     parent,
                     selection.childCount(),
                     selection.depth()));
@@ -3006,13 +2959,13 @@ public class MainController implements Initializable {
         showStructureSelectionOverlay(
                 I18N.text("label.workspace.selection.cell"),
                 "[" + selection.index() + "]",
-                Integer.toString(selection.value()),
+                selection.value().text(),
                 I18N.text("label.workspace.selection.array.hint"));
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(I18N.text(
                     "label.workspace.selection.array.detail",
                     selection.index(),
-                    selection.value(),
+                    selection.value().text(),
                     selection.size()));
         }
     }
@@ -3045,13 +2998,13 @@ public class MainController implements Initializable {
             showStructureSelectionOverlay(
                     I18N.text("label.workspace.selection.node"),
                     "#" + node.id(),
-                    Integer.toString(node.value()),
+                    node.value().text(),
                     I18N.text("label.workspace.selection.graph.node.hint"));
             if (structureInspectorBody != null) {
                 structureInspectorBody.setText(I18N.text(
                         "label.workspace.selection.graph.node.detail",
                         node.id(),
-                        node.value(),
+                        node.value().text(),
                         node.degree()));
             }
             return;
@@ -3066,7 +3019,7 @@ public class MainController implements Initializable {
         showStructureSelectionOverlay(
                 I18N.text("label.workspace.selection.edge"),
                 "E#" + edge.id(),
-                edge.fromValue() + relation + edge.toValue(),
+                edge.fromValue().text() + relation + edge.toValue().text(),
                 I18N.text("label.workspace.selection.graph.edge.hint"));
         if (structureInspectorBody != null) {
             String directed;
@@ -3078,8 +3031,8 @@ public class MainController implements Initializable {
             structureInspectorBody.setText(I18N.text(
                     "label.workspace.selection.graph.edge.detail",
                     edge.id(),
-                    edge.fromValue(),
-                    edge.toValue(),
+                    edge.fromValue().text(),
+                    edge.toValue().text(),
                     directed));
         }
     }
@@ -3092,7 +3045,7 @@ public class MainController implements Initializable {
         showStructureSelectionOverlay(
                 I18N.text("label.workspace.selection.node"),
                 "#" + selection.id(),
-                Integer.toString(selection.value()),
+                selection.value().text(),
                 I18N.text("label.workspace.selection.linked.hint"));
         if (structureInspectorBody != null) {
             String previousText;
@@ -3110,7 +3063,7 @@ public class MainController implements Initializable {
             structureInspectorBody.setText(I18N.text(
                     "label.workspace.selection.linked.detail",
                     selection.id(),
-                    selection.value(),
+                    selection.value().text(),
                     selection.index(),
                     previousText,
                     nextText,
@@ -3127,13 +3080,13 @@ public class MainController implements Initializable {
         showStructureSelectionOverlay(
                 I18N.text("label.workspace.selection.item"),
                 "[" + selection.index() + "]",
-                Integer.toString(selection.value()),
+                selection.value().text(),
                 role);
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(I18N.text(
                     "label.workspace.selection.linear.detail",
                     selection.index(),
-                    selection.value(),
+                    selection.value().text(),
                     role,
                     selection.size()));
         }

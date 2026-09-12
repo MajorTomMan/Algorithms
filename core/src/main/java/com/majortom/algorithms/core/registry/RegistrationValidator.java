@@ -30,8 +30,11 @@ public final class RegistrationValidator {
     public static AlgorithmDescriptor validate(AlgorithmDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
         validateId(descriptor.id(), "Algorithm");
+        validateId(descriptor.moduleId(), "Algorithm module");
         validateValueType(descriptor.valueType());
-        validateContract(descriptor.structureContract(), "Algorithm structure");
+        if (descriptor.hasStructureContract()) {
+            validateContract(descriptor.structureContract(), "Algorithm structure");
+        }
         validateImplementation(descriptor.implementation(), "Algorithm");
         return descriptor;
     }

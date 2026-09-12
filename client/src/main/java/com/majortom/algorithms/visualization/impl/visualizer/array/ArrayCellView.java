@@ -32,7 +32,7 @@ public final class ArrayCellView extends StackPane {
     private VisualDensity density = VisualDensity.DETAIL;
     private IntConsumer selectionHandler = ignored -> { };
 
-    public ArrayCellView(int index, int value) {
+    public ArrayCellView(int index, String value) {
         getStyleClass().addAll("array-cell", "visual-entity");
         valueText.getStyleClass().add("array-cell-value");
         indexText.getStyleClass().add("array-cell-index");
@@ -73,8 +73,8 @@ public final class ArrayCellView extends StackPane {
         indexText.setText(Integer.toString(index));
     }
 
-    public void setValue(int value) {
-        valueText.setText(Integer.toString(value));
+    public void setValue(String value) {
+        valueText.setText(Objects.requireNonNull(value, "value"));
     }
 
 

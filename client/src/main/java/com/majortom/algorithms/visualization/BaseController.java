@@ -14,8 +14,8 @@ import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
-import com.majortom.algorithms.core.registry.ModuleLoader;
-import com.majortom.algorithms.core.registry.ModuleRegistry;
+import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
@@ -78,7 +78,7 @@ public abstract class BaseController<S> implements Initializable {
 
     private static final long LIVE_STATS_REFRESH_INTERVAL_NANOS = 50_000_000L;
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private static final ModuleRegistry MODULE_REGISTRY = ModuleLoader.load();
+    private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
     private static final RunHistoryService DEFAULT_EXECUTION_HISTORY =
             new InMemoryRunHistoryService(RunHistoryPolicy.desktopDefault());
     private static final InputFingerprint DEFAULT_INPUT_FINGERPRINT =
@@ -219,8 +219,12 @@ public abstract class BaseController<S> implements Initializable {
                 () -> finishExecution(session, algorithmId, input, reducerFactory, result, error)));
     }
 
-    protected final <T> T module(String key, Class<T> contract) {
-        return MODULE_REGISTRY.create(key, contract);
+    protected final <T> T structure(String id, Class<T> contract) {
+        return COMPONENTS.createStructure(id, contract);
+    }
+
+    protected final <T> T algorithm(String id, Class<T> contract) {
+        return COMPONENTS.createAlgorithm(id, contract);
     }
 
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */

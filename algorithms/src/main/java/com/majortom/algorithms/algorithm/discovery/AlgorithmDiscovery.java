@@ -42,7 +42,11 @@ public final class AlgorithmDiscovery {
                 continue;
             }
             AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
-                    annotation.id(), annotation.type(), annotation.structure(), implementation);
+                    annotation.id(),
+                    annotation.module(),
+                    annotation.type(),
+                    annotation.structure(),
+                    implementation);
             RegistrationValidator.validate(descriptor);
             validateStructureUsage(descriptor);
             validateValueType(descriptor);
@@ -54,6 +58,9 @@ public final class AlgorithmDiscovery {
     }
 
     private void validateStructureUsage(AlgorithmDescriptor descriptor) {
+        if (!descriptor.hasStructureContract()) {
+            return;
+        }
         for (Method method : descriptor.implementation().getMethods()) {
             for (Class<?> parameterType : method.getParameterTypes()) {
                 if (descriptor.structureContract().isAssignableFrom(parameterType)) {
@@ -68,26 +75,15 @@ public final class AlgorithmDiscovery {
     private void validateValueType(AlgorithmDescriptor descriptor) {
         Set<Class<?>> resolvedTypes = new HashSet<>();
         collectConcreteTypeArguments(descriptor.implementation(), new HashMap<>(), resolvedTypes);
-        if (!resolvedTypes.isEmpty()) {
-            if (!resolvedTypes.contains(descriptor.valueType())) {
-                throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
-                        + " does not match generic contract of " + descriptor.implementation().getName()
-                        + ": " + resolvedTypes.stream().map(Class::getName).sorted().toList());
-            }
-            return;
+        if (!resolvedTypes.isEmpty() && !resolvedTypes.contains(descriptor.valueType())) {
+            throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
+                    + " does not match generic contract of " + descriptor.implementation().getName()
+                    + ": " + resolvedTypes.stream().map(Class::getName).sorted().toList());
         }
-        for (Method method : descriptor.implementation().getMethods()) {
-            for (Class<?> parameterType : method.getParameterTypes()) {
-                if (parameterType.equals(descriptor.valueType())) {
-                    return;
-                }
-            }
-        }
-        throw new RegistrationException("Unable to verify Algorithm value type " + descriptor.valueType().getName()
-                + " for " + descriptor.implementation().getName());
     }
 
-    private void collectConcreteTypeArguments(Type current, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
+    private void collectConcreteTypeArguments(
+            Type current, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
         if (current instanceof ParameterizedType parameterizedType) {
             Class<?> rawType = (Class<?>) parameterizedType.getRawType();
             Map<TypeVariable<?>, Type> nested = new HashMap<>(bindings);

@@ -1,6 +1,5 @@
 package com.majortom.algorithms.core.registry;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,6 +12,10 @@ public final class StructureResolver {
 
     public StructureDescriptor resolve(AlgorithmDescriptor algorithm) {
         Objects.requireNonNull(algorithm, "algorithm");
+        if (!algorithm.hasStructureContract()) {
+            throw new RegistrationException("Algorithm " + algorithm.id()
+                    + " does not declare a Structure contract");
+        }
         return resolve(algorithm.structureContract());
     }
 
@@ -43,22 +46,9 @@ public final class StructureResolver {
         throw ambiguous(requiredContract, compatible);
     }
 
-    public Object create(AlgorithmDescriptor algorithm) {
-        return instantiate(resolve(algorithm));
-    }
-
     public <S> S create(Class<S> requiredContract) {
         StructureDescriptor descriptor = resolve(requiredContract);
-        return requiredContract.cast(instantiate(descriptor));
-    }
-
-    private Object instantiate(StructureDescriptor descriptor) {
-        try {
-            return descriptor.implementation().getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException exception) {
-            throw new RegistrationException("Unable to instantiate Structure " + descriptor.id()
-                    + " using " + descriptor.implementation().getName(), exception);
-        }
+        return registry.createStructure(descriptor.id(), requiredContract);
     }
 
     private RegistrationException ambiguous(Class<?> contract, List<StructureDescriptor> candidates) {

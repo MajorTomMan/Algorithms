@@ -17,6 +17,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.graph.GraphEventReducer;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
@@ -134,9 +135,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @SuppressWarnings("unchecked")
     private GraphFamilyAlgorithm<Integer> graphAlgorithm(String algorithmId) {
-        return (GraphFamilyAlgorithm<Integer>) module(
-                "algorithm.graph.Integer." + algorithmId,
-                GraphFamilyAlgorithm.class);
+        return (GraphFamilyAlgorithm<Integer>) algorithm(algorithmId, GraphFamilyAlgorithm.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -1044,7 +1043,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (startField != null) {
             startField.setText(text);
         }
-        selectionListener.accept(new NodeSelection(nodeId, value, degree));
+        selectionListener.accept(new NodeSelection(nodeId, VisualValue.of(value), degree));
     }
 
     private void handleAlgorithmNodeSelection(long nodeId) {
@@ -1106,7 +1105,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (weightField != null && edge.weight() != null) {
             weightField.setText(formatWeight(edge.weight()));
         }
-        selectionListener.accept(new EdgeSelection(edgeId, from, to, snapshot.directed()));
+        selectionListener.accept(new EdgeSelection(edgeId, VisualValue.of(from), VisualValue.of(to), snapshot.directed()));
     }
 
     private void handleAlgorithmEdgeSelection(long edgeId) {
@@ -1182,10 +1181,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public sealed interface Selection permits NodeSelection, EdgeSelection {
     }
 
-    public record NodeSelection(long id, int value, int degree) implements Selection {
+    public record NodeSelection(long id, VisualValue value, int degree) implements Selection {
     }
 
-    public record EdgeSelection(long id, int fromValue, int toValue, boolean directed) implements Selection {
+    public record EdgeSelection(long id, VisualValue fromValue, VisualValue toValue, boolean directed) implements Selection {
     }
 
     private record SnapshotEdge(long id, long fromId, long toId, Double weight) {

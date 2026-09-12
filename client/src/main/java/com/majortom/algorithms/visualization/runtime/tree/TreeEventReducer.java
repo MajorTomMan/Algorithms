@@ -40,9 +40,9 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
             TreeViewState.Node node;
             if (previous.kind() == TreeViewState.Kind.GENERAL) {
-                node = TreeViewState.Node.general(inserted.nodeId(), (Integer) inserted.value(), List.of());
+                node = TreeViewState.Node.general(inserted.nodeId(), inserted.value(), List.of());
             } else {
-                node = TreeViewState.Node.binary(inserted.nodeId(), (Integer) inserted.value(), null, null);
+                node = TreeViewState.Node.binary(inserted.nodeId(), inserted.value(), null, null);
             }
             nodes.put(inserted.nodeId(), node);
             return changed(copy(previous, previous.rootId(), nodes,
@@ -61,7 +61,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
-            nodes.put(changed.nodeId(), node.withValue((Integer) changed.value()));
+            nodes.put(changed.nodeId(), node.withValue(changed.value()));
             return changed(copy(previous, previous.rootId(), nodes,
                     Set.of(changed.nodeId()), Set.of(), previous.visitedNodeIds(), false));
         }

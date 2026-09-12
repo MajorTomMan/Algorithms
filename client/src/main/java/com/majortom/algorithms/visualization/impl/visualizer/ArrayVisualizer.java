@@ -64,7 +64,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     private final Text emptyLabel = new Text();
 
     private List<ElementSize> lastLayoutInput = List.of();
-    private List<Integer> lastRenderedValues = List.of();
+    private List<com.majortom.algorithms.visualization.runtime.VisualValue> lastRenderedValues = List.of();
     private boolean firstRender = true;
     private int selectedIndex = -1;
     private int pendingSelectedIndex = -1;
@@ -160,7 +160,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
                 }
             }
             cell.setIndex(index);
-            cell.setValue(state.values().get(index));
+            cell.setValue(state.values().get(index).text());
             cell.setStripPosition(index, size);
             boolean mutationIndex = isMutationIndex(state.mutation(), index);
             boolean observationIndex = isObservationIndex(state.observation(), index);
@@ -192,8 +192,8 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         lastRenderedValues = state.values();
     }
 
-    private ArrayCellView createCell(int index, int value) {
-        ArrayCellView cell = new ArrayCellView(index, value);
+    private ArrayCellView createCell(int index, com.majortom.algorithms.visualization.runtime.VisualValue value) {
+        ArrayCellView cell = new ArrayCellView(index, value.text());
         cell.setSelectionHandler(this::selectIndex);
         return cell;
     }

@@ -106,7 +106,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         for (GraphViewState.Node node : state.nodes()) {
             NodeView view = nodeViews.get(node.id());
             if (view == null) {
-                view = new NodeView(new CircleGeometry(MIN_RADIUS), Integer.toString(node.value()));
+                view = new NodeView(new CircleGeometry(MIN_RADIUS), node.value().text());
                 view.layoutBoundsProperty().addListener(elementSizeListener);
                 long visualNodeId = node.id();
                 view.setOnMouseClicked(event -> {
@@ -126,7 +126,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                             animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
-                view.setText(Integer.toString(node.value()));
+                view.setText(node.value().text());
             }
             view.setVisited(state.visitedNodeIds().contains(node.id()));
             view.setHighlighted(isObservedNode(state.observation(), node.id()));

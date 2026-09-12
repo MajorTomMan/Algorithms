@@ -3,6 +3,7 @@ package com.majortom.algorithms.algorithm.maze;
 
 
 
+import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
@@ -10,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.Random;
 
 /** Breadth-first frontier perfect-maze generator. */
+@Algorithm(id = "maze-generator-bfs", module = "maze", type = Boolean.class)
 public final class BfsArrayMazeGenerator implements ArrayMazeGenerator {
     @Override
     public GridMaze generate(MazeDimensions dimensions, long seed) {

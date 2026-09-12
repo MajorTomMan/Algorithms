@@ -1,6 +1,6 @@
 package com.majortom.algorithms.visualization.module;
 
-import com.majortom.algorithms.core.registry.ModuleRegistry;
+import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.impl.controller.ArrayController;
 import com.majortom.algorithms.visualization.impl.controller.GraphController;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureController;
@@ -17,7 +17,7 @@ public final class WorkbenchModules {
     private WorkbenchModules() {
     }
 
-    public static List<WorkbenchModuleDefinition> available(ModuleRegistry registry) {
+    public static List<WorkbenchModuleDefinition> available(ComponentRegistry registry) {
         List<WorkbenchModuleDefinition> modules = new ArrayList<>();
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition("array", "label.structure.array", ArrayController::new));
@@ -40,28 +40,11 @@ public final class WorkbenchModules {
 
     private static void addIfAvailable(
             List<WorkbenchModuleDefinition> modules,
-            ModuleRegistry registry,
+            ComponentRegistry registry,
             WorkbenchModuleDefinition definition) {
         String id = definition.id();
-        if (registry.hasStructureFamily(id) || registry.hasAlgorithmFamily(id) || isMazeAvailable(registry, id)) {
+        if (registry.hasStructure(id) || registry.hasAlgorithmModule(id)) {
             modules.add(definition);
         }
-    }
-
-    private static boolean isMazeAvailable(ModuleRegistry registry, String id) {
-        if (!"maze".equals(id)) {
-            return false;
-        }
-        if (registry.hasAlgorithmFamily("maze")) {
-            return true;
-        }
-        for (String valueType : registry.algorithmValueTypes("graph")) {
-            for (String algorithmId : registry.algorithmIds("graph", valueType)) {
-                if (algorithmId.startsWith("graph-generator-")) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

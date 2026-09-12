@@ -18,13 +18,13 @@ import java.util.Set;
 /** Reduces factual Graph mutations, observations and Runtime lifecycle into GraphViewState. */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
     private static final String VERTEX_DOMAIN = "graph.vertex";
-    private final GraphSnapshotState<Integer> initialGraph;
+    private final GraphSnapshotState<?> initialGraph;
 
-    public GraphEventReducer(GraphSnapshot<Integer> graph) {
-        this((GraphSnapshotState<Integer>) graph);
+    public GraphEventReducer(GraphSnapshot<?> graph) {
+        this((GraphSnapshotState<?>) graph);
     }
 
-    public GraphEventReducer(GraphSnapshotState<Integer> graph) {
+    public GraphEventReducer(GraphSnapshotState<?> graph) {
         initialGraph = graph;
     }
 
@@ -38,7 +38,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
         Object event = envelope.event();
         if (event instanceof GraphStructureEvent.VertexAdded added) {
             List<GraphViewState.Node> nodes = new ArrayList<>(previous.nodes());
-            nodes.add(new GraphViewState.Node(added.vertexId(), (Integer) added.value()));
+            nodes.add(new GraphViewState.Node(added.vertexId(), com.majortom.algorithms.visualization.runtime.VisualValue.of(added.value())));
             return changed(state(previous, nodes, previous.edges(), previous.visitedNodeIds(),
                     GraphViewState.Observation.none(), false));
         }

@@ -15,6 +15,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmLabels;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.tree.TreeEventReducer;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
@@ -66,8 +67,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     public TreeController() {
         super(new TreeVisualizer(), "/fxml/TreeControls.fxml");
-        generalTree = module("structure.tree.Integer", Tree.class);
-        avlTree = module("structure.tree.avl.Integer", AVLTree.class);
+        generalTree = structure("tree", Tree.class);
+        avlTree = structure("avl-tree", AVLTree.class);
         initializeSampleGeneralTree();
         initializeSampleAvlTree();
         treeVisualizer().setSelectionListener(this::handleVisualSelection);
@@ -83,7 +84,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         refreshVariantControls();
     }
 
-    public record NodeSelection(long id, int value, Long parentId, int childCount, int depth) {
+    public record NodeSelection(long id, VisualValue value, Long parentId, int childCount, int depth) {
     }
 
     private enum TreeVariant {
@@ -171,7 +172,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         selectionListener.accept(new NodeSelection(
                 nodeId,
-                node.getValue(),
+                VisualValue.of(node.getValue()),
                 parentId,
                 node.getChildren().size(),
                 generalDepthOf(generalTree.root(), node, 0)));
@@ -200,7 +201,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         selectionListener.accept(new NodeSelection(
                 nodeId,
-                node.getValue(),
+                VisualValue.of(node.getValue()),
                 parentId,
                 childCount,
                 avlDepthOf(avlTree.root(), node, 0)));

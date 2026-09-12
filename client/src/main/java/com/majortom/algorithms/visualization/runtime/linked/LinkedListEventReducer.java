@@ -31,7 +31,7 @@ public final class LinkedListEventReducer implements EventReducer<LinkedListView
         Object event = envelope.event();
         if (event instanceof LinkedStructureEvent.NodeInserted inserted) {
             Map<Long, LinkedListViewState.Node> nodes = mutable(previous);
-            nodes.put(inserted.nodeId(), new LinkedListViewState.Node(inserted.nodeId(), (Integer) inserted.value(), null, null));
+            nodes.put(inserted.nodeId(), new LinkedListViewState.Node(inserted.nodeId(), com.majortom.algorithms.visualization.runtime.VisualValue.of(inserted.value()), null, null));
             return changed(nodes);
         }
         if (event instanceof LinkedStructureEvent.NodeRemoved removed) {
@@ -42,7 +42,7 @@ public final class LinkedListEventReducer implements EventReducer<LinkedListView
         if (event instanceof LinkedStructureEvent.ValueChanged changed) {
             Map<Long, LinkedListViewState.Node> nodes = mutable(previous);
             LinkedListViewState.Node node = requireNode(nodes, changed.nodeId());
-            nodes.put(changed.nodeId(), node.withValue((Integer) changed.value()));
+            nodes.put(changed.nodeId(), node.withValue(changed.value()));
             return changed(nodes);
         }
         if (event instanceof LinkedStructureEvent.NextChanged changed) {

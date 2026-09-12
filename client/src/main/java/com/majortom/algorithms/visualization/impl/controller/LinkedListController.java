@@ -7,6 +7,7 @@ import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.LinkedStructure;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListEventReducer;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
@@ -46,7 +47,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @SuppressWarnings("unchecked")
     public LinkedListController() {
         super(new LinkedListVisualizer(), "/fxml/LinearStructureControls.fxml");
-        linkedList = (LinkedStructure<Integer>) module("structure.linked-list.Integer", LinkedList.class);
+        linkedList = (LinkedStructure<Integer>) structure("linked-list", LinkedList.class);
         seed();
         renderStructureState(currentState());
     }
@@ -380,7 +381,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         }
         List<Long> order = orderedNodeIds(state);
         int index = order.indexOf(nodeId);
-        valueField.setText(Integer.toString(node.value()));
+        valueField.setText(node.value().text());
         if (index >= 0) {
             indexField.setText(Integer.toString(index));
         }
@@ -445,7 +446,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         return (LinkedListVisualizer) visualizer;
     }
 
-    public record NodeSelection(long id, int value, Long previousId, Long nextId, int index, int size) {
+    public record NodeSelection(long id, VisualValue value, Long previousId, Long nextId, int index, int size) {
     }
 
     private void clearWithoutRuntime() {
