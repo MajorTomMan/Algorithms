@@ -192,6 +192,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
+        if (algorithmId == null) {
+            return false;
+        }
         int index = algorithmIds.indexOf(algorithmId);
         if (index < 0) {
             return false;
@@ -756,7 +759,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             labels.add(AlgorithmCatalog.name(id));
         }
         algorithmSelector.setItems(labels);
-        int index = algorithmIds.indexOf(previousId);
+        int index = previousId == null ? -1 : algorithmIds.indexOf(previousId);
         if (index < 0 && !algorithmIds.isEmpty()) {
             index = 0;
         }

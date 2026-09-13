@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.value;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public final class ValueAdapters {
         LinkedHashMap<Class<?>, ValueAdapter<?>> adapters = new LinkedHashMap<>();
         register(adapters, new IntegerAdapter());
         register(adapters, new StringAdapter());
-        return Map.copyOf(adapters);
+        return Collections.unmodifiableMap(adapters);
     }
 
     private static <T> void register(Map<Class<?>, ValueAdapter<?>> adapters, ValueAdapter<T> adapter) {
