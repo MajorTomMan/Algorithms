@@ -9,8 +9,7 @@ public class ReverseLinkedList implements LinkedListAlgorithm<Integer> {
 
     @Override
     public void reverse(LinkedStructure<Integer> list) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'reverse'");
+        System.out.println("test");
     }
     
 }

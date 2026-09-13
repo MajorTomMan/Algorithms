@@ -5,8 +5,10 @@ import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.LinkedStructure;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListEventReducer;
@@ -15,6 +17,12 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
+
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -27,27 +35,47 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
-/** Linked-list workbench backed by factual node/link events and the family-specific linked visualizer. */
+/**
+ * Linked-list workbench backed by factual node/link events and the
+ * family-specific linked visualizer.
+ */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
+        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
+        AlgorithmSelectionSupport {
     private static final String MODULE_ID = "linked-list";
 
     private final LinkedStructure<Object> linkedList;
     private Class<?> runtimeValueType = Integer.class;
     private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
+    private final LongProperty valueTypeRevision = new SimpleLongProperty();
     private boolean structureSelectionEnabled = true;
     private Long algorithmSelectedNodeId;
-    private Consumer<NodeSelection> selectionListener = ignored -> { };
+    private Consumer<NodeSelection> selectionListener = ignored -> {
+    };
 
-    @FXML private Label typeLabel;
-    @FXML private Label structureLabel;
-    @FXML private ComboBox<String> structureSelector;
-    @FXML private Label operationsLabel;
-    @FXML private TextField valueField;
-    @FXML private TextField indexField;
-    @FXML private Button primaryBtn;
-    @FXML private Button secondaryBtn;
-    @FXML private Button quaternaryBtn;
+    @FXML
+    private Label typeLabel;
+    @FXML
+    private Label structureLabel;
+    @FXML
+    private ComboBox<String> structureSelector;
+    @FXML
+    private Label operationsLabel;
+    @FXML
+    private TextField valueField;
+    @FXML
+    private TextField indexField;
+    @FXML
+    private Button primaryBtn;
+    @FXML
+    private Button secondaryBtn;
+    @FXML
+    private Button quaternaryBtn;
+
+    @FXML
+    private ComboBox<String> algorithmSelector;
+    private String selectedAlgorithmId;
+    private Consumer<String> algorithmSelectionListener;
 
     @SuppressWarnings("unchecked")
     public LinkedListController() {
@@ -63,6 +91,27 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         configureControls();
         quaternaryBtn.setOnAction(event -> update());
         linkedVisualizer().setSelectionListener(this::handleVisualSelection);
+        bindAlgorithmSelector();
+    }
+
+    private void bindAlgorithmSelector() {
+        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+            ObservableList<String> labels = FXCollections.observableArrayList();
+            for (String id : algorithmIds()) {
+                labels.add(AlgorithmCatalog.name(id));
+            }
+            return labels;
+        }, valueTypeRevision));
+
+        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
+                (obs, oldIdx, newIdx) -> {
+                    List<String> ids = algorithmIds();
+                    selectedAlgorithmId = (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
+                            ? ids.get(newIdx.intValue())
+                            : null;
+                    if (algorithmSelectionListener != null && selectedAlgorithmId != null)
+                        algorithmSelectionListener.accept(selectedAlgorithmId);
+                });
     }
 
     @FXML
@@ -361,7 +410,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     public void setSelectionListener(Consumer<NodeSelection> listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {
+            };
         } else {
             selectionListener = listener;
         }
@@ -475,12 +525,16 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         quaternaryBtn.setVisible(true);
         quaternaryBtn.setManaged(true);
     }
+
     @Override
     public Class<?> runtimeValueType() {
         return runtimeValueType;
     }
 
-    @Override public boolean hasValues() { return linkedList.size() > 0; }
+    @Override
+    public boolean hasValues() {
+        return linkedList.size() > 0;
+    }
 
     @Override
     public List<Class<?>> supportedValueTypes() {
@@ -504,6 +558,31 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
             renderStructureState(currentState());
             refreshStatsDisplay();
         }
+    }
+
+    @Override
+    public List<String> algorithmIds() {
+        return AlgorithmCatalog.linkedListAlgorithms(runtimeValueType);
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        List<String> ids = algorithmIds();
+        int index = ids.indexOf(algorithmId);
+        if (index < 0)
+            return false;
+        algorithmSelector.getSelectionModel().select(index);
+        return true;
+    }
+
+    @Override
+    public String selectedAlgorithmId() {
+        return selectedAlgorithmId;
+    }
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        this.algorithmSelectionListener = listener;
     }
 
 }
