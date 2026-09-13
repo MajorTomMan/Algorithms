@@ -6,14 +6,23 @@ import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 import com.majortom.algorithms.structure.linked.StackStructure;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
+
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -30,7 +39,8 @@ import java.util.function.Consumer;
  * Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7.
  */
 public final class LinearStructureController extends BaseModuleController<LinearStructureViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
+        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
+        AlgorithmSelectionSupport, SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
 
     private enum Kind {
         STACK, QUEUE
@@ -67,6 +77,13 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @FXML
     private Button quaternaryBtn;
 
+    @FXML
+    private ComboBox<String> algorithmSelector;
+    private String selectedAlgorithmId;
+    private Consumer<String> algorithmSelectionListener;
+    private final LongProperty valueTypeRevision = new SimpleLongProperty();
+    private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
+
     @SuppressWarnings("unchecked")
     private LinearStructureController(Kind kind, String moduleId) {
         super(visualizer(kind), "/fxml/LinearStructureControls.fxml");
@@ -99,10 +116,32 @@ public final class LinearStructureController extends BaseModuleController<Linear
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         configureControls();
+        bindAlgorithmSelector();
         if (kind == Kind.STACK)
             stackVisualizer().setSelectionListener(this::handleVisualSelection);
         else
             queueVisualizer().setSelectionListener(this::handleVisualSelection);
+    }
+
+    private void bindAlgorithmSelector() {
+        if (algorithmSelector == null)
+            return;
+        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+            ObservableList<String> labels = FXCollections.observableArrayList();
+            for (String id : algorithmIds()) {
+                labels.add(AlgorithmCatalog.name(id));
+            }
+            return labels;
+        }, valueTypeRevision));
+        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
+                (obs, oldIdx, newIdx) -> {
+                    List<String> ids = algorithmIds();
+                    selectedAlgorithmId = (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
+                            ? ids.get(newIdx.intValue())
+                            : null;
+                    if (algorithmSelectionListener != null && selectedAlgorithmId != null)
+                        algorithmSelectionListener.accept(selectedAlgorithmId);
+                });
     }
 
     @FXML
@@ -509,6 +548,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             renderStructureState(currentState());
             refreshStatsDisplay();
         }
+        valueTypeRevision.set(valueTypeRevision.get() + 1);
     }
 
     private void configureControls() {
@@ -519,5 +559,58 @@ public final class LinearStructureController extends BaseModuleController<Linear
         indexField.setManaged(false);
         quaternaryBtn.setVisible(false);
         quaternaryBtn.setManaged(false);
+    }
+
+    @Override
+    public List<String> algorithmIds() {
+        return kind == Kind.STACK
+                ? AlgorithmCatalog.stackAlgorithms(runtimeValueType)
+                : AlgorithmCatalog.queueAlgorithms(runtimeValueType);
+    }
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        List<String> ids = algorithmIds();
+        int index = ids.indexOf(algorithmId);
+        if (index < 0)
+            return false;
+        if (algorithmSelector != null)
+            algorithmSelector.getSelectionModel().select(index);
+        return true;
+    }
+
+    @Override
+    public String selectedAlgorithmId() {
+        return selectedAlgorithmId;
+    }
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        this.algorithmSelectionListener = listener;
+    }
+
+    @Override
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
+        if (!moduleId.equals(snapshot.moduleId()))
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        snapshot.requireValueType(runtimeValueType);
+        algorithmInputSnapshot = snapshot;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public void useCurrentStructureAsAlgorithmInput() {
+        algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public String algorithmInputSnapshotId() {
+        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+    }
+
+    @Override
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return algorithmInputSnapshot == null;
     }
 }

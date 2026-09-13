@@ -15,6 +15,7 @@ import com.majortom.algorithms.visualization.runtime.linked.LinkedListEventReduc
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 
@@ -41,7 +42,7 @@ import java.util.function.Consumer;
  */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
         implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
-        AlgorithmSelectionSupport {
+        AlgorithmSelectionSupport, SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
     private static final String MODULE_ID = "linked-list";
 
     private final LinkedStructure<Object> linkedList;
@@ -76,6 +77,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private ComboBox<String> algorithmSelector;
     private String selectedAlgorithmId;
     private Consumer<String> algorithmSelectionListener;
+    private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
 
     @SuppressWarnings("unchecked")
     public LinkedListController() {
@@ -583,6 +585,31 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         this.algorithmSelectionListener = listener;
+    }
+
+    @Override
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
+        if (!MODULE_ID.equals(snapshot.moduleId()))
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        snapshot.requireValueType(runtimeValueType);
+        algorithmInputSnapshot = snapshot;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public void useCurrentStructureAsAlgorithmInput() {
+        algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
+    }
+
+    @Override
+    public String algorithmInputSnapshotId() {
+        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+    }
+
+    @Override
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return algorithmInputSnapshot == null;
     }
 
 }

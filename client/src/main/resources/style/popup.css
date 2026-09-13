@@ -5,44 +5,57 @@
  * so popup paint properties intentionally use concrete palette values here.
  */
 .combo-box-popup .list-view {
-    -fx-background-color: #ffffff;
-    -fx-background-insets: 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 8, 0.08, 0, 2);
-    -fx-control-inner-background: #ffffff;
-    -fx-border-color: #d7dce1;
-    -fx-border-width: 1px;
-    -fx-border-radius: 2px;
-    -fx-background-radius: 2px;
-    -fx-padding: 2px;
+  -fx-background-color: #ffffff;
+  -fx-background-insets: 0;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 8, 0.08, 0, 2);
+  -fx-control-inner-background: #ffffff;
+  -fx-border-color: #d7dce1;
+  -fx-border-width: 1px;
+  -fx-border-radius: 2px;
+  -fx-background-radius: 2px;
+  -fx-padding: 2px;
 }
 .combo-box-popup .list-cell {
-    -fx-background-color: #ffffff;
-    -fx-text-fill: #202124;
-    -fx-padding: 0.42em 0.58em;
+  -fx-background-color: #ffffff;
+  -fx-text-fill: #202124;
+  -fx-padding: 0.42em 0.58em;
 }
 .combo-box-popup .list-cell:filled:hover {
-    -fx-background-color: #f3f5f7;
-    -fx-text-fill: #202124;
+  -fx-background-color: #f3f5f7;
+  -fx-text-fill: #202124;
 }
 .combo-box-popup .list-cell:filled:selected {
-    -fx-background-color: #ff1f2d;
-    -fx-text-fill: #ffffff;
+  -fx-background-color: #ff1f2d;
+  -fx-text-fill: #ffffff;
 }
 .context-menu.algorithm-snapshot-menu {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #d7dce1;
-    -fx-border-width: 1px;
-    -fx-padding: 3px;
+  -fx-background-color: #ffffff;
+  -fx-border-color: #d7dce1;
+  -fx-border-width: 1px;
+  -fx-padding: 3px;
 }
 .context-menu.algorithm-snapshot-menu .menu-item {
-    -fx-background-color: #ffffff;
+  -fx-background-color: #ffffff;
 }
 .context-menu.algorithm-snapshot-menu .menu-item:focused {
-    -fx-background-color: #ff1f2d;
+  -fx-background-color: #ff1f2d;
 }
 .context-menu.algorithm-snapshot-menu .menu-item .label {
-    -fx-text-fill: #202124;
+  -fx-text-fill: #202124;
 }
 .context-menu.algorithm-snapshot-menu .menu-item:focused .label {
-    -fx-text-fill: #ffffff;
+  -fx-text-fill: #ffffff;
+}
+
+/* 快照菜单跟随字体大小设置 */
+.context-menu.algorithm-snapshot-menu .menu-item .label {
+  -fx-font-size: 13px;
+}
+
+.context-menu.algorithm-snapshot-menu.font-size-large .menu-item .label {
+  -fx-font-size: 15px;
+}
+
+.context-menu.algorithm-snapshot-menu.font-size-xlarge .menu-item .label {
+  -fx-font-size: 17px;
 }

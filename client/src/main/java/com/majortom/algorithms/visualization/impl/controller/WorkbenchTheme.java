@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import java.util.List;
+
 import atlantafx.base.theme.Styles;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
@@ -19,7 +21,10 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.collections.ListChangeListener;
 
-/** Applies AtlantaFX control semantics while preserving project-specific layout classes. */
+/**
+ * Applies AtlantaFX control semantics while preserving project-specific layout
+ * classes.
+ */
 final class WorkbenchTheme {
 
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
@@ -77,8 +82,8 @@ final class WorkbenchTheme {
         if (Boolean.TRUE.equals(host.getProperties().putIfAbsent("mazeRunVisibilityInstalled", Boolean.TRUE))) {
             return;
         }
-        host.getChildren().addListener((ListChangeListener<Node>) change ->
-                Platform.runLater(() -> refreshMazeRunVisibility(host)));
+        host.getChildren().addListener(
+                (ListChangeListener<Node>) change -> Platform.runLater(() -> refreshMazeRunVisibility(host)));
         Platform.runLater(() -> refreshMazeRunVisibility(host));
     }
 
@@ -99,8 +104,10 @@ final class WorkbenchTheme {
     }
 
     /**
-     * Upgrades the existing Saved Snapshot button into an arbitrary-snapshot picker. The menu
-     * delegates to the action already attached to each snapshot card, preserving one input owner.
+     * Upgrades the existing Saved Snapshot button into an arbitrary-snapshot
+     * picker. The menu
+     * delegates to the action already attached to each snapshot card, preserving
+     * one input owner.
      */
     private static void installSavedSnapshotPicker(Button button) {
         if (Boolean.TRUE.equals(button.getProperties().putIfAbsent("savedSnapshotPickerInstalled", Boolean.TRUE))) {
@@ -126,6 +133,15 @@ final class WorkbenchTheme {
 
         ContextMenu menu = new ContextMenu();
         menu.getStyleClass().add("algorithm-snapshot-menu");
+        Parent mainRoot = rootOf(source);
+        if (mainRoot != null) {
+            for (String cls : List.of("font-size-large", "font-size-xlarge")) {
+                if (mainRoot.getStyleClass().contains(cls)) {
+                    menu.getStyleClass().add(cls);
+                }
+            }
+        }
+
         for (Node node : snapshotCards.getChildren()) {
             if (!(node instanceof VBox card) || !card.getStyleClass().contains("snapshot-card-saved")) {
                 continue;
