@@ -6,6 +6,7 @@
 <?import java.lang.String?>
 <?import java.lang.Double?>
 <?import com.majortom.algorithms.visualization.logging.LogView?>
+<?import com.majortom.algorithms.visualization.common.OverlayPane?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
@@ -87,13 +88,6 @@
                     <Button fx:id="fontSettingsBtn" text="Aa" onAction="#toggleFontSettings"
                         styleClass="font-settings-button" />
                 </HBox>
-                <!-- Kept for existing product controls, intentionally hidden in the visual shell. -->
-                <HBox fx:id="valueTypeBox" managed="false" visible="false">
-                    <Label fx:id="valueTypeLabel" />
-                    <ComboBox fx:id="valueTypeSelector" />
-                    <Label fx:id="hashValueTypeLabel" />
-                    <ComboBox fx:id="hashValueTypeSelector" />
-                </HBox>
                 <Label fx:id="menuTitleLabel" managed="false" visible="false" />
             </HBox>
         </VBox>
@@ -137,6 +131,13 @@
                             VBox.vgrow="ALWAYS" styleClass="panel-scroll-pane light-scroll-pane">
                             <content>
                                 <VBox fillWidth="true" spacing="0" styleClass="module-control-host">
+                                    <VBox fx:id="structureKindHost" fillWidth="true" />
+                                    <VBox fx:id="valueTypeBox" spacing="8" styleClass="control-section">
+                                        <Label fx:id="valueTypeLabel" styleClass="panel-section-title" />
+                                        <ComboBox fx:id="valueTypeSelector" maxWidth="Infinity" />
+                                        <Label fx:id="hashValueTypeLabel" managed="false" visible="false" />
+                                        <ComboBox fx:id="hashValueTypeSelector" managed="false" visible="false" />
+                                    </VBox>
                                     <VBox fx:id="structureControlsHost" fillWidth="true" spacing="0">
                                         <HBox fx:id="customControlBox" maxWidth="Infinity"
                                             fillHeight="true" />
@@ -193,6 +194,7 @@
                             <Label fx:id="structurePreviewHintLabel" wrapText="true"
                                 maxWidth="320.0" styleClass="structure-preview-hint" />
                         </VBox>
+                        <OverlayPane mouseTransparent="true">
                         <VBox fx:id="structureSelectionOverlay" mouseTransparent="true"
                             managed="false" visible="false"
                             maxWidth="220.0" prefWidth="220.0" maxHeight="184.0" prefHeight="184.0"
@@ -205,13 +207,14 @@
                             </HBox>
                             <Label fx:id="selectedValueCaptionLabel" text="VALUE"
                                 styleClass="overlay-caption" />
-                            <Label fx:id="selectedNodeValueLabel" text="—"
+                            <Label fx:id="selectedNodeValueLabel" text="—" minWidth="0" maxWidth="Infinity" textOverrun="ELLIPSIS"
                                 styleClass="overlay-value" />
                             <Separator />
                             <Label fx:id="selectedEntityHintLabel"
                                 text="Ready to edit or remove this node." wrapText="true"
                                 styleClass="overlay-hint" />
                         </VBox>
+                        </OverlayPane>
                     </StackPane>
 
                     <VBox fx:id="snapshotPanel" minWidth="360.0" prefWidth="360.0" maxWidth="390.0"
@@ -437,6 +440,7 @@
                                 styleClass="current-step-detail" />
                             <Label fx:id="viewportHintLabel" managed="false" visible="false" />
                         </VBox>
+                        <OverlayPane mouseTransparent="true">
                         <VBox fx:id="algorithmSelectionOverlay" mouseTransparent="true"
                             managed="false" visible="false"
                             maxWidth="220.0" prefWidth="220.0" maxHeight="184.0" prefHeight="184.0"
@@ -450,13 +454,14 @@
                             </HBox>
                             <Label fx:id="algorithmSelectedValueCaptionLabel" text="VALUE"
                                 styleClass="overlay-caption" />
-                            <Label fx:id="algorithmSelectedNodeValueLabel" text="—"
+                            <Label fx:id="algorithmSelectedNodeValueLabel" text="—" minWidth="0" maxWidth="Infinity" textOverrun="ELLIPSIS"
                                 styleClass="overlay-value" />
                             <Separator />
                             <Label fx:id="algorithmSelectedEntityHintLabel"
                                 text="Current algorithm frame · read only" wrapText="true"
                                 styleClass="overlay-hint" />
                         </VBox>
+                        </OverlayPane>
                     </StackPane>
 
                     <VBox fx:id="diagnosticsPanel" minWidth="360.0" prefWidth="360.0"

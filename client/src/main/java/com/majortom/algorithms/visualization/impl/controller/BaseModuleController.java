@@ -79,12 +79,25 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         if (selector == null) {
             return;
         }
-        Runnable refresh = () -> {
-            selector.getItems().setAll(I18N.text(key));
-            selector.getSelectionModel().selectFirst();
+        selector.getItems().setAll(key);
+        selector.getSelectionModel().selectFirst();
+        localizeChoiceCells(selector, ignored -> I18N.text(key));
+    }
+
+    /** Translate cells, never selected identifiers: language changes must not activate another model. */
+    protected final void localizeChoiceCells(ComboBox<String> selector,
+            java.util.function.Function<String, String> displayName) {
+        java.util.function.Supplier<javafx.scene.control.ListCell<String>> cell = () -> new javafx.scene.control.ListCell<>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                textProperty().unbind();
+                if (empty || item == null) setText(null);
+                else textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
+                        () -> displayName.apply(item), I18N.localeProperty()));
+            }
         };
-        refresh.run();
-        I18N.localeProperty().addListener((observable, oldLocale, newLocale) -> refresh.run());
+        selector.setCellFactory(ignored -> cell.get());
+        selector.setButtonCell(cell.get());
     }
 
     protected boolean supportsDataTools() {

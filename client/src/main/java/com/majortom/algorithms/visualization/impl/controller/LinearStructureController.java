@@ -462,6 +462,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return runtimeValueType;
     }
 
+    @Override public boolean hasValues() { return linkedList.size() > 0; }
+
     @Override
     public List<Class<?>> supportedValueTypes() {
         return ValueAdapters.supportedTypes();
@@ -478,7 +480,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         runtimeValueType = valueType;
         valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
         clearVisualSelection();
-        seed();
+        clearWithoutRuntime();
         invalidateExecutionForStructureChange();
         if (controlPanel != null) {
             renderStructureState(currentState());

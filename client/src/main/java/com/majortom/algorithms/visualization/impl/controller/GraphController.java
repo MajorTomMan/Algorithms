@@ -102,9 +102,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        if (startField != null) {
-            startField.setText(valueAdapter.format(startNode));
-        }
+        // The remembered value type may have cleared the graph before FXML is loaded.
+        syncStartNode(currentGraph());
         if (weightField != null && weightField.getText().isBlank()) {
             weightField.setText("1");
         }
@@ -703,11 +702,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void bindSelectors() {
-        structureSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> FXCollections.observableArrayList(
-                        I18N.text("label.graph.structure.undirected"),
-                        I18N.text("label.graph.structure.directed")),
-                I18N.localeProperty()));
+        structureSelector.setItems(FXCollections.observableArrayList(
+                "label.graph.structure.undirected", "label.graph.structure.directed"));
+        localizeChoiceCells(structureSelector, I18N::text);
+        localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             if (current == null || current.intValue() < 0) {
                 return;
@@ -721,10 +719,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             refreshAlgorithmControls();
             notifyAlgorithmSelection();
-        });
-        I18N.localeProperty().addListener((observable, previous, current) -> {
-            refreshAlgorithmSelector();
-            Platform.runLater(this::syncStructureSelectorSelection);
         });
         Platform.runLater(() -> {
             syncStructureSelectorSelection();
@@ -756,7 +750,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         String previousId = selectedAlgorithmId();
         javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
         for (String id : algorithmIds) {
-            labels.add(AlgorithmCatalog.name(id));
+            labels.add(id);
         }
         algorithmSelector.setItems(labels);
         int index = previousId == null ? -1 : algorithmIds.indexOf(previousId);
@@ -1406,6 +1400,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return runtimeValueType;
     }
 
+    @Override public boolean hasValues() {
+        return undirectedGraph.vertices().iterator().hasNext() || directedGraph.vertices().iterator().hasNext();
+    }
+
     @Override
     public List<Class<?>> supportedValueTypes() {
         return ValueAdapters.supportedTypes();
@@ -1423,13 +1421,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
         algorithmInputSnapshot = null;
         clearVisualSelection();
-        undirectedGraph = randomWeightedGraph(10, 16, false);
-        directedGraph = randomWeightedGraph(10, 16, true);
-        startNode = firstVertexValue(currentGraph());
+        undirectedGraph = new WeightedGraph<>(false);
+        directedGraph = new WeightedGraph<>(true);
+        startNode = null;
         refreshAlgorithmIds();
         invalidateExecutionForStructureChange();
         if (startField != null) {
-            startField.setText(valueAdapter.format(startNode));
+            startField.clear();
         }
         if (controlPanel != null) {
             refreshVariantControls();

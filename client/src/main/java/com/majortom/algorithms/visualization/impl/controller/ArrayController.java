@@ -648,7 +648,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void bindStructureSelector() {
-        structureSelector.setItems(FXCollections.observableArrayList(StructureCatalog.name("array")));
+        structureSelector.setItems(FXCollections.observableArrayList("array"));
+        localizeChoiceCells(structureSelector, StructureCatalog::name);
         Platform.runLater(() -> structureSelector.getSelectionModel().selectFirst());
     }
     private int indexOf(Object value) {
@@ -662,6 +663,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     public Class<?> runtimeValueType() {
         return runtimeValueType;
     }
+
+    @Override public boolean hasValues() { return sourceArray.size() > 0; }
 
     @Override
     public List<Class<?>> supportedValueTypes() {
@@ -681,7 +684,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         valueTypeRevision.set(valueTypeRevision.get() + 1L);
         algorithmInputSnapshot = null;
         clearArraySelection();
-        sourceArray.initialize(randomValues());
+        sourceArray.initialize(List.of());
         invalidateExecutionForStructureChange();
         if (algorithmSelector != null) {
             algorithmSelector.getSelectionModel().clearSelection();

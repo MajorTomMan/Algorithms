@@ -8,5 +8,8 @@ public interface RuntimeValueTypeSupport {
 
     List<Class<?>> supportedValueTypes();
 
+    /** Whether changing type would discard values, including inactive variants. */
+    boolean hasValues();
+
     void setRuntimeValueType(Class<?> valueType);
 }

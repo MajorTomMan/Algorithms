@@ -136,10 +136,8 @@ public final class VisualizationSurface extends StackPane {
         if (next.equals(this.obstructionInsets)) {
             return;
         }
+        // Transient cards must not move the camera. Explicit fit/reset uses the current insets.
         this.obstructionInsets = next;
-        if (!userViewportChanged) {
-            fitWithMinimumScale(autoFitMinimumScale);
-        }
     }
 
     public void zoomIn() {

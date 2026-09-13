@@ -12,6 +12,10 @@ public final class StructureCatalog {
     }
 
     public static String name(String structureId) {
+        String key = "label.structure." + structureId;
+        if (com.majortom.algorithms.visualization.international.I18N.getBundle().containsKey(key)) {
+            return com.majortom.algorithms.visualization.international.I18N.text(key);
+        }
         return REGISTRY.findStructure(structureId)
                 .orElseThrow(() -> new IllegalArgumentException("No Structure registered for id: " + structureId))
                 .name();

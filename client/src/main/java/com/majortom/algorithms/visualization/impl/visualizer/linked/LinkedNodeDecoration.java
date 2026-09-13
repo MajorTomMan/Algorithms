@@ -26,6 +26,8 @@ final class LinkedNodeDecoration extends Group {
         getStyleClass().add("linked-node-decoration");
         divider.getStyleClass().add("linked-node-divider");
         portDivider.getStyleClass().add("linked-node-port-divider");
+        previousLabel.textProperty().bind(I18N.createStringBinding("label.visual.linked.previous"));
+        nextLabel.textProperty().bind(I18N.createStringBinding("label.visual.linked.next"));
         previousLabel.getStyleClass().add("linked-port-label");
         nextLabel.getStyleClass().add("linked-port-label");
         previousPort.getStyleClass().add("linked-port-dot");
@@ -44,6 +46,8 @@ final class LinkedNodeDecoration extends Group {
     }
 
     void dispose() {
+        previousLabel.textProperty().unbind();
+        nextLabel.textProperty().unbind();
         node.centerXProperty().removeListener(geometryListener);
         node.centerYProperty().removeListener(geometryListener);
         node.geometryProperty().removeListener(geometryListener);

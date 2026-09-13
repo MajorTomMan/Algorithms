@@ -84,6 +84,8 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
         surface.setSafeInsets(new javafx.geometry.Insets(26.0d, 16.0d, 62.0d, 16.0d));
+        headLabel.textProperty().bind(I18N.createStringBinding("label.visual.linked.head"));
+        tailLabel.textProperty().bind(I18N.createStringBinding("label.visual.linked.tail"));
         headLabel.getStyleClass().addAll("linear-role-label", "linked-head-label");
         tailLabel.getStyleClass().addAll("linear-role-label", "linked-tail-label");
         surface.decorationLayer().getChildren().addAll(headLabel, tailLabel);

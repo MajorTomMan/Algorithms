@@ -448,7 +448,8 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void bindSelectors() {
-        structureSelector.setItems(FXCollections.observableArrayList(StructureCatalog.name("string")));
+        structureSelector.setItems(FXCollections.observableArrayList("string"));
+        localizeChoiceCells(structureSelector, StructureCatalog::name);
         javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
         for (String id : algorithmIds) {
             algorithmLabels.add(AlgorithmCatalog.name(id));

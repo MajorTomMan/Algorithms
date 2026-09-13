@@ -1043,7 +1043,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
         for (String id : algorithmIds) {
-            labels.add(AlgorithmCatalog.name(id));
+            labels.add(id);
         }
         algorithmSelector.setItems(labels);
         if (algorithmIds.isEmpty()) {
@@ -1219,6 +1219,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return runtimeValueType;
     }
 
+    @Override public boolean hasValues() { return generalTree.size() > 0 || avlTree.size() > 0; }
+
     @Override
     public List<Class<?>> supportedValueTypes() {
         return ValueAdapters.supportedTypes();
@@ -1242,8 +1244,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         clearNodeSelection();
         generalTree = new Tree<>();
         avlTree = new AVLTree<>();
-        initializeSampleGeneralTree();
-        initializeSampleAvlTree();
         refreshAlgorithmIds();
         invalidateExecutionForInputChange();
         if (controlPanel != null) {
@@ -1296,8 +1296,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
-                StructureCatalog.name("tree"),
-                StructureCatalog.name("avl-tree")));
+                "tree", "avl-tree"));
+        localizeChoiceCells(structureSelector, StructureCatalog::name);
+        localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             if (current == null || current.intValue() < 0) {
                 return;
@@ -1311,7 +1312,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
                 (observable, previous, current) -> notifyAlgorithmSelection());
         I18N.localeProperty().addListener((observable, previous, current) -> {
-            refreshAlgorithmSelector();
             refreshOperationLabels();
             Platform.runLater(this::syncStructureSelectorSelection);
         });

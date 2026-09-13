@@ -480,6 +480,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         return runtimeValueType;
     }
 
+    @Override public boolean hasValues() { return linkedList.size() > 0; }
+
     @Override
     public List<Class<?>> supportedValueTypes() {
         return ValueAdapters.supportedTypes();
@@ -496,7 +498,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         runtimeValueType = valueType;
         valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
         clearVisualSelection();
-        seed();
+        clearWithoutRuntime();
         invalidateExecutionForStructureChange();
         if (controlPanel != null) {
             renderStructureState(currentState());

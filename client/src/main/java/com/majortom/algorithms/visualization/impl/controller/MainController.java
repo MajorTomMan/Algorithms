@@ -130,7 +130,9 @@ public class MainController implements Initializable {
     @FXML
     private Button practiceWorkspaceBtn;
     @FXML
-    private HBox valueTypeBox;
+    private VBox valueTypeBox;
+    @FXML
+    private VBox structureKindHost;
     @FXML
     private Label valueTypeLabel;
     @FXML
@@ -602,7 +604,7 @@ public class MainController implements Initializable {
                 I18N.localeProperty()));
         stepForwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.forward"));
-        I18N.localeProperty().addListener((observable, oldValue, newValue) -> {
+        localeListener = (observable, oldValue, newValue) -> {
             if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
                 fontSettingsPopup.hide();
             }
@@ -618,10 +620,13 @@ public class MainController implements Initializable {
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
                 selectionVisible = true;
             }
-            if (!selectionVisible) {
+            if (selectionVisible && selectionPresentation != null) {
+                selectionPresentation.run();
+            } else if (!selectionVisible) {
                 clearStructureSelection();
             }
-        });
+        };
+        I18N.localeProperty().addListener(new javafx.beans.value.WeakChangeListener<>(localeListener));
         refreshPauseText();
     }
 
@@ -907,6 +912,9 @@ public class MainController implements Initializable {
         return String.format(Locale.ROOT, "%.2f px", size);
     }
 
+    private Runnable selectionPresentation;
+    private javafx.beans.value.ChangeListener<Locale> localeListener;
+
     private void setupValueTypeSelectors() {
         configureValueTypeSelector(valueTypeSelector);
         configureValueTypeSelector(hashValueTypeSelector);
@@ -917,6 +925,12 @@ public class MainController implements Initializable {
             }
             if (!newValue.available()) {
                 appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
+                refreshValueTypeSelectors();
+                return;
+            }
+            if (newValue.type().equals(selectedValueType(activeDefinition.id()))) return;
+            if (!isStructurePageVisible() || currentSubController.isRunning()
+                    || structureSnapshotPreviewActive || !confirmValueTypeChange(newValue.type())) {
                 refreshValueTypeSelectors();
                 return;
             }
@@ -961,10 +975,10 @@ public class MainController implements Initializable {
                     return;
                 }
                 if (item.available()) {
-                    setText(item.type());
+                    setText(valueTypeDisplayName(item.type()));
                     setDisable(false);
                 } else {
-                    setText(item.type() + " · " + I18N.text("label.value_type.unavailable"));
+                    setText(valueTypeDisplayName(item.type()) + " · " + I18N.text("label.value_type.unavailable"));
                     setDisable(true);
                 }
             }
@@ -994,9 +1008,16 @@ public class MainController implements Initializable {
                 return;
             }
 
-            if (!valueTypeLabel.textProperty().isBound()) {
-                valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
-            }
+            valueTypeLabel.textProperty().unbind();
+            String typeLabelKey = switch (moduleId) {
+                case "tree" -> "label.value_type.node";
+                case "graph" -> "label.value_type.vertex";
+                default -> "label.value_type.element";
+            };
+            valueTypeLabel.setText(I18N.text(typeLabelKey));
+            valueTypeSelector.setDisable("string".equals(moduleId) || !isStructurePageVisible()
+                    || structureSnapshotPreviewActive
+                    || (currentSubController != null && currentSubController.isRunning()));
             List<String> available = availableValueTypes(moduleId);
             String selected = selectedValueTypes.get(moduleId);
             if (selected == null || !available.contains(selected)) {
@@ -1014,6 +1035,25 @@ public class MainController implements Initializable {
         } finally {
             updatingValueTypeSelectors = false;
         }
+    }
+
+    private String valueTypeDisplayName(String type) {
+        return I18N.text("label.value_type." + type);
+    }
+
+    private boolean confirmValueTypeChange(String nextType) {
+        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues()) return true;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        if (rootPane.getScene() != null) alert.initOwner(rootPane.getScene().getWindow());
+        alert.setTitle(I18N.text("dialog.value_type.title"));
+        alert.setHeaderText(I18N.text("dialog.value_type.header", valueTypeDisplayName(nextType)));
+        alert.setContentText(I18N.text("dialog.value_type.body"));
+        ButtonType change = new ButtonType(I18N.text("dialog.value_type.confirm"),
+                javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType(I18N.text("dialog.value_type.cancel"),
+                javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(change, cancel);
+        return alert.showAndWait().orElse(cancel) == change;
     }
 
     private void refreshHashTableTypeSelectors() {
@@ -1072,6 +1112,9 @@ public class MainController implements Initializable {
             return;
         }
         configureRuntimeValueType(activeDefinition.id(), currentSubController);
+        refreshAlgorithmInputSource();
+        refreshWorkspaceContext();
+        refreshStructureSummary();
         rebuildAlgorithmMenu();
         updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         clearAlgorithmSelection();
@@ -1149,12 +1192,7 @@ public class MainController implements Initializable {
     }
 
     private String familyName(String moduleId) {
-        return moduleDefinitions.stream()
-                .filter(definition -> definition.id().equals(moduleId))
-                .map(WorkbenchModuleDefinition::name)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown Workbench module: " + moduleId))
-                .toUpperCase(Locale.ROOT);
+        return I18N.text("label.structure." + moduleId).toUpperCase(Locale.ROOT);
     }
 
     private String familyIndex(String moduleId) {
@@ -1806,14 +1844,29 @@ public class MainController implements Initializable {
     }
 
     private void switchToModule(WorkbenchModuleDefinition definition) {
+        // Prepare without touching the active shell or binding its shared buttons.
+        // In particular, restoring a value type runs before FXML initialization.
+        BaseController<?> nextController = null;
+        HBox preparedControls = new HBox();
+        try {
+            nextController = definition.controllerFactory().get();
+            configureRuntimeValueType(definition.id(), nextController);
+            nextController.setupCustomControls(preparedControls);
+        } catch (RuntimeException failure) {
+            if (nextController != null) nextController.dispatchVisualizerDetached();
+            Throwable cause = failure;
+            while (cause.getCause() != null) cause = cause.getCause();
+            appendSystemLog(I18N.text("message.error.module_load",
+                    familyName(definition.id()), cause.toString()));
+            return;
+        }
+
         activeDefinition = definition;
         selectedAlgorithmId = null;
         structureSnapshotPreviewActive = false;
         clearStructureSelection();
         refreshValueTypeSelectors();
-        BaseController<?> nextController = definition.controllerFactory().get();
-        configureRuntimeValueType(definition.id(), nextController);
-        loadSubController(nextController);
+        loadSubController(nextController, preparedControls);
         rebuildAlgorithmMenu();
         syncAlgorithmSelectionFromController();
         updateAlgorithmWorkspaceAvailability(definition.id());
@@ -1844,6 +1897,9 @@ public class MainController implements Initializable {
         if (structureControlsHost != null) {
             structureControlsHost.setDisable(running || structureSnapshotPreviewActive);
         }
+        if (valueTypeBox != null) valueTypeBox.setDisable(running || structureSnapshotPreviewActive);
+        if (structureKindHost != null) structureKindHost.setDisable(running || structureSnapshotPreviewActive);
+        refreshValueTypeSelectors();
         refreshSnapshotPreviewPresentation();
     }
 
@@ -1956,10 +2012,11 @@ public class MainController implements Initializable {
         support.setRuntimeValueType(valueType);
     }
 
-    private void loadSubController(BaseController<?> newController) {
+    private void loadSubController(BaseController<?> newController, HBox preparedControls) {
         detachCurrentController();
         visualizationContainer.getChildren().clear();
         structureControlsHost.getChildren().clear();
+        structureKindHost.getChildren().clear();
         algorithmControlsHost.getChildren().clear();
         customControlBox.getChildren().clear();
 
@@ -1994,7 +2051,9 @@ public class MainController implements Initializable {
             refreshExecutionPresentation();
             refreshTopContext();
         });
-        currentSubController.setupCustomControls(customControlBox);
+        List<Node> preparedNodes = List.copyOf(preparedControls.getChildren());
+        preparedControls.getChildren().clear();
+        customControlBox.getChildren().setAll(preparedNodes);
         distributeModuleControls();
         wireAlgorithmSelection();
         wireStructureSelection();
@@ -2067,8 +2126,10 @@ public class MainController implements Initializable {
         if (!target.getChildren().contains(visualizer)) {
             target.getChildren().add(0, visualizer);
         }
-        visualizer.prefWidthProperty().bind(target.widthProperty());
-        visualizer.prefHeightProperty().bind(target.heightProperty());
+        // Parent allocates the viewport; content must not feed its previous size back into HBox.
+        visualizer.setMinSize(0, 0);
+        visualizer.setPrefSize(0, 0);
+        visualizer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         if (structurePreviewEmpty != null) {
             structurePreviewEmpty.setVisible(!structurePage);
             structurePreviewEmpty.setManaged(!structurePage);
@@ -2105,6 +2166,10 @@ public class MainController implements Initializable {
             VBox target;
             if (isAlgorithmSection(section)) {
                 target = algorithmControlsHost;
+            } else if (structureKindHost.getChildren().isEmpty()
+                    && section.getStyleClass().contains("structure-section")
+                    && !section.getStyleClass().contains("operation-section")) {
+                target = structureKindHost;
             } else {
                 target = structureControlsHost;
             }
@@ -2112,6 +2177,7 @@ public class MainController implements Initializable {
         }
         stretchControls(structureControlsHost);
         stretchControls(algorithmControlsHost);
+        stretchControls(structureKindHost);
     }
 
     private boolean isAlgorithmSection(Node section) {
@@ -2132,7 +2198,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null) {
             return;
         }
-        String moduleName = activeDefinition.name();
+        String moduleName = familyName(activeDefinition.id());
         structureWorkspaceSubtitleLabel.setText(moduleName);
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
         refreshSnapshotCards();
@@ -2146,7 +2212,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null || snapshotCards == null) {
             return;
         }
-        String moduleName = activeDefinition.name();
+        String moduleName = familyName(activeDefinition.id());
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
         if (support == null) {
             snapshotCards.getChildren().clear();
@@ -2601,7 +2667,7 @@ public class MainController implements Initializable {
             }
         }
         if (current) {
-            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot"));
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot") + "\n" + inputValueTypeText());
             return;
         }
         StructureSnapshot<?> selected = structureSnapshotStore.snapshots(activeDefinition.id()).stream()
@@ -2612,7 +2678,14 @@ public class MainController implements Initializable {
         } else {
             detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId) + "\n" + formatSnapshotTime(selected);
         }
-        algorithmInputSourceLabel.setText(detail);
+        algorithmInputSourceLabel.setText(detail + "\n" + inputValueTypeText());
+    }
+
+    private String inputValueTypeText() {
+        if (currentSubController instanceof RuntimeValueTypeSupport support) {
+            return I18N.text("label.value_type.input", valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
+        }
+        return "";
     }
 
     private String inputSourceButtonText(String key, boolean selected) {
@@ -2862,7 +2935,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null) {
             family = I18N.text("label.menu.title").toUpperCase(Locale.ROOT);
         } else {
-            family = activeDefinition.name().toUpperCase(Locale.ROOT);
+            family = familyName(activeDefinition.id()).toUpperCase(Locale.ROOT);
         }
         boolean structureMode = isStructurePageVisible();
         String suffix;
@@ -3074,191 +3147,86 @@ public class MainController implements Initializable {
     }
 
     private void showTreeSelection(TreeController.NodeSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.node"),
-                "#" + selection.id(),
-                selection.value().text(),
-                I18N.text("label.workspace.selection.node.hint"));
-        if (structureInspectorBody != null) {
-            String parent;
-            if (selection.parentId() == null) {
-                parent = I18N.text("label.workspace.selection.none");
-            } else {
-                parent = "#" + selection.parentId();
-            }
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.tree.detail",
-                    selection.id(),
-                    selection.value().text(),
-                    parent,
-                    selection.childCount(),
-                    selection.depth()));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
+                selection.value().text(), I18N.text("label.workspace.selection.node.hint"),
+                I18N.text("label.workspace.selection.tree.detail", selection.id(), selection.value().text(), nodeIdText(selection.parentId()), selection.childCount(), selection.depth()));
+        selectionPresentation.run();
     }
 
     private void showArraySelection(ArrayController.IndexSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.cell"),
-                "[" + selection.index() + "]",
-                selection.value().text(),
-                I18N.text("label.workspace.selection.array.hint"));
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.array.detail",
-                    selection.index(),
-                    selection.value().text(),
-                    selection.size()));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.cell"), "[" + selection.index() + "]",
+                selection.value().text(), I18N.text("label.workspace.selection.array.hint"),
+                I18N.text("label.workspace.selection.array.detail", selection.index(), selection.value().text(), selection.size()));
+        selectionPresentation.run();
     }
 
     private void showStringSelection(StringController.IndexSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.character"),
-                "[" + selection.index() + "]",
-                Character.toString(selection.value()),
-                I18N.text("label.workspace.selection.string.hint"));
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.string.detail",
-                    selection.index(),
-                    Character.toString(selection.value()),
-                    selection.length()));
-        }
-    }
-
-    private void showGraphSelection(GraphController.Selection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        if (selection instanceof GraphController.NodeSelection node) {
-            showStructureSelectionOverlay(
-                    I18N.text("label.workspace.selection.node"),
-                    "#" + node.id(),
-                    node.value().text(),
-                    I18N.text("label.workspace.selection.graph.node.hint"));
-            if (structureInspectorBody != null) {
-                structureInspectorBody.setText(I18N.text(
-                        "label.workspace.selection.graph.node.detail",
-                        node.id(),
-                        node.value().text(),
-                        node.degree()));
-            }
-            return;
-        }
-        GraphController.EdgeSelection edge = (GraphController.EdgeSelection) selection;
-        String relation;
-        if (edge.directed()) {
-            relation = " → ";
-        } else {
-            relation = " — ";
-        }
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.edge"),
-                "E#" + edge.id(),
-                edge.fromValue().text() + relation + edge.toValue().text(),
-                I18N.text("label.workspace.selection.graph.edge.hint"));
-        if (structureInspectorBody != null) {
-            String directed;
-            if (edge.directed()) {
-                directed = I18N.text("label.workspace.selection.yes");
-            } else {
-                directed = I18N.text("label.workspace.selection.no");
-            }
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.graph.edge.detail",
-                    edge.id(),
-                    edge.fromValue().text(),
-                    edge.toValue().text(),
-                    directed));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.character"), "[" + selection.index() + "]",
+                Character.toString(selection.value()), I18N.text("label.workspace.selection.string.hint"),
+                I18N.text("label.workspace.selection.string.detail", selection.index(), Character.toString(selection.value()), selection.length()));
+        selectionPresentation.run();
     }
 
     private void showLinkedSelection(LinkedListController.NodeSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.node"),
-                "#" + selection.id(),
-                selection.value().text(),
-                I18N.text("label.workspace.selection.linked.hint"));
-        if (structureInspectorBody != null) {
-            String previousText;
-            if (selection.previousId() == null) {
-                previousText = I18N.text("label.workspace.selection.none");
-            } else {
-                previousText = "#" + selection.previousId();
-            }
-            String nextText;
-            if (selection.nextId() == null) {
-                nextText = I18N.text("label.workspace.selection.none");
-            } else {
-                nextText = "#" + selection.nextId();
-            }
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.linked.detail",
-                    selection.id(),
-                    selection.value().text(),
-                    selection.index(),
-                    previousText,
-                    nextText,
-                    selection.size()));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
+                selection.value().text(), I18N.text("label.workspace.selection.linked.hint"),
+                I18N.text("label.workspace.selection.linked.detail", selection.id(), selection.value().text(), selection.index(), nodeIdText(selection.previousId()), nodeIdText(selection.nextId()), selection.size()));
+        selectionPresentation.run();
     }
 
     private void showLinearSelection(LinearStructureController.ItemSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        String role = linearRoleText(selection.role());
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.item"),
-                "[" + selection.index() + "]",
-                selection.value().text(),
-                role);
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.linear.detail",
-                    selection.index(),
-                    selection.value().text(),
-                    role,
-                    selection.size()));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.item"), "[" + selection.index() + "]",
+                selection.value().text(), linearRoleText(selection.role()),
+                I18N.text("label.workspace.selection.linear.detail", selection.index(), selection.value().text(), linearRoleText(selection.role()), selection.size()));
+        selectionPresentation.run();
     }
 
     private void showMazeSelection(MazeController.CellSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
-        String state = mazeCellStateText(selection.state());
-        showStructureSelectionOverlay(
-                I18N.text("label.workspace.selection.cell"),
-                "[" + selection.row() + "," + selection.column() + "]",
-                state,
-                I18N.text("label.workspace.selection.maze.hint"));
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text(
-                    "label.workspace.selection.maze.detail",
-                    selection.row(),
-                    selection.column(),
-                    state));
-        }
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.cell"), "[" + selection.row() + "," + selection.column() + "]",
+                mazeCellStateText(selection.state()), I18N.text("label.workspace.selection.maze.hint"),
+                I18N.text("label.workspace.selection.maze.detail", selection.row(), selection.column(), mazeCellStateText(selection.state())));
+        selectionPresentation.run();
+    }
+
+    private void showGraphSelection(GraphController.Selection selection) {
+        if (selection == null) { clearStructureSelection(); return; }
+        selectionPresentation = () -> {
+            if (selection instanceof GraphController.NodeSelection node) {
+                presentSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
+                        node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
+                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(), node.degree()));
+            } else if (selection instanceof GraphController.EdgeSelection edge) {
+                presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
+                        edge.fromValue().text() + (edge.directed() ? " → " : " — ") + edge.toValue().text(),
+                        I18N.text("label.workspace.selection.graph.edge.hint"),
+                        I18N.text("label.workspace.selection.graph.edge.detail", edge.id(),
+                                edge.fromValue().text(), edge.toValue().text(),
+                                I18N.text(edge.directed() ? "label.workspace.selection.yes" : "label.workspace.selection.no")));
+            }
+        };
+        selectionPresentation.run();
+    }
+
+    private String nodeIdText(Long id) {
+        return id == null ? I18N.text("label.workspace.selection.none") : "#" + id;
+    }
+
+    /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */
+    private void presentSelection(String title, String id, String value, String hint, String detail) {
+        showStructureSelectionOverlay(title, id, value, hint);
+        if (structureInspectorBody != null) structureInspectorBody.setText(detail);
     }
 
     private String linearRoleText(String role) {
@@ -3332,6 +3300,7 @@ public class MainController implements Initializable {
     }
 
     private void clearStructureSelection() {
+        selectionPresentation = null;
         if (structureSelectionOverlay != null) {
             structureSelectionOverlay.setManaged(false);
             structureSelectionOverlay.setVisible(false);
@@ -3399,13 +3368,13 @@ public class MainController implements Initializable {
         }
         double left;
         if (currentStepVisible) {
-            left = 254.0d;
+            left = currentStepOverlay.getWidth() + 24.0d;
         } else {
             left = 0.0d;
         }
         double right;
         if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
-            right = 254.0d;
+            right = algorithmSelectionOverlay.getWidth() + 24.0d;
         } else {
             right = 0.0d;
         }

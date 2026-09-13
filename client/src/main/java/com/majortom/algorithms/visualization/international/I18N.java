@@ -70,7 +70,7 @@ public class I18N {
             if (args == null || args.length == 0) {
                 return pattern;
             }
-            return String.format(pattern, args);
+            return String.format(getLocale(), pattern, args);
         } catch (MissingResourceException e) {
             return key;
         }
