@@ -1,5 +1,6 @@
-package com.majortom.algorithms.algorithm.string;
+package com.majortom.algorithms.algorithm.string.impl;
 
+import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.Observations;

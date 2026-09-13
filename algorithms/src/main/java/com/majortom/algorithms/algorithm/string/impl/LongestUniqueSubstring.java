@@ -1,5 +1,7 @@
-package com.majortom.algorithms.algorithm.string;
+package com.majortom.algorithms.algorithm.string.impl;
 
+import com.majortom.algorithms.algorithm.string.LongestSubstringAlgorithm;
+import com.majortom.algorithms.algorithm.string.LongestSubstringAlgorithm.SubstringRange;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.runtime.Observations;

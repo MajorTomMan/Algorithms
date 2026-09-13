@@ -1,6 +1,6 @@
 package com.majortom.algorithms.leetcode.algo.string;
 
-import com.majortom.algorithms.algorithm.string.KmpSearch;
+import com.majortom.algorithms.algorithm.string.impl.KmpSearch;
 
 public class KMP算法 {
     public static void main(String[] args) {

@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.algorithm.array.sort.insertion.IntegerInsertionSort;
-import com.majortom.algorithms.algorithm.array.sort.insertion.StringInsertionSort;
+import com.majortom.algorithms.algorithm.array.sort.impl.IntegerInsertionSort;
+import com.majortom.algorithms.algorithm.array.sort.impl.StringInsertionSort;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;

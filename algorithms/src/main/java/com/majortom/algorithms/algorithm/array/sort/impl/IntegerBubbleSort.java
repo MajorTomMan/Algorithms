@@ -1,5 +1,6 @@
-package com.majortom.algorithms.algorithm.array.sort;
+package com.majortom.algorithms.algorithm.array.sort.impl;
 
+import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.array.ArrayStructure;

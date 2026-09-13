@@ -1,4 +1,4 @@
-package com.majortom.algorithms.algorithm.array.sort.insertion;
+package com.majortom.algorithms.algorithm.array.sort.impl;
 
 import com.majortom.algorithms.algorithm.array.sort.Sort;
 import com.majortom.algorithms.core.annotation.Algorithm;
