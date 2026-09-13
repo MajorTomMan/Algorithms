@@ -1,4 +1,4 @@
-package com.majortom.algorithms.algorithm.maze;
+package com.majortom.algorithms.algorithm.maze.generator;
 
 
 import com.majortom.algorithms.structure.maze.MazeDimensions;

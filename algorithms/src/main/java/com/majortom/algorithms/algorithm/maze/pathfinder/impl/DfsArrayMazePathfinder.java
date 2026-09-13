@@ -1,7 +1,9 @@
-package com.majortom.algorithms.algorithm.maze;
+package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
 
 
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
+import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
@@ -14,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Recursive depth-first pathfinder with factual visit/examine/backtrack observations. */
-@Algorithm(id = "maze-pathfinder-dfs", name = "DFS Search", module = "maze", type = Boolean.class)
+@Algorithm(id = "maze-pathfinder-dfs", name = "深度优先搜索", module = "maze", type = Boolean.class)
 public final class DfsArrayMazePathfinder implements ArrayMazePathfinder {
     @Override
     public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {

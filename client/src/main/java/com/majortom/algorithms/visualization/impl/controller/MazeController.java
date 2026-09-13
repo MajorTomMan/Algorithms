@@ -1,8 +1,8 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
-import com.majortom.algorithms.algorithm.maze.GraphMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.generator.ArrayMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.generator.GraphMazeGenerator;
+import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;

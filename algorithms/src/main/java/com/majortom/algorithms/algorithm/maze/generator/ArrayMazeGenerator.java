@@ -1,4 +1,4 @@
-package com.majortom.algorithms.algorithm.maze;
+package com.majortom.algorithms.algorithm.maze.generator;
 
 
 

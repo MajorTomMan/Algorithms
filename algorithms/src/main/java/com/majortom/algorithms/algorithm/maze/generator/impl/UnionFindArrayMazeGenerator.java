@@ -1,8 +1,11 @@
-package com.majortom.algorithms.algorithm.maze;
+package com.majortom.algorithms.algorithm.maze.generator.impl;
 
 
 
 
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
+import com.majortom.algorithms.algorithm.maze.generator.ArrayMazeGenerator;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.GridPoint;

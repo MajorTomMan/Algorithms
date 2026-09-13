@@ -1,7 +1,9 @@
-package com.majortom.algorithms.algorithm.maze;
+package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
 
 
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
+import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
