@@ -14,7 +14,7 @@ import java.util.ArrayDeque;
 import java.util.Random;
 
 /** Breadth-first frontier perfect-maze generator. */
-@Algorithm(id = "maze-generator-bfs", name = "Randomized BFS", module = "maze", type = Boolean.class)
+@Algorithm(id = "maze-generator-bfs", name = "随机广度优先", module = "maze", type = Boolean.class)
 public final class BfsArrayMazeGenerator implements ArrayMazeGenerator {
     @Override
     public GridMaze generate(MazeDimensions dimensions, long seed) {
