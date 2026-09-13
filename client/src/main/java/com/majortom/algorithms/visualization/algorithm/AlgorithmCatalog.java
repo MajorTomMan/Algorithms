@@ -5,9 +5,12 @@ import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.algorithm.graph.GraphAlgorithm;
 import com.majortom.algorithms.algorithm.graph.GraphTraversal;
 import com.majortom.algorithms.algorithm.graph.WeightedGraphAlgorithm;
+import com.majortom.algorithms.algorithm.linkedlist.LinkedListAlgorithm;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeGenerator;
 import com.majortom.algorithms.algorithm.maze.ArrayMazePathfinder;
 import com.majortom.algorithms.algorithm.maze.GraphMazeGenerator;
+import com.majortom.algorithms.algorithm.queue.QueueAlgorithm;
+import com.majortom.algorithms.algorithm.stack.StackAlgorithm;
 import com.majortom.algorithms.algorithm.string.StringAlgorithm;
 import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.algorithm.tree.AvlTreeAlgorithm;
@@ -29,8 +32,10 @@ public final class AlgorithmCatalog {
     private AlgorithmCatalog() {
     }
 
-
-    /** Resolves display metadata from the discovered descriptor, never from I18N or an id map. */
+    /**
+     * Resolves display metadata from the discovered descriptor, never from I18N or
+     * an id map.
+     */
     public static String name(String algorithmId) {
         List<AlgorithmDescriptor> matches = REGISTRY.algorithms().stream()
                 .filter(descriptor -> descriptor.id().equals(algorithmId))
@@ -57,12 +62,39 @@ public final class AlgorithmCatalog {
     public static List<String> forWorkbenchModule(String moduleId, Class<?> valueType) {
         return switch (moduleId) {
             case "array" -> arraySorts(valueType);
+            case "linked-list" -> linkedListAlgorithms(valueType);
+            case "stack" -> stackAlgorithms(valueType);
+            case "queue" -> queueAlgorithms(valueType);
             case "maze" -> concat(arrayMazeGenerators(), graphMazeGenerators(), arrayMazePathfinders());
             case "tree" -> generalTreeAlgorithms(valueType);
             case "graph" -> basicGraphAlgorithms(valueType);
             case "string" -> stringAlgorithms();
             default -> List.of();
         };
+    }
+
+    public static List<String> stackAlgorithms() {
+        return stackAlgorithms(Integer.class);
+    }
+
+    public static List<String> stackAlgorithms(Class<?> valueType) {
+        return ids("stack", valueType, StackAlgorithm.class);
+    }
+
+    public static List<String> queueAlgorithms() {
+        return queueAlgorithms(Integer.class);
+    }
+
+    public static List<String> queueAlgorithms(Class<?> valueType) {
+        return ids("queue", valueType, QueueAlgorithm.class);
+    }
+
+    public static List<String> linkedListAlgorithms() {
+        return linkedListAlgorithms(Integer.class);
+    }
+
+    public static List<String> linkedListAlgorithms(Class<?> valueType) {
+        return ids("linked-list", valueType, LinkedListAlgorithm.class);
     }
 
     public static List<String> arraySorts() {

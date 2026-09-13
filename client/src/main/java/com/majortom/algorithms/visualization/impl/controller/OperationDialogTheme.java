@@ -16,7 +16,12 @@ final class OperationDialogTheme {
     }
 
     static void apply(Dialog<?> dialog, double preferredWidth) {
-        DialogPane pane = dialog.getDialogPane();
+        DialogPane pane = dialog.getDialogPane(
+
+
+
+            
+        );
         URL theme = OperationDialogTheme.class.getResource(THEME_PATH);
         if (theme != null && !pane.getStylesheets().contains(theme.toExternalForm())) {
             pane.getStylesheets().add(theme.toExternalForm());

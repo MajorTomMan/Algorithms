@@ -26,11 +26,15 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
-/** Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7. */
+/**
+ * Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7.
+ */
 public final class LinearStructureController extends BaseModuleController<LinearStructureViewState>
         implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
 
-    private enum Kind { STACK, QUEUE }
+    private enum Kind {
+        STACK, QUEUE
+    }
 
     private final Kind kind;
     private final String moduleId;
@@ -41,17 +45,27 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
-    private Consumer<ItemSelection> selectionListener = ignored -> { };
+    private Consumer<ItemSelection> selectionListener = ignored -> {
+    };
 
-    @FXML private Label typeLabel;
-    @FXML private Label structureLabel;
-    @FXML private ComboBox<String> structureSelector;
-    @FXML private Label operationsLabel;
-    @FXML private TextField valueField;
-    @FXML private TextField indexField;
-    @FXML private Button primaryBtn;
-    @FXML private Button secondaryBtn;
-    @FXML private Button quaternaryBtn;
+    @FXML
+    private Label typeLabel;
+    @FXML
+    private Label structureLabel;
+    @FXML
+    private ComboBox<String> structureSelector;
+    @FXML
+    private Label operationsLabel;
+    @FXML
+    private TextField valueField;
+    @FXML
+    private TextField indexField;
+    @FXML
+    private Button primaryBtn;
+    @FXML
+    private Button secondaryBtn;
+    @FXML
+    private Button quaternaryBtn;
 
     @SuppressWarnings("unchecked")
     private LinearStructureController(Kind kind, String moduleId) {
@@ -85,8 +99,10 @@ public final class LinearStructureController extends BaseModuleController<Linear
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         configureControls();
-        if (kind == Kind.STACK) stackVisualizer().setSelectionListener(this::handleVisualSelection);
-        else queueVisualizer().setSelectionListener(this::handleVisualSelection);
+        if (kind == Kind.STACK)
+            stackVisualizer().setSelectionListener(this::handleVisualSelection);
+        else
+            queueVisualizer().setSelectionListener(this::handleVisualSelection);
     }
 
     @FXML
@@ -351,7 +367,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     public void setSelectionListener(Consumer<ItemSelection> listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {
+            };
         } else {
             selectionListener = listener;
         }
@@ -376,7 +393,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
         Object value = current.get(index);
         valueField.setText(valueAdapter.format(value));
-        selectionListener.accept(new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
+        selectionListener.accept(
+                new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
     }
 
     private void handleAlgorithmSelection(int index) {
@@ -437,8 +455,10 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void clearVisualSelection() {
         algorithmSelectedIndex = -1;
-        if (kind == Kind.STACK) stackVisualizer().clearSelection();
-        else queueVisualizer().clearSelection();
+        if (kind == Kind.STACK)
+            stackVisualizer().clearSelection();
+        else
+            queueVisualizer().clearSelection();
         selectionListener.accept(null);
     }
 
@@ -462,7 +482,10 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return runtimeValueType;
     }
 
-    @Override public boolean hasValues() { return linkedList.size() > 0; }
+    @Override
+    public boolean hasValues() {
+        return linkedList.size() > 0;
+    }
 
     @Override
     public List<Class<?>> supportedValueTypes() {
