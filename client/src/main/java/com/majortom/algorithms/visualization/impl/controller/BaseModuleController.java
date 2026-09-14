@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.layout.WorkbenchFormLayout;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -48,6 +49,7 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
             controlPanel = loader.load();
             installDataTools();
             WorkbenchTheme.apply(controlPanel);
+            WorkbenchFormLayout.install(controlPanel);
         } catch (IOException exception) {
             throw new IllegalStateException("Module control panel load failed: " + fxmlPath, exception);
         }
