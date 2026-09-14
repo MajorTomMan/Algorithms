@@ -361,6 +361,57 @@ public abstract class BaseController<S> implements Initializable {
         return rewound;
     }
 
+    /** Moves the replay cursor to the first available frame and leaves playback paused. */
+    public final boolean jumpToStart() {
+        if (!hasExecutionData() || running.get() || replayController == null) {
+            return false;
+        }
+        stopReplay();
+        boolean moved = seekReplayFrame(0);
+        paused.set(true);
+        if (moved) {
+            syncTimelineSlider(0, replayController.frameCount());
+        }
+        refreshStatsDisplay();
+        return moved;
+    }
+
+    /** Moves the replay cursor to the last available frame and leaves playback paused. */
+    public final boolean jumpToEnd() {
+        if (!hasExecutionData() || running.get() || replayController == null) {
+            return false;
+        }
+        stopReplay();
+        int last = Math.max(0, replayController.frameCount() - 1);
+        boolean moved = seekReplayFrame(last);
+        paused.set(true);
+        if (moved) {
+            syncTimelineSlider(last, replayController.frameCount());
+        }
+        refreshStatsDisplay();
+        return moved;
+    }
+
+    /**
+     * Requests a graceful end of the active execution while preserving the
+     * events already produced. The normal completion path converts them into
+     * a replayable timeline.
+     */
+    public final void endAlgorithm() {
+        stopReplay();
+        if (currentSession != null && running.get()) {
+            currentSession.close();
+        }
+    }
+
+    /** Clears the current execution/replay session without resetting editable structure data. */
+    public final void closeExecution() {
+        stopAlgorithm();
+        clearExecutionState();
+        restoreStructureState();
+        refreshStatsDisplay();
+    }
+
     public final void seekTimeline(double progress) {
         if (!hasExecutionData()) {
             return;

@@ -1,0 +1,154 @@
+/* Central Workbench shell layout. Loaded last so shell policy wins over legacy per-tier fixes. */
+
+/* Header widths/heights are owned by WorkbenchUiFramework, not fixed CSS tiers. */
+.root-pane .lab-top-bar {
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+    -fx-max-height: -1;
+}
+.root-pane .brand-zone,
+.root-pane .lab-mode-switch,
+.root-pane .top-context-zone,
+.root-pane .family-rail,
+.root-pane .structure-control-panel,
+.root-pane .algorithm-control-panel,
+.root-pane .inspector-panel {
+    -fx-min-width: -1;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+}
+
+/* Inspector tabs remain readable; the framework computes tab widths from actual localized text. */
+.root-pane .inspector-tabs {
+    -fx-tab-min-height: 2.8em;
+}
+.root-pane .inspector-tabs .tab {
+    -fx-padding: 0 0.9em;
+}
+
+/* Execution toolbar: semantic groups, font-aware controls, flexible timeline. */
+.root-pane .timeline-compact-row,
+.root-pane.font-size-large .timeline-compact-row,
+.root-pane.font-size-xlarge .timeline-compact-row,
+.root-pane:compact-layout .timeline-compact-row,
+.root-pane:narrow-layout .timeline-compact-row,
+.root-pane.font-size-large:compact-layout .timeline-compact-row,
+.root-pane.font-size-xlarge:compact-layout .timeline-compact-row,
+.root-pane.font-size-large:narrow-layout .timeline-compact-row,
+.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row {
+    -fx-padding: 9px 18px;
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+    -fx-max-height: Infinity;
+}
+
+.root-pane .timeline-compact-row .playback-button,
+.root-pane .timeline-compact-row .playback-primary,
+.root-pane.font-size-large .timeline-compact-row .playback-button,
+.root-pane.font-size-xlarge .timeline-compact-row .playback-button,
+.root-pane.font-size-large .timeline-compact-row .playback-primary,
+.root-pane.font-size-xlarge .timeline-compact-row .playback-primary,
+.root-pane:compact-layout .timeline-compact-row .playback-button,
+.root-pane:narrow-layout .timeline-compact-row .playback-button,
+.root-pane:compact-layout .timeline-compact-row .playback-primary,
+.root-pane:narrow-layout .timeline-compact-row .playback-primary {
+    -fx-min-width: 4.8em;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+    -fx-min-height: 2.65em;
+    -fx-pref-height: 2.65em;
+    -fx-max-height: 2.65em;
+    -fx-padding: 0 1.0em;
+}
+
+.root-pane .timeline-compact-row .playback-icon-button,
+.root-pane.font-size-large .timeline-compact-row .playback-icon-button,
+.root-pane.font-size-xlarge .timeline-compact-row .playback-icon-button,
+.root-pane:compact-layout .timeline-compact-row .playback-icon-button,
+.root-pane:narrow-layout .timeline-compact-row .playback-icon-button {
+    -fx-min-width: 2.65em;
+    -fx-pref-width: 2.65em;
+    -fx-max-width: 2.65em;
+    -fx-padding: 0;
+    -fx-font-size: 1em;
+}
+
+.root-pane .timeline-compact-row .playback-primary {
+    -fx-background-color: -ui-red;
+    -fx-border-color: -ui-red;
+    -fx-text-fill: -ui-white;
+}
+.root-pane .timeline-compact-row .playback-end-button {
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-300;
+    -fx-text-fill: -ui-black;
+}
+.root-pane .timeline-compact-row .playback-close-button {
+    -fx-background-color: -ui-gray-900;
+    -fx-border-color: -ui-gray-900;
+    -fx-text-fill: -ui-white;
+}
+
+.root-pane .playback-timeline-area {
+    -fx-min-width: 180px;
+    -fx-pref-width: 420px;
+    -fx-max-width: Infinity;
+}
+.root-pane .timeline-compact-track {
+    -fx-min-width: 120px;
+    -fx-pref-width: 320px;
+    -fx-max-width: Infinity;
+}
+.root-pane .timeline-position-compact,
+.root-pane.font-size-large .timeline-position-compact,
+.root-pane.font-size-xlarge .timeline-position-compact,
+.root-pane:compact-layout .timeline-position-compact,
+.root-pane:narrow-layout .timeline-position-compact {
+    -fx-min-width: 8.5em;
+    -fx-pref-width: 8.5em;
+    -fx-max-width: 8.5em;
+}
+
+.root-pane .timeline-compact-row .speed-button,
+.root-pane.font-size-large .timeline-compact-row .speed-button,
+.root-pane.font-size-xlarge .timeline-compact-row .speed-button,
+.root-pane:compact-layout .timeline-compact-row .speed-button,
+.root-pane:narrow-layout .timeline-compact-row .speed-button {
+    -fx-min-width: 2.65em;
+    -fx-pref-width: 2.65em;
+    -fx-max-width: 2.65em;
+    -fx-min-height: 2.65em;
+    -fx-pref-height: 2.65em;
+    -fx-max-height: 2.65em;
+    -fx-padding: 0;
+}
+
+/* Timeline disclosure belongs to the timeline header, not the speed group. */
+.root-pane .timeline-header-bar {
+    -fx-padding: 6px 18px 7px 18px;
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+    -fx-background-color: -ui-white;
+    -fx-border-color: -ui-gray-200 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.root-pane .timeline-header-bar .timeline-legend {
+    -fx-padding: 0;
+}
+.root-pane .timeline-header-toggle {
+    -fx-min-width: 2.4em;
+    -fx-pref-width: 2.4em;
+    -fx-max-width: 2.4em;
+    -fx-min-height: 2.2em;
+    -fx-pref-height: 2.2em;
+    -fx-max-height: 2.2em;
+}
+
+/* Form framework owns all non-canvas data-entry geometry. */
+.root-pane .control-section,
+.root-pane .control-card,
+.root-pane .operation-section,
+.root-pane .execution-section {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+}

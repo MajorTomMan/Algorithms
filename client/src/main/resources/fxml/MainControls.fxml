@@ -7,6 +7,7 @@
 <?import java.lang.Double?>
 <?import com.majortom.algorithms.visualization.logging.LogView?>
 <?import com.majortom.algorithms.visualization.common.OverlayPane?>
+<?import com.majortom.algorithms.visualization.layout.PlaybackToolbar?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
@@ -348,8 +349,7 @@
                     </VBox>
                 </HBox>
 
-                <VBox fx:id="structureHistoryDock" minHeight="52.0" prefHeight="52.0"
-                    maxHeight="52.0" styleClass="history-dock">
+                <VBox fx:id="structureHistoryDock" styleClass="history-dock">
                     <HBox alignment="CENTER_LEFT" styleClass="history-header">
                         <Label fx:id="structureHistoryTitleLabel" text="STRUCTURE HISTORY"
                             styleClass="history-title" />
@@ -609,33 +609,45 @@
                     </VBox>
                 </HBox>
 
-                <VBox fx:id="bottomDock" minHeight="62.0" prefHeight="62.0" maxHeight="188.0"
-                    styleClass="algorithm-dock timeline-collapsed">
-                    <HBox fx:id="playbackToolbar" alignment="CENTER_LEFT" spacing="10"
-                        styleClass="timeline-compact-row">
+                <VBox fx:id="bottomDock" styleClass="algorithm-dock timeline-collapsed">
+                    <PlaybackToolbar fx:id="playbackToolbar" styleClass="timeline-compact-row">
                         <HBox alignment="CENTER_LEFT" spacing="7"
-                            styleClass="playback-control-group">
-                            <Button fx:id="stepBackwardBtn" text="|◀"
+                            styleClass="playback-control-group playback-nav-leading">
+                            <Button fx:id="jumpStartBtn" text="|◀"
                                 styleClass="playback-button playback-icon-button" />
-                            <Button fx:id="replayBtn" text="REPLAY" styleClass="playback-button" />
-                            <Button fx:id="pauseBtn" text="PAUSE" styleClass="playback-primary" />
-                            <Button fx:id="stepForwardBtn" text="STEP  ▶|"
-                                styleClass="playback-button" />
-                            <Button fx:id="resetBtn" text="✕"
-                                styleClass="playback-button playback-icon-button cancel-button" />
+                            <Button fx:id="stepBackwardBtn" text="‹"
+                                styleClass="playback-button playback-icon-button" />
                         </HBox>
-                        <StackPane HBox.hgrow="ALWAYS" minHeight="36.0" prefHeight="36.0"
-                            maxHeight="36.0" styleClass="timeline-compact-track">
-                            <Slider fx:id="timelineSlider" min="0" max="1" value="0" disable="true"
-                                maxWidth="Infinity" StackPane.alignment="CENTER" />
-                            <Pane fx:id="timelineMarkers" minHeight="32.0" prefHeight="32.0"
-                                maxHeight="32.0" pickOnBounds="false" mouseTransparent="false"
-                                StackPane.alignment="CENTER"
-                                styleClass="timeline-markers timeline-markers-compact" />
-                        </StackPane>
-                        <Label fx:id="timelinePositionLabel" text="#0000"
-                            styleClass="timeline-position-compact" />
-                        <HBox alignment="CENTER_RIGHT" spacing="7" styleClass="speed-control-group">
+                        <HBox alignment="CENTER" spacing="7"
+                            styleClass="playback-control-group playback-actions">
+                            <Button fx:id="pauseBtn" text="PAUSE" styleClass="playback-primary" />
+                            <Button fx:id="endExecutionBtn" text="END" styleClass="playback-button playback-end-button" />
+                            <Button fx:id="closeExecutionBtn" text="CLOSE"
+                                styleClass="playback-button playback-close-button" />
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="7"
+                            styleClass="playback-control-group playback-nav-trailing">
+                            <Button fx:id="stepForwardBtn" text="›"
+                                styleClass="playback-button playback-icon-button" />
+                            <Button fx:id="jumpEndBtn" text="▶|"
+                                styleClass="playback-button playback-icon-button" />
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity"
+                            styleClass="playback-timeline-area">
+                            <StackPane HBox.hgrow="ALWAYS" minHeight="36.0" prefHeight="36.0"
+                                maxHeight="36.0" styleClass="timeline-compact-track">
+                                <Slider fx:id="timelineSlider" min="0" max="1" value="0" disable="true"
+                                    maxWidth="Infinity" StackPane.alignment="CENTER" />
+                                <Pane fx:id="timelineMarkers" minHeight="32.0" prefHeight="32.0"
+                                    maxHeight="32.0" pickOnBounds="false" mouseTransparent="false"
+                                    StackPane.alignment="CENTER"
+                                    styleClass="timeline-markers timeline-markers-compact" />
+                            </StackPane>
+                            <Label fx:id="timelinePositionLabel" text="#0000"
+                                styleClass="timeline-position-compact" />
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="7"
+                            styleClass="speed-control-group playback-speed-area">
                             <Label fx:id="speedLabel" text="SPEED" styleClass="speed-label" />
                             <HBox fx:id="speedButtonBox" alignment="CENTER" spacing="0"
                                 styleClass="speed-button-group">
@@ -645,35 +657,43 @@
                                 <Button fx:id="speed8Btn" text="8×" styleClass="speed-button" />
                                 <Button fx:id="speed16Btn" text="16×" styleClass="speed-button" />
                             </HBox>
-                            <Button fx:id="timelineToggleBtn" text="▲"
-                                onAction="#toggleTimelineDetails"
-                                styleClass="timeline-toggle-button" />
                         </HBox>
+                        <!-- Legacy WorkbenchControls hooks remain available but are no longer part of the visible toolbar. -->
+                        <Button fx:id="replayBtn" managed="false" visible="false" />
+                        <Button fx:id="resetBtn" managed="false" visible="false" />
                         <Slider fx:id="delaySlider" min="0" max="500" value="50" managed="false"
                             visible="false" />
                         <Label fx:id="delayLabel" managed="false" visible="false" />
                         <Button fx:id="exportBtn" managed="false" visible="false" />
                         <Button fx:id="compareBtn" managed="false" visible="false" />
-                    </HBox>
-                    <VBox fx:id="timelineDetails" managed="false" visible="false"
-                        VBox.vgrow="ALWAYS" styleClass="timeline-details">
-                        <HBox alignment="CENTER_LEFT" styleClass="timeline-header">
-                            <Label fx:id="timelineLabel" text="EXECUTION TIMELINE"
-                                styleClass="history-title" />
-                            <HBox spacing="16" alignment="CENTER_LEFT" styleClass="timeline-legend">
-                                <Label fx:id="timelineRuntimeLegendLabel" text="◆ Runtime"
-                                    styleClass="timeline-legend-runtime" />
-                                <Label fx:id="timelineStructureLegendLabel" text="■ Structure"
-                                    styleClass="timeline-legend-structure" />
-                                <Label fx:id="timelineObservationLegendLabel" text="● Observation"
-                                    styleClass="timeline-legend-observation" />
+                    </PlaybackToolbar>
+                    <BorderPane fx:id="timelineHeaderBar" styleClass="timeline-header timeline-header-bar">
+                        <left>
+                            <HBox alignment="CENTER_LEFT" spacing="14">
+                                <Label fx:id="timelineLabel" text="EXECUTION TIMELINE"
+                                    styleClass="history-title" />
+                                <FlowPane fx:id="timelineDetails" hgap="16" vgap="4"
+                                    alignment="CENTER_LEFT" styleClass="timeline-legend">
+                                    <Label fx:id="timelineRuntimeLegendLabel" text="◆ Runtime"
+                                        styleClass="timeline-legend-runtime" />
+                                    <Label fx:id="timelineStructureLegendLabel" text="■ Structure"
+                                        styleClass="timeline-legend-structure" />
+                                    <Label fx:id="timelineObservationLegendLabel" text="● Observation"
+                                        styleClass="timeline-legend-observation" />
+                                </FlowPane>
                             </HBox>
-                            <Region HBox.hgrow="ALWAYS" />
+                        </left>
+                        <center>
                             <Label fx:id="timelineCursorLabel" text="" managed="false"
                                 visible="false" mouseTransparent="true"
                                 styleClass="timeline-current-summary" />
-                        </HBox>
-                    </VBox>
+                        </center>
+                        <right>
+                            <Button fx:id="timelineToggleBtn" text="▲"
+                                onAction="#toggleTimelineDetails"
+                                styleClass="timeline-toggle-button timeline-header-toggle" />
+                        </right>
+                    </BorderPane>
                     <HBox fx:id="timelineRow" managed="false" visible="false" />
                 </VBox>
             </VBox>

@@ -14,6 +14,8 @@ import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.module.WorkbenchModules;
 import com.majortom.algorithms.visualization.logging.LogView;
+import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
+import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
 import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
@@ -30,7 +32,6 @@ import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
-import atlantafx.base.theme.Styles;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -55,6 +56,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -70,14 +72,11 @@ import java.net.URL;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 /**
  * 单 Workbench JavaFX 外壳。
@@ -88,14 +87,8 @@ import java.util.Set;
  */
 public class MainController implements Initializable {
 
-    private static final PseudoClass COMPACT_LAYOUT = PseudoClass.getPseudoClass("compact-layout");
-    private static final PseudoClass NARROW_LAYOUT = PseudoClass.getPseudoClass("narrow-layout");
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
-    private static final double COMPACT_LAYOUT_WIDTH = 1500.0d;
-    private static final double COMPACT_LAYOUT_HEIGHT = 820.0d;
-    private static final double NARROW_LAYOUT_WIDTH = 1120.0d;
-    private static final double NARROW_LAYOUT_HEIGHT = 680.0d;
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
@@ -287,7 +280,7 @@ public class MainController implements Initializable {
     @FXML
     private VBox bottomDock;
     @FXML
-    private HBox playbackToolbar;
+    private PlaybackToolbar playbackToolbar;
     @FXML
     private HBox timelineRow;
     @FXML
@@ -347,6 +340,8 @@ public class MainController implements Initializable {
     @FXML
     private Label timelineCursorLabel;
     @FXML
+    private TabPane structureInspectorTabs;
+    @FXML
     private TabPane algorithmInspectorTabs;
     @FXML
     private Tab statisticsTab;
@@ -369,7 +364,7 @@ public class MainController implements Initializable {
     @FXML
     private Pane timelineMarkers;
     @FXML
-    private VBox timelineDetails;
+    private FlowPane timelineDetails;
     @FXML
     private Button timelineToggleBtn;
     @FXML
@@ -447,6 +442,14 @@ public class MainController implements Initializable {
     @FXML
     private Button pauseBtn;
     @FXML
+    private Button jumpStartBtn;
+    @FXML
+    private Button endExecutionBtn;
+    @FXML
+    private Button closeExecutionBtn;
+    @FXML
+    private Button jumpEndBtn;
+    @FXML
     private Button resetBtn;
     @FXML
     private Button replayBtn;
@@ -480,10 +483,7 @@ public class MainController implements Initializable {
     private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
     private String selectedAlgorithmId;
-    private final Set<Node> responsiveAddedSmall =
-            Collections.newSetFromMap(new IdentityHashMap<>());
-    private final Set<Node> responsiveAddedDense =
-            Collections.newSetFromMap(new IdentityHashMap<>());
+    private WorkbenchUiFramework uiFramework;
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
@@ -507,14 +507,15 @@ public class MainController implements Initializable {
         setupPracticeWorkspace();
         setupWorkspaceMode();
         setupPlaybackSpeedButtons();
+        setupPlaybackShellActions();
         setupTimelinePresentation();
         setupGlobalEffects();
         setupLayoutClips();
-        setupResponsiveLayout();
         setStructureHistoryExpanded(false);
         WorkbenchTheme.apply(rootPane);
         WorkbenchTheme.leftPill(structureWorkspaceBtn);
         WorkbenchTheme.rightPill(practiceWorkspaceBtn);
+        setupUiFramework();
 
         if (!moduleDefinitions.isEmpty()) {
             switchToModule(moduleDefinitions.getFirst());
@@ -598,13 +599,18 @@ public class MainController implements Initializable {
         Label logPlaceholder = new Label();
         logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
         logView.setPlaceholder(logPlaceholder);
+        stepBackwardBtn.setText("‹");
         stepBackwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.backward"));
-        stepForwardBtn.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
-                () -> I18N.text("action.execution.step.forward").toUpperCase(Locale.ROOT) + "  ▶|",
-                I18N.localeProperty()));
+        stepForwardBtn.setText("›");
         stepForwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.forward"));
+        jumpStartBtn.accessibleTextProperty().bind(
+                I18N.createStringBinding("action.execution.jump.start"));
+        jumpEndBtn.accessibleTextProperty().bind(
+                I18N.createStringBinding("action.execution.jump.end"));
+        endExecutionBtn.textProperty().bind(I18N.createStringBinding("action.execution.end"));
+        closeExecutionBtn.textProperty().bind(I18N.createStringBinding("action.execution.close"));
         localeListener = (observable, oldValue, newValue) -> {
             if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
                 fontSettingsPopup.hide();
@@ -617,6 +623,7 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
+            if (uiFramework != null) uiFramework.scheduleRefresh();
             boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
                 selectionVisible = true;
@@ -862,7 +869,7 @@ public class MainController implements Initializable {
             }
             rootPane.applyCss();
             rootPane.layout();
-            updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
+            refreshUiFramework();
             boolean timelineExpanded = timelineDetails != null && timelineDetails.isVisible();
             setTimelineExpanded(timelineExpanded);
             rootPane.requestLayout();
@@ -872,7 +879,7 @@ public class MainController implements Initializable {
                 }
                 rootPane.applyCss();
                 rootPane.layout();
-                updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
+                refreshUiFramework();
             });
             popup.hide();
         });
@@ -1513,39 +1520,17 @@ public class MainController implements Initializable {
             timelineDetails.setVisible(expanded);
         }
         if (bottomDock != null) {
-            FontSettingsService.LayoutTier tier = currentTypographyTier();
-            double collapsedHeight = 62.0d;
-            double expandedMinHeight = 96.0d;
-            double expandedPrefHeight = 104.0d;
-            if (tier == FontSettingsService.LayoutTier.LARGE) {
-                collapsedHeight = 70.0d;
-                expandedMinHeight = 110.0d;
-                expandedPrefHeight = 120.0d;
-            } else if (tier == FontSettingsService.LayoutTier.XLARGE) {
-                collapsedHeight = 78.0d;
-                expandedMinHeight = 124.0d;
-                expandedPrefHeight = 136.0d;
-            }
-            if (expanded) {
-                bottomDock.setMinHeight(expandedMinHeight);
-                bottomDock.setPrefHeight(expandedPrefHeight);
-            } else {
-                bottomDock.setMinHeight(collapsedHeight);
-                bottomDock.setPrefHeight(collapsedHeight);
-            }
             bottomDock.getStyleClass().removeAll("timeline-collapsed", "timeline-expanded");
-            if (expanded) {
-                bottomDock.getStyleClass().add("timeline-expanded");
-            } else {
-                bottomDock.getStyleClass().add("timeline-collapsed");
-            }
+            bottomDock.getStyleClass().add(expanded ? "timeline-expanded" : "timeline-collapsed");
         }
         if (timelineToggleBtn != null) {
-            if (expanded) {
-                timelineToggleBtn.setText("▼");
-            } else {
-                timelineToggleBtn.setText("▲");
-            }
+            timelineToggleBtn.setText(expanded ? "▲" : "▼");
+            timelineToggleBtn.setAccessibleText(I18N.text(expanded
+                    ? "action.execution.timeline.collapse"
+                    : "action.execution.timeline.expand"));
+        }
+        if (uiFramework != null) {
+            uiFramework.scheduleRefresh();
         }
     }
 
@@ -1556,63 +1541,23 @@ public class MainController implements Initializable {
 
     private void setStructureHistoryExpanded(boolean expanded) {
         structureHistoryExpanded = expanded;
-        if (structureHistoryDetails != null) {
+        if (structureHistoryToggleBtn != null) {
+            structureHistoryToggleBtn.setText(expanded ? "▼" : "▲");
+        }
+        if (uiFramework != null) {
+            uiFramework.setStructureHistoryExpanded(expanded);
+        } else if (structureHistoryDetails != null) {
             structureHistoryDetails.setManaged(expanded);
             structureHistoryDetails.setVisible(expanded);
-        }
-        if (structureHistoryToggleBtn != null) {
-            if (expanded) {
-                structureHistoryToggleBtn.setText("▼");
-            } else {
-                structureHistoryToggleBtn.setText("▲");
-            }
-        }
-        updateStructureHistoryGeometry();
-    }
-
-    private void updateStructureHistoryGeometry() {
-        if (structureHistoryDock == null || narrowLayout) {
-            return;
-        }
-        FontSettingsService.LayoutTier tier = currentTypographyTier();
-        double collapsedHeight = 52.0d;
-        double compactExpandedHeight = 124.0d;
-        double expandedHeight = 168.0d;
-        if (tier == FontSettingsService.LayoutTier.LARGE) {
-            collapsedHeight = 60.0d;
-            compactExpandedHeight = 146.0d;
-            expandedHeight = 190.0d;
-        } else if (tier == FontSettingsService.LayoutTier.XLARGE) {
-            collapsedHeight = 68.0d;
-            compactExpandedHeight = 168.0d;
-            expandedHeight = 214.0d;
-        }
-        double height;
-        if (structureHistoryExpanded) {
-            if (compactLayout) {
-                height = compactExpandedHeight;
-            } else {
-                height = expandedHeight;
-            }
-        } else {
-            height = collapsedHeight;
-        }
-        structureHistoryDock.setMinHeight(height);
-        structureHistoryDock.setPrefHeight(height);
-        structureHistoryDock.setMaxHeight(height);
-        structureHistoryDock.getStyleClass().removeAll("history-collapsed", "history-expanded");
-        if (structureHistoryExpanded) {
-            structureHistoryDock.getStyleClass().add("history-expanded");
-        } else {
-            structureHistoryDock.getStyleClass().add("history-collapsed");
         }
     }
 
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(
                 structureWorkspaceBtn, algorithmWorkspaceBtn, fontSettingsBtn,
-                startBtn, pauseBtn, resetBtn, replayBtn, stepBackwardBtn,
-                stepForwardBtn, exportBtn, compareBtn, saveSnapshotBtn,
+                startBtn, pauseBtn, endExecutionBtn, closeExecutionBtn,
+                jumpStartBtn, stepBackwardBtn, stepForwardBtn, jumpEndBtn,
+                resetBtn, replayBtn, exportBtn, compareBtn, saveSnapshotBtn,
                 speed1Btn, speed2Btn, speed4Btn, speed8Btn, speed16Btn);
     }
 
@@ -1637,182 +1582,43 @@ public class MainController implements Initializable {
         region.setClip(clip);
     }
 
-    private void setupResponsiveLayout() {
-        if (rootPane == null) {
+    private void setupUiFramework() {
+        uiFramework = new WorkbenchUiFramework(
+                rootPane,
+                topBar,
+                brandZone,
+                brandSubtitle,
+                workspaceModeBox,
+                topContextZone,
+                topContextLabel,
+                runIdLabel,
+                fontSettingsBtn,
+                structureFamilyRail,
+                algorithmFamilyRail,
+                structureControlRail,
+                algorithmControlRail,
+                snapshotPanel,
+                diagnosticsPanel,
+                structureSelectionOverlay,
+                currentStepOverlay,
+                algorithmSelectionOverlay,
+                structureInspectorTabs,
+                algorithmInspectorTabs,
+                playbackToolbar,
+                structureHistoryDock,
+                structureHistoryDetails);
+        uiFramework.setStructureHistoryExpanded(structureHistoryExpanded);
+        uiFramework.install();
+        refreshUiFramework();
+    }
+
+    private void refreshUiFramework() {
+        if (uiFramework == null) {
             return;
         }
-        rootPane.widthProperty().addListener((observable, oldValue, newValue) ->
-                updateResponsiveLayout(newValue.doubleValue(), rootPane.getHeight()));
-        rootPane.heightProperty().addListener((observable, oldValue, newValue) ->
-                updateResponsiveLayout(rootPane.getWidth(), newValue.doubleValue()));
-        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
-    }
-
-    private void updateResponsiveLayout(double width, double height) {
-        if (rootPane == null) {
-            return;
-        }
-        boolean hasWidth = width > 0.0d;
-        boolean hasHeight = height > 0.0d;
-        boolean nextCompactLayout = (hasWidth && width < COMPACT_LAYOUT_WIDTH)
-                || (hasHeight && height < COMPACT_LAYOUT_HEIGHT);
-        boolean nextNarrowLayout = (hasWidth && width < NARROW_LAYOUT_WIDTH)
-                || (hasHeight && height < NARROW_LAYOUT_HEIGHT);
-
-        compactLayout = nextCompactLayout;
-        narrowLayout = nextNarrowLayout;
-        rootPane.pseudoClassStateChanged(COMPACT_LAYOUT, compactLayout);
-        rootPane.pseudoClassStateChanged(NARROW_LAYOUT, narrowLayout);
-
-        ResponsiveGeometry geometry = responsiveGeometry(nextCompactLayout, nextNarrowLayout);
-        double familyWidth = geometry.familyWidth();
-        double controlWidth = geometry.controlWidth();
-        double inspectorWidth = geometry.inspectorWidth();
-        double topBarHeight = geometry.topBarHeight();
-        double brandWidth = geometry.brandWidth();
-        double modeWidth = geometry.modeWidth();
-        double contextWidth = geometry.contextWidth();
-
-        setFixedWidth(structureFamilyRail, familyWidth);
-        setFixedWidth(algorithmFamilyRail, familyWidth);
-        setFixedWidth(structureControlRail, controlWidth);
-        setFixedWidth(algorithmControlRail, controlWidth);
-        setFixedWidth(snapshotPanel, inspectorWidth);
-        setFixedWidth(diagnosticsPanel, inspectorWidth);
-        setFixedWidth(brandZone, brandWidth);
-        setFixedWidth(workspaceModeBox, modeWidth);
-        setFixedWidth(topContextZone, contextWidth);
-        setFixedHeight(topBar, topBarHeight);
-        setOverlayGeometry(structureSelectionOverlay, geometry.overlayWidth());
-        setOverlayGeometry(currentStepOverlay, geometry.overlayWidth());
-        setOverlayGeometry(algorithmSelectionOverlay, geometry.overlayWidth());
-
-        snapshotPanel.setManaged(true);
-        snapshotPanel.setVisible(true);
-        setPageVisibility(diagnosticsPanel, !narrowLayout);
-        setPageVisibility(structureHistoryDock, !narrowLayout);
-        updateStructureHistoryGeometry();
-
-        setControlVisibility(brandSubtitle, !nextNarrowLayout);
-        setControlVisibility(topContextLabel, !nextNarrowLayout);
-        setControlVisibility(runIdLabel, !nextCompactLayout);
-        setControlVisibility(fontSettingsBtn, true);
-        applyResponsiveControlDensity(nextCompactLayout);
-    }
-
-    private FontSettingsService.LayoutTier currentTypographyTier() {
-        return FONT_SETTINGS_SERVICE.layoutTier(appliedFontSettings);
-    }
-
-    private ResponsiveGeometry responsiveGeometry(boolean compact, boolean narrow) {
-        FontSettingsService.LayoutTier tier = currentTypographyTier();
-        if (narrow) {
-            if (tier == FontSettingsService.LayoutTier.XLARGE) {
-                return new ResponsiveGeometry(132.0d, 300.0d, 280.0d, 64.0d, 220.0d, 250.0d, 220.0d, 270.0d);
-            }
-            if (tier == FontSettingsService.LayoutTier.LARGE) {
-                return new ResponsiveGeometry(108.0d, 280.0d, 240.0d, 58.0d, 220.0d, 250.0d, 220.0d, 240.0d);
-            }
-            return new ResponsiveGeometry(84.0d, 220.0d, 196.0d, 52.0d, 220.0d, 250.0d, 220.0d, 220.0d);
-        }
-        if (compact) {
-            if (tier == FontSettingsService.LayoutTier.XLARGE) {
-                return new ResponsiveGeometry(166.0d, 340.0d, 360.0d, 72.0d, 300.0d, 300.0d, 320.0d, 290.0d);
-            }
-            if (tier == FontSettingsService.LayoutTier.LARGE) {
-                return new ResponsiveGeometry(138.0d, 300.0d, 320.0d, 64.0d, 300.0d, 300.0d, 320.0d, 260.0d);
-            }
-            return new ResponsiveGeometry(104.0d, 250.0d, 260.0d, 56.0d, 300.0d, 300.0d, 320.0d, 220.0d);
-        }
-        if (tier == FontSettingsService.LayoutTier.XLARGE) {
-            return new ResponsiveGeometry(208.0d, 420.0d, 460.0d, 86.0d, 430.0d, 420.0d, 500.0d, 320.0d);
-        }
-        if (tier == FontSettingsService.LayoutTier.LARGE) {
-            return new ResponsiveGeometry(172.0d, 360.0d, 410.0d, 78.0d, 430.0d, 420.0d, 500.0d, 280.0d);
-        }
-        return new ResponsiveGeometry(142.0d, 320.0d, 360.0d, 72.0d, 430.0d, 420.0d, 500.0d, 220.0d);
-    }
-
-    private static void setOverlayGeometry(Region overlay, double width) {
-        if (overlay == null) {
-            return;
-        }
-        overlay.setMinWidth(width);
-        overlay.setPrefWidth(width);
-        overlay.setMaxWidth(width);
-        overlay.setMinHeight(Region.USE_COMPUTED_SIZE);
-        overlay.setPrefHeight(Region.USE_COMPUTED_SIZE);
-        overlay.setMaxHeight(Region.USE_PREF_SIZE);
-    }
-
-    private record ResponsiveGeometry(
-            double familyWidth,
-            double controlWidth,
-            double inspectorWidth,
-            double topBarHeight,
-            double brandWidth,
-            double modeWidth,
-            double contextWidth,
-            double overlayWidth) {
-    }
-
-    private static void setFixedWidth(Region region, double width) {
-        if (region == null) {
-            return;
-        }
-        region.setMinWidth(width);
-        region.setPrefWidth(width);
-        region.setMaxWidth(width);
-    }
-
-    private static void setFixedHeight(Region region, double height) {
-        if (region == null) {
-            return;
-        }
-        region.setMinHeight(height);
-        region.setPrefHeight(height);
-        region.setMaxHeight(height);
-    }
-
-    private void applyResponsiveControlDensity(boolean compact) {
-        applyResponsiveControlDensity(rootPane, compact);
-    }
-
-    private void applyResponsiveControlDensity(Node node, boolean compact) {
-        if (node == null) {
-            return;
-        }
-        if (node instanceof TabPane) {
-            setResponsiveStyleClass(node, Styles.DENSE, compact, responsiveAddedDense);
-        } else if (node instanceof Button
-                || node instanceof ComboBoxBase<?>
-                || node instanceof TextInputControl
-                || node instanceof Spinner<?>
-                || node instanceof Slider) {
-            setResponsiveStyleClass(node, Styles.SMALL, compact, responsiveAddedSmall);
-        }
-        if (node instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                applyResponsiveControlDensity(child, compact);
-            }
-        }
-    }
-
-    private static void setResponsiveStyleClass(
-            Node node,
-            String styleClass,
-            boolean enabled,
-            Set<Node> ownedNodes) {
-        if (enabled) {
-            if (!node.getStyleClass().contains(styleClass)) {
-                node.getStyleClass().add(styleClass);
-                ownedNodes.add(node);
-            }
-            return;
-        }
-        if (ownedNodes.remove(node)) {
-            node.getStyleClass().remove(styleClass);
-        }
+        WorkbenchUiFramework.LayoutState state = uiFramework.refresh();
+        compactLayout = state.compact();
+        narrowLayout = state.narrow();
     }
 
     private void setPageVisibility(VBox page, boolean visible) {
@@ -1821,19 +1627,6 @@ public class MainController implements Initializable {
         }
         page.setManaged(visible);
         page.setVisible(visible);
-    }
-
-    private void resizeRail(Region rail, boolean compact) {
-        if (rail == null) {
-            return;
-        }
-        double width;
-        if (compact) {
-            width = 190.0d;
-        } else {
-            width = 204.0d;
-        }
-        rail.setPrefWidth(Math.min(220.0d, width));
     }
 
     private void setControlVisibility(Node control, boolean visible) {
@@ -2080,7 +1873,7 @@ public class MainController implements Initializable {
         refreshTopContext();
         refreshExecutionPresentation();
         updateWorkspaceInteractionState();
-        updateResponsiveLayout(rootPane.getWidth(), rootPane.getHeight());
+        refreshUiFramework();
     }
 
     private void detachCurrentController() {
@@ -2890,6 +2683,51 @@ public class MainController implements Initializable {
         setSelectedSpeed(speed1Btn);
     }
 
+    private void setupPlaybackShellActions() {
+        if (jumpStartBtn != null) {
+            jumpStartBtn.setOnAction(event -> {
+                if (currentSubController != null && currentSubController.jumpToStart()) {
+                    refreshExecutionPresentation();
+                }
+            });
+        }
+        if (jumpEndBtn != null) {
+            jumpEndBtn.setOnAction(event -> {
+                if (currentSubController != null && currentSubController.jumpToEnd()) {
+                    refreshExecutionPresentation();
+                }
+            });
+        }
+        if (endExecutionBtn != null) {
+            endExecutionBtn.setOnAction(event -> {
+                if (currentSubController != null) {
+                    currentSubController.endAlgorithm();
+                    refreshExecutionPresentation();
+                }
+            });
+        }
+        if (closeExecutionBtn != null) {
+            closeExecutionBtn.setOnAction(event -> {
+                if (currentSubController != null) {
+                    currentSubController.closeExecution();
+                    refreshExecutionPresentation();
+                    refreshTopContext();
+                }
+            });
+        }
+        refreshPlaybackShellControls();
+    }
+
+    private void refreshPlaybackShellControls() {
+        boolean available = currentSubController != null;
+        boolean running = available && currentSubController.isRunning();
+        boolean hasTimeline = available && currentSubController.hasExecutionData();
+        if (jumpStartBtn != null) jumpStartBtn.setDisable(running || !hasTimeline);
+        if (jumpEndBtn != null) jumpEndBtn.setDisable(running || !hasTimeline);
+        if (endExecutionBtn != null) endExecutionBtn.setDisable(!running);
+        if (closeExecutionBtn != null) closeExecutionBtn.setDisable(!running && !hasTimeline);
+    }
+
     private void bindSpeedButton(Button button, double speed, double delayMillis) {
         if (button == null) {
             return;
@@ -3318,6 +3156,7 @@ public class MainController implements Initializable {
 
     private void refreshExecutionPresentation() {
         if (currentSubController == null) {
+            refreshPlaybackShellControls();
             return;
         }
         EventEnvelope current = currentSubController.currentPresentationEvent();
@@ -3361,6 +3200,7 @@ public class MainController implements Initializable {
         refreshRunSummary();
         rebuildTimelineMarkers();
         refreshStructureSummary();
+        refreshPlaybackShellControls();
     }
 
     private void updateVisualizationObstruction(boolean currentStepVisible) {
