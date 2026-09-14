@@ -1,8 +1,12 @@
 package com.majortom.algorithms.structure.graph;
 
+import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureModule;
+
 import java.util.Map;
 
 /** Graph contract that associates a finite numeric weight with every edge. */
+@Structure(id = "weighted-graph", name = "Weighted Graph", module = StructureModule.GRAPH, implementation = WeightedGraph.class)
 public interface WeightedGraphStructure<T> extends GraphStructure<T> {
     double weight(Edge<T> edge);
 

@@ -1,8 +1,5 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.algorithm.maze.generator.ArrayMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.generator.GraphMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
@@ -175,17 +172,15 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (graphGenerators.contains(id)) {
             MazeDimensions dimensions = new MazeDimensions(size, size);
             long seed = System.nanoTime();
-            @SuppressWarnings("unchecked")
-            GraphMazeGenerator<Integer> algorithm = (GraphMazeGenerator<Integer>)
-                    algorithm(id, Integer.class, GraphMazeGenerator.class);
+            var descriptor = algorithm(id, Integer.class);
             startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
-                    () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, true));
+                    () -> descriptor.invoke(dimensions, seed), () -> new MazeEventReducer(size, size, true));
         } else {
             MazeDimensions dimensions = new MazeDimensions(size, size);
             long seed = System.nanoTime();
-            ArrayMazeGenerator algorithm = algorithm(id, Boolean.class, ArrayMazeGenerator.class);
+            var descriptor = algorithm(id, Boolean.class);
             startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
-                    () -> algorithm.generate(dimensions, seed), () -> new MazeEventReducer(size, size, false));
+                    () -> descriptor.invoke(dimensions, seed), () -> new MazeEventReducer(size, size, false));
         }
     }
 
@@ -201,9 +196,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         String id = selectedId(pathfinderSelector, arrayPathfinders);
         GridPoint start = inputMaze.entrance();
         GridPoint goal = inputMaze.exit();
-        ArrayMazePathfinder algorithm = algorithm(id, Boolean.class, ArrayMazePathfinder.class);
+        var descriptor = algorithm(id, Boolean.class);
         startAlgorithm(id, Map.of("maze", inputMaze, "start", start, "goal", goal),
-                () -> algorithm.findPath(inputMaze, start, goal),
+                () -> descriptor.invoke(inputMaze, start, goal),
                 () -> new MazeEventReducer(selectedSnapshot));
     }
 

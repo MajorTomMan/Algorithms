@@ -1,7 +1,7 @@
 package com.majortom.algorithms.algorithm.graph.impl;
 
-import com.majortom.algorithms.algorithm.graph.GraphTraversal;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
@@ -15,11 +15,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Algorithm(id = "graph-bfs", name = "广度优先遍历", module = "graph", type = Integer.class, structure = GraphStructure.class)
-public final class GraphBfs implements GraphTraversal<Integer> {
+@Algorithm(id = "graph-bfs", name = "广度优先遍历", type = Integer.class, structure = GraphStructure.class)
+public final class GraphBfs {
     private static final String VERTEX_DOMAIN = "graph.vertex";
-
-    @Override
+    @AlgorithmEntry
     public List<Integer> traverse(GraphStructure<Integer> graph, Integer startNode) {
         Objects.requireNonNull(graph, "graph");
         Vertex<Integer> startVertex = vertex(graph, startNode);

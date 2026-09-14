@@ -4,7 +4,9 @@ import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Shared direct helpers for concrete integer sorting algorithms. */
-public abstract class AbstractIntegerSort implements Sort<Integer> {
+public abstract class AbstractIntegerSort {
+
+    protected abstract int compare(Integer left, Integer right);
 
     protected final int compareAt(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
         Observations.compared("array", leftIndex, "array", rightIndex);

@@ -1,6 +1,5 @@
 package com.majortom.algorithms.structure.linked;
 
-import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.ArrayList;
@@ -8,9 +7,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-@Structure(id = "linked-list", name = "Linked List", contract = LinkedStructure.class)
-@Structure(id = "stack", name = "Stack", contract = StackStructure.class)
-@Structure(id = "queue", name = "Queue", contract = QueueStructure.class)
 public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T>, QueueStructure<T> {
     private ListNode<T> head;
     private ListNode<T> tail;

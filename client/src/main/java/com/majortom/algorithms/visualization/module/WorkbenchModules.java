@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.module;
 
+import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.impl.controller.ArrayController;
 import com.majortom.algorithms.visualization.impl.controller.GraphController;
@@ -49,7 +50,7 @@ public final class WorkbenchModules {
             ComponentRegistry registry,
             WorkbenchModuleDefinition definition) {
         String id = definition.id();
-        if (registry.hasStructure(id) || registry.hasAlgorithmModule(id)) {
+        if (registry.hasStructure(id) || registry.hasAlgorithmModule(StructureModule.fromId(id))) {
             modules.add(definition);
         }
     }

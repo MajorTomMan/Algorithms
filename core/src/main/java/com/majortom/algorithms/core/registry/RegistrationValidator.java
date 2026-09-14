@@ -1,6 +1,10 @@
 package com.majortom.algorithms.core.registry;
 
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.annotation.Structure;
+
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
@@ -30,12 +34,14 @@ public final class RegistrationValidator {
     public static AlgorithmDescriptor validate(AlgorithmDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
         validateId(descriptor.id(), "Algorithm");
-        validateId(descriptor.moduleId(), "Algorithm module");
         validateValueType(descriptor.valueType());
-        if (descriptor.hasStructureContract()) {
-            validateContract(descriptor.structureContract(), "Algorithm structure");
+        validateContract(descriptor.structureContract(), "Algorithm structure");
+        if (descriptor.structureContract().getAnnotation(Structure.class) == null) {
+            throw new RegistrationException("Algorithm structure contract must declare @Structure metadata: "
+                    + descriptor.structureContract().getName());
         }
         validateImplementation(descriptor.implementation(), "Algorithm");
+        validateEntryPoint(descriptor);
         return descriptor;
     }
 
@@ -57,9 +63,23 @@ public final class RegistrationValidator {
             validate(descriptor);
             AlgorithmKey key = descriptor.key();
             if (!keys.add(key)) {
-                throw new RegistrationException("Duplicate Algorithm registration: module=" + key.moduleId()
-                        + ", type=" + key.valueType().getName() + ", id=" + key.algorithmId());
+                throw new RegistrationException("Duplicate Algorithm registration: structure="
+                        + key.structureContract().getName() + ", type=" + key.valueType().getName()
+                        + ", id=" + key.algorithmId());
             }
+        }
+    }
+
+    private static void validateEntryPoint(AlgorithmDescriptor descriptor) {
+        Method method = descriptor.entryPoint();
+        if (method.getAnnotation(AlgorithmEntry.class) == null) {
+            throw new RegistrationException("Algorithm entry method is missing @AlgorithmEntry: " + method);
+        }
+        if (!Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers())) {
+            throw new RegistrationException("Algorithm entry method must be public and non-static: " + method);
+        }
+        if (!method.getDeclaringClass().isAssignableFrom(descriptor.implementation())) {
+            throw new RegistrationException("Algorithm entry method does not belong to implementation: " + method);
         }
     }
 

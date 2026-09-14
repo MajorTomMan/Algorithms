@@ -1,18 +1,19 @@
 package com.majortom.algorithms.algorithm.discovery;
 
-import com.majortom.algorithms.algorithm.array.sort.Sort;
+import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.core.registry.RegistrationException;
 import com.majortom.algorithms.core.registry.StructureResolver;
 import com.majortom.algorithms.structure.array.Array;
+import com.majortom.algorithms.structure.array.ArrayStructure;
 import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,8 +22,8 @@ class ComponentDiscoveryTest {
 
     @Test
     void discoversIntegerAndStringVariantsUnderTheSameStableId() {
-        var integer = registry.requireAlgorithm("array", Integer.class, "insertion-sort");
-        var string = registry.requireAlgorithm("array", String.class, "insertion-sort");
+        var integer = registry.requireAlgorithm(StructureModule.ARRAY, Integer.class, "insertion-sort");
+        var string = registry.requireAlgorithm(StructureModule.ARRAY, String.class, "insertion-sort");
 
         assertEquals("insertion-sort", integer.id());
         assertEquals("Insertion Sort", integer.name());
@@ -30,26 +31,24 @@ class ComponentDiscoveryTest {
         assertEquals(integer.id(), string.id());
         assertEquals(Integer.class, integer.valueType());
         assertEquals(String.class, string.valueType());
-        assertEquals("array", string.moduleId());
-        assertTrue(string.hasStructureContract());
+        assertEquals(StructureModule.ARRAY, string.module());
+        assertEquals(ArrayStructure.class, string.structureContract());
+        assertEquals("sort", string.entryPoint().getName());
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void sameStableIdExecutesTheCorrectValueTypeVariant() {
-        Sort<Integer> integerSort = (Sort<Integer>) registry.createAlgorithm(
-                "array", Integer.class, "insertion-sort", Sort.class);
-        Sort<String> stringSort = (Sort<String>) registry.createAlgorithm(
-                "array", String.class, "insertion-sort", Sort.class);
+        var integerSort = registry.requireAlgorithm(StructureModule.ARRAY, Integer.class, "insertion-sort");
+        var stringSort = registry.requireAlgorithm(StructureModule.ARRAY, String.class, "insertion-sort");
         Array<Integer> integers = new Array<>(List.of(3, 1, 2));
         Array<String> strings = new Array<>(List.of("c", "a", "b"));
 
-        integerSort.sort(integers);
-        stringSort.sort(strings);
+        integerSort.invoke(integers);
+        stringSort.invoke(strings);
 
         assertEquals(List.of(1, 2, 3), values(integers));
         assertEquals(List.of("a", "b", "c"), values(strings));
-        assertEquals(List.of("insertion-sort"), registry.algorithms("array", String.class).stream()
+        assertEquals(List.of("insertion-sort"), registry.algorithms(StructureModule.ARRAY, String.class).stream()
                 .map(descriptor -> descriptor.id())
                 .toList());
     }
@@ -58,23 +57,24 @@ class ComponentDiscoveryTest {
     void integerAndStringAlgorithmsResolveTheSameGenericArrayImplementation() {
         StructureResolver resolver = new StructureResolver(registry);
         var integerStructure = resolver.resolve(
-                registry.requireAlgorithm("array", Integer.class, "insertion-sort"));
+                registry.requireAlgorithm(StructureModule.ARRAY, Integer.class, "insertion-sort"));
         var stringStructure = resolver.resolve(
-                registry.requireAlgorithm("array", String.class, "insertion-sort"));
+                registry.requireAlgorithm(StructureModule.ARRAY, String.class, "insertion-sort"));
         assertEquals(Array.class, integerStructure.implementation());
         assertEquals(integerStructure.implementation(), stringStructure.implementation());
     }
 
     @Test
-    void mazeAlgorithmsAreDiscoverableWithoutInventingAMazeStructureContract() {
-        var maze = registry.requireAlgorithm("maze", Boolean.class, "maze-generator-bfs");
-        assertFalse(maze.hasStructureContract());
+    void mazeAlgorithmsDeriveModuleFromMetadataOnlyMazeContract() {
+        var maze = registry.requireAlgorithm(StructureModule.MAZE, Boolean.class, "maze-generator-bfs");
+        assertEquals(StructureModule.MAZE, maze.module());
+        assertEquals(MazeStructure.class, maze.structureContract());
         assertTrue(registry.structures().stream()
                 .noneMatch(descriptor -> descriptor.implementation().equals(GridMaze.class)));
         assertThrows(RegistrationException.class, () -> new StructureResolver(registry).resolve(maze));
     }
+
     private static <T> List<T> values(Array<T> array) {
         return IntStream.range(0, array.size()).mapToObj(array::get).toList();
     }
-
 }

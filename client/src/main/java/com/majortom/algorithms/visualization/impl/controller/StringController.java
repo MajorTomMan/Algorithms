@@ -3,9 +3,6 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.algorithm.string.LongestSubstringAlgorithm;
-import com.majortom.algorithms.algorithm.string.StringAlgorithm;
-import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
@@ -232,21 +229,17 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
-        StringAlgorithm algorithm = algorithm(algorithmId, java.lang.String.class, StringAlgorithm.class);
-        if (algorithm instanceof StringSearch search) {
-            runStringSearch(algorithmId, search, input, target);
+        var descriptor = algorithm(algorithmId, java.lang.String.class);
+        if (AlgorithmCatalog.stringSearches().contains(algorithmId)) {
+            runStringSearch(algorithmId, descriptor, input, target);
             return;
         }
-        if (algorithm instanceof LongestSubstringAlgorithm longestSubstring) {
-            runLongestSubstring(algorithmId, longestSubstring, input, target);
-            return;
-        }
-        throw new IllegalStateException("Unsupported string algorithm contract: " + algorithm.getClass().getName());
+        runLongestSubstring(algorithmId, descriptor, input, target);
     }
 
     private void runStringSearch(
             String algorithmId,
-            StringSearch algorithm,
+            com.majortom.algorithms.core.registry.AlgorithmDescriptor descriptor,
             StringStructure input,
             String target) {
         String pattern = patternField.getText();
@@ -258,20 +251,20 @@ public final class StringController extends BaseModuleController<StringViewState
         startAlgorithm(
                 algorithmId,
                 Map.of("target", target, "pattern", pattern),
-                () -> algorithm.search(input, pattern),
+                () -> descriptor.invoke(input, pattern),
                 () -> new StringEventReducer(target));
     }
 
     private void runLongestSubstring(
             String algorithmId,
-            LongestSubstringAlgorithm algorithm,
+            com.majortom.algorithms.core.registry.AlgorithmDescriptor descriptor,
             StringStructure input,
             String target) {
         stringVisualizer().clearAlgorithmPattern();
         startAlgorithm(
                 algorithmId,
                 Map.of("target", target),
-                () -> algorithm.find(input),
+                () -> descriptor.invoke(input),
                 () -> new StringEventReducer(target));
     }
 

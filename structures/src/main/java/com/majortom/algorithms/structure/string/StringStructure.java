@@ -1,5 +1,9 @@
 package com.majortom.algorithms.structure.string;
 
+import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureModule;
+
+@Structure(id = "string", name = "String", module = StructureModule.STRING, implementation = String.class)
 public interface StringStructure {
     int length();
 

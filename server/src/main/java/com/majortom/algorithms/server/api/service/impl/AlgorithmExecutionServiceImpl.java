@@ -1,12 +1,6 @@
 package com.majortom.algorithms.server.api.service.impl;
 
-import com.majortom.algorithms.algorithm.array.sort.Sort;
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
-import com.majortom.algorithms.algorithm.graph.GraphTraversal;
-import com.majortom.algorithms.algorithm.maze.generator.ArrayMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.generator.GraphMazeGenerator;
-import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
-import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
@@ -29,8 +23,12 @@ import com.majortom.algorithms.server.request.IntegerSortRequest;
 import com.majortom.algorithms.server.request.MazeGenerationRequest;
 import com.majortom.algorithms.server.request.MazePathRequest;
 import com.majortom.algorithms.server.request.StringSearchRequest;
+import com.majortom.algorithms.structure.array.ArrayStructure;
 import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.string.StringStructure;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
@@ -162,7 +160,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             AlgorithmInformationDto dto = new AlgorithmInformationDto();
             dto.setId(exposed.descriptor().id());
             dto.setName(exposed.descriptor().name());
-            dto.setModuleId(exposed.descriptor().moduleId());
+            dto.setModuleId(exposed.descriptor().module().id());
             dto.setVersion(VERSION);
             dto.setInputType(exposed.handler().inputType().getName());
             dto.setOutputType(exposed.handler().outputType().getName());
@@ -191,7 +189,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
                         .map(handler -> new ExposedAlgorithm(descriptor, handler)))
                 .flatMap(Optional::stream)
                 .sorted(Comparator
-                        .comparing((ExposedAlgorithm value) -> value.descriptor().moduleId())
+                        .comparing((ExposedAlgorithm value) -> value.descriptor().module().id())
                         .thenComparing(value -> value.descriptor().valueType().getName())
                         .thenComparing(value -> value.descriptor().id()))
                 .toList();
@@ -217,8 +215,21 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         return API_PROTOCOLS.stream().filter(handler -> handler.supports(descriptor)).findFirst();
     }
 
-    private static <T> T createAlgorithm(AlgorithmDescriptor descriptor, Class<T> contract) {
-        return COMPONENTS.createAlgorithm(descriptor.key(), contract);
+    private static boolean signature(AlgorithmDescriptor descriptor, Class<?> returnType, Class<?>... parameters) {
+        if (!returnType.isAssignableFrom(descriptor.entryPoint().getReturnType())
+                && !(returnType == void.class && descriptor.entryPoint().getReturnType() == void.class)) {
+            return false;
+        }
+        Class<?>[] actual = descriptor.entryPoint().getParameterTypes();
+        if (actual.length != parameters.length) {
+            return false;
+        }
+        for (int index = 0; index < actual.length; index++) {
+            if (!actual[index].equals(parameters[index])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void pruneExecutions() {
@@ -263,7 +274,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(Integer.class)
-                    && Sort.class.isAssignableFrom(descriptor.implementation());
+                    && descriptor.structureContract().equals(ArrayStructure.class)
+                    && signature(descriptor, void.class, ArrayStructure.class);
         }
 
         @Override
@@ -280,12 +292,10 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         public PreparedExecution prepare(
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             IntegerSortRequest request = mapper.convertValue(input, IntegerSortRequest.class);
-            @SuppressWarnings("unchecked")
-            Sort<Integer> algorithm = (Sort<Integer>) createAlgorithm(descriptor, Sort.class);
             com.majortom.algorithms.structure.array.Array<Integer> array =
                     new com.majortom.algorithms.structure.array.Array<>(request.values());
             return new PreparedExecution(() -> {
-                algorithm.sort(array);
+                descriptor.invoke(array);
                 java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
                 for (Integer value : array) {
                     values.add(value);
@@ -299,7 +309,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(Boolean.class)
-                    && ArrayMazeGenerator.class.isAssignableFrom(descriptor.implementation());
+                    && signature(descriptor, GridMaze.class, MazeDimensions.class, long.class);
         }
 
         @Override
@@ -316,8 +326,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         public PreparedExecution prepare(
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
-            ArrayMazeGenerator algorithm = createAlgorithm(descriptor, ArrayMazeGenerator.class);
-            return new PreparedExecution(() -> algorithm.generate(request.dimensions(), request.seed()));
+            return new PreparedExecution(() -> descriptor.invoke(request.dimensions(), request.seed()));
         }
     }
 
@@ -325,7 +334,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(Integer.class)
-                    && GraphMazeGenerator.class.isAssignableFrom(descriptor.implementation());
+                    && signature(descriptor, GraphSnapshot.class, MazeDimensions.class, long.class);
         }
 
         @Override
@@ -342,10 +351,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         public PreparedExecution prepare(
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
-            @SuppressWarnings("unchecked")
-            GraphMazeGenerator<Integer> algorithm =
-                    (GraphMazeGenerator<Integer>) createAlgorithm(descriptor, GraphMazeGenerator.class);
-            return new PreparedExecution(() -> algorithm.generate(request.dimensions(), request.seed()));
+            return new PreparedExecution(() -> descriptor.invoke(request.dimensions(), request.seed()));
         }
     }
 
@@ -353,7 +359,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(Boolean.class)
-                    && ArrayMazePathfinder.class.isAssignableFrom(descriptor.implementation());
+                    && signature(descriptor, List.class, GridMaze.class, GridPoint.class, GridPoint.class);
         }
 
         @Override
@@ -370,9 +376,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         public PreparedExecution prepare(
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             MazePathRequest request = mapper.convertValue(input, MazePathRequest.class);
-            ArrayMazePathfinder algorithm = createAlgorithm(descriptor, ArrayMazePathfinder.class);
             return new PreparedExecution(() ->
-                    algorithm.findPath(request.maze(), request.start(), request.goal()));
+                    descriptor.invoke(request.maze(), request.start(), request.goal()));
         }
     }
 
@@ -380,7 +385,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(Integer.class)
-                    && GraphTraversal.class.isAssignableFrom(descriptor.implementation());
+                    && descriptor.structureContract().equals(GraphStructure.class)
+                    && signature(descriptor, List.class, GraphStructure.class, Integer.class);
         }
 
         @Override
@@ -398,10 +404,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             GraphBfsRequest request = mapper.convertValue(input, GraphBfsRequest.class);
             Graph<Integer> graph = Graph.fromSnapshot(request.graph());
-            @SuppressWarnings("unchecked")
-            GraphTraversal<Integer> algorithm =
-                    (GraphTraversal<Integer>) createAlgorithm(descriptor, GraphTraversal.class);
-            return new PreparedExecution(() -> algorithm.traverse(graph, request.startNode()));
+            return new PreparedExecution(() -> descriptor.invoke(graph, request.startNode()));
         }
     }
 
@@ -409,7 +412,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         @Override
         public boolean supports(AlgorithmDescriptor descriptor) {
             return descriptor.valueType().equals(String.class)
-                    && StringSearch.class.isAssignableFrom(descriptor.implementation());
+                    && signature(descriptor, List.class, StringStructure.class, String.class);
         }
 
         @Override
@@ -427,8 +430,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
                 AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
             StringSearchRequest request = mapper.convertValue(input, StringSearchRequest.class);
             StringStructure target = new com.majortom.algorithms.structure.string.String(request.target());
-            StringSearch algorithm = createAlgorithm(descriptor, StringSearch.class);
-            return new PreparedExecution(() -> algorithm.search(target, request.pattern()));
+            return new PreparedExecution(() -> descriptor.invoke(target, request.pattern()));
         }
     }
 }

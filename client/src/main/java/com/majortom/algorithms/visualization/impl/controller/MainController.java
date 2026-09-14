@@ -17,6 +17,7 @@ import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
+import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
@@ -1067,7 +1068,7 @@ public class MainController implements Initializable {
         return switch (moduleId) {
             case "array", "linked-list", "stack", "queue", "tree", "graph" -> ValueAdapters.supportedTypeNames();
             case "string" -> List.of(String.class.getSimpleName());
-            default -> COMPONENTS.algorithmValueTypes(moduleId);
+            default -> COMPONENTS.algorithmValueTypes(StructureModule.fromId(moduleId));
         };
     }
 
@@ -1276,15 +1277,15 @@ public class MainController implements Initializable {
             } else {
                 algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
             }
-            List<String> registered = COMPONENTS.algorithmIds(moduleId, valueType.getSimpleName());
+            List<String> registered = COMPONENTS.algorithmIds(StructureModule.fromId(moduleId), valueType.getSimpleName());
             algorithmIds.removeIf(id -> !registered.contains(id));
         }
         return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
     }
 
     private void addAlgorithmsForAllTypes(List<String> target, String family, String excludedPrefix) {
-        for (String valueType : COMPONENTS.algorithmValueTypes(family)) {
-            for (String algorithmId : COMPONENTS.algorithmIds(family, valueType)) {
+        for (String valueType : COMPONENTS.algorithmValueTypes(StructureModule.fromId(family))) {
+            for (String algorithmId : COMPONENTS.algorithmIds(StructureModule.fromId(family), valueType)) {
                 if (excludedPrefix == null || !algorithmId.startsWith(excludedPrefix)) {
                     target.add(algorithmId);
                 }

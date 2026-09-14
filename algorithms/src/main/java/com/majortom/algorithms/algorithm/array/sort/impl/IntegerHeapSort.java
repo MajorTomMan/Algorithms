@@ -2,18 +2,18 @@ package com.majortom.algorithms.algorithm.array.sort.impl;
 
 import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Max-heap sort over an ArrayStructure<Integer>. */
-@Algorithm(id = "heap-sort", name = "堆排序", module = "array", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(id = "heap-sort", name = "堆排序", type = Integer.class, structure = ArrayStructure.class)
 public final class IntegerHeapSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
-
-    @Override
+    @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         for (int root = array.size() / 2 - 1; root >= 0; root--) {
             siftDown(array, root, array.size());

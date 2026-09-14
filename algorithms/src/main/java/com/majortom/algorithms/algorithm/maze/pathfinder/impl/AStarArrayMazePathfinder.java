@@ -1,10 +1,11 @@
 package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
-import com.majortom.algorithms.algorithm.maze.pathfinder.ArrayMazePathfinder;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
@@ -18,9 +19,9 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
-@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", module = "maze", type = Boolean.class)
-public final class AStarArrayMazePathfinder implements ArrayMazePathfinder {
-    @Override
+@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", type = Boolean.class, structure = MazeStructure.class)
+public final class AStarArrayMazePathfinder {
+    @AlgorithmEntry
     public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {
         ArrayMazeSupport.requirePathEndpoints(maze, start, goal);
         Map<GridPoint, GridPoint> previous = new HashMap<>();

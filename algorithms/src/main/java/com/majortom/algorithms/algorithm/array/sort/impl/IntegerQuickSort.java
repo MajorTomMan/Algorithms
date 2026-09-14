@@ -2,20 +2,20 @@ package com.majortom.algorithms.algorithm.array.sort.impl;
 
 import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 import java.util.ArrayDeque;
 
 /** In-place three-way quicksort with deterministic pivot selection. */
-@Algorithm(id = "quick-sort", name = "Quick Sort", module = "array", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(id = "quick-sort", name = "Quick Sort", type = Integer.class, structure = ArrayStructure.class)
 public final class IntegerQuickSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
-
-    @Override
+    @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         ArrayDeque<Range> pending = new ArrayDeque<>();
         pending.push(new Range(0, array.size() - 1));

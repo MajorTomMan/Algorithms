@@ -1,7 +1,7 @@
 package com.majortom.algorithms.algorithm.string.impl;
 
-import com.majortom.algorithms.algorithm.string.StringSearch;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.string.StringStructure;
@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Algorithm(id = "kmp", name = "KMP Search", module = "string", type = String.class, structure = StringStructure.class)
-public final class KmpSearch implements StringSearch {
-    @Override
+@Algorithm(id = "kmp", name = "KMP Search", type = String.class, structure = StringStructure.class)
+public final class KmpSearch {
+    @AlgorithmEntry
     public List<Integer> search(StringStructure target, String pattern) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(pattern, "pattern");

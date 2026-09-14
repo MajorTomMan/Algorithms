@@ -15,6 +15,8 @@ import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.core.metadata.StructureModule;
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.logging.LogView;
@@ -223,8 +225,12 @@ public abstract class BaseController<S> implements Initializable {
         return COMPONENTS.createStructure(id, contract);
     }
 
-    protected final <T> T algorithm(String id, Class<?> valueType, Class<T> contract) {
-        return COMPONENTS.createAlgorithm(moduleId(), valueType, id, contract);
+    protected final AlgorithmDescriptor algorithm(String id, Class<?> valueType) {
+        return COMPONENTS.requireAlgorithm(StructureModule.fromId(moduleId()), valueType, id);
+    }
+
+    protected final Object invokeAlgorithm(String id, Class<?> valueType, Object... arguments) {
+        return algorithm(id, valueType).invoke(arguments);
     }
 
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */

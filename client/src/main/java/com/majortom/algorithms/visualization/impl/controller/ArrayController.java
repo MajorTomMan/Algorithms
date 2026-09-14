@@ -1,6 +1,5 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.algorithm.array.sort.Sort;
 import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -500,11 +499,10 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmId == null) {
             return;
         }
-        @SuppressWarnings("unchecked")
-        Sort<Object> algorithm = (Sort<Object>) algorithm(algorithmId, runtimeValueType, Sort.class);
+        var descriptor = algorithm(algorithmId, runtimeValueType);
         Array<Object> runtimeArray = new Array<>(values);
         startAlgorithm(algorithmId, values, () -> {
-            algorithm.sort(runtimeArray);
+            descriptor.invoke(runtimeArray);
             return sourceValues(runtimeArray);
         }, () -> new ArrayEventReducer(values));
     }

@@ -1,8 +1,9 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
-import com.majortom.algorithms.algorithm.maze.generator.GraphMazeGenerator;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
@@ -16,12 +17,11 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", module = "maze", type = Integer.class)
-public final class GraphMazeBfsGenerator implements GraphMazeGenerator<Integer> {
+@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", type = Integer.class, structure = MazeStructure.class)
+public final class GraphMazeBfsGenerator {
 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
-
-    @Override
+    @AlgorithmEntry
     public GraphSnapshot<Integer> generate(MazeDimensions dimensions, long seed) {
         List<GraphSnapshot.Vertex<Integer>> vertices = vertices(dimensions);
         List<GraphSnapshot.Edge> edges = new ArrayList<>();

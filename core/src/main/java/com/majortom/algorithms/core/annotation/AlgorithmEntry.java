@@ -6,9 +6,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/** Marks the single executable entry method of an {@link Algorithm} implementation. */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Structures {
-    Structure[] value();
+@Target(ElementType.METHOD)
+public @interface AlgorithmEntry {
 }

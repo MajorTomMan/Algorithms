@@ -1,12 +1,13 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 
 
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
-import com.majortom.algorithms.algorithm.maze.generator.ArrayMazeGenerator;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
@@ -14,9 +15,9 @@ import java.util.ArrayDeque;
 import java.util.Random;
 
 /** Breadth-first frontier perfect-maze generator. */
-@Algorithm(id = "maze-generator-bfs", name = "随机广度优先", module = "maze", type = Boolean.class)
-public final class BfsArrayMazeGenerator implements ArrayMazeGenerator {
-    @Override
+@Algorithm(id = "maze-generator-bfs", name = "随机广度优先", type = Boolean.class, structure = MazeStructure.class)
+public final class BfsArrayMazeGenerator {
+    @AlgorithmEntry
     public GridMaze generate(MazeDimensions dimensions, long seed) {
         Random random = new Random(seed);
         ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);

@@ -1,6 +1,8 @@
 package com.majortom.algorithms.algorithm.discovery;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
@@ -42,48 +44,68 @@ public final class AlgorithmDiscovery {
             if (annotation == null) {
                 continue;
             }
+            Class<?> structureContract = annotation.structure();
+            if (structureContract.getAnnotation(Structure.class) == null) {
+                throw new RegistrationException("Algorithm structure contract is missing @Structure metadata: "
+                        + structureContract.getName());
+            }
+            Method entryPoint = findEntryPoint(implementation);
             AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
                     annotation.id(),
                     ComponentNames.resolve(annotation.name(), implementation),
-                    annotation.module(),
                     annotation.type(),
-                    annotation.structure(),
-                    implementation);
+                    structureContract,
+                    implementation,
+                    entryPoint);
             RegistrationValidator.validate(descriptor);
-            validateStructureUsage(descriptor);
             validateValueType(descriptor);
             descriptors.add(descriptor);
         }
         descriptors.sort(Comparator
-                .comparing(AlgorithmDescriptor::moduleId)
+                .comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
+                .thenComparing(descriptor -> descriptor.structureContract().getName())
                 .thenComparing(descriptor -> descriptor.valueType().getName())
                 .thenComparing(AlgorithmDescriptor::id));
         RegistrationValidator.validateUniqueAlgorithmKeys(descriptors);
         return List.copyOf(descriptors);
     }
 
-    private void validateStructureUsage(AlgorithmDescriptor descriptor) {
-        if (!descriptor.hasStructureContract()) {
-            return;
-        }
-        for (Method method : descriptor.implementation().getMethods()) {
-            for (Class<?> parameterType : method.getParameterTypes()) {
-                if (descriptor.structureContract().isAssignableFrom(parameterType)) {
-                    return;
-                }
+    private Method findEntryPoint(Class<?> implementation) {
+        List<Method> entries = new ArrayList<>();
+        for (Method method : implementation.getMethods()) {
+            if (method.getAnnotation(AlgorithmEntry.class) != null) {
+                entries.add(method);
             }
         }
-        throw new RegistrationException("Algorithm " + descriptor.implementation().getName()
-                + " does not expose declared structure contract " + descriptor.structureContract().getName());
+        if (entries.size() != 1) {
+            throw new RegistrationException("Algorithm " + implementation.getName()
+                    + " must expose exactly one @AlgorithmEntry method, found " + entries.size());
+        }
+        return entries.getFirst();
     }
 
     private void validateValueType(AlgorithmDescriptor descriptor) {
         Set<Class<?>> resolvedTypes = new HashSet<>();
-        collectConcreteTypeArguments(descriptor.implementation(), new HashMap<>(), resolvedTypes);
+        for (Type parameter : descriptor.entryPoint().getGenericParameterTypes()) {
+            collectConcreteTypeArguments(parameter, new HashMap<>(), resolvedTypes);
+        }
+        collectConcreteTypeArguments(descriptor.entryPoint().getGenericReturnType(), new HashMap<>(), resolvedTypes);
         if (!resolvedTypes.isEmpty() && !resolvedTypes.contains(descriptor.valueType())) {
-            throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
-                    + " does not match generic contract of " + descriptor.implementation().getName()
-                    + ": " + resolvedTypes.stream().map(Class::getName).sorted().toList());
+            // Method signatures such as List<Integer> may describe output rather than the structure's value type.
+            // Only reject when the declared Structure parameter itself exposes a conflicting concrete type.
+            for (Type parameter : descriptor.entryPoint().getGenericParameterTypes()) {
+                if (parameter instanceof ParameterizedType parameterized
+                        && parameterized.getRawType() instanceof Class<?> raw
+                        && descriptor.structureContract().isAssignableFrom(raw)) {
+                    Set<Class<?>> structureTypes = new HashSet<>();
+                    collectConcreteTypeArguments(parameter, new HashMap<>(), structureTypes);
+                    if (!structureTypes.isEmpty() && !structureTypes.contains(descriptor.valueType())) {
+                        throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
+                                + " does not match entry Structure parameter of " + descriptor.implementation().getName()
+                                + ": " + structureTypes.stream().map(Class::getName).sorted().toList());
+                    }
+                }
+            }
         }
     }
 

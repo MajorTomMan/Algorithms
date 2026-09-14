@@ -4,19 +4,19 @@ import java.util.Objects;
 
 /** Stable runtime identity of an Algorithm registration. */
 public record AlgorithmKey(
-        String moduleId,
+        Class<?> structureContract,
         Class<?> valueType,
         String algorithmId) {
 
     public AlgorithmKey {
-        moduleId = requireText(moduleId, "moduleId");
+        structureContract = Objects.requireNonNull(structureContract, "structureContract");
         valueType = Objects.requireNonNull(valueType, "valueType");
         algorithmId = requireText(algorithmId, "algorithmId");
     }
 
     public static AlgorithmKey of(AlgorithmDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
-        return new AlgorithmKey(descriptor.moduleId(), descriptor.valueType(), descriptor.id());
+        return new AlgorithmKey(descriptor.structureContract(), descriptor.valueType(), descriptor.id());
     }
 
     private static String requireText(String value, String name) {

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -7,9 +8,7 @@ import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.structure.graph.WeightedGraph;
-import com.majortom.algorithms.algorithm.graph.GraphFamilyAlgorithm;
-import com.majortom.algorithms.algorithm.graph.GraphTraversal;
-import com.majortom.algorithms.algorithm.graph.MinimumSpanningAlgorithm;
+import com.majortom.algorithms.structure.graph.WeightedGraphStructure;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -124,29 +123,20 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         GraphSnapshotState<Object> selectedSnapshot = selectedAlgorithmSnapshot();
-        GraphFamilyAlgorithm<Object> algorithm = graphAlgorithm(algorithmId);
-        if (algorithm instanceof GraphTraversal<?>) {
-            runTraversal(algorithmId, algorithm, selectedSnapshot);
+        AlgorithmDescriptor descriptor = algorithm(algorithmId, runtimeValueType);
+        if (descriptor.structureContract().equals(WeightedGraphStructure.class)
+                && descriptor.entryPoint().getParameterCount() == 2
+                && descriptor.entryPoint().getParameterTypes()[1].equals(WeightedGraphStructure.class)) {
+            runMinimumSpanning(algorithmId, descriptor, selectedSnapshot);
             return;
         }
-        if (algorithm instanceof MinimumSpanningAlgorithm<?>) {
-            runMinimumSpanning(algorithmId, algorithm, selectedSnapshot);
-            return;
-        }
-        throw new IllegalStateException("Unsupported graph algorithm contract: " + algorithm.getClass().getName());
+        runTraversal(algorithmId, descriptor, selectedSnapshot);
     }
 
-    @SuppressWarnings("unchecked")
-    private GraphFamilyAlgorithm<Object> graphAlgorithm(String algorithmId) {
-        return (GraphFamilyAlgorithm<Object>) algorithm(algorithmId, runtimeValueType, GraphFamilyAlgorithm.class);
-    }
-
-    @SuppressWarnings("unchecked")
     private void runTraversal(
             String algorithmId,
-            GraphFamilyAlgorithm<Object> algorithm,
+            AlgorithmDescriptor descriptor,
             GraphSnapshotState<Object> inputSnapshot) {
-        GraphTraversal<Object> traversal = (GraphTraversal<Object>) algorithm;
         GraphStructure<Object> inputGraph = graphFromSnapshot(inputSnapshot);
         if (inputGraph.isEmpty()) {
             return;
@@ -159,14 +149,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         startAlgorithm(
                 algorithmId,
                 inputSnapshot,
-                () -> traversal.traverse(inputGraph, finalStartNode),
+                () -> descriptor.invoke(inputGraph, finalStartNode),
                 () -> new GraphEventReducer(inputSnapshot));
     }
 
     @SuppressWarnings("unchecked")
     private void runMinimumSpanning(
             String algorithmId,
-            GraphFamilyAlgorithm<Object> algorithm,
+            AlgorithmDescriptor descriptor,
             GraphSnapshotState<Object> inputSnapshot) {
         if (!(inputSnapshot instanceof WeightedGraphSnapshot<?> weighted)) {
             throw new IllegalArgumentException("minimum spanning algorithms require a weighted graph snapshot");
@@ -178,12 +168,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
                 sourceSnapshot.vertices(),
                 List.of());
         WeightedGraph<Object> result = WeightedGraph.fromSnapshot(resultSnapshot);
-        MinimumSpanningAlgorithm<Object> spanning = (MinimumSpanningAlgorithm<Object>) algorithm;
         startAlgorithm(
                 algorithmId,
                 sourceSnapshot,
                 () -> {
-                    spanning.build(source, result);
+                    descriptor.invoke(source, result);
                     return null;
                 },
                 () -> new GraphEventReducer(resultSnapshot));

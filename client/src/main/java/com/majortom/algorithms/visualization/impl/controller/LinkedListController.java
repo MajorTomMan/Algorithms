@@ -363,7 +363,23 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public void handleAlgorithmStart() {
-        logI18n("message.linear.no_algorithm");
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            logI18n("message.linear.no_algorithm");
+            return;
+        }
+        List<Object> inputValues = algorithmInputSnapshot == null
+                ? values()
+                : algorithmInputSnapshot.state().values();
+        LinkedList<Object> input = new LinkedList<>();
+        input.initialize(inputValues);
+        LinkedListViewState initialState = LinkedListViewState.source(input.head());
+        var descriptor = AlgorithmCatalog.compatibleDescriptor(
+                LinkedStructure.class, runtimeValueType, algorithmId);
+        startAlgorithm(algorithmId, inputValues, () -> {
+            descriptor.invoke(input);
+            return null;
+        }, () -> new LinkedListEventReducer(initialState));
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.majortom.algorithms.structure.array;
 
-import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.Collection;
@@ -8,7 +7,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-@Structure(id = "array", name = "Array", contract = ArrayStructure.class)
 public final class Array<T> implements ArrayStructure<T> {
     private static final int DEFAULT_CAPACITY = 10;
 

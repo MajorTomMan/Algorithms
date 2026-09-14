@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.snapshot.BinaryTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -22,6 +23,7 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
+import com.majortom.algorithms.structure.tree.AvlTreeStructure;
 import com.majortom.algorithms.structure.tree.GeneralTreeStructure;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -510,7 +512,41 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public void handleAlgorithmStart() {
-        logI18n("message.tree.no_algorithm");
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            logI18n("message.tree.no_algorithm");
+            return;
+        }
+
+        TreeSnapshotState<Object> inputState = algorithmInputSnapshot == null
+                ? (activeVariant == TreeVariant.GENERAL ? currentGeneralSnapshot() : currentAvlSnapshot())
+                : algorithmInputSnapshot.state();
+        TreeViewState initialState = viewState(inputState);
+        Class<?> activeStructure = inputState instanceof GeneralTreeSnapshot<?>
+                ? GeneralTreeStructure.class
+                : AvlTreeStructure.class;
+        AlgorithmDescriptor descriptor = AlgorithmCatalog.compatibleDescriptor(
+                activeStructure, runtimeValueType, algorithmId);
+        Object input = algorithmTree(inputState);
+
+        startAlgorithm(algorithmId, inputState, () -> {
+            descriptor.invoke(input);
+            return null;
+        }, () -> new TreeEventReducer(initialState));
+    }
+
+    private Object algorithmTree(TreeSnapshotState<Object> state) {
+        if (state instanceof GeneralTreeSnapshot<?> general) {
+            @SuppressWarnings("unchecked")
+            GeneralTreeSnapshot<Object> typed = (GeneralTreeSnapshot<Object>) general;
+            return Tree.fromSnapshot(typed);
+        }
+        if (state instanceof BinaryTreeSnapshot<?> binary) {
+            @SuppressWarnings("unchecked")
+            BinaryTreeSnapshot<Object> typed = (BinaryTreeSnapshot<Object>) binary;
+            return avlFromSnapshot(typed);
+        }
+        throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
     }
 
     @Override

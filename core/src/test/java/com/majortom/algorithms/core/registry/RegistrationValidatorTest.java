@@ -1,7 +1,11 @@
 package com.majortom.algorithms.core.registry;
 
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureModule;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -11,69 +15,80 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RegistrationValidatorTest {
+    @Structure(id = "sample", name = "Sample", module = StructureModule.ARRAY, implementation = Component.class)
     interface Contract {}
+
+    @Structure(module = StructureModule.GRAPH)
+    interface GraphContract {}
+
     public static final class Component implements Contract { public Component() {} }
     public static final class AlternateComponent implements Contract { public AlternateComponent() {} }
 
+    public static final class SampleAlgorithm {
+        public SampleAlgorithm() {}
+        @AlgorithmEntry public void execute(Contract ignored) {}
+    }
+
+    public static final class AlternateAlgorithm {
+        public AlternateAlgorithm() {}
+        @AlgorithmEntry public void execute(Contract ignored) {}
+    }
+
     @Test
     void rejectsDuplicateStructureIds() {
-        StructureDescriptor descriptor = new StructureDescriptor("sample", "Sample", Contract.class, Component.class);
+        StructureDescriptor descriptor = new StructureDescriptor(
+                "sample", "Sample", StructureModule.ARRAY, Contract.class, Component.class);
         assertThrows(RegistrationException.class,
                 () -> RegistrationValidator.validateUniqueStructureIds(List.of(descriptor, descriptor)));
     }
 
     @Test
     void rejectsPrimitiveAlgorithmValueTypes() {
-        AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
-                "sample", "Sample", "array", int.class, Contract.class, Component.class);
+        AlgorithmDescriptor descriptor = algorithm("sample", int.class, Contract.class, SampleAlgorithm.class);
         assertThrows(RegistrationException.class, () -> RegistrationValidator.validate(descriptor));
     }
 
     @Test
-    void algorithmIdentityIncludesModuleValueTypeAndStableId() {
-        AlgorithmDescriptor integer = algorithm("insertion-sort", "array", Integer.class, Component.class);
-        AlgorithmDescriptor string = algorithm("insertion-sort", "array", String.class, Component.class);
-        AlgorithmDescriptor graph = algorithm("insertion-sort", "graph", Integer.class, Component.class);
+    void algorithmIdentityIncludesStructureValueTypeAndStableId() {
+        AlgorithmDescriptor integer = algorithm("insertion-sort", Integer.class, Contract.class, SampleAlgorithm.class);
+        AlgorithmDescriptor string = algorithm("insertion-sort", String.class, Contract.class, SampleAlgorithm.class);
+        AlgorithmDescriptor graph = algorithm("insertion-sort", Integer.class, GraphContract.class, SampleAlgorithm.class);
 
-        assertDoesNotThrow(() -> RegistrationValidator.validateUniqueAlgorithmKeys(
-                List.of(integer, string, graph)));
+        assertDoesNotThrow(() -> RegistrationValidator.validateUniqueAlgorithmKeys(List.of(integer, string, graph)));
 
         ComponentRegistry registry = new ComponentRegistry(List.of(), List.of(integer, string, graph));
         assertEquals(3, registry.algorithms().size());
         assertEquals(Integer.class,
-                registry.requireAlgorithm("array", Integer.class, "insertion-sort").valueType());
+                registry.requireAlgorithm(new AlgorithmKey(Contract.class, Integer.class, "insertion-sort")).valueType());
         assertEquals(String.class,
-                registry.requireAlgorithm("array", String.class, "insertion-sort").valueType());
-        assertEquals("graph",
-                registry.requireAlgorithm("graph", Integer.class, "insertion-sort").moduleId());
+                registry.requireAlgorithm(new AlgorithmKey(Contract.class, String.class, "insertion-sort")).valueType());
+        assertEquals(StructureModule.GRAPH,
+                registry.requireAlgorithm(new AlgorithmKey(GraphContract.class, Integer.class, "insertion-sort")).module());
     }
 
     @Test
     void rejectsOnlyExactDuplicateAlgorithmKeys() {
-        AlgorithmDescriptor descriptor = algorithm("sample", "array", String.class, Component.class);
+        AlgorithmDescriptor descriptor = algorithm("sample", String.class, Contract.class, SampleAlgorithm.class);
         RegistrationException failure = assertThrows(RegistrationException.class,
                 () -> RegistrationValidator.validateUniqueAlgorithmKeys(List.of(descriptor, descriptor)));
-        assertTrue(failure.getMessage().contains("module=array"));
+        assertTrue(failure.getMessage().contains("structure=" + Contract.class.getName()));
         assertTrue(failure.getMessage().contains("java.lang.String"));
         assertTrue(failure.getMessage().contains("id=sample"));
     }
 
     @Test
-    void registryCreatesAlgorithmUsingCompositeIdentity() {
-        AlgorithmDescriptor integer = algorithm("sample", "array", Integer.class, Component.class);
-        AlgorithmDescriptor string = algorithm("sample", "array", String.class, AlternateComponent.class);
-        ComponentRegistry registry = new ComponentRegistry(List.of(), List.of(integer, string));
-
-        assertInstanceOf(Component.class,
-                registry.createAlgorithm("array", Integer.class, "sample", Contract.class));
-        assertInstanceOf(AlternateComponent.class,
-                registry.createAlgorithm("array", String.class, "sample", Contract.class));
+    void descriptorCreatesAndInvokesAlgorithmWithoutBehaviorInterface() {
+        AlgorithmDescriptor descriptor = algorithm("sample", Integer.class, Contract.class, AlternateAlgorithm.class);
+        assertInstanceOf(AlternateAlgorithm.class, descriptor.newInstance());
+        assertDoesNotThrow(() -> descriptor.invoke(new Component()));
     }
 
     @Test
     void structureResolverSupportsExplicitImplementationSelection() {
-        StructureDescriptor primary = new StructureDescriptor("primary", "Primary", Contract.class, Component.class);
-        StructureDescriptor alternate = new StructureDescriptor("alternate", "Alternate", Contract.class, AlternateComponent.class);
+        StructureDescriptor primary = new StructureDescriptor(
+                "primary", "Primary", StructureModule.ARRAY, Contract.class, Component.class);
+        StructureDescriptor alternate = new StructureDescriptor(
+                "alternate", "Alternate", StructureModule.ARRAY, Contract.class, AlternateComponent.class);
         StructureResolver resolver = new StructureResolver(
                 new ComponentRegistry(List.of(primary, alternate), List.of()));
 
@@ -90,7 +105,12 @@ class RegistrationValidatorTest {
     }
 
     private static AlgorithmDescriptor algorithm(
-            String id, String moduleId, Class<?> valueType, Class<?> implementation) {
-        return new AlgorithmDescriptor(id, "Sample", moduleId, valueType, Void.class, implementation);
+            String id, Class<?> valueType, Class<?> structureContract, Class<?> implementation) {
+        try {
+            Method entry = implementation.getMethod("execute", Contract.class);
+            return new AlgorithmDescriptor(id, "Sample", valueType, structureContract, implementation, entry);
+        } catch (NoSuchMethodException exception) {
+            throw new AssertionError(exception);
+        }
     }
 }

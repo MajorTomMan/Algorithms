@@ -2,10 +2,11 @@ package com.majortom.algorithms.algorithm.array.sort.impl;
 
 import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
-@Algorithm(id = "bubble-sort", name = "冒泡排序", module = "array", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(id = "bubble-sort", name = "冒泡排序", type = Integer.class, structure = ArrayStructure.class)
 public class IntegerBubbleSort extends AbstractIntegerSort {
 
     @Override
@@ -42,7 +43,7 @@ public class IntegerBubbleSort extends AbstractIntegerSort {
      * 3.1.1.1 因为最右边可以视为最左边的倒序,故可以从数组的最后面开始减去最左边的当前元素的位置
      * 3.1.1.2 可将该优化视为每轮的数组长度减少已经排序的元素个数,从最右边(即最大值)开始减少
      */
-    @Override
+    @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         Log.d("size:" + array.size());
         for (int i = 0; i < array.size(); i++) {

@@ -12,6 +12,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureEventReducer;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
@@ -358,7 +359,24 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public void handleAlgorithmStart() {
-        logI18n("message.linear.no_algorithm");
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            logI18n("message.linear.no_algorithm");
+            return;
+        }
+        List<Object> inputValues = algorithmInputSnapshot == null
+                ? values()
+                : algorithmInputSnapshot.state().values();
+        LinkedList<Object> input = new LinkedList<>();
+        input.initialize(inputValues);
+        Class<?> structureContract = kind == Kind.STACK ? StackStructure.class : QueueStructure.class;
+        var descriptor = AlgorithmCatalog.compatibleDescriptor(
+                structureContract, runtimeValueType, algorithmId);
+        Object algorithmInput = kind == Kind.STACK ? (StackStructure<Object>) input : (QueueStructure<Object>) input;
+        startAlgorithm(algorithmId, inputValues, () -> {
+            descriptor.invoke(algorithmInput);
+            return null;
+        }, () -> new LinearStructureEventReducer(moduleId, inputValues));
     }
 
     @Override

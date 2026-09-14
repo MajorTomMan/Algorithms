@@ -1,6 +1,5 @@
 package com.majortom.algorithms.structure.graph;
 
-import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Weighted graph variant that reuses the canonical Graph topology implementation. */
-@Structure(id = "weighted-graph", name = "Weighted Graph", contract = WeightedGraphStructure.class)
 public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
     private final Graph<T> graph;
     private final LinkedHashMap<Long, Double> weightsByEdgeId = new LinkedHashMap<>();

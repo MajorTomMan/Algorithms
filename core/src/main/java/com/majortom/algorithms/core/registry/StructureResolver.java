@@ -62,11 +62,7 @@ public final class StructureResolver {
     }
 
     private Class<?> requireStructureContract(AlgorithmDescriptor algorithm) {
-        if (!algorithm.hasStructureContract()) {
-            throw new RegistrationException("Algorithm " + algorithm.key()
-                    + " does not declare a Structure contract");
-        }
-        return algorithm.structureContract();
+        return Objects.requireNonNull(algorithm, "algorithm").structureContract();
     }
 
     private void validateContract(Class<?> requiredContract) {

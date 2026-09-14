@@ -1,7 +1,7 @@
 package com.majortom.algorithms.algorithm.graph.impl;
 
-import com.majortom.algorithms.algorithm.graph.MinimumSpanningAlgorithm;
 import com.majortom.algorithms.core.annotation.Algorithm;
+import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
@@ -15,10 +15,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Kruskal minimum-spanning-tree/forest implementation over the weighted graph contract. */
-@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", module = "graph", type = Integer.class, structure = WeightedGraphStructure.class)
-public final class KruskalMinimumSpanning implements MinimumSpanningAlgorithm<Integer> {
-
-    @Override
+@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", type = Integer.class, structure = WeightedGraphStructure.class)
+public final class KruskalMinimumSpanning {
+    @AlgorithmEntry
     public void build(WeightedGraphStructure<Integer> source, WeightedGraphStructure<Integer> result) {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(result, "result");

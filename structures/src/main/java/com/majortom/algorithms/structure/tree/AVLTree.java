@@ -1,6 +1,5 @@
 package com.majortom.algorithms.structure.tree;
 
-import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 
 import java.util.Collections;
@@ -10,7 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Structure(id = "avl-tree", name = "AVL Tree", contract = AvlTreeStructure.class)
 public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeStructure<T> {
     private AVLTreeNode<T> root;
     private int size;
