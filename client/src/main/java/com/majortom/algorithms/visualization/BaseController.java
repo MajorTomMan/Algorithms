@@ -1218,6 +1218,11 @@ public abstract class BaseController<S> implements Initializable {
         return paused.get();
     }
 
+    /** Returns whether a recorded timeline is currently auto-playing. */
+    public final boolean isPlaybackPlaying() {
+        return replayController != null && replayController.isPlaying();
+    }
+
     private ClientExecutionRecord createExecutionRecord(
             String operationId,
             Object input,

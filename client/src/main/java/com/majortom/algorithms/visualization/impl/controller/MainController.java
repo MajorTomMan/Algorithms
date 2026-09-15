@@ -180,6 +180,8 @@ public class MainController implements Initializable {
     @FXML
     private VBox algorithmControlRail;
     @FXML
+    private VBox practiceControlRail;
+    @FXML
     private VBox snapshotPanel;
     @FXML
     private HBox structureSnapshotPreviewBadge;
@@ -360,11 +362,15 @@ public class MainController implements Initializable {
     @FXML
     private Label resultHeadingLabel;
     @FXML
-    private Label timelinePositionLabel;
-    @FXML
     private Pane timelineMarkers;
     @FXML
     private FlowPane timelineDetails;
+    @FXML
+    private VBox timelineDetailPanel;
+    @FXML
+    private Region timelineStatusDot;
+    @FXML
+    private Label timelineStatusLabel;
     @FXML
     private Button timelineToggleBtn;
     @FXML
@@ -616,6 +622,7 @@ public class MainController implements Initializable {
                 fontSettingsPopup.hide();
             }
             refreshPauseText();
+            refreshTimelineStatus();
             refreshWorkspaceContext();
             refreshTopContext();
             refreshAlgorithmInputSource();
@@ -683,16 +690,17 @@ public class MainController implements Initializable {
         popup.setHideOnEscape(true);
         popup.setAnchorLocation(javafx.stage.PopupWindow.AnchorLocation.CONTENT_TOP_RIGHT);
 
-        VBox popupShell = new VBox(0.0d);
+        VBox popupShell = new VBox();
         popupShell.setAlignment(javafx.geometry.Pos.TOP_RIGHT);
         popupShell.getStyleClass().add("font-settings-popup-shell");
         popupShell.getStylesheets().addAll(rootPane.getStylesheets());
 
         Region arrow = new Region();
         arrow.getStyleClass().add("font-settings-arrow");
-        VBox.setMargin(arrow, new javafx.geometry.Insets(0.0d, 18.0d, 0.0d, 0.0d));
+        HBox arrowRow = new HBox(arrow);
+        arrowRow.getStyleClass().add("font-settings-arrow-row");
 
-        VBox content = new VBox(14.0d);
+        VBox content = new VBox();
         content.getStyleClass().add("font-settings-popover");
 
         FontSettings initial = appliedFontSettings;
@@ -752,7 +760,7 @@ public class MainController implements Initializable {
         sizeValue.setMaxWidth(Double.MAX_VALUE);
         sizeValue.getStyleClass().add("font-settings-size-value");
         HBox.setHgrow(sizeValue, Priority.ALWAYS);
-        HBox sizeControl = new HBox(0.0d, decreaseSize, sizeValue, increaseSize);
+        HBox sizeControl = new HBox(decreaseSize, sizeValue, increaseSize);
         sizeControl.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         sizeControl.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(sizeControl, Priority.ALWAYS);
@@ -777,7 +785,7 @@ public class MainController implements Initializable {
         previewArray.textProperty().bind(I18N.createStringBinding("settings.text.preview.array"));
         Label previewStep = new Label();
         previewStep.textProperty().bind(I18N.createStringBinding("settings.text.preview.step"));
-        VBox preview = new VBox(4.0d, previewPrimary, previewArray, previewStep);
+        VBox preview = new VBox(previewPrimary, previewArray, previewStep);
         preview.getStyleClass().add("font-settings-preview");
 
         Runnable refreshPreview = () -> FONT_SETTINGS_SERVICE.applyPreview(preview, draft[0]);
@@ -833,7 +841,7 @@ public class MainController implements Initializable {
         Button apply = new Button();
         apply.textProperty().bind(I18N.createStringBinding("settings.text.apply"));
         apply.getStyleClass().add("font-settings-apply-button");
-        HBox footer = new HBox(10.0d, reset, apply);
+        HBox footer = new HBox(reset, apply);
         footer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         footer.getStyleClass().add("font-settings-footer");
 
@@ -870,7 +878,7 @@ public class MainController implements Initializable {
             rootPane.applyCss();
             rootPane.layout();
             refreshUiFramework();
-            boolean timelineExpanded = timelineDetails != null && timelineDetails.isVisible();
+            boolean timelineExpanded = timelineDetailPanel != null && timelineDetailPanel.isVisible();
             setTimelineExpanded(timelineExpanded);
             rootPane.requestLayout();
             javafx.application.Platform.runLater(() -> {
@@ -895,7 +903,7 @@ public class MainController implements Initializable {
                 preview,
                 new Separator(),
                 footer);
-        popupShell.getChildren().setAll(arrow, content);
+        popupShell.getChildren().setAll(arrowRow, content);
         FONT_SETTINGS_SERVICE.apply(popupShell, initial);
         FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
         WorkbenchTheme.apply(popupShell);
@@ -906,7 +914,7 @@ public class MainController implements Initializable {
     private HBox fontSettingsRow(Label label, Node control) {
         label.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
         HBox.setHgrow(control, Priority.ALWAYS);
-        HBox row = new HBox(12.0d, label, control);
+        HBox row = new HBox(label, control);
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         row.getStyleClass().add("font-settings-row");
         return row;
@@ -1507,7 +1515,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void toggleTimelineDetails() {
-        boolean expanded = timelineDetails != null && !timelineDetails.isVisible();
+        boolean expanded = timelineDetailPanel != null && !timelineDetailPanel.isVisible();
         setTimelineExpanded(expanded);
         if (expanded) {
             rebuildTimelineMarkers();
@@ -1515,9 +1523,9 @@ public class MainController implements Initializable {
     }
 
     private void setTimelineExpanded(boolean expanded) {
-        if (timelineDetails != null) {
-            timelineDetails.setManaged(expanded);
-            timelineDetails.setVisible(expanded);
+        if (timelineDetailPanel != null) {
+            timelineDetailPanel.setManaged(expanded);
+            timelineDetailPanel.setVisible(expanded);
         }
         if (bottomDock != null) {
             bottomDock.getStyleClass().removeAll("timeline-collapsed", "timeline-expanded");
@@ -1597,6 +1605,7 @@ public class MainController implements Initializable {
                 algorithmFamilyRail,
                 structureControlRail,
                 algorithmControlRail,
+                practiceControlRail,
                 snapshotPanel,
                 diagnosticsPanel,
                 structureSelectionOverlay,
@@ -2596,7 +2605,7 @@ public class MainController implements Initializable {
         alert.setTitle(I18N.text("confirm.snapshot.restore.title"));
         alert.setHeaderText(I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
         alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
-        OperationDialogTheme.apply(alert, 460.0d);
+        OperationDialogTheme.apply(alert);
         return alert.showAndWait().filter(restore::equals).isPresent();
     }
 
@@ -2726,6 +2735,47 @@ public class MainController implements Initializable {
         if (jumpEndBtn != null) jumpEndBtn.setDisable(running || !hasTimeline);
         if (endExecutionBtn != null) endExecutionBtn.setDisable(!running);
         if (closeExecutionBtn != null) closeExecutionBtn.setDisable(!running && !hasTimeline);
+        refreshTimelineStatus();
+    }
+
+    private void refreshTimelineStatus() {
+        if (timelineStatusLabel == null) {
+            return;
+        }
+        boolean available = currentSubController != null;
+        boolean running = available && currentSubController.isRunning();
+        boolean replaying = available && currentSubController.isPlaybackPlaying();
+        boolean paused = available && currentSubController.isPaused();
+        boolean hasTimeline = available && currentSubController.hasExecutionData();
+
+        String key;
+        String tone;
+        if (paused && (running || replaying || hasTimeline)) {
+            key = "status.workspace.paused";
+            tone = "timeline-status-paused";
+        } else if (running) {
+            key = "status.workspace.running";
+            tone = "timeline-status-running";
+        } else if (replaying) {
+            key = "status.workspace.playing";
+            tone = "timeline-status-playing";
+        } else if (hasTimeline) {
+            key = "status.workspace.completed";
+            tone = "timeline-status-completed";
+        } else {
+            key = "status.workspace.ready";
+            tone = "timeline-status-ready";
+        }
+        timelineStatusLabel.setText(I18N.text(key));
+        if (timelineStatusDot != null) {
+            timelineStatusDot.getStyleClass().removeAll(
+                    "timeline-status-running",
+                    "timeline-status-playing",
+                    "timeline-status-paused",
+                    "timeline-status-completed",
+                    "timeline-status-ready");
+            timelineStatusDot.getStyleClass().add(tone);
+        }
     }
 
     private void bindSpeedButton(Button button, double speed, double delayMillis) {
@@ -3169,7 +3219,10 @@ public class MainController implements Initializable {
             if (eventKindLabel != null) eventKindLabel.setText(I18N.text("label.workspace.event.none"));
             if (eventDetailsLabel != null) eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
             if (eventKindDot != null) setEventDotClass("event-dot-idle");
-            if (timelineCursorLabel != null) { timelineCursorLabel.setManaged(false); timelineCursorLabel.setVisible(false); }
+            if (timelineCursorLabel != null) {
+                timelineCursorLabel.setText("");
+                timelineCursorLabel.setVisible(false);
+            }
         } else {
             if (currentStepOverlay != null) {
                 currentStepOverlay.setManaged(true);
@@ -3188,15 +3241,6 @@ public class MainController implements Initializable {
         String result = currentSubController.latestResultText();
         if (resultLabel != null) resultLabel.setText(result);
         if (resultPreviewLabel != null) resultPreviewLabel.setText(result);
-        if (timelinePositionLabel != null) {
-            int index = currentSubController.presentationEventIndex();
-            int count = currentSubController.executionEvents().size();
-            if (count == 0) {
-                timelinePositionLabel.setText("#0000");
-            } else {
-                timelinePositionLabel.setText(String.format(Locale.ROOT, "#%04d / %04d", Math.max(0, index + 1), count));
-            }
-        }
         refreshRunSummary();
         rebuildTimelineMarkers();
         refreshStructureSummary();
@@ -3388,9 +3432,10 @@ public class MainController implements Initializable {
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {
-        if (timelineCursorLabel == null || current == null) return;
-        timelineCursorLabel.setText(String.format(Locale.ROOT, "#%04d  %s", current.sequence(), eventDisplayName(current)));
-        timelineCursorLabel.setManaged(true);
+        if (timelineCursorLabel == null || current == null) {
+            return;
+        }
+        timelineCursorLabel.setText(I18N.text("label.workspace.event.current") + ": " + eventDisplayName(current));
         timelineCursorLabel.setVisible(true);
     }
 
@@ -3406,14 +3451,26 @@ public class MainController implements Initializable {
             return;
         }
 
-        double paneWidth;
-        if (timelineMarkers.getWidth() > 0.0d) {
-            paneWidth = timelineMarkers.getWidth();
-        } else {
-            paneWidth = 700.0d;
+        double paneWidth = timelineMarkers.getWidth();
+        if (!(paneWidth > 0.0d)) {
+            paneWidth = timelineMarkers.prefWidth(-1.0d);
         }
-        double horizontalInset = 8.0d;
+        if (!(paneWidth > 0.0d) || !Double.isFinite(paneWidth)) {
+            paneWidth = 320.0d;
+        }
+        double paneHeight = timelineMarkers.getHeight();
+        if (!(paneHeight > 0.0d)) {
+            paneHeight = timelineMarkers.prefHeight(paneWidth);
+        }
+        if (!(paneHeight > 0.0d) || !Double.isFinite(paneHeight)) {
+            paneHeight = 36.0d;
+        }
+
+        double fontSize = timelineBaseFontSize();
+        double symbolSize = Math.max(7.0d, Math.min(14.0d, fontSize * 0.52d));
+        double horizontalInset = Math.max(symbolSize, fontSize * 0.62d);
         double usableWidth = Math.max(1.0d, paneWidth - horizontalInset * 2.0d);
+        double trackCenterY = paneHeight / 2.0d;
 
         int currentIndex = currentSubController.presentationEventIndex();
         if (currentIndex >= 0 && currentIndex < events.size()) {
@@ -3422,7 +3479,11 @@ public class MainController implements Initializable {
             cursor.setManaged(false);
             cursor.setMouseTransparent(true);
             double ratio = eventRatio(currentIndex, events.size());
-            cursor.resizeRelocate(horizontalInset + ratio * usableWidth - 1.0d, 3.0d, 2.0d, 26.0d);
+            double cursorWidth = Math.max(2.0d, fontSize * 0.10d);
+            double cursorHeight = Math.max(symbolSize * 2.4d, paneHeight * 0.72d);
+            double cursorX = horizontalInset + ratio * usableWidth - cursorWidth / 2.0d;
+            double cursorY = trackCenterY - cursorHeight / 2.0d;
+            cursor.resizeRelocate(cursorX, cursorY, cursorWidth, cursorHeight);
             timelineMarkers.getChildren().add(cursor);
         }
 
@@ -3430,13 +3491,8 @@ public class MainController implements Initializable {
         for (TimelineMarkerGroup group : groups) {
             int representativeIndex = group.representativeIndex();
             EventEnvelope envelope = events.get(representativeIndex);
-            VBox marker = new VBox(1.0d);
-            marker.setAlignment(javafx.geometry.Pos.CENTER);
-            marker.setPrefWidth(24.0d);
-            marker.setMinWidth(24.0d);
-            marker.setMaxWidth(24.0d);
-            marker.setPrefHeight(28.0d);
-            marker.setMinHeight(28.0d);
+            VBox marker = new VBox(Math.max(1.0d, fontSize * 0.06d));
+            marker.setAlignment(javafx.geometry.Pos.TOP_CENTER);
             marker.setManaged(false);
             marker.setFocusTraversable(true);
             marker.getStyleClass().add("timeline-marker-node");
@@ -3445,6 +3501,9 @@ public class MainController implements Initializable {
             }
 
             Region symbol = new Region();
+            symbol.setMinSize(symbolSize, symbolSize);
+            symbol.setPrefSize(symbolSize, symbolSize);
+            symbol.setMaxSize(symbolSize, symbolSize);
             symbol.getStyleClass().addAll("timeline-marker-symbol", eventMarkerClass(envelope));
             if (group.eventIndexes().contains(currentIndex)) {
                 symbol.getStyleClass().add("timeline-marker-current");
@@ -3459,8 +3518,19 @@ public class MainController implements Initializable {
                 marker.getChildren().add(aggregate);
             }
 
+            timelineMarkers.getChildren().add(marker);
+            marker.applyCss();
+            marker.autosize();
+            double markerWidth = Math.max(symbolSize, marker.prefWidth(-1.0d));
+            double resolvedMarkerHeight = Math.max(symbolSize, marker.prefHeight(markerWidth));
+            marker.resize(markerWidth, resolvedMarkerHeight);
+
             double ratio = eventRatio(representativeIndex, events.size());
-            marker.relocate(horizontalInset + ratio * usableWidth - 12.0d, 2.0d);
+            double centerX = horizontalInset + ratio * usableWidth;
+            double markerX = Math.max(0.0d, Math.min(paneWidth - markerWidth, centerX - markerWidth / 2.0d));
+            double markerY = Math.max(0.0d, trackCenterY - symbolSize / 2.0d);
+            marker.relocate(markerX, markerY);
+
             String tooltipText = timelineMarkerTooltip(events, group);
             Tooltip.install(marker, new Tooltip(tooltipText));
             marker.setAccessibleText(tooltipText);
@@ -3474,8 +3544,14 @@ public class MainController implements Initializable {
                     event.consume();
                 }
             });
-            timelineMarkers.getChildren().add(marker);
         }
+    }
+
+    private double timelineBaseFontSize() {
+        if (timelineLabel != null && timelineLabel.getFont() != null) {
+            return Math.max(8.0d, timelineLabel.getFont().getSize());
+        }
+        return 16.0d;
     }
 
     private void jumpToTimelineMarkerGroup(TimelineMarkerGroup group) {
@@ -3514,8 +3590,9 @@ public class MainController implements Initializable {
             return List.of();
         }
 
-        int markerBudget = (int) Math.floor(usableWidth / 30.0d);
-        markerBudget = Math.max(13, Math.min(48, markerBudget));
+        double markerFootprint = Math.max(18.0d, timelineBaseFontSize() * 1.75d);
+        int markerBudget = (int) Math.floor(usableWidth / markerFootprint);
+        markerBudget = Math.max(3, Math.min(48, markerBudget));
         if (candidates.size() <= markerBudget) {
             List<TimelineMarkerGroup> groups = new ArrayList<>(candidates.size());
             for (int index : candidates) {
@@ -3581,7 +3658,8 @@ public class MainController implements Initializable {
 
     private String timelineMarkerTooltip(List<EventEnvelope> events, TimelineMarkerGroup group) {
         EventEnvelope envelope = events.get(group.representativeIndex());
-        String base = String.format(Locale.ROOT, "#%04d  %s", envelope.sequence(), eventDisplayName(envelope));
+        String base = I18N.text("label.workspace.event") + " " + envelope.sequence()
+                + " · " + eventDisplayName(envelope);
         if (group.eventIndexes().size() <= 1) {
             return base;
         }
@@ -3609,10 +3687,8 @@ public class MainController implements Initializable {
             return;
         }
         boolean paused = currentSubController != null && currentSubController.isPaused();
-        String key = "action.execution.pause";
-        if (paused) {
-            key = "action.execution.resume";
-        }
-        pauseBtn.setText(I18N.text(key).toUpperCase(Locale.ROOT));
+        String key = paused ? "action.execution.resume" : "action.execution.pause";
+        pauseBtn.setText(paused ? "▶" : "❚❚");
+        pauseBtn.setAccessibleText(I18N.text(key));
     }
 }

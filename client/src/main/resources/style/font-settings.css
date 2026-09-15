@@ -1,11 +1,12 @@
 /*
- * Font/display settings UI and user-selected ordinary text color.
+ * Font/display settings paint plus user-selected ordinary text color.
  *
- * This file owns the settings trigger/popover and the font-color override only.
- * Control heights grow with the active font tier so 10-24px text is never clipped.
+ * Geometry is relative to the active font so the popup follows the same
+ * 10-24px scaling model as the Workbench instead of carrying NORMAL/LARGE/
+ * XLARGE pixel tiers.
  */
 .font-settings-divider {
-    -fx-padding: 0 2px;
+    -fx-padding: 0 0.125em;
 }
 
 .font-settings-divider .line {
@@ -14,33 +15,13 @@
 }
 
 .lab-top-bar .font-settings-button {
-    -fx-min-height: 36px;
-    -fx-pref-height: 36px;
-    -fx-padding: 0;
     -fx-background-color: transparent;
     -fx-border-color: #4b5157;
     -fx-border-width: 1px;
-    -fx-border-radius: 3px;
-    -fx-background-radius: 3px;
+    -fx-border-radius: 0.188em;
+    -fx-background-radius: 0.188em;
     -fx-text-fill: #f2f3f4;
     -fx-font-weight: 700;
-}
-
-.lab-top-bar .font-settings-button {
-    -fx-min-width: 36px;
-    -fx-pref-width: 36px;
-    -fx-max-width: 36px;
-    -fx-font-size: 1.05em;
-}
-
-.root-pane.font-size-large .lab-top-bar .font-settings-button,
-.root-pane.font-size-xlarge .lab-top-bar .font-settings-button {
-    -fx-min-width: 2em;
-    -fx-pref-width: 2em;
-    -fx-max-width: 2em;
-    -fx-min-height: 2em;
-    -fx-pref-height: 2em;
-    -fx-max-height: 2em;
 }
 
 .lab-top-bar .font-settings-button:hover {
@@ -49,31 +30,24 @@
 }
 
 .font-settings-popup-shell {
-    -fx-min-width: 360px;
-    -fx-pref-width: 380px;
-    -fx-max-width: 380px;
+    -fx-min-width: 22.5em;
+    -fx-pref-width: 23.75em;
+    -fx-max-width: 23.75em;
     -fx-background-color: transparent;
 }
 
-.font-settings-popup-shell.font-size-large {
-    -fx-min-width: 400px;
-    -fx-pref-width: 430px;
-    -fx-max-width: 430px;
-}
-
-.font-settings-popup-shell.font-size-xlarge {
-    -fx-min-width: 450px;
-    -fx-pref-width: 500px;
-    -fx-max-width: 500px;
+.font-settings-arrow-row {
+    -fx-alignment: center-right;
+    -fx-padding: 0 1.125em 0 0;
 }
 
 .font-settings-arrow {
-    -fx-min-width: 20px;
-    -fx-pref-width: 20px;
-    -fx-max-width: 20px;
-    -fx-min-height: 10px;
-    -fx-pref-height: 10px;
-    -fx-max-height: 10px;
+    -fx-min-width: 1.25em;
+    -fx-pref-width: 1.25em;
+    -fx-max-width: 1.25em;
+    -fx-min-height: 0.625em;
+    -fx-pref-height: 0.625em;
+    -fx-max-height: 0.625em;
     -fx-background-color: #ffffff;
     -fx-shape: "M 0 10 L 10 0 L 20 10 Z";
 }
@@ -81,12 +55,13 @@
 .font-settings-popover {
     -fx-min-width: 0;
     -fx-max-width: Infinity;
+    -fx-spacing: 0.875em;
     -fx-background-color: #ffffff;
     -fx-border-color: #d6dce2;
     -fx-border-width: 1px;
-    -fx-background-radius: 6px;
-    -fx-border-radius: 6px;
-    -fx-padding: 18px 20px;
+    -fx-background-radius: 0.375em;
+    -fx-border-radius: 0.375em;
+    -fx-padding: 1.125em 1.25em;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 24, 0.12, 0, 5);
 }
 
@@ -94,23 +69,19 @@
     -fx-text-fill: #202124;
     -fx-font-size: 1.16em;
     -fx-font-weight: 800;
-    -fx-padding: 0 0 4px 0;
+    -fx-padding: 0 0 0.25em 0;
 }
 
 .font-settings-row {
     -fx-alignment: center-left;
-    -fx-min-height: 42px;
+    -fx-min-height: 2.625em;
+    -fx-spacing: 0.75em;
 }
 
 .font-settings-row-label {
     -fx-min-width: 7em;
     -fx-pref-width: 7em;
     -fx-max-width: 7em;
-}
-
-.font-settings-popup-shell.font-size-large .font-settings-row,
-.font-settings-popup-shell.font-size-xlarge .font-settings-row {
-    -fx-min-height: 2.55em;
 }
 
 .font-settings-row-label,
@@ -122,13 +93,13 @@
 
 .font-settings-popover .font-settings-combo,
 .font-settings-popover .font-settings-color-picker {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
+    -fx-min-height: 2.375em;
+    -fx-pref-height: 2.375em;
     -fx-background-color: #f8fafb;
     -fx-border-color: #d7dde3;
     -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
+    -fx-border-radius: 0.25em;
+    -fx-background-radius: 0.25em;
 }
 
 .font-settings-popup-shell .font-settings-popover .font-settings-combo .list-cell {
@@ -142,50 +113,29 @@
     -fx-text-fill: #202124;
 }
 
-.font-settings-popup-shell.font-size-large .font-settings-combo,
-.font-settings-popup-shell.font-size-large .font-settings-color-picker,
-.font-settings-popup-shell.font-size-xlarge .font-settings-combo,
-.font-settings-popup-shell.font-size-xlarge .font-settings-color-picker {
-    -fx-min-height: 2.45em;
-    -fx-pref-height: 2.45em;
-}
-
 .font-settings-size-control {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
+    -fx-min-height: 2.375em;
+    -fx-pref-height: 2.375em;
     -fx-border-color: #d7dde3;
     -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
+    -fx-border-radius: 0.25em;
+    -fx-background-radius: 0.25em;
     -fx-background-color: #ffffff;
 }
 
 .font-settings-popover .font-settings-size-button {
-    -fx-min-width: 48px;
-    -fx-pref-width: 48px;
-    -fx-max-width: 48px;
-    -fx-min-height: 36px;
-    -fx-pref-height: 36px;
-    -fx-max-height: 36px;
+    -fx-min-width: 3em;
+    -fx-pref-width: 3em;
+    -fx-max-width: 3em;
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
     -fx-padding: 0;
     -fx-background-color: #eef2f5;
     -fx-border-color: transparent;
     -fx-text-fill: #202124;
     -fx-font-size: 1.12em;
     -fx-font-weight: 700;
-}
-
-.font-settings-popup-shell.font-size-large .font-settings-size-control,
-.font-settings-popup-shell.font-size-xlarge .font-settings-size-control {
-    -fx-min-height: 2.35em;
-    -fx-pref-height: 2.35em;
-}
-
-.font-settings-popup-shell.font-size-large .font-settings-size-button,
-.font-settings-popup-shell.font-size-xlarge .font-settings-size-button {
-    -fx-min-height: 2.15em;
-    -fx-pref-height: 2.15em;
-    -fx-max-height: 2.15em;
 }
 
 .font-settings-popover .font-settings-size-button:hover {
@@ -205,17 +155,18 @@
 }
 
 .font-settings-preview-title {
-    -fx-padding: 0 0 1px 0;
+    -fx-padding: 0 0 0.0625em 0;
 }
 
 .font-settings-preview {
     -ui-user-text: #202124;
+    -fx-spacing: 0.25em;
     -fx-background-color: #f1f3f5;
-    -fx-background-radius: 4px;
+    -fx-background-radius: 0.25em;
     -fx-border-color: #e1e5e9;
     -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-padding: 12px 14px;
+    -fx-border-radius: 0.25em;
+    -fx-padding: 0.75em 0.875em;
 }
 
 .font-settings-preview .label {
@@ -233,23 +184,15 @@
 }
 
 .font-settings-footer {
-    -fx-padding: 2px 0 0 0;
+    -fx-spacing: 0.625em;
+    -fx-padding: 0.125em 0 0 0;
 }
 
 .font-settings-popover .font-settings-reset-button,
 .font-settings-popover .font-settings-apply-button {
-    -fx-min-height: 38px;
-    -fx-pref-height: 38px;
-    -fx-padding: 0 14px;
-}
-
-.font-settings-popup-shell.font-size-large .font-settings-reset-button,
-.font-settings-popup-shell.font-size-large .font-settings-apply-button,
-.font-settings-popup-shell.font-size-xlarge .font-settings-reset-button,
-.font-settings-popup-shell.font-size-xlarge .font-settings-apply-button {
-    -fx-min-height: 2.35em;
-    -fx-pref-height: 2.35em;
-    -fx-max-height: 2.35em;
+    -fx-min-height: 2.375em;
+    -fx-pref-height: 2.375em;
+    -fx-padding: 0 0.875em;
 }
 
 .font-settings-popover .font-settings-reset-button {
@@ -317,7 +260,7 @@
 
 .root-pane.font-color-custom .family-rail-button:selected,
 .root-pane.font-color-custom .speed-button:selected {
-    -fx-text-fill: -ui-white;
+    -fx-text-fill: #ffffff;
 }
 
 .font-scale-box {
@@ -330,6 +273,6 @@
 }
 
 .font-scale-selector {
-    -fx-min-width: 78px;
-    -fx-pref-width: 92px;
+    -fx-min-width: 4.875em;
+    -fx-pref-width: 5.75em;
 }

@@ -13,7 +13,7 @@
   -fx-border-width: 1px;
   -fx-border-radius: 2px;
   -fx-background-radius: 2px;
-  -fx-padding: 2px;
+  -fx-padding: 0.125em;
 }
 .combo-box-popup .list-cell {
   -fx-background-color: #ffffff;
@@ -32,7 +32,7 @@
   -fx-background-color: #ffffff;
   -fx-border-color: #d7dce1;
   -fx-border-width: 1px;
-  -fx-padding: 3px;
+  -fx-padding: 0.188em;
 }
 .context-menu.algorithm-snapshot-menu .menu-item {
   -fx-background-color: #ffffff;
@@ -47,15 +47,7 @@
   -fx-text-fill: #ffffff;
 }
 
-/* 快照菜单跟随字体大小设置 */
+/* Popup font size is copied from the invoking control by WorkbenchTheme. */
 .context-menu.algorithm-snapshot-menu .menu-item .label {
-  -fx-font-size: 13px;
-}
-
-.context-menu.algorithm-snapshot-menu.font-size-large .menu-item .label {
-  -fx-font-size: 15px;
-}
-
-.context-menu.algorithm-snapshot-menu.font-size-xlarge .menu-item .label {
-  -fx-font-size: 17px;
+  -fx-font-size: 1em;
 }

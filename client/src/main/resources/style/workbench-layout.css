@@ -1,154 +1,700 @@
-/* Central Workbench shell layout. Loaded last so shell policy wins over legacy per-tier fixes. */
+/*
+ * Algorithms / Lab Workbench geometry policy.
+ *
+ * Ownership rules:
+ *   - WorkbenchUiFramework owns primary shell widths/heights and visibility.
+ *   - This stylesheet owns relative padding, gaps and content-aware control geometry.
+ *   - typography.css owns font roles.
+ *   - theme.css owns colors, borders and visual states only.
+ *   - visualization entities/canvas coordinates are intentionally excluded.
+ */
 
-/* Header widths/heights are owned by WorkbenchUiFramework, not fixed CSS tiers. */
-.root-pane .lab-top-bar {
+/* ---------- centralized content geometry ---------- */
+/* All values are relative to the active UI font. Primary shell widths are
+ * still owned by WorkbenchUiFramework; explicit policies below take precedence. */
+.operation-dialog-pane {
+    -fx-padding: 1em;
+}
+
+.operation-dialog-content {
+    -fx-min-width: 31.25em;
+    -fx-padding: 0.625em;
+}
+
+.dialog-form-section {
+    -fx-padding: 0.75em;
+}
+
+.dialog-input {
+    -fx-min-width: 11.25em;
+    -fx-pref-height: 2.25em;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.dialog-action-row {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.workspace-catalog {
+    -fx-padding: 0.125em 0 0.25em 0;
+}
+
+.sidebar-catalog-button,
+.sidebar-algorithm-button {
+    -fx-max-width: Infinity;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sidebar-catalog-button {
+    -fx-min-height: 2.375em;
+    -fx-pref-height: 2.625em;
+    -fx-padding: 0.5em 0.625em;
+}
+
+.sidebar-catalog-group {
+    -fx-padding: 0.375em 0 0.562em 0;
+}
+
+.sidebar-group-title {
+    -fx-padding: 0.188em 0.5em 0.312em 0.5em;
+}
+
+.sidebar-algorithm-button {
+    -fx-min-height: 1.875em;
+    -fx-pref-height: 2.125em;
+    -fx-padding: 0.375em 0.625em 0.375em 0.875em;
+}
+
+.snapshot-card-action {
+    -fx-padding: 0.25em 0.375em;
+}
+
+.algorithm-input-source {
+    -fx-padding: 0.0625em 0 0 0;
+}
+
+.value-type-box,
+.font-scale-box {
+    -fx-alignment: center-right;
+}
+
+.log-view {
+    -fx-padding: 0.25em;
+}
+
+.log-view .list-cell {
+    -fx-padding: 0.25em 0.375em;
+}
+
+.log-row {
+    -fx-alignment: top-left;
+}
+
+.log-bullet {
+    -fx-min-width: 0.438em;
+    -fx-pref-width: 0.438em;
+    -fx-max-width: 0.438em;
+    -fx-min-height: 0.438em;
+    -fx-pref-height: 0.438em;
+    -fx-max-height: 0.438em;
+    -fx-translate-y: 0.312em;
+}
+
+.lab-mode-switch {
+    -fx-padding: 0;
+}
+
+.workspace-layer,
+.lab-workspace,
+.lab-workspace-body {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.family-nav {
+    -fx-padding: 0;
+}
+
+.family-rail-button {
+    -fx-alignment: CENTER_LEFT;
+}
+
+.snapshot-quick-block {
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.practice-problem-list {
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.practice-problem-list .list-cell {
+    -fx-padding: 0.688em 0.625em;
+}
+
+.practice-detail-pane {
+    -fx-padding: 2.25em 3em;
+}
+
+.practice-problem-entry {
+    -fx-padding: 0.875em 1em;
+}
+
+.visualization-gesture-pane {
+    -fx-padding: 0;
+}
+
+.viewport-toolbar {
+    -fx-padding: 0;
+    -fx-translate-x: -1.5em;
+    -fx-translate-y: -1.375em;
+}
+
+.snapshot-card {
+    -fx-padding: 0.625em;
+}
+
+.result-value {
+    -fx-padding: 0.875em;
+}
+
+.snapshot-preview-badge {
+    -fx-padding: 0.5em 0.75em;
+    -fx-translate-x: 1.125em;
+    -fx-translate-y: 1.125em;
+}
+
+.snapshot-preview-notice {
+    -fx-padding: 0.75em;
+}
+
+.history-toggle {
+    -fx-padding: 0.125em 0.375em;
+}
+
+.history-scroll,
+.history-scroll > .viewport {
+    -fx-padding: 0;
+}
+
+.input-source-toggle-row {
+    -fx-padding: 0;
+}
+
+.input-source-toggle {
+    -fx-padding: 0.438em 0.438em;
+}
+
+.timeline-legend {
+    -fx-padding: 0 0 0 1.625em;
+}
+
+.inspector-snapshot-section .snapshot-card {
+    -fx-padding: 0.562em 0.625em;
+}
+
+#algorithmInspectorTabs .tab {
+    -fx-padding: 0 0.5em;
+}
+
+.event-card {
+    -fx-padding: 0.75em;
+}
+
+.run-summary-grid {
+    -fx-min-height: 7.25em;
+    -fx-pref-height: 7.25em;
+}
+
+.metric-tile {
+    -fx-padding: 0.5em 0.25em;
+}
+
+.result-preview-value {
+    -fx-padding: 0.625em 0.75em;
+}
+
+.timeline-cursor-callout {
+    -fx-padding: 0.312em 0.625em;
+    -fx-translate-y: -0.25em;
+}
+
+.current-step-sequence {
+    -fx-min-width: 3.375em;
+    -fx-pref-width: 3.375em;
+    -fx-max-width: 3.375em;
+}
+
+.structure-overview-grid {
+    -fx-min-height: 4.75em;
+    -fx-pref-height: 4.75em;
+}
+
+.overview-tile {
+    -fx-padding: 0.5em 0.188em;
+}
+
+.array-cell {
+    -fx-padding: 0;
+}
+
+.viewport-toolbar {
+    -fx-spacing: 0;
+}
+
+.playback-control-group {
+    -fx-alignment: center-left;
+}
+
+.speed-control-group {
+    -fx-alignment: center-right;
+}
+
+.speed-button-group {
+    -fx-alignment: center;
+    -fx-spacing: 0;
+}
+
+.timeline-compact-track .slider .track {
+    -fx-pref-height: 0.125em;
+}
+
+.timeline-compact-track .slider .thumb {
+    -fx-pref-width: 0.625em;
+    -fx-pref-height: 0.625em;
+}
+
+.timeline-position-compact {
+    -fx-min-width: 5.5em;
+    -fx-pref-width: 5.5em;
+    -fx-max-width: 5.5em;
+    -fx-alignment: center;
+}
+
+.timeline-toggle-button {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+    -fx-padding: 0;
+}
+
+.timeline-details .timeline-header {
+    -fx-padding: 0.5em 1.25em 0.125em 1.25em;
+}
+
+.timeline-details .timeline-legend {
+    -fx-padding: 0 0 0 1.375em;
+}
+
+.timeline-current-summary {
+    -fx-padding: 0;
+}
+
+.timeline-marker-node {
+    -fx-alignment: top-center;
+    -fx-padding: 0.062em 0 0 0;
+}
+
+.timeline-marker-symbol {
+    -fx-min-width: 0.438em;
+    -fx-pref-width: 0.438em;
+    -fx-max-width: 0.438em;
+    -fx-min-height: 0.438em;
+    -fx-pref-height: 0.438em;
+    -fx-max-height: 0.438em;
+}
+
+.timeline-marker-sequence {
+    -fx-padding: 0.125em 0 0 0;
+}
+
+.timeline-current-row {
+    -fx-alignment: center-left;
+}
+
+.string-cell {
+    -fx-padding: 0;
+}
+
+.linked-node .visual-node-label {
+    -fx-translate-y: -0.812em;
+}
+
+.kmp-pattern-caption {
+    -fx-padding: 0;
+}
+
+.kmp-pattern-track {
+    -fx-spacing: 0;
+}
+
+.kmp-pattern-cell {
+    -fx-padding: 0;
+}
+
+.visual-edge-label {
+    -fx-padding: 0.125em 0.312em;
+}
+
+/* ---------- shell regions owned by WorkbenchUiFramework ---------- */
+/* Do not declare min/pref/max width or height for the major shell regions here.
+ * JavaFX CSS is reapplied after layout changes and would otherwise overwrite
+ * the USER-origin values installed by WorkbenchUiFramework. */
+.root-pane .lab-top-bar { -fx-padding: 0 1.45em; }
+.root-pane .brand-zone { -fx-spacing: 0.80em; }
+.root-pane .lab-mode-switch .workspace-mode-button {
+    -fx-min-width: 0;
+    -fx-min-height: 3.05em;
+    -fx-pref-height: 3.05em;
+    -fx-max-height: 3.05em;
+    -fx-padding: 0 1.60em;
+}
+.root-pane .top-context-zone {
+    -fx-spacing: 0.85em;
+    -fx-padding: 0 0 0 0.75em;
+}
+.root-pane .run-state-badge { -fx-padding: 0.55em 1.10em; }
+.root-pane .font-settings-button {
+    -fx-min-width: 2.20em;
+    -fx-pref-width: 2.20em;
+    -fx-max-width: 2.20em;
+    -fx-min-height: 2.20em;
+    -fx-pref-height: 2.20em;
+    -fx-max-height: 2.20em;
+    -fx-padding: 0;
+}
+
+/* ---------- family rail ---------- */
+.root-pane .family-rail-button {
+    -fx-min-width: 0;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
     -fx-min-height: -1;
     -fx-pref-height: -1;
     -fx-max-height: -1;
+    -fx-padding: 0 0.95em;
 }
-.root-pane .brand-zone,
-.root-pane .lab-mode-switch,
-.root-pane .top-context-zone,
-.root-pane .family-rail,
+
+/* ---------- control rails ---------- */
 .root-pane .structure-control-panel,
 .root-pane .algorithm-control-panel,
-.root-pane .inspector-panel {
-    -fx-min-width: -1;
+.root-pane .practice-control-panel {
+    -fx-padding: 0 1.00em 0.85em 1.10em;
+}
+.root-pane .panel-topline {
+    -fx-min-height: 2.80em;
+    -fx-pref-height: 2.80em;
+}
+.root-pane .structure-identity-block { -fx-padding: 0.86em 0.12em 0.74em 0.12em; }
+.root-pane .live-row { -fx-padding: 0.55em 0 0 0; }
+.root-pane .input-source-block { -fx-padding: 0.74em 0; }
+.root-pane .algorithm-input-source-card { -fx-padding: 0.68em 0.74em; }
+.root-pane .structure-control-panel .control-section,
+.root-pane .structure-control-panel .control-card,
+.root-pane .algorithm-control-panel .control-section,
+.root-pane .algorithm-control-panel .control-card,
+.root-pane .structure-control-panel .structure-section,
+.root-pane .algorithm-control-panel .algorithm-section,
+.root-pane .algorithm-control-panel .execution-section {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-padding: 0.62em 0 0.74em 0;
+}
+.root-pane .structure-control-panel .button,
+.root-pane .algorithm-control-panel .button {
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+}
+.root-pane .primary-red-button {
+    -fx-min-height: 2.45em;
+    -fx-pref-height: 2.45em;
+}
+.root-pane .summary-strip { -fx-padding: 0.62em 0.25em; }
+
+/* ---------- inspector ---------- */
+.root-pane .inspector-tabs { -fx-tab-min-height: 2.80em; }
+.root-pane .inspector-tabs .tab { -fx-padding: 0 0.90em; }
+.root-pane .inspector-content,
+.root-pane .snapshot-tab-content { -fx-padding: 1.00em 0.86em; }
+.root-pane .inspector-section { -fx-padding: 0 0 1.10em 0; }
+
+/* ---------- shell overlays ---------- */
+.root-pane .selection-overlay,
+.root-pane .current-step-overlay {
+    -fx-padding: 0.86em 0.86em 0.86em 1.00em;
+    -fx-spacing: 0.44em;
+}
+.root-pane .current-step-overlay { -fx-padding: 0.86em 0.74em 0.74em 1.15em; }
+
+/* ---------- structure history ---------- */
+.root-pane .history-header { -fx-padding: 0.62em 1.45em 0.50em 1.45em; }
+.root-pane .history-collapsed .history-header { -fx-padding: 0.62em 1.45em; }
+.root-pane .history-cards {
+    -fx-padding: 0.50em 1.85em 0.74em 1.85em;
+    -fx-spacing: 1.10em;
+}
+.root-pane .history-cards .snapshot-card {
+    -fx-min-width: 13em;
+    -fx-pref-width: 13em;
+}
+
+/* ---------- viewport chrome (not visualization geometry) ---------- */
+.root-pane .viewport-toolbar-button {
+    -fx-min-width: 2.10em;
+    -fx-min-height: 2.00em;
+    -fx-padding: 0 0.42em;
+}
+.root-pane .viewport-zoom-label {
+    -fx-min-width: 2.80em;
+    -fx-padding: 0 0.35em;
+}
+
+
+/* ---------- semantic FXML geometry moved out of FXML / legacy theme ---------- */
+.root-pane .brand-mark {
+    -fx-min-width: 3.25em;
+    -fx-pref-width: 3.25em;
+    -fx-min-height: 3.25em;
+    -fx-pref-height: 3.25em;
+}
+.root-pane .font-settings-divider {
+    -fx-min-height: 1.625em;
+    -fx-pref-height: 1.625em;
+    -fx-max-height: 1.625em;
+}
+.root-pane .live-dot {
+    -fx-min-width: 0.50em;
+    -fx-pref-width: 0.50em;
+    -fx-max-width: 0.50em;
+    -fx-min-height: 0.50em;
+    -fx-pref-height: 0.50em;
+    -fx-max-height: 0.50em;
+}
+.root-pane .module-control-host,
+.root-pane .module-control-panel {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-padding: 0;
+}
+.root-pane .module-control-host { -fx-spacing: 0; }
+.root-pane .operation-section { -fx-padding: 0.68em 0.12em 0.74em 0.12em; }
+.root-pane .operation-caption-row { -fx-padding: 0 0.06em; }
+.root-pane .operation-hint { -fx-padding: 0 0.06em 0.12em 0.06em; }
+.root-pane .operation-input,
+.root-pane .operation-button {
+    -fx-min-width: 0;
     -fx-pref-width: -1;
     -fx-max-width: Infinity;
+    -fx-padding: 0.34em 0.44em;
 }
+.root-pane .operation-slider { -fx-padding: 0.18em 0.18em 0 0.18em; }
+.root-pane .structure-preview-empty { -fx-padding: 1.25em; }
+.root-pane .structure-preview-hint { -fx-max-width: 20em; }
+.root-pane .event-kind-dot {
+    -fx-min-width: 1.125em;
+    -fx-pref-width: 1.125em;
+    -fx-max-width: 1.125em;
+    -fx-min-height: 1.125em;
+    -fx-pref-height: 1.125em;
+    -fx-max-height: 1.125em;
+}
+.root-pane .practice-detail-separator { -fx-max-width: 32.5em; }
+.root-pane .practice-problem-entry { -fx-max-width: 45em; }
 
-/* Inspector tabs remain readable; the framework computes tab widths from actual localized text. */
-.root-pane .inspector-tabs {
-    -fx-tab-min-height: 2.8em;
-}
-.root-pane .inspector-tabs .tab {
-    -fx-padding: 0 0.9em;
-}
-
-/* Execution toolbar: semantic groups, font-aware controls, flexible timeline. */
-.root-pane .timeline-compact-row,
-.root-pane.font-size-large .timeline-compact-row,
-.root-pane.font-size-xlarge .timeline-compact-row,
-.root-pane:compact-layout .timeline-compact-row,
-.root-pane:narrow-layout .timeline-compact-row,
-.root-pane.font-size-large:compact-layout .timeline-compact-row,
-.root-pane.font-size-xlarge:compact-layout .timeline-compact-row,
-.root-pane.font-size-large:narrow-layout .timeline-compact-row,
-.root-pane.font-size-xlarge:narrow-layout .timeline-compact-row {
-    -fx-padding: 9px 18px;
+/* ---------- execution toolbar ---------- */
+.root-pane .timeline-compact-row {
+    -fx-padding: 0.45em 1.10em;
     -fx-min-height: -1;
     -fx-pref-height: -1;
     -fx-max-height: Infinity;
+    -fx-background-color: #ffffff;
 }
-
-.root-pane .timeline-compact-row .playback-button,
-.root-pane .timeline-compact-row .playback-primary,
-.root-pane.font-size-large .timeline-compact-row .playback-button,
-.root-pane.font-size-xlarge .timeline-compact-row .playback-button,
-.root-pane.font-size-large .timeline-compact-row .playback-primary,
-.root-pane.font-size-xlarge .timeline-compact-row .playback-primary,
-.root-pane:compact-layout .timeline-compact-row .playback-button,
-.root-pane:narrow-layout .timeline-compact-row .playback-button,
-.root-pane:compact-layout .timeline-compact-row .playback-primary,
-.root-pane:narrow-layout .timeline-compact-row .playback-primary {
-    -fx-min-width: 4.8em;
+.root-pane .playback-leading-area {
+    -fx-padding: 0 1.05em 0 0;
+    -fx-border-color: transparent #e6e6e6 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.root-pane .playback-timeline-area {
+    -fx-min-width: 16em;
+    -fx-pref-width: 34em;
+    -fx-max-width: Infinity;
+    -fx-padding: 0 1.05em;
+}
+.root-pane .playback-speed-area {
+    -fx-padding: 0 0 0 1.05em;
+    -fx-border-color: transparent transparent transparent #e6e6e6;
+    -fx-border-width: 0 0 0 1px;
+}
+.root-pane .timeline-title-row,
+.root-pane .timeline-current-row {
+    -fx-min-height: 1.00em;
+    -fx-pref-height: 1.00em;
+    -fx-max-height: 1.00em;
+}
+.root-pane .timeline-title-accent {
+    -fx-min-width: 0.28em;
+    -fx-pref-width: 0.28em;
+    -fx-max-width: 0.28em;
+    -fx-min-height: 1.00em;
+    -fx-pref-height: 1.00em;
+    -fx-max-height: 1.00em;
+}
+.root-pane .timeline-status-dot {
+    -fx-min-width: 0.52em;
+    -fx-pref-width: 0.52em;
+    -fx-max-width: 0.52em;
+    -fx-min-height: 0.52em;
+    -fx-pref-height: 0.52em;
+    -fx-max-height: 0.52em;
+}
+.playback-button {
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+    -fx-padding: 0;
+    -fx-background-radius: 0.34em;
+    -fx-border-radius: 0.34em;
+}
+.playback-icon-button {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+}
+.playback-text-button {
+    -fx-min-width: 3.55em;
     -fx-pref-width: -1;
     -fx-max-width: Infinity;
-    -fx-min-height: 2.65em;
-    -fx-pref-height: 2.65em;
-    -fx-max-height: 2.65em;
-    -fx-padding: 0 1.0em;
+    -fx-padding: 0 0.72em;
 }
-
-.root-pane .timeline-compact-row .playback-icon-button,
-.root-pane.font-size-large .timeline-compact-row .playback-icon-button,
-.root-pane.font-size-xlarge .timeline-compact-row .playback-icon-button,
-.root-pane:compact-layout .timeline-compact-row .playback-icon-button,
-.root-pane:narrow-layout .timeline-compact-row .playback-icon-button {
-    -fx-min-width: 2.65em;
-    -fx-pref-width: 2.65em;
-    -fx-max-width: 2.65em;
+.playback-primary {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
     -fx-padding: 0;
-    -fx-font-size: 1em;
+    -fx-background-color: rgba(245, 27, 35, 0.08);
+    -fx-border-color: rgba(245, 27, 35, 0.34);
+    -fx-text-fill: #f51b23;
 }
-
-.root-pane .timeline-compact-row .playback-primary {
-    -fx-background-color: -ui-red;
-    -fx-border-color: -ui-red;
-    -fx-text-fill: -ui-white;
-}
-.root-pane .timeline-compact-row .playback-end-button {
-    -fx-background-color: -ui-white;
-    -fx-border-color: -ui-gray-300;
-    -fx-text-fill: -ui-black;
-}
-.root-pane .timeline-compact-row .playback-close-button {
-    -fx-background-color: -ui-gray-900;
-    -fx-border-color: -ui-gray-900;
-    -fx-text-fill: -ui-white;
-}
-
-.root-pane .playback-timeline-area {
-    -fx-min-width: 180px;
-    -fx-pref-width: 420px;
-    -fx-max-width: Infinity;
+.playback-end-button,
+.playback-close-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-text-fill: #08090a;
 }
 .root-pane .timeline-compact-track {
-    -fx-min-width: 120px;
-    -fx-pref-width: 320px;
+    -fx-min-width: 10em;
+    -fx-pref-width: 28em;
     -fx-max-width: Infinity;
+    -fx-min-height: 1.95em;
+    -fx-pref-height: 1.95em;
+    -fx-max-height: 1.95em;
+    -fx-padding: 0 0.45em;
 }
-.root-pane .timeline-position-compact,
-.root-pane.font-size-large .timeline-position-compact,
-.root-pane.font-size-xlarge .timeline-position-compact,
-.root-pane:compact-layout .timeline-position-compact,
-.root-pane:narrow-layout .timeline-position-compact {
-    -fx-min-width: 8.5em;
-    -fx-pref-width: 8.5em;
-    -fx-max-width: 8.5em;
+.root-pane .timeline-markers-compact {
+    -fx-min-height: 1.95em;
+    -fx-pref-height: 1.95em;
+    -fx-max-height: 1.95em;
 }
-
-.root-pane .timeline-compact-row .speed-button,
-.root-pane.font-size-large .timeline-compact-row .speed-button,
-.root-pane.font-size-xlarge .timeline-compact-row .speed-button,
-.root-pane:compact-layout .timeline-compact-row .speed-button,
-.root-pane:narrow-layout .timeline-compact-row .speed-button {
-    -fx-min-width: 2.65em;
-    -fx-pref-width: 2.65em;
-    -fx-max-width: 2.65em;
-    -fx-min-height: 2.65em;
-    -fx-pref-height: 2.65em;
-    -fx-max-height: 2.65em;
-    -fx-padding: 0;
-}
-
-/* Timeline disclosure belongs to the timeline header, not the speed group. */
-.root-pane .timeline-header-bar {
-    -fx-padding: 6px 18px 7px 18px;
-    -fx-min-height: -1;
-    -fx-pref-height: -1;
-    -fx-background-color: -ui-white;
-    -fx-border-color: -ui-gray-200 transparent transparent transparent;
-    -fx-border-width: 1px 0 0 0;
-}
-.root-pane .timeline-header-bar .timeline-legend {
-    -fx-padding: 0;
-}
-.root-pane .timeline-header-toggle {
-    -fx-min-width: 2.4em;
-    -fx-pref-width: 2.4em;
-    -fx-max-width: 2.4em;
-    -fx-min-height: 2.2em;
-    -fx-pref-height: 2.2em;
-    -fx-max-height: 2.2em;
-}
-
-/* Form framework owns all non-canvas data-entry geometry. */
-.root-pane .control-section,
-.root-pane .control-card,
-.root-pane .operation-section,
-.root-pane .execution-section {
+.root-pane .timeline-current-summary {
     -fx-min-width: 0;
     -fx-max-width: Infinity;
+    -fx-padding: 0;
 }
+.speed-button {
+    -fx-min-width: 2.35em;
+    -fx-pref-width: 2.35em;
+    -fx-max-width: 2.35em;
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+    -fx-padding: 0;
+}
+.timeline-header-toggle {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+}
+
+/* Large text keeps controls readable without letting the timeline consume the
+ * viewport. These are density factors inside the unified typography system. */
+.root-pane.font-size-large .timeline-compact-row .playback-icon-button { -fx-font-size: 0.82em; }
+.root-pane.font-size-large .timeline-compact-row .playback-primary { -fx-font-size: 0.84em; }
+.root-pane.font-size-large .timeline-compact-row .playback-text-button { -fx-font-size: 0.82em; }
+.root-pane.font-size-large .timeline-compact-row .speed-button { -fx-font-size: 0.78em; }
+.root-pane.font-size-large .timeline-header-toggle { -fx-font-size: 0.82em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-icon-button { -fx-font-size: 0.76em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-primary { -fx-font-size: 0.78em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-text-button { -fx-font-size: 0.76em; }
+.root-pane.font-size-xlarge .timeline-compact-row .speed-button { -fx-font-size: 0.72em; }
+.root-pane.font-size-xlarge .timeline-header-toggle { -fx-font-size: 0.76em; }
+
+.root-pane .timeline-detail-panel {
+    -fx-padding: 0.55em 1.10em 0.62em 1.10em;
+    -fx-background-color: #fafafa;
+    -fx-border-color: #e6e6e6 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.root-pane .timeline-detail-panel .timeline-legend { -fx-padding: 0; }
+
+/* ---------- responsive density: geometry only, never typography ---------- */
+.root-pane:compact-layout .lab-top-bar { -fx-padding: 0 0.82em; }
+.root-pane:compact-layout .brand-zone { -fx-spacing: 0.56em; }
+.root-pane:compact-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.88em; }
+.root-pane:compact-layout .top-context-zone { -fx-spacing: 0.62em; -fx-padding: 0; }
+.root-pane:compact-layout .run-state-badge { -fx-padding: 0.38em 0.62em; }
+.root-pane:compact-layout .structure-control-panel,
+.root-pane:compact-layout .algorithm-control-panel,
+.root-pane:compact-layout .practice-control-panel { -fx-padding: 0 0.62em 0.55em 0.74em; }
+.root-pane:compact-layout .panel-topline { -fx-min-height: 2.45em; -fx-pref-height: 2.45em; }
+.root-pane:compact-layout .structure-identity-block { -fx-padding: 0.55em 0.12em 0.50em 0.12em; }
+.root-pane:compact-layout .input-source-block { -fx-padding: 0.50em 0; }
+.root-pane:compact-layout .structure-control-panel .control-section,
+.root-pane:compact-layout .structure-control-panel .control-card,
+.root-pane:compact-layout .algorithm-control-panel .control-section,
+.root-pane:compact-layout .algorithm-control-panel .control-card,
+.root-pane:compact-layout .structure-control-panel .structure-section,
+.root-pane:compact-layout .algorithm-control-panel .algorithm-section,
+.root-pane:compact-layout .algorithm-control-panel .execution-section { -fx-padding: 0.44em 0 0.50em 0; }
+.root-pane:compact-layout .primary-red-button { -fx-min-height: 2.20em; -fx-pref-height: 2.20em; }
+.root-pane:compact-layout .summary-strip { -fx-padding: 0.38em 0.12em; }
+.root-pane:compact-layout .inspector-content,
+.root-pane:compact-layout .snapshot-tab-content { -fx-padding: 0.62em 0.56em; }
+.root-pane:compact-layout .inspector-section { -fx-padding: 0 0 0.74em 0; }
+.root-pane:compact-layout .history-header { -fx-padding: 0.44em 1.00em 0.32em 1.00em; }
+.root-pane:compact-layout .history-cards { -fx-padding: 0.32em 1.20em 0.50em 1.20em; -fx-spacing: 0.90em; }
+.root-pane:compact-layout .timeline-compact-row { -fx-padding: 0.42em 0.82em; }
+.root-pane:compact-layout .playback-leading-area { -fx-padding: 0 0.82em 0 0; }
+.root-pane:compact-layout .playback-timeline-area { -fx-min-width: 14em; -fx-padding: 0 0.82em; }
+.root-pane:compact-layout .playback-speed-area { -fx-padding: 0 0 0 0.82em; }
+
+.root-pane:narrow-layout .lab-top-bar { -fx-padding: 0 0.52em; }
+.root-pane:narrow-layout .brand-zone { -fx-spacing: 0.40em; }
+.root-pane:narrow-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.52em; }
+.root-pane:narrow-layout .top-context-zone { -fx-spacing: 0.40em; -fx-padding: 0; }
+.root-pane:narrow-layout .run-state-badge { -fx-padding: 0.32em 0.50em; }
+.root-pane:narrow-layout .structure-control-panel,
+.root-pane:narrow-layout .algorithm-control-panel,
+.root-pane:narrow-layout .practice-control-panel { -fx-padding: 0 0.50em 0.44em 0.56em; }
+.root-pane:narrow-layout .panel-topline { -fx-min-height: 2.25em; -fx-pref-height: 2.25em; }
+.root-pane:narrow-layout .structure-identity-block { -fx-padding: 0.44em 0.06em 0.38em 0.06em; }
+.root-pane:narrow-layout .input-source-block { -fx-padding: 0.38em 0; -fx-spacing: 0.32em; }
+.root-pane:narrow-layout .algorithm-input-source-card { -fx-padding: 0.44em 0.50em; }
+.root-pane:narrow-layout .structure-control-panel .control-section,
+.root-pane:narrow-layout .structure-control-panel .control-card,
+.root-pane:narrow-layout .algorithm-control-panel .control-section,
+.root-pane:narrow-layout .algorithm-control-panel .control-card,
+.root-pane:narrow-layout .structure-control-panel .structure-section,
+.root-pane:narrow-layout .algorithm-control-panel .algorithm-section,
+.root-pane:narrow-layout .algorithm-control-panel .execution-section { -fx-padding: 0.38em 0 0.44em 0; }
+.root-pane:narrow-layout .primary-red-button { -fx-min-height: 2.05em; -fx-pref-height: 2.05em; }
+.root-pane:narrow-layout .summary-strip { -fx-padding: 0.32em 0.06em; }
+.root-pane:narrow-layout .inspector-content,
+.root-pane:narrow-layout .snapshot-tab-content { -fx-padding: 0.50em 0.38em; }
+.root-pane:narrow-layout .viewport-toolbar { -fx-translate-x: -0.30em; -fx-translate-y: -0.30em; }
+.root-pane:narrow-layout .timeline-compact-row { -fx-padding: 0.38em 0.62em; }
+.root-pane:narrow-layout .playback-leading-area { -fx-padding: 0 0.62em 0 0; }
+.root-pane:narrow-layout .playback-timeline-area { -fx-min-width: 11.5em; -fx-padding: 0 0.62em; }
+.root-pane:narrow-layout .playback-speed-area { -fx-padding: 0 0 0 0.62em; }

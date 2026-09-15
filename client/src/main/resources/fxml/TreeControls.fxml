@@ -4,9 +4,8 @@
 <?import java.lang.String?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-    alignment="TOP_LEFT" spacing="0" fillWidth="true" minWidth="0.0" prefWidth="240.0"
-    maxWidth="Infinity"
-    styleClass="module-control-panel" stylesheets="@../style/theme.css">
+    alignment="TOP_LEFT" spacing="0" fillWidth="true"
+    styleClass="module-control-panel">
     <VBox spacing="7">
         <styleClass>
             <String fx:value="control-section" />

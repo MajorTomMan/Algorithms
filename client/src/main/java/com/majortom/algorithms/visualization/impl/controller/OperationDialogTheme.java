@@ -11,21 +11,15 @@ import java.net.URL;
 final class OperationDialogTheme {
 
     private static final String THEME_PATH = "/style/theme.css";
+    private static final String LAYOUT_PATH = "/style/workbench-layout.css";
 
     private OperationDialogTheme() {
     }
 
-    static void apply(Dialog<?> dialog, double preferredWidth) {
-        DialogPane pane = dialog.getDialogPane(
-
-
-
-            
-        );
-        URL theme = OperationDialogTheme.class.getResource(THEME_PATH);
-        if (theme != null && !pane.getStylesheets().contains(theme.toExternalForm())) {
-            pane.getStylesheets().add(theme.toExternalForm());
-        }
+    static void apply(Dialog<?> dialog) {
+        DialogPane pane = dialog.getDialogPane();
+        addStylesheet(pane, THEME_PATH);
+        addStylesheet(pane, LAYOUT_PATH);
         addClasses(pane, "operation-dialog-pane");
         WorkbenchTheme.apply(pane);
         if (pane.getContent() != null) {
@@ -36,9 +30,14 @@ final class OperationDialogTheme {
             addClasses(closeButton, "btn-ran-gold", "compact-button");
             WorkbenchTheme.warningOutlined(closeButton);
         }
-        pane.setMinWidth(preferredWidth);
-        pane.setPrefWidth(preferredWidth);
         dialog.setResizable(true);
+    }
+
+    private static void addStylesheet(DialogPane pane, String path) {
+        URL resource = OperationDialogTheme.class.getResource(path);
+        if (resource != null && !pane.getStylesheets().contains(resource.toExternalForm())) {
+            pane.getStylesheets().add(resource.toExternalForm());
+        }
     }
 
     static <T extends Node> T addClasses(T node, String... styleClasses) {

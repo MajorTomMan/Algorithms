@@ -110,51 +110,24 @@
 .root-pane .history-toggle { -fx-font-size: 0.68em; }
 .root-pane .timeline-legend .label,
 .root-pane .timeline-details .timeline-legend .label { -fx-font-size: 0.62em; }
-.root-pane .timeline-compact-row .playback-button,
-.root-pane .timeline-compact-row .playback-primary,
-.root-pane .timeline-compact-row .speed-button,
+.root-pane .timeline-compact-row .playback-button { -fx-font-size: 0.68em; }
+.root-pane .timeline-compact-row .playback-icon-button { -fx-font-size: 0.95em; }
+.root-pane .timeline-compact-row .playback-primary { -fx-font-size: 1.00em; }
+.root-pane .timeline-compact-row .playback-text-button { -fx-font-size: 0.95em; }
+.root-pane .timeline-compact-row .speed-button { -fx-font-size: 0.90em; }
 .root-pane .timeline-toggle-button { -fx-font-size: 0.62em; }
+.root-pane .timeline-header-toggle { -fx-font-size: 0.95em; }
 .root-pane .speed-label { -fx-font-size: 0.62em; }
-.root-pane .timeline-position-compact,
+.root-pane .timeline-toolbar-title { -fx-font-size: 0.78em; }
+.root-pane .timeline-status-label { -fx-font-size: 0.58em; }
 .root-pane .timeline-current-summary { -fx-font-size: 0.55em; }
 .root-pane .timeline-marker-sequence { -fx-font-size: 0.49em; }
 .root-pane .timeline-markers-compact .timeline-marker-sequence { -fx-font-size: 0.43em; }
 .root-pane .log-time { -fx-font-size: 0.85em; }
 .root-pane .log-message { -fx-font-size: 0.92em; }
 
-/* ---------- compact / narrow density keeps the same typography roles ---------- */
-.root-pane:compact-layout .brand-title-main { -fx-font-size: 1.23em; }
-.root-pane:compact-layout .brand-subtitle { -fx-font-size: 0.55em; }
-.root-pane:compact-layout .lab-mode-switch .workspace-mode-button { -fx-font-size: 0.80em; }
-.root-pane:compact-layout .top-context-title { -fx-font-size: 0.74em; }
-.root-pane:compact-layout .run-state-badge { -fx-font-size: 0.68em; }
-.root-pane:compact-layout .family-rail-button { -fx-font-size: 0.68em; }
-.root-pane:compact-layout .structure-identity-title { -fx-font-size: 0.98em; }
-.root-pane:compact-layout .summary-number,
-.root-pane:compact-layout .summary-number-red,
-.root-pane:compact-layout .summary-number-blue { -fx-font-size: 1.11em; }
-
-.root-pane:narrow-layout .brand-title-main { -fx-font-size: 1.05em; }
-.root-pane:narrow-layout .lab-mode-switch .workspace-mode-button { -fx-font-size: 0.68em; }
-.root-pane:narrow-layout .top-context-title { -fx-font-size: 0.68em; }
-.root-pane:narrow-layout .run-state-badge { -fx-font-size: 0.62em; }
-.root-pane:narrow-layout .family-rail-button { -fx-font-size: 0.55em; }
-.root-pane:narrow-layout .structure-identity-title { -fx-font-size: 0.86em; }
-.root-pane:narrow-layout .structure-identity-meta,
-.root-pane:narrow-layout .live-label,
-.root-pane:narrow-layout .panel-section-title,
-.root-pane:narrow-layout .inspector-heading,
-.root-pane:narrow-layout .inspector-tabs .tab .tab-label,
-.root-pane:narrow-layout #algorithmInspectorTabs .tab .tab-label { -fx-font-size: 0.55em; }
-.root-pane:narrow-layout .summary-caption { -fx-font-size: 0.49em; }
-.root-pane:narrow-layout .summary-number,
-.root-pane:narrow-layout .summary-number-red,
-.root-pane:narrow-layout .summary-number-blue { -fx-font-size: 0.92em; }
-.root-pane:narrow-layout .algorithm-input-source-card { -fx-font-size: 0.55em; }
-.root-pane:narrow-layout .viewport-toolbar-button,
-.root-pane:narrow-layout .viewport-zoom-label { -fx-font-size: 0.55em; }
-.root-pane:narrow-layout .timeline-position-compact,
-.root-pane:narrow-layout .speed-label { -fx-font-size: 0.49em; }
+/* Responsive layout never shrinks typography. FontSettingsService owns the
+ * base size and the semantic roles above stay stable in every viewport tier. */
 
 /* ---------- font-aware text fitting closure ---------- */
 .root-pane .top-context-title,

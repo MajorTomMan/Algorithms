@@ -20,7 +20,6 @@ public final class PlaybackToolbar extends Pane {
 
     private static final double DEFAULT_GAP = 10.0d;
     private static final double ROW_GAP = 7.0d;
-    private static final double MIN_TIMELINE_WIDTH = 180.0d;
     private static final String TIMELINE_CLASS = "playback-timeline-area";
     private static final String SPEED_CLASS = "playback-speed-area";
 
@@ -91,9 +90,9 @@ public final class PlaybackToolbar extends Pane {
         List<Node> fixed = children.stream().filter(node -> node != timeline).toList();
 
         double fixedWidth = totalWidth(fixed);
-        double timelinePref = timeline == null ? 0.0d : Math.max(MIN_TIMELINE_WIDTH, prefWidth(timeline));
+        double timelineMinimum = timeline == null ? 0.0d : minWidth(timeline);
         int gaps = Math.max(0, children.size() - 1);
-        double oneRowRequired = fixedWidth + timelinePref + horizontalGap * gaps;
+        double oneRowRequired = fixedWidth + timelineMinimum + horizontalGap * gaps;
 
         if (timeline == null || width >= oneRowRequired) {
             return oneRow(children, timeline, width);
@@ -110,7 +109,7 @@ public final class PlaybackToolbar extends Pane {
         double gaps = horizontalGap * Math.max(0, children.size() - 1);
         double timelineWidth = timeline == null
                 ? 0.0d
-                : Math.max(MIN_TIMELINE_WIDTH, width - fixedWidth - gaps);
+                : Math.max(minWidth(timeline), width - fixedWidth - gaps);
         double rowHeight = children.stream().mapToDouble(node -> prefHeight(node, node == timeline ? timelineWidth : prefWidth(node))).max().orElse(0.0d);
 
         double x = 0.0d;
@@ -160,7 +159,7 @@ public final class PlaybackToolbar extends Pane {
         double secondY = topHeight + verticalGap;
         double speedWidth = topRow.size() == 1 && isSpeed(topRow.getFirst()) ? prefWidth(topRow.getFirst()) : 0.0d;
         double timelineWidth = speedWidth > 0.0d
-                ? Math.max(MIN_TIMELINE_WIDTH, width - speedWidth - horizontalGap)
+                ? Math.max(minWidth(timeline), width - speedWidth - horizontalGap)
                 : width;
         double timelineHeight = prefHeight(timeline, timelineWidth);
         placements.add(new Placement(timeline, 0.0d, secondY, timelineWidth, timelineHeight));
@@ -183,6 +182,14 @@ public final class PlaybackToolbar extends Pane {
         double value = node.prefWidth(-1.0d);
         if (!Double.isFinite(value) || value < 0.0d) {
             value = node.minWidth(-1.0d);
+        }
+        return Math.max(0.0d, value);
+    }
+
+    private double minWidth(Node node) {
+        double value = node.minWidth(-1.0d);
+        if (!Double.isFinite(value) || value < 0.0d) {
+            value = 0.0d;
         }
         return Math.max(0.0d, value);
     }

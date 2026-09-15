@@ -133,13 +133,10 @@ final class WorkbenchTheme {
 
         ContextMenu menu = new ContextMenu();
         menu.getStyleClass().add("algorithm-snapshot-menu");
-        Parent mainRoot = rootOf(source);
-        if (mainRoot != null) {
-            for (String cls : List.of("font-size-large", "font-size-xlarge")) {
-                if (mainRoot.getStyleClass().contains(cls)) {
-                    menu.getStyleClass().add(cls);
-                }
-            }
+        if (source.getFont() != null) {
+            menu.setStyle(String.format(java.util.Locale.ROOT,
+                    "-fx-font-size: %.2fpx; -fx-font-family: \"%s\";",
+                    source.getFont().getSize(), escapeCssString(source.getFont().getFamily())));
         }
 
         for (Node node : snapshotCards.getChildren()) {
@@ -198,6 +195,11 @@ final class WorkbenchTheme {
             }
         }
         return "Snapshot";
+    }
+
+
+    private static String escapeCssString(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private static Parent rootOf(Node node) {

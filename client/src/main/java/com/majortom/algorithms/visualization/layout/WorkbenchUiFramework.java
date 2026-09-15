@@ -37,7 +37,12 @@ public final class WorkbenchUiFramework {
     private static final PseudoClass NARROW_LAYOUT = PseudoClass.getPseudoClass("narrow-layout");
     private static final double BASE_MODE_FONT = 16.0d;
     private static final double MIN_CANVAS_WIDTH = 360.0d;
-    private static final double MIN_FAMILY_WIDTH = 104.0d;
+    private static final double BASE_FAMILY_WIDTH = 156.0d;
+    private static final double MIN_FAMILY_WIDTH = 148.0d;
+    private static final double MAX_FAMILY_WIDTH = 260.0d;
+    private static final double NORMAL_FAMILY_ROW_HEIGHT = 76.0d;
+    private static final double COMPACT_FAMILY_ROW_HEIGHT = 60.0d;
+    private static final double NARROW_FAMILY_ROW_HEIGHT = 52.0d;
     private static final double MIN_CONTROL_WIDTH = 260.0d;
     private static final double MIN_INSPECTOR_WIDTH = 300.0d;
     private static final double CONTROL_VERTICAL_PADDING = 12.0d;
@@ -55,6 +60,7 @@ public final class WorkbenchUiFramework {
     private final Region algorithmFamilyRail;
     private final Region structureControlRail;
     private final Region algorithmControlRail;
+    private final Region practiceControlRail;
     private final Region structureInspector;
     private final Region algorithmInspector;
     private final Region structureOverlay;
@@ -86,6 +92,7 @@ public final class WorkbenchUiFramework {
             Region algorithmFamilyRail,
             Region structureControlRail,
             Region algorithmControlRail,
+            Region practiceControlRail,
             Region structureInspector,
             Region algorithmInspector,
             Region structureOverlay,
@@ -109,6 +116,7 @@ public final class WorkbenchUiFramework {
         this.algorithmFamilyRail = algorithmFamilyRail;
         this.structureControlRail = structureControlRail;
         this.algorithmControlRail = algorithmControlRail;
+        this.practiceControlRail = practiceControlRail;
         this.structureInspector = structureInspector;
         this.algorithmInspector = algorithmInspector;
         this.structureOverlay = structureOverlay;
@@ -144,7 +152,9 @@ public final class WorkbenchUiFramework {
         double height = root.getHeight() > 0.0d ? root.getHeight() : root.prefHeight(width);
         double scale = fontScale();
 
-        double familyWidth = clamp(142.0d * scale, MIN_FAMILY_WIDTH, 210.0d);
+        double familyContentWidth = familyRailContentWidth();
+        double familyWidth = clamp(Math.max(familyContentWidth, BASE_FAMILY_WIDTH * scale),
+                MIN_FAMILY_WIDTH, MAX_FAMILY_WIDTH);
         double controlWidth = clamp(320.0d * scale, MIN_CONTROL_WIDTH, 460.0d);
         double inspectorWidth = Math.max(MIN_INSPECTOR_WIDTH,
                 Math.max(inspectorTextWidth(structureTabs), inspectorTextWidth(algorithmTabs)));
@@ -156,12 +166,13 @@ public final class WorkbenchUiFramework {
                 || height < 650.0d);
 
         if (compact) {
-            familyWidth = Math.max(MIN_FAMILY_WIDTH, familyWidth * 0.82d);
             controlWidth = Math.max(MIN_CONTROL_WIDTH, controlWidth * 0.86d);
             inspectorWidth = Math.max(MIN_INSPECTOR_WIDTH, inspectorWidth * 0.88d);
         }
         if (narrow) {
-            familyWidth = Math.max(88.0d, familyWidth * 0.82d);
+            // Family navigation keeps a stable, comfortable width. Narrow layouts
+            // compress the control rail and inspector first; identity navigation
+            // must not collapse to a text-tight strip.
             controlWidth = Math.max(220.0d, controlWidth * 0.90d);
         }
 
@@ -170,10 +181,9 @@ public final class WorkbenchUiFramework {
         root.pseudoClassStateChanged(NARROW_LAYOUT, narrow);
 
         layoutHeader(width, scale, compact, narrow);
-        setFixedWidth(structureFamilyRail, familyWidth);
-        setFixedWidth(algorithmFamilyRail, familyWidth);
         setFixedWidth(structureControlRail, controlWidth);
         setFixedWidth(algorithmControlRail, controlWidth);
+        setFixedWidth(practiceControlRail, practiceControlWidth(scale, compact, narrow));
         setFixedWidth(structureInspector, inspectorWidth);
         setFixedWidth(algorithmInspector, inspectorWidth);
         setOverlayWidth(structureOverlay, overlayWidth(scale, compact, narrow));
@@ -183,6 +193,15 @@ public final class WorkbenchUiFramework {
         configureInspectorTabs(structureTabs, inspectorWidth);
         configureInspectorTabs(algorithmTabs, inspectorWidth);
         applyControlDensity(root, compact);
+        // Density classes and pseudo-classes must settle before Family Rail geometry is
+        // applied. Family navigation is identity/navigation chrome, not a compact form
+        // control, so it keeps the legacy roomy row rhythm under the new layout owner.
+        if (root.getScene() != null) {
+            root.applyCss();
+        }
+        double familyRowHeight = familyRowHeight(scale, compact, narrow);
+        layoutFamilyRail(structureFamilyRail, familyWidth, familyRowHeight);
+        layoutFamilyRail(algorithmFamilyRail, familyWidth, familyRowHeight);
         layoutStructureHistory(compact, narrow);
 
         if (playbackToolbar != null) {
@@ -264,6 +283,50 @@ public final class WorkbenchUiFramework {
         return clamp(max * count + 2.0d, 300.0d, 640.0d);
     }
 
+
+    private double familyRailContentWidth() {
+        double widest = Math.max(familyRailContentWidth(structureFamilyRail),
+                familyRailContentWidth(algorithmFamilyRail));
+        if (widest <= 0.0d) {
+            return MIN_FAMILY_WIDTH;
+        }
+        return Math.ceil(widest);
+    }
+
+    private double familyRailContentWidth(Region rail) {
+        if (!(rail instanceof Parent parent)) {
+            return 0.0d;
+        }
+        double widest = 0.0d;
+        for (Node node : descendants(parent)) {
+            if (!(node instanceof Labeled labeled)
+                    || !node.isManaged()
+                    || !node.getStyleClass().contains("family-rail-button")) {
+                continue;
+            }
+            double horizontalInsets = node instanceof Region region
+                    ? region.getInsets().getLeft() + region.getInsets().getRight()
+                    : 0.0d;
+            widest = Math.max(widest, measuredTextWidth(labeled) + horizontalInsets + 4.0d);
+        }
+        return widest + rail.getInsets().getLeft() + rail.getInsets().getRight();
+    }
+
+    private static List<Node> descendants(Parent root) {
+        java.util.ArrayList<Node> nodes = new java.util.ArrayList<>();
+        collectDescendants(root, nodes);
+        return List.copyOf(nodes);
+    }
+
+    private static void collectDescendants(Parent parent, List<Node> target) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            target.add(child);
+            if (child instanceof Parent nested) {
+                collectDescendants(nested, target);
+            }
+        }
+    }
+
     private double inspectorTextWidth(TabPane tabs) {
         if (tabs == null || tabs.getTabs().isEmpty()) {
             return MIN_INSPECTOR_WIDTH;
@@ -311,10 +374,6 @@ public final class WorkbenchUiFramework {
                 button.setMinWidth(0.0d);
                 button.setPrefWidth(Region.USE_COMPUTED_SIZE);
                 button.setMaxWidth(Double.MAX_VALUE);
-                double height = Math.max(48.0d, textControlHeight(button) + 16.0d);
-                button.setMinHeight(height);
-                button.setPrefHeight(height);
-                button.setMaxHeight(Region.USE_PREF_SIZE);
             }
         } else if (node instanceof TextInputControl input) {
             input.setMinHeight(Math.max(32.0d, textControlHeight(input)));
@@ -375,6 +434,17 @@ public final class WorkbenchUiFramework {
                 .filter(Node::isManaged)
                 .mapToDouble(node -> node.prefHeight(-1.0d))
                 .max().orElse(42.0d);
+    }
+
+    private double practiceControlWidth(double scale, boolean compact, boolean narrow) {
+        double width = 420.0d * Math.min(scale, 1.25d);
+        if (compact) {
+            width *= 0.90d;
+        }
+        if (narrow) {
+            width *= 0.90d;
+        }
+        return clamp(width, 320.0d, 520.0d);
     }
 
     private double overlayWidth(double scale, boolean compact, boolean narrow) {
@@ -450,11 +520,12 @@ public final class WorkbenchUiFramework {
         }
         if (node instanceof TabPane) {
             setOwnedClass(node, Styles.DENSE, compact, ownedDense);
-        } else if (node instanceof Button
+        } else if ((node instanceof Button
                 || node instanceof ComboBoxBase<?>
                 || node instanceof TextInputControl
                 || node instanceof Spinner<?>
-                || node instanceof Slider) {
+                || node instanceof Slider)
+                && !node.getStyleClass().contains("family-rail-button")) {
             setOwnedClass(node, Styles.SMALL, compact, ownedSmall);
         }
         if (node instanceof Parent parent) {
@@ -472,6 +543,44 @@ public final class WorkbenchUiFramework {
             }
         } else if (owned.remove(node)) {
             node.getStyleClass().remove(styleClass);
+        }
+    }
+
+    private double familyRowHeight(double scale, boolean compact, boolean narrow) {
+        double baseHeight;
+        if (narrow) {
+            baseHeight = NARROW_FAMILY_ROW_HEIGHT;
+        } else if (compact) {
+            baseHeight = COMPACT_FAMILY_ROW_HEIGHT;
+        } else {
+            baseHeight = NORMAL_FAMILY_ROW_HEIGHT;
+        }
+        // Keep the navigation rhythm stable once large-font mode is reached. Text
+        // keeps scaling, while rows retain enough breathing room without consuming
+        // the entire viewport at 21-24px.
+        double rowScale = clamp(scale, 0.95d, 1.10d);
+        return Math.ceil(baseHeight * rowScale);
+    }
+
+    private static void layoutFamilyRail(Region rail, double width, double rowHeight) {
+        if (rail == null) {
+            return;
+        }
+        setFixedWidth(rail, width);
+        if (!(rail instanceof Parent parent)) {
+            return;
+        }
+        for (Node node : descendants(parent)) {
+            if (!(node instanceof Button button)
+                    || !button.getStyleClass().contains("family-rail-button")) {
+                continue;
+            }
+            button.setMinWidth(0.0d);
+            button.setPrefWidth(Region.USE_COMPUTED_SIZE);
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setMinHeight(rowHeight);
+            button.setPrefHeight(rowHeight);
+            button.setMaxHeight(rowHeight);
         }
     }
 

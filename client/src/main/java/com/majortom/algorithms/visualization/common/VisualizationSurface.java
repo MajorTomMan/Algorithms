@@ -287,7 +287,6 @@ public final class VisualizationSurface extends StackPane {
 
         Button zoomOut = button("−", "action.viewport.zoom_out", this::zoomOut);
         zoomLabel.getStyleClass().add("viewport-zoom-label");
-        zoomLabel.setMinWidth(46.0d);
         zoomLabel.setAlignment(Pos.CENTER);
         Button zoomIn = button("+", "action.viewport.zoom_in", this::zoomIn);
         Button fit = localizedButton("action.viewport.fit", this::fit);
