@@ -1,12 +1,15 @@
 package com.majortom.algorithms.algorithm.discovery;
 
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
-import com.majortom.algorithms.core.registry.RegistrationException;
 import com.majortom.algorithms.core.registry.StructureResolver;
 import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.Maze;
 import com.majortom.algorithms.structure.maze.MazeStructure;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +17,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ComponentDiscoveryTest {
@@ -71,7 +74,30 @@ class ComponentDiscoveryTest {
         assertEquals(MazeStructure.class, maze.structureContract());
         assertTrue(registry.structures().stream()
                 .noneMatch(descriptor -> descriptor.implementation().equals(GridMaze.class)));
-        assertThrows(RegistrationException.class, () -> new StructureResolver(registry).resolve(maze));
+        assertInstanceOf(Maze.class, new StructureResolver(registry).create(MazeStructure.class));
+    }
+
+    @Test
+    void mazeGeneratorAndPathfinderUseMazeDomainMetadataWithoutChangingInvocationContract() {
+        var mazeAlgorithms = registry.algorithms().stream()
+                .filter(descriptor -> descriptor.module() == StructureModule.MAZE)
+                .toList();
+        assertTrue(mazeAlgorithms.stream()
+                .allMatch(descriptor -> descriptor.implementation().getAnnotation(MazeAlgorithm.class) != null));
+
+        var generator = registry.requireAlgorithm(StructureModule.MAZE, Boolean.class, "maze-generator-bfs");
+        var pathfinder = registry.requireAlgorithm(StructureModule.MAZE, Boolean.class, "maze-pathfinder-astar");
+
+        MazeAlgorithm generatorMetadata = generator.implementation().getAnnotation(MazeAlgorithm.class);
+        MazeAlgorithm pathfinderMetadata = pathfinder.implementation().getAnnotation(MazeAlgorithm.class);
+        assertEquals(MazeRole.GENERATOR, generatorMetadata.role());
+        assertEquals(MazeModel.ARRAY, generatorMetadata.model());
+        assertEquals(MazeRole.PATHFINDER, pathfinderMetadata.role());
+        assertEquals(MazeModel.ARRAY, pathfinderMetadata.model());
+        assertEquals(1, generator.entryPoint().getParameterCount());
+        assertEquals(1, pathfinder.entryPoint().getParameterCount());
+        assertEquals(MazeStructure.class, generator.entryPoint().getParameterTypes()[0]);
+        assertEquals(MazeStructure.class, pathfinder.entryPoint().getParameterTypes()[0]);
     }
 
     private static <T> List<T> values(Array<T> array) {

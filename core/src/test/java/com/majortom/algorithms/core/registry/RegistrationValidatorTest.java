@@ -34,6 +34,21 @@ class RegistrationValidatorTest {
         @AlgorithmEntry public void execute(Contract ignored) {}
     }
 
+    public static final class GraphAlgorithm {
+        public GraphAlgorithm() {}
+        @AlgorithmEntry public void execute(GraphContract ignored) {}
+    }
+
+    public static final class MultiParameterAlgorithm {
+        public MultiParameterAlgorithm() {}
+        @AlgorithmEntry public void execute(Contract ignored, int extra) {}
+    }
+
+    public static final class MismatchedAlgorithm {
+        public MismatchedAlgorithm() {}
+        @AlgorithmEntry public void execute(GraphContract ignored) {}
+    }
+
     @Test
     void rejectsDuplicateStructureIds() {
         StructureDescriptor descriptor = new StructureDescriptor(
@@ -52,7 +67,7 @@ class RegistrationValidatorTest {
     void algorithmIdentityIncludesStructureValueTypeAndStableId() {
         AlgorithmDescriptor integer = algorithm("insertion-sort", Integer.class, Contract.class, SampleAlgorithm.class);
         AlgorithmDescriptor string = algorithm("insertion-sort", String.class, Contract.class, SampleAlgorithm.class);
-        AlgorithmDescriptor graph = algorithm("insertion-sort", Integer.class, GraphContract.class, SampleAlgorithm.class);
+        AlgorithmDescriptor graph = algorithm("insertion-sort", Integer.class, GraphContract.class, GraphAlgorithm.class);
 
         assertDoesNotThrow(() -> RegistrationValidator.validateUniqueAlgorithmKeys(List.of(integer, string, graph)));
 
@@ -79,8 +94,27 @@ class RegistrationValidatorTest {
     @Test
     void descriptorCreatesAndInvokesAlgorithmWithoutBehaviorInterface() {
         AlgorithmDescriptor descriptor = algorithm("sample", Integer.class, Contract.class, AlternateAlgorithm.class);
-        assertInstanceOf(AlternateAlgorithm.class, descriptor.newInstance());
         assertDoesNotThrow(() -> descriptor.invoke(new Component()));
+    }
+
+
+    @Test
+    void rejectsAlgorithmEntryWithMoreThanOneParameter() {
+        AlgorithmDescriptor descriptor = algorithm(
+                "multi", Integer.class, Contract.class, MultiParameterAlgorithm.class, Contract.class, int.class);
+        RegistrationException failure = assertThrows(RegistrationException.class,
+                () -> RegistrationValidator.validate(descriptor));
+        assertTrue(failure.getMessage().contains("exactly one parameter"));
+    }
+
+    @Test
+    void rejectsAlgorithmEntryWhoseParameterDoesNotMatchDeclaredStructure() {
+        AlgorithmDescriptor descriptor = algorithm(
+                "mismatch", Integer.class, Contract.class, MismatchedAlgorithm.class, GraphContract.class);
+        RegistrationException failure = assertThrows(RegistrationException.class,
+                () -> RegistrationValidator.validate(descriptor));
+        assertTrue(failure.getMessage().contains(Contract.class.getName()));
+        assertTrue(failure.getMessage().contains(GraphContract.class.getName()));
     }
 
     @Test
@@ -106,8 +140,13 @@ class RegistrationValidatorTest {
 
     private static AlgorithmDescriptor algorithm(
             String id, Class<?> valueType, Class<?> structureContract, Class<?> implementation) {
+        return algorithm(id, valueType, structureContract, implementation, structureContract);
+    }
+
+    private static AlgorithmDescriptor algorithm(
+            String id, Class<?> valueType, Class<?> structureContract, Class<?> implementation, Class<?>... entryParameters) {
         try {
-            Method entry = implementation.getMethod("execute", Contract.class);
+            Method entry = implementation.getMethod("execute", entryParameters);
             return new AlgorithmDescriptor(id, "Sample", valueType, structureContract, implementation, entry);
         } catch (NoSuchMethodException exception) {
             throw new AssertionError(exception);

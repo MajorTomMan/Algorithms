@@ -1,9 +1,9 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
 import com.majortom.algorithms.structure.maze.MazeStructure;
-
-
-
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
 import com.majortom.algorithms.core.annotation.Algorithm;
@@ -17,10 +17,12 @@ import java.util.Random;
 
 /** Recursive-backtracker perfect-maze generator. */
 @Algorithm(id = "maze-generator-dfs", name = "递归回溯", type = Boolean.class, structure = MazeStructure.class)
+@MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.ARRAY)
 public final class DfsArrayMazeGenerator {
     @AlgorithmEntry
-    public GridMaze generate(MazeDimensions dimensions, long seed) {
-        Random random = new Random(seed);
+    public GridMaze generate(MazeStructure maze) {
+        MazeDimensions dimensions = maze.dimensions();
+        Random random = new Random();
         ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
         GridPoint start = new GridPoint(1, 1);
         ArrayMazeSupport.open(dimensions, state.open(), start);

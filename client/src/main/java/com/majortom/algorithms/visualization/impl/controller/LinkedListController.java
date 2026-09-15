@@ -580,7 +580,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public List<String> algorithmIds() {
-        return AlgorithmCatalog.linkedListAlgorithms(runtimeValueType);
+        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.LinkedStructure.class, runtimeValueType);
     }
 
     @Override

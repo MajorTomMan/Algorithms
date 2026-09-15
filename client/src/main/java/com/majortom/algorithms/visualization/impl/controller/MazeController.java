@@ -2,9 +2,13 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.Maze;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
+import com.majortom.algorithms.visualization.algorithm.MazeAlgorithmCatalog;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -28,7 +32,6 @@ import javafx.scene.control.Slider;
 
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -39,9 +42,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     private enum Operation { GENERATE, SOLVE }
 
-    private final List<String> arrayGenerators = AlgorithmCatalog.arrayMazeGenerators();
-    private final List<String> graphGenerators = AlgorithmCatalog.graphMazeGenerators();
-    private final List<String> arrayPathfinders = AlgorithmCatalog.arrayMazePathfinders();
+    private final List<String> arrayGenerators = MazeAlgorithmCatalog.ids(MazeRole.GENERATOR, MazeModel.ARRAY);
+    private final List<String> graphGenerators = MazeAlgorithmCatalog.ids(MazeRole.GENERATOR, MazeModel.GRAPH);
+    private final List<String> arrayPathfinders = MazeAlgorithmCatalog.ids(MazeRole.PATHFINDER, MazeModel.ARRAY);
     private final List<String> allGenerators = java.util.stream.Stream.concat(
             arrayGenerators.stream(), graphGenerators.stream()).toList();
 
@@ -62,7 +65,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @FXML private ComboBox<String> generatorSelector;
     @FXML private ComboBox<String> pathfinderSelector;
     @FXML private Label structureTitleLabel;
-    @FXML private Label algorithmStructureLabel;
     @FXML private Label generatorTitleLabel;
     @FXML private Label pathfinderTitleLabel;
     @FXML private Label sizeSectionLabel;
@@ -169,19 +171,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         selectedOperation = Operation.GENERATE;
         algorithmResultSnapshot = null;
         String id = selectedId(generatorSelector, allGenerators);
-        if (graphGenerators.contains(id)) {
-            MazeDimensions dimensions = new MazeDimensions(size, size);
-            long seed = System.nanoTime();
-            var descriptor = algorithm(id, Integer.class);
-            startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
-                    () -> descriptor.invoke(dimensions, seed), () -> new MazeEventReducer(size, size, true));
-        } else {
-            MazeDimensions dimensions = new MazeDimensions(size, size);
-            long seed = System.nanoTime();
-            var descriptor = algorithm(id, Boolean.class);
-            startAlgorithm(id, Map.of("dimensions", dimensions, "seed", seed),
-                    () -> descriptor.invoke(dimensions, seed), () -> new MazeEventReducer(size, size, false));
-        }
+        Maze input = new Maze(new MazeDimensions(size, size));
+        var descriptor = AlgorithmCatalog.descriptor(moduleId(), id);
+        boolean graphBased = graphGenerators.contains(id);
+        startAlgorithm(id, selectedAlgorithmSnapshot(), () -> descriptor.invoke(input),
+                () -> new MazeEventReducer(size, size, graphBased));
     }
 
     @FXML
@@ -194,11 +188,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         solving = true;
         selectedOperation = Operation.SOLVE;
         String id = selectedId(pathfinderSelector, arrayPathfinders);
-        GridPoint start = inputMaze.entrance();
-        GridPoint goal = inputMaze.exit();
-        var descriptor = algorithm(id, Boolean.class);
-        startAlgorithm(id, Map.of("maze", inputMaze, "start", start, "goal", goal),
-                () -> descriptor.invoke(inputMaze, start, goal),
+        Maze input = new Maze(inputMaze);
+        var descriptor = AlgorithmCatalog.descriptor(moduleId(), id);
+        startAlgorithm(id, selectedSnapshot, () -> descriptor.invoke(input),
                 () -> new MazeEventReducer(selectedSnapshot));
     }
 
@@ -600,7 +592,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @Override
     protected void setupI18n() {
         if (structureTitleLabel != null) structureTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.structure"));
-        if (algorithmStructureLabel != null) algorithmStructureLabel.textProperty().bind(I18N.createStringBinding("label.maze.algorithm_structure"));
         if (generatorTitleLabel != null) generatorTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.generator"));
         if (pathfinderTitleLabel != null) pathfinderTitleLabel.textProperty().bind(I18N.createStringBinding("label.maze.solver"));
         if (sizeSectionLabel != null) sizeSectionLabel.textProperty().bind(I18N.createStringBinding("label.maze.size"));

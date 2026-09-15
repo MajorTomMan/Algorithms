@@ -10,6 +10,7 @@ import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.RecordingEventSink;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.server.api.constant.ExecutionState;
 import com.majortom.algorithms.server.api.entity.ExecutionUnit;
 import com.majortom.algorithms.server.api.error.AlgorithmNotFoundException;
@@ -18,17 +19,15 @@ import com.majortom.algorithms.server.api.error.ExecutionRejectedException;
 import com.majortom.algorithms.server.api.service.AlgorithmExecutionService;
 import com.majortom.algorithms.server.dto.AlgorithmInformationDto;
 import com.majortom.algorithms.server.request.ExecutionRequest;
-import com.majortom.algorithms.server.request.GraphBfsRequest;
-import com.majortom.algorithms.server.request.IntegerSortRequest;
-import com.majortom.algorithms.server.request.MazeGenerationRequest;
-import com.majortom.algorithms.server.request.MazePathRequest;
-import com.majortom.algorithms.server.request.StringSearchRequest;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 import com.majortom.algorithms.structure.graph.Graph;
 import com.majortom.algorithms.structure.graph.GraphStructure;
+import com.majortom.algorithms.structure.graph.WeightedGraph;
+import com.majortom.algorithms.structure.graph.WeightedGraphStructure;
 import com.majortom.algorithms.structure.maze.GridMaze;
-import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.Maze;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 import com.majortom.algorithms.structure.string.StringStructure;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.log4j.Log4j2;
@@ -52,17 +51,14 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static final int MAX_RETAINED_EXECUTIONS = 512;
     private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
 
-    /**
-     * Server transport protocols. This list describes API request/output contracts, not Algorithm identities.
-     * Algorithm identity and metadata come exclusively from ComponentRegistry/AlgorithmDescriptor.
-     */
-    private static final List<ApiExecutionHandler> API_PROTOCOLS = List.of(
-            new IntegerSortHandler(),
-            new ArrayMazeGeneratorHandler(),
-            new GraphMazeGeneratorHandler(),
-            new ArrayMazePathfinderHandler(),
-            new GraphTraversalHandler(),
-            new StringSearchHandler());
+    /** Structure transport is selected only from @Algorithm.structure.
+     * No algorithm id, entry signature, or algorithm category is inspected here. */
+    private static final List<StructureInputFactory> STRUCTURE_INPUTS = List.of(
+            new ArrayInputFactory(),
+            new WeightedGraphInputFactory(),
+            new GraphInputFactory(),
+            new StringInputFactory(),
+            new MazeInputFactory());
 
     private final ObjectMapper objectMapper;
     private final ExecutionScheduler executionScheduler;
@@ -156,14 +152,14 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     @Override
     public List<AlgorithmInformationDto> getAlgorithms() {
-        return exposedAlgorithms().stream().map(exposed -> {
+        return exposedAlgorithms().stream().map(descriptor -> {
             AlgorithmInformationDto dto = new AlgorithmInformationDto();
-            dto.setId(exposed.descriptor().id());
-            dto.setName(exposed.descriptor().name());
-            dto.setModuleId(exposed.descriptor().module().id());
+            dto.setId(descriptor.id());
+            dto.setName(descriptor.name());
+            dto.setModuleId(descriptor.module().id());
             dto.setVersion(VERSION);
-            dto.setInputType(exposed.handler().inputType().getName());
-            dto.setOutputType(exposed.handler().outputType().getName());
+            dto.setInputType(descriptor.structureContract().getName());
+            dto.setOutputType(descriptor.entryPoint().getReturnType().getName());
             return dto;
         }).toList();
     }
@@ -178,29 +174,37 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     }
 
     private PreparedExecution prepareExecution(String algorithmId, Map<String, Object> rawInput) {
-        ExposedAlgorithm exposed = requireExposedAlgorithm(algorithmId);
+        AlgorithmDescriptor descriptor = requireExposedAlgorithm(algorithmId);
         Map<String, Object> input = rawInput == null ? Map.of() : rawInput;
-        return exposed.handler().prepare(exposed.descriptor(), input, objectMapper);
+        StructureInputFactory factory = structureFactory(descriptor.structureContract())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Server has no input factory for structure " + descriptor.structureContract().getName()));
+        Object structure = factory.create(input, objectMapper);
+        return new PreparedExecution(() -> descriptor.invoke(structure));
     }
 
-    private static List<ExposedAlgorithm> exposedAlgorithms() {
+
+    private static Number number(Object value) {
+        if (value instanceof Number number) return number;
+        return Long.valueOf(java.lang.String.valueOf(value));
+    }
+
+    private static List<AlgorithmDescriptor> exposedAlgorithms() {
         return COMPONENTS.algorithms().stream()
-                .map(descriptor -> handlerFor(descriptor)
-                        .map(handler -> new ExposedAlgorithm(descriptor, handler)))
-                .flatMap(Optional::stream)
+                .filter(descriptor -> structureFactory(descriptor.structureContract()).isPresent())
                 .sorted(Comparator
-                        .comparing((ExposedAlgorithm value) -> value.descriptor().module().id())
-                        .thenComparing(value -> value.descriptor().valueType().getName())
-                        .thenComparing(value -> value.descriptor().id()))
+                        .comparing((AlgorithmDescriptor value) -> value.module().id())
+                        .thenComparing(value -> value.valueType().getName())
+                        .thenComparing(AlgorithmDescriptor::id))
                 .toList();
     }
 
-    private static ExposedAlgorithm requireExposedAlgorithm(String algorithmId) {
+    private static AlgorithmDescriptor requireExposedAlgorithm(String algorithmId) {
         if (algorithmId == null || algorithmId.isBlank()) {
             throw new IllegalArgumentException("algorithmId must not be blank");
         }
-        List<ExposedAlgorithm> matches = exposedAlgorithms().stream()
-                .filter(candidate -> candidate.descriptor().id().equals(algorithmId))
+        List<AlgorithmDescriptor> matches = exposedAlgorithms().stream()
+                .filter(candidate -> candidate.id().equals(algorithmId))
                 .toList();
         if (matches.isEmpty()) {
             throw new AlgorithmNotFoundException(algorithmId);
@@ -211,25 +215,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         return matches.getFirst();
     }
 
-    private static Optional<ApiExecutionHandler> handlerFor(AlgorithmDescriptor descriptor) {
-        return API_PROTOCOLS.stream().filter(handler -> handler.supports(descriptor)).findFirst();
-    }
-
-    private static boolean signature(AlgorithmDescriptor descriptor, Class<?> returnType, Class<?>... parameters) {
-        if (!returnType.isAssignableFrom(descriptor.entryPoint().getReturnType())
-                && !(returnType == void.class && descriptor.entryPoint().getReturnType() == void.class)) {
-            return false;
-        }
-        Class<?>[] actual = descriptor.entryPoint().getParameterTypes();
-        if (actual.length != parameters.length) {
-            return false;
-        }
-        for (int index = 0; index < actual.length; index++) {
-            if (!actual[index].equals(parameters[index])) {
-                return false;
-            }
-        }
-        return true;
+    private static Optional<StructureInputFactory> structureFactory(Class<?> structureContract) {
+        return STRUCTURE_INPUTS.stream().filter(factory -> factory.supports(structureContract)).findFirst();
     }
 
     private void pruneExecutions() {
@@ -260,177 +247,93 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private record PreparedExecution(ExecutionOperation<?> operation) {
     }
 
-    private record ExposedAlgorithm(AlgorithmDescriptor descriptor, ApiExecutionHandler handler) {
+    private interface StructureInputFactory {
+        Class<?> structureContract();
+
+        Object create(Map<String, Object> input, ObjectMapper mapper);
+
+        default boolean supports(Class<?> contract) {
+            return structureContract().equals(contract);
+        }
+
     }
 
-    private interface ApiExecutionHandler {
-        boolean supports(AlgorithmDescriptor descriptor);
-        Class<?> inputType();
-        Class<?> outputType();
-        PreparedExecution prepare(AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper);
-    }
-
-    private static final class IntegerSortHandler implements ApiExecutionHandler {
+    private static final class ArrayInputFactory implements StructureInputFactory {
         @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(Integer.class)
-                    && descriptor.structureContract().equals(ArrayStructure.class)
-                    && signature(descriptor, void.class, ArrayStructure.class);
+        public Class<?> structureContract() {
+            return ArrayStructure.class;
         }
 
         @Override
-        public Class<?> inputType() {
-            return IntegerSortRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return List.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            IntegerSortRequest request = mapper.convertValue(input, IntegerSortRequest.class);
-            com.majortom.algorithms.structure.array.Array<Integer> array =
-                    new com.majortom.algorithms.structure.array.Array<>(request.values());
-            return new PreparedExecution(() -> {
-                descriptor.invoke(array);
-                java.util.ArrayList<Integer> values = new java.util.ArrayList<>(array.size());
-                for (Integer value : array) {
-                    values.add(value);
-                }
-                return List.copyOf(values);
-            });
+        public Object create(Map<String, Object> input, ObjectMapper mapper) {
+            Object rawValues = input.getOrDefault("values", List.of());
+            @SuppressWarnings("unchecked")
+            List<Object> values = mapper.convertValue(rawValues, List.class);
+            return new com.majortom.algorithms.structure.array.Array<>(values);
         }
     }
 
-    private static final class ArrayMazeGeneratorHandler implements ApiExecutionHandler {
+    private static final class GraphInputFactory implements StructureInputFactory {
         @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(Boolean.class)
-                    && signature(descriptor, GridMaze.class, MazeDimensions.class, long.class);
+        public Class<?> structureContract() {
+            return GraphStructure.class;
         }
 
         @Override
-        public Class<?> inputType() {
-            return MazeGenerationRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return GridMaze.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
-            return new PreparedExecution(() -> descriptor.invoke(request.dimensions(), request.seed()));
+        public Object create(Map<String, Object> input, ObjectMapper mapper) {
+            Object rawGraph = java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
+            @SuppressWarnings("unchecked")
+            GraphSnapshot<Integer> snapshot = mapper.convertValue(rawGraph, GraphSnapshot.class);
+            return Graph.fromSnapshot(snapshot);
         }
     }
 
-    private static final class GraphMazeGeneratorHandler implements ApiExecutionHandler {
+    private static final class WeightedGraphInputFactory implements StructureInputFactory {
         @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(Integer.class)
-                    && signature(descriptor, GraphSnapshot.class, MazeDimensions.class, long.class);
+        public Class<?> structureContract() {
+            return WeightedGraphStructure.class;
         }
 
         @Override
-        public Class<?> inputType() {
-            return MazeGenerationRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return GraphSnapshot.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            MazeGenerationRequest request = mapper.convertValue(input, MazeGenerationRequest.class);
-            return new PreparedExecution(() -> descriptor.invoke(request.dimensions(), request.seed()));
+        public Object create(Map<String, Object> input, ObjectMapper mapper) {
+            Object rawGraph = java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
+            @SuppressWarnings("unchecked")
+            WeightedGraphSnapshot<Integer> snapshot = mapper.convertValue(rawGraph, WeightedGraphSnapshot.class);
+            return WeightedGraph.fromSnapshot(snapshot);
         }
     }
 
-    private static final class ArrayMazePathfinderHandler implements ApiExecutionHandler {
+    private static final class StringInputFactory implements StructureInputFactory {
         @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(Boolean.class)
-                    && signature(descriptor, List.class, GridMaze.class, GridPoint.class, GridPoint.class);
+        public Class<?> structureContract() {
+            return StringStructure.class;
         }
 
         @Override
-        public Class<?> inputType() {
-            return MazePathRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return List.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            MazePathRequest request = mapper.convertValue(input, MazePathRequest.class);
-            return new PreparedExecution(() ->
-                    descriptor.invoke(request.maze(), request.start(), request.goal()));
+        public Object create(Map<String, Object> input, ObjectMapper mapper) {
+            java.lang.String value = mapper.convertValue(input.getOrDefault("value", input.getOrDefault("target", "")), java.lang.String.class);
+            return new com.majortom.algorithms.structure.string.String(value);
         }
     }
 
-    private static final class GraphTraversalHandler implements ApiExecutionHandler {
+    private static final class MazeInputFactory implements StructureInputFactory {
         @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(Integer.class)
-                    && descriptor.structureContract().equals(GraphStructure.class)
-                    && signature(descriptor, List.class, GraphStructure.class, Integer.class);
+        public Class<?> structureContract() {
+            return MazeStructure.class;
         }
 
         @Override
-        public Class<?> inputType() {
-            return GraphBfsRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return List.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            GraphBfsRequest request = mapper.convertValue(input, GraphBfsRequest.class);
-            Graph<Integer> graph = Graph.fromSnapshot(request.graph());
-            return new PreparedExecution(() -> descriptor.invoke(graph, request.startNode()));
-        }
-    }
-
-    private static final class StringSearchHandler implements ApiExecutionHandler {
-        @Override
-        public boolean supports(AlgorithmDescriptor descriptor) {
-            return descriptor.valueType().equals(String.class)
-                    && signature(descriptor, List.class, StringStructure.class, String.class);
-        }
-
-        @Override
-        public Class<?> inputType() {
-            return StringSearchRequest.class;
-        }
-
-        @Override
-        public Class<?> outputType() {
-            return List.class;
-        }
-
-        @Override
-        public PreparedExecution prepare(
-                AlgorithmDescriptor descriptor, Map<String, Object> input, ObjectMapper mapper) {
-            StringSearchRequest request = mapper.convertValue(input, StringSearchRequest.class);
-            StringStructure target = new com.majortom.algorithms.structure.string.String(request.target());
-            return new PreparedExecution(() -> descriptor.invoke(target, request.pattern()));
+        public Object create(Map<String, Object> input, ObjectMapper mapper) {
+            Maze maze;
+            if (input.containsKey("maze")) {
+                GridMaze grid = mapper.convertValue(input.get("maze"), GridMaze.class);
+                maze = new Maze(grid);
+            } else {
+                int rows = number(input.getOrDefault("rows", 51)).intValue();
+                int columns = number(input.getOrDefault("columns", rows)).intValue();
+                maze = new Maze(new MazeDimensions(rows, columns));
+            }
+            return maze;
         }
     }
 }

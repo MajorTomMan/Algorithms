@@ -582,8 +582,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     public List<String> algorithmIds() {
         return kind == Kind.STACK
-                ? AlgorithmCatalog.stackAlgorithms(runtimeValueType)
-                : AlgorithmCatalog.queueAlgorithms(runtimeValueType);
+                ? AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.StackStructure.class, runtimeValueType)
+                : AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.QueueStructure.class, runtimeValueType);
     }
 
     @Override

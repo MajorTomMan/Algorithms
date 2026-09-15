@@ -229,10 +229,6 @@ public abstract class BaseController<S> implements Initializable {
         return COMPONENTS.requireAlgorithm(StructureModule.fromId(moduleId()), valueType, id);
     }
 
-    protected final Object invokeAlgorithm(String id, Class<?> valueType, Object... arguments) {
-        return algorithm(id, valueType).invoke(arguments);
-    }
-
     /** Executes one editable structure mutation through the shared Runtime and records its event history. */
     protected final boolean executeStructureOperation(String operationId, ExecutionOperation<?> operation) {
         if (disposed) {

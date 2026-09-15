@@ -1,6 +1,6 @@
 package com.majortom.algorithms.structure.maze;
 
-/** Immutable validated maze dimensions shared by maze algorithms. */
+/** Immutable validated maze dimensions. */
 public record MazeDimensions(int rows, int columns) {
 
     public static final int MAX_CELLS = 100_000;

@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public final class StringController extends BaseModuleController<StringViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
 
-    private final List<String> algorithmIds = AlgorithmCatalog.stringAlgorithms();
+    private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
     private final StringStructure source;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
     private boolean structureSelectionEnabled = true;
@@ -49,7 +49,6 @@ public final class StringController extends BaseModuleController<StringViewState
     @FXML private TextField indexField;
     @FXML private TextField lengthField;
     @FXML private TextField characterField;
-    @FXML private TextField patternField;
     @FXML private Button replaceBtn;
     @FXML private Button insertBtn;
     @FXML private Button removeBtn;
@@ -69,12 +68,6 @@ public final class StringController extends BaseModuleController<StringViewState
         stringVisualizer().setOnIndexSelected(this::handleStringSelection);
         bindSelectors();
         valueField.setText(source.value());
-        patternField.setText("ABABCABAB");
-        patternField.textProperty().addListener((observable, previous, current) -> {
-            if (!structureSelectionEnabled) {
-                stringVisualizer().setAlgorithmPattern(current);
-            }
-        });
         renderSource();
     }
 
@@ -221,49 +214,16 @@ public final class StringController extends BaseModuleController<StringViewState
         if (algorithmId == null) {
             return;
         }
-        StructureSnapshot<StringSnapshot> inputSnapshot;
-        if (algorithmInputSnapshot == null) {
-            inputSnapshot = captureStructureSnapshot();
-        } else {
-            inputSnapshot = algorithmInputSnapshot;
-        }
+        StructureSnapshot<StringSnapshot> inputSnapshot = algorithmInputSnapshot == null
+                ? captureStructureSnapshot()
+                : algorithmInputSnapshot;
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
         var descriptor = algorithm(algorithmId, java.lang.String.class);
-        if (AlgorithmCatalog.stringSearches().contains(algorithmId)) {
-            runStringSearch(algorithmId, descriptor, input, target);
-            return;
-        }
-        runLongestSubstring(algorithmId, descriptor, input, target);
-    }
-
-    private void runStringSearch(
-            String algorithmId,
-            com.majortom.algorithms.core.registry.AlgorithmDescriptor descriptor,
-            StringStructure input,
-            String target) {
-        String pattern = patternField.getText();
-        if (pattern == null || pattern.isEmpty()) {
-            logI18n("message.string.pattern_required");
-            return;
-        }
-        stringVisualizer().setAlgorithmPattern(pattern);
-        startAlgorithm(
-                algorithmId,
-                Map.of("target", target, "pattern", pattern),
-                () -> descriptor.invoke(input, pattern),
-                () -> new StringEventReducer(target));
-    }
-
-    private void runLongestSubstring(
-            String algorithmId,
-            com.majortom.algorithms.core.registry.AlgorithmDescriptor descriptor,
-            StringStructure input,
-            String target) {
         stringVisualizer().clearAlgorithmPattern();
         startAlgorithm(
                 algorithmId,
-                Map.of("target", target),
+                inputSnapshot,
                 () -> descriptor.invoke(input),
                 () -> new StringEventReducer(target));
     }
@@ -395,7 +355,6 @@ public final class StringController extends BaseModuleController<StringViewState
         clearStringSelection();
         source.replace(0, source.length(), "ABABDABACDABABCABAB");
         if (valueField != null) valueField.setText(source.value());
-        if (patternField != null) patternField.setText("ABABCABAB");
         renderSource();
     }
 
@@ -414,7 +373,6 @@ public final class StringController extends BaseModuleController<StringViewState
         if (indexField != null) indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.index"));
         if (lengthField != null) lengthField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.length"));
         if (characterField != null) characterField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.character"));
-        if (patternField != null) patternField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.pattern"));
     }
 
     @Override
@@ -466,25 +424,9 @@ public final class StringController extends BaseModuleController<StringViewState
 
     private void refreshAlgorithmControls() {
         String algorithmId = selectedAlgorithmId();
-        boolean search = algorithmId != null && AlgorithmCatalog.stringSearches().contains(algorithmId);
-        if (patternField != null) {
-            patternField.setManaged(search);
-            patternField.setVisible(search);
-        }
         if (searchSectionLabel != null) {
             searchSectionLabel.textProperty().unbind();
-            String key;
-            if (search) {
-                key = "label.string.search";
-            } else {
-                key = "label.string.algorithm";
-            }
-            searchSectionLabel.textProperty().bind(I18N.createStringBinding(key));
-        }
-        if (!search) {
-            stringVisualizer().clearAlgorithmPattern();
-        } else if (!structureSelectionEnabled && patternField != null) {
-            stringVisualizer().setAlgorithmPattern(patternField.getText());
+            searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.algorithm"));
         }
     }
 
@@ -535,17 +477,7 @@ public final class StringController extends BaseModuleController<StringViewState
             clearStringSelection();
         }
         structureSelectionEnabled = enabled;
-        if (enabled) {
-            stringVisualizer().clearAlgorithmPattern();
-            return;
-        }
-        String algorithmId = selectedAlgorithmId();
-        boolean search = algorithmId != null && AlgorithmCatalog.stringSearches().contains(algorithmId);
-        if (search && patternField != null) {
-            stringVisualizer().setAlgorithmPattern(patternField.getText());
-        } else {
-            stringVisualizer().clearAlgorithmPattern();
-        }
+        stringVisualizer().clearAlgorithmPattern();
     }
 
     private void handleStringSelection(int index) {

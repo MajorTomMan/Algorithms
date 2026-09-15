@@ -1067,9 +1067,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void refreshAlgorithmIds() {
         if (activeVariant == TreeVariant.GENERAL) {
-            algorithmIds = AlgorithmCatalog.generalTreeAlgorithms(runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.GeneralTreeStructure.class, runtimeValueType);
         } else {
-            algorithmIds = AlgorithmCatalog.avlTreeAlgorithms(runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.AvlTreeStructure.class, runtimeValueType);
         }
     }
 

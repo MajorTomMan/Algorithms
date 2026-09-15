@@ -51,7 +51,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private GraphVariant activeVariant = GraphVariant.UNDIRECTED;
     private List<String> algorithmIds = List.of();
     private StructureSnapshot<GraphSnapshotState<Object>> algorithmInputSnapshot;
-    private Object startNode;
     private Class<?> runtimeValueType = Integer.class;
     private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
     private boolean structureSelectionEnabled = true;
@@ -72,13 +71,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @FXML private TextField fromField;
     @FXML private TextField toField;
     @FXML private TextField weightField;
-    @FXML private TextField startField;
     @FXML private Button addNodeBtn;
     @FXML private Button deleteNodeBtn;
     @FXML private Button addEdgeBtn;
     @FXML private Button deleteEdgeBtn;
     @FXML private Button setWeightBtn;
-    @FXML private Button setStartBtn;
     @FXML private Button runBtn;
 
     private enum GraphVariant {
@@ -90,7 +87,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         super(new GraphVisualizer(), "/fxml/GraphControls.fxml");
         undirectedGraph = randomWeightedGraph(10, 16, false);
         directedGraph = randomWeightedGraph(10, 16, true);
-        startNode = firstVertexValue(undirectedGraph);
         graphVisualizer().setNodeSelectionListener(this::handleVisualNodeSelection);
         graphVisualizer().setEdgeSelectionListener(this::handleVisualEdgeSelection);
         refreshAlgorithmIds();
@@ -101,14 +97,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        // The remembered value type may have cleared the graph before FXML is loaded.
-        syncStartNode(currentGraph());
         if (weightField != null && weightField.getText().isBlank()) {
             weightField.setText("1");
         }
         EffectUtils.applyDynamicEffect(
                 addNodeBtn, deleteNodeBtn, addEdgeBtn,
-                deleteEdgeBtn, setWeightBtn, setStartBtn, runBtn);
+                deleteEdgeBtn, setWeightBtn, runBtn);
         refreshVariantControls();
     }
 
@@ -122,60 +116,17 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (algorithmId == null) {
             return;
         }
-        GraphSnapshotState<Object> selectedSnapshot = selectedAlgorithmSnapshot();
-        AlgorithmDescriptor descriptor = algorithm(algorithmId, runtimeValueType);
-        if (descriptor.structureContract().equals(WeightedGraphStructure.class)
-                && descriptor.entryPoint().getParameterCount() == 2
-                && descriptor.entryPoint().getParameterTypes()[1].equals(WeightedGraphStructure.class)) {
-            runMinimumSpanning(algorithmId, descriptor, selectedSnapshot);
-            return;
-        }
-        runTraversal(algorithmId, descriptor, selectedSnapshot);
-    }
-
-    private void runTraversal(
-            String algorithmId,
-            AlgorithmDescriptor descriptor,
-            GraphSnapshotState<Object> inputSnapshot) {
+        GraphSnapshotState<Object> inputSnapshot = selectedAlgorithmSnapshot();
         GraphStructure<Object> inputGraph = graphFromSnapshot(inputSnapshot);
         if (inputGraph.isEmpty()) {
             return;
         }
-        Object algorithmStartNode = startNode;
-        if (inputGraph.vertex(algorithmStartNode) == null) {
-            algorithmStartNode = firstVertexValue(inputGraph);
-        }
-        Object finalStartNode = algorithmStartNode;
+        AlgorithmDescriptor descriptor = algorithm(algorithmId, runtimeValueType);
         startAlgorithm(
                 algorithmId,
                 inputSnapshot,
-                () -> descriptor.invoke(inputGraph, finalStartNode),
+                () -> descriptor.invoke(inputGraph),
                 () -> new GraphEventReducer(inputSnapshot));
-    }
-
-    @SuppressWarnings("unchecked")
-    private void runMinimumSpanning(
-            String algorithmId,
-            AlgorithmDescriptor descriptor,
-            GraphSnapshotState<Object> inputSnapshot) {
-        if (!(inputSnapshot instanceof WeightedGraphSnapshot<?> weighted)) {
-            throw new IllegalArgumentException("minimum spanning algorithms require a weighted graph snapshot");
-        }
-        WeightedGraphSnapshot<Object> sourceSnapshot = (WeightedGraphSnapshot<Object>) weighted;
-        WeightedGraph<Object> source = WeightedGraph.fromSnapshot(sourceSnapshot);
-        WeightedGraphSnapshot<Object> resultSnapshot = new WeightedGraphSnapshot<>(
-                false,
-                sourceSnapshot.vertices(),
-                List.of());
-        WeightedGraph<Object> result = WeightedGraph.fromSnapshot(resultSnapshot);
-        startAlgorithm(
-                algorithmId,
-                sourceSnapshot,
-                () -> {
-                    descriptor.invoke(source, result);
-                    return null;
-                },
-                () -> new GraphEventReducer(resultSnapshot));
     }
 
     @Override
@@ -282,10 +233,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
     }
 
-    @FXML
-    private void handleSetStart() {
-        setStartNode(startField.getText());
-    }
 
     private void addNode(String text) {
         Object id = parseNode(text);
@@ -297,16 +244,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             logI18n("message.graph.already_exists", id);
             return;
         }
-        boolean wasEmpty = graph.isEmpty();
         if (!executeStructureOperation("add-vertex", () -> {
             graph.addVertex(id);
             return null;
         })) {
             return;
-        }
-        if (wasEmpty) {
-            startNode = id;
-            startField.setText(valueAdapter.format(startNode));
         }
         renderGraph();
         Vertex<Object> addedVertex = graph.vertex(id);
@@ -332,7 +274,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(removedVertex))) {
             return;
         }
-        syncStartNode(graph);
         renderGraph();
         selectGraphNodeAfterRemoval(previousNodeOrder, removedIndex);
         logI18n("message.graph.node_deleted", id);
@@ -435,21 +376,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return currentOrder.get(0);
     }
 
-    private void setStartNode(String text) {
-        Object id = parseNode(text);
-        GraphStructure<Object> graph = currentGraph();
-        if (id == null || graph.vertex(id) == null) {
-            appendLog(I18N.text("message.error.invalid_graph_start", text));
-            return;
-        }
-        if (!java.util.Objects.equals(startNode, id)) {
-            invalidateExecutionForInputChange();
-            startNode = id;
-            renderGraph();
-        }
-        appendLog(I18N.text("message.graph.start_set", id));
-    }
-
     private Object parseNode(String text) {
         try {
             return valueAdapter.parse(text);
@@ -481,28 +407,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         invalidateExecutionForInputChange();
         activeVariant = variant;
         clearVisualSelection();
-        syncStartNode(currentGraph());
         refreshAlgorithmIds();
         syncStructureSelectorSelection();
         refreshVariantControls();
         renderGraph();
         refreshStatsDisplay();
-    }
-
-    private void syncStartNode(GraphStructure<Object> graph) {
-        if (graph.isEmpty()) {
-            startNode = null;
-            if (startField != null) {
-                startField.clear();
-            }
-            return;
-        }
-        if (graph.vertex(startNode) == null) {
-            startNode = firstVertexValue(graph);
-        }
-        if (startField != null) {
-            startField.setText(valueAdapter.format(startNode));
-        }
     }
 
     private void renderGraph() {
@@ -526,7 +435,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             activateVariant(GraphVariant.UNDIRECTED);
         }
         algorithmInputSnapshot = null;
-        syncStartNode(currentGraph());
         invalidateExecutionForStructureChange();
         clearVisualSelection();
         renderGraph();
@@ -652,18 +560,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         bindLabel(nodeOperationsLabel, "label.graph.node_ops");
         bindLabel(edgeOperationsLabel, "label.graph.edge_ops");
-        bindLabel(traversalLabel, "label.graph.run_start");
+        bindLabel(traversalLabel, "label.panel.execution");
         bindPrompt(nodeField, "prompt.graph.node");
         bindPrompt(fromField, "prompt.graph.from");
         bindPrompt(toField, "prompt.graph.to");
         bindPrompt(weightField, "prompt.graph.weight");
-        bindPrompt(startField, "prompt.graph.start");
         bindButton(addNodeBtn, "action.graph.add");
         bindButton(deleteNodeBtn, "action.graph.delete");
         bindButton(addEdgeBtn, "action.graph.link");
         bindButton(deleteEdgeBtn, "action.graph.delete_edge");
         bindButton(setWeightBtn, "action.graph.set_weight");
-        bindButton(setStartBtn, "action.graph.set_start");
         bindButton(runBtn, "action.graph.run");
     }
 
@@ -706,13 +612,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         });
         algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            refreshAlgorithmControls();
             notifyAlgorithmSelection();
         });
         Platform.runLater(() -> {
             syncStructureSelectorSelection();
             refreshAlgorithmSelector();
-            refreshAlgorithmControls();
         });
     }
 
@@ -721,14 +625,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         refreshAlgorithmSelector();
         setVisibleManaged(weightField, true);
         setVisibleManaged(setWeightBtn, true);
-        refreshAlgorithmControls();
     }
 
     private void refreshAlgorithmIds() {
         if (activeVariant == GraphVariant.UNDIRECTED) {
-            algorithmIds = AlgorithmCatalog.weightedGraphAlgorithms(runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType);
         } else {
-            algorithmIds = AlgorithmCatalog.basicGraphAlgorithms(runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType);
         }
     }
 
@@ -758,13 +661,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         algorithmSelectionListener.accept(selectedAlgorithmId());
     }
 
-    private void refreshAlgorithmControls() {
-        String algorithmId = selectedAlgorithmId();
-        boolean traversal = algorithmId != null && AlgorithmCatalog.graphTraversals(runtimeValueType).contains(algorithmId);
-        setVisibleManaged(startField, traversal);
-        setVisibleManaged(setStartBtn, traversal);
-        setVisibleManaged(traversalLabel, traversal);
-    }
 
     private void syncStructureSelectorSelection() {
         if (structureSelector == null) {
@@ -999,7 +895,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         })) {
             return;
         }
-        syncStartNode(graph);
         renderGraph();
         refreshStatsDisplay();
         if (!batch.nodes().isEmpty()) {
@@ -1047,9 +942,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         String text = valueAdapter.format(value);
         if (nodeField != null) {
             nodeField.setText(text);
-        }
-        if (startField != null) {
-            startField.setText(text);
         }
         selectionListener.accept(new NodeSelection(nodeId, VisualValue.of(value), degree));
     }
@@ -1412,12 +1304,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         clearVisualSelection();
         undirectedGraph = new WeightedGraph<>(false);
         directedGraph = new WeightedGraph<>(true);
-        startNode = null;
         refreshAlgorithmIds();
         invalidateExecutionForStructureChange();
-        if (startField != null) {
-            startField.clear();
-        }
         if (controlPanel != null) {
             refreshVariantControls();
             renderGraph();

@@ -149,20 +149,6 @@
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
-        <HBox spacing="6" styleClass="operation-row">
-            <TextField fx:id="startField" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <styleClass>
-                    <String fx:value="dark-textfield" />
-                    <String fx:value="operation-input" />
-                </styleClass>
-            </TextField>
-            <Button fx:id="setStartBtn" onAction="#handleSetStart">
-                <styleClass>
-                    <String fx:value="btn-ran-gold" />
-                    <String fx:value="operation-button" />
-                </styleClass>
-            </Button>
-        </HBox>
         <Button fx:id="runBtn" onAction="#handleAlgorithmStart" visible="false" managed="false"
             maxWidth="Infinity">
             <styleClass>

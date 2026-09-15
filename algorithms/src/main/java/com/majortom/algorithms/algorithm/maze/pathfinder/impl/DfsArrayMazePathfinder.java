@@ -1,8 +1,9 @@
 package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
 import com.majortom.algorithms.structure.maze.MazeStructure;
-
-
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
@@ -18,9 +19,16 @@ import java.util.Set;
 
 /** Recursive depth-first pathfinder with factual visit/examine/backtrack observations. */
 @Algorithm(id = "maze-pathfinder-dfs", name = "深度优先搜索", type = Boolean.class, structure = MazeStructure.class)
+@MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class DfsArrayMazePathfinder {
     @AlgorithmEntry
-    public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {
+    public List<GridPoint> findPath(MazeStructure structure) {
+        GridMaze maze = structure.grid();
+        if (maze == null) {
+            throw new IllegalArgumentException("maze structure has no grid");
+        }
+        GridPoint start = maze.entrance();
+        GridPoint goal = maze.exit();
         ArrayMazeSupport.requirePathEndpoints(maze, start, goal);
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Set<GridPoint> discovered = new HashSet<>();

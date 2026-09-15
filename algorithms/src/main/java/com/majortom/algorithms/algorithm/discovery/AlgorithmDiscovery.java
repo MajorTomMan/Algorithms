@@ -70,42 +70,14 @@ public final class AlgorithmDiscovery {
         return List.copyOf(descriptors);
     }
 
-    private Method findEntryPoint(Class<?> implementation) {
-        List<Method> entries = new ArrayList<>();
-        for (Method method : implementation.getMethods()) {
-            if (method.getAnnotation(AlgorithmEntry.class) != null) {
-                entries.add(method);
-            }
-        }
-        if (entries.size() != 1) {
-            throw new RegistrationException("Algorithm " + implementation.getName()
-                    + " must expose exactly one @AlgorithmEntry method, found " + entries.size());
-        }
-        return entries.getFirst();
-    }
-
     private void validateValueType(AlgorithmDescriptor descriptor) {
-        Set<Class<?>> resolvedTypes = new HashSet<>();
-        for (Type parameter : descriptor.entryPoint().getGenericParameterTypes()) {
-            collectConcreteTypeArguments(parameter, new HashMap<>(), resolvedTypes);
-        }
-        collectConcreteTypeArguments(descriptor.entryPoint().getGenericReturnType(), new HashMap<>(), resolvedTypes);
-        if (!resolvedTypes.isEmpty() && !resolvedTypes.contains(descriptor.valueType())) {
-            // Method signatures such as List<Integer> may describe output rather than the structure's value type.
-            // Only reject when the declared Structure parameter itself exposes a conflicting concrete type.
-            for (Type parameter : descriptor.entryPoint().getGenericParameterTypes()) {
-                if (parameter instanceof ParameterizedType parameterized
-                        && parameterized.getRawType() instanceof Class<?> raw
-                        && descriptor.structureContract().isAssignableFrom(raw)) {
-                    Set<Class<?>> structureTypes = new HashSet<>();
-                    collectConcreteTypeArguments(parameter, new HashMap<>(), structureTypes);
-                    if (!structureTypes.isEmpty() && !structureTypes.contains(descriptor.valueType())) {
-                        throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
-                                + " does not match entry Structure parameter of " + descriptor.implementation().getName()
-                                + ": " + structureTypes.stream().map(Class::getName).sorted().toList());
-                    }
-                }
-            }
+        Type structureParameter = descriptor.entryPoint().getGenericParameterTypes()[0];
+        Set<Class<?>> structureTypes = new HashSet<>();
+        collectConcreteTypeArguments(structureParameter, new HashMap<>(), structureTypes);
+        if (!structureTypes.isEmpty() && !structureTypes.contains(descriptor.valueType())) {
+            throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
+                    + " does not match entry Structure parameter of " + descriptor.implementation().getName()
+                    + ": " + structureTypes.stream().map(Class::getName).sorted().toList());
         }
     }
 
@@ -150,4 +122,20 @@ public final class AlgorithmDiscovery {
     private boolean isValueCandidate(Class<?> type) {
         return type != Object.class && !type.isInterface() && !type.isArray();
     }
+
+    private Method findEntryPoint(Class<?> implementation) {
+        List<Method> entries = new ArrayList<>();
+        for (Method method : implementation.getMethods()) {
+            if (method.getAnnotation(AlgorithmEntry.class) != null) {
+                entries.add(method);
+            }
+        }
+        if (entries.size() != 1) {
+            throw new RegistrationException("Algorithm " + implementation.getName()
+                    + " must expose exactly one @AlgorithmEntry method, found " + entries.size());
+        }
+        return entries.getFirst();
+    }
+
+
 }

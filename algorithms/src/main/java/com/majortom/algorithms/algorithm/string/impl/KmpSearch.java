@@ -12,14 +12,12 @@ import java.util.Objects;
 
 @Algorithm(id = "kmp", name = "KMP Search", type = String.class, structure = StringStructure.class)
 public final class KmpSearch {
+    private static final String DEFAULT_PATTERN = "ABABCABAB";
+
     @AlgorithmEntry
-    public List<Integer> search(StringStructure target, String pattern) {
+    public List<Integer> search(StringStructure target) {
         Objects.requireNonNull(target, "target");
-        Objects.requireNonNull(pattern, "pattern");
-        if (pattern.isEmpty()) {
-            Log.e("KMP", "Pattern must not be empty");
-            throw new IllegalArgumentException("pattern must not be empty");
-        }
+        String pattern = pattern(target);
         String text = target.value();
         Log.d("KMP", "Search start, text=" + text.length() + ", pattern=" + pattern.length());
         int[] prefix = prefix(pattern);
@@ -62,6 +60,11 @@ public final class KmpSearch {
             Log.i("KMP", "Matches found: " + result.size());
         }
         return result;
+    }
+
+    private String pattern(StringStructure target) {
+        // Pattern selection is KMP policy. Structure and framework deliberately know nothing about it.
+        return DEFAULT_PATTERN;
     }
 
     private int[] prefix(String pattern) {

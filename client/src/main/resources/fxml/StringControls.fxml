@@ -120,12 +120,6 @@
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
-        <TextField fx:id="patternField" maxWidth="Infinity">
-            <styleClass>
-                <String fx:value="dark-textfield" />
-                <String fx:value="operation-input" />
-            </styleClass>
-        </TextField>
         <Button fx:id="runBtn" onAction="#handleAlgorithmStart" maxWidth="Infinity" visible="false"
             managed="false" styleClass="btn-run-neon" />
     </VBox>

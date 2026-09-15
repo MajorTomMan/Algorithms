@@ -3,8 +3,10 @@ package com.majortom.algorithms.algorithm.graph.impl;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
+import com.majortom.algorithms.structure.graph.WeightedGraph;
 import com.majortom.algorithms.structure.graph.WeightedGraphStructure;
 
 import java.util.ArrayList;
@@ -18,33 +20,29 @@ import java.util.Objects;
 @Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", type = Integer.class, structure = WeightedGraphStructure.class)
 public final class KruskalMinimumSpanning {
     @AlgorithmEntry
-    public void build(WeightedGraphStructure<Integer> source, WeightedGraphStructure<Integer> result) {
-        Objects.requireNonNull(source, "source");
-        Objects.requireNonNull(result, "result");
-        if (source.isDirected()) {
+    public WeightedGraphSnapshot<Integer> build(WeightedGraphStructure<Integer> graph) {
+        Objects.requireNonNull(graph, "graph");
+        if (graph.isDirected()) {
             throw new IllegalArgumentException("Kruskal requires an undirected weighted graph");
-        }
-        if (result.isDirected()) {
-            throw new IllegalArgumentException("Kruskal result graph must be undirected");
         }
 
         Map<Long, Long> parent = new HashMap<>();
         Map<Long, Integer> rank = new HashMap<>();
-        for (Vertex<Integer> vertex : source.vertices()) {
+        for (Vertex<Integer> vertex : graph.vertices()) {
             parent.put(vertex.id(), vertex.id());
             rank.put(vertex.id(), 0);
-            if (result.vertex(vertex.value()) == null) {
-                result.addVertex(vertex.value());
-            }
         }
 
         List<Edge<Integer>> edges = new ArrayList<>();
-        for (Edge<Integer> edge : source.edges()) {
+        for (Edge<Integer> edge : graph.edges()) {
             edges.add(edge);
         }
-        edges.sort(Comparator
-                .comparingDouble(source::weight)
-                .thenComparingLong(Edge::id));
+        edges.sort(Comparator.comparingDouble(graph::weight).thenComparingLong(Edge::id));
+
+        WeightedGraph<Integer> result = new WeightedGraph<>(false);
+        for (Vertex<Integer> vertex : graph.vertices()) {
+            result.addVertex(vertex.value());
+        }
 
         for (Edge<Integer> edge : edges) {
             Observations.examined("graph.vertex", edge.from().id(), edge.to().id());
@@ -54,10 +52,11 @@ public final class KruskalMinimumSpanning {
                 continue;
             }
             union(parent, rank, fromRoot, toRoot);
-            Vertex<Integer> resultFrom = result.vertex(edge.from().value());
-            Vertex<Integer> resultTo = result.vertex(edge.to().value());
-            result.addEdge(resultFrom, resultTo, source.weight(edge));
+            Vertex<Integer> from = result.vertex(edge.from().value());
+            Vertex<Integer> to = result.vertex(edge.to().value());
+            result.addEdge(from, to, graph.weight(edge));
         }
+        return result.snapshot();
     }
 
     private static long find(Map<Long, Long> parent, long value) {

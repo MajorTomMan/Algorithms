@@ -523,7 +523,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public List<String> algorithmIds() {
-        return AlgorithmCatalog.arraySorts(runtimeValueType);
+        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.array.ArrayStructure.class, runtimeValueType);
     }
 
     @Override

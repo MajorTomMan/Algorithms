@@ -18,10 +18,12 @@ import java.util.Set;
 @Algorithm(id = "graph-bfs", name = "广度优先遍历", type = Integer.class, structure = GraphStructure.class)
 public final class GraphBfs {
     private static final String VERTEX_DOMAIN = "graph.vertex";
+
     @AlgorithmEntry
-    public List<Integer> traverse(GraphStructure<Integer> graph, Integer startNode) {
+    public List<Integer> traverse(GraphStructure<Integer> graph) {
         Objects.requireNonNull(graph, "graph");
-        Vertex<Integer> startVertex = vertex(graph, startNode);
+        Integer start = firstVertexValue(graph);
+        Vertex<Integer> startVertex = vertex(graph, start);
         if (startVertex == null) {
             throw new IllegalArgumentException("startNode must exist in graph");
         }
@@ -55,6 +57,13 @@ public final class GraphBfs {
             edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
         }
         return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
+    }
+
+    private static Integer firstVertexValue(GraphStructure<Integer> graph) {
+        for (Vertex<Integer> vertex : graph.vertices()) {
+            return vertex.value();
+        }
+        throw new IllegalArgumentException("graph must contain at least one vertex");
     }
 
     private static Vertex<Integer> vertex(GraphStructure<Integer> graph, int value) {

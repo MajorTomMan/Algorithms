@@ -81,6 +81,20 @@ public final class RegistrationValidator {
         if (!method.getDeclaringClass().isAssignableFrom(descriptor.implementation())) {
             throw new RegistrationException("Algorithm entry method does not belong to implementation: " + method);
         }
+        if (method.isVarArgs() || method.getParameterCount() != 1) {
+            throw new RegistrationException("Algorithm entry method must declare exactly one parameter and it must be a Structure contract: "
+                    + method);
+        }
+        Class<?> actualStructure = method.getParameterTypes()[0];
+        if (actualStructure.getAnnotation(Structure.class) == null) {
+            throw new RegistrationException("Algorithm entry parameter must be a @Structure contract: "
+                    + actualStructure.getName());
+        }
+        if (!actualStructure.isAssignableFrom(descriptor.structureContract())) {
+            throw new RegistrationException("Algorithm " + descriptor.id() + " declares structure "
+                    + descriptor.structureContract().getName() + " but @AlgorithmEntry parameter "
+                    + actualStructure.getName() + " cannot accept that contract");
+        }
     }
 
     private static void validateId(String id, String component) {

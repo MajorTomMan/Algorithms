@@ -1,7 +1,9 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
 import com.majortom.algorithms.structure.maze.MazeStructure;
-
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
@@ -18,16 +20,18 @@ import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
 @Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", type = Integer.class, structure = MazeStructure.class)
+@MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.GRAPH)
 public final class GraphMazeBfsGenerator {
 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
     @AlgorithmEntry
-    public GraphSnapshot<Integer> generate(MazeDimensions dimensions, long seed) {
+    public GraphSnapshot<Integer> generate(MazeStructure maze) {
+        MazeDimensions dimensions = maze.dimensions();
         List<GraphSnapshot.Vertex<Integer>> vertices = vertices(dimensions);
         List<GraphSnapshot.Edge> edges = new ArrayList<>();
         Set<Integer> discovered = new HashSet<>();
         ArrayDeque<Integer> queue = new ArrayDeque<>();
-        Random random = new Random(seed);
+        Random random = new Random();
         long nextEdgeId = 1L;
         queue.add(0);
         discovered.add(0);

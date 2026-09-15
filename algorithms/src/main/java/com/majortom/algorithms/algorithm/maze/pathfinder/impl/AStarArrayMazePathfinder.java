@@ -1,8 +1,9 @@
 package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
 import com.majortom.algorithms.structure.maze.MazeStructure;
-
-
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
@@ -20,9 +21,16 @@ import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
 @Algorithm(id = "maze-pathfinder-astar", name = "A* Search", type = Boolean.class, structure = MazeStructure.class)
+@MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class AStarArrayMazePathfinder {
     @AlgorithmEntry
-    public List<GridPoint> findPath(GridMaze maze, GridPoint start, GridPoint goal) {
+    public List<GridPoint> findPath(MazeStructure structure) {
+        GridMaze maze = structure.grid();
+        if (maze == null) {
+            throw new IllegalArgumentException("maze structure has no grid");
+        }
+        GridPoint start = maze.entrance();
+        GridPoint goal = maze.exit();
         ArrayMazeSupport.requirePathEndpoints(maze, start, goal);
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Map<GridPoint, Integer> distance = new HashMap<>();

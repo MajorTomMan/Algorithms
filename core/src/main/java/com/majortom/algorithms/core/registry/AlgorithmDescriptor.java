@@ -27,6 +27,7 @@ public record AlgorithmDescriptor(
         Objects.requireNonNull(entryPoint, "entryPoint");
     }
 
+
     public AlgorithmKey key() {
         return AlgorithmKey.of(this);
     }
@@ -40,32 +41,33 @@ public record AlgorithmDescriptor(
         return metadata.module();
     }
 
-    public Object newInstance() {
-        try {
-            return implementation.getDeclaredConstructor().newInstance();
-        } catch (ReflectiveOperationException exception) {
-            throw new RegistrationException("Unable to instantiate Algorithm " + id + " using "
-                    + implementation.getName(), exception);
+    public Object invoke(Object structure) {
+        Objects.requireNonNull(structure, "structure");
+        if (!structureContract.isInstance(structure)) {
+            throw new IllegalArgumentException("Algorithm " + id + " requires structure "
+                    + structureContract.getName() + " but received " + structure.getClass().getName());
         }
-    }
-
-    public Object invoke(Object... arguments) {
-        Object instance = newInstance();
+        Object algorithm = newInstance();
         try {
-            return entryPoint.invoke(instance, arguments);
+            return entryPoint.invoke(algorithm, structure);
         } catch (IllegalAccessException exception) {
             throw new RegistrationException("Unable to access Algorithm entry " + implementation.getName()
                     + "#" + entryPoint.getName(), exception);
         } catch (InvocationTargetException exception) {
             Throwable cause = exception.getCause();
-            if (cause instanceof RuntimeException runtime) {
-                throw runtime;
-            }
-            if (cause instanceof Error error) {
-                throw error;
-            }
+            if (cause instanceof RuntimeException runtime) throw runtime;
+            if (cause instanceof Error error) throw error;
             throw new RegistrationException("Algorithm entry failed: " + implementation.getName()
                     + "#" + entryPoint.getName(), cause);
+        }
+    }
+
+    private Object newInstance() {
+        try {
+            return implementation.getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException exception) {
+            throw new RegistrationException("Unable to instantiate Algorithm " + id + " using "
+                    + implementation.getName(), exception);
         }
     }
 }
