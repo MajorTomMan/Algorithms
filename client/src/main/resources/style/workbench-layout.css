@@ -369,9 +369,7 @@
     -fx-min-width: 0;
     -fx-pref-width: -1;
     -fx-max-width: Infinity;
-    -fx-min-height: -1;
-    -fx-pref-height: -1;
-    -fx-max-height: -1;
+
     -fx-padding: 0 0.95em;
 }
 
