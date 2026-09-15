@@ -1222,10 +1222,12 @@
 .array-cell-only .array-cell-body {
     -fx-border-width: 2px;
 }
+/* Primary visualization values follow the user base font size. Auxiliary
+ * indices, ports and metadata remain fixed because they are geometry cues. */
 .array-cell-value {
     -fx-fill: #08090a;
     -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 17px;
+    -fx-font-size: 1.05em;
     -fx-font-weight: 800;
 }
 .array-cell-selection-outline {
@@ -1256,10 +1258,10 @@
     -fx-fill: #08090a;
 }
 .array-cell-compact .array-cell-value {
-    -fx-font-size: 15px;
+    -fx-font-size: 0.92em;
 }
 .array-cell-dense .array-cell-value {
-    -fx-font-size: 12px;
+    -fx-font-size: 0.75em;
 }
 .array-cell-dense .array-cell-index {
     -fx-font-size: 8px;
@@ -1449,7 +1451,7 @@
 .string-cell-value {
     -fx-fill: #08090a;
     -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 22px;
+    -fx-font-size: 1.35em;
     -fx-font-weight: 800;
 }
 .string-cell-selection-outline {
@@ -1478,10 +1480,10 @@
     -fx-fill: #ffffff;
 }
 .string-cell-compact .string-cell-value {
-    -fx-font-size: 19px;
+    -fx-font-size: 1.17em;
 }
 .string-cell-dense .string-cell-value {
-    -fx-font-size: 15px;
+    -fx-font-size: 0.92em;
 }
 .string-cell-dense .string-cell-index {
     -fx-font-size: 8px;
@@ -1495,7 +1497,7 @@
 
 /* ---------- V3 logical linear structure grammar ---------- */
 .linked-node .visual-node-label {
-    -fx-font-size: 17px;
+    -fx-font-size: 1.05em;
 }
 .linked-node-divider,
 .linked-node-port-divider {
@@ -1552,7 +1554,7 @@
 .stack-item .visual-node-label,
 .queue-item .visual-node-label {
     -fx-fill: #08090a;
-    -fx-font-size: 17px;
+    -fx-font-size: 1.05em;
     -fx-font-weight: 800;
 }
 .stack-item:highlighted .visual-node-shape,
@@ -1675,7 +1677,7 @@
 .kmp-pattern-value {
     -fx-fill: #08090a;
     -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 16px;
+    -fx-font-size: 1em;
     -fx-font-weight: 800;
 }
 .kmp-pattern-cell:observed .kmp-pattern-body {
@@ -1683,10 +1685,10 @@
     -fx-border-color: #f5b400;
 }
 .kmp-pattern-compact .kmp-pattern-value {
-    -fx-font-size: 14px;
+    -fx-font-size: 0.86em;
 }
 .kmp-pattern-dense .kmp-pattern-value {
-    -fx-font-size: 12px;
+    -fx-font-size: 0.75em;
 }
 
 /* Edge metadata slot reserved for future weighted-graph labels. */

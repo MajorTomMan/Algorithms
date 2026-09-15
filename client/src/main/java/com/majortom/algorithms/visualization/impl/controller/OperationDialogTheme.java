@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -11,7 +12,7 @@ import java.net.URL;
 final class OperationDialogTheme {
 
     private static final String THEME_PATH = "/style/theme.css";
-    private static final String LAYOUT_PATH = "/style/workbench-layout.css";
+    private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
 
     private OperationDialogTheme() {
     }
@@ -19,7 +20,7 @@ final class OperationDialogTheme {
     static void apply(Dialog<?> dialog) {
         DialogPane pane = dialog.getDialogPane();
         addStylesheet(pane, THEME_PATH);
-        addStylesheet(pane, LAYOUT_PATH);
+        FONT_SETTINGS_SERVICE.apply(pane, FONT_SETTINGS_SERVICE.load());
         addClasses(pane, "operation-dialog-pane");
         WorkbenchTheme.apply(pane);
         if (pane.getContent() != null) {

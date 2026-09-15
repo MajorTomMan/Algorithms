@@ -939,7 +939,12 @@ public class MainController implements Initializable {
                 new Separator(),
                 footer);
         popupShell.getChildren().setAll(arrowRow, content);
-        FONT_SETTINGS_SERVICE.apply(popupShell, initial);
+        // Keep the settings chrome at the project default size. The selected
+        // 10-24px value is a target for application text and the preview, not
+        // a scale factor for the settings window itself.
+        double popupBaseSize = FONT_SETTINGS_SERVICE.defaults().size();
+        popupShell.setStyle(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", popupBaseSize));
+        FONT_SETTINGS_SERVICE.refreshScriptFonts(popupShell, initial);
         FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
         WorkbenchTheme.apply(popupShell);
         popup.getContent().setAll(popupShell);
