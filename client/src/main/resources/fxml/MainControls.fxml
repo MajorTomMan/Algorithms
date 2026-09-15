@@ -764,7 +764,7 @@
                             </styleClass>
                         </Label>
                         <Separator styleClass="practice-detail-separator" />
-                        <Label fx:id="practiceProblemEntryLabel" text="" wrapText="true">
+                        <Label fx:id="practiceProblemEntryLabel" text="" wrapText="true" maxWidth="Infinity">
                             <styleClass>
                                 <String fx:value="result-value" />
                                 <String fx:value="practice-problem-entry" />

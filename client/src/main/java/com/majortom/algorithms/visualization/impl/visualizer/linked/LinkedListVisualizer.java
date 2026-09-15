@@ -198,7 +198,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitWithMinimumScale(0.78d);
+                if (!surface.markInitialLayoutReady(0.78d)) {
+                    surface.fitWithMinimumScale(0.78d);
+                }
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }
@@ -311,7 +313,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
                 positionRoleLabels(result);
-                surface.fitWithMinimumScale(0.78d);
+                if (!surface.markInitialLayoutReady(0.78d)) {
+                    surface.fitWithMinimumScale(0.78d);
+                }
             }
         };
         play(transitions, finish);

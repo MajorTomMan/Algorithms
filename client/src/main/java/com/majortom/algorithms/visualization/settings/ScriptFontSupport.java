@@ -38,16 +38,14 @@ final class ScriptFontSupport {
     private ScriptFontSupport() {
     }
 
-    static void apply(Parent root, FontSettings settings) {
+    static void apply(Parent root, FontSettings settings, String chineseFallback, String englishFallback) {
         if (root == null || settings == null) {
             return;
         }
-        // Empty family deliberately means "do not override": JavaFX keeps the
-        // current CSS/system family. Both selectors expose the same installed
-        // family list; only the Unicode-script routing differs.
-        applyNode(root, new ResolvedSettings(
-                settings.chineseFamily(),
-                settings.englishFamily()));
+        ResolvedSettings resolved = new ResolvedSettings(
+                chooseFamily(settings.chineseFamily(), chineseFallback),
+                chooseFamily(settings.englishFamily(), englishFallback));
+        applyNode(root, resolved);
     }
 
     private static void applyNode(Node node, ResolvedSettings settings) {
@@ -303,6 +301,13 @@ final class ScriptFontSupport {
 
     private static String family(ResolvedSettings settings, Script script) {
         return script == Script.CHINESE ? settings.chineseFamily() : settings.englishFamily();
+    }
+
+    private static String chooseFamily(String configured, String fallback) {
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+        return fallback == null ? "" : fallback;
     }
 
     private static void applyFamilyStyle(Node node, String family) {

@@ -157,6 +157,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             resetCellsForSourceReplacement();
             firstRender = true;
         }
+        boolean initialPresentation = surface.isAwaitingInitialLayout();
         if (selectedIndex >= size) {
             selectedIndex = -1;
         }
@@ -186,8 +187,10 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             }
             updateObservationLabel(state.observation());
             detachPatternOverlay();
-            play(immediateTransitions);
-            surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            play(immediateTransitions, null);
+            if (!surface.markInitialLayoutReady(MINIMUM_AUTO_FIT_SCALE)) {
+                surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            }
             firstRender = false;
             lastRenderedValue = value;
             return;
@@ -201,7 +204,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                 cell = createCell(index, value.charAt(index));
                 cells.put(index, cell);
                 surface.nodeLayer().getChildren().add(cell);
-                if (!firstRender) {
+                if (!initialPresentation) {
                     enteringCells.add(cell);
                 }
             }
@@ -227,15 +230,14 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
 
         List<ElementSize> measured = measureElements(size);
+        boolean extentChanged = layoutExtentChanged(lastLayoutInput, measured);
         if (!measured.equals(lastLayoutInput) || geometryMutation || !enteringCells.isEmpty()) {
             lastLayoutInput = measured;
-            scheduleLayout(measured, enteringCells, firstRender);
-        } else {
-            surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            scheduleLayout(measured, enteringCells, initialPresentation, extentChanged);
         }
         updateObservationLabel(state.observation());
         updatePatternOverlay(state, !firstRender);
-        play(immediateTransitions);
+        play(immediateTransitions, null);
         firstRender = false;
         lastRenderedValue = value;
     }
@@ -292,7 +294,8 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             int oldSize,
             int newSize,
             List<Animation> transitions) {
-        if (firstRender || mutation == null || mutation.type() == StringViewState.Type.NONE || cells.isEmpty()) {
+        if (firstRender || surface.isAwaitingInitialLayout()
+                || mutation == null || mutation.type() == StringViewState.Type.NONE || cells.isEmpty()) {
             return false;
         }
         int index = mutation.index();
@@ -379,23 +382,34 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         return List.copyOf(measured);
     }
 
-    private void scheduleLayout(List<ElementSize> input, Set<StringCellView> enteringCells, boolean initialLayout) {
+    private void scheduleLayout(
+            List<ElementSize> input,
+            Set<StringCellView> enteringCells,
+            boolean initialLayout,
+            boolean refitAfterLayout) {
         long version = layoutVersion.incrementAndGet();
         Set<StringCellView> entering = Set.copyOf(enteringCells);
         layoutExecutor.execute(() -> {
             try {
                 LayoutResult result = layout.layout(input);
-                Platform.runLater(() -> applyLayout(version, result, entering, initialLayout));
+                Platform.runLater(() -> applyLayout(
+                        version, result, entering, initialLayout, refitAfterLayout));
             } catch (Throwable failure) {
                 Platform.runLater(() -> handleLayoutFailure(version, failure));
             }
         });
     }
 
-    private void applyLayout(long version, LayoutResult result, Set<StringCellView> enteringCells, boolean initialLayout) {
+    private void applyLayout(
+            long version,
+            LayoutResult result,
+            Set<StringCellView> enteringCells,
+            boolean initialLayout,
+            boolean refitAfterLayout) {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
+        boolean hiddenInitialLayout = initialLayout || surface.isAwaitingInitialLayout();
         List<Animation> transitions = new ArrayList<>();
         for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
             ElementBounds target = result.elements().get(id(entry.getKey()));
@@ -404,7 +418,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             }
             StringCellView cell = entry.getValue();
             settledPositions.put(cell, new Point2D(target.x(), target.y()));
-            if (initialLayout || animations.isScrubbing()) {
+            if (hiddenInitialLayout || animations.isScrubbing()) {
                 snapTo(cell, target.x(), target.y());
                 continue;
             }
@@ -418,9 +432,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                 snapTo(cell, target.x(), target.y());
             }
         }
-        play(transitions);
+        boolean initialReveal = surface.markInitialLayoutReady(MINIMUM_AUTO_FIT_SCALE);
+        play(transitions, refitAfterLayout && !initialReveal
+                ? () -> surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE)
+                : null);
         updatePatternOverlay(currentState(), false);
-        Platform.runLater(() -> surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE));
     }
 
     private Animation move(StringCellView cell, double x, double y, Duration baseDuration) {
@@ -581,7 +597,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private void clearCells(List<Animation> transitions) {
-        if (firstRender) {
+        if (firstRender || surface.isAwaitingInitialLayout()) {
             cells.clear();
             settledPositions.clear();
             surface.nodeLayer().getChildren().clear();
@@ -597,7 +613,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         if (cell == null) {
             return;
         }
-        if (firstRender || animations.isScrubbing()) {
+        if (firstRender || surface.isAwaitingInitialLayout() || animations.isScrubbing()) {
             settledPositions.remove(cell);
             surface.nodeLayer().getChildren().remove(cell);
             return;
@@ -639,20 +655,41 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         return VisualDensity.DENSE;
     }
 
+    private static boolean layoutExtentChanged(List<ElementSize> previous, List<ElementSize> current) {
+        if (previous.size() != current.size()) {
+            return true;
+        }
+        double previousWidth = previous.stream().mapToDouble(ElementSize::width).sum();
+        double currentWidth = current.stream().mapToDouble(ElementSize::width).sum();
+        double previousHeight = previous.stream().mapToDouble(ElementSize::height).max().orElse(0.0d);
+        double currentHeight = current.stream().mapToDouble(ElementSize::height).max().orElse(0.0d);
+        return Math.abs(previousWidth - currentWidth) > 0.5d
+                || Math.abs(previousHeight - currentHeight) > 0.5d;
+    }
+
     private void invalidateLayout() {
         layoutVersion.incrementAndGet();
         lastLayoutInput = List.of();
     }
 
-    private void play(List<Animation> transitions) {
-        for (Animation transition : transitions) {
-            if (transition == null) {
-                continue;
+    private void play(List<Animation> transitions, Runnable onFinished) {
+        List<Animation> actual = transitions.stream().filter(java.util.Objects::nonNull).toList();
+        if (actual.isEmpty()) {
+            if (onFinished != null) {
+                onFinished.run();
             }
-            activeAnimations.add(transition);
-            transition.setOnFinished(event -> activeAnimations.remove(transition));
-            transition.play();
+            return;
         }
+        ParallelTransition parallel = new ParallelTransition();
+        parallel.getChildren().addAll(actual);
+        activeAnimations.add(parallel);
+        parallel.setOnFinished(event -> {
+            activeAnimations.remove(parallel);
+            if (onFinished != null) {
+                onFinished.run();
+            }
+        });
+        parallel.play();
     }
 
     private void stopActiveAnimation() {

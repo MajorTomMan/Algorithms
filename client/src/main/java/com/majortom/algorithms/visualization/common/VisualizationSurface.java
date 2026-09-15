@@ -68,6 +68,8 @@ public final class VisualizationSurface extends StackPane {
     private double queuedMinimumAutoScale = MIN_ZOOM;
     private boolean queuedInitialFit;
     private boolean initialAutoFitPending;
+    /** True only after the visualizer has applied its first factual geometry. */
+    private boolean initialLayoutReady = true;
     private int initialFitRetryCount;
     private double lastObservedWidth = -1.0d;
     private double lastObservedHeight = -1.0d;
@@ -165,8 +167,9 @@ public final class VisualizationSurface extends StackPane {
     }
 
     /**
-     * Initial/automatic fit with a readability floor. This never marks the viewport as user-modified.
-     * Explicit {@link #fit()} ignores this floor and can fit the complete world at any supported scale.
+     * Initial/automatic fit with a legacy preferred-scale hint. Complete-world visibility always wins,
+     * so the hint is never allowed to enlarge content past the scale that fits the factual world.
+     * This never marks the viewport as user-modified.
      */
     public void fitWithMinimumScale(double minimumAutoScale) {
         autoFitMinimumScale = clamp(minimumAutoScale);
@@ -174,11 +177,28 @@ public final class VisualizationSurface extends StackPane {
             return;
         }
         if (initialAutoFitPending) {
-            initialFitRetryCount = 0;
-            requestInitialAutoFit();
+            if (initialLayoutReady) {
+                initialFitRetryCount = 0;
+                requestInitialAutoFit();
+            }
             return;
         }
         requestSettledAutoFit();
+    }
+
+    /**
+     * Signals that the visualizer has applied its first complete factual layout.
+     * Until this point resize/CSS pulses are not allowed to fit or reveal the world.
+     */
+    public boolean markInitialLayoutReady(double minimumAutoScale) {
+        autoFitMinimumScale = clamp(minimumAutoScale);
+        if (!initialAutoFitPending) {
+            return false;
+        }
+        initialLayoutReady = true;
+        initialFitRetryCount = 0;
+        requestInitialAutoFit();
+        return true;
     }
 
     public void reset() {
@@ -202,12 +222,18 @@ public final class VisualizationSurface extends StackPane {
         return userViewportChanged;
     }
 
+    /** True while the world is intentionally hidden waiting for its first factual geometry and fit. */
+    public boolean isAwaitingInitialLayout() {
+        return initialAutoFitPending;
+    }
+
     public void markViewportPristine() {
         userViewportChanged = false;
         autoFitSettleTransition.stop();
         initialFitRetryTransition.stop();
         initialFitRetryCount = 0;
         initialAutoFitPending = true;
+        initialLayoutReady = false;
         worldPane.setOpacity(0.0d);
         worldPane.setMouseTransparent(true);
     }
@@ -225,14 +251,16 @@ public final class VisualizationSurface extends StackPane {
             return;
         }
         if (initialAutoFitPending) {
-            requestInitialAutoFit();
+            if (initialLayoutReady) {
+                requestInitialAutoFit();
+            }
             return;
         }
         requestSettledAutoFit();
     }
 
     private void requestInitialAutoFit() {
-        if (userViewportChanged || !initialAutoFitPending) {
+        if (userViewportChanged || !initialAutoFitPending || !initialLayoutReady) {
             return;
         }
         if (fitNow(true, autoFitMinimumScale)) {
@@ -375,7 +403,9 @@ public final class VisualizationSurface extends StackPane {
         double fitScale = clamp(Math.min(scaleX, scaleY));
         double targetScale;
         if (initialFit) {
-            targetScale = Math.min(MAX_AUTO_FIT_SCALE, Math.max(fitScale, minimumAutoScale));
+            // A readability preference must never make the factual world clip. If the whole
+            // world only fits below the preferred scale, the complete-world fit wins.
+            targetScale = Math.min(MAX_AUTO_FIT_SCALE, fitScale);
         } else {
             targetScale = fitScale;
         }
@@ -392,7 +422,7 @@ public final class VisualizationSurface extends StackPane {
     }
 
     private void revealWorldAfterInitialFit() {
-        if (!initialAutoFitPending) {
+        if (!initialAutoFitPending || !initialLayoutReady) {
             return;
         }
         initialAutoFitPending = false;

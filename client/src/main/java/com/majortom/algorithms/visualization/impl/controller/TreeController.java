@@ -551,6 +551,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
+        if (algorithmId == null) {
+            return false;
+        }
+        if (!algorithmIds.contains(algorithmId)) {
+            TreeVariant compatibleVariant = variantForAlgorithm(algorithmId);
+            if (compatibleVariant == null) {
+                return false;
+            }
+            activateVariant(compatibleVariant);
+        }
         int index = algorithmIds.indexOf(algorithmId);
         if (index < 0) {
             return false;
@@ -560,6 +570,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         notifyAlgorithmSelection();
         return true;
+    }
+
+    private TreeVariant variantForAlgorithm(String algorithmId) {
+        if (AlgorithmCatalog.compatibleAlgorithms(GeneralTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+            return TreeVariant.GENERAL;
+        }
+        if (AlgorithmCatalog.compatibleAlgorithms(AvlTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+            return TreeVariant.AVL;
+        }
+        return null;
     }
 
     @Override

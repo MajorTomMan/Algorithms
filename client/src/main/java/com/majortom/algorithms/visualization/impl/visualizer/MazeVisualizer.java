@@ -56,7 +56,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         fillBackground();
         if (state.rows() < 1 || state.columns() < 1
                 || state.openCells().size() < state.rows() * state.columns()) {
-            surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
+            if (!surface.markInitialLayoutReady(MIN_AUTO_FIT_SCALE)) {
+                surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
+            }
             return;
         }
 
@@ -76,7 +78,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         drawCurrent(state, cellWidth, cellHeight);
         drawRoles(state, cellWidth, cellHeight);
         drawSelection(state, cellWidth, cellHeight);
-        surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
+        if (!surface.markInitialLayoutReady(MIN_AUTO_FIT_SCALE)) {
+            surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
+        }
     }
 
     private void fillBackground() {

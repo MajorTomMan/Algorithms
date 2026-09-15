@@ -112,6 +112,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             resetCellsForSourceReplacement();
             firstRender = true;
         }
+        boolean initialPresentation = surface.isAwaitingInitialLayout();
         if (selectedIndex >= size) {
             selectedIndex = -1;
         }
@@ -140,8 +141,10 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
                 emptyLabel.relocate(EMPTY_X, EMPTY_Y);
                 surface.decorationLayer().getChildren().add(emptyLabel);
             }
-            play(immediateTransitions);
-            surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            play(immediateTransitions, null);
+            if (!surface.markInitialLayoutReady(MINIMUM_AUTO_FIT_SCALE)) {
+                surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            }
             firstRender = false;
             lastRenderedValues = state.values();
             return;
@@ -155,7 +158,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
                 cell = createCell(index, state.values().get(index));
                 cells.put(index, cell);
                 surface.nodeLayer().getChildren().add(cell);
-                if (!firstRender) {
+                if (!initialPresentation) {
                     enteringCells.add(cell);
                 }
             }
@@ -181,13 +184,12 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
 
         List<ElementSize> measured = measureElements(size);
+        boolean extentChanged = layoutExtentChanged(lastLayoutInput, measured);
         if (!measured.equals(lastLayoutInput) || geometryMutation || !enteringCells.isEmpty()) {
             lastLayoutInput = measured;
-            scheduleLayout(measured, enteringCells, swappedCells, firstRender);
-        } else {
-            surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE);
+            scheduleLayout(measured, enteringCells, swappedCells, initialPresentation, extentChanged);
         }
-        play(immediateTransitions);
+        play(immediateTransitions, null);
         firstRender = false;
         lastRenderedValues = state.values();
     }
@@ -244,7 +246,8 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             int newSize,
             List<Animation> transitions,
             Set<ArrayCellView> swappedCells) {
-        if (firstRender || mutation == null || mutation.type() == ArrayViewState.Type.NONE || cells.isEmpty()) {
+        if (firstRender || surface.isAwaitingInitialLayout()
+                || mutation == null || mutation.type() == ArrayViewState.Type.NONE || cells.isEmpty()) {
             return false;
         }
         switch (mutation.type()) {
@@ -345,14 +348,16 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             List<ElementSize> input,
             Set<ArrayCellView> enteringCells,
             Set<ArrayCellView> swappedCells,
-            boolean initialLayout) {
+            boolean initialLayout,
+            boolean refitAfterLayout) {
         long version = layoutVersion.incrementAndGet();
         Set<ArrayCellView> entering = Set.copyOf(enteringCells);
         Set<ArrayCellView> swapping = Set.copyOf(swappedCells);
         layoutExecutor.execute(() -> {
             try {
                 LayoutResult result = layout.layout(input);
-                Platform.runLater(() -> applyLayout(version, result, entering, swapping, initialLayout));
+                Platform.runLater(() -> applyLayout(
+                        version, result, entering, swapping, initialLayout, refitAfterLayout));
             } catch (Throwable failure) {
                 Platform.runLater(() -> handleLayoutFailure(version, failure));
             }
@@ -364,10 +369,12 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             LayoutResult result,
             Set<ArrayCellView> enteringCells,
             Set<ArrayCellView> swappedCells,
-            boolean initialLayout) {
+            boolean initialLayout,
+            boolean refitAfterLayout) {
         if (isDisposed() || version != layoutVersion.get()) {
             return;
         }
+        boolean hiddenInitialLayout = initialLayout || surface.isAwaitingInitialLayout();
         List<Animation> transitions = new ArrayList<>();
         for (Map.Entry<Integer, ArrayCellView> entry : cells.entrySet()) {
             ElementBounds target = result.elements().get(id(entry.getKey()));
@@ -376,7 +383,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             }
             ArrayCellView cell = entry.getValue();
             settledPositions.put(cell, new Point2D(target.x(), target.y()));
-            if (initialLayout || animations.isScrubbing()) {
+            if (hiddenInitialLayout || animations.isScrubbing()) {
                 snapTo(cell, target.x(), target.y());
                 continue;
             }
@@ -392,8 +399,10 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
                 snapTo(cell, target.x(), target.y());
             }
         }
-        play(transitions);
-        Platform.runLater(() -> surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE));
+        boolean initialReveal = surface.markInitialLayoutReady(MINIMUM_AUTO_FIT_SCALE);
+        play(transitions, refitAfterLayout && !initialReveal
+                ? () -> surface.fitWithMinimumScale(MINIMUM_AUTO_FIT_SCALE)
+                : null);
     }
 
     private Animation move(ArrayCellView cell, double x, double y, Duration baseDuration) {
@@ -473,7 +482,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     }
 
     private void clearCells(List<Animation> transitions) {
-        if (firstRender) {
+        if (firstRender || surface.isAwaitingInitialLayout()) {
             cells.clear();
             surface.nodeLayer().getChildren().clear();
             return;
@@ -488,7 +497,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         if (cell == null) {
             return;
         }
-        if (firstRender || animations.isScrubbing()) {
+        if (firstRender || surface.isAwaitingInitialLayout() || animations.isScrubbing()) {
             settledPositions.remove(cell);
             surface.nodeLayer().getChildren().remove(cell);
             return;
@@ -531,19 +540,39 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         surface.nodeLayer().getChildren().addAll(visualOrder);
     }
 
+    private static boolean layoutExtentChanged(List<ElementSize> previous, List<ElementSize> current) {
+        if (previous.size() != current.size()) {
+            return true;
+        }
+        double previousWidth = previous.stream().mapToDouble(ElementSize::width).sum();
+        double currentWidth = current.stream().mapToDouble(ElementSize::width).sum();
+        double previousHeight = previous.stream().mapToDouble(ElementSize::height).max().orElse(0.0d);
+        double currentHeight = current.stream().mapToDouble(ElementSize::height).max().orElse(0.0d);
+        return Math.abs(previousWidth - currentWidth) > 0.5d
+                || Math.abs(previousHeight - currentHeight) > 0.5d;
+    }
+
     private void invalidateLayout() {
         layoutVersion.incrementAndGet();
         lastLayoutInput = List.of();
     }
 
-    private void play(List<Animation> transitions) {
+    private void play(List<Animation> transitions, Runnable onFinished) {
         if (transitions.isEmpty()) {
+            if (onFinished != null) {
+                onFinished.run();
+            }
             return;
         }
         ParallelTransition parallel = new ParallelTransition();
         parallel.getChildren().addAll(transitions);
         activeAnimations.add(parallel);
-        parallel.setOnFinished(event -> activeAnimations.remove(parallel));
+        parallel.setOnFinished(event -> {
+            activeAnimations.remove(parallel);
+            if (onFinished != null) {
+                onFinished.run();
+            }
+        });
         parallel.play();
     }
 

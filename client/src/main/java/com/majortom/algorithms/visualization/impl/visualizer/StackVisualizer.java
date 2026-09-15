@@ -132,6 +132,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             invalidateLayout();
             topLabel.relocate(48.0d, 40.0d);
             play(transitions, null);
+            if (!surface.markInitialLayoutReady(0.82d)) {
+                surface.fitWithMinimumScale(0.82d);
+            }
             firstRender = false;
             return;
         }
@@ -250,7 +253,11 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         pendingTransitions = List.of();
         pendingNewIndexes = Set.of();
         hasAppliedLayout = true;
-        play(transitions, () -> surface.fitWithMinimumScale(0.82d));
+        play(transitions, () -> {
+            if (!surface.markInitialLayoutReady(0.82d)) {
+                surface.fitWithMinimumScale(0.82d);
+            }
+        });
     }
 
     private void handleLayoutFailure(long version, Throwable failure) {

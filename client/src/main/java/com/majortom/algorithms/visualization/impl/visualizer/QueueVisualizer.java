@@ -140,6 +140,9 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
             invalidateLayout();
             positionEmptyLabels();
             play(transitions, null);
+            if (!surface.markInitialLayoutReady(0.78d)) {
+                surface.fitWithMinimumScale(0.78d);
+            }
             firstRender = false;
             return;
         }
@@ -248,7 +251,11 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         pendingTransitions = List.of();
         pendingNewIndexes = Set.of();
         hasAppliedLayout = true;
-        play(transitions, () -> surface.fitWithMinimumScale(0.78d));
+        play(transitions, () -> {
+            if (!surface.markInitialLayoutReady(0.78d)) {
+                surface.fitWithMinimumScale(0.78d);
+            }
+        });
     }
 
     private void positionLabels(LayoutResult result) {

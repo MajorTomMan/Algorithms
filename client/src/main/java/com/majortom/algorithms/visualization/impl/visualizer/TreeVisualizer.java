@@ -166,7 +166,9 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitWithMinimumScale(0.78d);
+                if (!surface.markInitialLayoutReady(0.78d)) {
+                    surface.fitWithMinimumScale(0.78d);
+                }
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }
@@ -339,7 +341,9 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         Runnable finish = () -> {
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
-                surface.fitWithMinimumScale(0.78d);
+                if (!surface.markInitialLayoutReady(0.78d)) {
+                    surface.fitWithMinimumScale(0.78d);
+                }
             }
         };
         play(transitions, finish);

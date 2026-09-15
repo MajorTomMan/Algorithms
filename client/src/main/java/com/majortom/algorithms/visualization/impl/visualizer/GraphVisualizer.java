@@ -194,7 +194,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 pendingVersion = -1L;
                 hasAppliedLayout = false;
                 play(transitions, null);
-                surface.fitWithMinimumScale(0.72d);
+                if (!surface.markInitialLayoutReady(0.72d)) {
+                    surface.fitWithMinimumScale(0.72d);
+                }
             } else {
                 scheduleLayout(request, transitions, newNodeIds);
             }
@@ -305,7 +307,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         Runnable finish = () -> {
             if (!isDisposed() && version == layoutVersion.get()) {
                 applyRoutes(result);
-                surface.fitWithMinimumScale(0.72d);
+                if (!surface.markInitialLayoutReady(0.72d)) {
+                    surface.fitWithMinimumScale(0.72d);
+                }
             }
         };
         play(transitions, finish);

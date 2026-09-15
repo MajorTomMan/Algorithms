@@ -81,24 +81,23 @@ import java.util.ResourceBundle;
 /**
  * 单 Workbench JavaFX 外壳。
  *
- * <p>
- * Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责
+ * <p>Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责
  * 编辑真实结构和快照，Algorithm 模式消费当前或已保存快照的隔离副本并负责
- * 执行、时间线、统计和日志。
- * </p>
+ * 执行、时间线、统计和日志。</p>
  */
 public class MainController implements Initializable {
 
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
     private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
-    private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
-    private static final DateTimeFormatter EVENT_TIME_FORMATTER = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter EVENT_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
     private static final List<String> OFFICIAL_VALUE_TYPES = ValueAdapters.supportedTypeNames();
     private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
-    private static final PracticeProblemRegistry PRACTICE_PROBLEMS = PracticeProblemRegistry
-            .discover("com.majortom.algorithms");
+    private static final PracticeProblemRegistry PRACTICE_PROBLEMS =
+            PracticeProblemRegistry.discover("com.majortom.algorithms");
 
     @FXML
     private BorderPane rootPane;
@@ -474,14 +473,12 @@ public class MainController implements Initializable {
     private Slider timelineSlider;
 
     private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(COMPONENTS);
-    private final InMemoryStructureSnapshotStore structureSnapshotStore = new InMemoryStructureSnapshotStore();
+    private final InMemoryStructureSnapshotStore structureSnapshotStore =
+            new InMemoryStructureSnapshotStore();
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
     private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
-    /**
-     * Snapshot-card selection is independent from restore and algorithm execution.
-     * Null means live/current.
-     */
+    /** Snapshot-card selection is independent from restore and algorithm execution. Null means live/current. */
     private final Map<String, String> selectedSnapshotIds = new LinkedHashMap<>();
     private String selectedHashKeyType;
     private String selectedHashValueType;
@@ -492,6 +489,8 @@ public class MainController implements Initializable {
     private WorkbenchModuleDefinition activeDefinition;
     private javafx.beans.value.ChangeListener<Number> structureRevisionListener;
     private String selectedAlgorithmId;
+    private WorkspaceMode workspaceMode = WorkspaceMode.STRUCTURE;
+    private boolean moduleTransitionInProgress;
     private WorkbenchUiFramework uiFramework;
     private boolean compactLayout;
     private boolean narrowLayout;
@@ -499,10 +498,7 @@ public class MainController implements Initializable {
     private boolean timelineRuntimeVisible = true;
     private boolean timelineStructureVisible = true;
     private boolean timelineObservationVisible = true;
-    /**
-     * True only while Structure mode is showing a saved snapshot as a read-only
-     * preview.
-     */
+    /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
 
     @Override
@@ -552,8 +548,7 @@ public class MainController implements Initializable {
         practiceCatalogHintLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.hint"));
         practiceEmptyLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.empty"));
         structureLiveLabel.setText(I18N.text("label.workspace.structure.live"));
-        algorithmInputTitleLabel.textProperty()
-                .bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
+        algorithmInputTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
         structurePreviewTitleLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.structure.preview"));
         structurePreviewHintLabel.textProperty().bind(
@@ -561,12 +556,10 @@ public class MainController implements Initializable {
         snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         snapshotQuickTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.quick"));
         structurePrimaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
-        structureSecondaryMetricTitleLabel.textProperty()
-                .bind(I18N.createStringBinding("label.workspace.metric.height"));
+        structureSecondaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
         structureStateMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
         selectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
-        algorithmSelectedValueCaptionLabel.textProperty()
-                .bind(I18N.createStringBinding("label.workspace.selection.value"));
+        algorithmSelectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
         structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
         structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
@@ -585,8 +578,7 @@ public class MainController implements Initializable {
         structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
         saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
         currentSelectionHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.current"));
-        structureOverviewHeadingLabel.textProperty()
-                .bind(I18N.createStringBinding("label.workspace.structure.overview"));
+        structureOverviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.overview"));
         algorithmViewTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.current_step"));
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
@@ -611,8 +603,7 @@ public class MainController implements Initializable {
         speedLabel.textProperty().bind(I18N.createStringBinding("label.execution.speed"));
         timelineRuntimeLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.runtime"));
         timelineStructureLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.structure"));
-        timelineObservationLegendLabel.textProperty()
-                .bind(I18N.createStringBinding("label.execution.legend.observation"));
+        timelineObservationLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.observation"));
         Label logPlaceholder = new Label();
         logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
         logView.setPlaceholder(logPlaceholder);
@@ -641,8 +632,7 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
-            if (uiFramework != null)
-                uiFramework.scheduleRefresh();
+            if (uiFramework != null) uiFramework.scheduleRefresh();
             boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
                 selectionVisible = true;
@@ -741,9 +731,9 @@ public class MainController implements Initializable {
         }
         HBox languageRow = fontSettingsRow(languageLabel, languageSelector);
 
-        String systemDefault = I18N.text("settings.text.fontDefault");
+        String projectDefault = I18N.text("settings.text.fontDefault");
         List<String> families = new ArrayList<>();
-        families.add(systemDefault);
+        families.add(projectDefault);
         families.addAll(FONT_SETTINGS_SERVICE.availableFamilies());
 
         Label chineseFamilyLabel = new Label();
@@ -754,7 +744,7 @@ public class MainController implements Initializable {
         chineseFamilySelector.getStyleClass().add("font-settings-combo");
         chineseFamilySelector.getItems().setAll(families);
         chineseFamilySelector.getSelectionModel().select(
-                initial.chineseFamily().isBlank() ? systemDefault : initial.chineseFamily());
+                initial.chineseFamily().isBlank() ? projectDefault : initial.chineseFamily());
         HBox chineseFamilyRow = fontSettingsRow(chineseFamilyLabel, chineseFamilySelector);
 
         Label englishFamilyLabel = new Label();
@@ -765,7 +755,7 @@ public class MainController implements Initializable {
         englishFamilySelector.getStyleClass().add("font-settings-combo");
         englishFamilySelector.getItems().setAll(families);
         englishFamilySelector.getSelectionModel().select(
-                initial.englishFamily().isBlank() ? systemDefault : initial.englishFamily());
+                initial.englishFamily().isBlank() ? projectDefault : initial.englishFamily());
         HBox englishFamilyRow = fontSettingsRow(englishFamilyLabel, englishFamilySelector);
 
         Label sizeLabel = new Label();
@@ -881,8 +871,8 @@ public class MainController implements Initializable {
         reset.setOnAction(event -> {
             FontSettings defaults = FONT_SETTINGS_SERVICE.defaults();
             updatingControls[0] = true;
-            chineseFamilySelector.getSelectionModel().select(systemDefault);
-            englishFamilySelector.getSelectionModel().select(systemDefault);
+            chineseFamilySelector.getSelectionModel().select(projectDefault);
+            englishFamilySelector.getSelectionModel().select(projectDefault);
             sizeValue.setText(formatFontSize(defaults.size()));
             colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
             draftLocale[0] = I18N.getLocale();
@@ -939,12 +929,7 @@ public class MainController implements Initializable {
                 new Separator(),
                 footer);
         popupShell.getChildren().setAll(arrowRow, content);
-        // Keep the settings chrome at the project default size. The selected
-        // 10-24px value is a target for application text and the preview, not
-        // a scale factor for the settings window itself.
-        double popupBaseSize = FONT_SETTINGS_SERVICE.defaults().size();
-        popupShell.setStyle(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", popupBaseSize));
-        FONT_SETTINGS_SERVICE.refreshScriptFonts(popupShell, initial);
+        FONT_SETTINGS_SERVICE.apply(popupShell, initial);
         FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
         WorkbenchTheme.apply(popupShell);
         popup.getContent().setAll(popupShell);
@@ -984,8 +969,7 @@ public class MainController implements Initializable {
                 refreshValueTypeSelectors();
                 return;
             }
-            if (newValue.type().equals(selectedValueType(activeDefinition.id())))
-                return;
+            if (newValue.type().equals(selectedValueType(activeDefinition.id()))) return;
             if (!isStructurePageVisible() || currentSubController.isRunning()
                     || structureSnapshotPreviewActive || !confirmValueTypeChange(newValue.type())) {
                 refreshValueTypeSelectors();
@@ -1099,11 +1083,9 @@ public class MainController implements Initializable {
     }
 
     private boolean confirmValueTypeChange(String nextType) {
-        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues())
-            return true;
+        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues()) return true;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        if (rootPane.getScene() != null)
-            alert.initOwner(rootPane.getScene().getWindow());
+        if (rootPane.getScene() != null) alert.initOwner(rootPane.getScene().getWindow());
         alert.setTitle(I18N.text("dialog.value_type.title"));
         alert.setHeaderText(I18N.text("dialog.value_type.header", valueTypeDisplayName(nextType)));
         alert.setContentText(I18N.text("dialog.value_type.body"));
@@ -1196,48 +1178,27 @@ public class MainController implements Initializable {
     private void rebuildAlgorithmMenu() {
         algorithmNavigationBox.getChildren().clear();
         algorithmButtons.clear();
-
         for (WorkbenchModuleDefinition definition : moduleDefinitions) {
             List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
-
             if (navigationItems.isEmpty()) {
                 Button unavailable = createFamilyRailButton(definition);
                 unavailable.setDisable(true);
                 algorithmNavigationBox.getChildren().add(unavailable);
                 continue;
             }
-
             AlgorithmNavigationItem first = navigationItems.getFirst();
             Button familyButton = createAlgorithmFamilyButton(definition, first);
-
             algorithmNavigationBox.getChildren().add(familyButton);
-
-            Map<String, Button> byAlgorithm = algorithmButtons.computeIfAbsent(
-                    definition.id(),
-                    ignored -> new LinkedHashMap<>());
-
+            Map<String, Button> byAlgorithm = algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>());
             for (AlgorithmNavigationItem item : navigationItems) {
                 byAlgorithm.put(item.id(), familyButton);
             }
-        }
-
-        // 关键：新创建的 Family Rail Button 必须重新进入统一布局
-        if (uiFramework != null) {
-            uiFramework.scheduleRefresh();
         }
     }
 
     private Button createAlgorithmFamilyButton(WorkbenchModuleDefinition definition, AlgorithmNavigationItem first) {
         Button button = createFamilyRailButton(definition);
-        button.setOnAction(event -> {
-            if (activeDefinition == null || !activeDefinition.id().equals(definition.id())) {
-                switchToModule(definition);
-            }
-            setWorkspaceMode(false);
-            if (currentSubController instanceof AlgorithmSelectionSupport support) {
-                support.selectAlgorithm(first.id());
-            }
-        });
+        button.setOnAction(event -> switchToModule(definition, WorkspaceMode.ALGORITHM, first.id()));
         return button;
     }
 
@@ -1311,17 +1272,22 @@ public class MainController implements Initializable {
 
     private void selectAlgorithm(WorkbenchModuleDefinition definition, String algorithmId) {
         if (activeDefinition == null || !activeDefinition.id().equals(definition.id())) {
-            switchToModule(definition);
+            switchToModule(definition, WorkspaceMode.ALGORITHM, algorithmId);
+            return;
         }
-        setWorkspaceMode(false);
+        List<AlgorithmNavigationItem> available = algorithmNavigationItems(definition.id());
+        if (available.stream().noneMatch(item -> item.id().equals(algorithmId))) {
+            return;
+        }
+        setWorkspaceMode(WorkspaceMode.ALGORITHM);
         if (currentSubController instanceof AlgorithmSelectionSupport support) {
             support.selectAlgorithm(algorithmId);
         }
     }
 
     private void selectAlgorithmButton(String moduleId, String algorithmId) {
-        algorithmButtons.values().forEach(
-                buttons -> buttons.values().forEach(button -> button.pseudoClassStateChanged(SELECTED, false)));
+        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
+                button.pseudoClassStateChanged(SELECTED, false)));
         Map<String, Button> buttons = algorithmButtons.get(moduleId);
         if (buttons != null) {
             Button selectedButton = buttons.get(algorithmId);
@@ -1331,6 +1297,15 @@ public class MainController implements Initializable {
         }
     }
 
+    /**
+     * Algorithms exposed by a family in the workspace rail.
+     *
+     * <p>This deliberately describes the whole family, not only the currently active
+     * structure variant.  A family such as Tree can start on General Tree while its
+     * algorithms live on the AVL variant.  Using the active controller's list here
+     * made the rail change availability during a module transition and could bounce
+     * the workspace back to Structure before the target variant was selected.</p>
+     */
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         List<String> algorithmIds = new ArrayList<>();
         if ("maze".equals(moduleId)) {
@@ -1341,15 +1316,8 @@ public class MainController implements Initializable {
                 return List.of();
             }
             Class<?> valueType = ValueAdapters.requireType(selected);
-            if (activeDefinition != null
-                    && activeDefinition.id().equals(moduleId)
-                    && currentSubController instanceof AlgorithmSelectionSupport support) {
-                algorithmIds.addAll(support.algorithmIds());
-            } else {
-                algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
-            }
-            List<String> registered = COMPONENTS.algorithmIds(StructureModule.fromId(moduleId),
-                    valueType.getSimpleName());
+            algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
+            List<String> registered = COMPONENTS.algorithmIds(StructureModule.fromId(moduleId), valueType.getSimpleName());
             algorithmIds.removeIf(id -> !registered.contains(id));
         }
         return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
@@ -1388,7 +1356,24 @@ public class MainController implements Initializable {
 
     @FXML
     private void selectAlgorithmWorkspace() {
-        setWorkspaceMode(false);
+        if (activeDefinition == null || currentSubController == null) {
+            return;
+        }
+        List<AlgorithmNavigationItem> available = algorithmNavigationItems(activeDefinition.id());
+        if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
+            return;
+        }
+        String targetAlgorithm = available.stream()
+                .map(AlgorithmNavigationItem::id)
+                .filter(id -> java.util.Objects.equals(id, selectedAlgorithmId))
+                .findFirst()
+                .orElse(available.getFirst().id());
+        if (!support.selectAlgorithm(targetAlgorithm)) {
+            return;
+        }
+        syncAlgorithmSelectionFromController();
+        setWorkspaceMode(WorkspaceMode.ALGORITHM);
+        refreshUiFramework();
     }
 
     private void setWorkspaceMode(boolean structure) {
@@ -1401,6 +1386,7 @@ public class MainController implements Initializable {
     }
 
     private void setWorkspaceMode(WorkspaceMode mode) {
+        workspaceMode = mode;
         boolean structure = mode == WorkspaceMode.STRUCTURE;
         boolean algorithm = mode == WorkspaceMode.ALGORITHM;
         boolean practice = mode == WorkspaceMode.PRACTICE;
@@ -1707,8 +1693,15 @@ public class MainController implements Initializable {
     }
 
     private void switchToModule(WorkbenchModuleDefinition definition) {
-        // Prepare without touching the active shell or binding its shared buttons.
-        // In particular, restoring a value type runs before FXML initialization.
+        switchToModule(definition, WorkspaceMode.STRUCTURE, null);
+    }
+
+    private void switchToModule(
+            WorkbenchModuleDefinition definition,
+            WorkspaceMode requestedMode,
+            String preferredAlgorithmId) {
+        // Prepare the next controller off-screen. Nothing below is allowed to reveal a visualizer
+        // until the target workspace and algorithm selection are final.
         BaseController<?> nextController = null;
         HBox preparedControls = new HBox();
         try {
@@ -1716,34 +1709,63 @@ public class MainController implements Initializable {
             configureRuntimeValueType(definition.id(), nextController);
             nextController.setupCustomControls(preparedControls);
         } catch (RuntimeException failure) {
-            if (nextController != null)
-                nextController.dispatchVisualizerDetached();
+            if (nextController != null) nextController.dispatchVisualizerDetached();
             Throwable cause = failure;
-            while (cause.getCause() != null)
-                cause = cause.getCause();
+            while (cause.getCause() != null) cause = cause.getCause();
             appendSystemLog(I18N.text("message.error.module_load",
                     familyName(definition.id()), cause.toString()));
             return;
         }
 
-        activeDefinition = definition;
-        selectedAlgorithmId = null;
-        structureSnapshotPreviewActive = false;
-        clearStructureSelection();
-        refreshValueTypeSelectors();
-        loadSubController(nextController, preparedControls);
-        rebuildAlgorithmMenu();
-        syncAlgorithmSelectionFromController();
-        updateAlgorithmWorkspaceAvailability(definition.id());
-        refreshWorkspaceContext();
-        structureButtons.forEach((id, buttons) -> buttons
-                .forEach(button -> button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
+        moduleTransitionInProgress = true;
+        try {
+            activeDefinition = definition;
+            selectedAlgorithmId = null;
+            structureSnapshotPreviewActive = false;
+            clearStructureSelection();
+            refreshValueTypeSelectors();
+            loadSubController(nextController, preparedControls);
+            rebuildAlgorithmMenu();
+
+            WorkspaceMode finalMode = requestedMode;
+            if (requestedMode == WorkspaceMode.ALGORITHM) {
+                List<AlgorithmNavigationItem> available = algorithmNavigationItems(definition.id());
+                if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
+                    finalMode = WorkspaceMode.STRUCTURE;
+                } else {
+                    String targetAlgorithm = available.stream()
+                            .map(AlgorithmNavigationItem::id)
+                            .filter(id -> java.util.Objects.equals(id, preferredAlgorithmId))
+                            .findFirst()
+                            .orElse(available.getFirst().id());
+                    if (!support.selectAlgorithm(targetAlgorithm)) {
+                        finalMode = WorkspaceMode.STRUCTURE;
+                    }
+                }
+            }
+
+            syncAlgorithmSelectionFromController();
+            updateAlgorithmWorkspaceAvailability(definition.id());
+            refreshWorkspaceContext();
+            setWorkspaceMode(finalMode);
+            currentSubController.dispatchVisualizerAttached();
+            refreshPauseText();
+            refreshTopContext();
+            refreshExecutionPresentation();
+            updateWorkspaceInteractionState();
+            refreshUiFramework();
+            structureButtons.forEach((id, buttons) -> buttons.forEach(button ->
+                    button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
+        } finally {
+            moduleTransitionInProgress = false;
+        }
     }
+
 
     private void updateAlgorithmWorkspaceAvailability(String moduleId) {
         boolean available = !algorithmNavigationItems(moduleId).isEmpty();
-        if (!available) {
-            setWorkspaceMode(true);
+        if (!available && !moduleTransitionInProgress && workspaceMode == WorkspaceMode.ALGORITHM) {
+            setWorkspaceMode(WorkspaceMode.STRUCTURE);
         }
         refreshExecutionDockVisibility(isStructurePageVisible());
         updateWorkspaceInteractionState();
@@ -1761,13 +1783,12 @@ public class MainController implements Initializable {
         if (structureControlsHost != null) {
             structureControlsHost.setDisable(running || structureSnapshotPreviewActive);
         }
-        if (valueTypeBox != null)
-            valueTypeBox.setDisable(running || structureSnapshotPreviewActive);
-        if (structureKindHost != null)
-            structureKindHost.setDisable(running || structureSnapshotPreviewActive);
+        if (valueTypeBox != null) valueTypeBox.setDisable(running || structureSnapshotPreviewActive);
+        if (structureKindHost != null) structureKindHost.setDisable(running || structureSnapshotPreviewActive);
         refreshValueTypeSelectors();
         refreshSnapshotPreviewPresentation();
     }
+
 
     private void refreshSnapshotPreviewPresentation() {
         boolean visible = isStructurePageVisible() && structureSnapshotPreviewActive;
@@ -1836,8 +1857,8 @@ public class MainController implements Initializable {
     }
 
     private void clearAlgorithmSelection() {
-        algorithmButtons.values().forEach(
-                buttons -> buttons.values().forEach(button -> button.pseudoClassStateChanged(SELECTED, false)));
+        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
+                button.pseudoClassStateChanged(SELECTED, false)));
     }
 
     private void syncAlgorithmSelectionFromController() {
@@ -1935,16 +1956,8 @@ public class MainController implements Initializable {
         };
         currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
 
-        BaseVisualizer<?> visualizer = newController.getVisualizer();
-        if (visualizer != null) {
-            attachVisualizer(isStructurePageVisible());
-        }
-        currentSubController.dispatchVisualizerAttached();
-        refreshPauseText();
-        refreshTopContext();
-        refreshExecutionPresentation();
-        updateWorkspaceInteractionState();
-        refreshUiFramework();
+        // The caller decides the final workspace first, then attaches and reveals the visualizer.
+        // This prevents an intermediate parent size/mode from triggering a visible first layout.
     }
 
     private void detachCurrentController() {
@@ -1969,12 +1982,10 @@ public class MainController implements Initializable {
     /**
      * Places the one module visualizer in the currently visible page.
      *
-     * <p>
-     * Keeping a single visualizer avoids two controllers or two event
+     * <p>Keeping a single visualizer avoids two controllers or two event
      * streams. Rebinding its size when the page changes also means structure
      * edits remain visible on the structure page and algorithm frames remain
-     * visible on the algorithm page.
-     * </p>
+     * visible on the algorithm page.</p>
      */
     private void attachVisualizer(boolean structurePage) {
         if (currentSubController == null || currentSubController.getVisualizer() == null) {
@@ -1993,8 +2004,7 @@ public class MainController implements Initializable {
         if (!target.getChildren().contains(visualizer)) {
             target.getChildren().add(0, visualizer);
         }
-        // Parent allocates the viewport; content must not feed its previous size back
-        // into HBox.
+        // Parent allocates the viewport; content must not feed its previous size back into HBox.
         visualizer.setMinSize(0, 0);
         visualizer.setPrefSize(0, 0);
         visualizer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -2012,10 +2022,7 @@ public class MainController implements Initializable {
         return practiceWorkspacePane != null && practiceWorkspacePane.isManaged();
     }
 
-    /**
-     * Moves FXML sections into the structure and algorithm rails without
-     * duplicating controls.
-     */
+    /** Moves FXML sections into the structure and algorithm rails without duplicating controls. */
     private void distributeModuleControls() {
         if (customControlBox.getChildren().isEmpty()) {
             return;
@@ -2087,8 +2094,7 @@ public class MainController implements Initializable {
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
         if (support == null) {
             snapshotCards.getChildren().clear();
-            if (inspectorSnapshotCards != null)
-                inspectorSnapshotCards.getChildren().clear();
+            if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
             selectedSnapshotIds.remove(activeDefinition.id());
             snapshotCountLabel.setText(I18N.text(
                     "label.workspace.snapshot.count", 0,
@@ -2099,8 +2105,7 @@ public class MainController implements Initializable {
         }
 
         snapshotCards.getChildren().clear();
-        if (inspectorSnapshotCards != null)
-            inspectorSnapshotCards.getChildren().clear();
+        if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
         List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
         String selectedSnapshotId = validSelectedSnapshotId(saved);
 
@@ -2298,8 +2303,7 @@ public class MainController implements Initializable {
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
         card.getStyleClass().add("snapshot-card-saved");
-        if (selected)
-            card.getStyleClass().add("snapshot-card-selected");
+        if (selected) card.getStyleClass().add("snapshot-card-selected");
         card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
         HBox header = new HBox(8);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -2513,22 +2517,13 @@ public class MainController implements Initializable {
             return;
         }
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        boolean hasSaved = activeDefinition != null
-                && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
-        if (savedInputBtn != null)
-            savedInputBtn.setDisable(!hasSaved || support == null);
-        if (currentInputBtn != null)
-            currentInputBtn.setDisable(support == null);
+        boolean hasSaved = activeDefinition != null && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
+        if (savedInputBtn != null) savedInputBtn.setDisable(!hasSaved || support == null);
+        if (currentInputBtn != null) currentInputBtn.setDisable(support == null);
         if (support == null) {
             algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
-            if (currentInputBtn != null) {
-                currentInputBtn.pseudoClassStateChanged(SELECTED, false);
-                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false));
-            }
-            if (savedInputBtn != null) {
-                savedInputBtn.pseudoClassStateChanged(SELECTED, false);
-                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false));
-            }
+            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false)); }
+            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
             return;
         }
         String snapshotId = support.algorithmInputSnapshotId();
@@ -2550,8 +2545,7 @@ public class MainController implements Initializable {
             }
         }
         if (current) {
-            algorithmInputSourceLabel.setText(
-                    I18N.text("label.workspace.algorithm.input.current_snapshot") + "\n" + inputValueTypeText());
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot") + "\n" + inputValueTypeText());
             return;
         }
         StructureSnapshot<?> selected = structureSnapshotStore.snapshots(activeDefinition.id()).stream()
@@ -2560,16 +2554,14 @@ public class MainController implements Initializable {
         if (selected == null) {
             detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId);
         } else {
-            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId)
-                    + "\n" + formatSnapshotTime(selected);
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId) + "\n" + formatSnapshotTime(selected);
         }
         algorithmInputSourceLabel.setText(detail + "\n" + inputValueTypeText());
     }
 
     private String inputValueTypeText() {
         if (currentSubController instanceof RuntimeValueTypeSupport support) {
-            return I18N.text("label.value_type.input",
-                    valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
+            return I18N.text("label.value_type.input", valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
         }
         return "";
     }
@@ -2611,7 +2603,8 @@ public class MainController implements Initializable {
     private void useSnapshotAsAlgorithmInputUnchecked(
             SnapshotAlgorithmInputSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        SnapshotAlgorithmInputSupport<Object> typedSupport = (SnapshotAlgorithmInputSupport<Object>) support;
+        SnapshotAlgorithmInputSupport<Object> typedSupport =
+                (SnapshotAlgorithmInputSupport<Object>) support;
         StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         typedSupport.useSnapshotAsAlgorithmInput(typedSnapshot);
     }
@@ -2620,8 +2613,10 @@ public class MainController implements Initializable {
     private void previewSnapshotUnchecked(
             StructureSnapshotSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
         typedSupport.previewStructureSnapshot(typedSnapshot);
     }
 
@@ -2693,8 +2688,10 @@ public class MainController implements Initializable {
     private void restoreSnapshotUnchecked(
             StructureSnapshotSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
         typedSupport.restoreStructureSnapshot(typedSnapshot);
     }
 
@@ -2702,8 +2699,10 @@ public class MainController implements Initializable {
     private String describeSnapshot(
             StructureSnapshotSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
         return typedSupport.describeStructureSnapshot(typedSnapshot.state());
     }
 
@@ -2758,6 +2757,7 @@ public class MainController implements Initializable {
         };
     }
 
+
     private void setupPlaybackSpeedButtons() {
         bindSpeedButton(speed1Btn, 1.0d, 50.0d);
         bindSpeedButton(speed2Btn, 2.0d, 25.0d);
@@ -2806,14 +2806,10 @@ public class MainController implements Initializable {
         boolean available = currentSubController != null;
         boolean running = available && currentSubController.isRunning();
         boolean hasTimeline = available && currentSubController.hasExecutionData();
-        if (jumpStartBtn != null)
-            jumpStartBtn.setDisable(running || !hasTimeline);
-        if (jumpEndBtn != null)
-            jumpEndBtn.setDisable(running || !hasTimeline);
-        if (endExecutionBtn != null)
-            endExecutionBtn.setDisable(!running);
-        if (closeExecutionBtn != null)
-            closeExecutionBtn.setDisable(!running && !hasTimeline);
+        if (jumpStartBtn != null) jumpStartBtn.setDisable(running || !hasTimeline);
+        if (jumpEndBtn != null) jumpEndBtn.setDisable(running || !hasTimeline);
+        if (endExecutionBtn != null) endExecutionBtn.setDisable(!running);
+        if (closeExecutionBtn != null) closeExecutionBtn.setDisable(!running && !hasTimeline);
         refreshTimelineStatus();
     }
 
@@ -2916,14 +2912,10 @@ public class MainController implements Initializable {
         if (activeDefinition != null) {
             String railFamily = familyName(activeDefinition.id());
             String familyMeta = railFamily + " / " + familyIndex(activeDefinition.id());
-            if (structureWorkspaceSubtitleLabel != null)
-                structureWorkspaceSubtitleLabel.setText(railFamily);
-            if (structureControlsTitleLabel != null)
-                structureControlsTitleLabel.setText(familyMeta);
-            if (algorithmWorkspaceSubtitleLabel != null)
-                algorithmWorkspaceSubtitleLabel.setText(algorithmContextName());
-            if (algorithmControlsTitleLabel != null)
-                algorithmControlsTitleLabel.setText(familyMeta);
+            if (structureWorkspaceSubtitleLabel != null) structureWorkspaceSubtitleLabel.setText(railFamily);
+            if (structureControlsTitleLabel != null) structureControlsTitleLabel.setText(familyMeta);
+            if (algorithmWorkspaceSubtitleLabel != null) algorithmWorkspaceSubtitleLabel.setText(algorithmContextName());
+            if (algorithmControlsTitleLabel != null) algorithmControlsTitleLabel.setText(familyMeta);
         }
         if (runStateLabel != null) {
             String state;
@@ -2949,14 +2941,10 @@ public class MainController implements Initializable {
             }
             runStateLabel.setText(workspaceStatusText(state));
             runStateLabel.getStyleClass().removeAll("state-running", "state-paused", "state-completed", "state-failed");
-            if ("RUNNING".equals(state))
-                runStateLabel.getStyleClass().add("state-running");
-            if ("PAUSED".equals(state))
-                runStateLabel.getStyleClass().add("state-paused");
-            if ("COMPLETED".equals(state))
-                runStateLabel.getStyleClass().add("state-completed");
-            if ("FAILED".equals(state) || "CANCELLED".equals(state))
-                runStateLabel.getStyleClass().add("state-failed");
+            if ("RUNNING".equals(state)) runStateLabel.getStyleClass().add("state-running");
+            if ("PAUSED".equals(state)) runStateLabel.getStyleClass().add("state-paused");
+            if ("COMPLETED".equals(state)) runStateLabel.getStyleClass().add("state-completed");
+            if ("FAILED".equals(state) || "CANCELLED".equals(state)) runStateLabel.getStyleClass().add("state-failed");
         }
         if (runIdLabel != null) {
             String id;
@@ -2970,9 +2958,6 @@ public class MainController implements Initializable {
             } else {
                 runIdLabel.setText(I18N.text("label.workspace.run.id", shortRunId(id)));
             }
-        }
-        if (uiFramework != null) {
-            uiFramework.scheduleRefresh();
         }
     }
 
@@ -2988,8 +2973,7 @@ public class MainController implements Initializable {
     }
 
     private String shortRunId(String runId) {
-        if (runId == null || runId.isBlank())
-            return "----";
+        if (runId == null || runId.isBlank()) return "----";
         String compact = runId.replace("-", "");
         return compact.substring(0, Math.min(4, compact.length())).toUpperCase(Locale.ROOT);
     }
@@ -3071,8 +3055,10 @@ public class MainController implements Initializable {
     private String snapshotPrimaryCount(
             StructureSnapshotSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
         return typedSupport.snapshotPrimaryCount(typedSnapshot.state());
     }
 
@@ -3080,8 +3066,10 @@ public class MainController implements Initializable {
     private String snapshotSecondaryCount(
             StructureSnapshotSupport<?> support,
             StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
+        StructureSnapshotSupport<Object> typedSupport =
+                (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot =
+                (StructureSnapshot<Object>) snapshot;
         return typedSupport.snapshotSecondaryCount(typedSnapshot.state());
     }
 
@@ -3123,103 +3111,73 @@ public class MainController implements Initializable {
     }
 
     private void showTreeSelection(TreeController.NodeSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.node"), "#" + selection.id(),
                 selection.value().text(), I18N.text("label.workspace.selection.node.hint"),
-                I18N.text("label.workspace.selection.tree.detail", selection.id(), selection.value().text(),
-                        nodeIdText(selection.parentId()), selection.childCount(), selection.depth()));
+                I18N.text("label.workspace.selection.tree.detail", selection.id(), selection.value().text(), nodeIdText(selection.parentId()), selection.childCount(), selection.depth()));
         selectionPresentation.run();
     }
 
     private void showArraySelection(ArrayController.IndexSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.cell"), "[" + selection.index() + "]",
                 selection.value().text(), I18N.text("label.workspace.selection.array.hint"),
-                I18N.text("label.workspace.selection.array.detail", selection.index(), selection.value().text(),
-                        selection.size()));
+                I18N.text("label.workspace.selection.array.detail", selection.index(), selection.value().text(), selection.size()));
         selectionPresentation.run();
     }
 
     private void showStringSelection(StringController.IndexSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.character"), "[" + selection.index() + "]",
                 Character.toString(selection.value()), I18N.text("label.workspace.selection.string.hint"),
-                I18N.text("label.workspace.selection.string.detail", selection.index(),
-                        Character.toString(selection.value()), selection.length()));
+                I18N.text("label.workspace.selection.string.detail", selection.index(), Character.toString(selection.value()), selection.length()));
         selectionPresentation.run();
     }
 
     private void showLinkedSelection(LinkedListController.NodeSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.node"), "#" + selection.id(),
                 selection.value().text(), I18N.text("label.workspace.selection.linked.hint"),
-                I18N.text("label.workspace.selection.linked.detail", selection.id(), selection.value().text(),
-                        selection.index(), nodeIdText(selection.previousId()), nodeIdText(selection.nextId()),
-                        selection.size()));
+                I18N.text("label.workspace.selection.linked.detail", selection.id(), selection.value().text(), selection.index(), nodeIdText(selection.previousId()), nodeIdText(selection.nextId()), selection.size()));
         selectionPresentation.run();
     }
 
     private void showLinearSelection(LinearStructureController.ItemSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.item"), "[" + selection.index() + "]",
                 selection.value().text(), linearRoleText(selection.role()),
-                I18N.text("label.workspace.selection.linear.detail", selection.index(), selection.value().text(),
-                        linearRoleText(selection.role()), selection.size()));
+                I18N.text("label.workspace.selection.linear.detail", selection.index(), selection.value().text(), linearRoleText(selection.role()), selection.size()));
         selectionPresentation.run();
     }
 
     private void showMazeSelection(MazeController.CellSelection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> presentSelection(
                 I18N.text("label.workspace.selection.cell"), "[" + selection.row() + "," + selection.column() + "]",
                 mazeCellStateText(selection.state()), I18N.text("label.workspace.selection.maze.hint"),
-                I18N.text("label.workspace.selection.maze.detail", selection.row(), selection.column(),
-                        mazeCellStateText(selection.state())));
+                I18N.text("label.workspace.selection.maze.detail", selection.row(), selection.column(), mazeCellStateText(selection.state())));
         selectionPresentation.run();
     }
 
     private void showGraphSelection(GraphController.Selection selection) {
-        if (selection == null) {
-            clearStructureSelection();
-            return;
-        }
+        if (selection == null) { clearStructureSelection(); return; }
         selectionPresentation = () -> {
             if (selection instanceof GraphController.NodeSelection node) {
                 presentSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
                         node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
-                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(),
-                                node.degree()));
+                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(), node.degree()));
             } else if (selection instanceof GraphController.EdgeSelection edge) {
                 presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
                         edge.fromValue().text() + (edge.directed() ? " → " : " — ") + edge.toValue().text(),
                         I18N.text("label.workspace.selection.graph.edge.hint"),
                         I18N.text("label.workspace.selection.graph.edge.detail", edge.id(),
                                 edge.fromValue().text(), edge.toValue().text(),
-                                I18N.text(edge.directed() ? "label.workspace.selection.yes"
-                                        : "label.workspace.selection.no")));
+                                I18N.text(edge.directed() ? "label.workspace.selection.yes" : "label.workspace.selection.no")));
             }
         };
         selectionPresentation.run();
@@ -3229,14 +3187,10 @@ public class MainController implements Initializable {
         return id == null ? I18N.text("label.workspace.selection.none") : "#" + id;
     }
 
-    /**
-     * All formatting completes before either view is changed, so a failed format
-     * cannot leave half a selection.
-     */
+    /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */
     private void presentSelection(String title, String id, String value, String hint, String detail) {
         showStructureSelectionOverlay(title, id, value, hint);
-        if (structureInspectorBody != null)
-            structureInspectorBody.setText(detail);
+        if (structureInspectorBody != null) structureInspectorBody.setText(detail);
     }
 
     private String linearRoleText(String role) {
@@ -3284,14 +3238,10 @@ public class MainController implements Initializable {
             algorithmSelectionOverlay.setManaged(false);
             algorithmSelectionOverlay.setVisible(false);
         }
-        if (selectedEntityTitleLabel != null)
-            selectedEntityTitleLabel.setText(title);
-        if (selectedEntityHintLabel != null)
-            selectedEntityHintLabel.setText(hint);
-        if (selectedNodeIdLabel != null)
-            selectedNodeIdLabel.setText(id);
-        if (selectedNodeValueLabel != null)
-            selectedNodeValueLabel.setText(value);
+        if (selectedEntityTitleLabel != null) selectedEntityTitleLabel.setText(title);
+        if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
+        if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
+        if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
         updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
@@ -3304,15 +3254,12 @@ public class MainController implements Initializable {
             structureSelectionOverlay.setManaged(false);
             structureSelectionOverlay.setVisible(false);
         }
-        if (algorithmSelectedEntityTitleLabel != null)
-            algorithmSelectedEntityTitleLabel.setText(title);
+        if (algorithmSelectedEntityTitleLabel != null) algorithmSelectedEntityTitleLabel.setText(title);
         if (algorithmSelectedEntityHintLabel != null) {
             algorithmSelectedEntityHintLabel.setText(I18N.text("label.workspace.selection.algorithm.hint"));
         }
-        if (algorithmSelectedNodeIdLabel != null)
-            algorithmSelectedNodeIdLabel.setText(id);
-        if (algorithmSelectedNodeValueLabel != null)
-            algorithmSelectedNodeValueLabel.setText(value);
+        if (algorithmSelectedNodeIdLabel != null) algorithmSelectedNodeIdLabel.setText(id);
+        if (algorithmSelectedNodeValueLabel != null) algorithmSelectedNodeValueLabel.setText(value);
         updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
@@ -3344,12 +3291,9 @@ public class MainController implements Initializable {
                 currentStepOverlay.setVisible(false);
             }
             updateVisualizationObstruction(false);
-            if (eventKindLabel != null)
-                eventKindLabel.setText(I18N.text("label.workspace.event.none"));
-            if (eventDetailsLabel != null)
-                eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
-            if (eventKindDot != null)
-                setEventDotClass("event-dot-idle");
+            if (eventKindLabel != null) eventKindLabel.setText(I18N.text("label.workspace.event.none"));
+            if (eventDetailsLabel != null) eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
+            if (eventKindDot != null) setEventDotClass("event-dot-idle");
             if (timelineCursorLabel != null) {
                 timelineCursorLabel.setText("");
                 timelineCursorLabel.setVisible(false);
@@ -3361,25 +3305,17 @@ public class MainController implements Initializable {
             }
             updateVisualizationObstruction(true);
             String kind = eventDisplayName(current);
-            if (currentStepSequenceLabel != null)
-                currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
-            if (currentStepKindLabel != null)
-                currentStepKindLabel.setText(kind);
-            if (currentStepDetailLabel != null)
-                currentStepDetailLabel.setText(describeCurrentStep(current));
-            if (eventKindLabel != null)
-                eventKindLabel.setText(kind);
-            if (eventDetailsLabel != null)
-                eventDetailsLabel.setText(describeEventEnvelope(current));
-            if (eventKindDot != null)
-                setEventDotClass(eventDotClass(current));
+            if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
+            if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
+            if (currentStepDetailLabel != null) currentStepDetailLabel.setText(describeCurrentStep(current));
+            if (eventKindLabel != null) eventKindLabel.setText(kind);
+            if (eventDetailsLabel != null) eventDetailsLabel.setText(describeEventEnvelope(current));
+            if (eventKindDot != null) setEventDotClass(eventDotClass(current));
             updateTimelineCursorCallout(current);
         }
         String result = currentSubController.latestResultText();
-        if (resultLabel != null)
-            resultLabel.setText(result);
-        if (resultPreviewLabel != null)
-            resultPreviewLabel.setText(result);
+        if (resultLabel != null) resultLabel.setText(result);
+        if (resultPreviewLabel != null) resultPreviewLabel.setText(result);
         refreshRunSummary();
         rebuildTimelineMarkers();
         refreshStructureSummary();
@@ -3420,8 +3356,7 @@ public class MainController implements Initializable {
             return "FROM    " + formatReference(examined.fromRef()) + "\nTO      " + formatReference(examined.toRef());
         }
         if (event instanceof ObservationEvent.Compared compared) {
-            return "LEFT    " + formatReference(compared.leftRef()) + "\nRIGHT   "
-                    + formatReference(compared.rightRef());
+            return "LEFT    " + formatReference(compared.leftRef()) + "\nRIGHT   " + formatReference(compared.rightRef());
         }
         if (event instanceof ObservationEvent.Matched matched) {
             return "INDEX   " + matched.index() + "\nLENGTH  " + matched.length();
@@ -3445,12 +3380,10 @@ public class MainController implements Initializable {
             return "NODE    #" + changed.nodeId() + "\nVALUE   " + changed.previousValue() + " → " + changed.value();
         }
         if (event instanceof TreeStructureEvent.LeftChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nLEFT    "
-                    + formatIdChange(changed.previousChildId(), changed.childId());
+            return "NODE    #" + changed.nodeId() + "\nLEFT    " + formatIdChange(changed.previousChildId(), changed.childId());
         }
         if (event instanceof TreeStructureEvent.RightChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nRIGHT   "
-                    + formatIdChange(changed.previousChildId(), changed.childId());
+            return "NODE    #" + changed.nodeId() + "\nRIGHT   " + formatIdChange(changed.previousChildId(), changed.childId());
         }
         if (event instanceof TreeStructureEvent.RootChanged changed) {
             return "ROOT    " + formatIdChange(changed.previousRootId(), changed.rootId());
@@ -3462,8 +3395,7 @@ public class MainController implements Initializable {
             return "PARENT  #" + removed.parentId() + "\nCHILD   #" + removed.childId() + "  @" + removed.index();
         }
         String text = envelope.event().toString();
-        if (text.length() > 120)
-            text = text.substring(0, 117) + "...";
+        if (text.length() > 120) text = text.substring(0, 117) + "...";
         return text;
     }
 
@@ -3476,40 +3408,29 @@ public class MainController implements Initializable {
 
     private String eventCategory(EventEnvelope envelope) {
         Object event = envelope.event();
-        if (event instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
-            return "Structure Event";
-        if (event instanceof ObservationEvent)
-            return "Observation Event";
-        if (event instanceof ExecutionLifecycleEvent)
-            return "Runtime Event";
+        if (event instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "Structure Event";
+        if (event instanceof ObservationEvent) return "Observation Event";
+        if (event instanceof ExecutionLifecycleEvent) return "Runtime Event";
         return "Execution Event";
     }
 
     private String eventDotClass(EventEnvelope envelope) {
-        if (envelope.event() instanceof ObservationEvent)
-            return "event-dot-observation";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
-            return "event-dot-structure";
-        if (envelope.event() instanceof ExecutionLifecycleEvent)
-            return "event-dot-runtime";
+        if (envelope.event() instanceof ObservationEvent) return "event-dot-observation";
+        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "event-dot-structure";
+        if (envelope.event() instanceof ExecutionLifecycleEvent) return "event-dot-runtime";
         return "event-dot-idle";
     }
 
     private void setEventDotClass(String styleClass) {
-        eventKindDot.getStyleClass().removeAll("event-dot-idle", "event-dot-runtime", "event-dot-structure",
-                "event-dot-observation");
+        eventKindDot.getStyleClass().removeAll("event-dot-idle", "event-dot-runtime", "event-dot-structure", "event-dot-observation");
         eventKindDot.getStyleClass().add(styleClass);
     }
 
     private String formatReference(ObservationEvent.Reference reference) {
-        if (reference instanceof ObservationEvent.EntityRef entity)
-            return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
-        if (reference instanceof ObservationEvent.IndexRef index)
-            return index.source() + "[" + index.index() + "]";
-        if (reference instanceof ObservationEvent.CoordinateRef cell)
-            return "(" + cell.row() + ", " + cell.column() + ")";
-        if (reference instanceof ObservationEvent.ValueRef value)
-            return String.valueOf(value.value());
+        if (reference instanceof ObservationEvent.EntityRef entity) return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
+        if (reference instanceof ObservationEvent.IndexRef index) return index.source() + "[" + index.index() + "]";
+        if (reference instanceof ObservationEvent.CoordinateRef cell) return "(" + cell.row() + ", " + cell.column() + ")";
+        if (reference instanceof ObservationEvent.ValueRef value) return String.valueOf(value.value());
         return String.valueOf(reference);
     }
 
@@ -3530,8 +3451,7 @@ public class MainController implements Initializable {
     }
 
     private void refreshRunSummary() {
-        if (runMetric1Title == null || currentSubController == null)
-            return;
+        if (runMetric1Title == null || currentSubController == null) return;
         ExecutionStatistics statistics = currentSubController.currentExecutionStatistics();
         List<MetricDisplay> metrics = metricDisplays(statistics);
         setMetric(runMetric1Title, runMetric1Value, metrics.get(0));
@@ -3573,8 +3493,7 @@ public class MainController implements Initializable {
 
     private void addMetricIfPresent(List<MetricDisplay> metrics, Map<String, Long> values, String key, String title) {
         long value = values.getOrDefault(key, 0L);
-        if (value > 0L)
-            metrics.add(new MetricDisplay(title, Long.toString(value)));
+        if (value > 0L) metrics.add(new MetricDisplay(title, Long.toString(value)));
     }
 
     private void setMetric(Label title, Label value, MetricDisplay metric) {
@@ -3583,20 +3502,8 @@ public class MainController implements Initializable {
     }
 
     private String formatDuration(java.time.Duration duration) {
-        long millis = Math.max(0L, duration.toMillis());
-
-        long hours = millis / 3_600_000L;
-        long minutes = (millis % 3_600_000L) / 60_000L;
-        long seconds = (millis % 60_000L) / 1_000L;
-        long ms = millis % 1_000L;
-
-        return String.format(
-                Locale.ROOT,
-                "%02d:%02d:%02d.%03d",
-                hours,
-                minutes,
-                seconds,
-                ms);
+        long seconds = Math.max(0L, duration.toSeconds());
+        return String.format(Locale.ROOT, "%02d:%02d:%02d", seconds / 3600L, (seconds % 3600L) / 60L, seconds % 60L);
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {
@@ -3607,8 +3514,7 @@ public class MainController implements Initializable {
         timelineCursorLabel.setVisible(true);
     }
 
-    private record MetricDisplay(String title, String value) {
-    }
+    private record MetricDisplay(String title, String value) {}
 
     private void rebuildTimelineMarkers() {
         if (timelineMarkers == null || currentSubController == null) {
@@ -3845,12 +3751,9 @@ public class MainController implements Initializable {
     }
 
     private String eventMarkerClass(EventEnvelope envelope) {
-        if (envelope.event() instanceof ExecutionLifecycleEvent)
-            return "timeline-runtime";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
-            return "timeline-structure";
-        if (envelope.event() instanceof ObservationEvent)
-            return "timeline-observation";
+        if (envelope.event() instanceof ExecutionLifecycleEvent) return "timeline-runtime";
+        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "timeline-structure";
+        if (envelope.event() instanceof ObservationEvent) return "timeline-observation";
         return "timeline-other";
     }
 

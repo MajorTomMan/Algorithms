@@ -134,6 +134,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (algorithmId == null) {
             return false;
         }
+        if (!algorithmIds.contains(algorithmId)) {
+            GraphVariant compatibleVariant = variantForAlgorithm(algorithmId);
+            if (compatibleVariant == null) {
+                return false;
+            }
+            activateVariant(compatibleVariant);
+        }
         int index = algorithmIds.indexOf(algorithmId);
         if (index < 0) {
             return false;
@@ -143,6 +150,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         notifyAlgorithmSelection();
         return true;
+    }
+
+    private GraphVariant variantForAlgorithm(String algorithmId) {
+        if (AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType).contains(algorithmId)) {
+            return GraphVariant.UNDIRECTED;
+        }
+        if (AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType).contains(algorithmId)) {
+            return GraphVariant.DIRECTED;
+        }
+        return null;
     }
 
     @Override

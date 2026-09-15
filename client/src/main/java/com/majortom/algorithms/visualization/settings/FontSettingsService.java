@@ -21,15 +21,12 @@ public final class FontSettingsService {
     public static final double MIN_SIZE = 10.0d;
     public static final double MAX_SIZE = 24.0d;
 
-    private static final double LEGACY_BASE_SIZE = 13.0d;
-    private static final int LEGACY_DEFAULT_SCALE = 125;
-    private static final double PROJECT_DEFAULT_SIZE = LEGACY_BASE_SIZE * LEGACY_DEFAULT_SCALE / 100.0d;
+    private static final double PROJECT_DEFAULT_SIZE = 16.25d;
     private static final String PROJECT_DEFAULT_PREVIEW_COLOR = "#F2F3F4";
     private static final String KEY_CHINESE_FAMILY = "ui.font.family.zh";
     private static final String KEY_ENGLISH_FAMILY = "ui.font.family.en";
     private static final String KEY_SIZE = "ui.font.size";
     private static final String KEY_COLOR = "ui.font.color";
-    private static final String LEGACY_SCALE_KEY = "ui.font.scale";
     private static final String CUSTOM_COLOR_CLASS = "font-color-custom";
     private static final String LARGE_FONT_CLASS = "font-size-large";
     private static final String XLARGE_FONT_CLASS = "font-size-xlarge";
@@ -49,13 +46,7 @@ public final class FontSettingsService {
     public FontSettings load() {
         String chineseFamily = PREFERENCES.get(KEY_CHINESE_FAMILY, "");
         String englishFamily = PREFERENCES.get(KEY_ENGLISH_FAMILY, "");
-        double size;
-        if (PREFERENCES.get(KEY_SIZE, null) == null) {
-            int legacyScale = PREFERENCES.getInt(LEGACY_SCALE_KEY, LEGACY_DEFAULT_SCALE);
-            size = LEGACY_BASE_SIZE * legacyScale / 100.0d;
-        } else {
-            size = PREFERENCES.getDouble(KEY_SIZE, PROJECT_DEFAULT_SIZE);
-        }
+        double size = PREFERENCES.getDouble(KEY_SIZE, PROJECT_DEFAULT_SIZE);
         String color = PREFERENCES.get(KEY_COLOR, "");
         return normalize(new FontSettings(chineseFamily, englishFamily, size, color));
     }
@@ -104,7 +95,8 @@ public final class FontSettingsService {
             return;
         }
         FontSettings normalized = normalize(settings);
-        ScriptFontSupport.apply(root, normalized);
+        ScriptFontSupport.apply(root, normalized,
+                projectDefaultChineseFamily(), projectDefaultEnglishFamily());
     }
 
     public FontSettings normalize(FontSettings settings) {
@@ -187,6 +179,38 @@ public final class FontSettingsService {
         } catch (RuntimeException ignored) {
             return "";
         }
+    }
+
+    private String projectDefaultChineseFamily() {
+        return firstAvailableFamily(List.of(
+                "Microsoft YaHei",
+                "Microsoft YaHei UI",
+                "Noto Sans CJK SC",
+                "Noto Sans CJK JP",
+                "Source Han Sans SC",
+                "PingFang SC",
+                "SimSun",
+                "Arial Unicode MS"));
+    }
+
+    private String projectDefaultEnglishFamily() {
+        return firstAvailableFamily(List.of(
+                "Segoe UI",
+                "Arial",
+                "Noto Sans",
+                "DejaVu Sans",
+                "Liberation Sans",
+                "Consolas"));
+    }
+
+    private String firstAvailableFamily(List<String> preferred) {
+        List<String> families = Font.getFamilies();
+        for (String family : preferred) {
+            if (families.contains(family)) {
+                return family;
+            }
+        }
+        return Font.getDefault().getFamily();
     }
 
     private String mergeManagedStyle(String existing, FontSettings settings, boolean preview) {
