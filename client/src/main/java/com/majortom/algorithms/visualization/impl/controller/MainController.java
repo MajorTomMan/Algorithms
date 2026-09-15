@@ -3552,8 +3552,20 @@ public class MainController implements Initializable {
     }
 
     private String formatDuration(java.time.Duration duration) {
-        long seconds = Math.max(0L, duration.toSeconds());
-        return String.format(Locale.ROOT, "%02d:%02d:%02d", seconds / 3600L, (seconds % 3600L) / 60L, seconds % 60L);
+        long millis = Math.max(0L, duration.toMillis());
+
+        long hours = millis / 3_600_000L;
+        long minutes = (millis % 3_600_000L) / 60_000L;
+        long seconds = (millis % 60_000L) / 1_000L;
+        long ms = millis % 1_000L;
+
+        return String.format(
+                Locale.ROOT,
+                "%02d:%02d:%02d.%03d",
+                hours,
+                minutes,
+                seconds,
+                ms);
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {
