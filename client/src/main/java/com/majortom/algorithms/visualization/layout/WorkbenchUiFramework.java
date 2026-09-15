@@ -578,6 +578,9 @@ public final class WorkbenchUiFramework {
             button.setMinWidth(0.0d);
             button.setPrefWidth(Region.USE_COMPUTED_SIZE);
             button.setMaxWidth(Double.MAX_VALUE);
+            // WorkbenchUiFramework owns Family Rail geometry. Keep alignment at
+            // USER origin so later CSS re-application cannot push rows back left.
+            button.setAlignment(javafx.geometry.Pos.BASELINE_CENTER);
             button.setMinHeight(rowHeight);
             button.setPrefHeight(rowHeight);
             button.setMaxHeight(rowHeight);
