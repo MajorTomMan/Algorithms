@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.settings;
 
+import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -24,7 +25,8 @@ public final class FontSettingsService {
     private static final int LEGACY_DEFAULT_SCALE = 125;
     private static final double PROJECT_DEFAULT_SIZE = LEGACY_BASE_SIZE * LEGACY_DEFAULT_SCALE / 100.0d;
     private static final String PROJECT_DEFAULT_PREVIEW_COLOR = "#F2F3F4";
-    private static final String KEY_FAMILY = "ui.font.family";
+    private static final String KEY_CHINESE_FAMILY = "ui.font.family.zh";
+    private static final String KEY_ENGLISH_FAMILY = "ui.font.family.en";
     private static final String KEY_SIZE = "ui.font.size";
     private static final String KEY_COLOR = "ui.font.color";
     private static final String LEGACY_SCALE_KEY = "ui.font.scale";
@@ -41,11 +43,12 @@ public final class FontSettingsService {
             "/com/majortom/algorithms/visualization/impl/controller");
 
     public FontSettings defaults() {
-        return new FontSettings("", PROJECT_DEFAULT_SIZE, "");
+        return new FontSettings("", "", PROJECT_DEFAULT_SIZE, "");
     }
 
     public FontSettings load() {
-        String family = PREFERENCES.get(KEY_FAMILY, "");
+        String chineseFamily = PREFERENCES.get(KEY_CHINESE_FAMILY, "");
+        String englishFamily = PREFERENCES.get(KEY_ENGLISH_FAMILY, "");
         double size;
         if (PREFERENCES.get(KEY_SIZE, null) == null) {
             int legacyScale = PREFERENCES.getInt(LEGACY_SCALE_KEY, LEGACY_DEFAULT_SCALE);
@@ -54,12 +57,13 @@ public final class FontSettingsService {
             size = PREFERENCES.getDouble(KEY_SIZE, PROJECT_DEFAULT_SIZE);
         }
         String color = PREFERENCES.get(KEY_COLOR, "");
-        return normalize(new FontSettings(family, size, color));
+        return normalize(new FontSettings(chineseFamily, englishFamily, size, color));
     }
 
     public void save(FontSettings settings) {
         FontSettings normalized = normalize(settings);
-        PREFERENCES.put(KEY_FAMILY, normalized.family());
+        PREFERENCES.put(KEY_CHINESE_FAMILY, normalized.chineseFamily());
+        PREFERENCES.put(KEY_ENGLISH_FAMILY, normalized.englishFamily());
         PREFERENCES.putDouble(KEY_SIZE, normalized.size());
         PREFERENCES.put(KEY_COLOR, normalized.color());
     }
@@ -73,6 +77,13 @@ public final class FontSettingsService {
         root.setStyle(mergeManagedStyle(root.getStyle(), normalized, false));
         setCustomColorClass(root, !normalized.color().isBlank());
         setFontSizeClass(root, normalized.size());
+        refreshScriptFonts(root, normalized);
+        Platform.runLater(() -> {
+            if (root.getScene() != null) {
+                root.applyCss();
+            }
+            refreshScriptFonts(root, normalized);
+        });
     }
 
     /** Applies a draft only to preview content; application preferences are unchanged. */
@@ -82,13 +93,18 @@ public final class FontSettingsService {
         }
         FontSettings normalized = normalize(settings);
         ensureFontStylesheets(previewRoot);
-        String family = normalized.family();
-        if (family.isBlank()) {
-            family = projectDefaultFamily();
+        previewRoot.setStyle(mergeManagedStyle(previewRoot.getStyle(), normalized, true));
+        setCustomColorClass(previewRoot, !normalized.color().isBlank());
+        refreshScriptFonts(previewRoot, normalized);
+    }
+
+    /** Re-applies script families to newly created controls without touching size/color preferences. */
+    public void refreshScriptFonts(Parent root, FontSettings settings) {
+        if (root == null) {
+            return;
         }
-        FontSettings previewSettings = new FontSettings(family, normalized.size(), normalized.color());
-        previewRoot.setStyle(mergeManagedStyle(previewRoot.getStyle(), previewSettings, true));
-        setCustomColorClass(previewRoot, !previewSettings.color().isBlank());
+        FontSettings normalized = normalize(settings);
+        ScriptFontSupport.apply(root, normalized);
     }
 
     public FontSettings normalize(FontSettings settings) {
@@ -96,10 +112,11 @@ public final class FontSettingsService {
         if (source == null) {
             source = defaults();
         }
-        String family = normalizeFamily(source.family());
+        String chineseFamily = normalizeFamily(source.chineseFamily());
+        String englishFamily = normalizeFamily(source.englishFamily());
         double size = clampSize(source.size());
         String color = normalizeColor(source.color());
-        return new FontSettings(family, size, color);
+        return new FontSettings(chineseFamily, englishFamily, size, color);
     }
 
     public double clampSize(double size) {
@@ -172,17 +189,6 @@ public final class FontSettingsService {
         }
     }
 
-    private String projectDefaultFamily() {
-        List<String> families = Font.getFamilies();
-        List<String> preferred = List.of("Segoe UI", "Microsoft YaHei", "Arial", "Consolas");
-        for (String family : preferred) {
-            if (families.contains(family)) {
-                return family;
-            }
-        }
-        return Font.getDefault().getFamily();
-    }
-
     private String mergeManagedStyle(String existing, FontSettings settings, boolean preview) {
         StringBuilder result = new StringBuilder();
         if (existing != null && !existing.isBlank()) {
@@ -194,11 +200,8 @@ public final class FontSettingsService {
                 result.append(trimmed).append(';');
             }
         }
-        if (!settings.family().isBlank()) {
-            result.append("-fx-font-family: \"")
-                    .append(escapeCssString(settings.family()))
-                    .append("\";");
-        }
+        // Family is intentionally not set on the root: ScriptFontSupport owns
+        // Chinese/Latin family selection per text control/run.
         result.append(String.format(Locale.ROOT, "-fx-font-size: %.2fpx;", settings.size()));
         if (!settings.color().isBlank()) {
             result.append("-ui-user-text: ").append(settings.color()).append(';');
@@ -213,11 +216,6 @@ public final class FontSettingsService {
                 || declaration.startsWith("-fx-font-size:")
                 || declaration.startsWith("-ui-user-text:");
     }
-
-    private String escapeCssString(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
 
     private void ensureFontStylesheets(Parent root) {
         for (String resourcePath : FONT_STYLESHEETS) {

@@ -741,23 +741,32 @@ public class MainController implements Initializable {
         }
         HBox languageRow = fontSettingsRow(languageLabel, languageSelector);
 
-        Label familyLabel = new Label();
-        familyLabel.textProperty().bind(I18N.createStringBinding("settings.text.font"));
-        familyLabel.getStyleClass().add("font-settings-row-label");
-        ComboBox<String> familySelector = new ComboBox<>();
-        familySelector.setMaxWidth(Double.MAX_VALUE);
-        familySelector.getStyleClass().add("font-settings-combo");
-        String projectDefault = I18N.text("settings.text.fontDefault");
+        String systemDefault = I18N.text("settings.text.fontDefault");
         List<String> families = new ArrayList<>();
-        families.add(projectDefault);
+        families.add(systemDefault);
         families.addAll(FONT_SETTINGS_SERVICE.availableFamilies());
-        familySelector.getItems().setAll(families);
-        if (initial.family().isBlank()) {
-            familySelector.getSelectionModel().select(projectDefault);
-        } else {
-            familySelector.getSelectionModel().select(initial.family());
-        }
-        HBox familyRow = fontSettingsRow(familyLabel, familySelector);
+
+        Label chineseFamilyLabel = new Label();
+        chineseFamilyLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontChinese"));
+        chineseFamilyLabel.getStyleClass().add("font-settings-row-label");
+        ComboBox<String> chineseFamilySelector = new ComboBox<>();
+        chineseFamilySelector.setMaxWidth(Double.MAX_VALUE);
+        chineseFamilySelector.getStyleClass().add("font-settings-combo");
+        chineseFamilySelector.getItems().setAll(families);
+        chineseFamilySelector.getSelectionModel().select(
+                initial.chineseFamily().isBlank() ? systemDefault : initial.chineseFamily());
+        HBox chineseFamilyRow = fontSettingsRow(chineseFamilyLabel, chineseFamilySelector);
+
+        Label englishFamilyLabel = new Label();
+        englishFamilyLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontEnglish"));
+        englishFamilyLabel.getStyleClass().add("font-settings-row-label");
+        ComboBox<String> englishFamilySelector = new ComboBox<>();
+        englishFamilySelector.setMaxWidth(Double.MAX_VALUE);
+        englishFamilySelector.getStyleClass().add("font-settings-combo");
+        englishFamilySelector.getItems().setAll(families);
+        englishFamilySelector.getSelectionModel().select(
+                initial.englishFamily().isBlank() ? systemDefault : initial.englishFamily());
+        HBox englishFamilyRow = fontSettingsRow(englishFamilyLabel, englishFamilySelector);
 
         Label sizeLabel = new Label();
         sizeLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontSize"));
@@ -813,26 +822,35 @@ public class MainController implements Initializable {
             draftLocale[0] = selectedLocale;
         });
 
-        familySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+        chineseFamilySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (updatingControls[0] || newValue == null) {
                 return;
             }
-            String family = newValue;
-            if (familySelector.getSelectionModel().getSelectedIndex() == 0) {
-                family = "";
+            String family = chineseFamilySelector.getSelectionModel().getSelectedIndex() == 0 ? "" : newValue;
+            draft[0] = new FontSettings(
+                    family, draft[0].englishFamily(), draft[0].size(), draft[0].color());
+            refreshPreview.run();
+        });
+        englishFamilySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (updatingControls[0] || newValue == null) {
+                return;
             }
-            draft[0] = new FontSettings(family, draft[0].size(), draft[0].color());
+            String family = englishFamilySelector.getSelectionModel().getSelectedIndex() == 0 ? "" : newValue;
+            draft[0] = new FontSettings(
+                    draft[0].chineseFamily(), family, draft[0].size(), draft[0].color());
             refreshPreview.run();
         });
         decreaseSize.setOnAction(event -> {
             double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() - 1.0d);
-            draft[0] = new FontSettings(draft[0].family(), size, draft[0].color());
+            draft[0] = new FontSettings(
+                    draft[0].chineseFamily(), draft[0].englishFamily(), size, draft[0].color());
             sizeValue.setText(formatFontSize(size));
             refreshPreview.run();
         });
         increaseSize.setOnAction(event -> {
             double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() + 1.0d);
-            draft[0] = new FontSettings(draft[0].family(), size, draft[0].color());
+            draft[0] = new FontSettings(
+                    draft[0].chineseFamily(), draft[0].englishFamily(), size, draft[0].color());
             sizeValue.setText(formatFontSize(size));
             refreshPreview.run();
         });
@@ -841,7 +859,10 @@ public class MainController implements Initializable {
                 return;
             }
             draft[0] = new FontSettings(
-                    draft[0].family(), draft[0].size(), FONT_SETTINGS_SERVICE.toCssColor(newValue));
+                    draft[0].chineseFamily(),
+                    draft[0].englishFamily(),
+                    draft[0].size(),
+                    FONT_SETTINGS_SERVICE.toCssColor(newValue));
             refreshPreview.run();
         });
 
@@ -860,7 +881,8 @@ public class MainController implements Initializable {
         reset.setOnAction(event -> {
             FontSettings defaults = FONT_SETTINGS_SERVICE.defaults();
             updatingControls[0] = true;
-            familySelector.getSelectionModel().select(projectDefault);
+            chineseFamilySelector.getSelectionModel().select(systemDefault);
+            englishFamilySelector.getSelectionModel().select(systemDefault);
             sizeValue.setText(formatFontSize(defaults.size()));
             colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
             draftLocale[0] = I18N.getLocale();
@@ -907,7 +929,8 @@ public class MainController implements Initializable {
         content.getChildren().setAll(
                 title,
                 languageRow,
-                familyRow,
+                chineseFamilyRow,
+                englishFamilyRow,
                 sizeRow,
                 colorRow,
                 new Separator(),
@@ -1651,6 +1674,9 @@ public class MainController implements Initializable {
     }
 
     private void refreshUiFramework() {
+        if (rootPane != null && appliedFontSettings != null) {
+            FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
+        }
         if (uiFramework == null) {
             return;
         }
