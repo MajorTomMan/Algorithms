@@ -8,9 +8,9 @@ import java.util.OptionalLong;
 /**
  * Shared execution summary consumed by desktop, server, and other runtimes.
  *
- * <p>The event statistics are authoritative logical counters. Timing and host
- * resources are separate sections so a consumer cannot accidentally present
- * replay or resource time as algorithm time.</p>
+ * <p>The event statistics are authoritative logical counters. Timing and host resources are
+ * separate sections so a consumer cannot accidentally present replay or resource time as algorithm
+ * time.
  */
 public record ExecutionSummary(
         ExecutionStatistics statistics,
@@ -48,9 +48,7 @@ public record ExecutionSummary(
     }
 
     /** Creates a summary with a supplied host-resource measurement. */
-    public static ExecutionSummary from(
-            ExecutionStatistics statistics,
-            ResourceUsage usage) {
+    public static ExecutionSummary from(ExecutionStatistics statistics, ResourceUsage usage) {
         return from(statistics).withResourceUsage(usage);
     }
 

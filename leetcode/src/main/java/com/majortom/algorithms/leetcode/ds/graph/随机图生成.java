@@ -1,10 +1,6 @@
 package com.majortom.algorithms.leetcode.ds.graph;
 
-/**
- * 随机图生成
- */
+/** 随机图生成 */
 public class 随机图生成 {
-    public static void main(String[] args) {
-        
-    }
+    public static void main(String[] args) {}
 }

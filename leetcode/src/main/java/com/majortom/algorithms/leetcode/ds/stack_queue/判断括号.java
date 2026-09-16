@@ -9,13 +9,13 @@ public class 判断括号 {
     }
 
     public static boolean isValid(String s) {
-        if(s.length()==0||s.length()==1){
+        if (s.length() == 0 || s.length() == 1) {
             return false;
         }
-        StackStructure<Character> stack= new LinkedList<>();
-        for (int i = 0;i<s.length();i++) {
+        StackStructure<Character> stack = new LinkedList<>();
+        for (int i = 0; i < s.length(); i++) {
             if (s.charAt(i) == ')') {
-                if(stack.isEmpty()){
+                if (stack.isEmpty()) {
                     return false;
                 }
                 if (stack.pop() != '(') {
@@ -24,7 +24,7 @@ public class 判断括号 {
                 continue;
             }
             if (s.charAt(i) == ']') {
-                if(stack.isEmpty()){
+                if (stack.isEmpty()) {
                     return false;
                 }
                 if (stack.pop() != '[') {
@@ -33,7 +33,7 @@ public class 判断括号 {
                 continue;
             }
             if (s.charAt(i) == '}') {
-                if(stack.isEmpty()){
+                if (stack.isEmpty()) {
                     return false;
                 }
                 if (stack.pop() != '{') {
@@ -43,10 +43,9 @@ public class 判断括号 {
             }
             stack.push(s.charAt(i));
         }
-        if(stack.isEmpty()){
+        if (stack.isEmpty()) {
             return true;
-        }
-        else{
+        } else {
             return false;
         }
     }

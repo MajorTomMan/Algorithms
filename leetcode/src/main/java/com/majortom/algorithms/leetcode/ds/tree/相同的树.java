@@ -1,9 +1,8 @@
 package com.majortom.algorithms.leetcode.ds.tree;
 
-import java.util.Random;
 
-import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 相同的树 {
     public static void main(String[] args) {

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.string;
 
 import com.majortom.algorithms.visualization.common.VisualDensity;
+
 import javafx.css.PseudoClass;
 import javafx.geometry.Pos;
 import javafx.scene.layout.StackPane;

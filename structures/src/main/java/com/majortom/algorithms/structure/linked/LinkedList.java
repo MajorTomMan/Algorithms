@@ -7,7 +7,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public final class LinkedList<T> implements LinkedStructure<T>, StackStructure<T>, QueueStructure<T> {
+public final class LinkedList<T>
+        implements LinkedStructure<T>, StackStructure<T>, QueueStructure<T> {
     private ListNode<T> head;
     private ListNode<T> tail;
     private int size;

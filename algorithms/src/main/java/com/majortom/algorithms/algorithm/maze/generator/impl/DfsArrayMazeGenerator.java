@@ -1,22 +1,25 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
-import com.majortom.algorithms.structure.maze.MazeStructure;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.structure.maze.MazeDimensions;
-import com.majortom.algorithms.structure.maze.GridPoint;
-import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 import java.util.Random;
 
 /** Recursive-backtracker perfect-maze generator. */
-@Algorithm(id = "maze-generator-dfs", name = "递归回溯", type = Boolean.class, structure = MazeStructure.class)
+@Algorithm(
+        id = "maze-generator-dfs",
+        name = "递归回溯",
+        type = Boolean.class,
+        structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.ARRAY)
 public final class DfsArrayMazeGenerator {
     @AlgorithmEntry
@@ -30,7 +33,8 @@ public final class DfsArrayMazeGenerator {
         return ArrayMazeSupport.complete(dimensions, state);
     }
 
-    private void carve(MazeDimensions dimensions, boolean[] open, GridPoint current, Random random) {
+    private void carve(
+            MazeDimensions dimensions, boolean[] open, GridPoint current, Random random) {
         for (int[] direction : ArrayMazeSupport.shuffledCellDirections(random)) {
             int nextRow = current.row() + direction[0];
             int nextColumn = current.column() + direction[1];
@@ -42,9 +46,9 @@ public final class DfsArrayMazeGenerator {
             if (open[ArrayMazeSupport.index(dimensions.columns(), next)]) {
                 continue;
             }
-            GridPoint corridor = new GridPoint(
-                    current.row() + direction[0] / 2,
-                    current.column() + direction[1] / 2);
+            GridPoint corridor =
+                    new GridPoint(
+                            current.row() + direction[0] / 2, current.column() + direction[1] / 2);
             ArrayMazeSupport.open(dimensions, open, corridor);
             ArrayMazeSupport.open(dimensions, open, next);
             carve(dimensions, open, next, random);

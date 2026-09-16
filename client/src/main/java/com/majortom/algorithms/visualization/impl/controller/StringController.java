@@ -5,16 +5,16 @@ import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.string.StringEventReducer;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -24,20 +24,22 @@ import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
 public final class StringController extends BaseModuleController<StringViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
+        implements AlgorithmSelectionSupport,
+                StructureSnapshotSupport<StringSnapshot>,
+                SnapshotAlgorithmInputSupport<StringSnapshot> {
 
-    private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
+    private final List<String> algorithmIds =
+            AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
     private final StringStructure source;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
-    private Consumer<IndexSelection> selectionListener = ignored -> { };
-    private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private Consumer<IndexSelection> selectionListener = ignored -> {};
+    private Consumer<String> algorithmSelectionListener = ignored -> {};
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -75,10 +77,12 @@ public final class StringController extends BaseModuleController<StringViewState
     private void handleReplace() {
         clearStringSelection();
         String value = valueField.getText();
-        if (executeStructureOperation("replace", () -> {
-            source.replace(0, source.length(), value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "replace",
+                () -> {
+                    source.replace(0, source.length(), value);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             if (source.length() > 0) {
                 stringVisualizer().selectIndex(0);
@@ -117,10 +121,12 @@ public final class StringController extends BaseModuleController<StringViewState
 
     private void replaceFromDataTool(String value, String messageKey) {
         clearStringSelection();
-        if (!executeStructureOperation("bulk-replace", () -> {
-            source.replace(0, source.length(), value);
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                "bulk-replace",
+                () -> {
+                    source.replace(0, source.length(), value);
+                    return null;
+                })) {
             return;
         }
         if (valueField != null) {
@@ -144,10 +150,12 @@ public final class StringController extends BaseModuleController<StringViewState
         if (index == null) return;
         String value = valueField.getText();
         if (value.isEmpty()) return;
-        if (executeStructureOperation("insert", () -> {
-            source.insert(index, value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "insert",
+                () -> {
+                    source.insert(index, value);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             stringVisualizer().selectIndex(index);
         }
@@ -161,10 +169,12 @@ public final class StringController extends BaseModuleController<StringViewState
             logI18n("message.string.invalid_range");
             return;
         }
-        if (executeStructureOperation("remove", () -> {
-            source.remove(index, length);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "remove",
+                () -> {
+                    source.remove(index, length);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             selectStringAfterRemoval(index);
         }
@@ -195,10 +205,12 @@ public final class StringController extends BaseModuleController<StringViewState
             return;
         }
         char character = value.charAt(0);
-        if (executeStructureOperation("update", () -> {
-            source.set(index, character);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "update",
+                () -> {
+                    source.set(index, character);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             stringVisualizer().selectIndex(index);
         }
@@ -214,9 +226,10 @@ public final class StringController extends BaseModuleController<StringViewState
         if (algorithmId == null) {
             return;
         }
-        StructureSnapshot<StringSnapshot> inputSnapshot = algorithmInputSnapshot == null
-                ? captureStructureSnapshot()
-                : algorithmInputSnapshot;
+        StructureSnapshot<StringSnapshot> inputSnapshot =
+                algorithmInputSnapshot == null
+                        ? captureStructureSnapshot()
+                        : algorithmInputSnapshot;
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
         var descriptor = algorithm(algorithmId, java.lang.String.class);
@@ -249,7 +262,7 @@ public final class StringController extends BaseModuleController<StringViewState
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         if (listener == null) {
-            algorithmSelectionListener = ignored -> { };
+            algorithmSelectionListener = ignored -> {};
         } else {
             algorithmSelectionListener = listener;
         }
@@ -275,7 +288,8 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     public void useSnapshotAsAlgorithmInput(StructureSnapshot<StringSnapshot> snapshot) {
-        if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        if (!moduleId().equals(snapshot.moduleId()))
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
     }
@@ -300,7 +314,6 @@ public final class StringController extends BaseModuleController<StringViewState
         return algorithmInputSnapshot == null;
     }
 
-
     @Override
     protected void restoreAlgorithmState() {
         if (latestViewState() != null) {
@@ -315,7 +328,6 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         renderViewState(StringViewState.source(value));
     }
-
 
     @Override
     public void previewStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
@@ -345,7 +357,9 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     protected String formatStatsMessage() {
-        return String.format("%s | %s | %s", I18N.text("stats.size", source.length()),
+        return String.format(
+                "%s | %s | %s",
+                I18N.text("stats.size", source.length()),
                 formatMetric("stats.compare", stats.metric("comparisons")),
                 I18N.text("stats.frames", visualFrameCount()));
     }
@@ -360,19 +374,29 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     protected void setupI18n() {
-        if (structureLabel != null) structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
-        if (algorithmLabel != null) algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
-        if (editSectionLabel != null) editSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.edit"));
-        if (searchSectionLabel != null) searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.search"));
+        if (structureLabel != null)
+            structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
+        if (algorithmLabel != null)
+            algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
+        if (editSectionLabel != null)
+            editSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.edit"));
+        if (searchSectionLabel != null)
+            searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.search"));
         bindButton(replaceBtn, "action.string.replace");
         bindButton(insertBtn, "action.string.insert");
         bindButton(removeBtn, "action.string.remove");
         bindButton(updateBtn, "action.string.update");
         bindButton(runBtn, "action.string.run");
-        if (valueField != null) valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.value"));
-        if (indexField != null) indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.index"));
-        if (lengthField != null) lengthField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.length"));
-        if (characterField != null) characterField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.character"));
+        if (valueField != null)
+            valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.value"));
+        if (indexField != null)
+            indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.index"));
+        if (lengthField != null)
+            lengthField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.length"));
+        if (characterField != null)
+            characterField
+                    .promptTextProperty()
+                    .bind(I18N.createStringBinding("prompt.string.character"));
     }
 
     @Override
@@ -401,21 +425,27 @@ public final class StringController extends BaseModuleController<StringViewState
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList("string"));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
-        javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
+        javafx.collections.ObservableList<String> algorithmLabels =
+                FXCollections.observableArrayList();
         for (String id : algorithmIds) {
             algorithmLabels.add(AlgorithmCatalog.name(id));
         }
         algorithmSelector.setItems(algorithmLabels);
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            refreshAlgorithmControls();
-            notifyAlgorithmSelection();
-        });
-        Platform.runLater(() -> {
-            structureSelector.getSelectionModel().selectFirst();
-            algorithmSelector.getSelectionModel().selectFirst();
-            refreshAlgorithmControls();
-            notifyAlgorithmSelection();
-        });
+        algorithmSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener(
+                        (observable, previous, current) -> {
+                            refreshAlgorithmControls();
+                            notifyAlgorithmSelection();
+                        });
+        FxDispatch.defer(
+                () -> {
+                    structureSelector.getSelectionModel().selectFirst();
+                    algorithmSelector.getSelectionModel().selectFirst();
+                    refreshAlgorithmControls();
+                    notifyAlgorithmSelection();
+                });
     }
 
     private void notifyAlgorithmSelection() {
@@ -426,7 +456,9 @@ public final class StringController extends BaseModuleController<StringViewState
         String algorithmId = selectedAlgorithmId();
         if (searchSectionLabel != null) {
             searchSectionLabel.textProperty().unbind();
-            searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.algorithm"));
+            searchSectionLabel
+                    .textProperty()
+                    .bind(I18N.createStringBinding("label.string.algorithm"));
         }
     }
 
@@ -438,8 +470,13 @@ public final class StringController extends BaseModuleController<StringViewState
 
     /** Projects the latest factual String StructureEvent into Structure presentation state. */
     private void renderLatestStructureMutation() {
-        renderStructureState(new StringViewState(source.value(), latestStringMutation(),
-                StringViewState.Observation.none(), 0, false));
+        renderStructureState(
+                new StringViewState(
+                        source.value(),
+                        latestStringMutation(),
+                        StringViewState.Observation.none(),
+                        0,
+                        false));
         if (valueField != null && !valueField.isFocused()) valueField.setText(source.value());
         refreshStatsDisplay();
     }
@@ -449,7 +486,8 @@ public final class StringController extends BaseModuleController<StringViewState
         for (int index = events.size() - 1; index >= 0; index--) {
             Object event = events.get(index).event();
             if (event instanceof StringStructureEvent.Inserted inserted) {
-                return StringViewState.Mutation.inserted(inserted.index(), inserted.value().length());
+                return StringViewState.Mutation.inserted(
+                        inserted.index(), inserted.value().length());
             }
             if (event instanceof StringStructureEvent.Removed removed) {
                 return StringViewState.Mutation.removed(removed.index(), removed.value().length());
@@ -458,7 +496,8 @@ public final class StringController extends BaseModuleController<StringViewState
                 return StringViewState.Mutation.updated(updated.index());
             }
             if (event instanceof StringStructureEvent.Replaced replaced) {
-                return StringViewState.Mutation.replaced(replaced.index(), replaced.value().length());
+                return StringViewState.Mutation.replaced(
+                        replaced.index(), replaced.value().length());
             }
         }
         return StringViewState.Mutation.none();
@@ -466,7 +505,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
         if (selectionListener == null) {
-            this.selectionListener = ignored -> { };
+            this.selectionListener = ignored -> {};
         } else {
             this.selectionListener = selectionListener;
         }
@@ -490,7 +529,8 @@ public final class StringController extends BaseModuleController<StringViewState
             return;
         }
         algorithmSelectedIndex = index;
-        selectionListener.accept(new IndexSelection(index, state.value().charAt(index), state.value().length()));
+        selectionListener.accept(
+                new IndexSelection(index, state.value().charAt(index), state.value().length()));
     }
 
     @Override
@@ -503,10 +543,11 @@ public final class StringController extends BaseModuleController<StringViewState
             return;
         }
         stringVisualizer().showSelection(algorithmSelectedIndex);
-        selectionListener.accept(new IndexSelection(
-                algorithmSelectedIndex,
-                state.value().charAt(algorithmSelectedIndex),
-                state.value().length()));
+        selectionListener.accept(
+                new IndexSelection(
+                        algorithmSelectedIndex,
+                        state.value().charAt(algorithmSelectedIndex),
+                        state.value().length()));
     }
 
     private void handleStructureStringSelection(int index) {
@@ -530,8 +571,7 @@ public final class StringController extends BaseModuleController<StringViewState
         return (StringVisualizer) visualizer;
     }
 
-    public record IndexSelection(int index, char value, int length) {
-    }
+    public record IndexSelection(int index, char value, int length) {}
 
     private Integer parseIndex(TextField field, boolean allowEnd) {
         try {

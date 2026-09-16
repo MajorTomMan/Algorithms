@@ -1,15 +1,15 @@
 package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
-import com.majortom.algorithms.structure.maze.MazeStructure;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.structure.maze.GridPoint;
-import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,7 +18,11 @@ import java.util.Map;
 import java.util.Set;
 
 /** Recursive depth-first pathfinder with factual visit/examine/backtrack observations. */
-@Algorithm(id = "maze-pathfinder-dfs", name = "深度优先搜索", type = Boolean.class, structure = MazeStructure.class)
+@Algorithm(
+        id = "maze-pathfinder-dfs",
+        name = "深度优先搜索",
+        type = Boolean.class,
+        structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class DfsArrayMazePathfinder {
     @AlgorithmEntry
@@ -52,7 +56,8 @@ public final class DfsArrayMazePathfinder {
             return true;
         }
         for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-            Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
+            Observations.examined(
+                    current.row(), current.column(), neighbor.row(), neighbor.column());
             if (!discovered.add(neighbor)) {
                 continue;
             }

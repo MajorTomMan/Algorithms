@@ -11,7 +11,8 @@ public final class PracticeWorkerMain {
     private PracticeWorkerMain() {}
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1) throw new IllegalArgumentException("worker expects one encoded invocation");
+        if (args.length != 1)
+            throw new IllegalArgumentException("worker expects one encoded invocation");
         WorkerInvocation invocation = (WorkerInvocation) WorkerCodec.decode(args[0]);
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Class<?> owner = Class.forName(invocation.className(), true, loader);
@@ -21,7 +22,10 @@ public final class PracticeWorkerMain {
         }
         Method method = owner.getDeclaredMethod(invocation.methodName(), parameterTypes);
         method.trySetAccessible();
-        Object receiver = Modifier.isStatic(method.getModifiers()) ? null : owner.getDeclaredConstructor().newInstance();
+        Object receiver =
+                Modifier.isStatic(method.getModifiers())
+                        ? null
+                        : owner.getDeclaredConstructor().newInstance();
         try {
             Object result = method.invoke(receiver, invocation.arguments());
             System.out.println(RESULT_PREFIX + WorkerCodec.encode(result));
@@ -33,7 +37,8 @@ public final class PracticeWorkerMain {
         }
     }
 
-    private static Class<?> resolveType(String name, ClassLoader loader) throws ClassNotFoundException {
+    private static Class<?> resolveType(String name, ClassLoader loader)
+            throws ClassNotFoundException {
         return switch (name) {
             case "boolean" -> boolean.class;
             case "byte" -> byte.class;

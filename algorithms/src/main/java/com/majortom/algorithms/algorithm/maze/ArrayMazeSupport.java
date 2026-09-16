@@ -1,9 +1,9 @@
 package com.majortom.algorithms.algorithm.maze;
 
-import com.majortom.algorithms.structure.maze.MazeDimensions;
-import com.majortom.algorithms.structure.maze.GridPoint;
-import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -13,11 +13,10 @@ import java.util.Map;
 import java.util.Random;
 
 public final class ArrayMazeSupport {
-    public static final int[][] CELL_DIRECTIONS = { { -2, 0 }, { 0, 2 }, { 2, 0 }, { 0, -2 } };
-    public static final int[][] PATH_DIRECTIONS = { { -1, 0 }, { 0, 1 }, { 1, 0 }, { 0, -1 } };
+    public static final int[][] CELL_DIRECTIONS = {{-2, 0}, {0, 2}, {2, 0}, {0, -2}};
+    public static final int[][] PATH_DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
-    private ArrayMazeSupport() {
-    }
+    private ArrayMazeSupport() {}
 
     public static GenerationState initialize(MazeDimensions dimensions) {
         requireArrayDimensions(dimensions);
@@ -40,7 +39,8 @@ public final class ArrayMazeSupport {
         for (boolean cell : state.open()) {
             cells.add(cell);
         }
-        return new GridMaze(dimensions.rows(), dimensions.columns(), cells, state.entrance(), state.exit());
+        return new GridMaze(
+                dimensions.rows(), dimensions.columns(), cells, state.entrance(), state.exit());
     }
 
     public static List<int[]> shuffledCellDirections(Random random) {
@@ -50,7 +50,10 @@ public final class ArrayMazeSupport {
     }
 
     public static boolean isInner(MazeDimensions dimensions, int row, int column) {
-        return row > 0 && row < dimensions.rows() - 1 && column > 0 && column < dimensions.columns() - 1;
+        return row > 0
+                && row < dimensions.rows() - 1
+                && column > 0
+                && column < dimensions.columns() - 1;
     }
 
     public static int index(int columns, GridPoint point) {
@@ -73,7 +76,8 @@ public final class ArrayMazeSupport {
         return neighbors;
     }
 
-    public static List<GridPoint> reconstruct(Map<GridPoint, GridPoint> previous, GridPoint start, GridPoint goal) {
+    public static List<GridPoint> reconstruct(
+            Map<GridPoint, GridPoint> previous, GridPoint start, GridPoint goal) {
         ArrayDeque<GridPoint> path = new ArrayDeque<>();
         GridPoint current = goal;
         path.addFirst(current);
@@ -105,12 +109,13 @@ public final class ArrayMazeSupport {
 
     public static void requireArrayDimensions(MazeDimensions dimensions) {
         java.util.Objects.requireNonNull(dimensions, "dimensions");
-        if (dimensions.rows() < 3 || dimensions.columns() < 3
-                || dimensions.rows() % 2 == 0 || dimensions.columns() % 2 == 0) {
+        if (dimensions.rows() < 3
+                || dimensions.columns() < 3
+                || dimensions.rows() % 2 == 0
+                || dimensions.columns() % 2 == 0) {
             throw new IllegalArgumentException("maze dimensions must be odd and at least 3");
         }
     }
 
-    public record GenerationState(boolean[] open, GridPoint entrance, GridPoint exit) {
-    }
+    public record GenerationState(boolean[] open, GridPoint entrance, GridPoint exit) {}
 }

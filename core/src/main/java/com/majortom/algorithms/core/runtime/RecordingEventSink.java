@@ -1,6 +1,7 @@
 package com.majortom.algorithms.core.runtime;
 
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +28,8 @@ public final class RecordingEventSink implements EventSink {
             nextState = ExecutionRecording.transition(state, lifecycleEvent);
         } else {
             if (!state.acceptsDomainEvents()) {
-                throw new IllegalArgumentException("Domain events are only valid while a run is active or paused");
+                throw new IllegalArgumentException(
+                        "Domain events are only valid while a run is active or paused");
             }
         }
         nextStatistics = statisticsReducer.reduce(statistics, event);
@@ -71,7 +73,10 @@ public final class RecordingEventSink implements EventSink {
         long expectedSequence = events.size();
         if (event.sequence() != expectedSequence) {
             throw new IllegalArgumentException(
-                    "Expected execution event sequence " + expectedSequence + " but received " + event.sequence());
+                    "Expected execution event sequence "
+                            + expectedSequence
+                            + " but received "
+                            + event.sequence());
         }
         if (!events.isEmpty()
                 && (!runId.equals(event.runId()) || !operationId.equals(event.operationId()))) {

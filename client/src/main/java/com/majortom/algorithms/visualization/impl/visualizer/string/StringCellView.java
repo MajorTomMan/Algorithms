@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.string;
 
 import com.majortom.algorithms.visualization.common.VisualDensity;
+
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -30,7 +31,7 @@ public final class StringCellView extends StackPane {
 
     private int index;
     private VisualDensity density = VisualDensity.DETAIL;
-    private IntConsumer selectionHandler = ignored -> { };
+    private IntConsumer selectionHandler = ignored -> {};
 
     public StringCellView(int index, char value) {
         getStyleClass().addAll("string-cell", "visual-entity");
@@ -52,12 +53,13 @@ public final class StringCellView extends StackPane {
         getChildren().setAll(content);
         setCursor(Cursor.HAND);
         setPickOnBounds(true);
-        setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1) {
-                selectionHandler.accept(this.index);
-                event.consume();
-            }
-        });
+        setOnMouseClicked(
+                event -> {
+                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1) {
+                        selectionHandler.accept(this.index);
+                        event.consume();
+                    }
+                });
         setIndex(index);
         setValue(value);
         setDensity(VisualDensity.DETAIL, true);
@@ -77,7 +79,12 @@ public final class StringCellView extends StackPane {
     }
 
     public void setTrackPosition(int index, int size) {
-        getStyleClass().removeAll("string-cell-first", "string-cell-middle", "string-cell-last", "string-cell-only");
+        getStyleClass()
+                .removeAll(
+                        "string-cell-first",
+                        "string-cell-middle",
+                        "string-cell-last",
+                        "string-cell-only");
         if (size <= 1) {
             getStyleClass().add("string-cell-only");
         } else if (index == 0) {
@@ -113,7 +120,6 @@ public final class StringCellView extends StackPane {
     public void setCompleted(boolean completed) {
         pseudoClassStateChanged(COMPLETED, completed);
     }
-
 
     public void setDensity(VisualDensity density, boolean importantIndex) {
         this.density = Objects.requireNonNull(density, "density");

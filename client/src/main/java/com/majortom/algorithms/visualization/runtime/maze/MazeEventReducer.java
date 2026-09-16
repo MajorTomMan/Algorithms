@@ -57,7 +57,8 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         if (event instanceof ObservationEvent.PathTraced pathTraced) {
             GridPoint point = point(pathTraced.ref());
             if (point != null) {
-                return Reduction.changed(previous.tracePath(point), EventImportance.STATE_CHANGE, true);
+                return Reduction.changed(
+                        previous.tracePath(point), EventImportance.STATE_CHANGE, true);
             }
         }
         if (event instanceof ObservationEvent.PathFound pathFound) {
@@ -67,7 +68,8 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
                 if (point != null) path.add(point);
             }
             if (!path.isEmpty()) {
-                return Reduction.changed(previous.withPath(path), EventImportance.STATE_CHANGE, true);
+                return Reduction.changed(
+                        previous.withPath(path), EventImportance.STATE_CHANGE, true);
             }
         }
         if (event instanceof ObservationEvent.Backtracked backtracked) {

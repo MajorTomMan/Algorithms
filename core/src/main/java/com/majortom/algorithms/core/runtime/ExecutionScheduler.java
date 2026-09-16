@@ -20,17 +20,28 @@ public final class ExecutionScheduler implements AutoCloseable {
 
     public static ExecutionScheduler single(String threadPrefix) {
         AtomicLong sequence = new AtomicLong();
-        return new ExecutionScheduler(Executors.newSingleThreadExecutor(runnable -> daemonThread(runnable, threadPrefix + sequence.incrementAndGet())));
+        return new ExecutionScheduler(
+                Executors.newSingleThreadExecutor(
+                        runnable ->
+                                daemonThread(runnable, threadPrefix + sequence.incrementAndGet())));
     }
 
-    public static ExecutionScheduler bounded(String threadPrefix, int corePoolSize, int maximumPoolSize, int queueCapacity) {
+    public static ExecutionScheduler bounded(
+            String threadPrefix, int corePoolSize, int maximumPoolSize, int queueCapacity) {
         if (corePoolSize <= 0 || maximumPoolSize < corePoolSize || queueCapacity <= 0) {
             throw new IllegalArgumentException("Invalid scheduler bounds");
         }
         AtomicLong sequence = new AtomicLong();
-        ExecutorService executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(queueCapacity), runnable -> daemonThread(runnable, threadPrefix + sequence.incrementAndGet()),
-                new ThreadPoolExecutor.AbortPolicy());
+        ExecutorService executor =
+                new ThreadPoolExecutor(
+                        corePoolSize,
+                        maximumPoolSize,
+                        60L,
+                        TimeUnit.SECONDS,
+                        new ArrayBlockingQueue<>(queueCapacity),
+                        runnable ->
+                                daemonThread(runnable, threadPrefix + sequence.incrementAndGet()),
+                        new ThreadPoolExecutor.AbortPolicy());
         return new ExecutionScheduler(executor);
     }
 

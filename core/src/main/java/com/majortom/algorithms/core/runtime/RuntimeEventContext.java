@@ -76,7 +76,9 @@ final class RuntimeEventContext {
     }
 
     private enum Permission {
-        START, DOMAIN, COMPLETION
+        START,
+        DOMAIN,
+        COMPLETION
     }
 
     private void requireNotCancelled() {
@@ -87,13 +89,8 @@ final class RuntimeEventContext {
 
     private synchronized void publish(ExecutionEvent event) {
         long nextSequence = sequence.get();
-        EventEnvelope envelope = new EventEnvelope(
-                runId,
-                operationId,
-                nextSequence,
-                clock.instant(),
-                source,
-                event);
+        EventEnvelope envelope =
+                new EventEnvelope(runId, operationId, nextSequence, clock.instant(), source, event);
         try {
             eventSink.accept(envelope);
             sequence.incrementAndGet();

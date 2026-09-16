@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Stateful replay cursor around a stateless reducer.
- * It is the common boundary for validating run, operation, and contiguous sequence envelopes.
+ * Stateful replay cursor around a stateless reducer. It is the common boundary for validating run,
+ * operation, and contiguous sequence envelopes.
  */
 public final class ReductionCursor<S> {
 
@@ -30,9 +30,8 @@ public final class ReductionCursor<S> {
     public Reduction<S> accept(EventEnvelope event) {
         Objects.requireNonNull(event, "event");
         validateEnvelope(event);
-        Reduction<S> reduction = Objects.requireNonNull(
-                reducer.reduce(state, event),
-                "reducer result");
+        Reduction<S> reduction =
+                Objects.requireNonNull(reducer.reduce(state, event), "reducer result");
         ExecutionStatistics nextStatistics = statisticsReducer.reduce(statistics, event);
         state = reduction.state();
         if (nextSequence == 0L) {
@@ -80,7 +79,10 @@ public final class ReductionCursor<S> {
     private void validateEnvelope(EventEnvelope event) {
         if (event.sequence() != nextSequence) {
             throw new IllegalArgumentException(
-                    "Expected execution event sequence " + nextSequence + " but received " + event.sequence());
+                    "Expected execution event sequence "
+                            + nextSequence
+                            + " but received "
+                            + event.sequence());
         }
         if (nextSequence == 0L) {
             return;

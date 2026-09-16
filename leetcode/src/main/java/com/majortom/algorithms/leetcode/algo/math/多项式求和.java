@@ -50,8 +50,7 @@ public class 多项式求和 {
         return result;
     }
 
-    private record Term(int coefficient, int exponent) {
-    }
+    private record Term(int coefficient, int exponent) {}
 
     public static final class Polynomial {
         private final List<Term> terms = new ArrayList<>();

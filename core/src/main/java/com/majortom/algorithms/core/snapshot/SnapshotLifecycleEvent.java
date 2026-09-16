@@ -5,9 +5,7 @@ import com.majortom.algorithms.core.event.ExecutionEvent;
 public sealed interface SnapshotLifecycleEvent extends ExecutionEvent
         permits SnapshotLifecycleEvent.Created, SnapshotLifecycleEvent.Restored {
 
-    record Created(String snapshotId, String moduleId) implements SnapshotLifecycleEvent {
-    }
+    record Created(String snapshotId, String moduleId) implements SnapshotLifecycleEvent {}
 
-    record Restored(String snapshotId, String moduleId) implements SnapshotLifecycleEvent {
-    }
+    record Restored(String snapshotId, String moduleId) implements SnapshotLifecycleEvent {}
 }

@@ -1,15 +1,14 @@
 package com.majortom.algorithms.leetcode.ds.list;
 
-
-
-import com.majortom.algorithms.structure.linked.ListNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.linked.ListNode;
 
 public class 环形链表 {
     public static void main(String[] args) {
-        Integer[] nums={3,2,0,-4};
+        Integer[] nums = {3, 2, 0, -4};
         System.out.println(hasCycle(AlgorithmsUtils.buildLinkedList(nums)));
     }
+
     public static boolean hasCycle(ListNode<Integer> head) {
         if (head == null || head.getNext() == null) {
             return false;

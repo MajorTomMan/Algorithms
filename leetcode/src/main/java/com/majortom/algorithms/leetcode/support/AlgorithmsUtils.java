@@ -1,13 +1,12 @@
 package com.majortom.algorithms.leetcode.support;
 
-import java.util.*;
 import com.majortom.algorithms.structure.linked.ListNode;
-import com.majortom.algorithms.structure.tree.TreeNode;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
+import com.majortom.algorithms.structure.tree.TreeNode;
 
-/**
- * 算法实验室工具类。
- */
+import java.util.*;
+
+/** 算法实验室工具类。 */
 public abstract class AlgorithmsUtils {
     private static final Random random = new Random();
     private static final java.lang.String UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -15,11 +14,10 @@ public abstract class AlgorithmsUtils {
     private static final java.lang.String NUMBERS = "0123456789";
     private static final java.lang.String CHARACTERS = UPPER_CASE + LOWER_CASE + NUMBERS;
 
-    /**
-     * 内部工具类：提供一个具体的二叉节点实现，用于静态树的构建
-     */
+    /** 内部工具类：提供一个具体的二叉节点实现，用于静态树的构建 */
     private static class SimpleBinaryNode<T> extends BinaryTreeNode<T> {
-        private static final java.util.concurrent.atomic.AtomicLong IDS = new java.util.concurrent.atomic.AtomicLong(1L);
+        private static final java.util.concurrent.atomic.AtomicLong IDS =
+                new java.util.concurrent.atomic.AtomicLong(1L);
         private final long id = IDS.getAndIncrement();
 
         public SimpleBinaryNode(T data) {
@@ -39,8 +37,7 @@ public abstract class AlgorithmsUtils {
 
     public static Integer[] nearlySortedArray(int cap, int swapTimes) {
         Integer[] arr = new Integer[cap];
-        for (int i = 0; i < cap; i++)
-            arr[i] = i;
+        for (int i = 0; i < cap; i++) arr[i] = i;
         for (int i = 0; i < swapTimes; i++) {
             swap(arr, random.nextInt(cap), random.nextInt(cap));
         }
@@ -56,11 +53,9 @@ public abstract class AlgorithmsUtils {
     }
 
     public static int[] toPrimitive(Integer[] arr) {
-        if (arr == null)
-            return null;
+        if (arr == null) return null;
         int[] res = new int[arr.length];
-        for (int i = 0; i < arr.length; i++)
-            res[i] = arr[i];
+        for (int i = 0; i < arr.length; i++) res[i] = arr[i];
         return res;
     }
 
@@ -73,8 +68,7 @@ public abstract class AlgorithmsUtils {
     }
 
     public static <T> void swap(T[] arr, int i, int j) {
-        if (i == j)
-            return;
+        if (i == j) return;
         T temp = arr[i];
         arr[i] = arr[j];
         arr[j] = temp;
@@ -82,8 +76,7 @@ public abstract class AlgorithmsUtils {
 
     public static <T extends Comparable<T>> boolean isSorted(T[] arr) {
         for (int i = 0; i < arr.length - 1; i++) {
-            if (arr[i].compareTo(arr[i + 1]) > 0)
-                return false;
+            if (arr[i].compareTo(arr[i + 1]) > 0) return false;
         }
         return true;
     }
@@ -115,8 +108,7 @@ public abstract class AlgorithmsUtils {
     }
 
     private static <T> ListNode<T> buildLinkedListInternal(T[] nums, int index) {
-        if (index == nums.length)
-            return null;
+        if (index == nums.length) return null;
         ListNode<T> node = new ListNode<>(nums[index]);
         node.setNext(buildLinkedListInternal(nums, index + 1));
         return node;
@@ -134,15 +126,14 @@ public abstract class AlgorithmsUtils {
     // --- 树工具 (核心适配) ---
 
     public static <T extends Comparable<T>> BinaryTreeNode<T> buildBST(T[] data) {
-        if (data == null || data.length == 0)
-            return null;
+        if (data == null || data.length == 0) return null;
         Arrays.sort(data);
         return buildBSTInternal(data, 0, data.length - 1);
     }
 
-    private static <T extends Comparable<T>> BinaryTreeNode<T> buildBSTInternal(T[] data, int start, int end) {
-        if (start > end)
-            return null;
+    private static <T extends Comparable<T>> BinaryTreeNode<T> buildBSTInternal(
+            T[] data, int start, int end) {
+        if (start > end) return null;
         int mid = start + (end - start) / 2;
 
         BinaryTreeNode<T> node = new SimpleBinaryNode<>(data[mid]);
@@ -152,12 +143,9 @@ public abstract class AlgorithmsUtils {
         return node;
     }
 
-    /**
-     * 层序遍历构建二叉树 [1, 2, 3, null, 5]
-     */
+    /** 层序遍历构建二叉树 [1, 2, 3, null, 5] */
     public static <T> TreeNode<T> buildTreeByLevel(T[] arr) {
-        if (arr == null || arr.length == 0 || arr[0] == null)
-            return null;
+        if (arr == null || arr.length == 0 || arr[0] == null) return null;
 
         BinaryTreeNode<T> root = new SimpleBinaryNode<>(arr[0]);
         Queue<BinaryTreeNode<T>> queue = new ArrayDeque<>();
@@ -178,7 +166,6 @@ public abstract class AlgorithmsUtils {
                 queue.add(curr.getRight());
             }
             i++;
-
         }
         return root;
     }
@@ -189,12 +176,9 @@ public abstract class AlgorithmsUtils {
         Integer[][] matrix = new Integer[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                if (i == j)
-                    matrix[i][j] = 0;
-                else if (random.nextDouble() < density)
-                    matrix[i][j] = random.nextInt(10) + 1;
-                else
-                    matrix[i][j] = null;
+                if (i == j) matrix[i][j] = 0;
+                else if (random.nextDouble() < density) matrix[i][j] = random.nextInt(10) + 1;
+                else matrix[i][j] = null;
             }
         }
         return matrix;
@@ -231,8 +215,7 @@ public abstract class AlgorithmsUtils {
             System.out.print("[");
             for (int j = 0; j < row.length; j++) {
                 System.out.printf("%3d", row[j]);
-                if (j < row.length - 1)
-                    System.out.print(",");
+                if (j < row.length - 1) System.out.print(",");
             }
             System.out.println("]");
         }

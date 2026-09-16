@@ -37,11 +37,13 @@ public record ExecutionRecording(
         statistics = Objects.requireNonNull(statistics, "statistics");
         summary = Objects.requireNonNull(summary, "summary");
         if (!statistics.equals(summary.statistics())) {
-            throw new IllegalArgumentException("Summary statistics must match recording statistics");
+            throw new IllegalArgumentException(
+                    "Summary statistics must match recording statistics");
         }
         events = List.copyOf(Objects.requireNonNull(events, "events"));
         if (events.isEmpty()) {
-            throw new IllegalArgumentException("An execution recording requires at least one event");
+            throw new IllegalArgumentException(
+                    "An execution recording requires at least one event");
         }
         validate(runId, operationId, state, statistics, events);
     }
@@ -69,35 +71,40 @@ public record ExecutionRecording(
         ExecutionStatistics derivedStatistics = statisticsReducer.initialState();
 
         for (int index = 0; index < events.size(); index++) {
-            EventEnvelope event = Objects.requireNonNull(events.get(index), "events[" + index + "]");
+            EventEnvelope event =
+                    Objects.requireNonNull(events.get(index), "events[" + index + "]");
             if (!runId.equals(event.runId()) || !operationId.equals(event.operationId())) {
-                throw new IllegalArgumentException("All events must belong to the recorded execution");
+                throw new IllegalArgumentException(
+                        "All events must belong to the recorded execution");
             }
             if (event.sequence() != index) {
-                throw new IllegalArgumentException("Execution event sequence must start at zero and be contiguous");
+                throw new IllegalArgumentException(
+                        "Execution event sequence must start at zero and be contiguous");
             }
 
             if (event.event() instanceof ExecutionLifecycleEvent lifecycleEvent) {
                 derivedState = transition(derivedState, lifecycleEvent);
             } else {
                 if (!derivedState.acceptsDomainEvents()) {
-                    throw new IllegalArgumentException("Domain events are only valid while a run is active or paused");
+                    throw new IllegalArgumentException(
+                            "Domain events are only valid while a run is active or paused");
                 }
             }
             derivedStatistics = statisticsReducer.reduce(derivedStatistics, event);
         }
 
         if (derivedState != expectedState) {
-            throw new IllegalArgumentException("Recording state does not match its lifecycle events");
+            throw new IllegalArgumentException(
+                    "Recording state does not match its lifecycle events");
         }
         if (!statistics.equals(derivedStatistics)) {
-            throw new IllegalArgumentException("Execution statistics do not match the recorded events");
+            throw new IllegalArgumentException(
+                    "Execution statistics do not match the recorded events");
         }
     }
 
     static ExecutionRecordingState transition(
-            ExecutionRecordingState currentState,
-            ExecutionLifecycleEvent lifecycleEvent) {
+            ExecutionRecordingState currentState, ExecutionLifecycleEvent lifecycleEvent) {
         Objects.requireNonNull(currentState, "currentState");
         Objects.requireNonNull(lifecycleEvent, "lifecycleEvent");
         if (currentState.isTerminal()) {
@@ -139,7 +146,8 @@ public record ExecutionRecording(
             }
             return ExecutionRecordingState.FAILED;
         }
-        throw new IllegalArgumentException("Unsupported execution lifecycle event: " + lifecycleEvent.getClass());
+        throw new IllegalArgumentException(
+                "Unsupported execution lifecycle event: " + lifecycleEvent.getClass());
     }
 
     private static String requireText(String value, String name) {

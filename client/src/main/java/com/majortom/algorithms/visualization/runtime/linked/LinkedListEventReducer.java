@@ -27,11 +27,19 @@ public final class LinkedListEventReducer implements EventReducer<LinkedListView
     }
 
     @Override
-    public Reduction<LinkedListViewState> reduce(LinkedListViewState previous, EventEnvelope envelope) {
+    public Reduction<LinkedListViewState> reduce(
+            LinkedListViewState previous, EventEnvelope envelope) {
         Object event = envelope.event();
         if (event instanceof LinkedStructureEvent.NodeInserted inserted) {
             Map<Long, LinkedListViewState.Node> nodes = mutable(previous);
-            nodes.put(inserted.nodeId(), new LinkedListViewState.Node(inserted.nodeId(), com.majortom.algorithms.visualization.runtime.VisualValue.of(inserted.value()), null, null));
+            nodes.put(
+                    inserted.nodeId(),
+                    new LinkedListViewState.Node(
+                            inserted.nodeId(),
+                            com.majortom.algorithms.visualization.runtime.VisualValue.of(
+                                    inserted.value()),
+                            null,
+                            null));
             return changed(nodes);
         }
         if (event instanceof LinkedStructureEvent.NodeRemoved removed) {
@@ -64,7 +72,8 @@ public final class LinkedListEventReducer implements EventReducer<LinkedListView
         return new LinkedHashMap<>(state.nodes());
     }
 
-    private static LinkedListViewState.Node requireNode(Map<Long, LinkedListViewState.Node> nodes, long nodeId) {
+    private static LinkedListViewState.Node requireNode(
+            Map<Long, LinkedListViewState.Node> nodes, long nodeId) {
         LinkedListViewState.Node node = nodes.get(nodeId);
         if (node == null) {
             throw new IllegalStateException("Linked event references unknown node " + nodeId);
@@ -72,7 +81,9 @@ public final class LinkedListEventReducer implements EventReducer<LinkedListView
         return node;
     }
 
-    private static Reduction<LinkedListViewState> changed(Map<Long, LinkedListViewState.Node> nodes) {
-        return Reduction.changed(new LinkedListViewState(nodes), EventImportance.STATE_CHANGE, true);
+    private static Reduction<LinkedListViewState> changed(
+            Map<Long, LinkedListViewState.Node> nodes) {
+        return Reduction.changed(
+                new LinkedListViewState(nodes), EventImportance.STATE_CHANGE, true);
     }
 }

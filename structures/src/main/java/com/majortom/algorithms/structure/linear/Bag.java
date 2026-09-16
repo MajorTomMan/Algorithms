@@ -1,12 +1,10 @@
 package com.majortom.algorithms.structure.linear;
 
-import java.util.Iterator;
-
 import com.majortom.algorithms.structure.linked.ListNode;
 
-/**
- * Bag
- */
+import java.util.Iterator;
+
+/** Bag */
 public class Bag<T> implements Iterable<T> {
     private ListNode<T> top;
     private int size;

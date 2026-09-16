@@ -6,25 +6,28 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
-@Algorithm(id = "bubble-sort", name = "冒泡排序", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(
+        id = "bubble-sort",
+        name = "冒泡排序",
+        type = Integer.class,
+        structure = ArrayStructure.class)
 public class IntegerBubbleSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         // TODO Auto-generated method stubb
         return Integer.compare(left, right);
-
     }
 
     /*
      * 1. 冒泡排序是什么?
-     * 
-     * 
+     *
+     *
      * 因为每一轮外层循环，当前未排序部分里最大的元素会像气泡一样，一路交换到最右边
-     * 
-     * 
-     * 
-     * 
+     *
+     *
+     *
+     *
      * 2. 分解冒泡排序
      * 2.1 每一步要做什么?
      * 2.1.1 扫描未排序部分
@@ -33,10 +36,10 @@ public class IntegerBubbleSort extends AbstractIntegerSort {
      * 2.1.4 如果该位置的元素大于后续的元素,则将其和邻居交换位置
      * 2.1.5 然后继续扫描后续元素,不停留在该元素上
      * 2.1.6 每轮结束后最大的元素必然在最后
-     * 
+     *
      * 2.1.7 外层循环用于控制当前比较的元素,减少比较的范围
-     * 
-     * 
+     *
+     *
      * 3. 优化
      * 3.1 由于冒泡排序的特点是每轮结束后最大的元素都在最后面,故当遍历到右边有序数列时,后续比较已不再具有意义,故可将其减少
      * 3.1.1 分解优化
@@ -56,5 +59,4 @@ public class IntegerBubbleSort extends AbstractIntegerSort {
             }
         }
     }
-
 }

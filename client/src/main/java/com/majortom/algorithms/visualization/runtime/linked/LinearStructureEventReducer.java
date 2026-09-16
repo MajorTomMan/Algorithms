@@ -31,24 +31,37 @@ public final class LinearStructureEventReducer implements EventReducer<LinearStr
     }
 
     @Override
-    public Reduction<LinearStructureViewState> reduce(LinearStructureViewState previous, EventEnvelope envelope) {
+    public Reduction<LinearStructureViewState> reduce(
+            LinearStructureViewState previous, EventEnvelope envelope) {
         Object event = envelope.event();
         if (event instanceof LinkedStructureEvent.NodeInserted inserted) {
             List<Object> values = values(previous);
             if (stack) {
                 values.addFirst(inserted.value());
-                return changed(previous.kind(), values, LinearStructureViewState.Type.PUSH, inserted.value());
+                return changed(
+                        previous.kind(),
+                        values,
+                        LinearStructureViewState.Type.PUSH,
+                        inserted.value());
             }
             values.add(inserted.value());
-            return changed(previous.kind(), values, LinearStructureViewState.Type.ENQUEUE, inserted.value());
+            return changed(
+                    previous.kind(),
+                    values,
+                    LinearStructureViewState.Type.ENQUEUE,
+                    inserted.value());
         }
         if (event instanceof LinkedStructureEvent.NodeRemoved removed) {
             List<Object> values = values(previous);
             if (!values.isEmpty()) {
                 values.removeFirst();
             }
-            return changed(previous.kind(), values,
-                    stack ? LinearStructureViewState.Type.POP : LinearStructureViewState.Type.DEQUEUE,
+            return changed(
+                    previous.kind(),
+                    values,
+                    stack
+                            ? LinearStructureViewState.Type.POP
+                            : LinearStructureViewState.Type.DEQUEUE,
                     removed.value());
         }
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
@@ -61,7 +74,8 @@ public final class LinearStructureEventReducer implements EventReducer<LinearStr
     private static Reduction<LinearStructureViewState> changed(
             String kind, List<?> values, LinearStructureViewState.Type type, Object value) {
         return Reduction.changed(
-                LinearStructureViewState.of(kind, values, LinearStructureViewState.Mutation.of(type, value)),
+                LinearStructureViewState.of(
+                        kind, values, LinearStructureViewState.Mutation.of(type, value)),
                 EventImportance.STATE_CHANGE,
                 true);
     }

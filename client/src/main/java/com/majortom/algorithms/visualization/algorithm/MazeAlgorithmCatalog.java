@@ -10,8 +10,7 @@ import java.util.List;
 /** Maze-only presentation classification. Invocation remains owned by AlgorithmDescriptor. */
 public final class MazeAlgorithmCatalog {
 
-    private MazeAlgorithmCatalog() {
-    }
+    private MazeAlgorithmCatalog() {}
 
     public static List<String> ids(MazeRole role, MazeModel model) {
         return AlgorithmCatalog.descriptorsForWorkbenchModule("maze").stream()

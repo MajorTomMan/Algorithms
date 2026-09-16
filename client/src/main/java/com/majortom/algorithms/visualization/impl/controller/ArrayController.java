@@ -1,28 +1,29 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.array.ArrayEventReducer;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
-import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
-import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
-import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
-import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+
 import javafx.beans.binding.Bindings;
-import javafx.collections.FXCollections;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -39,8 +40,10 @@ import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
 public final class ArrayController extends BaseModuleController<ArrayViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<SequenceSnapshot<Object>>,
-        SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport {
+        implements AlgorithmSelectionSupport,
+                StructureSnapshotSupport<SequenceSnapshot<Object>>,
+                SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>>,
+                RuntimeValueTypeSupport {
 
     private final Random random = new Random();
     private final Array<Object> sourceArray;
@@ -51,8 +54,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private int currentSize = 20;
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
-    private Consumer<IndexSelection> selectionListener = ignored -> { };
-    private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private Consumer<IndexSelection> selectionListener = ignored -> {};
+    private Consumer<String> algorithmSelectionListener = ignored -> {};
 
     @FXML private Label structureLabel;
     @FXML private Label algorithmLabel;
@@ -86,10 +89,13 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         super.initialize(location, resources);
         bindStructureSelector();
         bindAlgorithmSelector();
-        sizeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            currentSize = newValue.intValue();
-            sizeValueLabel.setText(String.valueOf(currentSize));
-        });
+        sizeSlider
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            currentSize = newValue.intValue();
+                            sizeValueLabel.setText(String.valueOf(currentSize));
+                        });
         sizeValueLabel.setText(String.valueOf(currentSize));
         EffectUtils.applyDynamicEffect(
                 generateBtn, sortBtn, addElementBtn, deleteElementBtn, updateElementBtn);
@@ -101,10 +107,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private void handleGenerate() {
         clearArraySelection();
         List<Object> values = randomValues();
-        if (executeStructureOperation("generate", () -> {
-            replaceArrayContents(values);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "generate",
+                () -> {
+                    replaceArrayContents(values);
+                    return null;
+                })) {
             renderSource();
             refreshStatsDisplay();
             logI18n("message.sort.generated", currentSize);
@@ -119,7 +127,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             } else if (runtimeValueType == String.class) {
                 values.add("V" + (random.nextInt(100) + 1));
             } else {
-                throw new IllegalStateException("No random generator for " + runtimeValueType.getName());
+                throw new IllegalStateException(
+                        "No random generator for " + runtimeValueType.getName());
             }
         }
         return List.copyOf(values);
@@ -142,10 +151,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         clearArraySelection();
-        if (!executeStructureOperation("bulk-replace", () -> {
-            replaceArrayContents(values);
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                "bulk-replace",
+                () -> {
+                    replaceArrayContents(values);
+                    return null;
+                })) {
             return;
         }
         renderSource();
@@ -164,7 +175,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return sourceValues(sourceArray);
     }
 
-    private List<Object> sourceValues(com.majortom.algorithms.structure.array.ArrayStructure<?> array) {
+    private List<Object> sourceValues(
+            com.majortom.algorithms.structure.array.ArrayStructure<?> array) {
         List<Object> values = new ArrayList<>(array.size());
         for (Object value : array) {
             values.add(value);
@@ -204,7 +216,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), runtimeValueType, new SequenceSnapshot<>(sourceValues()));
+        return StructureSnapshot.create(
+                moduleId(), runtimeValueType, new SequenceSnapshot<>(sourceValues()));
     }
 
     @Override
@@ -218,7 +231,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         currentSize = sourceArray.size();
         invalidateExecutionForStructureChange();
         if (sizeSlider != null) {
-            double sliderValue = Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), currentSize));
+            double sliderValue =
+                    Math.max(sizeSlider.getMin(), Math.min(sizeSlider.getMax(), currentSize));
             sizeSlider.setValue(sliderValue);
         }
         if (sizeValueLabel != null) {
@@ -230,7 +244,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
-        if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        if (!moduleId().equals(snapshot.moduleId()))
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         snapshot.requireValueType(runtimeValueType);
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
@@ -256,7 +271,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return algorithmInputSnapshot == null;
     }
 
-
     @Override
     protected void restoreAlgorithmState() {
         if (latestViewState() != null) {
@@ -271,7 +285,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         renderViewState(ArrayViewState.source(values));
     }
-
 
     @Override
     public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
@@ -310,10 +323,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         } else {
             insertedIndex = index;
         }
-        if (executeStructureOperation("insert", () -> {
-            sourceArray.insert(insertedIndex, value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "insert",
+                () -> {
+                    sourceArray.insert(insertedIndex, value);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             arrayVisualizer().selectIndex(insertedIndex);
             refreshStatsDisplay();
@@ -341,10 +356,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         Object removed = sourceArray.get(index);
         int removedIndex = index;
-        if (executeStructureOperation("remove", () -> {
-            sourceArray.remove(removedIndex);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "remove",
+                () -> {
+                    sourceArray.remove(removedIndex);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             selectArrayAfterRemoval(removedIndex);
             refreshStatsDisplay();
@@ -377,10 +394,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         Object previous = sourceArray.get(index);
         int updateIndex = index;
-        if (executeStructureOperation("update", () -> {
-            sourceArray.set(updateIndex, value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "update",
+                () -> {
+                    sourceArray.set(updateIndex, value);
+                    return null;
+                })) {
             renderLatestStructureMutation();
             arrayVisualizer().selectIndex(updateIndex);
             refreshStatsDisplay();
@@ -390,7 +409,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
         if (selectionListener == null) {
-            this.selectionListener = ignored -> { };
+            this.selectionListener = ignored -> {};
         } else {
             this.selectionListener = selectionListener;
         }
@@ -413,7 +432,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         algorithmSelectedIndex = index;
-        selectionListener.accept(new IndexSelection(index, state.values().get(index), state.values().size()));
+        selectionListener.accept(
+                new IndexSelection(index, state.values().get(index), state.values().size()));
     }
 
     @Override
@@ -426,10 +446,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         arrayVisualizer().showSelection(algorithmSelectedIndex);
-        selectionListener.accept(new IndexSelection(
-                algorithmSelectedIndex,
-                state.values().get(algorithmSelectedIndex),
-                state.values().size()));
+        selectionListener.accept(
+                new IndexSelection(
+                        algorithmSelectedIndex,
+                        state.values().get(algorithmSelectedIndex),
+                        state.values().size()));
     }
 
     private void handleStructureArraySelection(int index) {
@@ -441,7 +462,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (updateIndexField != null) updateIndexField.setText(Integer.toString(index));
         if (elementValueField != null) elementValueField.setText(valueAdapter.format(value));
         if (updateValueField != null) updateValueField.setText(valueAdapter.format(value));
-        selectionListener.accept(new IndexSelection(index, VisualValue.of(value), sourceArray.size()));
+        selectionListener.accept(
+                new IndexSelection(index, VisualValue.of(value), sourceArray.size()));
     }
 
     private void clearArraySelection() {
@@ -454,8 +476,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return (ArrayVisualizer) visualizer;
     }
 
-    public record IndexSelection(int index, VisualValue value, int size) {
-    }
+    public record IndexSelection(int index, VisualValue value, int size) {}
 
     private Object parseValue(TextField field, String errorKey) {
         try {
@@ -501,10 +522,14 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         var descriptor = algorithm(algorithmId, runtimeValueType);
         Array<Object> runtimeArray = new Array<>(values);
-        startAlgorithm(algorithmId, values, () -> {
-            descriptor.invoke(runtimeArray);
-            return sourceValues(runtimeArray);
-        }, () -> new ArrayEventReducer(values));
+        startAlgorithm(
+                algorithmId,
+                values,
+                () -> {
+                    descriptor.invoke(runtimeArray);
+                    return sourceValues(runtimeArray);
+                },
+                () -> new ArrayEventReducer(values));
     }
 
     @Override
@@ -523,13 +548,14 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public List<String> algorithmIds() {
-        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.array.ArrayStructure.class, runtimeValueType);
+        return AlgorithmCatalog.compatibleAlgorithms(
+                com.majortom.algorithms.structure.array.ArrayStructure.class, runtimeValueType);
     }
 
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         if (listener == null) {
-            algorithmSelectionListener = ignored -> { };
+            algorithmSelectionListener = ignored -> {};
         } else {
             algorithmSelectionListener = listener;
         }
@@ -543,7 +569,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     protected String formatStatsMessage() {
-        return String.format("%s | %s | %s | %s",
+        return String.format(
+                "%s | %s | %s | %s",
                 I18N.text("stats.size", sourceArray.size()),
                 formatMetric("stats.action", stats.metric("writes")),
                 formatMetric("stats.compare", stats.metric("comparisons")),
@@ -572,10 +599,14 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             sizeLabel.textProperty().bind(I18N.createStringBinding("label.sort.size"));
         }
         if (operationsSectionLabel != null) {
-            operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.sort.operations"));
+            operationsSectionLabel
+                    .textProperty()
+                    .bind(I18N.createStringBinding("label.sort.operations"));
         }
         if (executionSectionLabel != null) {
-            executionSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.execution"));
+            executionSectionLabel
+                    .textProperty()
+                    .bind(I18N.createStringBinding("label.panel.execution"));
         }
         if (generateBtn != null) {
             generateBtn.textProperty().bind(I18N.createStringBinding("action.sort.generate"));
@@ -584,16 +615,24 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             sortBtn.textProperty().bind(I18N.createStringBinding("action.sort.run"));
         }
         if (elementValueField != null) {
-            elementValueField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.value"));
+            elementValueField
+                    .promptTextProperty()
+                    .bind(I18N.createStringBinding("prompt.sort.value"));
         }
         if (elementIndexField != null) {
-            elementIndexField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.index"));
+            elementIndexField
+                    .promptTextProperty()
+                    .bind(I18N.createStringBinding("prompt.sort.index"));
         }
         if (updateIndexField != null) {
-            updateIndexField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.index"));
+            updateIndexField
+                    .promptTextProperty()
+                    .bind(I18N.createStringBinding("prompt.sort.index"));
         }
         if (updateValueField != null) {
-            updateValueField.promptTextProperty().bind(I18N.createStringBinding("prompt.sort.new_value"));
+            updateValueField
+                    .promptTextProperty()
+                    .bind(I18N.createStringBinding("prompt.sort.new_value"));
         }
         bindButton(addElementBtn, "action.sort.add");
         bindButton(deleteElementBtn, "action.sort.delete");
@@ -614,7 +653,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @Override
     public String selectedAlgorithmId() {
         int index = 0;
-        if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
+        if (algorithmSelector != null
+                && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
             index = algorithmSelector.getSelectionModel().getSelectedIndex();
         }
         List<String> algorithmIds = algorithmIds();
@@ -626,19 +666,28 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void bindAlgorithmSelector() {
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds()) {
-                labels.add(AlgorithmCatalog.name(id));
-            }
-            return labels;
-        }, valueTypeRevision));
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, previous, current) -> notifyAlgorithmSelection());
-        Platform.runLater(() -> {
-            algorithmSelector.getSelectionModel().selectFirst();
-            notifyAlgorithmSelection();
-        });
+        algorithmSelector
+                .itemsProperty()
+                .bind(
+                        Bindings.createObjectBinding(
+                                () -> {
+                                    javafx.collections.ObservableList<String> labels =
+                                            FXCollections.observableArrayList();
+                                    for (String id : algorithmIds()) {
+                                        labels.add(AlgorithmCatalog.name(id));
+                                    }
+                                    return labels;
+                                },
+                                valueTypeRevision));
+        algorithmSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener((observable, previous, current) -> notifyAlgorithmSelection());
+        FxDispatch.defer(
+                () -> {
+                    algorithmSelector.getSelectionModel().selectFirst();
+                    notifyAlgorithmSelection();
+                });
     }
 
     private void notifyAlgorithmSelection() {
@@ -648,8 +697,9 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private void bindStructureSelector() {
         structureSelector.setItems(FXCollections.observableArrayList("array"));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
-        Platform.runLater(() -> structureSelector.getSelectionModel().selectFirst());
+        FxDispatch.defer(() -> structureSelector.getSelectionModel().selectFirst());
     }
+
     private int indexOf(Object value) {
         for (int index = 0; index < sourceArray.size(); index++) {
             if (Objects.equals(sourceArray.get(index), value)) return index;
@@ -662,7 +712,10 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         return runtimeValueType;
     }
 
-    @Override public boolean hasValues() { return sourceArray.size() > 0; }
+    @Override
+    public boolean hasValues() {
+        return sourceArray.size() > 0;
+    }
 
     @Override
     public List<Class<?>> supportedValueTypes() {
@@ -672,7 +725,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @Override
     public void setRuntimeValueType(Class<?> valueType) {
         if (!supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException("Unsupported Array value type: " + valueType.getName());
+            throw new IllegalArgumentException(
+                    "Unsupported Array value type: " + valueType.getName());
         }
         if (runtimeValueType.equals(valueType)) {
             return;
@@ -694,5 +748,4 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             refreshStatsDisplay();
         }
     }
-
 }

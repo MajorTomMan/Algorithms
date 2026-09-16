@@ -18,7 +18,8 @@ public record LinearStructureViewState(String kind, List<VisualValue> values, Mu
     }
 
     public static LinearStructureViewState of(String kind, List<?> values, Mutation mutation) {
-        return new LinearStructureViewState(kind, values.stream().map(VisualValue::of).toList(), mutation);
+        return new LinearStructureViewState(
+                kind, values.stream().map(VisualValue::of).toList(), mutation);
     }
 
     public record Mutation(Type type, VisualValue value) {

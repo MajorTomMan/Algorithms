@@ -5,9 +5,11 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 
 import java.util.Collection;
 
-import com.majortom.algorithms.structure.linked.ListNode;
-
-@Structure(id = "linked-list", name = "Linked List", module = StructureModule.LINKED_LIST, implementation = LinkedList.class)
+@Structure(
+        id = "linked-list",
+        name = "Linked List",
+        module = StructureModule.LINKED_LIST,
+        implementation = LinkedList.class)
 public interface LinkedStructure<T> extends Iterable<T> {
     int size();
 
@@ -19,9 +21,14 @@ public interface LinkedStructure<T> extends Iterable<T> {
     void initialize(Collection<? extends T> values);
 
     T get(int index);
+
     void insert(int index, T value);
+
     T remove(int index);
+
     T set(int index, T value);
+
     ListNode<T> head();
+
     ListNode<T> tail();
 }

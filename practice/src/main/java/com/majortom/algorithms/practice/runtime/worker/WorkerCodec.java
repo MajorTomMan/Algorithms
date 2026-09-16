@@ -18,7 +18,8 @@ final class WorkerCodec {
             }
             return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes.toByteArray());
         } catch (IOException exception) {
-            throw new IllegalArgumentException("Practice worker arguments/results must be serializable", exception);
+            throw new IllegalArgumentException(
+                    "Practice worker arguments/results must be serializable", exception);
         }
     }
 
@@ -29,7 +30,8 @@ final class WorkerCodec {
                 return input.readObject();
             }
         } catch (IOException | ClassNotFoundException exception) {
-            throw new IllegalArgumentException("Unable to decode Practice worker payload", exception);
+            throw new IllegalArgumentException(
+                    "Unable to decode Practice worker payload", exception);
         }
     }
 }

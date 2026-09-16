@@ -29,9 +29,13 @@ import com.majortom.algorithms.structure.maze.Maze;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.MazeStructure;
 import com.majortom.algorithms.structure.string.StringStructure;
+
 import jakarta.annotation.PreDestroy;
+
 import lombok.extern.log4j.Log4j2;
+
 import org.springframework.stereotype.Service;
+
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
@@ -51,14 +55,17 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static final int MAX_RETAINED_EXECUTIONS = 512;
     private static final ComponentRegistry COMPONENTS = ComponentDiscovery.discover();
 
-    /** Structure transport is selected only from @Algorithm.structure.
-     * No algorithm id, entry signature, or algorithm category is inspected here. */
-    private static final List<StructureInputFactory> STRUCTURE_INPUTS = List.of(
-            new ArrayInputFactory(),
-            new WeightedGraphInputFactory(),
-            new GraphInputFactory(),
-            new StringInputFactory(),
-            new MazeInputFactory());
+    /**
+     * Structure transport is selected only from @Algorithm.structure. No algorithm id, entry
+     * signature, or algorithm category is inspected here.
+     */
+    private static final List<StructureInputFactory> STRUCTURE_INPUTS =
+            List.of(
+                    new ArrayInputFactory(),
+                    new WeightedGraphInputFactory(),
+                    new GraphInputFactory(),
+                    new StringInputFactory(),
+                    new MazeInputFactory());
 
     private final ObjectMapper objectMapper;
     private final ExecutionScheduler executionScheduler;
@@ -68,9 +75,11 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         this(objectMapper, ExecutionScheduler.bounded("algorithm-executor-", 10, 20, 100));
     }
 
-    AlgorithmExecutionServiceImpl(ObjectMapper objectMapper, ExecutionScheduler executionScheduler) {
+    AlgorithmExecutionServiceImpl(
+            ObjectMapper objectMapper, ExecutionScheduler executionScheduler) {
         this.objectMapper = java.util.Objects.requireNonNull(objectMapper, "objectMapper");
-        this.executionScheduler = java.util.Objects.requireNonNull(executionScheduler, "executionScheduler");
+        this.executionScheduler =
+                java.util.Objects.requireNonNull(executionScheduler, "executionScheduler");
     }
 
     @PreDestroy
@@ -111,11 +120,13 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             ExecutionRecording recording = eventSink.snapshot();
             applyRecording(unit, recording);
             result.output().ifPresent(unit::setResult);
-            result.failure().ifPresent(failure -> {
-                unit.setFailureCode(failure.code());
-                unit.setFailureMessage(failure.message());
-                unit.setFailureType(failure.exceptionType());
-            });
+            result.failure()
+                    .ifPresent(
+                            failure -> {
+                                unit.setFailureCode(failure.code());
+                                unit.setFailureMessage(failure.message());
+                                unit.setFailureType(failure.exceptionType());
+                            });
             switch (result.status()) {
                 case COMPLETED -> unit.setStatus(ExecutionState.COMPLETED);
                 case CANCELLED -> unit.setStatus(ExecutionState.CANCELLED);
@@ -126,7 +137,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
             unit.setFailureCode("server.execution.unhandled");
             unit.setFailureMessage(message(failure));
             unit.setFailureType(failure.getClass().getName());
-            unit.setDuration(Math.max(0L, System.currentTimeMillis() - unit.getCreatedAtEpochMillis()));
+            unit.setDuration(
+                    Math.max(0L, System.currentTimeMillis() - unit.getCreatedAtEpochMillis()));
             log.error("Unhandled execution failure for runId: {}", unit.getRunId(), failure);
         } finally {
             unit.setCompletedAtEpochMillis(System.currentTimeMillis());
@@ -152,16 +164,19 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
     @Override
     public List<AlgorithmInformationDto> getAlgorithms() {
-        return exposedAlgorithms().stream().map(descriptor -> {
-            AlgorithmInformationDto dto = new AlgorithmInformationDto();
-            dto.setId(descriptor.id());
-            dto.setName(descriptor.name());
-            dto.setModuleId(descriptor.module().id());
-            dto.setVersion(VERSION);
-            dto.setInputType(descriptor.structureContract().getName());
-            dto.setOutputType(descriptor.entryPoint().getReturnType().getName());
-            return dto;
-        }).toList();
+        return exposedAlgorithms().stream()
+                .map(
+                        descriptor -> {
+                            AlgorithmInformationDto dto = new AlgorithmInformationDto();
+                            dto.setId(descriptor.id());
+                            dto.setName(descriptor.name());
+                            dto.setModuleId(descriptor.module().id());
+                            dto.setVersion(VERSION);
+                            dto.setInputType(descriptor.structureContract().getName());
+                            dto.setOutputType(descriptor.entryPoint().getReturnType().getName());
+                            return dto;
+                        })
+                .toList();
     }
 
     @Override
@@ -176,13 +191,18 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private PreparedExecution prepareExecution(String algorithmId, Map<String, Object> rawInput) {
         AlgorithmDescriptor descriptor = requireExposedAlgorithm(algorithmId);
         Map<String, Object> input = rawInput == null ? Map.of() : rawInput;
-        StructureInputFactory factory = structureFactory(descriptor.structureContract())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Server has no input factory for structure " + descriptor.structureContract().getName()));
+        StructureInputFactory factory =
+                structureFactory(descriptor.structureContract())
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Server has no input factory for structure "
+                                                        + descriptor
+                                                                .structureContract()
+                                                                .getName()));
         Object structure = factory.create(input, objectMapper);
         return new PreparedExecution(() -> descriptor.invoke(structure));
     }
-
 
     private static Number number(Object value) {
         if (value instanceof Number number) return number;
@@ -192,10 +212,10 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     private static List<AlgorithmDescriptor> exposedAlgorithms() {
         return COMPONENTS.algorithms().stream()
                 .filter(descriptor -> structureFactory(descriptor.structureContract()).isPresent())
-                .sorted(Comparator
-                        .comparing((AlgorithmDescriptor value) -> value.module().id())
-                        .thenComparing(value -> value.valueType().getName())
-                        .thenComparing(AlgorithmDescriptor::id))
+                .sorted(
+                        Comparator.comparing((AlgorithmDescriptor value) -> value.module().id())
+                                .thenComparing(value -> value.valueType().getName())
+                                .thenComparing(AlgorithmDescriptor::id))
                 .toList();
     }
 
@@ -203,27 +223,32 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         if (algorithmId == null || algorithmId.isBlank()) {
             throw new IllegalArgumentException("algorithmId must not be blank");
         }
-        List<AlgorithmDescriptor> matches = exposedAlgorithms().stream()
-                .filter(candidate -> candidate.id().equals(algorithmId))
-                .toList();
+        List<AlgorithmDescriptor> matches =
+                exposedAlgorithms().stream()
+                        .filter(candidate -> candidate.id().equals(algorithmId))
+                        .toList();
         if (matches.isEmpty()) {
             throw new AlgorithmNotFoundException(algorithmId);
         }
         if (matches.size() > 1) {
-            throw new IllegalArgumentException("Algorithm id is ambiguous for the Server API: " + algorithmId);
+            throw new IllegalArgumentException(
+                    "Algorithm id is ambiguous for the Server API: " + algorithmId);
         }
         return matches.getFirst();
     }
 
     private static Optional<StructureInputFactory> structureFactory(Class<?> structureContract) {
-        return STRUCTURE_INPUTS.stream().filter(factory -> factory.supports(structureContract)).findFirst();
+        return STRUCTURE_INPUTS.stream()
+                .filter(factory -> factory.supports(structureContract))
+                .findFirst();
     }
 
     private void pruneExecutions() {
-        List<ExecutionUnit> terminal = executions.values().stream()
-                .filter(unit -> isTerminal(unit.getStatus()))
-                .sorted(Comparator.comparingLong(ExecutionUnit::getCompletedAtEpochMillis))
-                .toList();
+        List<ExecutionUnit> terminal =
+                executions.values().stream()
+                        .filter(unit -> isTerminal(unit.getStatus()))
+                        .sorted(Comparator.comparingLong(ExecutionUnit::getCompletedAtEpochMillis))
+                        .toList();
         int excess = terminal.size() - MAX_RETAINED_EXECUTIONS;
         for (int index = 0; index < excess; index++) {
             ExecutionUnit unit = terminal.get(index);
@@ -232,8 +257,10 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
     }
 
     private boolean isTerminal(ExecutionState state) {
-        return state == ExecutionState.COMPLETED || state == ExecutionState.CANCELLED
-                || state == ExecutionState.FAILED || state == ExecutionState.REJECTED;
+        return state == ExecutionState.COMPLETED
+                || state == ExecutionState.CANCELLED
+                || state == ExecutionState.FAILED
+                || state == ExecutionState.REJECTED;
     }
 
     private static String message(Throwable failure) {
@@ -244,8 +271,7 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         return message;
     }
 
-    private record PreparedExecution(ExecutionOperation<?> operation) {
-    }
+    private record PreparedExecution(ExecutionOperation<?> operation) {}
 
     private interface StructureInputFactory {
         Class<?> structureContract();
@@ -255,7 +281,6 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
         default boolean supports(Class<?> contract) {
             return structureContract().equals(contract);
         }
-
     }
 
     private static final class ArrayInputFactory implements StructureInputFactory {
@@ -281,7 +306,8 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
         @Override
         public Object create(Map<String, Object> input, ObjectMapper mapper) {
-            Object rawGraph = java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
+            Object rawGraph =
+                    java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
             @SuppressWarnings("unchecked")
             GraphSnapshot<Integer> snapshot = mapper.convertValue(rawGraph, GraphSnapshot.class);
             return Graph.fromSnapshot(snapshot);
@@ -296,9 +322,11 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
         @Override
         public Object create(Map<String, Object> input, ObjectMapper mapper) {
-            Object rawGraph = java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
+            Object rawGraph =
+                    java.util.Objects.requireNonNull(input.get("graph"), "graph input is required");
             @SuppressWarnings("unchecked")
-            WeightedGraphSnapshot<Integer> snapshot = mapper.convertValue(rawGraph, WeightedGraphSnapshot.class);
+            WeightedGraphSnapshot<Integer> snapshot =
+                    mapper.convertValue(rawGraph, WeightedGraphSnapshot.class);
             return WeightedGraph.fromSnapshot(snapshot);
         }
     }
@@ -311,7 +339,10 @@ public class AlgorithmExecutionServiceImpl implements AlgorithmExecutionService 
 
         @Override
         public Object create(Map<String, Object> input, ObjectMapper mapper) {
-            java.lang.String value = mapper.convertValue(input.getOrDefault("value", input.getOrDefault("target", "")), java.lang.String.class);
+            java.lang.String value =
+                    mapper.convertValue(
+                            input.getOrDefault("value", input.getOrDefault("target", "")),
+                            java.lang.String.class);
             return new com.majortom.algorithms.structure.string.String(value);
         }
     }

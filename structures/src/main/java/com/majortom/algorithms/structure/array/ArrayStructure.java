@@ -5,7 +5,11 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 
 import java.util.Collection;
 
-@Structure(id = "array", name = "Array", module = StructureModule.ARRAY, implementation = Array.class)
+@Structure(
+        id = "array",
+        name = "Array",
+        module = StructureModule.ARRAY,
+        implementation = Array.class)
 public interface ArrayStructure<T> extends Iterable<T> {
     int size();
 
@@ -17,8 +21,12 @@ public interface ArrayStructure<T> extends Iterable<T> {
     void initialize(Collection<? extends T> values);
 
     T get(int index);
+
     T set(int index, T value);
+
     void insert(int index, T value);
+
     T remove(int index);
+
     void swap(int leftIndex, int rightIndex);
 }

@@ -3,8 +3,7 @@ package com.majortom.algorithms.visualization.structure;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 
 /**
- * Capability exposed by a module that can save and restore its editable
- * structure state.
+ * Capability exposed by a module that can save and restore its editable structure state.
  *
  * @param <S> module view-state type
  */

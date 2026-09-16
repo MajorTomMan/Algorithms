@@ -12,16 +12,17 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class ComponentRegistry {
-    private static final Comparator<AlgorithmDescriptor> ALGORITHM_ORDER = Comparator
-            .comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
-            .thenComparing(descriptor -> descriptor.structureContract().getName())
-            .thenComparing(descriptor -> descriptor.valueType().getName())
-            .thenComparing(AlgorithmDescriptor::id);
+    private static final Comparator<AlgorithmDescriptor> ALGORITHM_ORDER =
+            Comparator.comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
+                    .thenComparing(descriptor -> descriptor.structureContract().getName())
+                    .thenComparing(descriptor -> descriptor.valueType().getName())
+                    .thenComparing(AlgorithmDescriptor::id);
 
     private final Map<String, StructureDescriptor> structuresById;
     private final Map<AlgorithmKey, AlgorithmDescriptor> algorithmsByKey;
 
-    public ComponentRegistry(List<StructureDescriptor> structures, List<AlgorithmDescriptor> algorithms) {
+    public ComponentRegistry(
+            List<StructureDescriptor> structures, List<AlgorithmDescriptor> algorithms) {
         Objects.requireNonNull(structures, "structures");
         Objects.requireNonNull(algorithms, "algorithms");
         RegistrationValidator.validateUniqueStructureIds(structures);
@@ -48,12 +49,15 @@ public final class ComponentRegistry {
                 .toList();
     }
 
-    public List<AlgorithmDescriptor> compatibleAlgorithms(Class<?> activeStructure, Class<?> valueType) {
+    public List<AlgorithmDescriptor> compatibleAlgorithms(
+            Class<?> activeStructure, Class<?> valueType) {
         Objects.requireNonNull(activeStructure, "activeStructure");
         Objects.requireNonNull(valueType, "valueType");
         return algorithmsByKey.values().stream()
                 .filter(descriptor -> descriptor.valueType().equals(valueType))
-                .filter(descriptor -> descriptor.structureContract().isAssignableFrom(activeStructure))
+                .filter(
+                        descriptor ->
+                                descriptor.structureContract().isAssignableFrom(activeStructure))
                 .toList();
     }
 
@@ -100,7 +104,8 @@ public final class ComponentRegistry {
 
     public boolean hasAlgorithmModule(StructureModule module) {
         Objects.requireNonNull(module, "module");
-        return algorithmsByKey.values().stream().anyMatch(descriptor -> descriptor.module() == module);
+        return algorithmsByKey.values().stream()
+                .anyMatch(descriptor -> descriptor.module() == module);
     }
 
     public Optional<StructureDescriptor> findStructure(String id) {
@@ -124,7 +129,8 @@ public final class ComponentRegistry {
         AlgorithmKey normalized = Objects.requireNonNull(key, "key");
         AlgorithmDescriptor descriptor = algorithmsByKey.get(normalized);
         if (descriptor == null) {
-            throw new IllegalArgumentException("No Algorithm registered for " + describe(normalized));
+            throw new IllegalArgumentException(
+                    "No Algorithm registered for " + describe(normalized));
         }
         return descriptor;
     }
@@ -134,17 +140,31 @@ public final class ComponentRegistry {
         Objects.requireNonNull(module, "module");
         Objects.requireNonNull(valueType, "valueType");
         String id = requireId(algorithmId);
-        List<AlgorithmDescriptor> matches = algorithms(module, valueType).stream()
-                .filter(descriptor -> descriptor.id().equals(id))
-                .toList();
+        List<AlgorithmDescriptor> matches =
+                algorithms(module, valueType).stream()
+                        .filter(descriptor -> descriptor.id().equals(id))
+                        .toList();
         if (matches.size() != 1) {
             if (matches.isEmpty()) {
-                throw new IllegalArgumentException("No Algorithm registered for module=" + module.id()
-                        + ", type=" + valueType.getName() + ", id=" + id);
+                throw new IllegalArgumentException(
+                        "No Algorithm registered for module="
+                                + module.id()
+                                + ", type="
+                                + valueType.getName()
+                                + ", id="
+                                + id);
             }
-            throw new IllegalArgumentException("Algorithm registration is ambiguous for module=" + module.id()
-                    + ", type=" + valueType.getName() + ", id=" + id + ": "
-                    + matches.stream().map(value -> value.structureContract().getName()).toList());
+            throw new IllegalArgumentException(
+                    "Algorithm registration is ambiguous for module="
+                            + module.id()
+                            + ", type="
+                            + valueType.getName()
+                            + ", id="
+                            + id
+                            + ": "
+                            + matches.stream()
+                                    .map(value -> value.structureContract().getName())
+                                    .toList());
         }
         return matches.getFirst();
     }
@@ -153,8 +173,13 @@ public final class ComponentRegistry {
         Objects.requireNonNull(contract, "contract");
         StructureDescriptor descriptor = requireStructure(id);
         if (!contract.isAssignableFrom(descriptor.implementation())) {
-            throw new RegistrationException("Structure " + id + " implementation "
-                    + descriptor.implementation().getName() + " is not assignable to " + contract.getName());
+            throw new RegistrationException(
+                    "Structure "
+                            + id
+                            + " implementation "
+                            + descriptor.implementation().getName()
+                            + " is not assignable to "
+                            + contract.getName());
         }
         return contract.cast(instantiate(descriptor.implementation(), "Structure", id));
     }
@@ -162,23 +187,35 @@ public final class ComponentRegistry {
     private static Object instantiate(Class<?> implementation, String component, String id) {
         try {
             return implementation.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
+        } catch (NoSuchMethodException
+                | InstantiationException
+                | IllegalAccessException
                 | InvocationTargetException exception) {
-            throw new RegistrationException("Unable to instantiate " + component + " " + id
-                    + " using " + implementation.getName(), exception);
+            throw new RegistrationException(
+                    "Unable to instantiate "
+                            + component
+                            + " "
+                            + id
+                            + " using "
+                            + implementation.getName(),
+                    exception);
         }
     }
 
-    private static Map<String, StructureDescriptor> indexStructures(List<StructureDescriptor> descriptors) {
+    private static Map<String, StructureDescriptor> indexStructures(
+            List<StructureDescriptor> descriptors) {
         LinkedHashMap<String, StructureDescriptor> indexed = new LinkedHashMap<>();
-        descriptors.stream().sorted(Comparator.comparing(StructureDescriptor::id))
+        descriptors.stream()
+                .sorted(Comparator.comparing(StructureDescriptor::id))
                 .forEach(descriptor -> indexed.put(descriptor.id(), descriptor));
         return Collections.unmodifiableMap(indexed);
     }
 
-    private static Map<AlgorithmKey, AlgorithmDescriptor> indexAlgorithms(List<AlgorithmDescriptor> descriptors) {
+    private static Map<AlgorithmKey, AlgorithmDescriptor> indexAlgorithms(
+            List<AlgorithmDescriptor> descriptors) {
         LinkedHashMap<AlgorithmKey, AlgorithmDescriptor> indexed = new LinkedHashMap<>();
-        descriptors.stream().sorted(ALGORITHM_ORDER)
+        descriptors.stream()
+                .sorted(ALGORITHM_ORDER)
                 .forEach(descriptor -> indexed.put(descriptor.key(), descriptor));
         return Collections.unmodifiableMap(indexed);
     }
@@ -190,17 +227,26 @@ public final class ComponentRegistry {
             String lookupKey = descriptor.module().id() + "\0" + simpleName;
             Class<?> previous = names.putIfAbsent(lookupKey, descriptor.valueType());
             if (previous != null && !previous.equals(descriptor.valueType())) {
-                throw new RegistrationException("Ambiguous algorithm value type name '" + simpleName
-                        + "' in module " + descriptor.module().id() + ": "
-                        + previous.getName() + " vs " + descriptor.valueType().getName());
+                throw new RegistrationException(
+                        "Ambiguous algorithm value type name '"
+                                + simpleName
+                                + "' in module "
+                                + descriptor.module().id()
+                                + ": "
+                                + previous.getName()
+                                + " vs "
+                                + descriptor.valueType().getName());
             }
         }
     }
 
     private static String describe(AlgorithmKey key) {
-        return "structure=" + key.structureContract().getName()
-                + ", type=" + key.valueType().getName()
-                + ", id=" + key.algorithmId();
+        return "structure="
+                + key.structureContract().getName()
+                + ", type="
+                + key.valueType().getName()
+                + ", id="
+                + key.algorithmId();
     }
 
     private static String requireId(String id) {

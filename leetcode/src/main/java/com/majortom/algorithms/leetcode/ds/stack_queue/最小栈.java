@@ -1,12 +1,11 @@
 package com.majortom.algorithms.leetcode.ds.stack_queue;
- 
 
 import java.util.Deque;
 import java.util.LinkedList;
 
 public class 最小栈 {
     public static void main(String[] args) {
-        MinStack stack=new MinStack();
+        MinStack stack = new MinStack();
         stack.push(-2);
         stack.push(0);
         stack.push(-3);
@@ -17,7 +16,6 @@ public class 最小栈 {
     }
 }
 
-
 class MinStack {
     Deque<Integer> xStack;
     Deque<Integer> minStack;
@@ -27,21 +25,21 @@ class MinStack {
         minStack = new LinkedList<Integer>();
         minStack.push(Integer.MAX_VALUE);
     }
-    
+
     public void push(int x) {
         xStack.push(x);
         minStack.push(Math.min(minStack.peek(), x));
     }
-    
+
     public void pop() {
         xStack.pop();
         minStack.pop();
     }
-    
+
     public int top() {
         return xStack.peek();
     }
-    
+
     public int getMin() {
         return minStack.peek();
     }

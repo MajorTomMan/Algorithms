@@ -7,15 +7,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.util.Duration;
 
-/**
- * 视觉特效工具类
- * 职责：动态适配按钮视觉反馈，提供呼吸灯效果。
- */
+/** 视觉特效工具类 职责：动态适配按钮视觉反馈，提供呼吸灯效果。 */
 public class EffectUtils {
 
-    /**
-     * 批量应用动态效果
-     */
+    /** 批量应用动态效果 */
     public static void applyDynamicEffect(Button... buttons) {
         for (Button button : buttons) {
             if (button != null) {
@@ -33,32 +28,38 @@ public class EffectUtils {
         breathe.setAutoReverse(true);
 
         // 2. 划过状态监听
-        button.hoverProperty().addListener((obs, wasHover, isHover) -> {
-            if (isHover) {
-                activateEffect(button, breathe);
-            } else {
-                deactivateEffect(button, breathe);
-            }
-        });
+        button.hoverProperty()
+                .addListener(
+                        (obs, wasHover, isHover) -> {
+                            if (isHover) {
+                                activateEffect(button, breathe);
+                            } else {
+                                deactivateEffect(button, breathe);
+                            }
+                        });
 
         // 3. 点击状态监听
-        button.pressedProperty().addListener((obs, wasPressed, isPressed) -> {
-            if (isPressed) {
-                breathe.setRate(2.0); // 点击时加快呼吸节奏
-            } else {
-                breathe.setRate(1.0);
-                if (!button.isHover()) {
-                    deactivateEffect(button, breathe);
-                }
-            }
-        });
+        button.pressedProperty()
+                .addListener(
+                        (obs, wasPressed, isPressed) -> {
+                            if (isPressed) {
+                                breathe.setRate(2.0); // 点击时加快呼吸节奏
+                            } else {
+                                breathe.setRate(1.0);
+                                if (!button.isHover()) {
+                                    deactivateEffect(button, breathe);
+                                }
+                            }
+                        });
 
         // 4. 失去焦点时强制重置
-        button.focusedProperty().addListener((obs, old, isFocused) -> {
-            if (!isFocused && !button.isHover()) {
-                deactivateEffect(button, breathe);
-            }
-        });
+        button.focusedProperty()
+                .addListener(
+                        (obs, old, isFocused) -> {
+                            if (!isFocused && !button.isHover()) {
+                                deactivateEffect(button, breathe);
+                            }
+                        });
     }
 
     private static void activateEffect(Button btn, FadeTransition anim) {
@@ -76,9 +77,7 @@ public class EffectUtils {
         btn.setStyle(""); // 回归 CSS 定义的原始样式
     }
 
-    /**
-     * 动态取色逻辑：优先取边框色，其次取背景色，最后保底
-     */
+    /** 动态取色逻辑：优先取边框色，其次取背景色，最后保底 */
     private static String getDynamicColor(Button button) {
         // 尝试获取背景颜色
         Paint fill;
@@ -110,17 +109,15 @@ public class EffectUtils {
     }
 
     private static String resolveFromClass(String styleClass) {
-        if (styleClass.contains("primary") || styleClass.contains("blue"))
-            return "#1769D3";
-        if (styleClass.contains("gold") || styleClass.contains("warning"))
-            return "#F5B400";
-        if (styleClass.contains("red") || styleClass.contains("danger"))
-            return "#F51B23";
+        if (styleClass.contains("primary") || styleClass.contains("blue")) return "#1769D3";
+        if (styleClass.contains("gold") || styleClass.contains("warning")) return "#F5B400";
+        if (styleClass.contains("red") || styleClass.contains("danger")) return "#F51B23";
         return "#444444";
     }
 
     private static String toRGBCode(Color color) {
-        return String.format("#%02X%02X%02X",
+        return String.format(
+                "#%02X%02X%02X",
                 (int) (color.getRed() * 255),
                 (int) (color.getGreen() * 255),
                 (int) (color.getBlue() * 255));

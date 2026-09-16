@@ -6,11 +6,7 @@ import java.util.UUID;
 
 /** UI-neutral saved Structure state with optional runtime ValueType metadata. */
 public record StructureSnapshot<S>(
-        String id,
-        String moduleId,
-        Instant createdAt,
-        String valueTypeName,
-        S state) {
+        String id, String moduleId, Instant createdAt, String valueTypeName, S state) {
 
     public StructureSnapshot {
         if (id == null || id.isBlank()) {
@@ -26,13 +22,17 @@ public record StructureSnapshot<S>(
         state = Objects.requireNonNull(state, "state");
     }
 
-    /** Compatibility constructor for domain snapshots, such as Maze, that intentionally have no ValueType. */
+    /**
+     * Compatibility constructor for domain snapshots, such as Maze, that intentionally have no
+     * ValueType.
+     */
     public StructureSnapshot(String id, String moduleId, Instant createdAt, S state) {
         this(id, moduleId, createdAt, null, state);
     }
 
     public static <S> StructureSnapshot<S> create(String moduleId, S state) {
-        return new StructureSnapshot<>(UUID.randomUUID().toString(), moduleId, Instant.now(), null, state);
+        return new StructureSnapshot<>(
+                UUID.randomUUID().toString(), moduleId, Instant.now(), null, state);
     }
 
     public static <S> StructureSnapshot<S> create(String moduleId, Class<?> valueType, S state) {
@@ -53,8 +53,11 @@ public record StructureSnapshot<S>(
     public void requireValueType(Class<?> valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (!matchesValueType(valueType)) {
-            throw new IllegalArgumentException("snapshot value type mismatch: expected " + valueType.getName()
-                    + ", actual " + (valueTypeName == null ? "<none>" : valueTypeName));
+            throw new IllegalArgumentException(
+                    "snapshot value type mismatch: expected "
+                            + valueType.getName()
+                            + ", actual "
+                            + (valueTypeName == null ? "<none>" : valueTypeName));
         }
     }
 }

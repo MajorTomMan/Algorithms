@@ -1,26 +1,23 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.timing.RenderTimer;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-/** Playback scheduler over reducer-defined visible frames. */
+/** Replay state machine over reducer-defined visible frames; timing is delegated to RenderClock. */
 public final class PlaybackController<S> implements AutoCloseable {
 
     private final EventReducer<S> reducer;
     private final Consumer<S> stateConsumer;
     private final Consumer<Runnable> dispatcher;
-    private final ScheduledExecutorService scheduler;
+    private final RenderTimer timer;
     private final long baseFrameDelayMillis;
     private final Object lock = new Object();
 
@@ -30,13 +27,12 @@ public final class PlaybackController<S> implements AutoCloseable {
     private double speed = 1.0d;
     private boolean playing;
     private boolean closed;
-    private ScheduledFuture<?> scheduledFrame;
     private RuntimeException failure;
     private long playbackElapsedNanos;
     private long playbackStartedAtNanos;
 
     public PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer) {
-        this(reducer, stateConsumer, Platform::runLater, Duration.ofMillis(100L));
+        this(reducer, stateConsumer, FxDispatch::defer, Duration.ofMillis(100L));
     }
 
     PlaybackController(
@@ -44,19 +40,24 @@ public final class PlaybackController<S> implements AutoCloseable {
             Consumer<S> stateConsumer,
             Consumer<Runnable> dispatcher,
             Duration baseFrameDelay) {
+        this(reducer, stateConsumer, dispatcher, baseFrameDelay, RenderRuntime.clock());
+    }
+
+    PlaybackController(
+            EventReducer<S> reducer,
+            Consumer<S> stateConsumer,
+            Consumer<Runnable> dispatcher,
+            Duration baseFrameDelay,
+            RenderTimer timer) {
         this.reducer = Objects.requireNonNull(reducer, "reducer");
         this.stateConsumer = Objects.requireNonNull(stateConsumer, "stateConsumer");
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+        this.timer = Objects.requireNonNull(timer, "timer");
         Objects.requireNonNull(baseFrameDelay, "baseFrameDelay");
         if (baseFrameDelay.isZero() || baseFrameDelay.isNegative()) {
             throw new IllegalArgumentException("baseFrameDelay must be positive");
         }
         baseFrameDelayMillis = Math.max(1L, baseFrameDelay.toMillis());
-        scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "algorithm-playback");
-            thread.setDaemon(true);
-            return thread;
-        });
     }
 
     public void load(List<EventEnvelope> events) {
@@ -64,7 +65,6 @@ public final class PlaybackController<S> implements AutoCloseable {
         ReducedEventTimeline<S> loadedTimeline = new ReducedEventTimeline<>(events, reducer);
         synchronized (lock) {
             requireOpen();
-            stopScheduledFrame();
             timeline = loadedTimeline;
             currentIndex = -1;
             playing = false;
@@ -175,7 +175,6 @@ public final class PlaybackController<S> implements AutoCloseable {
             speed = multiplier;
             if (playing) {
                 generation++;
-                stopScheduledFrame();
                 scheduleFrame(generation, frameDelayMillis());
             }
         }
@@ -215,8 +214,8 @@ public final class PlaybackController<S> implements AutoCloseable {
     }
 
     /**
-     * Returns time spent actively scheduling replay frames since the last load.
-     * Pauses, seeks, and time spent before the first play are excluded.
+     * Returns time spent actively scheduling replay frames since the last load. Pauses, seeks, and
+     * time spent before the first play are excluded.
      */
     public Duration playbackDuration() {
         synchronized (lock) {
@@ -246,16 +245,17 @@ public final class PlaybackController<S> implements AutoCloseable {
             closed = true;
             playing = false;
             generation++;
-            stopScheduledFrame();
         }
-        scheduler.shutdownNow();
     }
 
     private void scheduleFrame(long expectedGeneration, long delayMillis) {
-        scheduledFrame = scheduler.schedule(
-                () -> dispatchFrame(expectedGeneration),
-                delayMillis,
-                TimeUnit.MILLISECONDS);
+        try {
+            timer.schedule(
+                    Duration.ofMillis(Math.max(0L, delayMillis)),
+                    () -> dispatchFrame(expectedGeneration));
+        } catch (RuntimeException exception) {
+            fail(expectedGeneration, exception);
+        }
     }
 
     private void dispatchFrame(long expectedGeneration) {
@@ -330,7 +330,6 @@ public final class PlaybackController<S> implements AutoCloseable {
             }
             playing = false;
             generation++;
-            stopScheduledFrame();
         }
     }
 
@@ -341,7 +340,6 @@ public final class PlaybackController<S> implements AutoCloseable {
         accumulatePlaybackDurationLocked();
         playing = false;
         generation++;
-        stopScheduledFrame();
     }
 
     private boolean hasNextFrame() {
@@ -357,13 +355,6 @@ public final class PlaybackController<S> implements AutoCloseable {
 
     private long frameDelayMillis() {
         return Math.max(1L, Math.round(baseFrameDelayMillis / speed));
-    }
-
-    private void stopScheduledFrame() {
-        if (scheduledFrame != null) {
-            scheduledFrame.cancel(false);
-            scheduledFrame = null;
-        }
     }
 
     private void requireOpen() {

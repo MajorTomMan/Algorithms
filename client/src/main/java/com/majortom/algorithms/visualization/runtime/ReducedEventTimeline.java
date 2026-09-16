@@ -1,11 +1,7 @@
 package com.majortom.algorithms.visualization.runtime;
 
-import com.majortom.algorithms.visualization.runtime.EventImportance;
-import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.visualization.runtime.Reduction;
-import com.majortom.algorithms.visualization.runtime.ReductionCursor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +12,7 @@ import java.util.Objects;
  *
  * <p>The complete stream remains available for replay, while lifecycle and other non-visual
  * reductions do not create blank frames. Sparse immutable-state checkpoints bound the amount of
- * reduction work required by a backward or random seek.</p>
+ * reduction work required by a backward or random seek.
  */
 public final class ReducedEventTimeline<S> {
 
@@ -37,9 +33,7 @@ public final class ReducedEventTimeline<S> {
     }
 
     ReducedEventTimeline(
-            List<EventEnvelope> events,
-            EventReducer<S> reducer,
-            int checkpointInterval) {
+            List<EventEnvelope> events, EventReducer<S> reducer, int checkpointInterval) {
         this.events = List.copyOf(Objects.requireNonNull(events, "events"));
         this.reducer = Objects.requireNonNull(reducer, "reducer");
         if (checkpointInterval <= 0) {
@@ -146,9 +140,7 @@ public final class ReducedEventTimeline<S> {
     }
 
     private boolean shouldCheckpoint(
-            int eventIndex,
-            Reduction<S> reduction,
-            int checkpointInterval) {
+            int eventIndex, Reduction<S> reduction, int checkpointInterval) {
         if ((eventIndex + 1) % checkpointInterval == 0) {
             return true;
         }

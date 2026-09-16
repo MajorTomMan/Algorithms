@@ -12,14 +12,12 @@ public class 迷宫回溯问题 {
         System.out.println("地图的初始情况:");
         showMap(map);
         System.out.println("--------------------start-------------------");
-        System.out.println(findWay(map, 1, 1,3, 5));
+        System.out.println(findWay(map, 1, 1, 3, 5));
     }
 
     /**
-     * 创建一个二维数组,用于模拟8*7迷宫
-     * 使用1表示不可通过的实心方块，0表示可通过砖块
-     * （6,5）为默认终点，（1,1）为默认起点
-     * 
+     * 创建一个二维数组,用于模拟8*7迷宫 使用1表示不可通过的实心方块，0表示可通过砖块 （6,5）为默认终点，（1,1）为默认起点
+     *
      * @return
      */
     private static Integer[][] getMap() {
@@ -42,11 +40,10 @@ public class 迷宫回溯问题 {
 
     /**
      * 设置目标位置和指定数
-     * 
-     * 
-     * @param map    地图二维数组
-     * @param x      起始点横坐标
-     * @param y      起始点纵坐标
+     *
+     * @param map 地图二维数组
+     * @param x 起始点横坐标
+     * @param y 起始点纵坐标
      * @param target 目标数
      * @return
      */
@@ -60,7 +57,7 @@ public class 迷宫回溯问题 {
 
     /**
      * 展示地图
-     * 
+     *
      * @param map
      */
     private static void showMap(Integer[][] map) {
@@ -73,12 +70,11 @@ public class 迷宫回溯问题 {
     }
 
     /**
-     * 给定起始点，根据地图找路
-     * 使用2表示可以走通的路，使用3表示走过但是不通的路
-     * 
+     * 给定起始点，根据地图找路 使用2表示可以走通的路，使用3表示走过但是不通的路
+     *
      * @param map 地图二维数组
-     * @param x   起始点横坐标
-     * @param y   起始点纵坐标
+     * @param x 起始点横坐标
+     * @param y 起始点纵坐标
      * @return
      */
     public static boolean findWay(Integer[][] map, int x, int y, int start, int end) {
@@ -86,8 +82,8 @@ public class 迷宫回溯问题 {
         if (map[y][x] == end) {
             return true;
         } else {
-            if (map[y][x] == start){
-                x=x+1;
+            if (map[y][x] == start) {
+                x = x + 1;
             }
             // 只有为0的路才能通过
             if (map[y][x] == 0) {
@@ -120,12 +116,11 @@ public class 迷宫回溯问题 {
     }
 
     /**
-     * 给定起始点，根据地图找路,利用BFS算法(广度优先)
-     * 使用-1表示可以走通的路
-     * 
+     * 给定起始点，根据地图找路,利用BFS算法(广度优先) 使用-1表示可以走通的路
+     *
      * @param map 地图二维数组
-     * @param x   起始点横坐标
-     * @param y   起始点纵坐标
+     * @param x 起始点横坐标
+     * @param y 起始点纵坐标
      * @return
      */
     public static boolean BFS(Integer[][] map, int x, int y, int target) {

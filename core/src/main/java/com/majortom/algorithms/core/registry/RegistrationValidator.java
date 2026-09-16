@@ -16,8 +16,7 @@ public final class RegistrationValidator {
 
     private static final Pattern COMPONENT_ID = Pattern.compile("[a-z0-9]+(?:-[a-z0-9]+)*");
 
-    private RegistrationValidator() {
-    }
+    private RegistrationValidator() {}
 
     public static StructureDescriptor validate(StructureDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
@@ -25,8 +24,11 @@ public final class RegistrationValidator {
         validateContract(descriptor.contract(), "Structure");
         validateImplementation(descriptor.implementation(), "Structure");
         if (!descriptor.contract().isAssignableFrom(descriptor.implementation())) {
-            throw new RegistrationException("Structure implementation " + descriptor.implementation().getName()
-                    + " does not implement declared contract " + descriptor.contract().getName());
+            throw new RegistrationException(
+                    "Structure implementation "
+                            + descriptor.implementation().getName()
+                            + " does not implement declared contract "
+                            + descriptor.contract().getName());
         }
         return descriptor;
     }
@@ -37,8 +39,9 @@ public final class RegistrationValidator {
         validateValueType(descriptor.valueType());
         validateContract(descriptor.structureContract(), "Algorithm structure");
         if (descriptor.structureContract().getAnnotation(Structure.class) == null) {
-            throw new RegistrationException("Algorithm structure contract must declare @Structure metadata: "
-                    + descriptor.structureContract().getName());
+            throw new RegistrationException(
+                    "Algorithm structure contract must declare @Structure metadata: "
+                            + descriptor.structureContract().getName());
         }
         validateImplementation(descriptor.implementation(), "Algorithm");
         validateEntryPoint(descriptor);
@@ -63,9 +66,13 @@ public final class RegistrationValidator {
             validate(descriptor);
             AlgorithmKey key = descriptor.key();
             if (!keys.add(key)) {
-                throw new RegistrationException("Duplicate Algorithm registration: structure="
-                        + key.structureContract().getName() + ", type=" + key.valueType().getName()
-                        + ", id=" + key.algorithmId());
+                throw new RegistrationException(
+                        "Duplicate Algorithm registration: structure="
+                                + key.structureContract().getName()
+                                + ", type="
+                                + key.valueType().getName()
+                                + ", id="
+                                + key.algorithmId());
             }
         }
     }
@@ -73,69 +80,88 @@ public final class RegistrationValidator {
     private static void validateEntryPoint(AlgorithmDescriptor descriptor) {
         Method method = descriptor.entryPoint();
         if (method.getAnnotation(AlgorithmEntry.class) == null) {
-            throw new RegistrationException("Algorithm entry method is missing @AlgorithmEntry: " + method);
+            throw new RegistrationException(
+                    "Algorithm entry method is missing @AlgorithmEntry: " + method);
         }
         if (!Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers())) {
-            throw new RegistrationException("Algorithm entry method must be public and non-static: " + method);
+            throw new RegistrationException(
+                    "Algorithm entry method must be public and non-static: " + method);
         }
         if (!method.getDeclaringClass().isAssignableFrom(descriptor.implementation())) {
-            throw new RegistrationException("Algorithm entry method does not belong to implementation: " + method);
+            throw new RegistrationException(
+                    "Algorithm entry method does not belong to implementation: " + method);
         }
         if (method.isVarArgs() || method.getParameterCount() != 1) {
-            throw new RegistrationException("Algorithm entry method must declare exactly one parameter and it must be a Structure contract: "
-                    + method);
+            throw new RegistrationException(
+                    "Algorithm entry method must declare exactly one parameter and it must be a"
+                        + " Structure contract: "
+                            + method);
         }
         Class<?> actualStructure = method.getParameterTypes()[0];
         if (actualStructure.getAnnotation(Structure.class) == null) {
-            throw new RegistrationException("Algorithm entry parameter must be a @Structure contract: "
-                    + actualStructure.getName());
+            throw new RegistrationException(
+                    "Algorithm entry parameter must be a @Structure contract: "
+                            + actualStructure.getName());
         }
         if (!actualStructure.isAssignableFrom(descriptor.structureContract())) {
-            throw new RegistrationException("Algorithm " + descriptor.id() + " declares structure "
-                    + descriptor.structureContract().getName() + " but @AlgorithmEntry parameter "
-                    + actualStructure.getName() + " cannot accept that contract");
+            throw new RegistrationException(
+                    "Algorithm "
+                            + descriptor.id()
+                            + " declares structure "
+                            + descriptor.structureContract().getName()
+                            + " but @AlgorithmEntry parameter "
+                            + actualStructure.getName()
+                            + " cannot accept that contract");
         }
     }
 
     private static void validateId(String id, String component) {
         if (id.isBlank() || !COMPONENT_ID.matcher(id).matches()) {
-            throw new RegistrationException(component + " id must be stable kebab-case: '" + id + "'");
+            throw new RegistrationException(
+                    component + " id must be stable kebab-case: '" + id + "'");
         }
     }
 
     private static void validateValueType(Class<?> valueType) {
         if (valueType.isPrimitive() || valueType == Void.class || valueType == void.class) {
-            throw new RegistrationException("Algorithm value type must be a non-primitive runtime type: "
-                    + valueType.getTypeName());
+            throw new RegistrationException(
+                    "Algorithm value type must be a non-primitive runtime type: "
+                            + valueType.getTypeName());
         }
     }
 
     private static void validateContract(Class<?> contract, String component) {
         if (!contract.isInterface()) {
-            throw new RegistrationException(component + " contract must be an interface: " + contract.getName());
+            throw new RegistrationException(
+                    component + " contract must be an interface: " + contract.getName());
         }
     }
 
     private static void validateImplementation(Class<?> implementation, String component) {
         int modifiers = implementation.getModifiers();
         if (implementation.isInterface() || Modifier.isAbstract(modifiers)) {
-            throw new RegistrationException(component + " implementation must be concrete: "
-                    + implementation.getName());
+            throw new RegistrationException(
+                    component + " implementation must be concrete: " + implementation.getName());
         }
         if (!Modifier.isPublic(modifiers)) {
-            throw new RegistrationException(component + " implementation must be public: "
-                    + implementation.getName());
+            throw new RegistrationException(
+                    component + " implementation must be public: " + implementation.getName());
         }
         Constructor<?> constructor;
         try {
             constructor = implementation.getDeclaredConstructor();
         } catch (NoSuchMethodException exception) {
-            throw new RegistrationException(component + " implementation requires a no-arg constructor: "
-                    + implementation.getName(), exception);
+            throw new RegistrationException(
+                    component
+                            + " implementation requires a no-arg constructor: "
+                            + implementation.getName(),
+                    exception);
         }
         if (!Modifier.isPublic(constructor.getModifiers())) {
-            throw new RegistrationException(component + " implementation requires a public no-arg constructor: "
-                    + implementation.getName());
+            throw new RegistrationException(
+                    component
+                            + " implementation requires a public no-arg constructor: "
+                            + implementation.getName());
         }
     }
 }

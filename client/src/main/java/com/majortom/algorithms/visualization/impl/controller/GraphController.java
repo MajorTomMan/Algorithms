@@ -6,25 +6,25 @@ import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.structure.graph.WeightedGraph;
 import com.majortom.algorithms.structure.graph.WeightedGraphStructure;
-import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.graph.GraphEventReducer;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -43,8 +43,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 public final class GraphController extends BaseModuleController<GraphViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshotState<Object>>,
-        SnapshotAlgorithmInputSupport<GraphSnapshotState<Object>>, RuntimeValueTypeSupport {
+        implements AlgorithmSelectionSupport,
+                StructureSnapshotSupport<GraphSnapshotState<Object>>,
+                SnapshotAlgorithmInputSupport<GraphSnapshotState<Object>>,
+                RuntimeValueTypeSupport {
 
     private WeightedGraph<Object> undirectedGraph;
     private WeightedGraph<Object> directedGraph;
@@ -56,8 +58,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private boolean structureSelectionEnabled = true;
     private Long algorithmSelectedNodeId;
     private Long algorithmSelectedEdgeId;
-    private Consumer<Selection> selectionListener = ignored -> { };
-    private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private Consumer<Selection> selectionListener = ignored -> {};
+    private Consumer<String> algorithmSelectionListener = ignored -> {};
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -101,8 +103,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             weightField.setText("1");
         }
         EffectUtils.applyDynamicEffect(
-                addNodeBtn, deleteNodeBtn, addEdgeBtn,
-                deleteEdgeBtn, setWeightBtn, runBtn);
+                addNodeBtn, deleteNodeBtn, addEdgeBtn, deleteEdgeBtn, setWeightBtn, runBtn);
         refreshVariantControls();
     }
 
@@ -153,10 +154,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private GraphVariant variantForAlgorithm(String algorithmId) {
-        if (AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType)
+                .contains(algorithmId)) {
             return GraphVariant.UNDIRECTED;
         }
-        if (AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType)
+                .contains(algorithmId)) {
             return GraphVariant.DIRECTED;
         }
         return null;
@@ -170,7 +173,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         if (listener == null) {
-            algorithmSelectionListener = ignored -> { };
+            algorithmSelectionListener = ignored -> {};
         } else {
             algorithmSelectionListener = listener;
         }
@@ -212,12 +215,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         GraphSnapshotState<Object> previousSnapshot = currentSnapshot();
         List<Long> previousEdgeOrder = snapshotEdgeIds(previousSnapshot);
-        Long removedEdgeId = snapshotEdgeIdBetween(previousSnapshot, fromVertex.id(), toVertex.id());
+        Long removedEdgeId =
+                snapshotEdgeIdBetween(previousSnapshot, fromVertex.id(), toVertex.id());
         int removedIndex = -1;
         if (removedEdgeId != null) {
             removedIndex = previousEdgeOrder.indexOf(removedEdgeId);
         }
-        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(fromVertex, toVertex))) {
+        if (!executeStructureOperation(
+                "remove-edge", () -> graph.removeEdge(fromVertex, toVertex))) {
             return;
         }
         renderGraph();
@@ -250,7 +255,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
     }
 
-
     private void addNode(String text) {
         Object id = parseNode(text);
         GraphStructure<Object> graph = currentGraph();
@@ -261,10 +265,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             logI18n("message.graph.already_exists", id);
             return;
         }
-        if (!executeStructureOperation("add-vertex", () -> {
-            graph.addVertex(id);
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                "add-vertex",
+                () -> {
+                    graph.addVertex(id);
+                    return null;
+                })) {
             return;
         }
         renderGraph();
@@ -312,10 +318,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             logI18n("message.graph.edge_exists", from, to);
             return;
         }
-        if (!executeStructureOperation("add-edge", () -> {
-            graph.addEdge(graph.vertex(from), graph.vertex(to), weight);
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                "add-edge",
+                () -> {
+                    graph.addEdge(graph.vertex(from), graph.vertex(to), weight);
+                    return null;
+                })) {
             return;
         }
         renderGraph();
@@ -373,7 +381,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         graphVisualizer().selectEdge(candidate);
     }
 
-    private Long survivingGraphSelection(List<Long> previousOrder, int removedIndex, List<Long> currentOrder) {
+    private Long survivingGraphSelection(
+            List<Long> previousOrder, int removedIndex, List<Long> currentOrder) {
         int startIndex = removedIndex;
         if (startIndex < 0) {
             startIndex = 0;
@@ -459,7 +468,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     @Override
-    public void useSnapshotAsAlgorithmInput(StructureSnapshot<GraphSnapshotState<Object>> snapshot) {
+    public void useSnapshotAsAlgorithmInput(
+            StructureSnapshot<GraphSnapshotState<Object>> snapshot) {
         requireGraphSnapshot(snapshot);
         GraphSnapshotState<Object> state = snapshot.state();
         if (state.directed()) {
@@ -509,12 +519,15 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public String describeStructureSnapshot(GraphSnapshotState<Object> state) {
         if (state instanceof GraphSnapshot<?> basic) {
-            return I18N.text("snapshot.graph.detail", basic.vertices().size(), basic.edges().size());
+            return I18N.text(
+                    "snapshot.graph.detail", basic.vertices().size(), basic.edges().size());
         }
         if (state instanceof WeightedGraphSnapshot<?> weighted) {
-            return I18N.text("snapshot.graph.detail", weighted.vertices().size(), weighted.edges().size());
+            return I18N.text(
+                    "snapshot.graph.detail", weighted.vertices().size(), weighted.edges().size());
         }
-        throw new IllegalArgumentException("unsupported graph snapshot type: " + state.getClass().getName());
+        throw new IllegalArgumentException(
+                "unsupported graph snapshot type: " + state.getClass().getName());
     }
 
     @Override
@@ -552,11 +565,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     protected String formatStatsMessage() {
         GraphStructure<Object> graph = currentGraph();
-        return String.format("%s | %s | %s",
+        return String.format(
+                "%s | %s | %s",
                 I18N.text("stats.graph.nodes", graph.vertexCount()),
                 I18N.text("stats.graph.edges", graph.edgeCount()),
-                formatMetric("stats.action", stats.metric("nodes.visited")
-                        + stats.metric("edges.examined")));
+                formatMetric(
+                        "stats.action",
+                        stats.metric("nodes.visited") + stats.metric("edges.examined")));
     }
 
     @Override
@@ -573,7 +588,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
         }
         if (executionSectionLabel != null) {
-            executionSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.execution"));
+            executionSectionLabel
+                    .textProperty()
+                    .bind(I18N.createStringBinding("label.panel.execution"));
         }
         bindLabel(nodeOperationsLabel, "label.graph.node_ops");
         bindLabel(edgeOperationsLabel, "label.graph.edge_ops");
@@ -614,27 +631,37 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void bindSelectors() {
-        structureSelector.setItems(FXCollections.observableArrayList(
-                "label.graph.structure.undirected", "label.graph.structure.directed"));
+        structureSelector.setItems(
+                FXCollections.observableArrayList(
+                        "label.graph.structure.undirected", "label.graph.structure.directed"));
         localizeChoiceCells(structureSelector, I18N::text);
         localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
-        structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            if (current == null || current.intValue() < 0) {
-                return;
-            }
-            if (current.intValue() == 0) {
-                activateVariant(GraphVariant.UNDIRECTED);
-            } else {
-                activateVariant(GraphVariant.DIRECTED);
-            }
-        });
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            notifyAlgorithmSelection();
-        });
-        Platform.runLater(() -> {
-            syncStructureSelectorSelection();
-            refreshAlgorithmSelector();
-        });
+        structureSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener(
+                        (observable, previous, current) -> {
+                            if (current == null || current.intValue() < 0) {
+                                return;
+                            }
+                            if (current.intValue() == 0) {
+                                activateVariant(GraphVariant.UNDIRECTED);
+                            } else {
+                                activateVariant(GraphVariant.DIRECTED);
+                            }
+                        });
+        algorithmSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener(
+                        (observable, previous, current) -> {
+                            notifyAlgorithmSelection();
+                        });
+        FxDispatch.defer(
+                () -> {
+                    syncStructureSelectorSelection();
+                    refreshAlgorithmSelector();
+                });
     }
 
     private void refreshVariantControls() {
@@ -646,9 +673,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     private void refreshAlgorithmIds() {
         if (activeVariant == GraphVariant.UNDIRECTED) {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType);
+            algorithmIds =
+                    AlgorithmCatalog.compatibleAlgorithms(
+                            WeightedGraphStructure.class, runtimeValueType);
         } else {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType);
+            algorithmIds =
+                    AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType);
         }
     }
 
@@ -677,7 +707,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void notifyAlgorithmSelection() {
         algorithmSelectionListener.accept(selectedAlgorithmId());
     }
-
 
     private void syncStructureSelectorSelection() {
         if (structureSelector == null) {
@@ -716,7 +745,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         node.setVisible(visible);
     }
 
-    private WeightedGraph<Object> randomWeightedGraph(int nodeCount, int edgeCount, boolean directed) {
+    private WeightedGraph<Object> randomWeightedGraph(
+            int nodeCount, int edgeCount, boolean directed) {
         WeightedGraph<Object> result = new WeightedGraph<>(directed);
         GraphBatch batch = randomGraphBatch(nodeCount, edgeCount, directed, new Random(0x5EEDL));
         result.initializeWeighted(weightedAdjacency(batch, directed));
@@ -731,7 +761,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             } else if (runtimeValueType == String.class) {
                 values.add("N" + index);
             } else {
-                throw new IllegalStateException("Unsupported Graph value type: " + runtimeValueType.getName());
+                throw new IllegalStateException(
+                        "Unsupported Graph value type: " + runtimeValueType.getName());
             }
         }
         return List.copyOf(values);
@@ -831,9 +862,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             left = relation.substring(0, separator);
             right = relation.substring(separator + separatorLength);
         } else if (runtimeValueType == Integer.class) {
-            java.util.regex.Matcher matcher = java.util.regex.Pattern
-                    .compile("^(-?\\d+)\\s*-\\s*(-?\\d+)$")
-                    .matcher(relation);
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile("^(-?\\d+)\\s*-\\s*(-?\\d+)$")
+                            .matcher(relation);
             if (!matcher.matches()) {
                 logI18n("message.error.bulk_input_invalid");
                 return null;
@@ -854,10 +885,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private GraphBatch randomGraphBatch(int nodeCount, int edgeCount) {
-        return randomGraphBatch(nodeCount, edgeCount, activeVariant == GraphVariant.DIRECTED, new Random());
+        return randomGraphBatch(
+                nodeCount, edgeCount, activeVariant == GraphVariant.DIRECTED, new Random());
     }
 
-    private GraphBatch randomGraphBatch(int nodeCount, int edgeCount, boolean directed, Random random) {
+    private GraphBatch randomGraphBatch(
+            int nodeCount, int edgeCount, boolean directed, Random random) {
         List<Object> nodes = defaultGraphValues(nodeCount);
         Set<String> edges = new LinkedHashSet<>();
         for (int node = 1; node < nodeCount; node++) {
@@ -880,17 +913,19 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         List<GraphBatchEdge> batchEdges = new ArrayList<>();
         for (String edge : edges) {
             String[] parts = edge.split(":", 2);
-            batchEdges.add(new GraphBatchEdge(
-                    nodes.get(Integer.parseInt(parts[0])),
-                    nodes.get(Integer.parseInt(parts[1])),
-                    1.0d + random.nextInt(20)));
+            batchEdges.add(
+                    new GraphBatchEdge(
+                            nodes.get(Integer.parseInt(parts[0])),
+                            nodes.get(Integer.parseInt(parts[1])),
+                            1.0d + random.nextInt(20)));
         }
         return new GraphBatch(List.copyOf(nodes), List.copyOf(batchEdges));
     }
 
     private java.util.Map<Object, java.util.Map<Object, Double>> weightedAdjacency(
             GraphBatch batch, boolean directed) {
-        java.util.LinkedHashMap<Object, java.util.Map<Object, Double>> adjacency = new java.util.LinkedHashMap<>();
+        java.util.LinkedHashMap<Object, java.util.Map<Object, Double>> adjacency =
+                new java.util.LinkedHashMap<>();
         for (Object node : batch.nodes()) {
             adjacency.put(node, new java.util.LinkedHashMap<>());
         }
@@ -906,10 +941,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
         WeightedGraph<Object> graph = currentWeightedGraph();
         clearVisualSelection();
-        if (!executeStructureOperation(operationId, () -> {
-            graph.initializeWeighted(weightedAdjacency(batch, graph.isDirected()));
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                operationId,
+                () -> {
+                    graph.initializeWeighted(weightedAdjacency(batch, graph.isDirected()));
+                    return null;
+                })) {
             return;
         }
         renderGraph();
@@ -923,15 +960,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         logI18n(messageKey, batch.nodes().size());
     }
 
-    private record GraphBatch(List<Object> nodes, List<GraphBatchEdge> edges) {
-    }
+    private record GraphBatch(List<Object> nodes, List<GraphBatchEdge> edges) {}
 
-    private record GraphBatchEdge(Object from, Object to, double weight) {
-    }
+    private record GraphBatchEdge(Object from, Object to, double weight) {}
 
     public void setSelectionListener(Consumer<Selection> listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {};
         } else {
             selectionListener = listener;
         }
@@ -1022,7 +1057,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (weightField != null && edge.weight() != null) {
             weightField.setText(formatWeight(edge.weight()));
         }
-        selectionListener.accept(new EdgeSelection(edgeId, VisualValue.of(from), VisualValue.of(to), snapshot.directed()));
+        selectionListener.accept(
+                new EdgeSelection(
+                        edgeId, VisualValue.of(from), VisualValue.of(to), snapshot.directed()));
     }
 
     private void handleAlgorithmEdgeSelection(long edgeId) {
@@ -1053,7 +1090,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (from == null || to == null) {
             return false;
         }
-        selectionListener.accept(new EdgeSelection(edgeId, from.value(), to.value(), state.directed()));
+        selectionListener.accept(
+                new EdgeSelection(edgeId, from.value(), to.value(), state.directed()));
         return true;
     }
 
@@ -1064,14 +1102,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         if (algorithmSelectedNodeId != null) {
             long nodeId = algorithmSelectedNodeId;
-            if (!graphVisualizer().showNodeSelection(nodeId) || !publishAlgorithmNodeSelection(state, nodeId)) {
+            if (!graphVisualizer().showNodeSelection(nodeId)
+                    || !publishAlgorithmNodeSelection(state, nodeId)) {
                 clearVisualSelection();
             }
             return;
         }
         if (algorithmSelectedEdgeId != null) {
             long edgeId = algorithmSelectedEdgeId;
-            if (!graphVisualizer().showEdgeSelection(edgeId) || !publishAlgorithmEdgeSelection(state, edgeId)) {
+            if (!graphVisualizer().showEdgeSelection(edgeId)
+                    || !publishAlgorithmEdgeSelection(state, edgeId)) {
                 clearVisualSelection();
             }
         }
@@ -1095,17 +1135,15 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return (GraphVisualizer) visualizer;
     }
 
-    public sealed interface Selection permits NodeSelection, EdgeSelection {
-    }
+    public sealed interface Selection permits NodeSelection, EdgeSelection {}
 
-    public record NodeSelection(long id, VisualValue value, int degree) implements Selection {
-    }
+    public record NodeSelection(long id, VisualValue value, int degree) implements Selection {}
 
-    public record EdgeSelection(long id, VisualValue fromValue, VisualValue toValue, boolean directed) implements Selection {
-    }
+    public record EdgeSelection(
+            long id, VisualValue fromValue, VisualValue toValue, boolean directed)
+            implements Selection {}
 
-    private record SnapshotEdge(long id, long fromId, long toId, Double weight) {
-    }
+    private record SnapshotEdge(long id, long fromId, long toId, Double weight) {}
 
     private GraphStructure<Object> currentGraph() {
         return currentWeightedGraph();
@@ -1130,7 +1168,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             state = algorithmInputSnapshot.state();
         }
         if (!snapshotMatchesActiveVariant(state)) {
-            throw new IllegalStateException("algorithm input graph direction does not match active structure");
+            throw new IllegalStateException(
+                    "algorithm input graph direction does not match active structure");
         }
         return asWeightedSnapshot(state);
     }
@@ -1160,16 +1199,24 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (snapshot instanceof GraphSnapshot<?> basic) {
             @SuppressWarnings("unchecked")
             GraphSnapshot<Object> typed = (GraphSnapshot<Object>) basic;
-            List<WeightedGraphSnapshot.Vertex<Object>> vertices = typed.vertices().stream()
-                    .map(vertex -> new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
-                    .toList();
-            List<WeightedGraphSnapshot.Edge> edges = typed.edges().stream()
-                    .map(edge -> new WeightedGraphSnapshot.Edge(
-                            edge.id(), edge.fromId(), edge.toId(), 1.0d))
-                    .toList();
+            List<WeightedGraphSnapshot.Vertex<Object>> vertices =
+                    typed.vertices().stream()
+                            .map(
+                                    vertex ->
+                                            new WeightedGraphSnapshot.Vertex<>(
+                                                    vertex.id(), vertex.value()))
+                            .toList();
+            List<WeightedGraphSnapshot.Edge> edges =
+                    typed.edges().stream()
+                            .map(
+                                    edge ->
+                                            new WeightedGraphSnapshot.Edge(
+                                                    edge.id(), edge.fromId(), edge.toId(), 1.0d))
+                            .toList();
             return new WeightedGraphSnapshot<>(typed.directed(), vertices, edges);
         }
-        throw new IllegalArgumentException("unsupported graph snapshot type: " + snapshot.getClass().getName());
+        throw new IllegalArgumentException(
+                "unsupported graph snapshot type: " + snapshot.getClass().getName());
     }
 
     private List<Long> snapshotVertexIds(GraphSnapshotState<Object> snapshot) {
@@ -1200,7 +1247,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return List.copyOf(ids);
     }
 
-    private Long snapshotEdgeIdBetween(GraphSnapshotState<Object> snapshot, long fromId, long toId) {
+    private Long snapshotEdgeIdBetween(
+            GraphSnapshotState<Object> snapshot, long fromId, long toId) {
         if (snapshot instanceof GraphSnapshot<?> basic) {
             for (GraphSnapshot.Edge edge : basic.edges()) {
                 if (edgeConnects(snapshot.directed(), edge.fromId(), edge.toId(), fromId, toId)) {
@@ -1217,7 +1265,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return null;
     }
 
-    private boolean edgeConnects(boolean directed, long edgeFrom, long edgeTo, long fromId, long toId) {
+    private boolean edgeConnects(
+            boolean directed, long edgeFrom, long edgeTo, long fromId, long toId) {
         if (edgeFrom == fromId && edgeTo == toId) {
             return true;
         }
@@ -1298,8 +1347,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return runtimeValueType;
     }
 
-    @Override public boolean hasValues() {
-        return undirectedGraph.vertices().iterator().hasNext() || directedGraph.vertices().iterator().hasNext();
+    @Override
+    public boolean hasValues() {
+        return undirectedGraph.vertices().iterator().hasNext()
+                || directedGraph.vertices().iterator().hasNext();
     }
 
     @Override
@@ -1310,7 +1361,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void setRuntimeValueType(Class<?> valueType) {
         if (!supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException("Unsupported Graph value type: " + valueType.getName());
+            throw new IllegalArgumentException(
+                    "Unsupported Graph value type: " + valueType.getName());
         }
         if (runtimeValueType.equals(valueType)) {
             return;
@@ -1329,5 +1381,4 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             refreshStatsDisplay();
         }
     }
-
 }

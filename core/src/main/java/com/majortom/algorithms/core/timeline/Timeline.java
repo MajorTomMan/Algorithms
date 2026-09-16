@@ -32,15 +32,11 @@ public final class Timeline implements EventSink {
     }
 
     public synchronized List<EventEnvelope> run(String runId) {
-        return events.stream()
-                .filter(event -> event.runId().equals(runId))
-                .toList();
+        return events.stream().filter(event -> event.runId().equals(runId)).toList();
     }
 
     public synchronized List<EventEnvelope> operation(String operationId) {
-        return events.stream()
-                .filter(event -> event.operationId().equals(operationId))
-                .toList();
+        return events.stream().filter(event -> event.operationId().equals(operationId)).toList();
     }
 
     public synchronized void clear() {

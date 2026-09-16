@@ -11,7 +11,8 @@ public record HashTableSnapshot<K, V>(int capacity, List<Entry<K, V>> entries) {
 
     public record Entry<K, V>(int bucketIndex, K key, V value) {
         public Entry {
-            if (bucketIndex < 0) throw new IllegalArgumentException("bucketIndex must not be negative");
+            if (bucketIndex < 0)
+                throw new IllegalArgumentException("bucketIndex must not be negative");
             Objects.requireNonNull(key, "key");
             Objects.requireNonNull(value, "value");
         }

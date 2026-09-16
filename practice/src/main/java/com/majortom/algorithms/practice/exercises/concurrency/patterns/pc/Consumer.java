@@ -1,7 +1,5 @@
 package com.majortom.algorithms.practice.exercises.concurrency.patterns.pc;
 
-import com.majortom.algorithms.practice.exercises.concurrency.patterns.pc.BufferQueue;
-import com.majortom.algorithms.practice.exercises.concurrency.patterns.pc.Goods;
 
 public class Consumer implements Runnable {
     private BufferQueue queue;

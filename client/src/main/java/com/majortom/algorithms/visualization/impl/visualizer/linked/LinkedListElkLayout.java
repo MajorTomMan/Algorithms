@@ -1,9 +1,14 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
-import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
-import com.majortom.algorithms.visualization.common.layout.ElementBounds;
-import com.majortom.algorithms.visualization.common.layout.LayoutResult;
-import javafx.geometry.Point2D;
+import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
+import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
+import com.majortom.algorithms.visualization.render.api.ElementGeometry;
+import com.majortom.algorithms.visualization.render.api.LayoutElement;
+import com.majortom.algorithms.visualization.render.api.LayoutLink;
+import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
+import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
+
 import org.eclipse.elk.alg.layered.options.LayeredOptions;
 import org.eclipse.elk.alg.layered.options.OrderingStrategy;
 import org.eclipse.elk.core.RecursiveGraphLayoutEngine;
@@ -22,18 +27,27 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-/** Linked-list-specific transient ELK adapter with routed next/previous/self-loop edges. */
-public final class LinkedListElkLayout {
+/** JavaFX-neutral linked-list ELK engine owned by RenderFramework. */
+public final class LinkedListElkLayout implements LayoutEngine {
+    public static final String ID = "linked-list";
     private static final double PADDING = 34.0d;
     private static final double ELEMENT_SPACING = 46.0d;
-    private static final int RANDOM_SEED = 1;
 
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
     public LayoutResult layout(LayoutRequest request) {
-        Objects.requireNonNull(request, "request");
-        if (request.nodes().isEmpty()) {
-            return new LayoutResult(Map.of(), Map.of());
+        if (request.elements().isEmpty()) {
+            return new LayoutResult(
+                    request.requestId(),
+                    request.modelRevision(),
+                    Map.of(),
+                    List.of(),
+                    BoundsSnapshot.empty());
         }
 
         ElkNode graph = ElkGraphUtil.createGraph();
@@ -41,77 +55,68 @@ public final class LinkedListElkLayout {
         graph.setProperty(CoreOptions.DIRECTION, Direction.RIGHT);
         graph.setProperty(CoreOptions.EDGE_ROUTING, EdgeRouting.ORTHOGONAL);
         graph.setProperty(CoreOptions.PADDING, new ElkPadding(PADDING));
-        graph.setProperty(CoreOptions.RANDOM_SEED, RANDOM_SEED);
+        graph.setProperty(CoreOptions.RANDOM_SEED, 1);
         graph.setProperty(LayeredOptions.SPACING_NODE_NODE_BETWEEN_LAYERS, ELEMENT_SPACING);
-        graph.setProperty(LayeredOptions.CONSIDER_MODEL_ORDER_STRATEGY, OrderingStrategy.NODES_AND_EDGES);
+        graph.setProperty(
+                LayeredOptions.CONSIDER_MODEL_ORDER_STRATEGY, OrderingStrategy.NODES_AND_EDGES);
 
-        Map<Long, ElkNode> elkNodes = new LinkedHashMap<>();
-        for (NodeSize nodeSize : request.nodes()) {
+        Map<String, ElkNode> elkNodes = new LinkedHashMap<>();
+        for (LayoutElement element : request.elements()) {
             ElkNode node = ElkGraphUtil.createNode(graph);
-            node.setIdentifier(nodeId(nodeSize.id()));
-            node.setDimensions(nodeSize.width(), nodeSize.height());
-            elkNodes.put(nodeSize.id(), node);
+            node.setIdentifier(element.id());
+            node.setDimensions(element.width(), element.height());
+            elkNodes.put(element.id(), node);
         }
 
-        for (Link link : request.links()) {
+        for (LayoutLink link : request.links()) {
             ElkNode source = elkNodes.get(link.sourceId());
             ElkNode target = elkNodes.get(link.targetId());
-            if (source == null || target == null) {
-                continue;
-            }
+            if (source == null || target == null) continue;
             ElkEdge edge = ElkGraphUtil.createSimpleEdge(source, target);
             edge.setIdentifier(link.id());
         }
 
         new RecursiveGraphLayoutEngine().layout(graph, new BasicProgressMonitor());
 
-        Map<String, ElementBounds> elements = new LinkedHashMap<>();
-        elkNodes.forEach((id, node) -> elements.put(nodeId(id),
-                new ElementBounds(nodeId(id), node.getX(), node.getY(), node.getWidth(), node.getHeight())));
+        Map<String, ElementGeometry> elements = new LinkedHashMap<>();
+        double minX = Double.POSITIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double maxY = Double.NEGATIVE_INFINITY;
+        for (Map.Entry<String, ElkNode> entry : elkNodes.entrySet()) {
+            ElkNode node = entry.getValue();
+            ElementGeometry geometry =
+                    new ElementGeometry(
+                            entry.getKey(),
+                            node.getX(),
+                            node.getY(),
+                            node.getWidth(),
+                            node.getHeight());
+            elements.put(entry.getKey(), geometry);
+            minX = Math.min(minX, geometry.x());
+            minY = Math.min(minY, geometry.y());
+            maxX = Math.max(maxX, geometry.x() + geometry.width());
+            maxY = Math.max(maxY, geometry.y() + geometry.height());
+        }
 
-        Map<String, EdgeRoute> edges = new LinkedHashMap<>();
+        List<EdgeGeometry> edges = new ArrayList<>();
         for (ElkEdge edge : graph.getContainedEdges()) {
-            if (edge.getIdentifier() == null || edge.getSections().isEmpty()) {
-                continue;
-            }
+            if (edge.getIdentifier() == null || edge.getSections().isEmpty()) continue;
             ElkEdgeSection section = edge.getSections().getFirst();
-            List<Point2D> points = new ArrayList<>();
-            points.add(new Point2D(section.getStartX(), section.getStartY()));
-            for (ElkBendPoint bendPoint : section.getBendPoints()) {
-                points.add(new Point2D(bendPoint.getX(), bendPoint.getY()));
+            List<EdgeGeometry.Point> points = new ArrayList<>();
+            points.add(new EdgeGeometry.Point(section.getStartX(), section.getStartY()));
+            for (ElkBendPoint bend : section.getBendPoints()) {
+                points.add(new EdgeGeometry.Point(bend.getX(), bend.getY()));
             }
-            points.add(new Point2D(section.getEndX(), section.getEndY()));
-            edges.put(edge.getIdentifier(), new EdgeRoute(edge.getIdentifier(), points));
-        }
-        return new LayoutResult(elements, edges);
-    }
-
-    public record LayoutRequest(List<NodeSize> nodes, List<Link> links) {
-        public LayoutRequest {
-            nodes = List.copyOf(Objects.requireNonNull(nodes, "nodes"));
-            links = List.copyOf(Objects.requireNonNull(links, "links"));
+            points.add(new EdgeGeometry.Point(section.getEndX(), section.getEndY()));
+            edges.add(new EdgeGeometry(edge.getIdentifier(), points));
         }
 
-        public static LayoutRequest empty() {
-            return new LayoutRequest(List.of(), List.of());
-        }
-    }
-
-    public record NodeSize(long id, double width, double height) {
-        public NodeSize {
-            if (id <= 0) {
-                throw new IllegalArgumentException("node id must be positive");
-            }
-            if (!(width > 0.0d) || !(height > 0.0d)) {
-                throw new IllegalArgumentException("node size must be positive: " + id);
-            }
-        }
-    }
-
-    public record Link(String id, long sourceId, long targetId) {
-        public Link {
-            Objects.requireNonNull(id, "id");
-        }
+        BoundsSnapshot bounds =
+                new BoundsSnapshot(
+                        minX, minY, Math.max(0.0d, maxX - minX), Math.max(0.0d, maxY - minY));
+        return new LayoutResult(
+                request.requestId(), request.modelRevision(), elements, edges, bounds);
     }
 
     public static String nodeId(long id) {

@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Optional capability for a module whose algorithm can be selected by the
- * workspace navigation sidebar.
+ * Optional capability for a module whose algorithm can be selected by the workspace navigation
+ * sidebar.
  */
 public interface AlgorithmSelectionSupport {
 
@@ -23,8 +23,8 @@ public interface AlgorithmSelectionSupport {
     String selectedAlgorithmId();
 
     /**
-     * Receives selection changes caused by the module-local selector or a
-     * structure-variant switch. Passing {@code null} clears the listener.
+     * Receives selection changes caused by the module-local selector or a structure-variant switch.
+     * Passing {@code null} clears the listener.
      */
     void setAlgorithmSelectionListener(Consumer<String> listener);
 }

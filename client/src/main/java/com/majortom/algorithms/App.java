@@ -5,8 +5,7 @@ import com.majortom.algorithms.visualization.launcher.AlgorithmVisualizerLaunche
 /**
  * client 模块的 JavaFX 应用入口。
  *
- * <p>实际 JavaFX 启动逻辑放在 {@link AlgorithmVisualizerLauncher} 中。
- * 这个类保留一个简短 main，方便 Maven、IDE 或统一启动入口调用。</p>
+ * <p>实际 JavaFX 启动逻辑放在 {@link AlgorithmVisualizerLauncher} 中。 这个类保留一个简短 main，方便 Maven、IDE 或统一启动入口调用。
  */
 public class App {
     /**

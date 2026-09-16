@@ -1,11 +1,11 @@
 package com.majortom.algorithms.visualization.execution;
 
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
+import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.ExecutionSession;
 import com.majortom.algorithms.visualization.runtime.LocalAlgorithmExecution;
 
@@ -39,10 +39,23 @@ public final class LocalClientExecutionService implements ClientExecutionService
             Consumer<S> liveStateConsumer,
             Consumer<ExecutionStatistics> liveStatisticsConsumer,
             LongSupplier delayMillisSupplier) {
-        ClientExecutionService.requireStartArguments(operationId, operation, reducer, liveEventConsumer,
-                liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
-        ExecutionSession session = delegate.start(operationId, operation, reducer, liveEventConsumer, liveStateConsumer,
-                liveStatisticsConsumer, delayMillisSupplier);
+        ClientExecutionService.requireStartArguments(
+                operationId,
+                operation,
+                reducer,
+                liveEventConsumer,
+                liveStateConsumer,
+                liveStatisticsConsumer,
+                delayMillisSupplier);
+        ExecutionSession session =
+                delegate.start(
+                        operationId,
+                        operation,
+                        reducer,
+                        liveEventConsumer,
+                        liveStateConsumer,
+                        liveStatisticsConsumer,
+                        delayMillisSupplier);
         return new LocalExecutionHandle(session);
     }
 

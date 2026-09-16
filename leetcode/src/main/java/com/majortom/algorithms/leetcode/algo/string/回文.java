@@ -1,10 +1,10 @@
 package com.majortom.algorithms.leetcode.algo.string;
 
-import java.util.Scanner;
-
 import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 import com.majortom.algorithms.structure.linked.StackStructure;
+
+import java.util.Scanner;
 
 public class 回文 {
     public static void main(String[] args) {

@@ -14,7 +14,8 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
     private int size;
     private long nextNodeId = 1L;
 
-    public static <T extends Comparable<? super T>> AVLTree<T> fromRestoredRoot(AVLTreeNode<T> restoredRoot) {
+    public static <T extends Comparable<? super T>> AVLTree<T> fromRestoredRoot(
+            AVLTreeNode<T> restoredRoot) {
         Set<AVLTreeNode<T>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
         Set<Long> nodeIds = new HashSet<>();
         Validation validation = validateRestored(restoredRoot, null, null, identities, nodeIds);
@@ -43,7 +44,8 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
         size = sortedUniqueValues.size();
     }
 
-    private AVLTreeNode<T> buildBalanced(List<? extends T> values, int fromInclusive, int toExclusive) {
+    private AVLTreeNode<T> buildBalanced(
+            List<? extends T> values, int fromInclusive, int toExclusive) {
         if (fromInclusive >= toExclusive) {
             return null;
         }
@@ -230,39 +232,57 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
             return Validation.empty();
         }
         if (!identities.add(node)) {
-            throw new IllegalArgumentException("restored AVL tree contains a cycle or reused node reference");
+            throw new IllegalArgumentException(
+                    "restored AVL tree contains a cycle or reused node reference");
         }
         if (!nodeIds.add(node.getId())) {
-            throw new IllegalArgumentException("restored AVL tree contains duplicate node id: " + node.getId());
+            throw new IllegalArgumentException(
+                    "restored AVL tree contains duplicate node id: " + node.getId());
         }
         T value = Objects.requireNonNull(node.getValue(), "restored AVL node value");
         if (lowerExclusive != null && value.compareTo(lowerExclusive) <= 0) {
-            throw new IllegalArgumentException("restored AVL tree violates BST lower bound at node " + node.getId());
+            throw new IllegalArgumentException(
+                    "restored AVL tree violates BST lower bound at node " + node.getId());
         }
         if (upperExclusive != null && value.compareTo(upperExclusive) >= 0) {
-            throw new IllegalArgumentException("restored AVL tree violates BST upper bound at node " + node.getId());
+            throw new IllegalArgumentException(
+                    "restored AVL tree violates BST upper bound at node " + node.getId());
         }
 
         @SuppressWarnings("unchecked")
         AVLTreeNode<T> left = (AVLTreeNode<T>) node.getLeft();
         @SuppressWarnings("unchecked")
         AVLTreeNode<T> right = (AVLTreeNode<T>) node.getRight();
-        Validation leftValidation = validateRestored(left, lowerExclusive, value, identities, nodeIds);
-        Validation rightValidation = validateRestored(right, value, upperExclusive, identities, nodeIds);
+        Validation leftValidation =
+                validateRestored(left, lowerExclusive, value, identities, nodeIds);
+        Validation rightValidation =
+                validateRestored(right, value, upperExclusive, identities, nodeIds);
         int expectedHeight = Math.max(leftValidation.height(), rightValidation.height()) + 1;
         int expectedCount = leftValidation.count() + rightValidation.count() + 1;
         if (node.getHeight() != expectedHeight) {
-            throw new IllegalArgumentException("restored AVL height mismatch at node " + node.getId()
-                    + ": expected " + expectedHeight + ", actual " + node.getHeight());
+            throw new IllegalArgumentException(
+                    "restored AVL height mismatch at node "
+                            + node.getId()
+                            + ": expected "
+                            + expectedHeight
+                            + ", actual "
+                            + node.getHeight());
         }
         if (node.getSubTreeCount() != expectedCount) {
-            throw new IllegalArgumentException("restored AVL subtree count mismatch at node " + node.getId()
-                    + ": expected " + expectedCount + ", actual " + node.getSubTreeCount());
+            throw new IllegalArgumentException(
+                    "restored AVL subtree count mismatch at node "
+                            + node.getId()
+                            + ": expected "
+                            + expectedCount
+                            + ", actual "
+                            + node.getSubTreeCount());
         }
         if (Math.abs(leftValidation.height() - rightValidation.height()) > 1) {
-            throw new IllegalArgumentException("restored AVL balance factor is invalid at node " + node.getId());
+            throw new IllegalArgumentException(
+                    "restored AVL balance factor is invalid at node " + node.getId());
         }
-        long maxId = Math.max(node.getId(), Math.max(leftValidation.maxId(), rightValidation.maxId()));
+        long maxId =
+                Math.max(node.getId(), Math.max(leftValidation.maxId(), rightValidation.maxId()));
         return new Validation(expectedHeight, expectedCount, maxId);
     }
 
@@ -276,7 +296,9 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
         if (node == null) {
             return;
         }
-        node.updateMetrics(Math.max(height(left(node)), height(right(node))) + 1, count(left(node)) + count(right(node)) + 1);
+        node.updateMetrics(
+                Math.max(height(left(node)), height(right(node))) + 1,
+                count(left(node)) + count(right(node)) + 1);
     }
 
     private void setRoot(AVLTreeNode<T> newRoot) {

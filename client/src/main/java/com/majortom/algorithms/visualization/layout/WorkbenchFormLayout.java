@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.layout;
 
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -21,9 +22,9 @@ import java.util.List;
 /**
  * Central layout policy for every Structure/Algorithm control panel.
  *
- * <p>FXML describes semantic controls only. This class owns responsive rows,
- * localized text metrics and operation-control sizing so individual modules do
- * not need per-language, per-font-size or narrow-window fixes.</p>
+ * <p>FXML describes semantic controls only. This class owns responsive rows, localized text metrics
+ * and operation-control sizing so individual modules do not need per-language, per-font-size or
+ * narrow-window fixes.
  */
 public final class WorkbenchFormLayout {
 
@@ -39,11 +40,12 @@ public final class WorkbenchFormLayout {
     private static final double METRIC_SAFETY_PADDING = 2.0d;
     private static final int AUTO_GROUP_COLUMNS = 2;
 
-    private WorkbenchFormLayout() {
-    }
+    private WorkbenchFormLayout() {}
 
     public static void install(Node root) {
-        if (root == null || Boolean.TRUE.equals(root.getProperties().putIfAbsent(INSTALLED_PROPERTY, Boolean.TRUE))) {
+        if (root == null
+                || Boolean.TRUE.equals(
+                        root.getProperties().putIfAbsent(INSTALLED_PROPERTY, Boolean.TRUE))) {
             return;
         }
         replaceOperationRows(root);
@@ -114,8 +116,8 @@ public final class WorkbenchFormLayout {
             return;
         }
 
-        AdaptiveFormRow replacement = operationRow(
-                source.getSpacing() > 0.0d ? source.getSpacing() : ROW_GAP);
+        AdaptiveFormRow replacement =
+                operationRow(source.getSpacing() > 0.0d ? source.getSpacing() : ROW_GAP);
         replacement.setId(source.getId());
         replacement.getStyleClass().addAll(source.getStyleClass());
         replacement.setManaged(source.isManaged());
@@ -130,10 +132,10 @@ public final class WorkbenchFormLayout {
     }
 
     /**
-     * Older module FXMLs contain direct operation-input / operation-button
-     * children. Compose them into the same two-column adaptive grid used by
-     * explicit operation-row declarations. This is intentionally centralized:
-     * new and old modules get the same layout without FXML-specific patches.
+     * Older module FXMLs contain direct operation-input / operation-button children. Compose them
+     * into the same two-column adaptive grid used by explicit operation-row declarations. This is
+     * intentionally centralized: new and old modules get the same layout without FXML-specific
+     * patches.
      */
     private static void composeLooseOperationControls(Node root) {
         if (!(root instanceof Parent parent)) {
@@ -154,7 +156,7 @@ public final class WorkbenchFormLayout {
         }
 
         section.getChildren().clear();
-        for (int index = 0; index < original.size();) {
+        for (int index = 0; index < original.size(); ) {
             Node child = original.get(index);
             OperationRole role = operationRole(child);
             if (role == OperationRole.NONE) {
@@ -166,7 +168,8 @@ public final class WorkbenchFormLayout {
             AdaptiveFormRow row = operationRow(ROW_GAP);
             row.getStyleClass().add("auto-operation-row");
             int columns = 0;
-            while (index < original.size() && columns < AUTO_GROUP_COLUMNS
+            while (index < original.size()
+                    && columns < AUTO_GROUP_COLUMNS
                     && operationRole(original.get(index)) == role) {
                 row.getChildren().add(original.get(index));
                 index++;
@@ -187,10 +190,11 @@ public final class WorkbenchFormLayout {
     }
 
     private static void syncManagedState(AdaptiveFormRow row) {
-        Runnable refresh = () -> {
-            row.setManaged(row.getChildren().stream().anyMatch(Node::isManaged));
-            row.setVisible(row.getChildren().stream().anyMatch(Node::isVisible));
-        };
+        Runnable refresh =
+                () -> {
+                    row.setManaged(row.getChildren().stream().anyMatch(Node::isManaged));
+                    row.setVisible(row.getChildren().stream().anyMatch(Node::isVisible));
+                };
         for (Node child : row.getChildren()) {
             child.managedProperty().addListener((observable, oldValue, newValue) -> refresh.run());
             child.visibleProperty().addListener((observable, oldValue, newValue) -> refresh.run());
@@ -199,9 +203,9 @@ public final class WorkbenchFormLayout {
     }
 
     /**
-     * A module's outer controlPanel is later dismantled by MainController and
-     * its sections are moved into structure/algorithm hosts. Therefore metric
-     * listeners live on each section, not on the disposable outer panel.
+     * A module's outer controlPanel is later dismantled by MainController and its sections are
+     * moved into structure/algorithm hosts. Therefore metric listeners live on each section, not on
+     * the disposable outer panel.
      */
     private static void installSectionMetrics(Node root) {
         if (root instanceof VBox section && isOperationSection(section)) {
@@ -215,19 +219,25 @@ public final class WorkbenchFormLayout {
     }
 
     private static void installSectionMetricPolicy(VBox section) {
-        if (Boolean.TRUE.equals(section.getProperties().putIfAbsent(SECTION_METRICS_PROPERTY, Boolean.TRUE))) {
+        if (Boolean.TRUE.equals(
+                section.getProperties().putIfAbsent(SECTION_METRICS_PROPERTY, Boolean.TRUE))) {
             return;
         }
-        section.sceneProperty().addListener((observable, oldScene, newScene) -> scheduleMetricRefresh(section));
+        section.sceneProperty()
+                .addListener((observable, oldScene, newScene) -> scheduleMetricRefresh(section));
         installFontListeners(section, section);
         scheduleMetricRefresh(section);
     }
 
     private static void installFontListeners(VBox section, Node node) {
         if (node instanceof TextInputControl input && isOperationControl(input)) {
-            input.fontProperty().addListener((observable, oldValue, newValue) -> scheduleMetricRefresh(section));
+            input.fontProperty()
+                    .addListener(
+                            (observable, oldValue, newValue) -> scheduleMetricRefresh(section));
         } else if (node instanceof Labeled labeled && isOperationControl(labeled)) {
-            labeled.fontProperty().addListener((observable, oldValue, newValue) -> scheduleMetricRefresh(section));
+            labeled.fontProperty()
+                    .addListener(
+                            (observable, oldValue, newValue) -> scheduleMetricRefresh(section));
         }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
@@ -237,18 +247,20 @@ public final class WorkbenchFormLayout {
     }
 
     private static void scheduleMetricRefresh(VBox section) {
-        if (Boolean.TRUE.equals(section.getProperties().putIfAbsent(REFRESH_SCHEDULED_PROPERTY, Boolean.TRUE))) {
+        if (Boolean.TRUE.equals(
+                section.getProperties().putIfAbsent(REFRESH_SCHEDULED_PROPERTY, Boolean.TRUE))) {
             return;
         }
-        Platform.runLater(() -> {
-            section.getProperties().remove(REFRESH_SCHEDULED_PROPERTY);
-            if (section.getScene() == null) {
-                return;
-            }
-            section.applyCss();
-            refreshOperationMetrics(section);
-            section.requestLayout();
-        });
+        FxDispatch.defer(
+                () -> {
+                    section.getProperties().remove(REFRESH_SCHEDULED_PROPERTY);
+                    if (section.getScene() == null) {
+                        return;
+                    }
+                    section.applyCss();
+                    refreshOperationMetrics(section);
+                    section.requestLayout();
+                });
     }
 
     private static void refreshOperationMetrics(VBox section) {
@@ -281,9 +293,9 @@ public final class WorkbenchFormLayout {
     }
 
     /**
-     * Measure a mixed CJK/Latin probe with the control's resolved JavaFX font.
-     * This accounts for CJK fallback ascent/descent instead of assuming that a
-     * 24px font always fits in a 30px control.
+     * Measure a mixed CJK/Latin probe with the control's resolved JavaFX font. This accounts for
+     * CJK fallback ascent/descent instead of assuming that a 24px font always fits in a 30px
+     * control.
      */
     private static double metricHeight(Region control) {
         Font font = fontOf(control);

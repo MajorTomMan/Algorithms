@@ -12,49 +12,69 @@ public final class AlgorithmCatalog {
 
     private static final ComponentRegistry REGISTRY = ComponentDiscovery.discover();
 
-    private AlgorithmCatalog() {
-    }
+    private AlgorithmCatalog() {}
 
     public static String name(String algorithmId) {
-        List<AlgorithmDescriptor> matches = REGISTRY.algorithms().stream()
-                .filter(descriptor -> descriptor.id().equals(algorithmId))
-                .toList();
+        List<AlgorithmDescriptor> matches =
+                REGISTRY.algorithms().stream()
+                        .filter(descriptor -> descriptor.id().equals(algorithmId))
+                        .toList();
         if (matches.isEmpty()) {
             throw new IllegalArgumentException("No Algorithm registered for id: " + algorithmId);
         }
         List<String> names = matches.stream().map(AlgorithmDescriptor::name).distinct().toList();
         if (names.size() != 1) {
-            throw new IllegalArgumentException("Algorithm id has multiple display names across registrations: "
-                    + algorithmId + " -> " + names);
+            throw new IllegalArgumentException(
+                    "Algorithm id has multiple display names across registrations: "
+                            + algorithmId
+                            + " -> "
+                            + names);
         }
         return names.getFirst();
     }
 
-    public static AlgorithmDescriptor descriptor(String moduleId, Class<?> valueType, String algorithmId) {
+    public static AlgorithmDescriptor descriptor(
+            String moduleId, Class<?> valueType, String algorithmId) {
         return REGISTRY.requireAlgorithm(StructureModule.fromId(moduleId), valueType, algorithmId);
     }
 
     public static AlgorithmDescriptor descriptor(String moduleId, String algorithmId) {
         StructureModule module = StructureModule.fromId(moduleId);
-        List<AlgorithmDescriptor> matches = REGISTRY.algorithms().stream()
-                .filter(descriptor -> descriptor.module() == module && descriptor.id().equals(algorithmId))
-                .toList();
+        List<AlgorithmDescriptor> matches =
+                REGISTRY.algorithms().stream()
+                        .filter(
+                                descriptor ->
+                                        descriptor.module() == module
+                                                && descriptor.id().equals(algorithmId))
+                        .toList();
         if (matches.size() != 1) {
-            throw new IllegalArgumentException("Expected exactly one Algorithm for module=" + module.id()
-                    + ", id=" + algorithmId + ", found=" + matches.size());
+            throw new IllegalArgumentException(
+                    "Expected exactly one Algorithm for module="
+                            + module.id()
+                            + ", id="
+                            + algorithmId
+                            + ", found="
+                            + matches.size());
         }
         return matches.getFirst();
     }
 
     public static AlgorithmDescriptor compatibleDescriptor(
             Class<?> activeStructure, Class<?> valueType, String algorithmId) {
-        List<AlgorithmDescriptor> matches = REGISTRY.compatibleAlgorithms(activeStructure, valueType).stream()
-                .filter(descriptor -> descriptor.id().equals(algorithmId))
-                .toList();
+        List<AlgorithmDescriptor> matches =
+                REGISTRY.compatibleAlgorithms(activeStructure, valueType).stream()
+                        .filter(descriptor -> descriptor.id().equals(algorithmId))
+                        .toList();
         if (matches.size() != 1) {
-            throw new IllegalArgumentException("Expected exactly one compatible Algorithm for structure="
-                    + activeStructure.getName() + ", type=" + valueType.getName() + ", id=" + algorithmId
-                    + ", found=" + matches.size());
+            throw new IllegalArgumentException(
+                    "Expected exactly one compatible Algorithm for structure="
+                            + activeStructure.getName()
+                            + ", type="
+                            + valueType.getName()
+                            + ", id="
+                            + algorithmId
+                            + ", found="
+                            + matches.size());
         }
         return matches.getFirst();
     }

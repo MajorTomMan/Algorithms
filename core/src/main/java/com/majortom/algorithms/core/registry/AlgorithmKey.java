@@ -3,10 +3,7 @@ package com.majortom.algorithms.core.registry;
 import java.util.Objects;
 
 /** Stable runtime identity of an Algorithm registration. */
-public record AlgorithmKey(
-        Class<?> structureContract,
-        Class<?> valueType,
-        String algorithmId) {
+public record AlgorithmKey(Class<?> structureContract, Class<?> valueType, String algorithmId) {
 
     public AlgorithmKey {
         structureContract = Objects.requireNonNull(structureContract, "structureContract");
@@ -16,7 +13,8 @@ public record AlgorithmKey(
 
     public static AlgorithmKey of(AlgorithmDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
-        return new AlgorithmKey(descriptor.structureContract(), descriptor.valueType(), descriptor.id());
+        return new AlgorithmKey(
+                descriptor.structureContract(), descriptor.valueType(), descriptor.id());
     }
 
     private static String requireText(String value, String name) {

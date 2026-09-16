@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 public class 三个数的最大乘积 {
     public static void main(String[] args) {
-        int[] nums = { -1,-2,-3,-4};
+        int[] nums = {-1, -2, -3, -4};
         System.out.println(maximumProduct(nums));
     }
 

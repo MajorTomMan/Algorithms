@@ -5,9 +5,7 @@ import java.util.Optional;
 
 /** Immutable terminal result for one runtime-managed operation. */
 public record ExecutionResult(
-        ExecutionStatus status,
-        Optional<Object> output,
-        Optional<ExecutionFailure> failure) {
+        ExecutionStatus status, Optional<Object> output, Optional<ExecutionFailure> failure) {
 
     public ExecutionResult {
         Objects.requireNonNull(status, "status");
@@ -25,7 +23,8 @@ public record ExecutionResult(
     }
 
     public static ExecutionResult completed(Object output) {
-        return new ExecutionResult(ExecutionStatus.COMPLETED, Optional.ofNullable(output), Optional.empty());
+        return new ExecutionResult(
+                ExecutionStatus.COMPLETED, Optional.ofNullable(output), Optional.empty());
     }
 
     public static ExecutionResult completed() {

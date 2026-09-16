@@ -9,8 +9,7 @@ public interface EventSink {
     void accept(EventEnvelope event);
 
     static EventSink noop() {
-        return event -> {
-        };
+        return event -> {};
     }
 
     default EventSink andThen(EventSink next) {

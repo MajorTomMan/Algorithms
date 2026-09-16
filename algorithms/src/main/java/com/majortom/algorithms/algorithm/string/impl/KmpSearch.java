@@ -63,7 +63,8 @@ public final class KmpSearch {
     }
 
     private String pattern(StringStructure target) {
-        // Pattern selection is KMP policy. Structure and framework deliberately know nothing about it.
+        // Pattern selection is KMP policy. Structure and framework deliberately know nothing about
+        // it.
         return DEFAULT_PATTERN;
     }
 

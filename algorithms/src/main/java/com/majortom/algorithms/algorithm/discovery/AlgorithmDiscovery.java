@@ -46,26 +46,28 @@ public final class AlgorithmDiscovery {
             }
             Class<?> structureContract = annotation.structure();
             if (structureContract.getAnnotation(Structure.class) == null) {
-                throw new RegistrationException("Algorithm structure contract is missing @Structure metadata: "
-                        + structureContract.getName());
+                throw new RegistrationException(
+                        "Algorithm structure contract is missing @Structure metadata: "
+                                + structureContract.getName());
             }
             Method entryPoint = findEntryPoint(implementation);
-            AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
-                    annotation.id(),
-                    ComponentNames.resolve(annotation.name(), implementation),
-                    annotation.type(),
-                    structureContract,
-                    implementation,
-                    entryPoint);
+            AlgorithmDescriptor descriptor =
+                    new AlgorithmDescriptor(
+                            annotation.id(),
+                            ComponentNames.resolve(annotation.name(), implementation),
+                            annotation.type(),
+                            structureContract,
+                            implementation,
+                            entryPoint);
             RegistrationValidator.validate(descriptor);
             validateValueType(descriptor);
             descriptors.add(descriptor);
         }
-        descriptors.sort(Comparator
-                .comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
-                .thenComparing(descriptor -> descriptor.structureContract().getName())
-                .thenComparing(descriptor -> descriptor.valueType().getName())
-                .thenComparing(AlgorithmDescriptor::id));
+        descriptors.sort(
+                Comparator.comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
+                        .thenComparing(descriptor -> descriptor.structureContract().getName())
+                        .thenComparing(descriptor -> descriptor.valueType().getName())
+                        .thenComparing(AlgorithmDescriptor::id));
         RegistrationValidator.validateUniqueAlgorithmKeys(descriptors);
         return List.copyOf(descriptors);
     }
@@ -75,9 +77,13 @@ public final class AlgorithmDiscovery {
         Set<Class<?>> structureTypes = new HashSet<>();
         collectConcreteTypeArguments(structureParameter, new HashMap<>(), structureTypes);
         if (!structureTypes.isEmpty() && !structureTypes.contains(descriptor.valueType())) {
-            throw new RegistrationException("Algorithm annotation type " + descriptor.valueType().getName()
-                    + " does not match entry Structure parameter of " + descriptor.implementation().getName()
-                    + ": " + structureTypes.stream().map(Class::getName).sorted().toList());
+            throw new RegistrationException(
+                    "Algorithm annotation type "
+                            + descriptor.valueType().getName()
+                            + " does not match entry Structure parameter of "
+                            + descriptor.implementation().getName()
+                            + ": "
+                            + structureTypes.stream().map(Class::getName).sorted().toList());
         }
     }
 
@@ -101,7 +107,8 @@ public final class AlgorithmDiscovery {
         }
     }
 
-    private void collectHierarchy(Class<?> type, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
+    private void collectHierarchy(
+            Class<?> type, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
         for (Type interfaceType : type.getGenericInterfaces()) {
             collectConcreteTypeArguments(interfaceType, bindings, result);
         }
@@ -131,11 +138,12 @@ public final class AlgorithmDiscovery {
             }
         }
         if (entries.size() != 1) {
-            throw new RegistrationException("Algorithm " + implementation.getName()
-                    + " must expose exactly one @AlgorithmEntry method, found " + entries.size());
+            throw new RegistrationException(
+                    "Algorithm "
+                            + implementation.getName()
+                            + " must expose exactly one @AlgorithmEntry method, found "
+                            + entries.size());
         }
         return entries.getFirst();
     }
-
-
 }

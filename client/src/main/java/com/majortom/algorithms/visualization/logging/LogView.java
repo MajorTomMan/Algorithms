@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.logging;
 
 import com.majortom.algorithms.core.logging.LogEvent;
 import com.majortom.algorithms.core.logging.LogLevel;
+
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -48,8 +49,7 @@ public final class LogView extends ListView<LogView.Line> {
         scrollTo(getItems().size() - 1);
     }
 
-    public record Line(String time, LogLevel level, String tag, String message) {
-    }
+    public record Line(String time, LogLevel level, String tag, String message) {}
 
     private static final class LogCell extends ListCell<Line> {
 
@@ -63,7 +63,8 @@ public final class LogView extends ListView<LogView.Line> {
             }
 
             Region bullet = new Region();
-            bullet.getStyleClass().addAll("log-bullet", "log-bullet-" + line.level().name().toLowerCase());
+            bullet.getStyleClass()
+                    .addAll("log-bullet", "log-bullet-" + line.level().name().toLowerCase());
 
             Text time = new Text(line.time() + "  ");
             time.getStyleClass().add("log-time");

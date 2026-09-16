@@ -3,7 +3,11 @@ package com.majortom.algorithms.structure.string;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
-@Structure(id = "string", name = "String", module = StructureModule.STRING, implementation = String.class)
+@Structure(
+        id = "string",
+        name = "String",
+        module = StructureModule.STRING,
+        implementation = String.class)
 public interface StringStructure {
     int length();
 
@@ -12,9 +16,13 @@ public interface StringStructure {
     }
 
     char charAt(int index);
+
     char set(int index, char value);
+
     void insert(int index, CharSequence value);
+
     java.lang.String remove(int index, int length);
+
     java.lang.String replace(int index, int length, CharSequence value);
 
     default void append(CharSequence value) {

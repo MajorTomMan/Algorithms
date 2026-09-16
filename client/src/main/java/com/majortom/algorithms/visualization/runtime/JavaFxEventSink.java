@@ -3,20 +3,23 @@ package com.majortom.algorithms.visualization.runtime;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.EventSink;
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.timing.RenderTimer;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
-/** Ordered, non-blocking live playback queue for authoritative Runtime events. */
+/**
+ * Ordered live-presentation queue for authoritative Runtime events; timing is delegated to
+ * RenderClock.
+ */
 public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
     static final int DEFAULT_CAPACITY = 200_000;
@@ -25,7 +28,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
     private final Consumer<EventEnvelope> consumer;
     private final LongSupplier delayMillisSupplier;
     private final int capacity;
-    private final ScheduledExecutorService playbackScheduler;
+    private final RenderTimer timer;
     private final Object lock = new Object();
     private final Deque<EventEnvelope> pendingEvents = new ArrayDeque<>();
 
@@ -39,31 +42,44 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
     private CompletableFuture<Void> drained = CompletableFuture.completedFuture(null);
 
     public JavaFxEventSink(Consumer<EventEnvelope> consumer) {
-        this(Platform::runLater, consumer, DEFAULT_CAPACITY, () -> 0L);
+        this(FxDispatch::defer, consumer, DEFAULT_CAPACITY, () -> 0L);
     }
 
     JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer) {
         this(dispatcher, consumer, DEFAULT_CAPACITY, () -> 0L);
     }
 
-    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity, int ignoredBatchSize) {
+    JavaFxEventSink(
+            Consumer<Runnable> dispatcher,
+            Consumer<EventEnvelope> consumer,
+            int capacity,
+            int ignoredBatchSize) {
         this(dispatcher, consumer, capacity, () -> 0L);
     }
 
-    JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity,
+    JavaFxEventSink(
+            Consumer<Runnable> dispatcher,
+            Consumer<EventEnvelope> consumer,
+            int capacity,
             LongSupplier delayMillisSupplier) {
+        this(dispatcher, consumer, capacity, delayMillisSupplier, RenderRuntime.clock());
+    }
+
+    JavaFxEventSink(
+            Consumer<Runnable> dispatcher,
+            Consumer<EventEnvelope> consumer,
+            int capacity,
+            LongSupplier delayMillisSupplier,
+            RenderTimer timer) {
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
         this.consumer = Objects.requireNonNull(consumer, "consumer");
-        this.delayMillisSupplier = Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
+        this.delayMillisSupplier =
+                Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
+        this.timer = Objects.requireNonNull(timer, "timer");
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
         this.capacity = capacity;
-        this.playbackScheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "live-playback");
-            thread.setDaemon(true);
-            return thread;
-        });
     }
 
     @Override
@@ -74,7 +90,9 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
                 return;
             }
             if (pendingEvents.size() >= capacity) {
-                observerFailure = new IllegalStateException("Live playback queue capacity exceeded: " + capacity);
+                observerFailure =
+                        new IllegalStateException(
+                                "Live playback queue capacity exceeded: " + capacity);
                 observerFailureCount++;
                 pendingEvents.clear();
                 completeDrainedIfIdle();
@@ -156,11 +174,14 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
                 drained.complete(null);
             }
         }
-        playbackScheduler.shutdownNow();
     }
 
     private void scheduleNextLocked(long delayMillis) {
-        if (closed || dispatcherFailure != null || observerFailure != null || dispatchInFlight || pendingEvents.isEmpty()) {
+        if (closed
+                || dispatcherFailure != null
+                || observerFailure != null
+                || dispatchInFlight
+                || pendingEvents.isEmpty()) {
             completeDrainedIfIdle();
             return;
         }
@@ -175,7 +196,14 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
             delay = Math.max(0L, delayMillis);
         }
         dispatchInFlight = true;
-        playbackScheduler.schedule(this::dispatchNext, delay, TimeUnit.MILLISECONDS);
+        try {
+            timer.schedule(Duration.ofMillis(delay), this::dispatchNext);
+        } catch (RuntimeException exception) {
+            dispatcherFailure = exception;
+            dispatchInFlight = false;
+            pendingEvents.clear();
+            completeDrainedIfIdle();
+        }
     }
 
     private void dispatchNext() {

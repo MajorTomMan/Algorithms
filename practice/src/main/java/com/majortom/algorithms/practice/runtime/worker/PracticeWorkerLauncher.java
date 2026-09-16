@@ -12,9 +12,9 @@ import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.event.ClassPrepareEvent;
@@ -42,18 +42,30 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-/** Executes one already-discovered Practice entry in an isolated child JVM and records factual JDI trace frames. */
+/**
+ * Executes one already-discovered Practice entry in an isolated child JVM and records factual JDI
+ * trace frames.
+ */
 public final class PracticeWorkerLauncher {
     private static final int TIMEOUT_EXIT_CODE = 124;
 
-    public PracticeRecording run(ProblemDescriptor descriptor, Duration timeout, Object... arguments) {
+    public PracticeRecording run(
+            ProblemDescriptor descriptor, Duration timeout, Object... arguments) {
         Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(timeout, "timeout");
-        if (timeout.isZero() || timeout.isNegative()) throw new IllegalArgumentException("timeout must be positive");
+        if (timeout.isZero() || timeout.isNegative())
+            throw new IllegalArgumentException("timeout must be positive");
         Method entry = descriptor.entryPoint();
-        String[] parameterNames = java.util.Arrays.stream(entry.getParameterTypes()).map(Class::getName).toArray(String[]::new);
-        WorkerInvocation invocation = new WorkerInvocation(
-                descriptor.implementation().getName(), entry.getName(), parameterNames, arguments);
+        String[] parameterNames =
+                java.util.Arrays.stream(entry.getParameterTypes())
+                        .map(Class::getName)
+                        .toArray(String[]::new);
+        WorkerInvocation invocation =
+                new WorkerInvocation(
+                        descriptor.implementation().getName(),
+                        entry.getName(),
+                        parameterNames,
+                        arguments);
         return launch(invocation, timeout);
     }
 
@@ -68,8 +80,12 @@ public final class PracticeWorkerLauncher {
             LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
             Map<String, Connector.Argument> connectorArgs = connector.defaultArguments();
             String encodedInvocation = WorkerCodec.encode(invocation);
-            connectorArgs.get("main").setValue(PracticeWorkerMain.class.getName() + " " + encodedInvocation);
-            connectorArgs.get("options").setValue("-Dfile.encoding=UTF-8 -cp \"" + childClasspath() + "\"");
+            connectorArgs
+                    .get("main")
+                    .setValue(PracticeWorkerMain.class.getName() + " " + encodedInvocation);
+            connectorArgs
+                    .get("options")
+                    .setValue("-Dfile.encoding=UTF-8 -cp \"" + childClasspath() + "\"");
             connectorArgs.get("suspend").setValue("true");
             vm = connector.launch(connectorArgs);
             worker = vm.process();
@@ -79,7 +95,8 @@ public final class PracticeWorkerLauncher {
             prepare.setSuspendPolicy(EventRequest.SUSPEND_ALL);
             prepare.enable();
 
-            ExceptionRequest exceptionRequest = vm.eventRequestManager().createExceptionRequest(null, true, true);
+            ExceptionRequest exceptionRequest =
+                    vm.eventRequestManager().createExceptionRequest(null, true, true);
             exceptionRequest.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
             exceptionRequest.enable();
 
@@ -87,8 +104,13 @@ public final class PracticeWorkerLauncher {
             boolean done = false;
             vm.resume();
             while (!done && System.nanoTime() < deadline) {
-                long remainingMillis = Math.max(1L,
-                        Math.min(100L, TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())));
+                long remainingMillis =
+                        Math.max(
+                                1L,
+                                Math.min(
+                                        100L,
+                                        TimeUnit.NANOSECONDS.toMillis(
+                                                deadline - System.nanoTime())));
                 EventSet set;
                 try {
                     set = vm.eventQueue().remove(remainingMillis);
@@ -101,23 +123,36 @@ public final class PracticeWorkerLauncher {
                         if (event instanceof ClassPrepareEvent prepared) {
                             installStepRequest(vm, prepared.thread(), invocation.className());
                         } else if (event instanceof StepEvent step) {
-                            if (step.location().declaringType().name().equals(invocation.className())) {
+                            if (step.location()
+                                    .declaringType()
+                                    .name()
+                                    .equals(invocation.className())) {
                                 frames.add(frame(step));
                             }
                         } else if (event instanceof ExceptionEvent exception) {
-                            if (exception.location().declaringType().name().equals(invocation.className())) {
-                                exceptions.add(new PracticeExceptionFact(
-                                        exception.exception().referenceType().name(),
-                                        exceptionMessage(exception.exception()),
-                                        exception.location().lineNumber(),
-                                        exception.catchLocation() != null));
+                            if (exception
+                                    .location()
+                                    .declaringType()
+                                    .name()
+                                    .equals(invocation.className())) {
+                                exceptions.add(
+                                        new PracticeExceptionFact(
+                                                exception.exception().referenceType().name(),
+                                                exceptionMessage(exception.exception()),
+                                                exception.location().lineNumber(),
+                                                exception.catchLocation() != null));
                             }
-                        } else if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
+                        } else if (event instanceof VMDeathEvent
+                                || event instanceof VMDisconnectEvent) {
                             done = true;
                         }
                     }
                 } finally {
-                    try { set.resume(); } catch (VMDisconnectedException ignored) { done = true; }
+                    try {
+                        set.resume();
+                    } catch (VMDisconnectedException ignored) {
+                        done = true;
+                    }
                 }
             }
 
@@ -132,16 +167,25 @@ public final class PracticeWorkerLauncher {
             String stdout = read(worker.getInputStream());
             String stderr = read(worker.getErrorStream());
             Object result = timedOut ? null : parseResult(stdout);
-            return new PracticeRecording(frames, exceptions, result,
-                    timedOut ? TIMEOUT_EXIT_CODE : exitCode, timedOut, stderr);
+            return new PracticeRecording(
+                    frames,
+                    exceptions,
+                    result,
+                    timedOut ? TIMEOUT_EXIT_CODE : exitCode,
+                    timedOut,
+                    stderr);
         } catch (Exception exception) {
             if (worker != null && worker.isAlive()) worker.destroyForcibly();
-            throw new IllegalStateException("Practice worker execution failed for " + invocation, exception);
+            throw new IllegalStateException(
+                    "Practice worker execution failed for " + invocation, exception);
         }
     }
 
-    private static void installStepRequest(VirtualMachine vm, ThreadReference thread, String targetClass) {
-        StepRequest step = vm.eventRequestManager().createStepRequest(thread, StepRequest.STEP_LINE, StepRequest.STEP_INTO);
+    private static void installStepRequest(
+            VirtualMachine vm, ThreadReference thread, String targetClass) {
+        StepRequest step =
+                vm.eventRequestManager()
+                        .createStepRequest(thread, StepRequest.STEP_LINE, StepRequest.STEP_INTO);
         step.addClassFilter(targetClass);
         step.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
         step.enable();
@@ -152,21 +196,31 @@ public final class PracticeWorkerLauncher {
         try {
             frame = step.thread().frame(0);
         } catch (Exception unavailable) {
-            return new PracticeFrame(sourceName(step), step.location().declaringType().name(),
-                    step.location().method().name(), step.location().lineNumber(), Map.of());
+            return new PracticeFrame(
+                    sourceName(step),
+                    step.location().declaringType().name(),
+                    step.location().method().name(),
+                    step.location().lineNumber(),
+                    Map.of());
         }
         LinkedHashMap<String, String> locals = new LinkedHashMap<>();
         try {
             List<LocalVariable> variables = new ArrayList<>(frame.visibleVariables());
             variables.sort(Comparator.comparing(LocalVariable::name));
             for (LocalVariable variable : variables) {
-                locals.put(variable.name(), value(frame.getValue(variable), 0, new IdentityHashMap<>()));
+                locals.put(
+                        variable.name(),
+                        value(frame.getValue(variable), 0, new IdentityHashMap<>()));
             }
         } catch (AbsentInformationException ignored) {
             // Debug information is optional; source line recording remains valid without locals.
         }
-        return new PracticeFrame(sourceName(step), step.location().declaringType().name(),
-                step.location().method().name(), step.location().lineNumber(), locals);
+        return new PracticeFrame(
+                sourceName(step),
+                step.location().declaringType().name(),
+                step.location().method().name(),
+                step.location().lineNumber(),
+                locals);
     }
 
     private static String sourceName(StepEvent step) {
@@ -177,7 +231,8 @@ public final class PracticeWorkerLauncher {
         }
     }
 
-    private static String value(Value value, int depth, IdentityHashMap<ObjectReference, Boolean> seen) {
+    private static String value(
+            Value value, int depth, IdentityHashMap<ObjectReference, Boolean> seen) {
         if (value == null) return "null";
         if (value instanceof PrimitiveValue primitive) return primitive.toString();
         if (value instanceof StringReference string) return '"' + string.value() + '"';
@@ -192,12 +247,14 @@ public final class PracticeWorkerLauncher {
             ReferenceType type = object.referenceType();
             String identity = type.name() + "#" + object.uniqueID();
             if (depth >= 1 || seen.put(object, Boolean.TRUE) != null) return identity;
-            List<Field> fields = type.allFields().stream().filter(field -> !field.isStatic()).limit(8).toList();
+            List<Field> fields =
+                    type.allFields().stream().filter(field -> !field.isStatic()).limit(8).toList();
             if (fields.isEmpty()) return identity;
             List<String> facts = new ArrayList<>(fields.size());
             for (Field field : fields) {
                 Value fieldValue = object.getValue(field);
-                if (fieldValue instanceof ObjectReference ref && ref.uniqueID() == object.uniqueID()) {
+                if (fieldValue instanceof ObjectReference ref
+                        && ref.uniqueID() == object.uniqueID()) {
                     facts.add(field.name() + "=self");
                 } else {
                     facts.add(field.name() + "=" + value(fieldValue, depth + 1, seen));
@@ -245,7 +302,8 @@ public final class PracticeWorkerLauncher {
     private static Object parseResult(String stdout) {
         for (String line : stdout.lines().toList()) {
             if (line.startsWith(PracticeWorkerMain.RESULT_PREFIX)) {
-                return WorkerCodec.decode(line.substring(PracticeWorkerMain.RESULT_PREFIX.length()));
+                return WorkerCodec.decode(
+                        line.substring(PracticeWorkerMain.RESULT_PREFIX.length()));
             }
         }
         return null;

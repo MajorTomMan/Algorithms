@@ -6,13 +6,18 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Insertion sort over an ArrayStructure<Integer>. */
-@Algorithm(id = "insertion-sort", name = "Insertion Sort", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(
+        id = "insertion-sort",
+        name = "Insertion Sort",
+        type = Integer.class,
+        structure = ArrayStructure.class)
 public final class IntegerInsertionSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
+
     @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         for (int insertionIndex = 1; insertionIndex < array.size(); insertionIndex++) {

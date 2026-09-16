@@ -11,10 +11,7 @@ import java.util.Objects;
  * @param visualFrame whether observers should expose the result as a visible timeline frame
  */
 public record Reduction<S>(
-        S state,
-        boolean stateChanged,
-        EventImportance importance,
-        boolean visualFrame) {
+        S state, boolean stateChanged, EventImportance importance, boolean visualFrame) {
 
     public Reduction {
         Objects.requireNonNull(state, "state");
@@ -26,9 +23,7 @@ public record Reduction<S>(
 
     /** Creates a state-changing reduction result. */
     public static <S> Reduction<S> changed(
-            S state,
-            EventImportance importance,
-            boolean visualFrame) {
+            S state, EventImportance importance, boolean visualFrame) {
         return new Reduction<>(state, true, importance, visualFrame);
     }
 

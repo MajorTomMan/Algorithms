@@ -4,8 +4,9 @@ import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.layout.WorkbenchFormLayout;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
-import javafx.application.Platform;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -51,7 +52,8 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
             WorkbenchTheme.apply(controlPanel);
             WorkbenchFormLayout.install(controlPanel);
         } catch (IOException exception) {
-            throw new IllegalStateException("Module control panel load failed: " + fxmlPath, exception);
+            throw new IllegalStateException(
+                    "Module control panel load failed: " + fxmlPath, exception);
         }
     }
 
@@ -65,10 +67,10 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
 
     protected final void logI18n(String key, Object... arguments) {
         Runnable task = () -> appendLog(I18N.text(key, arguments));
-        if (Platform.isFxApplicationThread()) {
+        if (FxDispatch.isFxThread()) {
             task.run();
         } else {
-            Platform.runLater(task);
+            FxDispatch.defer(task);
         }
     }
 
@@ -86,18 +88,29 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         localizeChoiceCells(selector, ignored -> I18N.text(key));
     }
 
-    /** Translate cells, never selected identifiers: language changes must not activate another model. */
-    protected final void localizeChoiceCells(ComboBox<String> selector,
-            java.util.function.Function<String, String> displayName) {
-        java.util.function.Supplier<javafx.scene.control.ListCell<String>> cell = () -> new javafx.scene.control.ListCell<>() {
-            @Override protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                textProperty().unbind();
-                if (empty || item == null) setText(null);
-                else textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
-                        () -> displayName.apply(item), I18N.localeProperty()));
-            }
-        };
+    /**
+     * Translate cells, never selected identifiers: language changes must not activate another
+     * model.
+     */
+    protected final void localizeChoiceCells(
+            ComboBox<String> selector, java.util.function.Function<String, String> displayName) {
+        java.util.function.Supplier<javafx.scene.control.ListCell<String>> cell =
+                () ->
+                        new javafx.scene.control.ListCell<>() {
+                            @Override
+                            protected void updateItem(String item, boolean empty) {
+                                super.updateItem(item, empty);
+                                textProperty().unbind();
+                                if (empty || item == null) setText(null);
+                                else
+                                    textProperty()
+                                            .bind(
+                                                    javafx.beans.binding.Bindings
+                                                            .createStringBinding(
+                                                                    () -> displayName.apply(item),
+                                                                    I18N.localeProperty()));
+                            }
+                        };
         selector.setCellFactory(ignored -> cell.get());
         selector.setButtonCell(cell.get());
     }
@@ -114,29 +127,29 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         return "prompt.data.bulk.values";
     }
 
-    protected void applyBulkData(String input) {
-    }
+    protected void applyBulkData(String input) {}
 
-    protected void randomizeData() {
-    }
+    protected void randomizeData() {}
 
     protected final java.util.List<Integer> parseIntegerBatchInput(String input) {
-        return parseBatchInput(input, new ValueAdapter<>() {
-            @Override
-            public Class<Integer> type() {
-                return Integer.class;
-            }
+        return parseBatchInput(
+                input,
+                new ValueAdapter<>() {
+                    @Override
+                    public Class<Integer> type() {
+                        return Integer.class;
+                    }
 
-            @Override
-            public Integer parse(String text) {
-                return Integer.valueOf(text.trim());
-            }
+                    @Override
+                    public Integer parse(String text) {
+                        return Integer.valueOf(text.trim());
+                    }
 
-            @Override
-            public String format(Integer value) {
-                return String.valueOf(value);
-            }
-        });
+                    @Override
+                    public String format(Integer value) {
+                        return String.valueOf(value);
+                    }
+                });
     }
 
     protected final <T> java.util.List<T> parseBatchInput(String input, ValueAdapter<T> adapter) {
@@ -170,8 +183,12 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         }
 
         VBox section = new VBox(8);
-        section.getStyleClass().addAll(
-                "control-section", "control-card", "operation-section", "structure-section");
+        section.getStyleClass()
+                .addAll(
+                        "control-section",
+                        "control-card",
+                        "operation-section",
+                        "structure-section");
 
         HBox header = new HBox();
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -236,13 +253,12 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     }
 
     private void toggleSection(Object source) {
-        if (!(source instanceof Node header)
-                || !(header.getParent() instanceof VBox section)) {
+        if (!(source instanceof Node header) || !(header.getParent() instanceof VBox section)) {
             return;
         }
 
-        boolean expanded = !Boolean.FALSE.equals(
-                section.getProperties().get(SECTION_EXPANDED_PROPERTY));
+        boolean expanded =
+                !Boolean.FALSE.equals(section.getProperties().get(SECTION_EXPANDED_PROPERTY));
         setSectionExpanded(section, header, !expanded);
     }
 

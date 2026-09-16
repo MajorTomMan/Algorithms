@@ -5,7 +5,4 @@ import com.majortom.algorithms.visualization.BaseController;
 import java.util.function.Supplier;
 
 public record WorkbenchModuleDefinition(
-        String id,
-        String name,
-        Supplier<BaseController<?>> controllerFactory) {
-}
+        String id, String name, Supplier<BaseController<?>> controllerFactory) {}

@@ -3,7 +3,6 @@ package com.majortom.algorithms.practice.exercises.concurrency.patterns.pc;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-
 public class BufferQueue {
     private static final String TAG = "QUEUE";
     private BlockingQueue<Goods> queue = new ArrayBlockingQueue<>(10);

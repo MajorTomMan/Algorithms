@@ -13,11 +13,11 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.linked.LinearStructureEventReducer;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
-import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.LongProperty;
@@ -36,15 +36,16 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
-/**
- * Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7.
- */
+/** Stack/Queue controller. LinkedList has its own factual visualizer in Phase 7. */
 public final class LinearStructureController extends BaseModuleController<LinearStructureViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
-        AlgorithmSelectionSupport, SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
+        implements StructureSnapshotSupport<SequenceSnapshot<Object>>,
+                RuntimeValueTypeSupport,
+                AlgorithmSelectionSupport,
+                SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
 
     private enum Kind {
-        STACK, QUEUE
+        STACK,
+        QUEUE
     }
 
     private final Kind kind;
@@ -56,30 +57,19 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;
-    private Consumer<ItemSelection> selectionListener = ignored -> {
-    };
+    private Consumer<ItemSelection> selectionListener = ignored -> {};
 
-    @FXML
-    private Label typeLabel;
-    @FXML
-    private Label structureLabel;
-    @FXML
-    private ComboBox<String> structureSelector;
-    @FXML
-    private Label operationsLabel;
-    @FXML
-    private TextField valueField;
-    @FXML
-    private TextField indexField;
-    @FXML
-    private Button primaryBtn;
-    @FXML
-    private Button secondaryBtn;
-    @FXML
-    private Button quaternaryBtn;
+    @FXML private Label typeLabel;
+    @FXML private Label structureLabel;
+    @FXML private ComboBox<String> structureSelector;
+    @FXML private Label operationsLabel;
+    @FXML private TextField valueField;
+    @FXML private TextField indexField;
+    @FXML private Button primaryBtn;
+    @FXML private Button secondaryBtn;
+    @FXML private Button quaternaryBtn;
 
-    @FXML
-    private ComboBox<String> algorithmSelector;
+    @FXML private ComboBox<String> algorithmSelector;
     private String selectedAlgorithmId;
     private Consumer<String> algorithmSelectionListener;
     private final LongProperty valueTypeRevision = new SimpleLongProperty();
@@ -118,31 +108,38 @@ public final class LinearStructureController extends BaseModuleController<Linear
         super.initialize(location, resources);
         configureControls();
         bindAlgorithmSelector();
-        if (kind == Kind.STACK)
-            stackVisualizer().setSelectionListener(this::handleVisualSelection);
-        else
-            queueVisualizer().setSelectionListener(this::handleVisualSelection);
+        if (kind == Kind.STACK) stackVisualizer().setSelectionListener(this::handleVisualSelection);
+        else queueVisualizer().setSelectionListener(this::handleVisualSelection);
     }
 
     private void bindAlgorithmSelector() {
-        if (algorithmSelector == null)
-            return;
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds()) {
-                labels.add(AlgorithmCatalog.name(id));
-            }
-            return labels;
-        }, valueTypeRevision));
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (obs, oldIdx, newIdx) -> {
-                    List<String> ids = algorithmIds();
-                    selectedAlgorithmId = (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
-                            ? ids.get(newIdx.intValue())
-                            : null;
-                    if (algorithmSelectionListener != null && selectedAlgorithmId != null)
-                        algorithmSelectionListener.accept(selectedAlgorithmId);
-                });
+        if (algorithmSelector == null) return;
+        algorithmSelector
+                .itemsProperty()
+                .bind(
+                        Bindings.createObjectBinding(
+                                () -> {
+                                    ObservableList<String> labels =
+                                            FXCollections.observableArrayList();
+                                    for (String id : algorithmIds()) {
+                                        labels.add(AlgorithmCatalog.name(id));
+                                    }
+                                    return labels;
+                                },
+                                valueTypeRevision));
+        algorithmSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener(
+                        (obs, oldIdx, newIdx) -> {
+                            List<String> ids = algorithmIds();
+                            selectedAlgorithmId =
+                                    (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
+                                            ? ids.get(newIdx.intValue())
+                                            : null;
+                            if (algorithmSelectionListener != null && selectedAlgorithmId != null)
+                                algorithmSelectionListener.accept(selectedAlgorithmId);
+                        });
     }
 
     @FXML
@@ -169,10 +166,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (value == null) {
             return;
         }
-        if (executeStructureOperation("push", () -> {
-            stack.push(value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "push",
+                () -> {
+                    stack.push(value);
+                    return null;
+                })) {
             renderMutation(LinearStructureViewState.Type.PUSH, value);
             stackVisualizer().selectIndex(0);
             logI18n("message.stack.pushed", value);
@@ -186,10 +185,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return;
         }
         Object[] value = new Object[1];
-        if (executeStructureOperation("pop", () -> {
-            value[0] = stack.pop();
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "pop",
+                () -> {
+                    value[0] = stack.pop();
+                    return null;
+                })) {
             renderMutation(LinearStructureViewState.Type.POP, value[0]);
             selectFirstAfterRemoval();
             logI18n("message.stack.popped", value[0]);
@@ -202,10 +203,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (value == null) {
             return;
         }
-        if (executeStructureOperation("enqueue", () -> {
-            queue.enqueue(value);
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "enqueue",
+                () -> {
+                    queue.enqueue(value);
+                    return null;
+                })) {
             renderMutation(LinearStructureViewState.Type.ENQUEUE, value);
             queueVisualizer().selectIndex(values().size() - 1);
             logI18n("message.queue.enqueued", value);
@@ -219,10 +222,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return;
         }
         Object[] value = new Object[1];
-        if (executeStructureOperation("dequeue", () -> {
-            value[0] = queue.dequeue();
-            return null;
-        })) {
+        if (executeStructureOperation(
+                "dequeue",
+                () -> {
+                    value[0] = queue.dequeue();
+                    return null;
+                })) {
             renderMutation(LinearStructureViewState.Type.DEQUEUE, value[0]);
             selectFirstAfterRemoval();
             logI18n("message.queue.dequeued", value[0]);
@@ -295,10 +300,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void replaceValues(List<Object> values, String operationId, String messageKey) {
         clearVisualSelection();
-        if (!executeStructureOperation(operationId, () -> {
-            linkedList.initialize(values);
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                operationId,
+                () -> {
+                    linkedList.initialize(values);
+                    return null;
+                })) {
             return;
         }
         renderStructureState(currentState());
@@ -317,8 +324,9 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void renderMutation(LinearStructureViewState.Type type, Object value) {
-        renderStructureState(LinearStructureViewState.of(
-                moduleId, values(), LinearStructureViewState.Mutation.of(type, value)));
+        renderStructureState(
+                LinearStructureViewState.of(
+                        moduleId, values(), LinearStructureViewState.Mutation.of(type, value)));
     }
 
     private List<Object> values() {
@@ -364,19 +372,27 @@ public final class LinearStructureController extends BaseModuleController<Linear
             logI18n("message.linear.no_algorithm");
             return;
         }
-        List<Object> inputValues = algorithmInputSnapshot == null
-                ? values()
-                : algorithmInputSnapshot.state().values();
+        List<Object> inputValues =
+                algorithmInputSnapshot == null ? values() : algorithmInputSnapshot.state().values();
         LinkedList<Object> input = new LinkedList<>();
         input.initialize(inputValues);
-        Class<?> structureContract = kind == Kind.STACK ? StackStructure.class : QueueStructure.class;
-        var descriptor = AlgorithmCatalog.compatibleDescriptor(
-                structureContract, runtimeValueType, algorithmId);
-        Object algorithmInput = kind == Kind.STACK ? (StackStructure<Object>) input : (QueueStructure<Object>) input;
-        startAlgorithm(algorithmId, inputValues, () -> {
-            descriptor.invoke(algorithmInput);
-            return null;
-        }, () -> new LinearStructureEventReducer(moduleId, inputValues));
+        Class<?> structureContract =
+                kind == Kind.STACK ? StackStructure.class : QueueStructure.class;
+        var descriptor =
+                AlgorithmCatalog.compatibleDescriptor(
+                        structureContract, runtimeValueType, algorithmId);
+        Object algorithmInput =
+                kind == Kind.STACK
+                        ? (StackStructure<Object>) input
+                        : (QueueStructure<Object>) input;
+        startAlgorithm(
+                algorithmId,
+                inputValues,
+                () -> {
+                    descriptor.invoke(algorithmInput);
+                    return null;
+                },
+                () -> new LinearStructureEventReducer(moduleId, inputValues));
     }
 
     @Override
@@ -388,7 +404,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId, runtimeValueType, new SequenceSnapshot<>(values()));
+        return StructureSnapshot.create(
+                moduleId, runtimeValueType, new SequenceSnapshot<>(values()));
     }
 
     @Override
@@ -424,8 +441,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     public void setSelectionListener(Consumer<ItemSelection> listener) {
         if (listener == null) {
-            selectionListener = ignored -> {
-            };
+            selectionListener = ignored -> {};
         } else {
             selectionListener = listener;
         }
@@ -451,7 +467,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
         Object value = current.get(index);
         valueField.setText(valueAdapter.format(value));
         selectionListener.accept(
-                new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
+                new ItemSelection(
+                        index,
+                        VisualValue.of(value),
+                        selectionRole(index, current.size()),
+                        current.size()));
     }
 
     private void handleAlgorithmSelection(int index) {
@@ -512,10 +532,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void clearVisualSelection() {
         algorithmSelectedIndex = -1;
-        if (kind == Kind.STACK)
-            stackVisualizer().clearSelection();
-        else
-            queueVisualizer().clearSelection();
+        if (kind == Kind.STACK) stackVisualizer().clearSelection();
+        else queueVisualizer().clearSelection();
         selectionListener.accept(null);
     }
 
@@ -527,8 +545,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         return (QueueVisualizer) visualizer;
     }
 
-    public record ItemSelection(int index, VisualValue value, String role, int size) {
-    }
+    public record ItemSelection(int index, VisualValue value, String role, int size) {}
 
     private void clearWithoutRuntime() {
         linkedList.initialize(List.of());
@@ -552,7 +569,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     public void setRuntimeValueType(Class<?> valueType) {
         if (!supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException("Unsupported " + moduleId + " value type: " + valueType.getName());
+            throw new IllegalArgumentException(
+                    "Unsupported " + moduleId + " value type: " + valueType.getName());
         }
         if (runtimeValueType.equals(valueType)) {
             return;
@@ -582,18 +600,20 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     public List<String> algorithmIds() {
         return kind == Kind.STACK
-                ? AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.StackStructure.class, runtimeValueType)
-                : AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.QueueStructure.class, runtimeValueType);
+                ? AlgorithmCatalog.compatibleAlgorithms(
+                        com.majortom.algorithms.structure.linked.StackStructure.class,
+                        runtimeValueType)
+                : AlgorithmCatalog.compatibleAlgorithms(
+                        com.majortom.algorithms.structure.linked.QueueStructure.class,
+                        runtimeValueType);
     }
 
     @Override
     public boolean selectAlgorithm(String algorithmId) {
         List<String> ids = algorithmIds();
         int index = ids.indexOf(algorithmId);
-        if (index < 0)
-            return false;
-        if (algorithmSelector != null)
-            algorithmSelector.getSelectionModel().select(index);
+        if (index < 0) return false;
+        if (algorithmSelector != null) algorithmSelector.getSelectionModel().select(index);
         return true;
     }
 

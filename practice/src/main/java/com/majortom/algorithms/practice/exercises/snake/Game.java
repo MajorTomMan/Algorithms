@@ -1,11 +1,11 @@
 package com.majortom.algorithms.practice.exercises.snake;
 
-import java.io.IOException;
-
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.NonBlockingReader;
+
+import java.io.IOException;
 
 public class Game {
     private static final String CLEAR_SCREEN = "\033[H\033[2J";
@@ -69,9 +69,7 @@ public class Game {
     }
 
     private void initTerminal() throws IOException {
-        terminal = TerminalBuilder.builder()
-            .system(true)
-            .build();
+        terminal = TerminalBuilder.builder().system(true).build();
         originalAttributes = terminal.enterRawMode();
     }
 
@@ -109,13 +107,14 @@ public class Game {
         }
 
         int direction = reader.read(5);
-        Direction move = switch (direction) {
-            case 'A' -> Direction.UP;
-            case 'B' -> Direction.DOWN;
-            case 'C' -> Direction.RIGHT;
-            case 'D' -> Direction.LEFT;
-            default -> null;
-        };
+        Direction move =
+                switch (direction) {
+                    case 'A' -> Direction.UP;
+                    case 'B' -> Direction.DOWN;
+                    case 'C' -> Direction.RIGHT;
+                    case 'D' -> Direction.LEFT;
+                    default -> null;
+                };
 
         if (move != null) {
             handleMove(move);
@@ -142,8 +141,7 @@ public class Game {
                     startGame();
                 }
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -169,7 +167,9 @@ public class Game {
     }
 
     private void restartFromCurrentState() {
-        if (state == GameState.PLAYING || state == GameState.PAUSED || state == GameState.GAME_OVER) {
+        if (state == GameState.PLAYING
+                || state == GameState.PAUSED
+                || state == GameState.GAME_OVER) {
             startGame();
         }
     }

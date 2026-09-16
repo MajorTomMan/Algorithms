@@ -19,7 +19,8 @@ public final class PracticeProblemRegistry {
         for (ProblemDescriptor descriptor : descriptors) {
             ProblemDescriptor previous = indexed.putIfAbsent(descriptor.stableId(), descriptor);
             if (previous != null) {
-                throw new IllegalArgumentException("Duplicate problem id: " + descriptor.stableId());
+                throw new IllegalArgumentException(
+                        "Duplicate problem id: " + descriptor.stableId());
             }
         }
         this.descriptors = Map.copyOf(indexed);

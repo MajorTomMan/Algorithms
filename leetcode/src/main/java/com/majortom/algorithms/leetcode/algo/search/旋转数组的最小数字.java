@@ -2,7 +2,7 @@ package com.majortom.algorithms.leetcode.algo.search;
 
 public class 旋转数组的最小数字 {
     public static void main(String[] args) {
-        Integer[] nums={2,2,2,0,1};
+        Integer[] nums = {2, 2, 2, 0, 1};
         System.out.println(minArray(nums));
     }
 

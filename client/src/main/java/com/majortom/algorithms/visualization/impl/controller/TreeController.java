@@ -7,25 +7,26 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.core.snapshot.TreeSnapshotState;
 import com.majortom.algorithms.structure.tree.AVLTree;
 import com.majortom.algorithms.structure.tree.AVLTreeNode;
+import com.majortom.algorithms.structure.tree.AvlTreeStructure;
 import com.majortom.algorithms.structure.tree.GeneralTreeNode;
+import com.majortom.algorithms.structure.tree.GeneralTreeStructure;
 import com.majortom.algorithms.structure.tree.Tree;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.tree.TreeEventReducer;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import com.majortom.algorithms.structure.tree.AvlTreeStructure;
-import com.majortom.algorithms.structure.tree.GeneralTreeStructure;
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -42,17 +43,21 @@ import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
 public final class TreeController extends BaseModuleController<TreeViewState>
-        implements AlgorithmSelectionSupport, StructureSnapshotSupport<TreeSnapshotState<Object>>,
-        SnapshotAlgorithmInputSupport<TreeSnapshotState<Object>>, RuntimeValueTypeSupport {
+        implements AlgorithmSelectionSupport,
+                StructureSnapshotSupport<TreeSnapshotState<Object>>,
+                SnapshotAlgorithmInputSupport<TreeSnapshotState<Object>>,
+                RuntimeValueTypeSupport {
 
     private Tree<Object> generalTree;
+
     @SuppressWarnings("rawtypes")
     private AVLTree avlTree;
+
     private TreeVariant activeVariant = TreeVariant.GENERAL;
     private List<String> algorithmIds = List.of();
     private StructureSnapshot<TreeSnapshotState<Object>> algorithmInputSnapshot;
-    private Consumer<NodeSelection> selectionListener = ignored -> { };
-    private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private Consumer<NodeSelection> selectionListener = ignored -> {};
+    private Consumer<String> algorithmSelectionListener = ignored -> {};
     private boolean structureSelectionEnabled = true;
     private Long selectedNodeId;
     private Long algorithmSelectedNodeId;
@@ -90,12 +95,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
         bindSelectors();
-        EffectUtils.applyDynamicEffect(addRootBtn, addChildBtn, addParentBtn, deleteBtn, updateBtn, randomBtn);
+        EffectUtils.applyDynamicEffect(
+                addRootBtn, addChildBtn, addParentBtn, deleteBtn, updateBtn, randomBtn);
         refreshVariantControls();
     }
 
-    public record NodeSelection(long id, VisualValue value, Long parentId, int childCount, int depth) {
-    }
+    public record NodeSelection(
+            long id, VisualValue value, Long parentId, int childCount, int depth) {}
 
     private enum TreeVariant {
         GENERAL,
@@ -104,7 +110,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     public void setSelectionListener(Consumer<NodeSelection> listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {};
         } else {
             selectionListener = listener;
         }
@@ -147,12 +153,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         Long parentId = presentationParentId(state, nodeId);
         int depth = presentationDepth(state, nodeId);
-        selectionListener.accept(new NodeSelection(
-                nodeId,
-                node.value(),
-                parentId,
-                state.childrenOf(node).size(),
-                depth));
+        selectionListener.accept(
+                new NodeSelection(
+                        nodeId, node.value(), parentId, state.childrenOf(node).size(), depth));
         return true;
     }
 
@@ -180,12 +183,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (parent != null) {
             parentId = parent.getId();
         }
-        selectionListener.accept(new NodeSelection(
-                nodeId,
-                VisualValue.of(node.getValue()),
-                parentId,
-                node.getChildren().size(),
-                generalDepthOf(generalTree.root(), node, 0)));
+        selectionListener.accept(
+                new NodeSelection(
+                        nodeId,
+                        VisualValue.of(node.getValue()),
+                        parentId,
+                        node.getChildren().size(),
+                        generalDepthOf(generalTree.root(), node, 0)));
         refreshOperationAvailability();
     }
 
@@ -209,12 +213,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (node.getRight() != null) {
             childCount++;
         }
-        selectionListener.accept(new NodeSelection(
-                nodeId,
-                VisualValue.of(node.getValue()),
-                parentId,
-                childCount,
-                avlDepthOf(avlRoot(), node, 0)));
+        selectionListener.accept(
+                new NodeSelection(
+                        nodeId,
+                        VisualValue.of(node.getValue()),
+                        parentId,
+                        childCount,
+                        avlDepthOf(avlRoot(), node, 0)));
         refreshOperationAvailability();
     }
 
@@ -225,10 +230,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
         if (activeVariant == TreeVariant.AVL) {
-            if (executeStructureOperation("insert", () -> {
-                avlInsert(value);
-                return null;
-            })) {
+            if (executeStructureOperation(
+                    "insert",
+                    () -> {
+                        avlInsert(value);
+                        return null;
+                    })) {
                 refreshStructureView();
                 AVLTreeNode<Object> inserted = avlFind(value);
                 if (inserted != null) {
@@ -258,11 +265,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
         long[] addedNodeId = {-1L};
-        if (executeStructureOperation("add-child", () -> {
-            GeneralTreeNode<Object> child = generalTree.addChild(parent, value);
-            addedNodeId[0] = child.getId();
-            return child;
-        })) {
+        if (executeStructureOperation(
+                "add-child",
+                () -> {
+                    GeneralTreeNode<Object> child = generalTree.addChild(parent, value);
+                    addedNodeId[0] = child.getId();
+                    return child;
+                })) {
             refreshStructureView();
             treeVisualizer().selectNode(addedNodeId[0]);
         }
@@ -279,11 +288,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
         long[] addedNodeId = {-1L};
-        if (executeStructureOperation("add-parent", () -> {
-            GeneralTreeNode<Object> parent = generalTree.addParent(node, value);
-            addedNodeId[0] = parent.getId();
-            return parent;
-        })) {
+        if (executeStructureOperation(
+                "add-parent",
+                () -> {
+                    GeneralTreeNode<Object> parent = generalTree.addParent(node, value);
+                    addedNodeId[0] = parent.getId();
+                    return parent;
+                })) {
             refreshStructureView();
             treeVisualizer().selectNode(addedNodeId[0]);
         }
@@ -445,14 +456,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void replaceTreeValues(List<Object> values, String operationId, String messageKey) {
         clearNodeSelection();
-        if (!executeStructureOperation(operationId, () -> {
-            if (activeVariant == TreeVariant.GENERAL) {
-                replaceGeneralTreeValues(values);
-            } else {
-                replaceAvlTreeValues(values);
-            }
-            return null;
-        })) {
+        if (!executeStructureOperation(
+                operationId,
+                () -> {
+                    if (activeVariant == TreeVariant.GENERAL) {
+                        replaceGeneralTreeValues(values);
+                    } else {
+                        replaceAvlTreeValues(values);
+                    }
+                    return null;
+                })) {
             return;
         }
         refreshStructureView();
@@ -518,21 +531,30 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return;
         }
 
-        TreeSnapshotState<Object> inputState = algorithmInputSnapshot == null
-                ? (activeVariant == TreeVariant.GENERAL ? currentGeneralSnapshot() : currentAvlSnapshot())
-                : algorithmInputSnapshot.state();
+        TreeSnapshotState<Object> inputState =
+                algorithmInputSnapshot == null
+                        ? (activeVariant == TreeVariant.GENERAL
+                                ? currentGeneralSnapshot()
+                                : currentAvlSnapshot())
+                        : algorithmInputSnapshot.state();
         TreeViewState initialState = viewState(inputState);
-        Class<?> activeStructure = inputState instanceof GeneralTreeSnapshot<?>
-                ? GeneralTreeStructure.class
-                : AvlTreeStructure.class;
-        AlgorithmDescriptor descriptor = AlgorithmCatalog.compatibleDescriptor(
-                activeStructure, runtimeValueType, algorithmId);
+        Class<?> activeStructure =
+                inputState instanceof GeneralTreeSnapshot<?>
+                        ? GeneralTreeStructure.class
+                        : AvlTreeStructure.class;
+        AlgorithmDescriptor descriptor =
+                AlgorithmCatalog.compatibleDescriptor(
+                        activeStructure, runtimeValueType, algorithmId);
         Object input = algorithmTree(inputState);
 
-        startAlgorithm(algorithmId, inputState, () -> {
-            descriptor.invoke(input);
-            return null;
-        }, () -> new TreeEventReducer(initialState));
+        startAlgorithm(
+                algorithmId,
+                inputState,
+                () -> {
+                    descriptor.invoke(input);
+                    return null;
+                },
+                () -> new TreeEventReducer(initialState));
     }
 
     private Object algorithmTree(TreeSnapshotState<Object> state) {
@@ -546,7 +568,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             BinaryTreeSnapshot<Object> typed = (BinaryTreeSnapshot<Object>) binary;
             return avlFromSnapshot(typed);
         }
-        throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+        throw new IllegalArgumentException(
+                "unsupported tree snapshot type: " + state.getClass().getName());
     }
 
     @Override
@@ -573,10 +596,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private TreeVariant variantForAlgorithm(String algorithmId) {
-        if (AlgorithmCatalog.compatibleAlgorithms(GeneralTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(GeneralTreeStructure.class, runtimeValueType)
+                .contains(algorithmId)) {
             return TreeVariant.GENERAL;
         }
-        if (AlgorithmCatalog.compatibleAlgorithms(AvlTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(AvlTreeStructure.class, runtimeValueType)
+                .contains(algorithmId)) {
             return TreeVariant.AVL;
         }
         return null;
@@ -590,7 +615,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         if (listener == null) {
-            algorithmSelectionListener = ignored -> { };
+            algorithmSelectionListener = ignored -> {};
         } else {
             algorithmSelectionListener = listener;
         }
@@ -623,7 +648,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             avlTree = avlFromSnapshot(typed);
             activateVariant(TreeVariant.AVL);
         } else {
-            throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+            throw new IllegalArgumentException(
+                    "unsupported tree snapshot type: " + state.getClass().getName());
         }
         clearNodeSelection();
         algorithmInputSnapshot = null;
@@ -640,7 +666,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         } else if (state instanceof BinaryTreeSnapshot<?>) {
             activateVariant(TreeVariant.AVL);
         } else {
-            throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+            throw new IllegalArgumentException(
+                    "unsupported tree snapshot type: " + state.getClass().getName());
         }
         algorithmInputSnapshot = snapshot;
         invalidateExecutionForInputChange();
@@ -697,7 +724,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             BinaryTreeSnapshot<Object> typed = (BinaryTreeSnapshot<Object>) binary;
             return I18N.text("snapshot.tree.detail", typed.size(), binaryHeight(typed.root()));
         }
-        throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+        throw new IllegalArgumentException(
+                "unsupported tree snapshot type: " + state.getClass().getName());
     }
 
     @Override
@@ -795,20 +823,21 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             BinaryTreeSnapshot<Object> typed = (BinaryTreeSnapshot<Object>) binary;
             return TreeViewState.binary(typed);
         }
-        throw new IllegalArgumentException("unsupported tree snapshot type: " + state.getClass().getName());
+        throw new IllegalArgumentException(
+                "unsupported tree snapshot type: " + state.getClass().getName());
     }
 
     private GeneralTreeSnapshot<Object> currentGeneralSnapshot() {
-        return new GeneralTreeSnapshot<>(snapshotGeneralNode(generalTree.root()), generalTree.size());
+        return new GeneralTreeSnapshot<>(
+                snapshotGeneralNode(generalTree.root()), generalTree.size());
     }
 
     private GeneralTreeSnapshot.Node<Object> snapshotGeneralNode(GeneralTreeNode<Object> node) {
         if (node == null) {
             return null;
         }
-        List<GeneralTreeSnapshot.Node<Object>> children = node.getChildren().stream()
-                .map(this::snapshotGeneralNode)
-                .toList();
+        List<GeneralTreeSnapshot.Node<Object>> children =
+                node.getChildren().stream().map(this::snapshotGeneralNode).toList();
         return new GeneralTreeSnapshot.Node<>(node.getId(), node.getValue(), children);
     }
 
@@ -826,7 +855,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 snapshotBinaryNode(left(node)),
                 snapshotBinaryNode(right(node)));
     }
-
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private AVLTree avlFromSnapshot(BinaryTreeSnapshot<Object> snapshot) {
@@ -871,7 +899,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @SuppressWarnings("rawtypes")
     private Comparable requireComparable(Object value) {
         if (!(value instanceof Comparable<?> comparable)) {
-            throw new IllegalArgumentException("AVL value type must implement Comparable: " + value.getClass().getName());
+            throw new IllegalArgumentException(
+                    "AVL value type must implement Comparable: " + value.getClass().getName());
         }
         return (Comparable) comparable;
     }
@@ -907,7 +936,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return null;
         }
     }
-
 
     private GeneralTreeNode<Object> selectedGeneralNode() {
         if (selectedNodeId == null) {
@@ -952,8 +980,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private GeneralTreeNode<Object> generalParentOf(
-            GeneralTreeNode<Object> root,
-            GeneralTreeNode<Object> target) {
+            GeneralTreeNode<Object> root, GeneralTreeNode<Object> target) {
         if (root == null) {
             return null;
         }
@@ -983,7 +1010,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return avlParentOf(right(root), target);
     }
 
-    private int generalDepthOf(GeneralTreeNode<Object> root, GeneralTreeNode<Object> target, int depth) {
+    private int generalDepthOf(
+            GeneralTreeNode<Object> root, GeneralTreeNode<Object> target, int depth) {
         if (root == null) {
             return -1;
         }
@@ -1087,9 +1115,15 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void refreshAlgorithmIds() {
         if (activeVariant == TreeVariant.GENERAL) {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.GeneralTreeStructure.class, runtimeValueType);
+            algorithmIds =
+                    AlgorithmCatalog.compatibleAlgorithms(
+                            com.majortom.algorithms.structure.tree.GeneralTreeStructure.class,
+                            runtimeValueType);
         } else {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.AvlTreeStructure.class, runtimeValueType);
+            algorithmIds =
+                    AlgorithmCatalog.compatibleAlgorithms(
+                            com.majortom.algorithms.structure.tree.AvlTreeStructure.class,
+                            runtimeValueType);
         }
     }
 
@@ -1143,7 +1177,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             selectionHintLabel.textProperty().bind(I18N.createStringBinding(key));
         }
     }
-
 
     private void refreshOperationAvailability() {
         boolean hasSelection = selectedNodeId != null;
@@ -1201,7 +1234,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
-    protected void onAlgorithmFinished(com.majortom.algorithms.core.runtime.ExecutionResult result) {
+    protected void onAlgorithmFinished(
+            com.majortom.algorithms.core.runtime.ExecutionResult result) {
         super.onAlgorithmFinished(result);
         logI18n("message.execution.finished");
     }
@@ -1214,16 +1248,22 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             if (snapshot.root() != null) {
                 rootValue = snapshot.root().value();
             }
-            return I18N.text("label.workspace.structure.summary.tree",
-                    snapshot.size(), generalHeight(snapshot.root()), rootValue);
+            return I18N.text(
+                    "label.workspace.structure.summary.tree",
+                    snapshot.size(),
+                    generalHeight(snapshot.root()),
+                    rootValue);
         }
         BinaryTreeSnapshot<Object> snapshot = currentAvlSnapshot();
         Object rootValue = I18N.text("label.workspace.selection.none");
         if (snapshot.root() != null) {
             rootValue = snapshot.root().value();
         }
-        return I18N.text("label.workspace.structure.summary.tree",
-                snapshot.size(), binaryHeight(snapshot.root()), rootValue);
+        return I18N.text(
+                "label.workspace.structure.summary.tree",
+                snapshot.size(),
+                binaryHeight(snapshot.root()),
+                rootValue);
     }
 
     @Override
@@ -1253,10 +1293,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             size = avlTree.size();
             height = binaryHeight(currentAvlSnapshot().root());
         }
-        return String.format("%s | %s | %s",
+        return String.format(
+                "%s | %s | %s",
                 I18N.text("stats.size", size),
                 I18N.text("stats.height", height),
-                formatMetric("stats.action", stats.metric("nodes.inserted") + stats.metric("nodes.removed")));
+                formatMetric(
+                        "stats.action",
+                        stats.metric("nodes.inserted") + stats.metric("nodes.removed")));
     }
 
     @Override
@@ -1275,7 +1318,10 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return runtimeValueType;
     }
 
-    @Override public boolean hasValues() { return generalTree.size() > 0 || avlTree.size() > 0; }
+    @Override
+    public boolean hasValues() {
+        return generalTree.size() > 0 || avlTree.size() > 0;
+    }
 
     @Override
     public List<Class<?>> supportedValueTypes() {
@@ -1285,14 +1331,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @Override
     public void setRuntimeValueType(Class<?> valueType) {
         if (!supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException("Unsupported Tree value type: " + valueType.getName());
+            throw new IllegalArgumentException(
+                    "Unsupported Tree value type: " + valueType.getName());
         }
         Class<?> resolved = valueType;
         if (resolved.equals(runtimeValueType)) {
             return;
         }
         if (!Comparable.class.isAssignableFrom(resolved)) {
-            throw new IllegalArgumentException("tree runtime value type must implement Comparable: " + resolved.getName());
+            throw new IllegalArgumentException(
+                    "tree runtime value type must implement Comparable: " + resolved.getName());
         }
         runtimeValueType = resolved;
         valueAdapter = ValueAdapters.requireObjectAdapter(resolved);
@@ -1319,7 +1367,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
         }
         if (operationsSectionLabel != null) {
-            operationsSectionLabel.textProperty().bind(I18N.createStringBinding("label.panel.operations"));
+            operationsSectionLabel
+                    .textProperty()
+                    .bind(I18N.createStringBinding("label.panel.operations"));
         }
         bindPrompt(valueField, "prompt.tree.value");
         bindButton(addChildBtn, "action.tree.add_child");
@@ -1351,30 +1401,38 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void bindSelectors() {
-        structureSelector.setItems(FXCollections.observableArrayList(
-                "tree", "avl-tree"));
+        structureSelector.setItems(FXCollections.observableArrayList("tree", "avl-tree"));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
         localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
-        structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            if (current == null || current.intValue() < 0) {
-                return;
-            }
-            if (current.intValue() == 0) {
-                activateVariant(TreeVariant.GENERAL);
-            } else {
-                activateVariant(TreeVariant.AVL);
-            }
-        });
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, previous, current) -> notifyAlgorithmSelection());
-        I18N.localeProperty().addListener((observable, previous, current) -> {
-            refreshOperationLabels();
-            Platform.runLater(this::syncStructureSelectorSelection);
-        });
-        Platform.runLater(() -> {
-            syncStructureSelectorSelection();
-            refreshAlgorithmSelector();
-        });
+        structureSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener(
+                        (observable, previous, current) -> {
+                            if (current == null || current.intValue() < 0) {
+                                return;
+                            }
+                            if (current.intValue() == 0) {
+                                activateVariant(TreeVariant.GENERAL);
+                            } else {
+                                activateVariant(TreeVariant.AVL);
+                            }
+                        });
+        algorithmSelector
+                .getSelectionModel()
+                .selectedIndexProperty()
+                .addListener((observable, previous, current) -> notifyAlgorithmSelection());
+        I18N.localeProperty()
+                .addListener(
+                        (observable, previous, current) -> {
+                            refreshOperationLabels();
+                            FxDispatch.defer(this::syncStructureSelectorSelection);
+                        });
+        FxDispatch.defer(
+                () -> {
+                    syncStructureSelectorSelection();
+                    refreshAlgorithmSelector();
+                });
     }
 
     private void syncStructureSelectorSelection() {
@@ -1396,8 +1454,11 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void bindButton(Button button, String key) {
         if (button != null) {
-            button.textProperty().bind(Bindings.createStringBinding(
-                    () -> I18N.text(key).toUpperCase(java.util.Locale.ROOT), I18N.localeProperty()));
+            button.textProperty()
+                    .bind(
+                            Bindings.createStringBinding(
+                                    () -> I18N.text(key).toUpperCase(java.util.Locale.ROOT),
+                                    I18N.localeProperty()));
         }
     }
 }

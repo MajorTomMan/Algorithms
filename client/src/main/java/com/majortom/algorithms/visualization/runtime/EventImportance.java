@@ -1,8 +1,6 @@
 package com.majortom.algorithms.visualization.runtime;
 
-/**
- * Retention and presentation importance assigned while reducing an execution event.
- */
+/** Retention and presentation importance assigned while reducing an execution event. */
 public enum EventImportance {
     /** Short-lived presentation detail that an observer may coalesce under load. */
     TRANSIENT,

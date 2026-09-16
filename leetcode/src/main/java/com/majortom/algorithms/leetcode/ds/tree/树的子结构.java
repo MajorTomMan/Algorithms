@@ -7,13 +7,15 @@
  */
 package com.majortom.algorithms.leetcode.ds.tree;
 
-import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 树的子结构 {
     public static void main(String[] args) {
-        BinaryTreeNode<Integer> tree_a = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
-        BinaryTreeNode<Integer> tree_b = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> tree_a =
+                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> tree_b =
+                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         System.out.println(isSubStructure(tree_a, tree_b));
     }
 
@@ -41,6 +43,8 @@ public class 树的子结构 {
         if (a == null) {
             return false;
         }
-        return a.getValue() == b.getValue() && checkSubTree(a.getLeft(), b.getLeft()) && checkSubTree(a.getRight(), b.getRight());
+        return a.getValue() == b.getValue()
+                && checkSubTree(a.getLeft(), b.getLeft())
+                && checkSubTree(a.getRight(), b.getRight());
     }
 }

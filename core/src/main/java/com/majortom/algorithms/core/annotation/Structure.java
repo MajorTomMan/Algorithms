@@ -9,8 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares Structure metadata on a capability contract. Concrete registrations additionally
- * provide an id and implementation; metadata-only family contracts may omit both.
+ * Declares Structure metadata on a capability contract. Concrete registrations additionally provide
+ * an id and implementation; metadata-only family contracts may omit both.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

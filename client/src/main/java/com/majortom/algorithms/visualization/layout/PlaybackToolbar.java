@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.layout;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +10,9 @@ import java.util.List;
 /**
  * Responsive layout for the execution controls.
  *
- * <p>The toolbar treats navigation, execution actions, timeline and speed as
- * semantic groups. On a wide workbench they stay on one line. When font size
- * or window width makes that impossible, the timeline moves to its own row
- * instead of shrinking labels or clipping controls.</p>
+ * <p>The toolbar treats navigation, execution actions, timeline and speed as semantic groups. On a
+ * wide workbench they stay on one line. When font size or window width makes that impossible, the
+ * timeline moves to its own row instead of shrinking labels or clipping controls.
  */
 public final class PlaybackToolbar extends Pane {
 
@@ -50,8 +48,10 @@ public final class PlaybackToolbar extends Pane {
     protected double computePrefWidth(double height) {
         List<Node> children = managedChildren();
         double width = children.stream().mapToDouble(this::prefWidth).sum();
-        return snappedLeftInset() + snappedRightInset()
-                + width + horizontalGap * Math.max(0, children.size() - 1);
+        return snappedLeftInset()
+                + snappedRightInset()
+                + width
+                + horizontalGap * Math.max(0, children.size() - 1);
     }
 
     @Override
@@ -102,21 +102,35 @@ public final class PlaybackToolbar extends Pane {
 
     private LayoutPlan oneRow(List<Node> children, Node timeline, double width) {
         List<Placement> placements = new ArrayList<>();
-        double fixedWidth = children.stream()
-                .filter(node -> node != timeline)
-                .mapToDouble(this::prefWidth)
-                .sum();
+        double fixedWidth =
+                children.stream()
+                        .filter(node -> node != timeline)
+                        .mapToDouble(this::prefWidth)
+                        .sum();
         double gaps = horizontalGap * Math.max(0, children.size() - 1);
-        double timelineWidth = timeline == null
-                ? 0.0d
-                : Math.max(minWidth(timeline), width - fixedWidth - gaps);
-        double rowHeight = children.stream().mapToDouble(node -> prefHeight(node, node == timeline ? timelineWidth : prefWidth(node))).max().orElse(0.0d);
+        double timelineWidth =
+                timeline == null ? 0.0d : Math.max(minWidth(timeline), width - fixedWidth - gaps);
+        double rowHeight =
+                children.stream()
+                        .mapToDouble(
+                                node ->
+                                        prefHeight(
+                                                node,
+                                                node == timeline ? timelineWidth : prefWidth(node)))
+                        .max()
+                        .orElse(0.0d);
 
         double x = 0.0d;
         for (Node child : children) {
             double childWidth = child == timeline ? timelineWidth : prefWidth(child);
             double childHeight = prefHeight(child, childWidth);
-            placements.add(new Placement(child, x, Math.max(0.0d, (rowHeight - childHeight) / 2.0d), childWidth, childHeight));
+            placements.add(
+                    new Placement(
+                            child,
+                            x,
+                            Math.max(0.0d, (rowHeight - childHeight) / 2.0d),
+                            childWidth,
+                            childHeight));
             x += childWidth + horizontalGap;
         }
         return new LayoutPlan(List.copyOf(placements), rowHeight);
@@ -125,7 +139,11 @@ public final class PlaybackToolbar extends Pane {
     private LayoutPlan wrapped(List<Node> children, Node timeline, double width) {
         List<Node> topRow = children.stream().filter(node -> node != timeline).toList();
         List<Placement> placements = new ArrayList<>();
-        double topHeight = topRow.stream().mapToDouble(node -> prefHeight(node, prefWidth(node))).max().orElse(0.0d);
+        double topHeight =
+                topRow.stream()
+                        .mapToDouble(node -> prefHeight(node, prefWidth(node)))
+                        .max()
+                        .orElse(0.0d);
 
         double topRequired = totalWidth(topRow) + horizontalGap * Math.max(0, topRow.size() - 1);
         double x = 0.0d;
@@ -133,7 +151,13 @@ public final class PlaybackToolbar extends Pane {
             for (Node child : topRow) {
                 double childWidth = prefWidth(child);
                 double childHeight = prefHeight(child, childWidth);
-                placements.add(new Placement(child, x, Math.max(0.0d, (topHeight - childHeight) / 2.0d), childWidth, childHeight));
+                placements.add(
+                        new Placement(
+                                child,
+                                x,
+                                Math.max(0.0d, (topHeight - childHeight) / 2.0d),
+                                childWidth,
+                                childHeight));
                 x += childWidth + horizontalGap;
             }
         } else {
@@ -141,11 +165,21 @@ public final class PlaybackToolbar extends Pane {
             // final speed group wrap to the second row beside the timeline.
             Node speed = topRow.stream().filter(this::isSpeed).findFirst().orElse(null);
             List<Node> controls = topRow.stream().filter(node -> node != speed).toList();
-            double controlsHeight = controls.stream().mapToDouble(node -> prefHeight(node, prefWidth(node))).max().orElse(0.0d);
+            double controlsHeight =
+                    controls.stream()
+                            .mapToDouble(node -> prefHeight(node, prefWidth(node)))
+                            .max()
+                            .orElse(0.0d);
             for (Node child : controls) {
                 double childWidth = Math.min(prefWidth(child), Math.max(0.0d, width - x));
                 double childHeight = prefHeight(child, childWidth);
-                placements.add(new Placement(child, x, Math.max(0.0d, (controlsHeight - childHeight) / 2.0d), childWidth, childHeight));
+                placements.add(
+                        new Placement(
+                                child,
+                                x,
+                                Math.max(0.0d, (controlsHeight - childHeight) / 2.0d),
+                                childWidth,
+                                childHeight));
                 x += childWidth + horizontalGap;
             }
             topHeight = controlsHeight;
@@ -157,18 +191,27 @@ public final class PlaybackToolbar extends Pane {
         }
 
         double secondY = topHeight + verticalGap;
-        double speedWidth = topRow.size() == 1 && isSpeed(topRow.getFirst()) ? prefWidth(topRow.getFirst()) : 0.0d;
-        double timelineWidth = speedWidth > 0.0d
-                ? Math.max(minWidth(timeline), width - speedWidth - horizontalGap)
-                : width;
+        double speedWidth =
+                topRow.size() == 1 && isSpeed(topRow.getFirst())
+                        ? prefWidth(topRow.getFirst())
+                        : 0.0d;
+        double timelineWidth =
+                speedWidth > 0.0d
+                        ? Math.max(minWidth(timeline), width - speedWidth - horizontalGap)
+                        : width;
         double timelineHeight = prefHeight(timeline, timelineWidth);
         placements.add(new Placement(timeline, 0.0d, secondY, timelineWidth, timelineHeight));
         double secondHeight = timelineHeight;
         if (speedWidth > 0.0d) {
             Node speed = topRow.getFirst();
             double speedHeight = prefHeight(speed, speedWidth);
-            placements.add(new Placement(speed, timelineWidth + horizontalGap,
-                    secondY + Math.max(0.0d, (timelineHeight - speedHeight) / 2.0d), speedWidth, speedHeight));
+            placements.add(
+                    new Placement(
+                            speed,
+                            timelineWidth + horizontalGap,
+                            secondY + Math.max(0.0d, (timelineHeight - speedHeight) / 2.0d),
+                            speedWidth,
+                            speedHeight));
             secondHeight = Math.max(secondHeight, speedHeight);
         }
         return new LayoutPlan(List.copyOf(placements), secondY + secondHeight);
@@ -214,9 +257,7 @@ public final class PlaybackToolbar extends Pane {
         return getChildren().stream().filter(Node::isManaged).toList();
     }
 
-    private record Placement(Node node, double x, double y, double width, double height) {
-    }
+    private record Placement(Node node, double x, double y, double width, double height) {}
 
-    private record LayoutPlan(List<Placement> placements, double height) {
-    }
+    private record LayoutPlan(List<Placement> placements, double height) {}
 }

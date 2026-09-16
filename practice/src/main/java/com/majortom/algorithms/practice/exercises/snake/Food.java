@@ -7,9 +7,7 @@ public class Food {
     public int y;
     private Random random = new Random();
 
-    private Food() {
-
-    }
+    private Food() {}
 
     public Food(Snake snake, Map map) {
         respawn(snake, map);

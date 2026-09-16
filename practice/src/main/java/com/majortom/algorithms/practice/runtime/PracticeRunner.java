@@ -21,9 +21,11 @@ public final class PracticeRunner {
             Throwable cause = exception.getCause();
             if (cause instanceof RuntimeException runtime) throw runtime;
             if (cause instanceof Error error) throw error;
-            throw new PracticeExecutionException("Problem entry failed: " + descriptor.stableId(), cause);
+            throw new PracticeExecutionException(
+                    "Problem entry failed: " + descriptor.stableId(), cause);
         } catch (ReflectiveOperationException exception) {
-            throw new PracticeExecutionException("Unable to invoke problem entry: " + descriptor.stableId(), exception);
+            throw new PracticeExecutionException(
+                    "Unable to invoke problem entry: " + descriptor.stableId(), exception);
         }
     }
 

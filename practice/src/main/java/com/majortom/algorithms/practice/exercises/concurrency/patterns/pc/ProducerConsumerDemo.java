@@ -1,6 +1,5 @@
 package com.majortom.algorithms.practice.exercises.concurrency.patterns.pc;
 
-
 public class ProducerConsumerDemo {
     private static final BufferQueue buffer = new BufferQueue();
 

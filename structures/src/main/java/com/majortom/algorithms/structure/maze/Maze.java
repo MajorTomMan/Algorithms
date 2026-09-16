@@ -7,8 +7,7 @@ public final class Maze implements MazeStructure {
     private MazeDimensions dimensions = new MazeDimensions(51, 51);
     private GridMaze grid;
 
-    public Maze() {
-    }
+    public Maze() {}
 
     public Maze(MazeDimensions dimensions) {
         initialize(dimensions);

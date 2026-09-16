@@ -45,7 +45,6 @@ public class Snake {
             }
             body = body.getNext();
         }
-
     }
 
     public Point getHead() {

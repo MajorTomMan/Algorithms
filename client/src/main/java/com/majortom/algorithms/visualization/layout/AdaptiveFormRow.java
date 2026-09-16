@@ -16,12 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A font-aware row that keeps controls inline while they fit and wraps them
- * into additional rows when the available width becomes too small.
+ * A font-aware row that keeps controls inline while they fit and wraps them into additional rows
+ * when the available width becomes too small.
  *
- * <p>The layout is based on the controls' current preferred sizes, so changing
- * the application font immediately changes the wrapping decision without any
- * module-specific LARGE/XLARGE rules.</p>
+ * <p>The layout is based on the controls' current preferred sizes, so changing the application font
+ * immediately changes the wrapping decision without any module-specific LARGE/XLARGE rules.
  */
 public final class AdaptiveFormRow extends Pane {
 
@@ -110,8 +109,11 @@ public final class AdaptiveFormRow extends Pane {
             double childWidth = widths[index];
             double childHeight = boundedPrefHeight(child, childWidth);
             double childY = y + Math.max(0.0d, (line.height() - childHeight) / 2.0d);
-            child.resizeRelocate(snapPositionX(cursor), snapPositionY(childY),
-                    snapSizeX(childWidth), snapSizeY(childHeight));
+            child.resizeRelocate(
+                    snapPositionX(cursor),
+                    snapPositionY(childY),
+                    snapSizeX(childWidth),
+                    snapSizeY(childHeight));
             cursor += childWidth + horizontalGap;
         }
     }
@@ -129,9 +131,8 @@ public final class AdaptiveFormRow extends Pane {
         double currentRequired = 0.0d;
         for (Node child : children) {
             double desired = desiredWidth(child);
-            double nextRequired = current.isEmpty()
-                    ? desired
-                    : currentRequired + horizontalGap + desired;
+            double nextRequired =
+                    current.isEmpty() ? desired : currentRequired + horizontalGap + desired;
             if (!current.isEmpty() && nextRequired > availableWidth) {
                 lines.add(line(current, availableWidth));
                 current = new ArrayList<>();
@@ -237,10 +238,9 @@ public final class AdaptiveFormRow extends Pane {
     }
 
     /**
-     * Preferred width derived from the actual localized text. CJK glyphs are
-     * full-em and can be substantially wider than the same semantic label in
-     * Latin fonts, so relying on a fixed minimum width makes Chinese the first
-     * locale to clip or look compressed.
+     * Preferred width derived from the actual localized text. CJK glyphs are full-em and can be
+     * substantially wider than the same semantic label in Latin fonts, so relying on a fixed
+     * minimum width makes Chinese the first locale to clip or look compressed.
      */
     private double textAwareWidth(Node child) {
         String text = null;
@@ -266,9 +266,10 @@ public final class AdaptiveFormRow extends Pane {
         }
         Text probe = new Text(text);
         probe.setFont(font);
-        double horizontalInsets = child instanceof Region region
-                ? region.getInsets().getLeft() + region.getInsets().getRight()
-                : 0.0d;
+        double horizontalInsets =
+                child instanceof Region region
+                        ? region.getInsets().getLeft() + region.getInsets().getRight()
+                        : 0.0d;
         return Math.ceil(probe.getLayoutBounds().getWidth() + horizontalInsets + 8.0d);
     }
 
@@ -291,7 +292,9 @@ public final class AdaptiveFormRow extends Pane {
         if (min != Region.USE_COMPUTED_SIZE && min != Region.USE_PREF_SIZE) {
             resolved = Math.max(resolved, min);
         }
-        if (max != Double.MAX_VALUE && max != Region.USE_COMPUTED_SIZE && max != Region.USE_PREF_SIZE) {
+        if (max != Double.MAX_VALUE
+                && max != Region.USE_COMPUTED_SIZE
+                && max != Region.USE_PREF_SIZE) {
             resolved = Math.min(resolved, max);
         }
         return resolved;
@@ -301,9 +304,7 @@ public final class AdaptiveFormRow extends Pane {
         return getChildren().stream().filter(Node::isManaged).toList();
     }
 
-    private record Line(List<Node> children, double height) {
-    }
+    private record Line(List<Node> children, double height) {}
 
-    private record LayoutPlan(List<Line> lines, double height) {
-    }
+    private record LayoutPlan(List<Line> lines, double height) {}
 }

@@ -38,13 +38,15 @@ public final class FrameworkClassScanner {
             try {
                 classes.add(Class.forName(className, false, classLoader));
             } catch (ClassNotFoundException exception) {
-                throw new RegistrationException("Unable to load framework class: " + className, exception);
+                throw new RegistrationException(
+                        "Unable to load framework class: " + className, exception);
             }
         }
         return List.copyOf(classes);
     }
 
-    private List<String> classNames(String rootPackage, String packagePath, ClassLoader classLoader) {
+    private List<String> classNames(
+            String rootPackage, String packagePath, ClassLoader classLoader) {
         try {
             Enumeration<URL> resources = classLoader.getResources(packagePath);
             List<String> names = new ArrayList<>();
@@ -58,7 +60,8 @@ public final class FrameworkClassScanner {
             }
             return names.stream().distinct().sorted().toList();
         } catch (IOException exception) {
-            throw new RegistrationException("Unable to scan framework package " + rootPackage, exception);
+            throw new RegistrationException(
+                    "Unable to scan framework package " + rootPackage, exception);
         }
     }
 
@@ -71,7 +74,8 @@ public final class FrameworkClassScanner {
                         .forEach(path -> names.add(className(rootPackage, packageRoot, path)));
             }
         } catch (IOException | URISyntaxException exception) {
-            throw new RegistrationException("Unable to scan framework class directory: " + resource, exception);
+            throw new RegistrationException(
+                    "Unable to scan framework class directory: " + resource, exception);
         }
     }
 
@@ -79,8 +83,9 @@ public final class FrameworkClassScanner {
         String rawRelative = packageRoot.toUri().relativize(classFile.toUri()).getRawPath();
         // Path#toString uses the native platform encoding and can replace Unicode names with '?'
         // under a POSIX/C locale. File URI raw paths preserve the original UTF-8 bytes.
-        String relative = URLDecoder.decode(rawRelative.replace("+", "%2B"), StandardCharsets.UTF_8)
-                .replace('/', '.');
+        String relative =
+                URLDecoder.decode(rawRelative.replace("+", "%2B"), StandardCharsets.UTF_8)
+                        .replace('/', '.');
         return rootPackage + "." + relative.substring(0, relative.length() - ".class".length());
     }
 
@@ -94,7 +99,8 @@ public final class FrameworkClassScanner {
                     if (!name.startsWith(packagePath + "/") || !isCandidateClass(name)) {
                         continue;
                     }
-                    names.add(name.substring(0, name.length() - ".class".length()).replace('/', '.'));
+                    names.add(
+                            name.substring(0, name.length() - ".class".length()).replace('/', '.'));
                 }
             }
         } catch (IOException exception) {

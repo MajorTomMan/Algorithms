@@ -1,11 +1,11 @@
 package com.majortom.algorithms.leetcode.ds.tree;
 
-import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 二叉树的镜像 {
     public static void main(String[] args) {
-        Integer[] a = { 4, 2, 7, 1, 3, 6, 9 };
+        Integer[] a = {4, 2, 7, 1, 3, 6, 9};
         BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(a);
         mirrorTree(root);
     }

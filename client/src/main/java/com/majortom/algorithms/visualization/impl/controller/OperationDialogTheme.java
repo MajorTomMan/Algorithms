@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
+
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -14,8 +15,7 @@ final class OperationDialogTheme {
     private static final String THEME_PATH = "/style/theme.css";
     private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
 
-    private OperationDialogTheme() {
-    }
+    private OperationDialogTheme() {}
 
     static void apply(Dialog<?> dialog) {
         DialogPane pane = dialog.getDialogPane();

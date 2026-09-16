@@ -34,7 +34,8 @@ public final class StructureResolver {
             return compatible.getFirst();
         }
         if (compatible.isEmpty()) {
-            throw new RegistrationException("No Structure registered for contract: " + requiredContract.getName());
+            throw new RegistrationException(
+                    "No Structure registered for contract: " + requiredContract.getName());
         }
         throw ambiguous(requiredContract, compatible);
     }
@@ -46,9 +47,15 @@ public final class StructureResolver {
         return candidates.stream()
                 .filter(descriptor -> descriptor.id().equals(requestedId))
                 .findFirst()
-                .orElseThrow(() -> new RegistrationException("No Structure registered for contract "
-                        + requiredContract.getName() + " with id '" + requestedId + "'; available ids: "
-                        + ids(candidates)));
+                .orElseThrow(
+                        () ->
+                                new RegistrationException(
+                                        "No Structure registered for contract "
+                                                + requiredContract.getName()
+                                                + " with id '"
+                                                + requestedId
+                                                + "'; available ids: "
+                                                + ids(candidates)));
     }
 
     public <S> S create(Class<S> requiredContract) {
@@ -68,7 +75,8 @@ public final class StructureResolver {
     private void validateContract(Class<?> requiredContract) {
         Objects.requireNonNull(requiredContract, "requiredContract");
         if (!requiredContract.isInterface()) {
-            throw new IllegalArgumentException("requiredContract must be an interface: " + requiredContract.getName());
+            throw new IllegalArgumentException(
+                    "requiredContract must be an interface: " + requiredContract.getName());
         }
     }
 
@@ -81,21 +89,31 @@ public final class StructureResolver {
     private List<StructureDescriptor> compatible(Class<?> requiredContract) {
         return registry.structures().stream()
                 .filter(descriptor -> requiredContract.isAssignableFrom(descriptor.contract()))
-                .filter(descriptor -> requiredContract.isAssignableFrom(descriptor.implementation()))
+                .filter(
+                        descriptor ->
+                                requiredContract.isAssignableFrom(descriptor.implementation()))
                 .toList();
     }
 
     private List<StructureDescriptor> allMatches(Class<?> requiredContract) {
         return registry.structures().stream()
-                .filter(descriptor -> descriptor.contract().equals(requiredContract)
-                        || (requiredContract.isAssignableFrom(descriptor.contract())
-                        && requiredContract.isAssignableFrom(descriptor.implementation())))
+                .filter(
+                        descriptor ->
+                                descriptor.contract().equals(requiredContract)
+                                        || (requiredContract.isAssignableFrom(descriptor.contract())
+                                                && requiredContract.isAssignableFrom(
+                                                        descriptor.implementation())))
                 .toList();
     }
 
-    private RegistrationException ambiguous(Class<?> contract, List<StructureDescriptor> candidates) {
-        return new RegistrationException("Multiple Structures match contract " + contract.getName() + ": "
-                + ids(candidates) + "; select one by structure id");
+    private RegistrationException ambiguous(
+            Class<?> contract, List<StructureDescriptor> candidates) {
+        return new RegistrationException(
+                "Multiple Structures match contract "
+                        + contract.getName()
+                        + ": "
+                        + ids(candidates)
+                        + "; select one by structure id");
     }
 
     private List<String> ids(List<StructureDescriptor> descriptors) {

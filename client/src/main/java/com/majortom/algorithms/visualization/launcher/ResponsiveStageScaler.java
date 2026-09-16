@@ -9,9 +9,8 @@ import javafx.stage.Screen;
 /**
  * 主界面场景构造器。
  *
- * <p>窗口优先保持 1600x900 参考尺寸，但不会超过当前屏幕的可用区域。
- * 高 DPI / 笔记本环境下直接以 Screen visual bounds 计算初始 Scene，避免
- * 先创建一个大于桌面的窗口再依赖系统缩放或整页 scale。</p>
+ * <p>窗口优先保持 1600x900 参考尺寸，但不会超过当前屏幕的可用区域。 高 DPI / 笔记本环境下直接以 Screen visual bounds 计算初始 Scene，避免
+ * 先创建一个大于桌面的窗口再依赖系统缩放或整页 scale。
  */
 public final class ResponsiveStageScaler {
 
@@ -21,8 +20,7 @@ public final class ResponsiveStageScaler {
     public static final double MIN_HEIGHT = 540.0d;
     private static final double SCREEN_USAGE = 0.94d;
 
-    private ResponsiveStageScaler() {
-    }
+    private ResponsiveStageScaler() {}
 
     public static Scene createScene(Parent content, double designWidth, double designHeight) {
         if (content instanceof Region region) {

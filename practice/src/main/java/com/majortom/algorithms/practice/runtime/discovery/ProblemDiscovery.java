@@ -6,6 +6,7 @@ import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationException;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -64,7 +65,16 @@ public final class ProblemDiscovery {
             }
             validateConcrete(candidate);
             Method entry = findEntry(candidate);
-            descriptors.add(new ProblemDescriptor(problem.source(), problem.id(), ComponentNames.resolve(problem.name(), candidate), problem.number(), problem.difficulty(), Arrays.asList(problem.tags()), candidate, entry));
+            descriptors.add(
+                    new ProblemDescriptor(
+                            problem.source(),
+                            problem.id(),
+                            ComponentNames.resolve(problem.name(), candidate),
+                            problem.number(),
+                            problem.difficulty(),
+                            Arrays.asList(problem.tags()),
+                            candidate,
+                            entry));
         }
         descriptors.sort(Comparator.comparing(ProblemDescriptor::stableId));
         validateUniqueIds(descriptors);
@@ -72,16 +82,21 @@ public final class ProblemDiscovery {
     }
 
     private static Method findEntry(Class<?> type) {
-        List<Method> entries = java.util.Arrays.stream(type.getDeclaredMethods())
-                .filter(method -> method.isAnnotationPresent(ProblemEntry.class))
-                .toList();
+        List<Method> entries =
+                java.util.Arrays.stream(type.getDeclaredMethods())
+                        .filter(method -> method.isAnnotationPresent(ProblemEntry.class))
+                        .toList();
         if (entries.size() != 1) {
-            throw new RegistrationException("Practice problem " + type.getName()
-                    + " must declare exactly one @ProblemEntry method, found " + entries.size());
+            throw new RegistrationException(
+                    "Practice problem "
+                            + type.getName()
+                            + " must declare exactly one @ProblemEntry method, found "
+                            + entries.size());
         }
         Method entry = entries.getFirst();
         if (entry.isSynthetic() || entry.isBridge()) {
-            throw new RegistrationException("@ProblemEntry must be a concrete source method: " + entry);
+            throw new RegistrationException(
+                    "@ProblemEntry must be a concrete source method: " + entry);
         }
         entry.trySetAccessible();
         return entry;
@@ -98,7 +113,8 @@ public final class ProblemDiscovery {
         Set<String> ids = new LinkedHashSet<>();
         for (ProblemDescriptor descriptor : descriptors) {
             if (!ids.add(descriptor.stableId())) {
-                throw new RegistrationException("Duplicate Practice problem id: " + descriptor.stableId());
+                throw new RegistrationException(
+                        "Duplicate Practice problem id: " + descriptor.stableId());
             }
         }
     }

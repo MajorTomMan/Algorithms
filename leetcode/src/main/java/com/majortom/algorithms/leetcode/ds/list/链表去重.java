@@ -1,10 +1,8 @@
 package com.majortom.algorithms.leetcode.ds.list;
 
-import java.util.Random;
 
-import com.majortom.algorithms.structure.linked.LinkedList;
-import com.majortom.algorithms.structure.linked.ListNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.linked.ListNode;
 
 public class 链表去重 {
     public static void main(String[] args) {
@@ -23,7 +21,8 @@ public class 链表去重 {
         return deleteDuplicates(head.getNext(), head);
     }
 
-    private static ListNode<Integer> deleteDuplicates(ListNode<Integer> node, ListNode<Integer> previous) {
+    private static ListNode<Integer> deleteDuplicates(
+            ListNode<Integer> node, ListNode<Integer> previous) {
         if (node == null) {
             return node;
         }
@@ -41,7 +40,7 @@ public class 链表去重 {
         }
         ListNode<Integer> temp = head.getNext();
         ListNode<Integer> pre = head;
-        for (; temp != null;) {
+        for (; temp != null; ) {
             if (pre.getValue().equals(temp.getValue())) {
                 pre.setNext(temp.getNext());
                 temp = temp.getNext();

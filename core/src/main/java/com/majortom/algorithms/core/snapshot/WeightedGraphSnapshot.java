@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Objects;
 
 /** UI-neutral immutable weighted-graph snapshot with stable vertex/edge identity. */
-public record WeightedGraphSnapshot<T>(
-        boolean directed,
-        List<Vertex<T>> vertices,
-        List<Edge> edges) implements GraphSnapshotState<T> {
+public record WeightedGraphSnapshot<T>(boolean directed, List<Vertex<T>> vertices, List<Edge> edges)
+        implements GraphSnapshotState<T> {
 
     public WeightedGraphSnapshot {
         vertices = List.copyOf(Objects.requireNonNull(vertices, "vertices"));

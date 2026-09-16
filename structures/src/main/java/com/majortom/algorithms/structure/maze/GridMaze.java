@@ -5,11 +5,7 @@ import java.util.Objects;
 
 /** Immutable row-major binary maze; {@code true} denotes a traversable cell. */
 public record GridMaze(
-        int rows,
-        int columns,
-        List<Boolean> openCells,
-        GridPoint entrance,
-        GridPoint exit) {
+        int rows, int columns, List<Boolean> openCells, GridPoint entrance, GridPoint exit) {
 
     public GridMaze {
         if (rows < 1 || columns < 1) {
@@ -21,7 +17,9 @@ public record GridMaze(
         if (openCells.size() != cellCount) {
             throw new IllegalArgumentException("openCells size does not match maze dimensions");
         }
-        entrance = requireInside(Objects.requireNonNull(entrance, "entrance"), rows, columns, "entrance");
+        entrance =
+                requireInside(
+                        Objects.requireNonNull(entrance, "entrance"), rows, columns, "entrance");
         exit = requireInside(Objects.requireNonNull(exit, "exit"), rows, columns, "exit");
         if (!openCells.get(index(columns, entrance)) || !openCells.get(index(columns, exit))) {
             throw new IllegalArgumentException("entrance and exit must be open");

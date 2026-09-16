@@ -1,13 +1,14 @@
 package com.majortom.algorithms.visualization.layout;
 
 import atlantafx.base.theme.Styles;
-import javafx.application.Platform;
+
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBoxBase;
-import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
@@ -26,10 +27,9 @@ import java.util.Set;
 /**
  * Central geometry and text policy for the Workbench shell.
  *
- * <p>The visualization hosts are deliberately excluded: their coordinate
- * system is controlled by FIT/CENTER/zoom. Everything around the canvas uses
- * this framework for font-aware sizing, responsive shell geometry and control
- * density.</p>
+ * <p>The visualization hosts are deliberately excluded: their coordinate system is controlled by
+ * FIT/CENTER/zoom. Everything around the canvas uses this framework for font-aware sizing,
+ * responsive shell geometry and control density.
  */
 public final class WorkbenchUiFramework {
 
@@ -153,17 +153,33 @@ public final class WorkbenchUiFramework {
         double scale = fontScale();
 
         double familyContentWidth = familyRailContentWidth();
-        double familyWidth = clamp(Math.max(familyContentWidth, BASE_FAMILY_WIDTH * scale),
-                MIN_FAMILY_WIDTH, MAX_FAMILY_WIDTH);
+        double familyWidth =
+                clamp(
+                        Math.max(familyContentWidth, BASE_FAMILY_WIDTH * scale),
+                        MIN_FAMILY_WIDTH,
+                        MAX_FAMILY_WIDTH);
         double controlWidth = clamp(320.0d * scale, MIN_CONTROL_WIDTH, 460.0d);
-        double inspectorWidth = Math.max(MIN_INSPECTOR_WIDTH,
-                Math.max(inspectorTextWidth(structureTabs), inspectorTextWidth(algorithmTabs)));
-        inspectorWidth = clamp(Math.max(inspectorWidth, 360.0d * Math.min(scale, 1.30d)), MIN_INSPECTOR_WIDTH, 500.0d);
+        double inspectorWidth =
+                Math.max(
+                        MIN_INSPECTOR_WIDTH,
+                        Math.max(
+                                inspectorTextWidth(structureTabs),
+                                inspectorTextWidth(algorithmTabs)));
+        inspectorWidth =
+                clamp(
+                        Math.max(inspectorWidth, 360.0d * Math.min(scale, 1.30d)),
+                        MIN_INSPECTOR_WIDTH,
+                        500.0d);
 
         double requiredBody = familyWidth + controlWidth + inspectorWidth + MIN_CANVAS_WIDTH;
-        boolean compact = width > 0.0d && (width < requiredBody + 80.0d || height < 820.0d * Math.min(scale, 1.18d));
-        boolean narrow = width > 0.0d && (width < familyWidth + controlWidth + MIN_CANVAS_WIDTH + 80.0d
-                || height < 650.0d);
+        boolean compact =
+                width > 0.0d
+                        && (width < requiredBody + 80.0d
+                                || height < 820.0d * Math.min(scale, 1.18d));
+        boolean narrow =
+                width > 0.0d
+                        && (width < familyWidth + controlWidth + MIN_CANVAS_WIDTH + 80.0d
+                                || height < 650.0d);
 
         if (compact) {
             controlWidth = Math.max(MIN_CONTROL_WIDTH, controlWidth * 0.86d);
@@ -227,10 +243,11 @@ public final class WorkbenchUiFramework {
             return;
         }
         refreshScheduled = true;
-        Platform.runLater(() -> {
-            refreshScheduled = false;
-            refresh();
-        });
+        FxDispatch.defer(
+                () -> {
+                    refreshScheduled = false;
+                    refresh();
+                });
     }
 
     private void layoutHeader(double width, double scale, boolean compact, boolean narrow) {
@@ -272,8 +289,13 @@ public final class WorkbenchUiFramework {
         int count = 0;
         for (Node child : parent.getChildrenUnmodifiable()) {
             if (child instanceof Labeled labeled && child.isManaged()) {
-                max = Math.max(max, measuredTextWidth(labeled) + labeled.getInsets().getLeft()
-                        + labeled.getInsets().getRight() + 28.0d);
+                max =
+                        Math.max(
+                                max,
+                                measuredTextWidth(labeled)
+                                        + labeled.getInsets().getLeft()
+                                        + labeled.getInsets().getRight()
+                                        + 28.0d);
                 count++;
             }
         }
@@ -283,10 +305,11 @@ public final class WorkbenchUiFramework {
         return clamp(max * count + 2.0d, 300.0d, 640.0d);
     }
 
-
     private double familyRailContentWidth() {
-        double widest = Math.max(familyRailContentWidth(structureFamilyRail),
-                familyRailContentWidth(algorithmFamilyRail));
+        double widest =
+                Math.max(
+                        familyRailContentWidth(structureFamilyRail),
+                        familyRailContentWidth(algorithmFamilyRail));
         if (widest <= 0.0d) {
             return MIN_FAMILY_WIDTH;
         }
@@ -304,9 +327,10 @@ public final class WorkbenchUiFramework {
                     || !node.getStyleClass().contains("family-rail-button")) {
                 continue;
             }
-            double horizontalInsets = node instanceof Region region
-                    ? region.getInsets().getLeft() + region.getInsets().getRight()
-                    : 0.0d;
+            double horizontalInsets =
+                    node instanceof Region region
+                            ? region.getInsets().getLeft() + region.getInsets().getRight()
+                            : 0.0d;
             widest = Math.max(widest, measuredTextWidth(labeled) + horizontalInsets + 4.0d);
         }
         return widest + rail.getInsets().getLeft() + rail.getInsets().getRight();
@@ -382,7 +406,7 @@ public final class WorkbenchUiFramework {
         }
         if (node instanceof Region region
                 && (node.getStyleClass().contains("run-summary-grid")
-                || node.getStyleClass().contains("structure-overview-grid"))) {
+                        || node.getStyleClass().contains("structure-overview-grid"))) {
             releaseHeight(region);
         }
         if (node instanceof Parent parent) {
@@ -404,9 +428,10 @@ public final class WorkbenchUiFramework {
         }
         Text probe = new Text("国Ag");
         probe.setFont(font);
-        double insets = node instanceof Region region
-                ? region.getInsets().getTop() + region.getInsets().getBottom()
-                : 0.0d;
+        double insets =
+                node instanceof Region region
+                        ? region.getInsets().getTop() + region.getInsets().getBottom()
+                        : 0.0d;
         return Math.ceil(probe.getLayoutBounds().getHeight() + insets + CONTROL_VERTICAL_PADDING);
     }
 
@@ -433,7 +458,8 @@ public final class WorkbenchUiFramework {
         return parent.getChildrenUnmodifiable().stream()
                 .filter(Node::isManaged)
                 .mapToDouble(node -> node.prefHeight(-1.0d))
-                .max().orElse(42.0d);
+                .max()
+                .orElse(42.0d);
     }
 
     private double practiceControlWidth(double scale, boolean compact, boolean narrow) {
@@ -471,13 +497,14 @@ public final class WorkbenchUiFramework {
             setVisibleManaged(structureHistoryDetails, structureHistoryExpanded);
         }
         structureHistoryDock.getStyleClass().removeAll("history-collapsed", "history-expanded");
-        structureHistoryDock.getStyleClass().add(structureHistoryExpanded
-                ? "history-expanded"
-                : "history-collapsed");
+        structureHistoryDock
+                .getStyleClass()
+                .add(structureHistoryExpanded ? "history-expanded" : "history-collapsed");
 
         releaseHeight(structureHistoryDock);
         double lineHeight = mixedLineHeight(shellFont());
-        double headerHeight = Math.max(lineHeight + 20.0d, firstManagedChildPrefHeight(structureHistoryDock));
+        double headerHeight =
+                Math.max(lineHeight + 20.0d, firstManagedChildPrefHeight(structureHistoryDock));
         if (!structureHistoryExpanded) {
             setFixedHeight(structureHistoryDock, Math.ceil(headerHeight));
             return;
@@ -485,12 +512,14 @@ public final class WorkbenchUiFramework {
 
         double rootHeight = root == null ? 0.0d : root.getHeight();
         double minimumDetails = lineHeight * 3.4d + 24.0d;
-        double desiredDetails = structureHistoryDetails == null
-                ? minimumDetails
-                : Math.max(minimumDetails, structureHistoryDetails.prefHeight(-1.0d));
-        double viewportBudget = rootHeight > 0.0d
-                ? rootHeight * (compact ? 0.22d : 0.28d)
-                : lineHeight * 7.0d + 44.0d;
+        double desiredDetails =
+                structureHistoryDetails == null
+                        ? minimumDetails
+                        : Math.max(minimumDetails, structureHistoryDetails.prefHeight(-1.0d));
+        double viewportBudget =
+                rootHeight > 0.0d
+                        ? rootHeight * (compact ? 0.22d : 0.28d)
+                        : lineHeight * 7.0d + 44.0d;
         double maximumDetails = Math.max(minimumDetails, viewportBudget);
         double detailsHeight = Math.min(desiredDetails, maximumDetails);
         setFixedHeight(structureHistoryDock, Math.ceil(headerHeight + detailsHeight));
@@ -521,10 +550,10 @@ public final class WorkbenchUiFramework {
         if (node instanceof TabPane) {
             setOwnedClass(node, Styles.DENSE, compact, ownedDense);
         } else if ((node instanceof Button
-                || node instanceof ComboBoxBase<?>
-                || node instanceof TextInputControl
-                || node instanceof Spinner<?>
-                || node instanceof Slider)
+                        || node instanceof ComboBoxBase<?>
+                        || node instanceof TextInputControl
+                        || node instanceof Spinner<?>
+                        || node instanceof Slider)
                 && !node.getStyleClass().contains("family-rail-button")) {
             setOwnedClass(node, Styles.SMALL, compact, ownedSmall);
         }
@@ -535,7 +564,8 @@ public final class WorkbenchUiFramework {
         }
     }
 
-    private static void setOwnedClass(Node node, String styleClass, boolean enabled, Set<Node> owned) {
+    private static void setOwnedClass(
+            Node node, String styleClass, boolean enabled, Set<Node> owned) {
         if (enabled) {
             if (!node.getStyleClass().contains(styleClass)) {
                 node.getStyleClass().add(styleClass);
@@ -657,6 +687,5 @@ public final class WorkbenchUiFramework {
         return Math.max(minimum, Math.min(maximum, value));
     }
 
-    public record LayoutState(boolean compact, boolean narrow) {
-    }
+    public record LayoutState(boolean compact, boolean narrow) {}
 }

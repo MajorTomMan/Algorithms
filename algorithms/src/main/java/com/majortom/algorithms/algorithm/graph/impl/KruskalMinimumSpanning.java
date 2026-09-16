@@ -17,7 +17,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Kruskal minimum-spanning-tree/forest implementation over the weighted graph contract. */
-@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", type = Integer.class, structure = WeightedGraphStructure.class)
+@Algorithm(
+        id = "kruskal-minimum-spanning",
+        name = "Kruskal最小生成树",
+        type = Integer.class,
+        structure = WeightedGraphStructure.class)
 public final class KruskalMinimumSpanning {
     @AlgorithmEntry
     public WeightedGraphSnapshot<Integer> build(WeightedGraphStructure<Integer> graph) {
@@ -74,7 +78,8 @@ public final class KruskalMinimumSpanning {
         return root;
     }
 
-    private static void union(Map<Long, Long> parent, Map<Long, Integer> rank, long left, long right) {
+    private static void union(
+            Map<Long, Long> parent, Map<Long, Integer> rank, long left, long right) {
         int leftRank = rank.get(left);
         int rightRank = rank.get(right);
         if (leftRank < rightRank) {

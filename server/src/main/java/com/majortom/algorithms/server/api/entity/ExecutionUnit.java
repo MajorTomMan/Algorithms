@@ -1,6 +1,7 @@
 package com.majortom.algorithms.server.api.entity;
 
 import com.majortom.algorithms.server.api.constant.ExecutionState;
+
 import lombok.Data;
 
 import java.util.Map;

@@ -13,6 +13,7 @@ public final class IntegerHeapSort extends AbstractIntegerSort {
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
+
     @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         for (int root = array.size() / 2 - 1; root >= 0; root--) {
@@ -22,8 +23,7 @@ public final class IntegerHeapSort extends AbstractIntegerSort {
             swap(array, 0, end);
             siftDown(array, 0, end);
         }
-        if (array.size() > 0) {
-        }
+        if (array.size() > 0) {}
     }
 
     private void siftDown(ArrayStructure<Integer> array, int root, int size) {

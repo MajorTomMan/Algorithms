@@ -1,15 +1,13 @@
 package com.majortom.algorithms.leetcode.ds.stack_queue;
 
+import com.majortom.algorithms.structure.linked.LinkedList;
+import com.majortom.algorithms.structure.linked.StackStructure;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.majortom.algorithms.structure.linked.LinkedList;
-import com.majortom.algorithms.structure.linked.StackStructure;
-
-/**
- * 后缀表达式求值
- */
+/** 后缀表达式求值 */
 public class 表达式求值 {
     private static Boolean isPost = false;
 

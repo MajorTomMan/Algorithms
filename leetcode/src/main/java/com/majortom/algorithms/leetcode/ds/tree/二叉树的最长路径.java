@@ -1,13 +1,13 @@
 package com.majortom.algorithms.leetcode.ds.tree;
 
-import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 二叉树的最长路径 {
     public static void main(String[] args) {
-            BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> root =
+                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         maxDepth(root);
-
     }
 
     public static int maxDepth(BinaryTreeNode<Integer> root) {

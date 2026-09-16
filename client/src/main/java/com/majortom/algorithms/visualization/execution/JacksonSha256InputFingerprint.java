@@ -12,7 +12,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 
-/** SHA-256 fingerprint over canonical input JSON, independent of an input object's toString implementation. */
+/**
+ * SHA-256 fingerprint over canonical input JSON, independent of an input object's toString
+ * implementation.
+ */
 public final class JacksonSha256InputFingerprint implements InputFingerprint {
 
     private static final int FINGERPRINT_SCHEMA_VERSION = 1;

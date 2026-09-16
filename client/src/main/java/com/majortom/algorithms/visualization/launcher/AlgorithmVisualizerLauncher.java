@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.launcher;
 
+import atlantafx.base.theme.PrimerDark;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -10,14 +12,10 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-import atlantafx.base.theme.PrimerDark;
-
 /**
  * 算法可视化实验室 JavaFX 启动入口。
  *
- * <p>
- * 它负责初始化主题、加载主 FXML、创建响应式 Scene，并在窗口关闭时停止后台算法线程。
- * </p>
+ * <p>它负责初始化主题、加载主 FXML、创建响应式 Scene，并在窗口关闭时停止后台算法线程。
  */
 public class AlgorithmVisualizerLauncher extends Application {
 
@@ -31,14 +29,16 @@ public class AlgorithmVisualizerLauncher extends Application {
         Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
         try {
             // 1. 加载主界面 FXML
-            ResourceBundle bundle = ResourceBundle.getBundle("language.language", Locale.getDefault());
+            ResourceBundle bundle =
+                    ResourceBundle.getBundle("language.language", Locale.getDefault());
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainControls.fxml"));
             loader.setResources(bundle);
             // 2. 创建可伸缩场景。主界面会在窄窗口中压缩侧栏并让播放栏自动换行。
-            Scene scene = ResponsiveStageScaler.createScene(
-                    loader.load(),
-                    ResponsiveStageScaler.DEFAULT_WIDTH,
-                    ResponsiveStageScaler.DEFAULT_HEIGHT);
+            Scene scene =
+                    ResponsiveStageScaler.createScene(
+                            loader.load(),
+                            ResponsiveStageScaler.DEFAULT_WIDTH,
+                            ResponsiveStageScaler.DEFAULT_HEIGHT);
             scene.setFill(Color.web("#0A0A0E"));
 
             // 3. 配置窗口属性

@@ -137,7 +137,8 @@ public final class DefaultExecutionControl implements RunControl {
     }
 
     @Override
-    public void awaitStartPermission(CancellationToken cancellationToken) throws InterruptedException {
+    public void awaitStartPermission(CancellationToken cancellationToken)
+            throws InterruptedException {
         lock.lockInterruptibly();
         try {
             while ((lifecycleTransitionInProgress || (paused && stepPermits == 0))
@@ -151,12 +152,14 @@ public final class DefaultExecutionControl implements RunControl {
     }
 
     @Override
-    public void awaitDomainEventPermission(CancellationToken cancellationToken) throws InterruptedException {
+    public void awaitDomainEventPermission(CancellationToken cancellationToken)
+            throws InterruptedException {
         awaitPermission(cancellationToken);
     }
 
     @Override
-    public void awaitCompletionPermission(CancellationToken cancellationToken) throws InterruptedException {
+    public void awaitCompletionPermission(CancellationToken cancellationToken)
+            throws InterruptedException {
         lock.lockInterruptibly();
         try {
             while ((paused || lifecycleTransitionInProgress)
@@ -194,8 +197,7 @@ public final class DefaultExecutionControl implements RunControl {
     }
 
     private static RuntimeException emitLifecycle(
-            Consumer<ExecutionLifecycleEvent> sink,
-            ExecutionLifecycleEvent event) {
+            Consumer<ExecutionLifecycleEvent> sink, ExecutionLifecycleEvent event) {
         if (sink == null) {
             return null;
         }

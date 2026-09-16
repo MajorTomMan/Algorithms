@@ -35,8 +35,9 @@ public final class StructureDiscovery {
                 continue;
             }
             if (!contract.isInterface()) {
-                throw new RegistrationException("@Structure must be declared on a capability interface: "
-                        + contract.getName());
+                throw new RegistrationException(
+                        "@Structure must be declared on a capability interface: "
+                                + contract.getName());
             }
             boolean hasId = !annotation.id().isBlank();
             boolean hasImplementation = annotation.implementation() != Void.class;
@@ -44,13 +45,18 @@ public final class StructureDiscovery {
                 continue;
             }
             if (hasId != hasImplementation) {
-                throw new RegistrationException("Concrete @Structure registration requires both id and implementation: "
-                        + contract.getName());
+                throw new RegistrationException(
+                        "Concrete @Structure registration requires both id and implementation: "
+                                + contract.getName());
             }
             Class<?> implementation = annotation.implementation();
-            StructureDescriptor descriptor = new StructureDescriptor(
-                    annotation.id(), ComponentNames.resolve(annotation.name(), implementation),
-                    annotation.module(), contract, implementation);
+            StructureDescriptor descriptor =
+                    new StructureDescriptor(
+                            annotation.id(),
+                            ComponentNames.resolve(annotation.name(), implementation),
+                            annotation.module(),
+                            contract,
+                            implementation);
             descriptors.add(RegistrationValidator.validate(descriptor));
         }
         descriptors.sort(Comparator.comparing(StructureDescriptor::id));

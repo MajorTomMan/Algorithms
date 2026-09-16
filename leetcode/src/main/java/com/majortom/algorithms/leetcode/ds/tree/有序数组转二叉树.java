@@ -1,8 +1,8 @@
 package com.majortom.algorithms.leetcode.ds.tree;
 
+import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.AVLTreeNode;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
-import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 
 public class 有序数组转二叉树 {
     public static void main(String[] args) {

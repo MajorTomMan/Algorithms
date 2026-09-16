@@ -5,7 +5,10 @@ import com.majortom.algorithms.core.runtime.ExecutionResult;
 
 import java.util.Objects;
 
-/** Client history entry that decorates the shared recording with presentation identity and frame statistics. */
+/**
+ * Client history entry that decorates the shared recording with presentation identity and frame
+ * statistics.
+ */
 public record ClientExecutionRecord(
         String moduleId,
         String operationId,
@@ -24,7 +27,8 @@ public record ClientExecutionRecord(
             throw new IllegalArgumentException("Record operation ID must match its recording");
         }
         if (visualFrameCount < 0L || visualFrameCount > recording.statistics().totalEventCount()) {
-            throw new IllegalArgumentException("visualFrameCount must be between zero and totalEventCount");
+            throw new IllegalArgumentException(
+                    "visualFrameCount must be between zero and totalEventCount");
         }
     }
 
@@ -35,5 +39,4 @@ public record ClientExecutionRecord(
         }
         return value;
     }
-
 }

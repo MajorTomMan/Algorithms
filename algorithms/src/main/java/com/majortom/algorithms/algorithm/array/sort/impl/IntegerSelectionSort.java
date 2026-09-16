@@ -6,13 +6,18 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Selection sort over an ArrayStructure<Integer>. */
-@Algorithm(id = "selection-sort", name = "Selection Sort", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(
+        id = "selection-sort",
+        name = "Selection Sort",
+        type = Integer.class,
+        structure = ArrayStructure.class)
 public final class IntegerSelectionSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
+
     @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         for (int destination = 0; destination < array.size(); destination++) {

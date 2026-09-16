@@ -2,6 +2,7 @@ package com.majortom.algorithms.practice.exercises.princeton.ds.graph;
 
 import com.majortom.algorithms.structure.graph.Graph;
 import com.majortom.algorithms.structure.graph.Vertex;
+
 import edu.princeton.cs.algs4.SymbolGraph;
 
 import java.io.FileNotFoundException;
@@ -71,10 +72,10 @@ public class 符号图测试 {
 
     private static void testCanonicalGraph() {
         String[][] edges = {
-                {"linkin Park", "deep Purple"},
-                {"linkin Park", "led Zepplin"},
-                {"deep Purple", "black Sabbath"},
-                {"black Sabbath", "led Zepplin"}
+            {"linkin Park", "deep Purple"},
+            {"linkin Park", "led Zepplin"},
+            {"deep Purple", "black Sabbath"},
+            {"black Sabbath", "led Zepplin"}
         };
         Graph<String> graph = new Graph<>();
         for (String[] edge : edges) {

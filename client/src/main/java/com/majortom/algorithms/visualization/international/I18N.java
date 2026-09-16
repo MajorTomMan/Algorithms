@@ -4,6 +4,7 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -11,14 +12,11 @@ import java.util.ResourceBundle;
 /**
  * 国际化工具类。
  *
- * <p>控制器和模块定义都通过这里读取文案。UI 控件通常绑定
- * {@link #createStringBinding(String)}，当 {@link #setLocale(Locale)} 切换语言时，
- * 绑定文本会自动刷新。</p>
+ * <p>控制器和模块定义都通过这里读取文案。UI 控件通常绑定 {@link #createStringBinding(String)}，当 {@link #setLocale(Locale)}
+ * 切换语言时， 绑定文本会自动刷新。
  */
 public class I18N {
-    /**
-     * 当前语言环境属性。
-     */
+    /** 当前语言环境属性。 */
     private static final ObjectProperty<Locale> locale = new SimpleObjectProperty<>(Locale.CHINESE);
 
     /**
@@ -78,13 +76,11 @@ public class I18N {
 
     /**
      * 创建一个动态绑定的字符串对象。
-     * 
+     *
      * @param key 资源文件中的键
      * @return 随语言变化自动更新的 StringBinding
      */
     public static StringBinding createStringBinding(String key) {
-        return Bindings.createStringBinding(
-                () -> text(key),
-                locale);
+        return Bindings.createStringBinding(() -> text(key), locale);
     }
 }

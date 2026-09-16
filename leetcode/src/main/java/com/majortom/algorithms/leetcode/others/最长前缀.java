@@ -1,14 +1,12 @@
 package com.majortom.algorithms.leetcode.others;
 
-import java.util.Arrays;
 
-public class 最长前缀{
+public class 最长前缀 {
     public static void main(String[] args) {
-        String[] strs = {
-            "cir","car"
-        };
+        String[] strs = {"cir", "car"};
         System.out.println(longestCommonPrefix(strs));
     }
+
     public static String longestCommonPrefix(String[] strs) {
         if (strs == null || strs.length == 0) {
             return "";

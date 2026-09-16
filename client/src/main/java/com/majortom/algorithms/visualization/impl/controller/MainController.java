@@ -1,7 +1,16 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
+import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
+import com.majortom.algorithms.core.logging.LogEvent;
+import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.runtime.ExecutionStatistics;
+import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
+import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.practice.runtime.PracticeProblemRegistry;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -10,51 +19,43 @@ import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.WorkbenchControls;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.international.I18N;
-import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
-import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.module.WorkbenchModules;
-import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
-import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
-import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
-import com.majortom.algorithms.core.logging.LogEvent;
-import com.majortom.algorithms.core.metadata.StructureModule;
-import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
-import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
-import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
-import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.logging.LogView;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
+import com.majortom.algorithms.visualization.module.WorkbenchModules;
+import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
+import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
+import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
+
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.TextInputControl;
-import javafx.scene.control.Tooltip;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -65,8 +66,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Popup;
-import javafx.geometry.Bounds;
-import javafx.scene.input.KeyCode;
 
 import java.net.URL;
 import java.time.ZoneId;
@@ -81,14 +80,14 @@ import java.util.ResourceBundle;
 /**
  * 单 Workbench JavaFX 外壳。
  *
- * <p>Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责
- * 编辑真实结构和快照，Algorithm 模式消费当前或已保存快照的隔离副本并负责
- * 执行、时间线、统计和日志。</p>
+ * <p>Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责 编辑真实结构和快照，Algorithm 模式消费当前或已保存快照的隔离副本并负责
+ * 执行、时间线、统计和日志。
  */
 public class MainController implements Initializable {
 
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
-    private static final PseudoClass WORKSPACE_FOCUS = PseudoClass.getPseudoClass("workspace-focus");
+    private static final PseudoClass WORKSPACE_FOCUS =
+            PseudoClass.getPseudoClass("workspace-focus");
     private static final DateTimeFormatter SNAPSHOT_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter EVENT_TIME_FORMATTER =
@@ -99,387 +98,207 @@ public class MainController implements Initializable {
     private static final PracticeProblemRegistry PRACTICE_PROBLEMS =
             PracticeProblemRegistry.discover("com.majortom.algorithms");
 
-    @FXML
-    private BorderPane rootPane;
-    @FXML
-    private VBox topShell;
-    @FXML
-    private HBox topBar;
-    @FXML
-    private HBox brandZone;
-    @FXML
-    private Label brandSubtitle;
-    @FXML
-    private HBox workspaceModeBox;
-    @FXML
-    private HBox topContextZone;
-    @FXML
-    private VBox structureNavigationBox;
-    @FXML
-    private VBox algorithmNavigationBox;
-    @FXML
-    private Button structureWorkspaceBtn;
-    @FXML
-    private Button algorithmWorkspaceBtn;
-    @FXML
-    private Button practiceWorkspaceBtn;
-    @FXML
-    private VBox valueTypeBox;
-    @FXML
-    private VBox structureKindHost;
-    @FXML
-    private Label valueTypeLabel;
-    @FXML
-    private ComboBox<ValueTypeOption> valueTypeSelector;
-    @FXML
-    private Label hashValueTypeLabel;
-    @FXML
-    private ComboBox<ValueTypeOption> hashValueTypeSelector;
-    @FXML
-    private Button fontSettingsBtn;
-    @FXML
-    private StackPane workspaceLayer;
-    @FXML
-    private VBox structureWorkspacePane;
-    @FXML
-    private VBox algorithmWorkspacePane;
-    @FXML
-    private VBox practiceWorkspacePane;
-    @FXML
-    private Label practiceWorkspaceTitleLabel;
-    @FXML
-    private Label practiceCatalogTitleLabel;
-    @FXML
-    private Label practiceCatalogHintLabel;
-    @FXML
-    private ListView<ProblemDescriptor> practiceProblemList;
-    @FXML
-    private Label practiceProblemNameLabel;
-    @FXML
-    private Label practiceProblemMetaLabel;
-    @FXML
-    private Label practiceProblemEntryLabel;
-    @FXML
-    private Label practiceEmptyLabel;
-    @FXML
-    private HBox structureWorkspaceBody;
-    @FXML
-    private HBox algorithmWorkspaceBody;
-    @FXML
-    private VBox structureFamilyRail;
-    @FXML
-    private VBox algorithmFamilyRail;
-    @FXML
-    private VBox structureControlsHost;
-    @FXML
-    private VBox algorithmControlsHost;
-    @FXML
-    private HBox customControlBox;
-    @FXML
-    private VBox structureControlRail;
-    @FXML
-    private VBox algorithmControlRail;
-    @FXML
-    private VBox practiceControlRail;
-    @FXML
-    private VBox snapshotPanel;
-    @FXML
-    private HBox structureSnapshotPreviewBadge;
-    @FXML
-    private Label structureSnapshotPreviewBadgeLabel;
-    @FXML
-    private Label structureSnapshotPreviewIdLabel;
-    @FXML
-    private VBox snapshotPreviewNotice;
-    @FXML
-    private Label snapshotPreviewNoticeTitleLabel;
-    @FXML
-    private Label snapshotPreviewNoticeIdLabel;
-    @FXML
-    private Label snapshotPreviewNoticeHintLabel;
-    @FXML
-    private Button snapshotPreviewRestoreBtn;
-    @FXML
-    private VBox snapshotCards;
-    @FXML
-    private Label structureHistoryTitleLabel;
-    @FXML
-    private Label structureHistoryCountLabel;
-    @FXML
-    private HBox structureHistoryCards;
-    @FXML
-    private VBox structureHistoryDock;
-    @FXML
-    private ScrollPane structureHistoryDetails;
-    @FXML
-    private Button structureHistoryToggleBtn;
-    @FXML
-    private VBox structureSelectionOverlay;
-    @FXML
-    private Label selectedEntityTitleLabel;
-    @FXML
-    private Label selectedEntityHintLabel;
-    @FXML
-    private Label selectedNodeIdLabel;
-    @FXML
-    private Label selectedNodeValueLabel;
-    @FXML
-    private Label selectedValueCaptionLabel;
-    @FXML
-    private Label structureInspectorBody;
-    @FXML
-    private Label currentSelectionHeadingLabel;
-    @FXML
-    private Label structureOverviewHeadingLabel;
-    @FXML
-    private Label structureOverviewLabel;
-    @FXML
-    private Label overviewPrimaryTitleLabel;
-    @FXML
-    private Label overviewPrimaryValue;
-    @FXML
-    private Label overviewSecondaryTitleLabel;
-    @FXML
-    private Label overviewSecondaryValue;
-    @FXML
-    private Label overviewEventsTitleLabel;
-    @FXML
-    private Label overviewEventsValue;
-    @FXML
-    private Label overviewStateTitleLabel;
-    @FXML
-    private Label overviewStateValue;
-    @FXML
-    private Label inspectorSnapshotsHeadingLabel;
-    @FXML
-    private Tab structureInspectorTab;
-    @FXML
-    private Tab structureSnapshotsTab;
-    @FXML
-    private VBox inspectorSnapshotCards;
-    @FXML
-    private Label structurePrimaryMetricTitleLabel;
-    @FXML
-    private Label structureNodeCountLabel;
-    @FXML
-    private Label structureSecondaryMetricTitleLabel;
-    @FXML
-    private Label structureHeightLabel;
-    @FXML
-    private Label structureStateMetricTitleLabel;
-    @FXML
-    private Label structureStateLabel;
-    @FXML
-    private StackPane structurePreviewViewport;
-    @FXML
-    private VBox structurePreviewEmpty;
-    @FXML
-    private StackPane visualizationViewport;
-    @FXML
-    private StackPane visualizationContainer;
-    @FXML
-    private VBox diagnosticsPanel;
-    @FXML
-    private VBox bottomDock;
-    @FXML
-    private PlaybackToolbar playbackToolbar;
-    @FXML
-    private HBox timelineRow;
-    @FXML
-    private Label menuTitleLabel;
-    @FXML
-    private Label topContextLabel;
-    @FXML
-    private Label runStateLabel;
-    @FXML
-    private Label runIdLabel;
-    @FXML
-    private Label currentStepSequenceLabel;
-    @FXML
-    private Label currentStepKindLabel;
-    @FXML
-    private Label currentStepDetailLabel;
-    @FXML
-    private VBox currentStepOverlay;
-    @FXML
-    private VBox algorithmSelectionOverlay;
-    @FXML
-    private Label algorithmSelectedEntityTitleLabel;
-    @FXML
-    private Label algorithmSelectedEntityHintLabel;
-    @FXML
-    private Label algorithmSelectedNodeIdLabel;
-    @FXML
-    private Label algorithmSelectedNodeValueLabel;
-    @FXML
-    private Label algorithmSelectedValueCaptionLabel;
-    @FXML
-    private Label eventKindLabel;
-    @FXML
-    private Region eventKindDot;
-    @FXML
-    private Label eventDetailsLabel;
-    @FXML
-    private Label resultLabel;
-    @FXML
-    private Label resultPreviewLabel;
-    @FXML
-    private Label runMetric1Title;
-    @FXML
-    private Label runMetric1Value;
-    @FXML
-    private Label runMetric2Title;
-    @FXML
-    private Label runMetric2Value;
-    @FXML
-    private Label runMetric3Title;
-    @FXML
-    private Label runMetric3Value;
-    @FXML
-    private Label runMetric4Title;
-    @FXML
-    private Label runMetric4Value;
-    @FXML
-    private Label timelineCursorLabel;
-    @FXML
-    private TabPane structureInspectorTabs;
-    @FXML
-    private TabPane algorithmInspectorTabs;
-    @FXML
-    private Tab statisticsTab;
-    @FXML
-    private Tab eventTab;
-    @FXML
-    private Tab logTab;
-    @FXML
-    private Tab resultTab;
-    @FXML
-    private Label currentEventHeadingLabel;
-    @FXML
-    private Label eventRunSummaryHeadingLabel;
-    @FXML
-    private Label resultPreviewHeadingLabel;
-    @FXML
-    private Label resultHeadingLabel;
-    @FXML
-    private Pane timelineMarkers;
-    @FXML
-    private FlowPane timelineDetails;
-    @FXML
-    private VBox timelineDetailPanel;
-    @FXML
-    private Region timelineStatusDot;
-    @FXML
-    private Label timelineStatusLabel;
-    @FXML
-    private Button timelineToggleBtn;
-    @FXML
-    private Button speed1Btn;
-    @FXML
-    private Button speed2Btn;
-    @FXML
-    private Button speed4Btn;
-    @FXML
-    private Button speed8Btn;
-    @FXML
-    private Button speed16Btn;
-    @FXML
-    private Label structureWorkspaceTitleLabel;
-    @FXML
-    private Label structureWorkspaceSubtitleLabel;
-    @FXML
-    private Label structureControlsTitleLabel;
-    @FXML
-    private Label structureLiveLabel;
-    @FXML
-    private Label algorithmWorkspaceTitleLabel;
-    @FXML
-    private Label algorithmWorkspaceSubtitleLabel;
-    @FXML
-    private Label algorithmInputTitleLabel;
-    @FXML
-    private Label algorithmInputSourceLabel;
-    @FXML
-    private Button currentInputBtn;
-    @FXML
-    private Button savedInputBtn;
-    @FXML
-    private Label algorithmControlsTitleLabel;
-    @FXML
-    private Label structurePreviewTitleLabel;
-    @FXML
-    private Label structurePreviewHintLabel;
-    @FXML
-    private Label snapshotTitleLabel;
-    @FXML
-    private Label snapshotQuickTitleLabel;
-    @FXML
-    private Label snapshotCountLabel;
-    @FXML
-    private Button saveSnapshotBtn;
-    @FXML
-    private Label algorithmViewTitleLabel;
-    @FXML
-    private Label viewportHintLabel;
-    @FXML
-    private Label statsTitleLabel;
-    @FXML
-    private Label liveLabel;
-    @FXML
-    private Label logTitleLabel;
-    @FXML
-    private Label statsLabel;
-    @FXML
-    private Label delayLabel;
-    @FXML
-    private Label timelineLabel;
-    @FXML
-    private Label speedLabel;
-    @FXML
-    private Label timelineRuntimeLegendLabel;
-    @FXML
-    private Label timelineStructureLegendLabel;
-    @FXML
-    private Label timelineObservationLegendLabel;
-    @FXML
-    private LogView logView;
-    @FXML
-    private Button startBtn;
-    @FXML
-    private Button pauseBtn;
-    @FXML
-    private Button jumpStartBtn;
-    @FXML
-    private Button endExecutionBtn;
-    @FXML
-    private Button closeExecutionBtn;
-    @FXML
-    private Button jumpEndBtn;
-    @FXML
-    private Button resetBtn;
-    @FXML
-    private Button replayBtn;
-    @FXML
-    private Button stepBackwardBtn;
-    @FXML
-    private Button stepForwardBtn;
-    @FXML
-    private Button exportBtn;
-    @FXML
-    private Button compareBtn;
-    @FXML
-    private Slider delaySlider;
-    @FXML
-    private Slider timelineSlider;
+    @FXML private BorderPane rootPane;
+    @FXML private VBox topShell;
+    @FXML private HBox topBar;
+    @FXML private HBox brandZone;
+    @FXML private Label brandSubtitle;
+    @FXML private HBox workspaceModeBox;
+    @FXML private HBox topContextZone;
+    @FXML private VBox structureNavigationBox;
+    @FXML private VBox algorithmNavigationBox;
+    @FXML private Button structureWorkspaceBtn;
+    @FXML private Button algorithmWorkspaceBtn;
+    @FXML private Button practiceWorkspaceBtn;
+    @FXML private VBox valueTypeBox;
+    @FXML private VBox structureKindHost;
+    @FXML private Label valueTypeLabel;
+    @FXML private ComboBox<ValueTypeOption> valueTypeSelector;
+    @FXML private Label hashValueTypeLabel;
+    @FXML private ComboBox<ValueTypeOption> hashValueTypeSelector;
+    @FXML private Button fontSettingsBtn;
+    @FXML private StackPane workspaceLayer;
+    @FXML private VBox structureWorkspacePane;
+    @FXML private VBox algorithmWorkspacePane;
+    @FXML private VBox practiceWorkspacePane;
+    @FXML private Label practiceWorkspaceTitleLabel;
+    @FXML private Label practiceCatalogTitleLabel;
+    @FXML private Label practiceCatalogHintLabel;
+    @FXML private ListView<ProblemDescriptor> practiceProblemList;
+    @FXML private Label practiceProblemNameLabel;
+    @FXML private Label practiceProblemMetaLabel;
+    @FXML private Label practiceProblemEntryLabel;
+    @FXML private Label practiceEmptyLabel;
+    @FXML private HBox structureWorkspaceBody;
+    @FXML private HBox algorithmWorkspaceBody;
+    @FXML private VBox structureFamilyRail;
+    @FXML private VBox algorithmFamilyRail;
+    @FXML private VBox structureControlsHost;
+    @FXML private VBox algorithmControlsHost;
+    @FXML private HBox customControlBox;
+    @FXML private VBox structureControlRail;
+    @FXML private VBox algorithmControlRail;
+    @FXML private VBox practiceControlRail;
+    @FXML private VBox snapshotPanel;
+    @FXML private HBox structureSnapshotPreviewBadge;
+    @FXML private Label structureSnapshotPreviewBadgeLabel;
+    @FXML private Label structureSnapshotPreviewIdLabel;
+    @FXML private VBox snapshotPreviewNotice;
+    @FXML private Label snapshotPreviewNoticeTitleLabel;
+    @FXML private Label snapshotPreviewNoticeIdLabel;
+    @FXML private Label snapshotPreviewNoticeHintLabel;
+    @FXML private Button snapshotPreviewRestoreBtn;
+    @FXML private VBox snapshotCards;
+    @FXML private Label structureHistoryTitleLabel;
+    @FXML private Label structureHistoryCountLabel;
+    @FXML private HBox structureHistoryCards;
+    @FXML private VBox structureHistoryDock;
+    @FXML private ScrollPane structureHistoryDetails;
+    @FXML private Button structureHistoryToggleBtn;
+    @FXML private VBox structureSelectionOverlay;
+    @FXML private Label selectedEntityTitleLabel;
+    @FXML private Label selectedEntityHintLabel;
+    @FXML private Label selectedNodeIdLabel;
+    @FXML private Label selectedNodeValueLabel;
+    @FXML private Label selectedValueCaptionLabel;
+    @FXML private Label structureInspectorBody;
+    @FXML private Label currentSelectionHeadingLabel;
+    @FXML private Label structureOverviewHeadingLabel;
+    @FXML private Label structureOverviewLabel;
+    @FXML private Label overviewPrimaryTitleLabel;
+    @FXML private Label overviewPrimaryValue;
+    @FXML private Label overviewSecondaryTitleLabel;
+    @FXML private Label overviewSecondaryValue;
+    @FXML private Label overviewEventsTitleLabel;
+    @FXML private Label overviewEventsValue;
+    @FXML private Label overviewStateTitleLabel;
+    @FXML private Label overviewStateValue;
+    @FXML private Label inspectorSnapshotsHeadingLabel;
+    @FXML private Tab structureInspectorTab;
+    @FXML private Tab structureSnapshotsTab;
+    @FXML private VBox inspectorSnapshotCards;
+    @FXML private Label structurePrimaryMetricTitleLabel;
+    @FXML private Label structureNodeCountLabel;
+    @FXML private Label structureSecondaryMetricTitleLabel;
+    @FXML private Label structureHeightLabel;
+    @FXML private Label structureStateMetricTitleLabel;
+    @FXML private Label structureStateLabel;
+    @FXML private StackPane structurePreviewViewport;
+    @FXML private VBox structurePreviewEmpty;
+    @FXML private StackPane visualizationViewport;
+    @FXML private StackPane visualizationContainer;
+    @FXML private VBox diagnosticsPanel;
+    @FXML private VBox bottomDock;
+    @FXML private PlaybackToolbar playbackToolbar;
+    @FXML private HBox timelineRow;
+    @FXML private Label menuTitleLabel;
+    @FXML private Label topContextLabel;
+    @FXML private Label runStateLabel;
+    @FXML private Label runIdLabel;
+    @FXML private Label currentStepSequenceLabel;
+    @FXML private Label currentStepKindLabel;
+    @FXML private Label currentStepDetailLabel;
+    @FXML private VBox currentStepOverlay;
+    @FXML private VBox algorithmSelectionOverlay;
+    @FXML private Label algorithmSelectedEntityTitleLabel;
+    @FXML private Label algorithmSelectedEntityHintLabel;
+    @FXML private Label algorithmSelectedNodeIdLabel;
+    @FXML private Label algorithmSelectedNodeValueLabel;
+    @FXML private Label algorithmSelectedValueCaptionLabel;
+    @FXML private Label eventKindLabel;
+    @FXML private Region eventKindDot;
+    @FXML private Label eventDetailsLabel;
+    @FXML private Label resultLabel;
+    @FXML private Label resultPreviewLabel;
+    @FXML private Label runMetric1Title;
+    @FXML private Label runMetric1Value;
+    @FXML private Label runMetric2Title;
+    @FXML private Label runMetric2Value;
+    @FXML private Label runMetric3Title;
+    @FXML private Label runMetric3Value;
+    @FXML private Label runMetric4Title;
+    @FXML private Label runMetric4Value;
+    @FXML private Label timelineCursorLabel;
+    @FXML private TabPane structureInspectorTabs;
+    @FXML private TabPane algorithmInspectorTabs;
+    @FXML private Tab statisticsTab;
+    @FXML private Tab eventTab;
+    @FXML private Tab logTab;
+    @FXML private Tab resultTab;
+    @FXML private Label currentEventHeadingLabel;
+    @FXML private Label eventRunSummaryHeadingLabel;
+    @FXML private Label resultPreviewHeadingLabel;
+    @FXML private Label resultHeadingLabel;
+    @FXML private Pane timelineMarkers;
+    @FXML private FlowPane timelineDetails;
+    @FXML private VBox timelineDetailPanel;
+    @FXML private Region timelineStatusDot;
+    @FXML private Label timelineStatusLabel;
+    @FXML private Button timelineToggleBtn;
+    @FXML private Button speed1Btn;
+    @FXML private Button speed2Btn;
+    @FXML private Button speed4Btn;
+    @FXML private Button speed8Btn;
+    @FXML private Button speed16Btn;
+    @FXML private Label structureWorkspaceTitleLabel;
+    @FXML private Label structureWorkspaceSubtitleLabel;
+    @FXML private Label structureControlsTitleLabel;
+    @FXML private Label structureLiveLabel;
+    @FXML private Label algorithmWorkspaceTitleLabel;
+    @FXML private Label algorithmWorkspaceSubtitleLabel;
+    @FXML private Label algorithmInputTitleLabel;
+    @FXML private Label algorithmInputSourceLabel;
+    @FXML private Button currentInputBtn;
+    @FXML private Button savedInputBtn;
+    @FXML private Label algorithmControlsTitleLabel;
+    @FXML private Label structurePreviewTitleLabel;
+    @FXML private Label structurePreviewHintLabel;
+    @FXML private Label snapshotTitleLabel;
+    @FXML private Label snapshotQuickTitleLabel;
+    @FXML private Label snapshotCountLabel;
+    @FXML private Button saveSnapshotBtn;
+    @FXML private Label algorithmViewTitleLabel;
+    @FXML private Label viewportHintLabel;
+    @FXML private Label statsTitleLabel;
+    @FXML private Label liveLabel;
+    @FXML private Label logTitleLabel;
+    @FXML private Label statsLabel;
+    @FXML private Label delayLabel;
+    @FXML private Label timelineLabel;
+    @FXML private Label speedLabel;
+    @FXML private Label timelineRuntimeLegendLabel;
+    @FXML private Label timelineStructureLegendLabel;
+    @FXML private Label timelineObservationLegendLabel;
+    @FXML private LogView logView;
+    @FXML private Button startBtn;
+    @FXML private Button pauseBtn;
+    @FXML private Button jumpStartBtn;
+    @FXML private Button endExecutionBtn;
+    @FXML private Button closeExecutionBtn;
+    @FXML private Button jumpEndBtn;
+    @FXML private Button resetBtn;
+    @FXML private Button replayBtn;
+    @FXML private Button stepBackwardBtn;
+    @FXML private Button stepForwardBtn;
+    @FXML private Button exportBtn;
+    @FXML private Button compareBtn;
+    @FXML private Slider delaySlider;
+    @FXML private Slider timelineSlider;
 
-    private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(COMPONENTS);
+    private final List<WorkbenchModuleDefinition> moduleDefinitions =
+            WorkbenchModules.available(COMPONENTS);
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
     private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
     private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
-    /** Snapshot-card selection is independent from restore and algorithm execution. Null means live/current. */
+
+    /**
+     * Snapshot-card selection is independent from restore and algorithm execution. Null means
+     * live/current.
+     */
     private final Map<String, String> selectedSnapshotIds = new LinkedHashMap<>();
+
     private String selectedHashKeyType;
     private String selectedHashValueType;
     private boolean updatingValueTypeSelectors;
@@ -498,6 +317,7 @@ public class MainController implements Initializable {
     private boolean timelineRuntimeVisible = true;
     private boolean timelineStructureVisible = true;
     private boolean timelineObservationVisible = true;
+
     /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
 
@@ -536,60 +356,135 @@ public class MainController implements Initializable {
         valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
         hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
         if (fontSettingsBtn != null) {
-            fontSettingsBtn.accessibleTextProperty().bind(I18N.createStringBinding("settings.text.open"));
+            fontSettingsBtn
+                    .accessibleTextProperty()
+                    .bind(I18N.createStringBinding("settings.text.open"));
         }
-        structureWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
-        algorithmWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
-        practiceWorkspaceBtn.textProperty().bind(I18N.createStringBinding("label.workspace.practice"));
-        structureWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure"));
-        algorithmWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm"));
-        practiceWorkspaceTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice"));
-        practiceCatalogTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.catalog"));
-        practiceCatalogHintLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.hint"));
-        practiceEmptyLabel.textProperty().bind(I18N.createStringBinding("label.workspace.practice.empty"));
+        structureWorkspaceBtn
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure"));
+        algorithmWorkspaceBtn
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.algorithm"));
+        practiceWorkspaceBtn
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.practice"));
+        structureWorkspaceTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure"));
+        algorithmWorkspaceTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.algorithm"));
+        practiceWorkspaceTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.practice"));
+        practiceCatalogTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.practice.catalog"));
+        practiceCatalogHintLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.practice.hint"));
+        practiceEmptyLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.practice.empty"));
         structureLiveLabel.setText(I18N.text("label.workspace.structure.live"));
-        algorithmInputTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
-        structurePreviewTitleLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.structure.preview"));
-        structurePreviewHintLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.structure.preview.hint"));
-        snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
-        snapshotQuickTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.quick"));
-        structurePrimaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
-        structureSecondaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
-        structureStateMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
-        selectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
-        algorithmSelectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
-        structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
-        structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
-        inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
-        structureSnapshotPreviewBadgeLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
-        snapshotPreviewNoticeTitleLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
-        snapshotPreviewNoticeHintLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.snapshot.preview_hint"));
-        snapshotPreviewRestoreBtn.textProperty().bind(
-                I18N.createStringBinding("action.workspace.restore_snapshot"));
-        overviewPrimaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
-        overviewSecondaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
-        overviewEventsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.events"));
-        overviewStateTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
-        structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
-        saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
-        currentSelectionHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.current"));
-        structureOverviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.overview"));
-        algorithmViewTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.algorithm.current_step"));
-        viewportHintLabel.textProperty().bind(
-                I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
-        statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
+        algorithmInputTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.algorithm.input_source"));
+        structurePreviewTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure.preview"));
+        structurePreviewHintLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure.preview.hint"));
+        snapshotTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshots"));
+        snapshotQuickTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshot.quick"));
+        structurePrimaryMetricTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.nodes"));
+        structureSecondaryMetricTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.height"));
+        structureStateMetricTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.state"));
+        selectedValueCaptionLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.selection.value"));
+        algorithmSelectedValueCaptionLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.selection.value"));
+        structureInspectorTab
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.inspector"));
+        structureSnapshotsTab
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshots"));
+        inspectorSnapshotsHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshots"));
+        structureSnapshotPreviewBadgeLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
+        snapshotPreviewNoticeTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
+        snapshotPreviewNoticeHintLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.snapshot.preview_hint"));
+        snapshotPreviewRestoreBtn
+                .textProperty()
+                .bind(I18N.createStringBinding("action.workspace.restore_snapshot"));
+        overviewPrimaryTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.nodes"));
+        overviewSecondaryTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.height"));
+        overviewEventsTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.events"));
+        overviewStateTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.metric.state"));
+        structureHistoryTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure.history"));
+        saveSnapshotBtn
+                .textProperty()
+                .bind(I18N.createStringBinding("action.workspace.save_snapshot"));
+        currentSelectionHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.selection.current"));
+        structureOverviewHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.structure.overview"));
+        algorithmViewTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.algorithm.current_step"));
+        viewportHintLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
+        statsTitleLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.run_summary"));
         statisticsTab.textProperty().bind(I18N.createStringBinding("label.workspace.statistics"));
         eventTab.textProperty().bind(I18N.createStringBinding("label.workspace.event"));
         logTab.textProperty().bind(I18N.createStringBinding("label.panel.log"));
         resultTab.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
-        currentEventHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.event.current"));
-        eventRunSummaryHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
-        resultPreviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result.preview"));
+        currentEventHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.event.current"));
+        eventRunSummaryHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.run_summary"));
+        resultPreviewHeadingLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.workspace.result.preview"));
         resultHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
         logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
         liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
@@ -599,51 +494,68 @@ public class MainController implements Initializable {
         exportBtn.textProperty().bind(I18N.createStringBinding("action.execution.export"));
         compareBtn.textProperty().bind(I18N.createStringBinding("action.execution.compare"));
         delayLabel.textProperty().bind(I18N.createStringBinding("label.execution.delay"));
-        timelineLabel.textProperty().bind(I18N.createStringBinding("label.execution.timeline.full"));
+        timelineLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.execution.timeline.full"));
         speedLabel.textProperty().bind(I18N.createStringBinding("label.execution.speed"));
-        timelineRuntimeLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.runtime"));
-        timelineStructureLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.structure"));
-        timelineObservationLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.observation"));
+        timelineRuntimeLegendLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.execution.legend.runtime"));
+        timelineStructureLegendLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.execution.legend.structure"));
+        timelineObservationLegendLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("label.execution.legend.observation"));
         Label logPlaceholder = new Label();
         logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
         logView.setPlaceholder(logPlaceholder);
         stepBackwardBtn.setText("‹");
-        stepBackwardBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("action.execution.step.backward"));
+        stepBackwardBtn
+                .accessibleTextProperty()
+                .bind(I18N.createStringBinding("action.execution.step.backward"));
         stepForwardBtn.setText("›");
-        stepForwardBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("action.execution.step.forward"));
-        jumpStartBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("action.execution.jump.start"));
-        jumpEndBtn.accessibleTextProperty().bind(
-                I18N.createStringBinding("action.execution.jump.end"));
+        stepForwardBtn
+                .accessibleTextProperty()
+                .bind(I18N.createStringBinding("action.execution.step.forward"));
+        jumpStartBtn
+                .accessibleTextProperty()
+                .bind(I18N.createStringBinding("action.execution.jump.start"));
+        jumpEndBtn
+                .accessibleTextProperty()
+                .bind(I18N.createStringBinding("action.execution.jump.end"));
         endExecutionBtn.textProperty().bind(I18N.createStringBinding("action.execution.end"));
         closeExecutionBtn.textProperty().bind(I18N.createStringBinding("action.execution.close"));
-        localeListener = (observable, oldValue, newValue) -> {
-            if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
-                fontSettingsPopup.hide();
-            }
-            refreshPauseText();
-            refreshTimelineStatus();
-            refreshWorkspaceContext();
-            refreshTopContext();
-            refreshAlgorithmInputSource();
-            refreshSnapshotPreviewPresentation();
-            refreshValueTypeSelectors();
-            refreshStructureSummary();
-            refreshExecutionPresentation();
-            if (uiFramework != null) uiFramework.scheduleRefresh();
-            boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
-            if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
-                selectionVisible = true;
-            }
-            if (selectionVisible && selectionPresentation != null) {
-                selectionPresentation.run();
-            } else if (!selectionVisible) {
-                clearStructureSelection();
-            }
-        };
-        I18N.localeProperty().addListener(new javafx.beans.value.WeakChangeListener<>(localeListener));
+        localeListener =
+                (observable, oldValue, newValue) -> {
+                    if (fontSettingsPopup != null && fontSettingsPopup.isShowing()) {
+                        fontSettingsPopup.hide();
+                    }
+                    refreshPauseText();
+                    refreshTimelineStatus();
+                    refreshWorkspaceContext();
+                    refreshTopContext();
+                    refreshAlgorithmInputSource();
+                    refreshSnapshotPreviewPresentation();
+                    refreshValueTypeSelectors();
+                    refreshStructureSummary();
+                    refreshExecutionPresentation();
+                    if (uiFramework != null) uiFramework.scheduleRefresh();
+                    boolean selectionVisible =
+                            structureSelectionOverlay != null
+                                    && structureSelectionOverlay.isVisible();
+                    if (algorithmSelectionOverlay != null
+                            && algorithmSelectionOverlay.isVisible()) {
+                        selectionVisible = true;
+                    }
+                    if (selectionVisible && selectionPresentation != null) {
+                        selectionPresentation.run();
+                    } else if (!selectionVisible) {
+                        clearStructureSelection();
+                    }
+                };
+        I18N.localeProperty()
+                .addListener(new javafx.beans.value.WeakChangeListener<>(localeListener));
         refreshPauseText();
     }
 
@@ -660,6 +572,19 @@ public class MainController implements Initializable {
         }
         appliedFontSettings = FONT_SETTINGS_SERVICE.load();
         FONT_SETTINGS_SERVICE.apply(rootPane, appliedFontSettings);
+        publishContentStyle(appliedFontSettings);
+    }
+
+    private void publishContentStyle(FontSettings settings) {
+        if (settings == null) {
+            return;
+        }
+        RenderRuntime.shared()
+                .updateContentStyle(
+                        new ContentStyleSnapshot(
+                                settings.size(),
+                                settings.chineseFamily(),
+                                settings.englishFamily()));
     }
 
     @FXML
@@ -677,11 +602,12 @@ public class MainController implements Initializable {
             return;
         }
         fontSettingsPopup = popup;
-        popup.setOnHidden(event -> {
-            if (fontSettingsPopup == popup) {
-                fontSettingsPopup = null;
-            }
-        });
+        popup.setOnHidden(
+                event -> {
+                    if (fontSettingsPopup == popup) {
+                        fontSettingsPopup = null;
+                    }
+                });
         popup.show(fontSettingsBtn, anchor.getMaxX(), anchor.getMaxY());
     }
 
@@ -709,9 +635,9 @@ public class MainController implements Initializable {
         if (initial == null) {
             initial = FONT_SETTINGS_SERVICE.load();
         }
-        FontSettings[] draft = new FontSettings[] { initial };
-        Locale[] draftLocale = new Locale[] { I18N.getLocale() };
-        boolean[] updatingControls = new boolean[] { false };
+        FontSettings[] draft = new FontSettings[] {initial};
+        Locale[] draftLocale = new Locale[] {I18N.getLocale()};
+        boolean[] updatingControls = new boolean[] {false};
 
         Label title = new Label();
         title.textProperty().bind(I18N.createStringBinding("settings.text.title"));
@@ -722,7 +648,9 @@ public class MainController implements Initializable {
         languageLabel.getStyleClass().add("font-settings-row-label");
         ComboBox<String> languageSelector = new ComboBox<>();
         languageSelector.setMaxWidth(Double.MAX_VALUE);
-        languageSelector.getStyleClass().addAll("font-settings-combo", "font-settings-language-combo");
+        languageSelector
+                .getStyleClass()
+                .addAll("font-settings-combo", "font-settings-language-combo");
         languageSelector.getItems().setAll("中文", "English");
         if (I18N.getLocale().getLanguage().equals("zh")) {
             languageSelector.getSelectionModel().select("中文");
@@ -737,25 +665,37 @@ public class MainController implements Initializable {
         families.addAll(FONT_SETTINGS_SERVICE.availableFamilies());
 
         Label chineseFamilyLabel = new Label();
-        chineseFamilyLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontChinese"));
+        chineseFamilyLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("settings.text.fontChinese"));
         chineseFamilyLabel.getStyleClass().add("font-settings-row-label");
         ComboBox<String> chineseFamilySelector = new ComboBox<>();
         chineseFamilySelector.setMaxWidth(Double.MAX_VALUE);
         chineseFamilySelector.getStyleClass().add("font-settings-combo");
         chineseFamilySelector.getItems().setAll(families);
-        chineseFamilySelector.getSelectionModel().select(
-                initial.chineseFamily().isBlank() ? projectDefault : initial.chineseFamily());
+        chineseFamilySelector
+                .getSelectionModel()
+                .select(
+                        initial.chineseFamily().isBlank()
+                                ? projectDefault
+                                : initial.chineseFamily());
         HBox chineseFamilyRow = fontSettingsRow(chineseFamilyLabel, chineseFamilySelector);
 
         Label englishFamilyLabel = new Label();
-        englishFamilyLabel.textProperty().bind(I18N.createStringBinding("settings.text.fontEnglish"));
+        englishFamilyLabel
+                .textProperty()
+                .bind(I18N.createStringBinding("settings.text.fontEnglish"));
         englishFamilyLabel.getStyleClass().add("font-settings-row-label");
         ComboBox<String> englishFamilySelector = new ComboBox<>();
         englishFamilySelector.setMaxWidth(Double.MAX_VALUE);
         englishFamilySelector.getStyleClass().add("font-settings-combo");
         englishFamilySelector.getItems().setAll(families);
-        englishFamilySelector.getSelectionModel().select(
-                initial.englishFamily().isBlank() ? projectDefault : initial.englishFamily());
+        englishFamilySelector
+                .getSelectionModel()
+                .select(
+                        initial.englishFamily().isBlank()
+                                ? projectDefault
+                                : initial.englishFamily());
         HBox englishFamilyRow = fontSettingsRow(englishFamilyLabel, englishFamilySelector);
 
         Label sizeLabel = new Label();
@@ -790,7 +730,9 @@ public class MainController implements Initializable {
         previewTitle.textProperty().bind(I18N.createStringBinding("settings.text.preview"));
         previewTitle.getStyleClass().add("font-settings-preview-title");
         Label previewPrimary = new Label();
-        previewPrimary.textProperty().bind(I18N.createStringBinding("settings.text.preview.primary"));
+        previewPrimary
+                .textProperty()
+                .bind(I18N.createStringBinding("settings.text.preview.primary"));
         previewPrimary.getStyleClass().add("font-settings-preview-primary");
         Label previewArray = new Label();
         previewArray.textProperty().bind(I18N.createStringBinding("settings.text.preview.array"));
@@ -801,60 +743,99 @@ public class MainController implements Initializable {
 
         Runnable refreshPreview = () -> FONT_SETTINGS_SERVICE.applyPreview(preview, draft[0]);
 
-        languageSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingControls[0] || newValue == null) {
-                return;
-            }
-            Locale selectedLocale = Locale.CHINESE;
-            if ("English".equals(newValue)) {
-                selectedLocale = Locale.ENGLISH;
-            }
-            draftLocale[0] = selectedLocale;
-        });
+        languageSelector
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingControls[0] || newValue == null) {
+                                return;
+                            }
+                            Locale selectedLocale = Locale.CHINESE;
+                            if ("English".equals(newValue)) {
+                                selectedLocale = Locale.ENGLISH;
+                            }
+                            draftLocale[0] = selectedLocale;
+                        });
 
-        chineseFamilySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingControls[0] || newValue == null) {
-                return;
-            }
-            String family = chineseFamilySelector.getSelectionModel().getSelectedIndex() == 0 ? "" : newValue;
-            draft[0] = new FontSettings(
-                    family, draft[0].englishFamily(), draft[0].size(), draft[0].color());
-            refreshPreview.run();
-        });
-        englishFamilySelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingControls[0] || newValue == null) {
-                return;
-            }
-            String family = englishFamilySelector.getSelectionModel().getSelectedIndex() == 0 ? "" : newValue;
-            draft[0] = new FontSettings(
-                    draft[0].chineseFamily(), family, draft[0].size(), draft[0].color());
-            refreshPreview.run();
-        });
-        decreaseSize.setOnAction(event -> {
-            double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() - 1.0d);
-            draft[0] = new FontSettings(
-                    draft[0].chineseFamily(), draft[0].englishFamily(), size, draft[0].color());
-            sizeValue.setText(formatFontSize(size));
-            refreshPreview.run();
-        });
-        increaseSize.setOnAction(event -> {
-            double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() + 1.0d);
-            draft[0] = new FontSettings(
-                    draft[0].chineseFamily(), draft[0].englishFamily(), size, draft[0].color());
-            sizeValue.setText(formatFontSize(size));
-            refreshPreview.run();
-        });
-        colorPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingControls[0] || newValue == null) {
-                return;
-            }
-            draft[0] = new FontSettings(
-                    draft[0].chineseFamily(),
-                    draft[0].englishFamily(),
-                    draft[0].size(),
-                    FONT_SETTINGS_SERVICE.toCssColor(newValue));
-            refreshPreview.run();
-        });
+        chineseFamilySelector
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingControls[0] || newValue == null) {
+                                return;
+                            }
+                            String family =
+                                    chineseFamilySelector.getSelectionModel().getSelectedIndex()
+                                                    == 0
+                                            ? ""
+                                            : newValue;
+                            draft[0] =
+                                    new FontSettings(
+                                            family,
+                                            draft[0].englishFamily(),
+                                            draft[0].size(),
+                                            draft[0].color());
+                            refreshPreview.run();
+                        });
+        englishFamilySelector
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingControls[0] || newValue == null) {
+                                return;
+                            }
+                            String family =
+                                    englishFamilySelector.getSelectionModel().getSelectedIndex()
+                                                    == 0
+                                            ? ""
+                                            : newValue;
+                            draft[0] =
+                                    new FontSettings(
+                                            draft[0].chineseFamily(),
+                                            family,
+                                            draft[0].size(),
+                                            draft[0].color());
+                            refreshPreview.run();
+                        });
+        decreaseSize.setOnAction(
+                event -> {
+                    double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() - 1.0d);
+                    draft[0] =
+                            new FontSettings(
+                                    draft[0].chineseFamily(),
+                                    draft[0].englishFamily(),
+                                    size,
+                                    draft[0].color());
+                    sizeValue.setText(formatFontSize(size));
+                    refreshPreview.run();
+                });
+        increaseSize.setOnAction(
+                event -> {
+                    double size = FONT_SETTINGS_SERVICE.clampSize(draft[0].size() + 1.0d);
+                    draft[0] =
+                            new FontSettings(
+                                    draft[0].chineseFamily(),
+                                    draft[0].englishFamily(),
+                                    size,
+                                    draft[0].color());
+                    sizeValue.setText(formatFontSize(size));
+                    refreshPreview.run();
+                });
+        colorPicker
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingControls[0] || newValue == null) {
+                                return;
+                            }
+                            draft[0] =
+                                    new FontSettings(
+                                            draft[0].chineseFamily(),
+                                            draft[0].englishFamily(),
+                                            draft[0].size(),
+                                            FONT_SETTINGS_SERVICE.toCssColor(newValue));
+                            refreshPreview.run();
+                        });
 
         Button reset = new Button();
         reset.textProperty().bind(I18N.createStringBinding("settings.text.reset"));
@@ -868,66 +849,76 @@ public class MainController implements Initializable {
         footer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         footer.getStyleClass().add("font-settings-footer");
 
-        reset.setOnAction(event -> {
-            FontSettings defaults = FONT_SETTINGS_SERVICE.defaults();
-            updatingControls[0] = true;
-            chineseFamilySelector.getSelectionModel().select(projectDefault);
-            englishFamilySelector.getSelectionModel().select(projectDefault);
-            sizeValue.setText(formatFontSize(defaults.size()));
-            colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
-            draftLocale[0] = I18N.getLocale();
-            if ("zh".equals(draftLocale[0].getLanguage())) {
-                languageSelector.getSelectionModel().select("中文");
-            } else {
-                languageSelector.getSelectionModel().select("English");
-            }
-            updatingControls[0] = false;
-            draft[0] = defaults;
-            refreshPreview.run();
-        });
-        apply.setOnAction(event -> {
-            FontSettings normalized = FONT_SETTINGS_SERVICE.normalize(draft[0]);
-            Locale selectedLocale = draftLocale[0];
-            boolean languageChanged = selectedLocale != null
-                    && !I18N.getLocale().getLanguage().equals(selectedLocale.getLanguage());
-            FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
-            FONT_SETTINGS_SERVICE.save(normalized);
-            appliedFontSettings = normalized;
-            if (languageChanged) {
-                I18N.setLocale(selectedLocale);
-                appendSystemLog(I18N.text(
-                        "message.system.language_switched",
-                        selectedLocale.getDisplayLanguage(selectedLocale)));
-            }
-            rootPane.applyCss();
-            rootPane.layout();
-            refreshUiFramework();
-            boolean timelineExpanded = timelineDetailPanel != null && timelineDetailPanel.isVisible();
-            setTimelineExpanded(timelineExpanded);
-            rootPane.requestLayout();
-            javafx.application.Platform.runLater(() -> {
-                if (rootPane == null) {
-                    return;
-                }
-                rootPane.applyCss();
-                rootPane.layout();
-                refreshUiFramework();
-            });
-            popup.hide();
-        });
+        reset.setOnAction(
+                event -> {
+                    FontSettings defaults = FONT_SETTINGS_SERVICE.defaults();
+                    updatingControls[0] = true;
+                    chineseFamilySelector.getSelectionModel().select(projectDefault);
+                    englishFamilySelector.getSelectionModel().select(projectDefault);
+                    sizeValue.setText(formatFontSize(defaults.size()));
+                    colorPicker.setValue(FONT_SETTINGS_SERVICE.colorForPicker(defaults));
+                    draftLocale[0] = I18N.getLocale();
+                    if ("zh".equals(draftLocale[0].getLanguage())) {
+                        languageSelector.getSelectionModel().select("中文");
+                    } else {
+                        languageSelector.getSelectionModel().select("English");
+                    }
+                    updatingControls[0] = false;
+                    draft[0] = defaults;
+                    refreshPreview.run();
+                });
+        apply.setOnAction(
+                event -> {
+                    FontSettings normalized = FONT_SETTINGS_SERVICE.normalize(draft[0]);
+                    Locale selectedLocale = draftLocale[0];
+                    boolean languageChanged =
+                            selectedLocale != null
+                                    && !I18N.getLocale()
+                                            .getLanguage()
+                                            .equals(selectedLocale.getLanguage());
+                    FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
+                    FONT_SETTINGS_SERVICE.save(normalized);
+                    appliedFontSettings = normalized;
+                    publishContentStyle(normalized);
+                    if (languageChanged) {
+                        I18N.setLocale(selectedLocale);
+                        appendSystemLog(
+                                I18N.text(
+                                        "message.system.language_switched",
+                                        selectedLocale.getDisplayLanguage(selectedLocale)));
+                    }
+                    rootPane.applyCss();
+                    rootPane.layout();
+                    refreshUiFramework();
+                    boolean timelineExpanded =
+                            timelineDetailPanel != null && timelineDetailPanel.isVisible();
+                    setTimelineExpanded(timelineExpanded);
+                    rootPane.requestLayout();
+                    FxDispatch.defer(
+                            () -> {
+                                if (rootPane == null) {
+                                    return;
+                                }
+                                rootPane.applyCss();
+                                rootPane.layout();
+                                refreshUiFramework();
+                            });
+                    popup.hide();
+                });
 
-        content.getChildren().setAll(
-                title,
-                languageRow,
-                chineseFamilyRow,
-                englishFamilyRow,
-                sizeRow,
-                colorRow,
-                new Separator(),
-                previewTitle,
-                preview,
-                new Separator(),
-                footer);
+        content.getChildren()
+                .setAll(
+                        title,
+                        languageRow,
+                        chineseFamilyRow,
+                        englishFamilyRow,
+                        sizeRow,
+                        colorRow,
+                        new Separator(),
+                        previewTitle,
+                        preview,
+                        new Separator(),
+                        footer);
         popupShell.getChildren().setAll(arrowRow, content);
         FONT_SETTINGS_SERVICE.apply(popupShell, initial);
         FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
@@ -960,41 +951,58 @@ public class MainController implements Initializable {
         configureValueTypeSelector(valueTypeSelector);
         configureValueTypeSelector(hashValueTypeSelector);
 
-        valueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
-                return;
-            }
-            if (!newValue.available()) {
-                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
-                refreshValueTypeSelectors();
-                return;
-            }
-            if (newValue.type().equals(selectedValueType(activeDefinition.id()))) return;
-            if (!isStructurePageVisible() || currentSubController.isRunning()
-                    || structureSnapshotPreviewActive || !confirmValueTypeChange(newValue.type())) {
-                refreshValueTypeSelectors();
-                return;
-            }
-            if ("hash-table".equals(activeDefinition.id())) {
-                selectedHashKeyType = newValue.type();
-            } else {
-                selectedValueTypes.put(activeDefinition.id(), newValue.type());
-            }
-            refreshAfterValueTypeChange();
-        });
+        valueTypeSelector
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingValueTypeSelectors
+                                    || activeDefinition == null
+                                    || newValue == null) {
+                                return;
+                            }
+                            if (!newValue.available()) {
+                                appendSystemLog(
+                                        I18N.text(
+                                                "message.value_type.unavailable", newValue.type()));
+                                refreshValueTypeSelectors();
+                                return;
+                            }
+                            if (newValue.type().equals(selectedValueType(activeDefinition.id())))
+                                return;
+                            if (!isStructurePageVisible()
+                                    || currentSubController.isRunning()
+                                    || structureSnapshotPreviewActive
+                                    || !confirmValueTypeChange(newValue.type())) {
+                                refreshValueTypeSelectors();
+                                return;
+                            }
+                            if ("hash-table".equals(activeDefinition.id())) {
+                                selectedHashKeyType = newValue.type();
+                            } else {
+                                selectedValueTypes.put(activeDefinition.id(), newValue.type());
+                            }
+                            refreshAfterValueTypeChange();
+                        });
 
-        hashValueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
-                return;
-            }
-            if (!newValue.available()) {
-                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
-                refreshValueTypeSelectors();
-                return;
-            }
-            selectedHashValueType = newValue.type();
-            refreshAfterValueTypeChange();
-        });
+        hashValueTypeSelector
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            if (updatingValueTypeSelectors
+                                    || activeDefinition == null
+                                    || newValue == null) {
+                                return;
+                            }
+                            if (!newValue.available()) {
+                                appendSystemLog(
+                                        I18N.text(
+                                                "message.value_type.unavailable", newValue.type()));
+                                refreshValueTypeSelectors();
+                                return;
+                            }
+                            selectedHashValueType = newValue.type();
+                            refreshAfterValueTypeChange();
+                        });
     }
 
     private void configureValueTypeSelector(ComboBox<ValueTypeOption> selector) {
@@ -1019,7 +1027,10 @@ public class MainController implements Initializable {
                     setText(valueTypeDisplayName(item.type()));
                     setDisable(false);
                 } else {
-                    setText(valueTypeDisplayName(item.type()) + " · " + I18N.text("label.value_type.unavailable"));
+                    setText(
+                            valueTypeDisplayName(item.type())
+                                    + " · "
+                                    + I18N.text("label.value_type.unavailable"));
                     setDisable(true);
                 }
             }
@@ -1050,15 +1061,18 @@ public class MainController implements Initializable {
             }
 
             valueTypeLabel.textProperty().unbind();
-            String typeLabelKey = switch (moduleId) {
-                case "tree" -> "label.value_type.node";
-                case "graph" -> "label.value_type.vertex";
-                default -> "label.value_type.element";
-            };
+            String typeLabelKey =
+                    switch (moduleId) {
+                        case "tree" -> "label.value_type.node";
+                        case "graph" -> "label.value_type.vertex";
+                        default -> "label.value_type.element";
+                    };
             valueTypeLabel.setText(I18N.text(typeLabelKey));
-            valueTypeSelector.setDisable("string".equals(moduleId) || !isStructurePageVisible()
-                    || structureSnapshotPreviewActive
-                    || (currentSubController != null && currentSubController.isRunning()));
+            valueTypeSelector.setDisable(
+                    "string".equals(moduleId)
+                            || !isStructurePageVisible()
+                            || structureSnapshotPreviewActive
+                            || (currentSubController != null && currentSubController.isRunning()));
             List<String> available = availableValueTypes(moduleId);
             String selected = selectedValueTypes.get(moduleId);
             if (selected == null || !available.contains(selected)) {
@@ -1083,16 +1097,21 @@ public class MainController implements Initializable {
     }
 
     private boolean confirmValueTypeChange(String nextType) {
-        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues()) return true;
+        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues())
+            return true;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         if (rootPane.getScene() != null) alert.initOwner(rootPane.getScene().getWindow());
         alert.setTitle(I18N.text("dialog.value_type.title"));
         alert.setHeaderText(I18N.text("dialog.value_type.header", valueTypeDisplayName(nextType)));
         alert.setContentText(I18N.text("dialog.value_type.body"));
-        ButtonType change = new ButtonType(I18N.text("dialog.value_type.confirm"),
-                javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancel = new ButtonType(I18N.text("dialog.value_type.cancel"),
-                javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType change =
+                new ButtonType(
+                        I18N.text("dialog.value_type.confirm"),
+                        javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel =
+                new ButtonType(
+                        I18N.text("dialog.value_type.cancel"),
+                        javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(change, cancel);
         return alert.showAndWait().orElse(cancel) == change;
     }
@@ -1106,7 +1125,8 @@ public class MainController implements Initializable {
 
     private List<String> availableValueTypes(String moduleId) {
         return switch (moduleId) {
-            case "array", "linked-list", "stack", "queue", "tree", "graph" -> ValueAdapters.supportedTypeNames();
+            case "array", "linked-list", "stack", "queue", "tree", "graph" ->
+                    ValueAdapters.supportedTypeNames();
             case "string" -> List.of(String.class.getSimpleName());
             default -> COMPONENTS.algorithmValueTypes(StructureModule.fromId(moduleId));
         };
@@ -1179,7 +1199,8 @@ public class MainController implements Initializable {
         algorithmNavigationBox.getChildren().clear();
         algorithmButtons.clear();
         for (WorkbenchModuleDefinition definition : moduleDefinitions) {
-            List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
+            List<AlgorithmNavigationItem> navigationItems =
+                    algorithmNavigationItems(definition.id());
             if (navigationItems.isEmpty()) {
                 Button unavailable = createFamilyRailButton(definition);
                 unavailable.setDisable(true);
@@ -1189,23 +1210,29 @@ public class MainController implements Initializable {
             AlgorithmNavigationItem first = navigationItems.getFirst();
             Button familyButton = createAlgorithmFamilyButton(definition, first);
             algorithmNavigationBox.getChildren().add(familyButton);
-            Map<String, Button> byAlgorithm = algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>());
+            Map<String, Button> byAlgorithm =
+                    algorithmButtons.computeIfAbsent(
+                            definition.id(), ignored -> new LinkedHashMap<>());
             for (AlgorithmNavigationItem item : navigationItems) {
                 byAlgorithm.put(item.id(), familyButton);
             }
         }
     }
 
-    private Button createAlgorithmFamilyButton(WorkbenchModuleDefinition definition, AlgorithmNavigationItem first) {
+    private Button createAlgorithmFamilyButton(
+            WorkbenchModuleDefinition definition, AlgorithmNavigationItem first) {
         Button button = createFamilyRailButton(definition);
-        button.setOnAction(event -> switchToModule(definition, WorkspaceMode.ALGORITHM, first.id()));
+        button.setOnAction(
+                event -> switchToModule(definition, WorkspaceMode.ALGORITHM, first.id()));
         return button;
     }
 
     private Button createCatalogButton(WorkbenchModuleDefinition definition) {
         Button button = createFamilyRailButton(definition);
         button.setOnAction(event -> switchToModule(definition));
-        structureButtons.computeIfAbsent(definition.id(), ignored -> new java.util.ArrayList<>()).add(button);
+        structureButtons
+                .computeIfAbsent(definition.id(), ignored -> new java.util.ArrayList<>())
+                .add(button);
         return button;
     }
 
@@ -1215,13 +1242,19 @@ public class MainController implements Initializable {
         button.setPrefWidth(Region.USE_COMPUTED_SIZE);
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("family-rail-button");
-        button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
-                () -> familyRailText(definition), I18N.localeProperty()));
+        button.textProperty()
+                .bind(
+                        javafx.beans.binding.Bindings.createStringBinding(
+                                () -> familyRailText(definition), I18N.localeProperty()));
         return button;
     }
 
     private String familyRailText(WorkbenchModuleDefinition definition) {
-        return familyIndex(definition.id()) + "   " + familyGlyph(definition.id()) + "  " + familyName(definition.id());
+        return familyIndex(definition.id())
+                + "   "
+                + familyGlyph(definition.id())
+                + "  "
+                + familyName(definition.id());
     }
 
     private String familyName(String moduleId) {
@@ -1257,15 +1290,15 @@ public class MainController implements Initializable {
     }
 
     private Button createAlgorithmButton(
-            WorkbenchModuleDefinition definition,
-            AlgorithmNavigationItem item) {
+            WorkbenchModuleDefinition definition, AlgorithmNavigationItem item) {
         Button button = new Button();
         button.setMaxWidth(Double.MAX_VALUE);
         button.getStyleClass().add("sidebar-algorithm-button");
         button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
         button.setText(AlgorithmCatalog.name(item.id()));
         button.setOnAction(event -> selectAlgorithm(definition, item.id()));
-        algorithmButtons.computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
+        algorithmButtons
+                .computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
                 .put(item.id(), button);
         return button;
     }
@@ -1286,8 +1319,15 @@ public class MainController implements Initializable {
     }
 
     private void selectAlgorithmButton(String moduleId, String algorithmId) {
-        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
-                button.pseudoClassStateChanged(SELECTED, false)));
+        algorithmButtons
+                .values()
+                .forEach(
+                        buttons ->
+                                buttons.values()
+                                        .forEach(
+                                                button ->
+                                                        button.pseudoClassStateChanged(
+                                                                SELECTED, false)));
         Map<String, Button> buttons = algorithmButtons.get(moduleId);
         if (buttons != null) {
             Button selectedButton = buttons.get(algorithmId);
@@ -1300,11 +1340,11 @@ public class MainController implements Initializable {
     /**
      * Algorithms exposed by a family in the workspace rail.
      *
-     * <p>This deliberately describes the whole family, not only the currently active
-     * structure variant.  A family such as Tree can start on General Tree while its
-     * algorithms live on the AVL variant.  Using the active controller's list here
-     * made the rail change availability during a module transition and could bounce
-     * the workspace back to Structure before the target variant was selected.</p>
+     * <p>This deliberately describes the whole family, not only the currently active structure
+     * variant. A family such as Tree can start on General Tree while its algorithms live on the AVL
+     * variant. Using the active controller's list here made the rail change availability during a
+     * module transition and could bounce the workspace back to Structure before the target variant
+     * was selected.
      */
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         List<String> algorithmIds = new ArrayList<>();
@@ -1317,15 +1357,19 @@ public class MainController implements Initializable {
             }
             Class<?> valueType = ValueAdapters.requireType(selected);
             algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
-            List<String> registered = COMPONENTS.algorithmIds(StructureModule.fromId(moduleId), valueType.getSimpleName());
+            List<String> registered =
+                    COMPONENTS.algorithmIds(
+                            StructureModule.fromId(moduleId), valueType.getSimpleName());
             algorithmIds.removeIf(id -> !registered.contains(id));
         }
         return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
     }
 
-    private void addAlgorithmsForAllTypes(List<String> target, String family, String excludedPrefix) {
+    private void addAlgorithmsForAllTypes(
+            List<String> target, String family, String excludedPrefix) {
         for (String valueType : COMPONENTS.algorithmValueTypes(StructureModule.fromId(family))) {
-            for (String algorithmId : COMPONENTS.algorithmIds(StructureModule.fromId(family), valueType)) {
+            for (String algorithmId :
+                    COMPONENTS.algorithmIds(StructureModule.fromId(family), valueType)) {
                 if (excludedPrefix == null || !algorithmId.startsWith(excludedPrefix)) {
                     target.add(algorithmId);
                 }
@@ -1339,11 +1383,9 @@ public class MainController implements Initializable {
         PRACTICE
     }
 
-    private record ValueTypeOption(String type, boolean available) {
-    }
+    private record ValueTypeOption(String type, boolean available) {}
 
-    private record AlgorithmNavigationItem(String id) {
-    }
+    private record AlgorithmNavigationItem(String id) {}
 
     private void setupWorkspaceMode() {
         setWorkspaceMode(true);
@@ -1360,14 +1402,16 @@ public class MainController implements Initializable {
             return;
         }
         List<AlgorithmNavigationItem> available = algorithmNavigationItems(activeDefinition.id());
-        if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
+        if (available.isEmpty()
+                || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
             return;
         }
-        String targetAlgorithm = available.stream()
-                .map(AlgorithmNavigationItem::id)
-                .filter(id -> java.util.Objects.equals(id, selectedAlgorithmId))
-                .findFirst()
-                .orElse(available.getFirst().id());
+        String targetAlgorithm =
+                available.stream()
+                        .map(AlgorithmNavigationItem::id)
+                        .filter(id -> java.util.Objects.equals(id, selectedAlgorithmId))
+                        .findFirst()
+                        .orElse(available.getFirst().id());
         if (!support.selectAlgorithm(targetAlgorithm)) {
             return;
         }
@@ -1454,20 +1498,29 @@ public class MainController implements Initializable {
     private void setupPracticeWorkspace() {
         List<ProblemDescriptor> problems = PRACTICE_PROBLEMS.problems();
         practiceProblemList.getItems().setAll(problems);
-        practiceProblemList.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(ProblemDescriptor item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    return;
-                }
-                String number = item.number().isBlank() ? item.id() : item.number();
-                setText(item.name() + "  ·  " + item.source().name() + " #" + number);
-            }
-        });
-        practiceProblemList.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> showPracticeProblem(selected));
+        practiceProblemList.setCellFactory(
+                ignored ->
+                        new ListCell<>() {
+                            @Override
+                            protected void updateItem(ProblemDescriptor item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty || item == null) {
+                                    setText(null);
+                                    return;
+                                }
+                                String number = item.number().isBlank() ? item.id() : item.number();
+                                setText(
+                                        item.name()
+                                                + "  ·  "
+                                                + item.source().name()
+                                                + " #"
+                                                + number);
+                            }
+                        });
+        practiceProblemList
+                .getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, previous, selected) -> showPracticeProblem(selected));
         if (problems.isEmpty()) {
             showPracticeProblem(null);
         } else {
@@ -1495,18 +1548,27 @@ public class MainController implements Initializable {
         String tags = problem.tags().isEmpty() ? "" : "  ·  " + String.join(", ", problem.tags());
         practiceProblemNameLabel.setText(problem.name());
         practiceProblemMetaLabel.setText(
-                problem.source().name() + " #" + number + "  ·  " + problem.difficulty().name() + tags);
+                problem.source().name()
+                        + " #"
+                        + number
+                        + "  ·  "
+                        + problem.difficulty().name()
+                        + tags);
         practiceProblemEntryLabel.setText(
                 problem.implementation().getName() + "#" + problem.entryPoint().getName());
     }
 
     private void setupTimelinePresentation() {
         if (timelineMarkers != null) {
-            timelineMarkers.widthProperty().addListener((observable, oldValue, newValue) -> rebuildTimelineMarkers());
+            timelineMarkers
+                    .widthProperty()
+                    .addListener((observable, oldValue, newValue) -> rebuildTimelineMarkers());
         }
         configureTimelineLegendToggle(timelineRuntimeLegendLabel, TimelineMarkerCategory.RUNTIME);
-        configureTimelineLegendToggle(timelineStructureLegendLabel, TimelineMarkerCategory.STRUCTURE);
-        configureTimelineLegendToggle(timelineObservationLegendLabel, TimelineMarkerCategory.OBSERVATION);
+        configureTimelineLegendToggle(
+                timelineStructureLegendLabel, TimelineMarkerCategory.STRUCTURE);
+        configureTimelineLegendToggle(
+                timelineObservationLegendLabel, TimelineMarkerCategory.OBSERVATION);
         refreshTimelineLegendState();
         setTimelineExpanded(false);
     }
@@ -1517,16 +1579,18 @@ public class MainController implements Initializable {
         }
         label.getStyleClass().add("timeline-legend-toggle");
         label.setFocusTraversable(true);
-        label.setOnMouseClicked(event -> {
-            toggleTimelineMarkerCategory(category);
-            event.consume();
-        });
-        label.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
-                toggleTimelineMarkerCategory(category);
-                event.consume();
-            }
-        });
+        label.setOnMouseClicked(
+                event -> {
+                    toggleTimelineMarkerCategory(category);
+                    event.consume();
+                });
+        label.setOnKeyPressed(
+                event -> {
+                    if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                        toggleTimelineMarkerCategory(category);
+                        event.consume();
+                    }
+                });
     }
 
     private void toggleTimelineMarkerCategory(TimelineMarkerCategory category) {
@@ -1576,9 +1640,11 @@ public class MainController implements Initializable {
         }
         if (timelineToggleBtn != null) {
             timelineToggleBtn.setText(expanded ? "▲" : "▼");
-            timelineToggleBtn.setAccessibleText(I18N.text(expanded
-                    ? "action.execution.timeline.collapse"
-                    : "action.execution.timeline.expand"));
+            timelineToggleBtn.setAccessibleText(
+                    I18N.text(
+                            expanded
+                                    ? "action.execution.timeline.collapse"
+                                    : "action.execution.timeline.expand"));
         }
         if (uiFramework != null) {
             uiFramework.scheduleRefresh();
@@ -1605,11 +1671,27 @@ public class MainController implements Initializable {
 
     private void setupGlobalEffects() {
         EffectUtils.applyDynamicEffect(
-                structureWorkspaceBtn, algorithmWorkspaceBtn, fontSettingsBtn,
-                startBtn, pauseBtn, endExecutionBtn, closeExecutionBtn,
-                jumpStartBtn, stepBackwardBtn, stepForwardBtn, jumpEndBtn,
-                resetBtn, replayBtn, exportBtn, compareBtn, saveSnapshotBtn,
-                speed1Btn, speed2Btn, speed4Btn, speed8Btn, speed16Btn);
+                structureWorkspaceBtn,
+                algorithmWorkspaceBtn,
+                fontSettingsBtn,
+                startBtn,
+                pauseBtn,
+                endExecutionBtn,
+                closeExecutionBtn,
+                jumpStartBtn,
+                stepBackwardBtn,
+                stepForwardBtn,
+                jumpEndBtn,
+                resetBtn,
+                replayBtn,
+                exportBtn,
+                compareBtn,
+                saveSnapshotBtn,
+                speed1Btn,
+                speed2Btn,
+                speed4Btn,
+                speed8Btn,
+                speed16Btn);
     }
 
     private void setupLayoutClips() {
@@ -1634,31 +1716,32 @@ public class MainController implements Initializable {
     }
 
     private void setupUiFramework() {
-        uiFramework = new WorkbenchUiFramework(
-                rootPane,
-                topBar,
-                brandZone,
-                brandSubtitle,
-                workspaceModeBox,
-                topContextZone,
-                topContextLabel,
-                runIdLabel,
-                fontSettingsBtn,
-                structureFamilyRail,
-                algorithmFamilyRail,
-                structureControlRail,
-                algorithmControlRail,
-                practiceControlRail,
-                snapshotPanel,
-                diagnosticsPanel,
-                structureSelectionOverlay,
-                currentStepOverlay,
-                algorithmSelectionOverlay,
-                structureInspectorTabs,
-                algorithmInspectorTabs,
-                playbackToolbar,
-                structureHistoryDock,
-                structureHistoryDetails);
+        uiFramework =
+                new WorkbenchUiFramework(
+                        rootPane,
+                        topBar,
+                        brandZone,
+                        brandSubtitle,
+                        workspaceModeBox,
+                        topContextZone,
+                        topContextLabel,
+                        runIdLabel,
+                        fontSettingsBtn,
+                        structureFamilyRail,
+                        algorithmFamilyRail,
+                        structureControlRail,
+                        algorithmControlRail,
+                        practiceControlRail,
+                        snapshotPanel,
+                        diagnosticsPanel,
+                        structureSelectionOverlay,
+                        currentStepOverlay,
+                        algorithmSelectionOverlay,
+                        structureInspectorTabs,
+                        algorithmInspectorTabs,
+                        playbackToolbar,
+                        structureHistoryDock,
+                        structureHistoryDetails);
         uiFramework.setStructureHistoryExpanded(structureHistoryExpanded);
         uiFramework.install();
         refreshUiFramework();
@@ -1712,8 +1795,11 @@ public class MainController implements Initializable {
             if (nextController != null) nextController.dispatchVisualizerDetached();
             Throwable cause = failure;
             while (cause.getCause() != null) cause = cause.getCause();
-            appendSystemLog(I18N.text("message.error.module_load",
-                    familyName(definition.id()), cause.toString()));
+            appendSystemLog(
+                    I18N.text(
+                            "message.error.module_load",
+                            familyName(definition.id()),
+                            cause.toString()));
             return;
         }
 
@@ -1730,14 +1816,19 @@ public class MainController implements Initializable {
             WorkspaceMode finalMode = requestedMode;
             if (requestedMode == WorkspaceMode.ALGORITHM) {
                 List<AlgorithmNavigationItem> available = algorithmNavigationItems(definition.id());
-                if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
+                if (available.isEmpty()
+                        || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
                     finalMode = WorkspaceMode.STRUCTURE;
                 } else {
-                    String targetAlgorithm = available.stream()
-                            .map(AlgorithmNavigationItem::id)
-                            .filter(id -> java.util.Objects.equals(id, preferredAlgorithmId))
-                            .findFirst()
-                            .orElse(available.getFirst().id());
+                    String targetAlgorithm =
+                            available.stream()
+                                    .map(AlgorithmNavigationItem::id)
+                                    .filter(
+                                            id ->
+                                                    java.util.Objects.equals(
+                                                            id, preferredAlgorithmId))
+                                    .findFirst()
+                                    .orElse(available.getFirst().id());
                     if (!support.selectAlgorithm(targetAlgorithm)) {
                         finalMode = WorkspaceMode.STRUCTURE;
                     }
@@ -1754,13 +1845,16 @@ public class MainController implements Initializable {
             refreshExecutionPresentation();
             updateWorkspaceInteractionState();
             refreshUiFramework();
-            structureButtons.forEach((id, buttons) -> buttons.forEach(button ->
-                    button.pseudoClassStateChanged(SELECTED, id.equals(definition.id()))));
+            structureButtons.forEach(
+                    (id, buttons) ->
+                            buttons.forEach(
+                                    button ->
+                                            button.pseudoClassStateChanged(
+                                                    SELECTED, id.equals(definition.id()))));
         } finally {
             moduleTransitionInProgress = false;
         }
     }
-
 
     private void updateAlgorithmWorkspaceAvailability(String moduleId) {
         boolean available = !algorithmNavigationItems(moduleId).isEmpty();
@@ -1773,22 +1867,28 @@ public class MainController implements Initializable {
 
     private void updateWorkspaceInteractionState() {
         boolean running = currentSubController != null && currentSubController.isRunning();
-        boolean algorithmAvailable = activeDefinition != null
-                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        boolean algorithmAvailable =
+                activeDefinition != null
+                        && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
         structureWorkspaceBtn.setDisable(running);
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
         practiceWorkspaceBtn.setDisable(running);
-        structureButtons.values().forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
-        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
+        structureButtons
+                .values()
+                .forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
+        algorithmButtons
+                .values()
+                .forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
         if (structureControlsHost != null) {
             structureControlsHost.setDisable(running || structureSnapshotPreviewActive);
         }
-        if (valueTypeBox != null) valueTypeBox.setDisable(running || structureSnapshotPreviewActive);
-        if (structureKindHost != null) structureKindHost.setDisable(running || structureSnapshotPreviewActive);
+        if (valueTypeBox != null)
+            valueTypeBox.setDisable(running || structureSnapshotPreviewActive);
+        if (structureKindHost != null)
+            structureKindHost.setDisable(running || structureSnapshotPreviewActive);
         refreshValueTypeSelectors();
         refreshSnapshotPreviewPresentation();
     }
-
 
     private void refreshSnapshotPreviewPresentation() {
         boolean visible = isStructurePageVisible() && structureSnapshotPreviewActive;
@@ -1822,7 +1922,8 @@ public class MainController implements Initializable {
 
         String snapshotId = "";
         if (snapshot != null) {
-            snapshotId = I18N.text("label.workspace.snapshot.preview_id", shortSnapshotId(snapshot));
+            snapshotId =
+                    I18N.text("label.workspace.snapshot.preview_id", shortSnapshotId(snapshot));
         }
         if (structureSnapshotPreviewIdLabel != null) {
             structureSnapshotPreviewIdLabel.setText(snapshotId);
@@ -1849,16 +1950,24 @@ public class MainController implements Initializable {
         if (bottomDock == null) {
             return;
         }
-        boolean algorithmAvailable = activeDefinition != null
-                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+        boolean algorithmAvailable =
+                activeDefinition != null
+                        && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
         boolean visible = !structureMode && algorithmAvailable;
         setPageVisibility(bottomDock, visible);
         bottomDock.setDisable(!visible);
     }
 
     private void clearAlgorithmSelection() {
-        algorithmButtons.values().forEach(buttons -> buttons.values().forEach(button ->
-                button.pseudoClassStateChanged(SELECTED, false)));
+        algorithmButtons
+                .values()
+                .forEach(
+                        buttons ->
+                                buttons.values()
+                                        .forEach(
+                                                button ->
+                                                        button.pseudoClassStateChanged(
+                                                                SELECTED, false)));
     }
 
     private void syncAlgorithmSelectionFromController() {
@@ -1892,8 +2001,11 @@ public class MainController implements Initializable {
         }
         Class<?> valueType = ValueAdapters.requireType(selected);
         if (!support.supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException("Controller for " + moduleId
-                    + " does not support runtime value type " + valueType.getName());
+            throw new IllegalArgumentException(
+                    "Controller for "
+                            + moduleId
+                            + " does not support runtime value type "
+                            + valueType.getName());
         }
         support.setRuntimeValueType(valueType);
     }
@@ -1906,54 +2018,65 @@ public class MainController implements Initializable {
         algorithmControlsHost.getChildren().clear();
         customControlBox.getChildren().clear();
 
-        newController.setUIReferences(new WorkbenchControls(
-                statsLabel,
-                logView,
-                delaySlider,
-                timelineSlider,
-                customControlBox,
-                startBtn,
-                pauseBtn,
-                resetBtn,
-                replayBtn,
-                stepBackwardBtn,
-                stepForwardBtn,
-                exportBtn,
-                compareBtn));
+        newController.setUIReferences(
+                new WorkbenchControls(
+                        statsLabel,
+                        logView,
+                        delaySlider,
+                        timelineSlider,
+                        customControlBox,
+                        startBtn,
+                        pauseBtn,
+                        resetBtn,
+                        replayBtn,
+                        stepBackwardBtn,
+                        stepForwardBtn,
+                        exportBtn,
+                        compareBtn));
 
         currentSubController = newController;
-        currentSubController.pausedProperty().addListener((observable, oldValue, newValue) -> {
-            refreshPauseText();
-            refreshTopContext();
-            refreshExecutionPresentation();
-        });
-        currentSubController.runningProperty().addListener((observable, oldValue, newValue) -> {
-            updateSnapshotActionState();
-            updateWorkspaceInteractionState();
-            refreshTopContext();
-            refreshExecutionPresentation();
-        });
-        currentSubController.presentationEventProperty().addListener((observable, oldValue, newValue) -> {
-            refreshExecutionPresentation();
-            refreshTopContext();
-        });
+        currentSubController
+                .pausedProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            refreshPauseText();
+                            refreshTopContext();
+                            refreshExecutionPresentation();
+                        });
+        currentSubController
+                .runningProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            updateSnapshotActionState();
+                            updateWorkspaceInteractionState();
+                            refreshTopContext();
+                            refreshExecutionPresentation();
+                        });
+        currentSubController
+                .presentationEventProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            refreshExecutionPresentation();
+                            refreshTopContext();
+                        });
         List<Node> preparedNodes = List.copyOf(preparedControls.getChildren());
         preparedControls.getChildren().clear();
         customControlBox.getChildren().setAll(preparedNodes);
         distributeModuleControls();
         wireAlgorithmSelection();
         wireStructureSelection();
-        structureRevisionListener = (observable, oldValue, newValue) -> {
-            if (isStructurePageVisible()) {
-                structureSnapshotPreviewActive = false;
-                if (activeDefinition != null) {
-                    selectedSnapshotIds.remove(activeDefinition.id());
-                }
-            }
-            refreshSnapshotCards();
-            refreshStructureSummary();
-            updateWorkspaceInteractionState();
-        };
+        structureRevisionListener =
+                (observable, oldValue, newValue) -> {
+                    if (isStructurePageVisible()) {
+                        structureSnapshotPreviewActive = false;
+                        if (activeDefinition != null) {
+                            selectedSnapshotIds.remove(activeDefinition.id());
+                        }
+                    }
+                    refreshSnapshotCards();
+                    refreshStructureSummary();
+                    updateWorkspaceInteractionState();
+                };
         currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
 
         // The caller decides the final workspace first, then attaches and reveals the visualizer.
@@ -1965,7 +2088,9 @@ public class MainController implements Initializable {
             return;
         }
         if (structureRevisionListener != null) {
-            currentSubController.structureRevisionProperty().removeListener(structureRevisionListener);
+            currentSubController
+                    .structureRevisionProperty()
+                    .removeListener(structureRevisionListener);
             structureRevisionListener = null;
         }
         BaseVisualizer<?> previousVisualizer = currentSubController.getVisualizer();
@@ -1982,10 +2107,9 @@ public class MainController implements Initializable {
     /**
      * Places the one module visualizer in the currently visible page.
      *
-     * <p>Keeping a single visualizer avoids two controllers or two event
-     * streams. Rebinding its size when the page changes also means structure
-     * edits remain visible on the structure page and algorithm frames remain
-     * visible on the algorithm page.</p>
+     * <p>Keeping a single visualizer avoids two controllers or two event streams. Rebinding its
+     * size when the page changes also means structure edits remain visible on the structure page
+     * and algorithm frames remain visible on the algorithm page.
      */
     private void attachVisualizer(boolean structurePage) {
         if (currentSubController == null || currentSubController.getVisualizer() == null) {
@@ -2096,9 +2220,11 @@ public class MainController implements Initializable {
             snapshotCards.getChildren().clear();
             if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
             selectedSnapshotIds.remove(activeDefinition.id());
-            snapshotCountLabel.setText(I18N.text(
-                    "label.workspace.snapshot.count", 0,
-                    structureSnapshotStore.maxSnapshotsPerModule()));
+            snapshotCountLabel.setText(
+                    I18N.text(
+                            "label.workspace.snapshot.count",
+                            0,
+                            structureSnapshotStore.maxSnapshotsPerModule()));
             updateSnapshotActionState();
             refreshStructureHistory();
             return;
@@ -2110,22 +2236,40 @@ public class MainController implements Initializable {
         String selectedSnapshotId = validSelectedSnapshotId(saved);
 
         StructureSnapshot<?> current = support.captureStructureSnapshot();
-        snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true,
-                selectedSnapshotId == null));
+        snapshotCards
+                .getChildren()
+                .add(
+                        createSnapshotCard(
+                                moduleName,
+                                I18N.text("label.workspace.snapshot.current"),
+                                current,
+                                support,
+                                true,
+                                selectedSnapshotId == null));
 
         if (inspectorSnapshotCards != null) {
-            inspectorSnapshotCards.getChildren().add(createInspectorCurrentSnapshotCard(
-                    current, support, selectedSnapshotId == null));
+            inspectorSnapshotCards
+                    .getChildren()
+                    .add(
+                            createInspectorCurrentSnapshotCard(
+                                    current, support, selectedSnapshotId == null));
         }
         for (StructureSnapshot<?> snapshot : saved) {
             boolean selected = snapshot.id().equals(selectedSnapshotId);
-            snapshotCards.getChildren().add(createSnapshotCard(
-                    moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
-                    support, false, selected));
+            snapshotCards
+                    .getChildren()
+                    .add(
+                            createSnapshotCard(
+                                    moduleName,
+                                    I18N.text("label.workspace.snapshot.saved"),
+                                    snapshot,
+                                    support,
+                                    false,
+                                    selected));
             if (inspectorSnapshotCards != null) {
-                inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
-                        snapshot, support, selected));
+                inspectorSnapshotCards
+                        .getChildren()
+                        .add(createInspectorSnapshotCard(snapshot, support, selected));
             }
         }
         if (saved.isEmpty()) {
@@ -2134,9 +2278,11 @@ public class MainController implements Initializable {
             empty.setWrapText(true);
             snapshotCards.getChildren().add(empty);
         }
-        snapshotCountLabel.setText(I18N.text(
-                "label.workspace.snapshot.count", saved.size(),
-                structureSnapshotStore.maxSnapshotsPerModule()));
+        snapshotCountLabel.setText(
+                I18N.text(
+                        "label.workspace.snapshot.count",
+                        saved.size(),
+                        structureSnapshotStore.maxSnapshotsPerModule()));
         updateSnapshotActionState();
         refreshStructureHistory();
     }
@@ -2163,7 +2309,8 @@ public class MainController implements Initializable {
         if (activeDefinition == null) {
             return null;
         }
-        List<StructureSnapshot<?>> snapshots = structureSnapshotStore.snapshots(activeDefinition.id());
+        List<StructureSnapshot<?>> snapshots =
+                structureSnapshotStore.snapshots(activeDefinition.id());
         String selectedId = validSelectedSnapshotId(snapshots);
         if (selectedId != null) {
             for (StructureSnapshot<?> snapshot : snapshots) {
@@ -2181,7 +2328,9 @@ public class MainController implements Initializable {
     }
 
     private void selectCurrentSnapshotCard() {
-        if (activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
+        if (activeDefinition == null
+                || currentSubController == null
+                || currentSubController.isRunning()) {
             return;
         }
         selectedSnapshotIds.remove(activeDefinition.id());
@@ -2200,8 +2349,11 @@ public class MainController implements Initializable {
     }
 
     private void selectSavedSnapshotCard(StructureSnapshot<?> snapshot) {
-        if (snapshot == null || activeDefinition == null || currentSubController == null
-                || currentSubController.isRunning() || !activeDefinition.id().equals(snapshot.moduleId())) {
+        if (snapshot == null
+                || activeDefinition == null
+                || currentSubController == null
+                || currentSubController.isRunning()
+                || !activeDefinition.id().equals(snapshot.moduleId())) {
             return;
         }
         selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
@@ -2227,10 +2379,11 @@ public class MainController implements Initializable {
             structureHistoryCountLabel.setText("0");
             return;
         }
-        List<EventEnvelope> domainEvents = currentSubController.structureEvents().stream()
-                .filter(event -> !(event.event() instanceof ExecutionLifecycleEvent))
-                .filter(event -> !(event.event() instanceof LogEvent))
-                .toList();
+        List<EventEnvelope> domainEvents =
+                currentSubController.structureEvents().stream()
+                        .filter(event -> !(event.event() instanceof ExecutionLifecycleEvent))
+                        .filter(event -> !(event.event() instanceof LogEvent))
+                        .toList();
         structureHistoryCountLabel.setText(String.valueOf(domainEvents.size()));
         if (domainEvents.isEmpty()) {
             Label empty = new Label(I18N.text("label.workspace.structure.history.none"));
@@ -2241,7 +2394,9 @@ public class MainController implements Initializable {
         }
         int start = Math.max(0, domainEvents.size() - 12);
         for (int index = domainEvents.size() - 1; index >= start; index--) {
-            structureHistoryCards.getChildren().add(createStructureHistoryCard(domainEvents.get(index)));
+            structureHistoryCards
+                    .getChildren()
+                    .add(createStructureHistoryCard(domainEvents.get(index)));
         }
     }
 
@@ -2268,9 +2423,7 @@ public class MainController implements Initializable {
     }
 
     private Node createInspectorCurrentSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean selected) {
+            StructureSnapshot<?> snapshot, StructureSnapshotSupport<?> support, boolean selected) {
         VBox card = new VBox(5);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
@@ -2296,9 +2449,7 @@ public class MainController implements Initializable {
     }
 
     private Node createInspectorSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean selected) {
+            StructureSnapshot<?> snapshot, StructureSnapshotSupport<?> support, boolean selected) {
         VBox card = new VBox(5);
         card.setMaxWidth(Double.MAX_VALUE);
         card.getStyleClass().add("snapshot-card");
@@ -2307,7 +2458,8 @@ public class MainController implements Initializable {
         card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
         HBox header = new HBox(8);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label(I18N.text("label.workspace.snapshot.card", shortSnapshotId(snapshot)));
+        Label title =
+                new Label(I18N.text("label.workspace.snapshot.card", shortSnapshotId(snapshot)));
         title.getStyleClass().add("snapshot-card-title");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -2356,7 +2508,10 @@ public class MainController implements Initializable {
         card.getChildren().addAll(title, state, detail);
 
         if (!current) {
-            Label createdAt = new Label(I18N.text("label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
+            Label createdAt =
+                    new Label(
+                            I18N.text(
+                                    "label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
             createdAt.getStyleClass().add("snapshot-card-detail");
             card.getChildren().add(createdAt);
         }
@@ -2395,14 +2550,15 @@ public class MainController implements Initializable {
             }
             useInput.getStyleClass().add("snapshot-card-action");
             WorkbenchTheme.applyControl(useInput);
-            useInput.setOnAction(event -> {
-                if (current) {
-                    applyCurrentStructureAlgorithmInput(true);
-                } else {
-                    selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
-                    applySavedSnapshotAlgorithmInput(snapshot, true);
-                }
-            });
+            useInput.setOnAction(
+                    event -> {
+                        if (current) {
+                            applyCurrentStructureAlgorithmInput(true);
+                        } else {
+                            selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
+                            applySavedSnapshotAlgorithmInput(snapshot, true);
+                        }
+                    });
             actions.getChildren().add(useInput);
         }
         if (!actions.getChildren().isEmpty()) {
@@ -2414,7 +2570,10 @@ public class MainController implements Initializable {
 
     private void previewSavedStructureSnapshot(StructureSnapshot<?> snapshot) {
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
-        if (support == null || snapshot == null || currentSubController == null || currentSubController.isRunning()) {
+        if (support == null
+                || snapshot == null
+                || currentSubController == null
+                || currentSubController.isRunning()) {
             return;
         }
         try {
@@ -2453,9 +2612,13 @@ public class MainController implements Initializable {
         }
     }
 
-    private void applySavedSnapshotAlgorithmInput(StructureSnapshot<?> snapshot, boolean logSelection) {
+    private void applySavedSnapshotAlgorithmInput(
+            StructureSnapshot<?> snapshot, boolean logSelection) {
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        if (support == null || snapshot == null || currentSubController == null || currentSubController.isRunning()) {
+        if (support == null
+                || snapshot == null
+                || currentSubController == null
+                || currentSubController.isRunning()) {
             return;
         }
         selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
@@ -2484,7 +2647,9 @@ public class MainController implements Initializable {
 
     @FXML
     private void useLatestSnapshotInput() {
-        if (activeDefinition == null || currentSubController == null || currentSubController.isRunning()) {
+        if (activeDefinition == null
+                || currentSubController == null
+                || currentSubController.isRunning()) {
             return;
         }
         StructureSnapshot<?> snapshot = selectedSavedSnapshot(true);
@@ -2517,13 +2682,26 @@ public class MainController implements Initializable {
             return;
         }
         SnapshotAlgorithmInputSupport<?> support = currentAlgorithmInputSupport();
-        boolean hasSaved = activeDefinition != null && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
+        boolean hasSaved =
+                activeDefinition != null
+                        && !structureSnapshotStore.snapshots(activeDefinition.id()).isEmpty();
         if (savedInputBtn != null) savedInputBtn.setDisable(!hasSaved || support == null);
         if (currentInputBtn != null) currentInputBtn.setDisable(support == null);
         if (support == null) {
-            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
-            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false)); }
-            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
+            algorithmInputSourceLabel.setText(
+                    I18N.text("label.workspace.algorithm.input.parameters"));
+            if (currentInputBtn != null) {
+                currentInputBtn.pseudoClassStateChanged(SELECTED, false);
+                currentInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.current_button", false));
+            }
+            if (savedInputBtn != null) {
+                savedInputBtn.pseudoClassStateChanged(SELECTED, false);
+                savedInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.saved_button", false));
+            }
             return;
         }
         String snapshotId = support.algorithmInputSnapshotId();
@@ -2531,37 +2709,61 @@ public class MainController implements Initializable {
         if (currentInputBtn != null) {
             currentInputBtn.pseudoClassStateChanged(SELECTED, current);
             if (current) {
-                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", true));
+                currentInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.current_button", true));
             } else {
-                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false));
+                currentInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.current_button", false));
             }
         }
         if (savedInputBtn != null) {
             savedInputBtn.pseudoClassStateChanged(SELECTED, !current);
             if (current) {
-                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false));
+                savedInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.saved_button", false));
             } else {
-                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", true));
+                savedInputBtn.setText(
+                        inputSourceButtonText(
+                                "label.workspace.algorithm.input.saved_button", true));
             }
         }
         if (current) {
-            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot") + "\n" + inputValueTypeText());
+            algorithmInputSourceLabel.setText(
+                    I18N.text("label.workspace.algorithm.input.current_snapshot")
+                            + "\n"
+                            + inputValueTypeText());
             return;
         }
-        StructureSnapshot<?> selected = structureSnapshotStore.snapshots(activeDefinition.id()).stream()
-                .filter(snapshot -> snapshot.id().equals(snapshotId)).findFirst().orElse(null);
+        StructureSnapshot<?> selected =
+                structureSnapshotStore.snapshots(activeDefinition.id()).stream()
+                        .filter(snapshot -> snapshot.id().equals(snapshotId))
+                        .findFirst()
+                        .orElse(null);
         String detail;
         if (selected == null) {
-            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId);
+            detail =
+                    I18N.text("label.workspace.algorithm.input.saved_snapshot")
+                            + " / "
+                            + shortSnapshotId(snapshotId);
         } else {
-            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotId(snapshotId) + "\n" + formatSnapshotTime(selected);
+            detail =
+                    I18N.text("label.workspace.algorithm.input.saved_snapshot")
+                            + " / "
+                            + shortSnapshotId(snapshotId)
+                            + "\n"
+                            + formatSnapshotTime(selected);
         }
         algorithmInputSourceLabel.setText(detail + "\n" + inputValueTypeText());
     }
 
     private String inputValueTypeText() {
         if (currentSubController instanceof RuntimeValueTypeSupport support) {
-            return I18N.text("label.value_type.input", valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
+            return I18N.text(
+                    "label.value_type.input",
+                    valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
         }
         return "";
     }
@@ -2601,8 +2803,7 @@ public class MainController implements Initializable {
 
     @SuppressWarnings("unchecked")
     private void useSnapshotAsAlgorithmInputUnchecked(
-            SnapshotAlgorithmInputSupport<?> support,
-            StructureSnapshot<?> snapshot) {
+            SnapshotAlgorithmInputSupport<?> support, StructureSnapshot<?> snapshot) {
         SnapshotAlgorithmInputSupport<Object> typedSupport =
                 (SnapshotAlgorithmInputSupport<Object>) support;
         StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
@@ -2611,12 +2812,9 @@ public class MainController implements Initializable {
 
     @SuppressWarnings("unchecked")
     private void previewSnapshotUnchecked(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+            StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         typedSupport.previewStructureSnapshot(typedSnapshot);
     }
 
@@ -2633,7 +2831,8 @@ public class MainController implements Initializable {
         structureSnapshotStore.save(snapshot);
         selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
         currentSubController.recordAuxiliaryEvent(
-                "snapshot-created", new SnapshotLifecycleEvent.Created(snapshot.id(), snapshot.moduleId()));
+                "snapshot-created",
+                new SnapshotLifecycleEvent.Created(snapshot.id(), snapshot.moduleId()));
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
         appendSystemLog(I18N.text("message.snapshot.saved", shortSnapshotId(snapshot)));
@@ -2644,7 +2843,8 @@ public class MainController implements Initializable {
             return;
         }
         StructureSnapshotSupport<?> support = currentSnapshotSupport();
-        if (support == null || activeDefinition == null
+        if (support == null
+                || activeDefinition == null
                 || !activeDefinition.id().equals(snapshot.moduleId())) {
             return;
         }
@@ -2654,7 +2854,8 @@ public class MainController implements Initializable {
         try {
             restoreSnapshotUnchecked(support, snapshot);
             currentSubController.recordAuxiliaryEvent(
-                    "snapshot-restored", new SnapshotLifecycleEvent.Restored(snapshot.id(), snapshot.moduleId()));
+                    "snapshot-restored",
+                    new SnapshotLifecycleEvent.Restored(snapshot.id(), snapshot.moduleId()));
         } catch (RuntimeException exception) {
             appendSystemLog(I18N.text("message.snapshot.restore_failed"));
             return;
@@ -2678,7 +2879,8 @@ public class MainController implements Initializable {
         ButtonType restore = new ButtonType(I18N.text("action.workspace.restore_snapshot"));
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "", cancel, restore);
         alert.setTitle(I18N.text("confirm.snapshot.restore.title"));
-        alert.setHeaderText(I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
+        alert.setHeaderText(
+                I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
         alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
         OperationDialogTheme.apply(alert);
         return alert.showAndWait().filter(restore::equals).isPresent();
@@ -2686,29 +2888,22 @@ public class MainController implements Initializable {
 
     @SuppressWarnings("unchecked")
     private void restoreSnapshotUnchecked(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+            StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         typedSupport.restoreStructureSnapshot(typedSnapshot);
     }
 
     @SuppressWarnings("unchecked")
     private String describeSnapshot(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+            StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         return typedSupport.describeStructureSnapshot(typedSnapshot.state());
     }
 
     private String formatSnapshotTime(StructureSnapshot<?> snapshot) {
-        return SNAPSHOT_TIME_FORMATTER.format(
-                snapshot.createdAt().atZone(ZoneId.systemDefault()));
+        return SNAPSHOT_TIME_FORMATTER.format(snapshot.createdAt().atZone(ZoneId.systemDefault()));
     }
 
     private String shortSnapshotId(StructureSnapshot<?> snapshot) {
@@ -2735,8 +2930,10 @@ public class MainController implements Initializable {
             newLocale = Locale.ENGLISH;
         }
         I18N.setLocale(newLocale);
-        appendSystemLog(I18N.text(
-                "message.system.language_switched", newLocale.getDisplayLanguage(newLocale)));
+        appendSystemLog(
+                I18N.text(
+                        "message.system.language_switched",
+                        newLocale.getDisplayLanguage(newLocale)));
     }
 
     private void appendSystemLog(String message) {
@@ -2757,7 +2954,6 @@ public class MainController implements Initializable {
         };
     }
 
-
     private void setupPlaybackSpeedButtons() {
         bindSpeedButton(speed1Btn, 1.0d, 50.0d);
         bindSpeedButton(speed2Btn, 2.0d, 25.0d);
@@ -2769,35 +2965,39 @@ public class MainController implements Initializable {
 
     private void setupPlaybackShellActions() {
         if (jumpStartBtn != null) {
-            jumpStartBtn.setOnAction(event -> {
-                if (currentSubController != null && currentSubController.jumpToStart()) {
-                    refreshExecutionPresentation();
-                }
-            });
+            jumpStartBtn.setOnAction(
+                    event -> {
+                        if (currentSubController != null && currentSubController.jumpToStart()) {
+                            refreshExecutionPresentation();
+                        }
+                    });
         }
         if (jumpEndBtn != null) {
-            jumpEndBtn.setOnAction(event -> {
-                if (currentSubController != null && currentSubController.jumpToEnd()) {
-                    refreshExecutionPresentation();
-                }
-            });
+            jumpEndBtn.setOnAction(
+                    event -> {
+                        if (currentSubController != null && currentSubController.jumpToEnd()) {
+                            refreshExecutionPresentation();
+                        }
+                    });
         }
         if (endExecutionBtn != null) {
-            endExecutionBtn.setOnAction(event -> {
-                if (currentSubController != null) {
-                    currentSubController.endAlgorithm();
-                    refreshExecutionPresentation();
-                }
-            });
+            endExecutionBtn.setOnAction(
+                    event -> {
+                        if (currentSubController != null) {
+                            currentSubController.endAlgorithm();
+                            refreshExecutionPresentation();
+                        }
+                    });
         }
         if (closeExecutionBtn != null) {
-            closeExecutionBtn.setOnAction(event -> {
-                if (currentSubController != null) {
-                    currentSubController.closeExecution();
-                    refreshExecutionPresentation();
-                    refreshTopContext();
-                }
-            });
+            closeExecutionBtn.setOnAction(
+                    event -> {
+                        if (currentSubController != null) {
+                            currentSubController.closeExecution();
+                            refreshExecutionPresentation();
+                            refreshTopContext();
+                        }
+                    });
         }
         refreshPlaybackShellControls();
     }
@@ -2843,12 +3043,14 @@ public class MainController implements Initializable {
         }
         timelineStatusLabel.setText(I18N.text(key));
         if (timelineStatusDot != null) {
-            timelineStatusDot.getStyleClass().removeAll(
-                    "timeline-status-running",
-                    "timeline-status-playing",
-                    "timeline-status-paused",
-                    "timeline-status-completed",
-                    "timeline-status-ready");
+            timelineStatusDot
+                    .getStyleClass()
+                    .removeAll(
+                            "timeline-status-running",
+                            "timeline-status-playing",
+                            "timeline-status-paused",
+                            "timeline-status-completed",
+                            "timeline-status-ready");
             timelineStatusDot.getStyleClass().add(tone);
         }
     }
@@ -2857,16 +3059,18 @@ public class MainController implements Initializable {
         if (button == null) {
             return;
         }
-        button.setOnAction(event -> {
-            if (delaySlider != null) {
-                delaySlider.setValue(delayMillis);
-            }
-            if (currentSubController != null && currentSubController.getVisualizer() != null) {
-                currentSubController.getVisualizer().setPlaybackSpeed(speed);
-                currentSubController.getVisualizer().setScrubbing(speed >= 16.0d);
-            }
-            setSelectedSpeed(button);
-        });
+        button.setOnAction(
+                event -> {
+                    if (delaySlider != null) {
+                        delaySlider.setValue(delayMillis);
+                    }
+                    if (currentSubController != null
+                            && currentSubController.getVisualizer() != null) {
+                        currentSubController.getVisualizer().setPlaybackSpeed(speed);
+                        currentSubController.getVisualizer().setScrubbing(speed >= 16.0d);
+                    }
+                    setSelectedSpeed(button);
+                });
     }
 
     private void setSelectedSpeed(Button selected) {
@@ -2883,12 +3087,16 @@ public class MainController implements Initializable {
         }
         if (isPracticePageVisible()) {
             topContextLabel.setText(
-                    I18N.text("label.workspace.practice").toUpperCase(Locale.ROOT) + " / "
-                            + I18N.text("label.workspace.practice.catalog").toUpperCase(Locale.ROOT));
+                    I18N.text("label.workspace.practice").toUpperCase(Locale.ROOT)
+                            + " / "
+                            + I18N.text("label.workspace.practice.catalog")
+                                    .toUpperCase(Locale.ROOT));
             if (runStateLabel != null) {
                 runStateLabel.setText(workspaceStatusText("READY"));
-                runStateLabel.getStyleClass().removeAll(
-                        "state-running", "state-paused", "state-completed", "state-failed");
+                runStateLabel
+                        .getStyleClass()
+                        .removeAll(
+                                "state-running", "state-paused", "state-completed", "state-failed");
             }
             if (runIdLabel != null) {
                 runIdLabel.setText("");
@@ -2912,10 +3120,14 @@ public class MainController implements Initializable {
         if (activeDefinition != null) {
             String railFamily = familyName(activeDefinition.id());
             String familyMeta = railFamily + " / " + familyIndex(activeDefinition.id());
-            if (structureWorkspaceSubtitleLabel != null) structureWorkspaceSubtitleLabel.setText(railFamily);
-            if (structureControlsTitleLabel != null) structureControlsTitleLabel.setText(familyMeta);
-            if (algorithmWorkspaceSubtitleLabel != null) algorithmWorkspaceSubtitleLabel.setText(algorithmContextName());
-            if (algorithmControlsTitleLabel != null) algorithmControlsTitleLabel.setText(familyMeta);
+            if (structureWorkspaceSubtitleLabel != null)
+                structureWorkspaceSubtitleLabel.setText(railFamily);
+            if (structureControlsTitleLabel != null)
+                structureControlsTitleLabel.setText(familyMeta);
+            if (algorithmWorkspaceSubtitleLabel != null)
+                algorithmWorkspaceSubtitleLabel.setText(algorithmContextName());
+            if (algorithmControlsTitleLabel != null)
+                algorithmControlsTitleLabel.setText(familyMeta);
         }
         if (runStateLabel != null) {
             String state;
@@ -2933,18 +3145,22 @@ public class MainController implements Initializable {
                     } else {
                         state = "RUNNING";
                     }
-                } else if (currentSubController != null && currentSubController.hasExecutionRecord()) {
+                } else if (currentSubController != null
+                        && currentSubController.hasExecutionRecord()) {
                     state = currentSubController.latestExecutionStatus();
                 } else {
                     state = "IDLE";
                 }
             }
             runStateLabel.setText(workspaceStatusText(state));
-            runStateLabel.getStyleClass().removeAll("state-running", "state-paused", "state-completed", "state-failed");
+            runStateLabel
+                    .getStyleClass()
+                    .removeAll("state-running", "state-paused", "state-completed", "state-failed");
             if ("RUNNING".equals(state)) runStateLabel.getStyleClass().add("state-running");
             if ("PAUSED".equals(state)) runStateLabel.getStyleClass().add("state-paused");
             if ("COMPLETED".equals(state)) runStateLabel.getStyleClass().add("state-completed");
-            if ("FAILED".equals(state) || "CANCELLED".equals(state)) runStateLabel.getStyleClass().add("state-failed");
+            if ("FAILED".equals(state) || "CANCELLED".equals(state))
+                runStateLabel.getStyleClass().add("state-failed");
         }
         if (runIdLabel != null) {
             String id;
@@ -3044,7 +3260,8 @@ public class MainController implements Initializable {
             overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
         }
         if (overviewEventsValue != null) {
-            overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
+            overviewEventsValue.setText(
+                    Integer.toString(currentSubController.structureEvents().size()));
         }
         if (overviewStateValue != null) {
             overviewStateValue.setText(workspaceStatusText("READY"));
@@ -3053,23 +3270,17 @@ public class MainController implements Initializable {
 
     @SuppressWarnings("unchecked")
     private String snapshotPrimaryCount(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+            StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         return typedSupport.snapshotPrimaryCount(typedSnapshot.state());
     }
 
     @SuppressWarnings("unchecked")
     private String snapshotSecondaryCount(
-            StructureSnapshotSupport<?> support,
-            StructureSnapshot<?> snapshot) {
-        StructureSnapshotSupport<Object> typedSupport =
-                (StructureSnapshotSupport<Object>) support;
-        StructureSnapshot<Object> typedSnapshot =
-                (StructureSnapshot<Object>) snapshot;
+            StructureSnapshotSupport<?> support, StructureSnapshot<?> snapshot) {
+        StructureSnapshotSupport<Object> typedSupport = (StructureSnapshotSupport<Object>) support;
+        StructureSnapshot<Object> typedSnapshot = (StructureSnapshot<Object>) snapshot;
         return typedSupport.snapshotSecondaryCount(typedSnapshot.state());
     }
 
@@ -3111,75 +3322,168 @@ public class MainController implements Initializable {
     }
 
     private void showTreeSelection(TreeController.NodeSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
-                selection.value().text(), I18N.text("label.workspace.selection.node.hint"),
-                I18N.text("label.workspace.selection.tree.detail", selection.id(), selection.value().text(), nodeIdText(selection.parentId()), selection.childCount(), selection.depth()));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.node"),
+                                "#" + selection.id(),
+                                selection.value().text(),
+                                I18N.text("label.workspace.selection.node.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.tree.detail",
+                                        selection.id(),
+                                        selection.value().text(),
+                                        nodeIdText(selection.parentId()),
+                                        selection.childCount(),
+                                        selection.depth()));
         selectionPresentation.run();
     }
 
     private void showArraySelection(ArrayController.IndexSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.cell"), "[" + selection.index() + "]",
-                selection.value().text(), I18N.text("label.workspace.selection.array.hint"),
-                I18N.text("label.workspace.selection.array.detail", selection.index(), selection.value().text(), selection.size()));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.cell"),
+                                "[" + selection.index() + "]",
+                                selection.value().text(),
+                                I18N.text("label.workspace.selection.array.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.array.detail",
+                                        selection.index(),
+                                        selection.value().text(),
+                                        selection.size()));
         selectionPresentation.run();
     }
 
     private void showStringSelection(StringController.IndexSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.character"), "[" + selection.index() + "]",
-                Character.toString(selection.value()), I18N.text("label.workspace.selection.string.hint"),
-                I18N.text("label.workspace.selection.string.detail", selection.index(), Character.toString(selection.value()), selection.length()));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.character"),
+                                "[" + selection.index() + "]",
+                                Character.toString(selection.value()),
+                                I18N.text("label.workspace.selection.string.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.string.detail",
+                                        selection.index(),
+                                        Character.toString(selection.value()),
+                                        selection.length()));
         selectionPresentation.run();
     }
 
     private void showLinkedSelection(LinkedListController.NodeSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
-                selection.value().text(), I18N.text("label.workspace.selection.linked.hint"),
-                I18N.text("label.workspace.selection.linked.detail", selection.id(), selection.value().text(), selection.index(), nodeIdText(selection.previousId()), nodeIdText(selection.nextId()), selection.size()));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.node"),
+                                "#" + selection.id(),
+                                selection.value().text(),
+                                I18N.text("label.workspace.selection.linked.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.linked.detail",
+                                        selection.id(),
+                                        selection.value().text(),
+                                        selection.index(),
+                                        nodeIdText(selection.previousId()),
+                                        nodeIdText(selection.nextId()),
+                                        selection.size()));
         selectionPresentation.run();
     }
 
     private void showLinearSelection(LinearStructureController.ItemSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.item"), "[" + selection.index() + "]",
-                selection.value().text(), linearRoleText(selection.role()),
-                I18N.text("label.workspace.selection.linear.detail", selection.index(), selection.value().text(), linearRoleText(selection.role()), selection.size()));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.item"),
+                                "[" + selection.index() + "]",
+                                selection.value().text(),
+                                linearRoleText(selection.role()),
+                                I18N.text(
+                                        "label.workspace.selection.linear.detail",
+                                        selection.index(),
+                                        selection.value().text(),
+                                        linearRoleText(selection.role()),
+                                        selection.size()));
         selectionPresentation.run();
     }
 
     private void showMazeSelection(MazeController.CellSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.cell"), "[" + selection.row() + "," + selection.column() + "]",
-                mazeCellStateText(selection.state()), I18N.text("label.workspace.selection.maze.hint"),
-                I18N.text("label.workspace.selection.maze.detail", selection.row(), selection.column(), mazeCellStateText(selection.state())));
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () ->
+                        presentSelection(
+                                I18N.text("label.workspace.selection.cell"),
+                                "[" + selection.row() + "," + selection.column() + "]",
+                                mazeCellStateText(selection.state()),
+                                I18N.text("label.workspace.selection.maze.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.maze.detail",
+                                        selection.row(),
+                                        selection.column(),
+                                        mazeCellStateText(selection.state())));
         selectionPresentation.run();
     }
 
     private void showGraphSelection(GraphController.Selection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> {
-            if (selection instanceof GraphController.NodeSelection node) {
-                presentSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
-                        node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
-                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(), node.degree()));
-            } else if (selection instanceof GraphController.EdgeSelection edge) {
-                presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
-                        edge.fromValue().text() + (edge.directed() ? " → " : " — ") + edge.toValue().text(),
-                        I18N.text("label.workspace.selection.graph.edge.hint"),
-                        I18N.text("label.workspace.selection.graph.edge.detail", edge.id(),
-                                edge.fromValue().text(), edge.toValue().text(),
-                                I18N.text(edge.directed() ? "label.workspace.selection.yes" : "label.workspace.selection.no")));
-            }
-        };
+        if (selection == null) {
+            clearStructureSelection();
+            return;
+        }
+        selectionPresentation =
+                () -> {
+                    if (selection instanceof GraphController.NodeSelection node) {
+                        presentSelection(
+                                I18N.text("label.workspace.selection.node"),
+                                "#" + node.id(),
+                                node.value().text(),
+                                I18N.text("label.workspace.selection.graph.node.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.graph.node.detail",
+                                        node.id(),
+                                        node.value().text(),
+                                        node.degree()));
+                    } else if (selection instanceof GraphController.EdgeSelection edge) {
+                        presentSelection(
+                                I18N.text("label.workspace.selection.edge"),
+                                "E#" + edge.id(),
+                                edge.fromValue().text()
+                                        + (edge.directed() ? " → " : " — ")
+                                        + edge.toValue().text(),
+                                I18N.text("label.workspace.selection.graph.edge.hint"),
+                                I18N.text(
+                                        "label.workspace.selection.graph.edge.detail",
+                                        edge.id(),
+                                        edge.fromValue().text(),
+                                        edge.toValue().text(),
+                                        I18N.text(
+                                                edge.directed()
+                                                        ? "label.workspace.selection.yes"
+                                                        : "label.workspace.selection.no")));
+                    }
+                };
         selectionPresentation.run();
     }
 
@@ -3187,8 +3491,12 @@ public class MainController implements Initializable {
         return id == null ? I18N.text("label.workspace.selection.none") : "#" + id;
     }
 
-    /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */
-    private void presentSelection(String title, String id, String value, String hint, String detail) {
+    /**
+     * All formatting completes before either view is changed, so a failed format cannot leave half
+     * a selection.
+     */
+    private void presentSelection(
+            String title, String id, String value, String hint, String detail) {
         showStructureSelectionOverlay(title, id, value, hint);
         if (structureInspectorBody != null) structureInspectorBody.setText(detail);
     }
@@ -3242,7 +3550,8 @@ public class MainController implements Initializable {
         if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
         if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
         if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
+        updateVisualizationObstruction(
+                currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
     private void showAlgorithmSelectionOverlay(String title, String id, String value) {
@@ -3254,13 +3563,16 @@ public class MainController implements Initializable {
             structureSelectionOverlay.setManaged(false);
             structureSelectionOverlay.setVisible(false);
         }
-        if (algorithmSelectedEntityTitleLabel != null) algorithmSelectedEntityTitleLabel.setText(title);
+        if (algorithmSelectedEntityTitleLabel != null)
+            algorithmSelectedEntityTitleLabel.setText(title);
         if (algorithmSelectedEntityHintLabel != null) {
-            algorithmSelectedEntityHintLabel.setText(I18N.text("label.workspace.selection.algorithm.hint"));
+            algorithmSelectedEntityHintLabel.setText(
+                    I18N.text("label.workspace.selection.algorithm.hint"));
         }
         if (algorithmSelectedNodeIdLabel != null) algorithmSelectedNodeIdLabel.setText(id);
         if (algorithmSelectedNodeValueLabel != null) algorithmSelectedNodeValueLabel.setText(value);
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
+        updateVisualizationObstruction(
+                currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
     private void clearStructureSelection() {
@@ -3276,7 +3588,8 @@ public class MainController implements Initializable {
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
         }
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
+        updateVisualizationObstruction(
+                currentStepOverlay != null && currentStepOverlay.isVisible());
     }
 
     private void refreshExecutionPresentation() {
@@ -3291,8 +3604,10 @@ public class MainController implements Initializable {
                 currentStepOverlay.setVisible(false);
             }
             updateVisualizationObstruction(false);
-            if (eventKindLabel != null) eventKindLabel.setText(I18N.text("label.workspace.event.none"));
-            if (eventDetailsLabel != null) eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
+            if (eventKindLabel != null)
+                eventKindLabel.setText(I18N.text("label.workspace.event.none"));
+            if (eventDetailsLabel != null)
+                eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
             if (eventKindDot != null) setEventDotClass("event-dot-idle");
             if (timelineCursorLabel != null) {
                 timelineCursorLabel.setText("");
@@ -3305,11 +3620,15 @@ public class MainController implements Initializable {
             }
             updateVisualizationObstruction(true);
             String kind = eventDisplayName(current);
-            if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
+            if (currentStepSequenceLabel != null)
+                currentStepSequenceLabel.setText(
+                        String.format(Locale.ROOT, "#%04d", current.sequence()));
             if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
-            if (currentStepDetailLabel != null) currentStepDetailLabel.setText(describeCurrentStep(current));
+            if (currentStepDetailLabel != null)
+                currentStepDetailLabel.setText(describeCurrentStep(current));
             if (eventKindLabel != null) eventKindLabel.setText(kind);
-            if (eventDetailsLabel != null) eventDetailsLabel.setText(describeEventEnvelope(current));
+            if (eventDetailsLabel != null)
+                eventDetailsLabel.setText(describeEventEnvelope(current));
             if (eventKindDot != null) setEventDotClass(eventDotClass(current));
             updateTimelineCursorCallout(current);
         }
@@ -3338,8 +3657,9 @@ public class MainController implements Initializable {
         } else {
             right = 0.0d;
         }
-        currentSubController.getVisualizer().setViewportObstructionInsets(
-                new javafx.geometry.Insets(0.0d, right, 0.0d, left));
+        currentSubController
+                .getVisualizer()
+                .setViewportObstructionInsets(new javafx.geometry.Insets(0.0d, right, 0.0d, left));
     }
 
     private String eventDisplayName(EventEnvelope envelope) {
@@ -3353,10 +3673,16 @@ public class MainController implements Initializable {
             return "TARGET  " + formatReference(visited.ref());
         }
         if (event instanceof ObservationEvent.Examined examined) {
-            return "FROM    " + formatReference(examined.fromRef()) + "\nTO      " + formatReference(examined.toRef());
+            return "FROM    "
+                    + formatReference(examined.fromRef())
+                    + "\nTO      "
+                    + formatReference(examined.toRef());
         }
         if (event instanceof ObservationEvent.Compared compared) {
-            return "LEFT    " + formatReference(compared.leftRef()) + "\nRIGHT   " + formatReference(compared.rightRef());
+            return "LEFT    "
+                    + formatReference(compared.leftRef())
+                    + "\nRIGHT   "
+                    + formatReference(compared.rightRef());
         }
         if (event instanceof ObservationEvent.Matched matched) {
             return "INDEX   " + matched.index() + "\nLENGTH  " + matched.length();
@@ -3377,22 +3703,43 @@ public class MainController implements Initializable {
             return "NODE    #" + removed.nodeId() + "\nVALUE   " + removed.value();
         }
         if (event instanceof TreeStructureEvent.ValueChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nVALUE   " + changed.previousValue() + " → " + changed.value();
+            return "NODE    #"
+                    + changed.nodeId()
+                    + "\nVALUE   "
+                    + changed.previousValue()
+                    + " → "
+                    + changed.value();
         }
         if (event instanceof TreeStructureEvent.LeftChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nLEFT    " + formatIdChange(changed.previousChildId(), changed.childId());
+            return "NODE    #"
+                    + changed.nodeId()
+                    + "\nLEFT    "
+                    + formatIdChange(changed.previousChildId(), changed.childId());
         }
         if (event instanceof TreeStructureEvent.RightChanged changed) {
-            return "NODE    #" + changed.nodeId() + "\nRIGHT   " + formatIdChange(changed.previousChildId(), changed.childId());
+            return "NODE    #"
+                    + changed.nodeId()
+                    + "\nRIGHT   "
+                    + formatIdChange(changed.previousChildId(), changed.childId());
         }
         if (event instanceof TreeStructureEvent.RootChanged changed) {
             return "ROOT    " + formatIdChange(changed.previousRootId(), changed.rootId());
         }
         if (event instanceof TreeStructureEvent.ChildInserted inserted) {
-            return "PARENT  #" + inserted.parentId() + "\nCHILD   #" + inserted.childId() + "  @" + inserted.index();
+            return "PARENT  #"
+                    + inserted.parentId()
+                    + "\nCHILD   #"
+                    + inserted.childId()
+                    + "  @"
+                    + inserted.index();
         }
         if (event instanceof TreeStructureEvent.ChildRemoved removed) {
-            return "PARENT  #" + removed.parentId() + "\nCHILD   #" + removed.childId() + "  @" + removed.index();
+            return "PARENT  #"
+                    + removed.parentId()
+                    + "\nCHILD   #"
+                    + removed.childId()
+                    + "  @"
+                    + removed.index();
         }
         String text = envelope.event().toString();
         if (text.length() > 120) text = text.substring(0, 117) + "...";
@@ -3400,15 +3747,20 @@ public class MainController implements Initializable {
     }
 
     private String describeEventEnvelope(EventEnvelope envelope) {
-        return String.format(Locale.ROOT,
+        return String.format(
+                Locale.ROOT,
                 "Sequence     %d%nTime         %s%nKind         %s%nSource       %s%n%n%s",
-                envelope.sequence(), EVENT_TIME_FORMATTER.format(envelope.timestamp().atZone(ZoneId.systemDefault())),
-                eventCategory(envelope), envelope.source(), describeCurrentStep(envelope));
+                envelope.sequence(),
+                EVENT_TIME_FORMATTER.format(envelope.timestamp().atZone(ZoneId.systemDefault())),
+                eventCategory(envelope),
+                envelope.source(),
+                describeCurrentStep(envelope));
     }
 
     private String eventCategory(EventEnvelope envelope) {
         Object event = envelope.event();
-        if (event instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "Structure Event";
+        if (event instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
+            return "Structure Event";
         if (event instanceof ObservationEvent) return "Observation Event";
         if (event instanceof ExecutionLifecycleEvent) return "Runtime Event";
         return "Execution Event";
@@ -3416,21 +3768,32 @@ public class MainController implements Initializable {
 
     private String eventDotClass(EventEnvelope envelope) {
         if (envelope.event() instanceof ObservationEvent) return "event-dot-observation";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "event-dot-structure";
+        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
+            return "event-dot-structure";
         if (envelope.event() instanceof ExecutionLifecycleEvent) return "event-dot-runtime";
         return "event-dot-idle";
     }
 
     private void setEventDotClass(String styleClass) {
-        eventKindDot.getStyleClass().removeAll("event-dot-idle", "event-dot-runtime", "event-dot-structure", "event-dot-observation");
+        eventKindDot
+                .getStyleClass()
+                .removeAll(
+                        "event-dot-idle",
+                        "event-dot-runtime",
+                        "event-dot-structure",
+                        "event-dot-observation");
         eventKindDot.getStyleClass().add(styleClass);
     }
 
     private String formatReference(ObservationEvent.Reference reference) {
-        if (reference instanceof ObservationEvent.EntityRef entity) return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
-        if (reference instanceof ObservationEvent.IndexRef index) return index.source() + "[" + index.index() + "]";
-        if (reference instanceof ObservationEvent.CoordinateRef cell) return "(" + cell.row() + ", " + cell.column() + ")";
-        if (reference instanceof ObservationEvent.ValueRef value) return String.valueOf(value.value());
+        if (reference instanceof ObservationEvent.EntityRef entity)
+            return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
+        if (reference instanceof ObservationEvent.IndexRef index)
+            return index.source() + "[" + index.index() + "]";
+        if (reference instanceof ObservationEvent.CoordinateRef cell)
+            return "(" + cell.row() + ", " + cell.column() + ")";
+        if (reference instanceof ObservationEvent.ValueRef value)
+            return String.valueOf(value.value());
         return String.valueOf(reference);
     }
 
@@ -3463,35 +3826,47 @@ public class MainController implements Initializable {
     private List<MetricDisplay> metricDisplays(ExecutionStatistics statistics) {
         Map<String, Long> values = statistics.metrics();
         List<MetricDisplay> metrics = new ArrayList<>();
-        addMetricIfPresent(metrics, values, "nodesVisited", I18N.text("label.workspace.metric.nodes_visited"));
-        addMetricIfPresent(metrics, values, "edgesExamined", I18N.text("label.workspace.metric.edges_examined"));
-        addMetricIfPresent(metrics, values, "comparisons", I18N.text("label.workspace.metric.comparisons"));
+        addMetricIfPresent(
+                metrics, values, "nodesVisited", I18N.text("label.workspace.metric.nodes_visited"));
+        addMetricIfPresent(
+                metrics,
+                values,
+                "edgesExamined",
+                I18N.text("label.workspace.metric.edges_examined"));
+        addMetricIfPresent(
+                metrics, values, "comparisons", I18N.text("label.workspace.metric.comparisons"));
         addMetricIfPresent(metrics, values, "writes", I18N.text("label.workspace.metric.writes"));
         addMetricIfPresent(metrics, values, "swaps", I18N.text("label.workspace.metric.swaps"));
         addMetricIfPresent(metrics, values, "matches", I18N.text("label.workspace.metric.matches"));
-        addMetricIfPresent(metrics, values, "fallbacks", I18N.text("label.workspace.metric.fallbacks"));
-        addMetricIfPresent(metrics, values, "backtracks", I18N.text("label.workspace.metric.backtracks"));
+        addMetricIfPresent(
+                metrics, values, "fallbacks", I18N.text("label.workspace.metric.fallbacks"));
+        addMetricIfPresent(
+                metrics, values, "backtracks", I18N.text("label.workspace.metric.backtracks"));
         if (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(
-                    I18N.text("label.workspace.metric.domain_events"),
-                    Long.toString(statistics.domainEventCount())));
+            metrics.add(
+                    new MetricDisplay(
+                            I18N.text("label.workspace.metric.domain_events"),
+                            Long.toString(statistics.domainEventCount())));
         }
         if (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(
-                    I18N.text("label.workspace.metric.total_events"),
-                    Long.toString(statistics.totalEventCount())));
+            metrics.add(
+                    new MetricDisplay(
+                            I18N.text("label.workspace.metric.total_events"),
+                            Long.toString(statistics.totalEventCount())));
         }
         while (metrics.size() < 3) {
             metrics.add(new MetricDisplay(I18N.text("label.workspace.metric.events"), "0"));
         }
         List<MetricDisplay> result = new ArrayList<>(metrics.subList(0, 3));
-        result.add(new MetricDisplay(
-                I18N.text("label.workspace.metric.duration"),
-                formatDuration(statistics.duration())));
+        result.add(
+                new MetricDisplay(
+                        I18N.text("label.workspace.metric.duration"),
+                        formatDuration(statistics.duration())));
         return result;
     }
 
-    private void addMetricIfPresent(List<MetricDisplay> metrics, Map<String, Long> values, String key, String title) {
+    private void addMetricIfPresent(
+            List<MetricDisplay> metrics, Map<String, Long> values, String key, String title) {
         long value = values.getOrDefault(key, 0L);
         if (value > 0L) metrics.add(new MetricDisplay(title, Long.toString(value)));
     }
@@ -3503,14 +3878,20 @@ public class MainController implements Initializable {
 
     private String formatDuration(java.time.Duration duration) {
         long seconds = Math.max(0L, duration.toSeconds());
-        return String.format(Locale.ROOT, "%02d:%02d:%02d", seconds / 3600L, (seconds % 3600L) / 60L, seconds % 60L);
+        return String.format(
+                Locale.ROOT,
+                "%02d:%02d:%02d",
+                seconds / 3600L,
+                (seconds % 3600L) / 60L,
+                seconds % 60L);
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {
         if (timelineCursorLabel == null || current == null) {
             return;
         }
-        timelineCursorLabel.setText(I18N.text("label.workspace.event.current") + ": " + eventDisplayName(current));
+        timelineCursorLabel.setText(
+                I18N.text("label.workspace.event.current") + ": " + eventDisplayName(current));
         timelineCursorLabel.setVisible(true);
     }
 
@@ -3602,23 +3983,26 @@ public class MainController implements Initializable {
 
             double ratio = eventRatio(representativeIndex, events.size());
             double centerX = horizontalInset + ratio * usableWidth;
-            double markerX = Math.max(0.0d, Math.min(paneWidth - markerWidth, centerX - markerWidth / 2.0d));
+            double markerX =
+                    Math.max(0.0d, Math.min(paneWidth - markerWidth, centerX - markerWidth / 2.0d));
             double markerY = Math.max(0.0d, trackCenterY - symbolSize / 2.0d);
             marker.relocate(markerX, markerY);
 
             String tooltipText = timelineMarkerTooltip(events, group);
             Tooltip.install(marker, new Tooltip(tooltipText));
             marker.setAccessibleText(tooltipText);
-            marker.setOnMouseClicked(event -> {
-                jumpToTimelineMarkerGroup(group);
-                event.consume();
-            });
-            marker.setOnKeyPressed(event -> {
-                if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
-                    jumpToTimelineMarkerGroup(group);
-                    event.consume();
-                }
-            });
+            marker.setOnMouseClicked(
+                    event -> {
+                        jumpToTimelineMarkerGroup(group);
+                        event.consume();
+                    });
+            marker.setOnKeyPressed(
+                    event -> {
+                        if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                            jumpToTimelineMarkerGroup(group);
+                            event.consume();
+                        }
+                    });
         }
     }
 
@@ -3648,16 +4032,16 @@ public class MainController implements Initializable {
     }
 
     private List<TimelineMarkerGroup> timelineMarkerGroups(
-            List<EventEnvelope> events,
-            int currentIndex,
-            double usableWidth) {
+            List<EventEnvelope> events, int currentIndex, double usableWidth) {
         List<Integer> candidates = new ArrayList<>();
         for (int index = 0; index < events.size(); index++) {
             if (isTimelineMarkerVisible(events.get(index))) {
                 candidates.add(index);
             }
         }
-        if (currentIndex >= 0 && currentIndex < events.size() && !candidates.contains(currentIndex)) {
+        if (currentIndex >= 0
+                && currentIndex < events.size()
+                && !candidates.contains(currentIndex)) {
             candidates.add(currentIndex);
             candidates.sort(Integer::compareTo);
         }
@@ -3687,14 +4071,14 @@ public class MainController implements Initializable {
             int representative = representativeTimelineEvent(events, eventIndexes, currentIndex);
             groups.add(new TimelineMarkerGroup(representative, List.copyOf(eventIndexes)));
         }
-        groups.sort((left, right) -> Integer.compare(left.representativeIndex(), right.representativeIndex()));
+        groups.sort(
+                (left, right) ->
+                        Integer.compare(left.representativeIndex(), right.representativeIndex()));
         return List.copyOf(groups);
     }
 
     private int representativeTimelineEvent(
-            List<EventEnvelope> events,
-            List<Integer> eventIndexes,
-            int currentIndex) {
+            List<EventEnvelope> events, List<Integer> eventIndexes, int currentIndex) {
         if (eventIndexes.contains(currentIndex)) {
             return currentIndex;
         }
@@ -3704,7 +4088,8 @@ public class MainController implements Initializable {
             }
         }
         for (int eventIndex : eventIndexes) {
-            if (events.get(eventIndex).event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
+            if (events.get(eventIndex).event()
+                    instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
                 return eventIndex;
             }
         }
@@ -3715,7 +4100,8 @@ public class MainController implements Initializable {
         if (envelope.event() instanceof ExecutionLifecycleEvent) {
             return timelineRuntimeVisible;
         }
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
+        if (envelope.event()
+                instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
             return timelineStructureVisible;
         }
         if (envelope.event() instanceof ObservationEvent) {
@@ -3733,16 +4119,19 @@ public class MainController implements Initializable {
 
     private String timelineMarkerTooltip(List<EventEnvelope> events, TimelineMarkerGroup group) {
         EventEnvelope envelope = events.get(group.representativeIndex());
-        String base = I18N.text("label.workspace.event") + " " + envelope.sequence()
-                + " · " + eventDisplayName(envelope);
+        String base =
+                I18N.text("label.workspace.event")
+                        + " "
+                        + envelope.sequence()
+                        + " · "
+                        + eventDisplayName(envelope);
         if (group.eventIndexes().size() <= 1) {
             return base;
         }
         return base + "  ·  ×" + group.eventIndexes().size();
     }
 
-    private record TimelineMarkerGroup(int representativeIndex, List<Integer> eventIndexes) {
-    }
+    private record TimelineMarkerGroup(int representativeIndex, List<Integer> eventIndexes) {}
 
     private enum TimelineMarkerCategory {
         RUNTIME,
@@ -3752,7 +4141,8 @@ public class MainController implements Initializable {
 
     private String eventMarkerClass(EventEnvelope envelope) {
         if (envelope.event() instanceof ExecutionLifecycleEvent) return "timeline-runtime";
-        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "timeline-structure";
+        if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent)
+            return "timeline-structure";
         if (envelope.event() instanceof ObservationEvent) return "timeline-observation";
         return "timeline-other";
     }

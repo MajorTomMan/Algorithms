@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.settings;
 
-import javafx.application.Platform;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+
 import javafx.scene.Parent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -32,12 +33,13 @@ public final class FontSettingsService {
     private static final String XLARGE_FONT_CLASS = "font-size-xlarge";
     private static final double LARGE_FONT_THRESHOLD = 18.0d;
     private static final double XLARGE_FONT_THRESHOLD = 21.0d;
-    private static final List<String> FONT_STYLESHEETS = List.of(
-            "/style/typography.css",
-            "/style/font-settings.css",
-            "/style/workbench-layout.css");
-    private static final Preferences PREFERENCES = Preferences.userRoot().node(
-            "/com/majortom/algorithms/visualization/impl/controller");
+    private static final List<String> FONT_STYLESHEETS =
+            List.of(
+                    "/style/typography.css",
+                    "/style/font-settings.css",
+                    "/style/workbench-layout.css");
+    private static final Preferences PREFERENCES =
+            Preferences.userRoot().node("/com/majortom/algorithms/visualization/impl/controller");
 
     public FontSettings defaults() {
         return new FontSettings("", "", PROJECT_DEFAULT_SIZE, "");
@@ -69,12 +71,13 @@ public final class FontSettingsService {
         setCustomColorClass(root, !normalized.color().isBlank());
         setFontSizeClass(root, normalized.size());
         refreshScriptFonts(root, normalized);
-        Platform.runLater(() -> {
-            if (root.getScene() != null) {
-                root.applyCss();
-            }
-            refreshScriptFonts(root, normalized);
-        });
+        FxDispatch.defer(
+                () -> {
+                    if (root.getScene() != null) {
+                        root.applyCss();
+                    }
+                    refreshScriptFonts(root, normalized);
+                });
     }
 
     /** Applies a draft only to preview content; application preferences are unchanged. */
@@ -89,14 +92,16 @@ public final class FontSettingsService {
         refreshScriptFonts(previewRoot, normalized);
     }
 
-    /** Re-applies script families to newly created controls without touching size/color preferences. */
+    /**
+     * Re-applies script families to newly created controls without touching size/color preferences.
+     */
     public void refreshScriptFonts(Parent root, FontSettings settings) {
         if (root == null) {
             return;
         }
         FontSettings normalized = normalize(settings);
-        ScriptFontSupport.apply(root, normalized,
-                projectDefaultChineseFamily(), projectDefaultEnglishFamily());
+        ScriptFontSupport.apply(
+                root, normalized, projectDefaultChineseFamily(), projectDefaultEnglishFamily());
     }
 
     public FontSettings normalize(FontSettings settings) {
@@ -182,25 +187,27 @@ public final class FontSettingsService {
     }
 
     private String projectDefaultChineseFamily() {
-        return firstAvailableFamily(List.of(
-                "Microsoft YaHei",
-                "Microsoft YaHei UI",
-                "Noto Sans CJK SC",
-                "Noto Sans CJK JP",
-                "Source Han Sans SC",
-                "PingFang SC",
-                "SimSun",
-                "Arial Unicode MS"));
+        return firstAvailableFamily(
+                List.of(
+                        "Microsoft YaHei",
+                        "Microsoft YaHei UI",
+                        "Noto Sans CJK SC",
+                        "Noto Sans CJK JP",
+                        "Source Han Sans SC",
+                        "PingFang SC",
+                        "SimSun",
+                        "Arial Unicode MS"));
     }
 
     private String projectDefaultEnglishFamily() {
-        return firstAvailableFamily(List.of(
-                "Segoe UI",
-                "Arial",
-                "Noto Sans",
-                "DejaVu Sans",
-                "Liberation Sans",
-                "Consolas"));
+        return firstAvailableFamily(
+                List.of(
+                        "Segoe UI",
+                        "Arial",
+                        "Noto Sans",
+                        "DejaVu Sans",
+                        "Liberation Sans",
+                        "Consolas"));
     }
 
     private String firstAvailableFamily(List<String> preferred) {

@@ -7,17 +7,18 @@
  */
 package com.majortom.algorithms.leetcode.ds.tree;
 
+import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
-import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 
-public class 对称二叉树{
+public class 对称二叉树 {
     public static void main(String[] args) {
-        Integer[] nums = { 1, 2, 2, 3, 4, 4, 3 };
+        Integer[] nums = {1, 2, 2, 3, 4, 4, 3};
         BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(nums);
         System.out.println(isSymmetric(root));
     }
+
     /*
      * 如果同时满足下面的条件，两个树互为镜像：
      * 它们的两个根结点具有相同的值
@@ -25,7 +26,6 @@ public class 对称二叉树{
      */
     public static boolean isSymmetric(BinaryTreeNode<Integer> root) {
         return check(root);
-
     }
 
     public static boolean check(BinaryTreeNode<Integer> p, BinaryTreeNode<Integer> q) {
@@ -35,7 +35,9 @@ public class 对称二叉树{
         if (p == null || q == null) {
             return false;
         }
-        return p.getValue() == q.getValue() && check(p.getLeft(), q.getRight()) && check(p.getRight(), q.getLeft());
+        return p.getValue() == q.getValue()
+                && check(p.getLeft(), q.getRight())
+                && check(p.getRight(), q.getLeft());
     }
 
     /*

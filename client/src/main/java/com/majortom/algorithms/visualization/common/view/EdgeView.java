@@ -19,7 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Edge primitive with boundary attachment, routes, arrows and an optional presentation label slot. */
+/**
+ * Edge primitive with boundary attachment, routes, arrows and an optional presentation label slot.
+ */
 public final class EdgeView extends Group {
     private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
@@ -71,15 +73,17 @@ public final class EdgeView extends Group {
         this.directed.addListener(geometryListener);
         curved.addListener(geometryListener);
         label.layoutBoundsProperty().addListener(geometryListener);
-        highlighted.addListener((observable, previous, current) -> {
-            pseudoClassStateChanged(HIGHLIGHTED, current);
-            if (current) {
-                path.setStrokeWidth(3.5d);
-            } else {
-                path.setStrokeWidth(2.0d);
-            }
-        });
-        selected.addListener((observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
+        highlighted.addListener(
+                (observable, previous, current) -> {
+                    pseudoClassStateChanged(HIGHLIGHTED, current);
+                    if (current) {
+                        path.setStrokeWidth(3.5d);
+                    } else {
+                        path.setStrokeWidth(2.0d);
+                    }
+                });
+        selected.addListener(
+                (observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
         setDirected(directed);
         updateGeometry();
     }
@@ -237,7 +241,8 @@ public final class EdgeView extends Group {
             Point2D normal = new Point2D(-delta.getY(), delta.getX()).normalize();
             double offset = Math.max(28.0d, delta.magnitude() * 0.16d);
             Point2D control = start.midpoint(end).add(normal.multiply(offset));
-            path.getElements().add(new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
+            path.getElements()
+                    .add(new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
             tangent = end.subtract(control);
             labelAnchor = quadraticPoint(start, control, end, 0.5d);
         } else {
@@ -303,10 +308,12 @@ public final class EdgeView extends Group {
         Point2D control1 = center.add(width * 1.1d, -height * 1.7d);
         Point2D control2 = center.add(-width * 1.1d, -height * 1.7d);
         path.getElements().add(new MoveTo(start.getX(), start.getY()));
-        path.getElements().add(new CubicCurveTo(
-                control1.getX(), control1.getY(),
-                control2.getX(), control2.getY(),
-                end.getX(), end.getY()));
+        path.getElements()
+                .add(
+                        new CubicCurveTo(
+                                control1.getX(), control1.getY(),
+                                control2.getX(), control2.getY(),
+                                end.getX(), end.getY()));
         updateArrow(end, end.subtract(control2));
         positionLabel(center.add(0.0d, -height * 1.9d), new Point2D(1.0d, 0.0d), 0.0d);
         syncHitPath();
@@ -326,7 +333,8 @@ public final class EdgeView extends Group {
         Point2D location = anchor.add(normal.multiply(normalOffset));
         double width = Math.max(1.0d, label.prefWidth(-1.0d));
         double height = Math.max(1.0d, label.prefHeight(width));
-        label.resizeRelocate(location.getX() - width / 2.0d, location.getY() - height / 2.0d, width, height);
+        label.resizeRelocate(
+                location.getX() - width / 2.0d, location.getY() - height / 2.0d, width, height);
     }
 
     private PolylineMidpoint polylineMidpoint(List<Point2D> points) {
@@ -351,7 +359,8 @@ public final class EdgeView extends Group {
             }
             remaining -= segment;
         }
-        return new PolylineMidpoint(points.getFirst().midpoint(points.getLast()),
+        return new PolylineMidpoint(
+                points.getFirst().midpoint(points.getLast()),
                 points.getLast().subtract(points.getFirst()));
     }
 
@@ -370,13 +379,20 @@ public final class EdgeView extends Group {
             } else if (element instanceof LineTo line) {
                 hitPath.getElements().add(new LineTo(line.getX(), line.getY()));
             } else if (element instanceof QuadCurveTo curve) {
-                hitPath.getElements().add(new QuadCurveTo(
-                        curve.getControlX(), curve.getControlY(), curve.getX(), curve.getY()));
+                hitPath.getElements()
+                        .add(
+                                new QuadCurveTo(
+                                        curve.getControlX(),
+                                        curve.getControlY(),
+                                        curve.getX(),
+                                        curve.getY()));
             } else if (element instanceof CubicCurveTo curve) {
-                hitPath.getElements().add(new CubicCurveTo(
-                        curve.getControlX1(), curve.getControlY1(),
-                        curve.getControlX2(), curve.getControlY2(),
-                        curve.getX(), curve.getY()));
+                hitPath.getElements()
+                        .add(
+                                new CubicCurveTo(
+                                        curve.getControlX1(), curve.getControlY1(),
+                                        curve.getControlX2(), curve.getControlY2(),
+                                        curve.getX(), curve.getY()));
             }
         }
     }
@@ -393,13 +409,13 @@ public final class EdgeView extends Group {
         Point2D base = tip.subtract(direction.multiply(length));
         Point2D left = base.add(normal.multiply(width));
         Point2D right = base.subtract(normal.multiply(width));
-        arrow.getPoints().setAll(
-                tip.getX(), tip.getY(),
-                left.getX(), left.getY(),
-                right.getX(), right.getY());
+        arrow.getPoints()
+                .setAll(
+                        tip.getX(), tip.getY(),
+                        left.getX(), left.getY(),
+                        right.getX(), right.getY());
         arrow.setVisible(true);
     }
 
-    private record PolylineMidpoint(Point2D point, Point2D tangent) {
-    }
+    private record PolylineMidpoint(Point2D point, Point2D tangent) {}
 }

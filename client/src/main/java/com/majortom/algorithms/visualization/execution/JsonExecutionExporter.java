@@ -6,8 +6,8 @@ import com.majortom.algorithms.core.runtime.ExecutionSummary;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,15 +24,13 @@ public final class JsonExecutionExporter implements ExecutionExporter {
     private final ExecutionExportCodec codec;
     private final Clock clock;
 
-    public JsonExecutionExporter(Path exportDirectory, ObjectMapper mapper, ExecutionExportCodec codec) {
+    public JsonExecutionExporter(
+            Path exportDirectory, ObjectMapper mapper, ExecutionExportCodec codec) {
         this(exportDirectory, mapper, codec, Clock.systemDefaultZone());
     }
 
     JsonExecutionExporter(
-            Path exportDirectory,
-            ObjectMapper mapper,
-            ExecutionExportCodec codec,
-            Clock clock) {
+            Path exportDirectory, ObjectMapper mapper, ExecutionExportCodec codec, Clock clock) {
         this.exportDirectory = Objects.requireNonNull(exportDirectory, "exportDirectory");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.codec = Objects.requireNonNull(codec, "codec");
@@ -44,13 +42,22 @@ public final class JsonExecutionExporter implements ExecutionExporter {
         Objects.requireNonNull(record, "record");
         Objects.requireNonNull(summary, "summary");
         Files.createDirectories(exportDirectory);
-        String timestamp = LocalDateTime.now(clock)
-                .format(FILE_TIMESTAMP);
-        Path file = exportDirectory.resolve(record.moduleId() + "_" + record.operationId()
-                + "_" + timestamp + "_" + safeFilePart(record.recording().runId()) + ".json");
-        try (OutputStream output = Files.newOutputStream(
-                file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            mapper.writerWithDefaultPrettyPrinter().writeValue(output, codec.encode(record, summary));
+        String timestamp = LocalDateTime.now(clock).format(FILE_TIMESTAMP);
+        Path file =
+                exportDirectory.resolve(
+                        record.moduleId()
+                                + "_"
+                                + record.operationId()
+                                + "_"
+                                + timestamp
+                                + "_"
+                                + safeFilePart(record.recording().runId())
+                                + ".json");
+        try (OutputStream output =
+                Files.newOutputStream(
+                        file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+            mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(output, codec.encode(record, summary));
         }
         return file;
     }
@@ -59,7 +66,9 @@ public final class JsonExecutionExporter implements ExecutionExporter {
         StringBuilder result = new StringBuilder(value.length());
         for (int index = 0; index < value.length(); index++) {
             char character = value.charAt(index);
-            if (Character.isLetterOrDigit(character) || character == '-' || character == '_'
+            if (Character.isLetterOrDigit(character)
+                    || character == '-'
+                    || character == '_'
                     || character == '.') {
                 result.append(character);
             } else {

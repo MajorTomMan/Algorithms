@@ -4,20 +4,31 @@ import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.AnimationCoordinator;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
-import com.majortom.algorithms.visualization.common.layout.EdgeRoute;
-import com.majortom.algorithms.visualization.common.layout.ElementBounds;
-import com.majortom.algorithms.visualization.common.layout.LayoutResult;
-import com.majortom.algorithms.visualization.common.layout.LayoutFailureReporter;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
-import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout.LayoutRequest;
-import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout.Link;
-import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout.NodeSize;
+import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
+import com.majortom.algorithms.visualization.render.api.ElementGeometry;
+import com.majortom.algorithms.visualization.render.api.LayoutElement;
+import com.majortom.algorithms.visualization.render.api.LayoutLink;
+import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
+import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.StructuralChange;
+import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
+import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.runtime.DefaultRenderFramework;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
+import com.majortom.algorithms.visualization.render.viewport.CameraState;
+import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
+
 import javafx.animation.Animation;
 import javafx.animation.ParallelTransition;
-import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -30,13 +41,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-/** General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX viewport. */
-public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
+/**
+ * General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX
+ * viewport.
+ */
+public final class TreeVisualizer extends BaseVisualizer<TreeViewState>
+        implements FxSurfaceAdapter<TreeViewState> {
     private static final double MIN_RADIUS = 24.0d;
     private static final double LABEL_PADDING = 18.0d;
     private static final Duration MOVE_DURATION = Duration.millis(300.0d);
@@ -44,58 +59,77 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private static final Duration DISAPPEAR_DURATION = Duration.millis(140.0d);
     private static final double NEW_NODE_ENTRY_DISTANCE = MIN_RADIUS * 2.0d + 8.0d;
 
+    private static final RenderSessionId SESSION_ID = RenderSessionId.of("TREE");
     private final VisualizationSurface surface = new VisualizationSurface();
     private final AnimationCoordinator animations = new AnimationCoordinator();
-    private final TreeElkLayout layout = new TreeElkLayout();
-    private final ExecutorService layoutExecutor = Executors.newSingleThreadExecutor(task -> {
-        Thread thread = new Thread(task, "tree-elk-layout");
-        thread.setDaemon(true);
-        return thread;
-    });
-    private final AtomicLong layoutVersion = new AtomicLong();
-    private final Object layoutQueueLock = new Object();
-    private LayoutJob queuedLayout;
-    private boolean layoutWorkerActive;
+    private final DefaultRenderFramework renderFramework = RenderRuntime.shared();
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, Point2D> settledTargets = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
     private boolean measuringElements;
-    private final InvalidationListener elementSizeListener = observable -> {
-        if (!measuringElements) {
-            requestRender();
-        }
-    };
+    private final InvalidationListener elementSizeListener =
+            observable -> {
+                if (!measuringElements) {
+                    requestGeometryRefresh();
+                }
+            };
 
     private TreeViewState renderedState = TreeViewState.empty(TreeViewState.Kind.GENERAL);
-    private LayoutRequest lastLayoutInput = LayoutRequest.empty();
+    private volatile TreeViewState lastSubmittedState;
     private Animation activeAnimation;
-    private List<Animation> pendingTransitions = List.of();
-    private Set<Long> pendingNewNodeIds = Set.of();
-    private long pendingVersion = -1L;
+    private PendingLayout pendingLayout = PendingLayout.empty();
     private boolean firstRender = true;
     private boolean hasAppliedLayout;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
-    private LongConsumer selectionListener = ignored -> { };
+    private LongConsumer selectionListener = ignored -> {};
 
     public TreeVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
+        surface.setFrameworkManagedCamera(true);
+        renderFramework.registerSurface(SESSION_ID, this);
     }
 
     @Override
-    protected void draw(TreeViewState state) {
-        if (layoutAffectingChange(renderedState, state)) {
-            stopActiveAnimation();
+    protected synchronized void submitFrameworkRender(TreeViewState state) {
+        TreeViewState previous = lastSubmittedState;
+        boolean initial = previous == null;
+        boolean structural = initial || requiresStructuralLayout(previous, state);
+        lastSubmittedState = state;
+        if (structural) {
+            renderFramework.submit(
+                    new StructuralRenderIntent<>(
+                            SESSION_ID,
+                            state,
+                            initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE,
+                            initial));
+        } else {
+            renderFramework.submit(new PresentationRenderIntent<>(SESSION_ID, state));
         }
+    }
+
+    private void requestGeometryRefresh() {
+        var state = currentState();
+        if (state == null || !isModuleAttached() || isDisposed()) {
+            return;
+        }
+        renderFramework.submit(
+                new StructuralRenderIntent<>(
+                        SESSION_ID,
+                        state,
+                        CameraPolicy.ENSURE_VISIBLE,
+                        false,
+                        StructuralChange.GEOMETRY));
+    }
+
+    @Override
+    public LayoutRequest captureLayout(TreeViewState state, RenderCaptureContext context) {
+        stopActiveAnimation();
         cleanupDetachedViews();
         List<Animation> transitions = new ArrayList<>();
         Set<Long> newNodeIds = new HashSet<>();
-
-        if (firstRender) {
-            surface.markViewportPristine();
-        }
 
         for (TreeViewState.Node node : state.nodes().values()) {
             NodeView view = nodeViews.get(node.id());
@@ -103,19 +137,21 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 view = new NodeView(new CircleGeometry(MIN_RADIUS), node.value().text());
                 view.layoutBoundsProperty().addListener(elementSizeListener);
                 long visualNodeId = node.id();
-                view.setOnMouseClicked(event -> {
-                    selectedNodeId = visualNodeId;
-                    syncSelectionState();
-                    selectionListener.accept(visualNodeId);
-                    event.consume();
-                });
+                view.setOnMouseClicked(
+                        event -> {
+                            selectedNodeId = visualNodeId;
+                            syncSelectionState();
+                            selectionListener.accept(visualNodeId);
+                            event.consume();
+                        });
                 nodeViews.put(node.id(), view);
                 surface.nodeLayer().getChildren().add(view);
                 newNodeIds.add(node.id());
                 if (!firstRender) {
-                    transitions.add(animations.together(
-                            animations.fadeIn(view, APPEAR_DURATION),
-                            animations.scaleIn(view, APPEAR_DURATION)));
+                    transitions.add(
+                            animations.together(
+                                    animations.fadeIn(view, APPEAR_DURATION),
+                                    animations.scaleIn(view, APPEAR_DURATION)));
                 }
             } else {
                 view.setText(node.value().text());
@@ -139,9 +175,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
         syncEdges(state, transitions);
 
-        List<Long> removedIds = nodeViews.keySet().stream()
-                .filter(id -> !state.nodes().containsKey(id))
-                .toList();
+        List<Long> removedIds =
+                nodeViews.keySet().stream().filter(id -> !state.nodes().containsKey(id)).toList();
         for (Long nodeId : removedIds) {
             NodeView view = nodeViews.remove(nodeId);
             settledTargets.remove(nodeId);
@@ -155,34 +190,15 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             }
         }
 
-        LayoutRequest request = buildLayoutInput(state);
-        boolean layoutChanged = !request.equals(lastLayoutInput);
-        if (layoutChanged) {
-            lastLayoutInput = request;
-            if (request.nodes().isEmpty()) {
-                invalidateLayout();
-                pendingTransitions = List.of();
-                pendingNewNodeIds = Set.of();
-                pendingVersion = -1L;
-                hasAppliedLayout = false;
-                play(transitions, null);
-                if (!surface.markInitialLayoutReady(0.78d)) {
-                    surface.fitWithMinimumScale(0.78d);
-                }
-            } else {
-                scheduleLayout(request, transitions, newNodeIds);
-            }
-        } else {
-            play(transitions, null);
-        }
-
-        renderedState = state;
-        firstRender = false;
+        pendingLayout =
+                new PendingLayout(
+                        List.copyOf(transitions), Set.copyOf(newNodeIds), context.initialFrame());
+        return buildLayoutInput(state, context);
     }
 
-    private LayoutRequest buildLayoutInput(TreeViewState state) {
+    private LayoutRequest buildLayoutInput(TreeViewState state, RenderCaptureContext context) {
         List<Long> order = orderedNodeIds(state);
-        List<NodeSize> nodes = new ArrayList<>(order.size());
+        List<LayoutElement> nodes = new ArrayList<>(order.size());
         measuringElements = true;
         try {
             for (Long id : order) {
@@ -192,13 +208,17 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 }
                 resizeToMeasuredLabel(view);
                 CircleGeometry geometry = (CircleGeometry) view.getGeometry();
-                nodes.add(new NodeSize(id, quantize(geometry.width()), quantize(geometry.height())));
+                nodes.add(
+                        new LayoutElement(
+                                TreeElkLayout.nodeId(id),
+                                quantize(geometry.width()),
+                                quantize(geometry.height())));
             }
         } finally {
             measuringElements = false;
         }
 
-        List<Link> links = new ArrayList<>();
+        List<LayoutLink> links = new ArrayList<>();
         for (Long id : order) {
             TreeViewState.Node node = state.nodes().get(id);
             if (node == null) {
@@ -211,7 +231,13 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                         continue;
                     }
                     EdgeKey key = new EdgeKey(node.id(), targetId, Relation.CHILD, index);
-                    links.add(new Link(routeId(key), node.id(), targetId, TreeElkLayout.Relation.CHILD, index));
+                    links.add(
+                            new LayoutLink(
+                                    routeId(key),
+                                    TreeElkLayout.nodeId(node.id()),
+                                    TreeElkLayout.nodeId(targetId),
+                                    "CHILD",
+                                    index));
                 }
             } else {
                 addLayoutLink(links, state, node.id(), node.leftId(), Relation.LEFT, 0);
@@ -219,34 +245,42 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             }
         }
 
-        TreeElkLayout.Kind kind;
-        if (state.kind() == TreeViewState.Kind.GENERAL) {
-            kind = TreeElkLayout.Kind.GENERAL;
-        } else {
-            kind = TreeElkLayout.Kind.BINARY;
-        }
-        return new LayoutRequest(kind, nodes, links);
+        return new LayoutRequest(
+                context.requestId(),
+                SESSION_ID,
+                context.modelRevision(),
+                context.geometryRevision(),
+                TreeElkLayout.ID,
+                nodes,
+                links,
+                Map.of("kind", state.kind().name()));
     }
 
-    private void addLayoutLink(List<Link> links, TreeViewState state, long sourceId, Long targetId, Relation relation, int index) {
-        if (targetId == null || !state.nodes().containsKey(targetId)) {
-            return;
-        }
+    private void addLayoutLink(
+            List<LayoutLink> links,
+            TreeViewState state,
+            long sourceId,
+            Long targetId,
+            Relation relation,
+            int index) {
+        if (targetId == null || !state.nodes().containsKey(targetId)) return;
         EdgeKey key = new EdgeKey(sourceId, targetId, relation, index);
-        TreeElkLayout.Relation elkRelation;
-        if (relation == Relation.LEFT) {
-            elkRelation = TreeElkLayout.Relation.LEFT;
-        } else {
-            elkRelation = TreeElkLayout.Relation.RIGHT;
-        }
-        links.add(new Link(routeId(key), sourceId, targetId, elkRelation, index));
+        links.add(
+                new LayoutLink(
+                        routeId(key),
+                        TreeElkLayout.nodeId(sourceId),
+                        TreeElkLayout.nodeId(targetId),
+                        relation.name(),
+                        index));
     }
 
     private void resizeToMeasuredLabel(NodeView view) {
         view.applyCss();
         Bounds label = view.labelBounds();
-        double diameter = Math.max(MIN_RADIUS * 2.0d,
-                Math.ceil(Math.max(label.getWidth(), label.getHeight()) + LABEL_PADDING));
+        double diameter =
+                Math.max(
+                        MIN_RADIUS * 2.0d,
+                        Math.ceil(Math.max(label.getWidth(), label.getHeight()) + LABEL_PADDING));
         double radius = diameter / 2.0d;
         CircleGeometry geometry = (CircleGeometry) view.getGeometry();
         if (Math.abs(geometry.radius() - radius) > 0.01d) {
@@ -254,127 +288,84 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
     }
 
-    private void scheduleLayout(LayoutRequest request, List<Animation> transitions, Set<Long> newNodeIds) {
-        long version = layoutVersion.incrementAndGet();
-        pendingVersion = version;
-        pendingTransitions = List.copyOf(transitions);
-        pendingNewNodeIds = Set.copyOf(newNodeIds);
-
-        boolean startWorker = false;
-        synchronized (layoutQueueLock) {
-            queuedLayout = new LayoutJob(version, request);
-            if (!layoutWorkerActive) {
-                layoutWorkerActive = true;
-                startWorker = true;
-            }
-        }
-        if (startWorker) {
-            layoutExecutor.execute(this::runLatestLayouts);
-        }
-    }
-
-    private void runLatestLayouts() {
-        while (!Thread.currentThread().isInterrupted()) {
-            LayoutJob job;
-            synchronized (layoutQueueLock) {
-                job = queuedLayout;
-                queuedLayout = null;
-                if (job == null) {
-                    layoutWorkerActive = false;
-                    return;
-                }
-            }
-            try {
-                LayoutResult result = layout.layout(job.request());
-                Platform.runLater(() -> applyLayout(job.version(), result));
-            } catch (Throwable failure) {
-                Platform.runLater(() -> handleLayoutFailure(job.version(), failure));
-            }
-        }
-        synchronized (layoutQueueLock) {
-            layoutWorkerActive = false;
-        }
-    }
-
-    private void applyLayout(long version, LayoutResult result) {
-        if (isDisposed() || version != layoutVersion.get()) {
-            return;
-        }
-
-        List<Animation> transitions = new ArrayList<>();
-        if (pendingVersion == version) {
-            transitions.addAll(pendingTransitions);
-        }
-        Set<Long> newNodeIds;
-        if (pendingVersion == version) {
-            newNodeIds = pendingNewNodeIds;
-        } else {
-            newNodeIds = Set.of();
-        }
-
+    @Override
+    public CompletionStage<Void> commitLayout(
+            TreeViewState state, LayoutPatch patch, RenderCommitContext context) {
+        PendingLayout pending = pendingLayout;
+        List<Animation> transitions = new ArrayList<>(pending.transitions());
+        Set<Long> newNodeIds = pending.newNodeIds();
+        boolean snap = context.initialFrame() || animations.isScrubbing() || !hasAppliedLayout;
+        settledTargets.clear();
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
-            ElementBounds bounds = result.elements().get(TreeElkLayout.nodeId(entry.getKey()));
-            if (bounds == null) {
-                continue;
-            }
-            Point2D target = new Point2D(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
+            ElementGeometry bounds = patch.elements().get(TreeElkLayout.nodeId(entry.getKey()));
+            if (bounds == null) continue;
+            Point2D target =
+                    new Point2D(
+                            bounds.x() + bounds.width() / 2.0d,
+                            bounds.y() + bounds.height() / 2.0d);
             settledTargets.put(entry.getKey(), target);
             NodeView view = entry.getValue();
-            if (!hasAppliedLayout) {
+            if (snap) {
                 view.setCenter(target.getX(), target.getY());
             } else if (newNodeIds.contains(entry.getKey())) {
                 Point2D origin = newNodeOrigin(entry.getKey(), target);
                 view.setCenter(origin.getX(), origin.getY());
-                if (!close(origin, target)) {
+                if (!close(origin, target))
                     transitions.add(animations.move(view, target, MOVE_DURATION));
-                }
             } else if (!close(view.center(), target)) {
                 transitions.add(animations.move(view, target, MOVE_DURATION));
             }
         }
-
-        pendingVersion = -1L;
-        pendingTransitions = List.of();
-        pendingNewNodeIds = Set.of();
-        hasAppliedLayout = true;
-
-        Runnable finish = () -> {
-            if (!isDisposed() && version == layoutVersion.get()) {
-                applyRoutes(result);
-                if (!surface.markInitialLayoutReady(0.78d)) {
-                    surface.fitWithMinimumScale(0.78d);
-                }
-            }
-        };
-        play(transitions, finish);
+        pendingLayout = PendingLayout.empty();
+        hasAppliedLayout = !patch.elements().isEmpty();
+        renderedState = state;
+        firstRender = false;
+        Runnable finish = () -> applyRoutes(patch);
+        if (snap || transitions.isEmpty()) {
+            transitions.forEach(Animation::stop);
+            finish.run();
+            return CompletableFuture.completedFuture(null);
+        }
+        return playAsync(transitions).thenRun(finish);
     }
 
-    private void applyRoutes(LayoutResult result) {
+    @Override
+    public CompletionStage<Void> commitPresentation(
+            TreeViewState state, RenderCommitContext context) {
+        stopActiveAnimation();
+        for (TreeViewState.Node node : state.nodes().values()) {
+            NodeView view = nodeViews.get(node.id());
+            if (view == null) continue;
+            view.setText(node.value().text());
+            view.setCurrent(state.currentNodeIds().contains(node.id()));
+            view.setHighlighted(state.observedNodeIds().contains(node.id()));
+            view.setVisited(state.visitedNodeIds().contains(node.id()));
+        }
+        if (pendingSelectedNodeId != null) {
+            if (state.nodes().containsKey(pendingSelectedNodeId))
+                selectedNodeId = pendingSelectedNodeId;
+            pendingSelectedNodeId = null;
+        }
+        syncSelectionState();
+        renderedState = state;
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void applyRoutes(LayoutPatch patch) {
+        Map<String, EdgeGeometry> routes = new LinkedHashMap<>();
+        for (EdgeGeometry route : patch.edges()) routes.put(route.id(), route);
         for (Map.Entry<EdgeKey, EdgeView> entry : edgeViews.entrySet()) {
-            EdgeRoute route = result.edges().get(routeId(entry.getKey()));
+            EdgeGeometry route = routes.get(routeId(entry.getKey()));
             if (route == null || route.points().size() < 2) {
                 entry.getValue().clearRoute();
             } else {
-                entry.getValue().setRoute(route.points());
+                entry.getValue()
+                        .setRoute(
+                                route.points().stream()
+                                        .map(point -> new Point2D(point.x(), point.y()))
+                                        .toList());
             }
         }
-    }
-
-    private void handleLayoutFailure(long version, Throwable failure) {
-        if (isDisposed() || version != layoutVersion.get()) {
-            return;
-        }
-        List<Animation> transitions;
-        if (pendingVersion == version) {
-            transitions = pendingTransitions;
-        } else {
-            transitions = List.of();
-        }
-        pendingVersion = -1L;
-        pendingTransitions = List.of();
-        pendingNewNodeIds = Set.of();
-        LayoutFailureReporter.report("Tree", failure);
-        play(transitions, null);
     }
 
     private void syncEdges(TreeViewState state, List<Animation> transitions) {
@@ -382,7 +373,13 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         for (TreeViewState.Node node : state.nodes().values()) {
             if (state.kind() == TreeViewState.Kind.GENERAL) {
                 for (int index = 0; index < node.childIds().size(); index++) {
-                    addExpectedEdge(expected, state, node.id(), node.childIds().get(index), Relation.CHILD, index);
+                    addExpectedEdge(
+                            expected,
+                            state,
+                            node.id(),
+                            node.childIds().get(index),
+                            Relation.CHILD,
+                            index);
                 }
             } else {
                 addExpectedEdge(expected, state, node.id(), node.leftId(), Relation.LEFT, 0);
@@ -410,9 +407,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             }
         }
 
-        List<EdgeKey> removed = edgeViews.keySet().stream()
-                .filter(key -> !expected.containsKey(key))
-                .toList();
+        List<EdgeKey> removed =
+                edgeViews.keySet().stream().filter(key -> !expected.containsKey(key)).toList();
         for (EdgeKey key : removed) {
             EdgeView edge = edgeViews.remove(key);
             if (firstRender) {
@@ -425,8 +421,13 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
     }
 
-    private void addExpectedEdge(Map<EdgeKey, EdgeSpec> expected, TreeViewState state,
-            long sourceId, Long targetId, Relation relation, int index) {
+    private void addExpectedEdge(
+            Map<EdgeKey, EdgeSpec> expected,
+            TreeViewState state,
+            long sourceId,
+            Long targetId,
+            Relation relation,
+            int index) {
         if (targetId == null || !state.nodes().containsKey(targetId)) {
             return;
         }
@@ -486,7 +487,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         if (state.rootId() != null) {
             visit(state.rootId(), state, visited, order);
         }
-        state.nodes().keySet().stream().sorted(Comparator.naturalOrder())
+        state.nodes().keySet().stream()
+                .sorted(Comparator.naturalOrder())
                 .forEach(id -> visit(id, state, visited, order));
         return order;
     }
@@ -514,13 +516,17 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     }
 
     private void cleanupDetachedViews() {
-        surface.nodeLayer().getChildren().removeIf(node -> node instanceof NodeView && !nodeViews.containsValue(node));
-        surface.edgeLayer().getChildren().removeIf(node -> node instanceof EdgeView && !edgeViews.containsValue(node));
+        surface.nodeLayer()
+                .getChildren()
+                .removeIf(node -> node instanceof NodeView && !nodeViews.containsValue(node));
+        surface.edgeLayer()
+                .getChildren()
+                .removeIf(node -> node instanceof EdgeView && !edgeViews.containsValue(node));
     }
 
     public void setSelectionListener(LongConsumer listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {};
         } else {
             selectionListener = listener;
         }
@@ -561,15 +567,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
 
     private void syncSelectionState() {
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
-            entry.getValue().setSelected(selectedNodeId != null && selectedNodeId.equals(entry.getKey()));
-        }
-    }
-
-    private void invalidateLayout() {
-        layoutVersion.incrementAndGet();
-        lastLayoutInput = LayoutRequest.empty();
-        synchronized (layoutQueueLock) {
-            queuedLayout = null;
+            entry.getValue()
+                    .setSelected(selectedNodeId != null && selectedNodeId.equals(entry.getKey()));
         }
     }
 
@@ -590,21 +589,31 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             return;
         }
         activeAnimation = parallel;
-        parallel.setOnFinished(event -> {
-            if (activeAnimation == parallel) {
-                activeAnimation = null;
-            }
-            if (onFinished != null) {
-                onFinished.run();
-            }
-        });
+        parallel.setOnFinished(
+                event -> {
+                    if (activeAnimation == parallel) {
+                        activeAnimation = null;
+                    }
+                    if (onFinished != null) {
+                        onFinished.run();
+                    }
+                });
         parallel.play();
     }
 
-    private boolean layoutAffectingChange(TreeViewState previous, TreeViewState current) {
-        return previous.kind() != current.kind()
-                || !java.util.Objects.equals(previous.rootId(), current.rootId())
-                || !previous.nodes().equals(current.nodes());
+    private CompletionStage<Void> playAsync(List<Animation> transitions) {
+        if (transitions.isEmpty()) return CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        ParallelTransition parallel = new ParallelTransition();
+        parallel.getChildren().addAll(transitions);
+        activeAnimation = parallel;
+        parallel.setOnFinished(
+                event -> {
+                    if (activeAnimation == parallel) activeAnimation = null;
+                    future.complete(null);
+                });
+        parallel.play();
+        return future;
     }
 
     private void stopActiveAnimation() {
@@ -615,12 +624,62 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         // A newer factual topology may arrive before a prior transition completes.
         // Keep the currently displayed geometry as the next transition origin; only
         // normalize transient presentation properties.
-        nodeViews.values().forEach(view -> {
-            view.setOpacity(1.0d);
-            view.setScaleX(1.0d);
-            view.setScaleY(1.0d);
-        });
+        nodeViews
+                .values()
+                .forEach(
+                        view -> {
+                            view.setOpacity(1.0d);
+                            view.setScaleX(1.0d);
+                            view.setScaleY(1.0d);
+                        });
         edgeViews.values().forEach(edge -> edge.setOpacity(1.0d));
+    }
+
+    @Override
+    public ViewportSnapshot viewportSnapshot() {
+        return surface.viewportSnapshot();
+    }
+
+    @Override
+    public CameraState cameraState() {
+        return surface.cameraState();
+    }
+
+    @Override
+    public void applyCameraState(CameraState cameraState) {
+        surface.applyCameraState(cameraState);
+    }
+
+    @Override
+    public boolean userControlledCamera() {
+        return surface.isUserViewportChanged();
+    }
+
+    @Override
+    public void prepareInitialFrame() {
+        surface.markViewportPristine();
+    }
+
+    @Override
+    public void revealFrame() {
+        surface.setWorldVisible(true);
+    }
+
+    @Override
+    public void setViewportListener(Consumer<ViewportSnapshot> listener) {
+        surface.setViewportListener(listener);
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        renderFramework.activateSession(SESSION_ID);
+        super.onModuleAttached(moduleId);
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        renderFramework.deactivateSession(SESSION_ID);
+        super.onModuleDetached(moduleId);
     }
 
     @Override
@@ -641,18 +700,18 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     @Override
     public void onVisualizationReset() {
         stopActiveAnimation();
-        invalidateLayout();
         renderedState = TreeViewState.empty(TreeViewState.Kind.GENERAL);
-        nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
+        nodeViews
+                .values()
+                .forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         nodeViews.clear();
         settledTargets.clear();
         edgeViews.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
-        pendingTransitions = List.of();
-        pendingNewNodeIds = Set.of();
-        pendingVersion = -1L;
+        pendingLayout = PendingLayout.empty();
+        lastSubmittedState = null;
         hasAppliedLayout = false;
         selectedNodeId = null;
         pendingSelectedNodeId = null;
@@ -664,17 +723,43 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     @Override
     public void dispose() {
         stopActiveAnimation();
-        invalidateLayout();
-        nodeViews.values().forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
-        layoutExecutor.shutdownNow();
+        nodeViews
+                .values()
+                .forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
+        renderFramework.unregisterSurface(SESSION_ID);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();
     }
 
+    private static boolean requiresStructuralLayout(TreeViewState previous, TreeViewState current) {
+        return previous == null
+                || previous.kind() != current.kind()
+                || !java.util.Objects.equals(previous.rootId(), current.rootId())
+                || !previous.nodes().equals(current.nodes());
+    }
+
+    private record PendingLayout(
+            List<Animation> transitions, Set<Long> newNodeIds, boolean initialFrame) {
+        private PendingLayout {
+            transitions = List.copyOf(transitions);
+            newNodeIds = Set.copyOf(newNodeIds);
+        }
+
+        private static PendingLayout empty() {
+            return new PendingLayout(List.of(), Set.of(), false);
+        }
+    }
+
     private static String routeId(EdgeKey key) {
-        return "tree:" + key.relation().name().toLowerCase() + ":" + key.index() + ":"
-                + key.sourceId() + ":" + key.targetId();
+        return "tree:"
+                + key.relation().name().toLowerCase()
+                + ":"
+                + key.index()
+                + ":"
+                + key.sourceId()
+                + ":"
+                + key.targetId();
     }
 
     private static double quantize(double value) {
@@ -704,5 +789,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private record LayoutJob(long version, LayoutRequest request) {}
 
     private record EdgeKey(long sourceId, long targetId, Relation relation, int index) {}
+
     private record EdgeSpec(long sourceId, long targetId) {}
 }

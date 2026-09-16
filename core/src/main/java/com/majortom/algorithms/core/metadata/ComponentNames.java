@@ -4,8 +4,7 @@ import java.util.Objects;
 
 /** Small formatting helper for annotation metadata name fallbacks. */
 public final class ComponentNames {
-    private ComponentNames() {
-    }
+    private ComponentNames() {}
 
     public static String resolve(String explicitName, Class<?> type) {
         Objects.requireNonNull(type, "type");

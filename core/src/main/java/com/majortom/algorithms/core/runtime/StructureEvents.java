@@ -10,11 +10,10 @@ import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
  * Thin domain-oriented publishing helpers for factual StructureEvent instances.
  *
  * <p>These methods never mutate or validate Structures. Callers perform the real mutation first,
- * then publish the fact through this convenience layer.</p>
+ * then publish the fact through this convenience layer.
  */
 public final class StructureEvents {
-    private StructureEvents() {
-    }
+    private StructureEvents() {}
 
     public static void arrayInserted(int index, Object value) {
         ExecutionEvents.emit(new ArrayStructureEvent.Inserted(index, value));
@@ -28,8 +27,10 @@ public final class StructureEvents {
         ExecutionEvents.emit(new ArrayStructureEvent.Updated(index, previousValue, value));
     }
 
-    public static void arraySwapped(int leftIndex, int rightIndex, Object leftValue, Object rightValue) {
-        ExecutionEvents.emit(new ArrayStructureEvent.Swapped(leftIndex, rightIndex, leftValue, rightValue));
+    public static void arraySwapped(
+            int leftIndex, int rightIndex, Object leftValue, Object rightValue) {
+        ExecutionEvents.emit(
+                new ArrayStructureEvent.Swapped(leftIndex, rightIndex, leftValue, rightValue));
     }
 
     public static void graphVertexAdded(long vertexId, Object value) {
@@ -49,7 +50,8 @@ public final class StructureEvents {
     }
 
     public static void graphEdgeWeightChanged(long edgeId, Double previousWeight, double weight) {
-        ExecutionEvents.emit(new GraphStructureEvent.EdgeWeightChanged(edgeId, previousWeight, weight));
+        ExecutionEvents.emit(
+                new GraphStructureEvent.EdgeWeightChanged(edgeId, previousWeight, weight));
     }
 
     public static void linkedNodeInserted(long nodeId, Object value) {
@@ -65,14 +67,19 @@ public final class StructureEvents {
     }
 
     public static void linkedNextChanged(long nodeId, Long previousNextNodeId, Long nextNodeId) {
-        ExecutionEvents.emit(new LinkedStructureEvent.NextChanged(nodeId, previousNextNodeId, nextNodeId));
+        ExecutionEvents.emit(
+                new LinkedStructureEvent.NextChanged(nodeId, previousNextNodeId, nextNodeId));
     }
 
-    public static void linkedPreviousChanged(long nodeId, Long previousPreviousNodeId, Long previousNodeId) {
-        ExecutionEvents.emit(new LinkedStructureEvent.PreviousChanged(nodeId, previousPreviousNodeId, previousNodeId));
+    public static void linkedPreviousChanged(
+            long nodeId, Long previousPreviousNodeId, Long previousNodeId) {
+        ExecutionEvents.emit(
+                new LinkedStructureEvent.PreviousChanged(
+                        nodeId, previousPreviousNodeId, previousNodeId));
     }
 
-    public static void stringReplaced(int index, java.lang.String previousValue, java.lang.String value) {
+    public static void stringReplaced(
+            int index, java.lang.String previousValue, java.lang.String value) {
         ExecutionEvents.emit(new StringStructureEvent.Replaced(index, previousValue, value));
     }
 

@@ -11,6 +11,5 @@ public final class MazeCellType {
     public static final int END = 5;
     public static final int BACKTRACK = 6;
 
-    private MazeCellType() {
-    }
+    private MazeCellType() {}
 }

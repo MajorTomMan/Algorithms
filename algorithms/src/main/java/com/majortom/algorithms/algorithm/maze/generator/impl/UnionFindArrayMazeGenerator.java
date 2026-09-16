@@ -1,23 +1,27 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
-import com.majortom.algorithms.structure.maze.MazeStructure;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.structure.maze.MazeDimensions;
-import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeStructure;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 /** Randomized Kruskal/union-find perfect-maze generator. */
-@Algorithm(id = "maze-generator-union-find", name = "并查集生成", type = Boolean.class, structure = MazeStructure.class)
+@Algorithm(
+        id = "maze-generator-union-find",
+        name = "并查集生成",
+        type = Boolean.class,
+        structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.ARRAY)
 public final class UnionFindArrayMazeGenerator {
     @AlgorithmEntry
@@ -38,9 +42,10 @@ public final class UnionFindArrayMazeGenerator {
             int left = ArrayMazeSupport.index(dimensions.columns(), edge.left());
             int right = ArrayMazeSupport.index(dimensions.columns(), edge.right());
             if (!sets.union(left, right)) continue;
-            GridPoint corridor = new GridPoint(
-                    (edge.left().row() + edge.right().row()) / 2,
-                    (edge.left().column() + edge.right().column()) / 2);
+            GridPoint corridor =
+                    new GridPoint(
+                            (edge.left().row() + edge.right().row()) / 2,
+                            (edge.left().column() + edge.right().column()) / 2);
             ArrayMazeSupport.open(dimensions, state.open(), corridor);
         }
         return ArrayMazeSupport.complete(dimensions, state);
@@ -49,12 +54,18 @@ public final class UnionFindArrayMazeGenerator {
     private List<GridPoint> logicalCells(MazeDimensions dimensions) {
         List<GridPoint> cells = new ArrayList<>();
         for (int row = 1; row < dimensions.rows(); row += 2) {
-            for (int column = 1; column < dimensions.columns(); column += 2) cells.add(new GridPoint(row, column));
+            for (int column = 1; column < dimensions.columns(); column += 2)
+                cells.add(new GridPoint(row, column));
         }
         return cells;
     }
 
-    private void addEdgeIfInside(MazeDimensions dimensions, List<CellEdge> edges, GridPoint left, int rowDelta, int columnDelta) {
+    private void addEdgeIfInside(
+            MazeDimensions dimensions,
+            List<CellEdge> edges,
+            GridPoint left,
+            int rowDelta,
+            int columnDelta) {
         int rightRow = left.row() + rowDelta;
         int rightColumn = left.column() + columnDelta;
         if (ArrayMazeSupport.isInner(dimensions, rightRow, rightColumn)) {
@@ -80,7 +91,10 @@ public final class UnionFindArrayMazeGenerator {
             if (leftRoot == rightRoot) return false;
             if (rank[leftRoot] < rank[rightRoot]) parent[leftRoot] = rightRoot;
             else if (rank[leftRoot] > rank[rightRoot]) parent[rightRoot] = leftRoot;
-            else { parent[rightRoot] = leftRoot; rank[leftRoot]++; }
+            else {
+                parent[rightRoot] = leftRoot;
+                rank[leftRoot]++;
+            }
             return true;
         }
 

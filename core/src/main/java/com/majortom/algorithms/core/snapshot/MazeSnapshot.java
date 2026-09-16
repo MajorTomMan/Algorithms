@@ -14,7 +14,8 @@ public record MazeSnapshot(
         boolean graphBased) {
 
     public MazeSnapshot {
-        if (rows <= 0 || columns <= 0) throw new IllegalArgumentException("maze dimensions must be positive");
+        if (rows <= 0 || columns <= 0)
+            throw new IllegalArgumentException("maze dimensions must be positive");
         openCells = List.copyOf(Objects.requireNonNull(openCells, "openCells"));
         graphEdges = List.copyOf(Objects.requireNonNull(graphEdges, "graphEdges"));
         if (openCells.size() != Math.multiplyExact(rows, columns)) {

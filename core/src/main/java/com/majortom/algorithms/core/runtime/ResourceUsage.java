@@ -6,14 +6,11 @@ import java.util.OptionalLong;
 /**
  * Best-effort host-resource measurements for one execution.
  *
- * <p>The values are optional because a runtime may not expose a particular
- * counter.  The core model deliberately does not prescribe how a client or
- * server obtains these measurements.</p>
+ * <p>The values are optional because a runtime may not expose a particular counter. The core model
+ * deliberately does not prescribe how a client or server obtains these measurements.
  */
 public record ResourceUsage(
-        OptionalLong cpuTimeNanos,
-        OptionalLong peakMemoryBytes,
-        OptionalLong outputBytes) {
+        OptionalLong cpuTimeNanos, OptionalLong peakMemoryBytes, OptionalLong outputBytes) {
 
     public ResourceUsage {
         cpuTimeNanos = requireNonNegative(cpuTimeNanos, "cpuTimeNanos");
@@ -23,14 +20,11 @@ public record ResourceUsage(
 
     /** Returns an empty measurement for an environment without sampling. */
     public static ResourceUsage empty() {
-        return new ResourceUsage(
-                OptionalLong.empty(), OptionalLong.empty(), OptionalLong.empty());
+        return new ResourceUsage(OptionalLong.empty(), OptionalLong.empty(), OptionalLong.empty());
     }
 
     public static ResourceUsage of(
-            OptionalLong cpuTimeNanos,
-            OptionalLong peakMemoryBytes,
-            OptionalLong outputBytes) {
+            OptionalLong cpuTimeNanos, OptionalLong peakMemoryBytes, OptionalLong outputBytes) {
         return new ResourceUsage(cpuTimeNanos, peakMemoryBytes, outputBytes);
     }
 

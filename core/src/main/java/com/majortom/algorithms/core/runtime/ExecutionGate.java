@@ -7,7 +7,6 @@ public interface ExecutionGate {
     void awaitPermission(CancellationToken cancellationToken) throws InterruptedException;
 
     static ExecutionGate open() {
-        return cancellationToken -> {
-        };
+        return cancellationToken -> {};
     }
 }

@@ -25,9 +25,7 @@ public final class ExecutionRuntime {
     }
 
     public ExecutionResult execute(
-            String operationId,
-            EventSink sink,
-            ExecutionOperation<?> operation) {
+            String operationId, EventSink sink, ExecutionOperation<?> operation) {
         return execute(operationId, operationId, sink, RunControl.unrestricted(), operation);
     }
 
@@ -46,8 +44,9 @@ public final class ExecutionRuntime {
             RunControl control,
             ExecutionOperation<?> operation) {
         Objects.requireNonNull(operation, "operation");
-        RuntimeEventContext context = new RuntimeEventContext(
-                runIdSupplier.get(), operationId, source, sink, control, clock);
+        RuntimeEventContext context =
+                new RuntimeEventContext(
+                        runIdSupplier.get(), operationId, source, sink, control, clock);
         DefaultExecutionControl defaultControl;
         if (control instanceof DefaultExecutionControl value) {
             defaultControl = value;
@@ -77,12 +76,16 @@ public final class ExecutionRuntime {
             return eventDeliveryFailure(exception);
         } catch (RuntimeException exception) {
             try {
-                context.emitLifecycle(new RunFailedEvent("execution.operation.failed", message(exception)));
+                context.emitLifecycle(
+                        new RunFailedEvent("execution.operation.failed", message(exception)));
             } catch (EventDeliveryException deliveryFailure) {
                 return eventDeliveryFailure(deliveryFailure);
             }
-            return ExecutionResult.failed(new ExecutionFailure(
-                    "execution.operation.failed", message(exception), exception.getClass().getName()));
+            return ExecutionResult.failed(
+                    new ExecutionFailure(
+                            "execution.operation.failed",
+                            message(exception),
+                            exception.getClass().getName()));
         } finally {
             if (defaultControl != null) {
                 defaultControl.unbindLifecycle();
@@ -93,11 +96,9 @@ public final class ExecutionRuntime {
     private ExecutionResult cancelled(RuntimeEventContext context, String reason) {
         try {
             if (reason == null) {
-                context.emitLifecycle(new RunCancelledEvent(
-                    "Execution cancelled"));
+                context.emitLifecycle(new RunCancelledEvent("Execution cancelled"));
             } else {
-                context.emitLifecycle(new RunCancelledEvent(
-                    reason));
+                context.emitLifecycle(new RunCancelledEvent(reason));
             }
         } catch (EventDeliveryException deliveryFailure) {
             return eventDeliveryFailure(deliveryFailure);
@@ -106,8 +107,11 @@ public final class ExecutionRuntime {
     }
 
     private static ExecutionResult eventDeliveryFailure(EventDeliveryException exception) {
-        return ExecutionResult.failed(new ExecutionFailure(
-                "execution.event.delivery.failed", message(exception), exception.getClass().getName()));
+        return ExecutionResult.failed(
+                new ExecutionFailure(
+                        "execution.event.delivery.failed",
+                        message(exception),
+                        exception.getClass().getName()));
     }
 
     private static String message(Throwable throwable) {

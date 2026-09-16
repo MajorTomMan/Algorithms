@@ -88,7 +88,12 @@ public final class String implements StringStructure {
         ensureCapacity(newLength);
         int tailLength = length - index - replaceLength;
         if (replacement.length() != replaceLength && tailLength > 0) {
-            System.arraycopy(characters, index + replaceLength, characters, index + replacement.length(), tailLength);
+            System.arraycopy(
+                    characters,
+                    index + replaceLength,
+                    characters,
+                    index + replacement.length(),
+                    tailLength);
         }
         replacement.getChars(0, replacement.length(), characters, index);
         length = newLength;
@@ -125,7 +130,8 @@ public final class String implements StringStructure {
 
     private void checkRange(int index, int rangeLength) {
         if (rangeLength < 0 || index < 0 || index + rangeLength > length) {
-            throw new IndexOutOfBoundsException("index=" + index + ", length=" + rangeLength + ", valueLength=" + length);
+            throw new IndexOutOfBoundsException(
+                    "index=" + index + ", length=" + rangeLength + ", valueLength=" + length);
         }
     }
 }

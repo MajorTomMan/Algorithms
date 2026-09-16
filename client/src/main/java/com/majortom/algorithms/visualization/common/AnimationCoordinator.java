@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.common;
 
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
+
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
@@ -14,7 +15,10 @@ import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.util.Duration;
 
-/** Thin speed-aware visual animation helper. Runtime/Timeline remain the authoritative event history. */
+/**
+ * Thin speed-aware visual animation helper. Runtime/Timeline remain the authoritative event
+ * history.
+ */
 public final class AnimationCoordinator {
     private double playbackSpeed = 1.0d;
     private boolean scrubbing;
@@ -44,10 +48,11 @@ public final class AnimationCoordinator {
             node.setCenter(target.getX(), target.getY());
             return new PauseTransition(Duration.ZERO);
         }
-        return new Timeline(new KeyFrame(
-                duration,
-                new KeyValue(node.centerXProperty(), target.getX()),
-                new KeyValue(node.centerYProperty(), target.getY())));
+        return new Timeline(
+                new KeyFrame(
+                        duration,
+                        new KeyValue(node.centerXProperty(), target.getX()),
+                        new KeyValue(node.centerYProperty(), target.getY())));
     }
 
     public Animation fadeIn(Node node, Duration baseDuration) {
@@ -97,7 +102,10 @@ public final class AnimationCoordinator {
     }
 
     public Duration effectiveDuration(Duration baseDuration) {
-        if (baseDuration == null || baseDuration.lessThanOrEqualTo(Duration.ZERO) || scrubbing || playbackSpeed >= 16.0d) {
+        if (baseDuration == null
+                || baseDuration.lessThanOrEqualTo(Duration.ZERO)
+                || scrubbing
+                || playbackSpeed >= 16.0d) {
             return Duration.ZERO;
         }
         return baseDuration.divide(playbackSpeed);

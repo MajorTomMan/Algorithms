@@ -7,7 +7,7 @@ public class 删除有序数组的重复项 {
     private static List<Integer> list = new ArrayList<>();
 
     public static void main(String[] args) {
-        Integer[] nums = { 0, 0, 1, 1, 1, 2, 2, 3, 3, 4 };
+        Integer[] nums = {0, 0, 1, 1, 1, 2, 2, 3, 3, 4};
         System.out.println(removeDuplicates(nums));
     }
 

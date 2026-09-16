@@ -21,7 +21,8 @@ public record ExecutionTiming(Duration eventSpan, Optional<Duration> totalDurati
     }
 
     public static ExecutionTiming of(Duration eventSpan, Duration totalDuration) {
-        return new ExecutionTiming(eventSpan, Optional.of(requireDuration(totalDuration, "totalDuration")));
+        return new ExecutionTiming(
+                eventSpan, Optional.of(requireDuration(totalDuration, "totalDuration")));
     }
 
     public Optional<Duration> totalExecutionDuration() {
@@ -38,7 +39,8 @@ public record ExecutionTiming(Duration eventSpan, Optional<Duration> totalDurati
         return value;
     }
 
-    private static Optional<Duration> requireOptionalDuration(Optional<Duration> value, String name) {
+    private static Optional<Duration> requireOptionalDuration(
+            Optional<Duration> value, String name) {
         Objects.requireNonNull(value, name);
         value.ifPresent(duration -> requireDuration(duration, name));
         return value;

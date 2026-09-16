@@ -1,8 +1,12 @@
 package com.majortom.algorithms.visualization.common;
 
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.viewport.CameraState;
+import com.majortom.algorithms.visualization.render.viewport.ViewportInsets;
+import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
+
 import javafx.animation.PauseTransition;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.geometry.Bounds;
@@ -23,16 +27,18 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
+
 import net.kurobako.gesturefx.GesturePane;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Shared viewport infrastructure for project-owned Structure visualizers.
  *
  * <p>This class owns presentation-space concerns only: layers, GestureFX viewport behavior,
- * safe-area-aware fit/center and the viewport toolbar. It never interprets Structure/Event data.</p>
+ * safe-area-aware fit/center and the viewport toolbar. It never interprets Structure/Event data.
  */
 public final class VisualizationSurface extends StackPane {
     private static final double MIN_ZOOM = 0.10d;
@@ -68,8 +74,12 @@ public final class VisualizationSurface extends StackPane {
     private double queuedMinimumAutoScale = MIN_ZOOM;
     private boolean queuedInitialFit;
     private boolean initialAutoFitPending;
+
     /** True only after the visualizer has applied its first factual geometry. */
     private boolean initialLayoutReady = true;
+
+    private boolean frameworkManagedCamera;
+    private Consumer<ViewportSnapshot> viewportListener = ignored -> {};
     private int initialFitRetryCount;
     private double lastObservedWidth = -1.0d;
     private double lastObservedHeight = -1.0d;
@@ -86,10 +96,14 @@ public final class VisualizationSurface extends StackPane {
         initialFitRetryTransition.setOnFinished(event -> requestInitialAutoFit());
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
         viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        widthProperty().addListener((observable, oldValue, newValue) ->
-                requestAutoFitAfterResize(true, newValue.doubleValue()));
-        heightProperty().addListener((observable, oldValue, newValue) ->
-                requestAutoFitAfterResize(false, newValue.doubleValue()));
+        widthProperty()
+                .addListener(
+                        (observable, oldValue, newValue) ->
+                                requestAutoFitAfterResize(true, newValue.doubleValue()));
+        heightProperty()
+                .addListener(
+                        (observable, oldValue, newValue) ->
+                                requestAutoFitAfterResize(false, newValue.doubleValue()));
     }
 
     public Group edgeLayer() {
@@ -123,7 +137,9 @@ public final class VisualizationSurface extends StackPane {
     /** Insets reserved for overlays/toolbars. Fit and center use the remaining usable viewport. */
     public void setSafeInsets(Insets safeInsets) {
         this.safeInsets = Objects.requireNonNull(safeInsets, "safeInsets");
-        if (!userViewportChanged) {
+        if (frameworkManagedCamera) {
+            notifyViewportChanged();
+        } else if (!userViewportChanged) {
             fitWithMinimumScale(autoFitMinimumScale);
         }
     }
@@ -132,7 +148,9 @@ public final class VisualizationSurface extends StackPane {
         return effectiveSafeInsets();
     }
 
-    /** Additional shell-level obstruction, composed with family safe insets without replacing them. */
+    /**
+     * Additional shell-level obstruction, composed with family safe insets without replacing them.
+     */
     public void setObstructionInsets(Insets obstructionInsets) {
         Insets next = Objects.requireNonNull(obstructionInsets, "obstructionInsets");
         if (next.equals(this.obstructionInsets)) {
@@ -140,6 +158,76 @@ public final class VisualizationSurface extends StackPane {
         }
         // Transient cards must not move the camera. Explicit fit/reset uses the current insets.
         this.obstructionInsets = next;
+        if (frameworkManagedCamera) {
+            notifyViewportChanged();
+        }
+    }
+
+    /** Enables RenderFramework ownership of automatic resize/Fit decisions. */
+    public void setFrameworkManagedCamera(boolean frameworkManagedCamera) {
+        this.frameworkManagedCamera = frameworkManagedCamera;
+        if (frameworkManagedCamera) {
+            autoFitSettleTransition.stop();
+            initialFitRetryTransition.stop();
+            notifyViewportChanged();
+        }
+    }
+
+    public void setViewportListener(Consumer<ViewportSnapshot> listener) {
+        viewportListener = listener == null ? ignored -> {} : listener;
+        if (frameworkManagedCamera) {
+            notifyViewportChanged();
+        }
+    }
+
+    public ViewportSnapshot viewportSnapshot() {
+        Insets insets = effectiveSafeInsets();
+        double width =
+                gesturePane.getViewportWidth() > 0.0d ? gesturePane.getViewportWidth() : getWidth();
+        double height =
+                gesturePane.getViewportHeight() > 0.0d
+                        ? gesturePane.getViewportHeight()
+                        : getHeight();
+        return new ViewportSnapshot(
+                Math.max(0.0d, width),
+                Math.max(0.0d, height),
+                new ViewportInsets(
+                        insets.getTop(), insets.getRight(), insets.getBottom(), insets.getLeft()));
+    }
+
+    public CameraState cameraState() {
+        ViewportSnapshot viewport = viewportSnapshot();
+        double scale = zoom();
+        Point2D worldAtCentre = gesturePane.targetPointAtViewportCentre();
+        double translateX = viewport.width() / 2.0d - worldAtCentre.getX() * scale;
+        double translateY = viewport.height() / 2.0d - worldAtCentre.getY() * scale;
+        return new CameraState(scale, translateX, translateY);
+    }
+
+    public void applyCameraState(CameraState state) {
+        Objects.requireNonNull(state, "state");
+        ViewportSnapshot viewport = viewportSnapshot();
+        if (!(viewport.width() > 0.0d) || !(viewport.height() > 0.0d)) {
+            return;
+        }
+        Point2D worldAtViewportCentre =
+                new Point2D(
+                        (viewport.width() / 2.0d - state.translateX()) / state.scale(),
+                        (viewport.height() / 2.0d - state.translateY()) / state.scale());
+        runProgrammatic(
+                () -> {
+                    gesturePane.zoomTo(clamp(state.scale()), worldAtViewportCentre);
+                    gesturePane.centreOn(worldAtViewportCentre);
+                });
+    }
+
+    public void setWorldVisible(boolean visible) {
+        worldPane.setOpacity(visible ? 1.0d : 0.0d);
+        worldPane.setMouseTransparent(!visible);
+        if (visible) {
+            initialAutoFitPending = false;
+            initialLayoutReady = true;
+        }
     }
 
     public void zoomIn() {
@@ -152,7 +240,9 @@ public final class VisualizationSurface extends StackPane {
         setZoomAroundViewportCentre(zoom() / TOOLBAR_ZOOM_FACTOR);
     }
 
-    /** Keeps current scale and centers the world in the safe viewport rather than under overlays. */
+    /**
+     * Keeps current scale and centers the world in the safe viewport rather than under overlays.
+     */
     public void center() {
         Bounds bounds = worldBounds();
         if (hasWorld(bounds)) {
@@ -167,9 +257,9 @@ public final class VisualizationSurface extends StackPane {
     }
 
     /**
-     * Initial/automatic fit with a legacy preferred-scale hint. Complete-world visibility always wins,
-     * so the hint is never allowed to enlarge content past the scale that fits the factual world.
-     * This never marks the viewport as user-modified.
+     * Initial/automatic fit with a legacy preferred-scale hint. Complete-world visibility always
+     * wins, so the hint is never allowed to enlarge content past the scale that fits the factual
+     * world. This never marks the viewport as user-modified.
      */
     public void fitWithMinimumScale(double minimumAutoScale) {
         autoFitMinimumScale = clamp(minimumAutoScale);
@@ -187,8 +277,8 @@ public final class VisualizationSurface extends StackPane {
     }
 
     /**
-     * Signals that the visualizer has applied its first complete factual layout.
-     * Until this point resize/CSS pulses are not allowed to fit or reveal the world.
+     * Signals that the visualizer has applied its first complete factual layout. Until this point
+     * resize/CSS pulses are not allowed to fit or reveal the world.
      */
     public boolean markInitialLayoutReady(double minimumAutoScale) {
         autoFitMinimumScale = clamp(minimumAutoScale);
@@ -209,12 +299,13 @@ public final class VisualizationSurface extends StackPane {
         } else {
             pivot = new Point2D(0.0d, 0.0d);
         }
-        runProgrammatic(() -> {
-            gesturePane.zoomTo(DEFAULT_ZOOM, pivot);
-            if (hasWorld(bounds)) {
-                centerOnSafeViewport(pivot);
-            }
-        });
+        runProgrammatic(
+                () -> {
+                    gesturePane.zoomTo(DEFAULT_ZOOM, pivot);
+                    if (hasWorld(bounds)) {
+                        centerOnSafeViewport(pivot);
+                    }
+                });
         userViewportChanged = true;
     }
 
@@ -222,7 +313,9 @@ public final class VisualizationSurface extends StackPane {
         return userViewportChanged;
     }
 
-    /** True while the world is intentionally hidden waiting for its first factual geometry and fit. */
+    /**
+     * True while the world is intentionally hidden waiting for its first factual geometry and fit.
+     */
     public boolean isAwaitingInitialLayout() {
         return initialAutoFitPending;
     }
@@ -248,6 +341,10 @@ public final class VisualizationSurface extends StackPane {
             lastObservedHeight = value;
         }
         if (previous >= 0.0d && Math.abs(value - previous) < AUTO_FIT_RESIZE_EPSILON) {
+            return;
+        }
+        if (frameworkManagedCamera) {
+            notifyViewportChanged();
             return;
         }
         if (initialAutoFitPending) {
@@ -301,10 +398,13 @@ public final class VisualizationSurface extends StackPane {
         gesturePane.setFitMode(GesturePane.FitMode.UNBOUNDED);
         gesturePane.setScrollMode(GesturePane.ScrollMode.ZOOM);
         gesturePane.setScrollBarPolicy(GesturePane.ScrollBarPolicy.NEVER);
-        gesturePane.currentScaleProperty().addListener((observable, oldValue, newValue) -> {
-            zoom.set(newValue.doubleValue());
-            updateZoomLabel();
-        });
+        gesturePane
+                .currentScaleProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            zoom.set(newValue.doubleValue());
+                            updateZoomLabel();
+                        });
         updateZoomLabel();
     }
 
@@ -326,9 +426,11 @@ public final class VisualizationSurface extends StackPane {
 
     private Button localizedButton(String textKey, Runnable action) {
         Button button = button("", textKey, action);
-        button.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(
-                () -> I18N.text(textKey).toUpperCase(Locale.ROOT),
-                I18N.localeProperty()));
+        button.textProperty()
+                .bind(
+                        javafx.beans.binding.Bindings.createStringBinding(
+                                () -> I18N.text(textKey).toUpperCase(Locale.ROOT),
+                                I18N.localeProperty()));
         return button;
     }
 
@@ -349,15 +451,17 @@ public final class VisualizationSurface extends StackPane {
     }
 
     private void installShortcuts() {
-        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (!event.isShortcutDown()) {
-                return;
-            }
-            if (event.getCode() == KeyCode.DIGIT0 || event.getCode() == KeyCode.NUMPAD0) {
-                fit();
-                event.consume();
-            }
-        });
+        addEventFilter(
+                KeyEvent.KEY_PRESSED,
+                event -> {
+                    if (!event.isShortcutDown()) {
+                        return;
+                    }
+                    if (event.getCode() == KeyCode.DIGIT0 || event.getCode() == KeyCode.NUMPAD0) {
+                        fit();
+                        event.consume();
+                    }
+                });
     }
 
     private void requestFit(boolean initialFit, double minimumAutoScale) {
@@ -368,12 +472,15 @@ public final class VisualizationSurface extends StackPane {
             fitQueued = true;
             queuedInitialFit = initialFit;
             queuedMinimumAutoScale = minimumAutoScale;
-            Platform.runLater(() -> {
-                fitQueued = false;
-                if (!queuedInitialFit || !userViewportChanged) {
-                    fitNow(queuedInitialFit, queuedMinimumAutoScale);
-                }
-            });
+            RenderRuntime.shared()
+                    .fxExecutor()
+                    .defer(
+                            () -> {
+                                fitQueued = false;
+                                if (!queuedInitialFit || !userViewportChanged) {
+                                    fitNow(queuedInitialFit, queuedMinimumAutoScale);
+                                }
+                            });
         }
     }
 
@@ -386,8 +493,10 @@ public final class VisualizationSurface extends StackPane {
         }
 
         Insets insets = effectiveSafeInsets();
-        double availableWidth = Math.max(1.0d, viewportWidth - insets.getLeft() - insets.getRight());
-        double availableHeight = Math.max(1.0d, viewportHeight - insets.getTop() - insets.getBottom());
+        double availableWidth =
+                Math.max(1.0d, viewportWidth - insets.getLeft() - insets.getRight());
+        double availableHeight =
+                Math.max(1.0d, viewportHeight - insets.getTop() - insets.getBottom());
         double scaleX;
         if (bounds.getWidth() <= 0.0d) {
             scaleX = MAX_ZOOM;
@@ -410,10 +519,11 @@ public final class VisualizationSurface extends StackPane {
             targetScale = fitScale;
         }
         Point2D center = worldCenter(bounds);
-        runProgrammatic(() -> {
-            gesturePane.zoomTo(targetScale, center);
-            centerOnSafeViewport(center);
-        });
+        runProgrammatic(
+                () -> {
+                    gesturePane.zoomTo(targetScale, center);
+                    centerOnSafeViewport(center);
+                });
         if (!initialFit) {
             userViewportChanged = true;
         }
@@ -449,6 +559,11 @@ public final class VisualizationSurface extends StackPane {
     private void markUserGesture() {
         if (!programmaticViewportChange) {
             userViewportChanged = true;
+            if (frameworkManagedCamera) {
+                // The VIEWPORT intent keeps geometry untouched but lets the Session
+                // remember the user's camera for later RESTORE.
+                notifyViewportChanged();
+            }
         }
     }
 
@@ -465,6 +580,15 @@ public final class VisualizationSurface extends StackPane {
         zoomLabel.setText(String.format(Locale.ROOT, "%.0f%%", zoom() * 100.0d));
     }
 
+    private void notifyViewportChanged() {
+        if (!frameworkManagedCamera) {
+            return;
+        }
+        ViewportSnapshot snapshot = viewportSnapshot();
+        if (snapshot.width() > 0.0d && snapshot.height() > 0.0d) {
+            viewportListener.accept(snapshot);
+        }
+    }
 
     private Insets effectiveSafeInsets() {
         return new Insets(
@@ -488,7 +612,8 @@ public final class VisualizationSurface extends StackPane {
     }
 
     private static boolean hasWorld(Bounds bounds) {
-        return bounds != null && !bounds.isEmpty()
+        return bounds != null
+                && !bounds.isEmpty()
                 && (bounds.getWidth() > 0.0d || bounds.getHeight() > 0.0d);
     }
 

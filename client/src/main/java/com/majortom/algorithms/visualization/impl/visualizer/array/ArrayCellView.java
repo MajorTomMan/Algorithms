@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.array;
 
 import com.majortom.algorithms.visualization.common.VisualDensity;
+
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -30,7 +31,7 @@ public final class ArrayCellView extends StackPane {
 
     private int index;
     private VisualDensity density = VisualDensity.DETAIL;
-    private IntConsumer selectionHandler = ignored -> { };
+    private IntConsumer selectionHandler = ignored -> {};
 
     public ArrayCellView(int index, String value) {
         getStyleClass().addAll("array-cell", "visual-entity");
@@ -53,12 +54,13 @@ public final class ArrayCellView extends StackPane {
         getChildren().setAll(content);
         setCursor(Cursor.HAND);
         setPickOnBounds(true);
-        setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1) {
-                selectionHandler.accept(this.index);
-                event.consume();
-            }
-        });
+        setOnMouseClicked(
+                event -> {
+                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1) {
+                        selectionHandler.accept(this.index);
+                        event.consume();
+                    }
+                });
         setIndex(index);
         setValue(value);
         setDensity(VisualDensity.DETAIL, true);
@@ -77,9 +79,13 @@ public final class ArrayCellView extends StackPane {
         valueText.setText(Objects.requireNonNull(value, "value"));
     }
 
-
     public void setStripPosition(int index, int size) {
-        getStyleClass().removeAll("array-cell-first", "array-cell-middle", "array-cell-last", "array-cell-only");
+        getStyleClass()
+                .removeAll(
+                        "array-cell-first",
+                        "array-cell-middle",
+                        "array-cell-last",
+                        "array-cell-only");
         if (size <= 1) {
             getStyleClass().add("array-cell-only");
         } else if (index == 0) {
@@ -115,7 +121,6 @@ public final class ArrayCellView extends StackPane {
     public void setCompleted(boolean completed) {
         pseudoClassStateChanged(COMPLETED, completed);
     }
-
 
     public void setDensity(VisualDensity density, boolean importantIndex) {
         this.density = Objects.requireNonNull(density, "density");

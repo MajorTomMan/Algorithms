@@ -7,8 +7,7 @@ import java.util.Objects;
 
 public final class ComponentDiscovery {
 
-    private ComponentDiscovery() {
-    }
+    private ComponentDiscovery() {}
 
     public static ComponentRegistry discover() {
         return Holder.DEFAULT;

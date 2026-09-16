@@ -7,12 +7,13 @@
  */
 package com.majortom.algorithms.leetcode.ds.tree;
 
-import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 平衡二叉树 {
     public static void main(String[] args) {
-        BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+        BinaryTreeNode<Integer> root =
+                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
         isBalanced(root);
     }
 

@@ -5,7 +5,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-record WorkerInvocation(String className, String methodName, String[] parameterTypeNames, Object[] arguments)
+record WorkerInvocation(
+        String className, String methodName, String[] parameterTypeNames, Object[] arguments)
         implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
 
@@ -16,10 +17,18 @@ record WorkerInvocation(String className, String methodName, String[] parameterT
         arguments = arguments.clone();
     }
 
-    @Override public String[] parameterTypeNames() { return parameterTypeNames.clone(); }
-    @Override public Object[] arguments() { return arguments.clone(); }
+    @Override
+    public String[] parameterTypeNames() {
+        return parameterTypeNames.clone();
+    }
 
-    @Override public String toString() {
+    @Override
+    public Object[] arguments() {
+        return arguments.clone();
+    }
+
+    @Override
+    public String toString() {
         return className + "#" + methodName + Arrays.toString(parameterTypeNames);
     }
 }

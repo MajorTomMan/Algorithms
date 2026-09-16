@@ -8,6 +8,7 @@ public class 杨辉三角 {
         System.out.println(generate(6));
         System.out.println(getRow(3));
     }
+
     public static List<List<Integer>> generate(int numRows) {
         List<List<Integer>> ret = new ArrayList<List<Integer>>();
         for (int i = 0; i < numRows; ++i) {
@@ -23,8 +24,9 @@ public class 杨辉三角 {
         }
         return ret;
     }
+
     public static List<Integer> getRow(int rowIndex) {
-        List<List<Integer>> result=generate(rowIndex+1);
+        List<List<Integer>> result = generate(rowIndex + 1);
         return result.get(rowIndex);
     }
 }

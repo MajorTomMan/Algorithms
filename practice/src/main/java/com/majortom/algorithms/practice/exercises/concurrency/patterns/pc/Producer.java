@@ -2,7 +2,6 @@ package com.majortom.algorithms.practice.exercises.concurrency.patterns.pc;
 
 import java.util.Random;
 
-
 public class Producer implements Runnable {
     private String TAG = "";
     private BufferQueue buffer;
@@ -14,7 +13,7 @@ public class Producer implements Runnable {
     }
 
     public void product() {
-        System.out.println(TAG+":"+"1 goods was produce");
+        System.out.println(TAG + ":" + "1 goods was produce");
         Goods goods = new Goods();
         goods.setFrom(TAG);
         goods.setName("goods");

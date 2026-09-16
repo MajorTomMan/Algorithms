@@ -7,7 +7,10 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 @Structure(id = "maze", name = "Maze", module = StructureModule.MAZE, implementation = Maze.class)
 public interface MazeStructure {
     MazeDimensions dimensions();
+
     GridMaze grid();
+
     void initialize(MazeDimensions dimensions);
+
     void initialize(GridMaze grid);
 }

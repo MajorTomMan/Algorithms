@@ -13,33 +13,25 @@ public class SnakeView {
             case PLAYING -> renderPlaying(sb, snake, food, map, false);
             case PAUSED -> renderPlaying(sb, snake, food, map, true);
             case GAME_OVER -> renderGameOver(sb, snake, food, map);
-            case EXIT -> {
-            }
+            case EXIT -> {}
         }
         return sb.toString();
     }
 
     private void renderWelcome(StringBuilder sb) {
         appendPanel(
-            sb,
-            "贪 吃 蛇",
-            "一个运行在终端里的小游戏",
-            "",
-            "操作说明",
-            "W A S D 或方向键  -> 每次移动一格",
-            "P                -> 游戏中暂停/继续",
-            "Q                -> 退出游戏",
-            "",
-            "按 Enter、空格或 S 开始"
-        );
+                sb,
+                "贪 吃 蛇",
+                "一个运行在终端里的小游戏",
+                "",
+                "操作说明",
+                "W A S D 或方向键  -> 每次移动一格",
+                "P                -> 游戏中暂停/继续",
+                "Q                -> 退出游戏",
+                "",
+                "按 Enter、空格或 S 开始");
         sb.append("\n");
-        appendPanel(
-            sb,
-            "小提示",
-            "这是一步一动的回合制版本。",
-            "每次输入只会让蛇前进一步。",
-            "规划好路线，别撞墙，也别咬到自己。"
-        );
+        appendPanel(sb, "小提示", "这是一步一动的回合制版本。", "每次输入只会让蛇前进一步。", "规划好路线，别撞墙，也别咬到自己。");
     }
 
     private void renderPlaying(StringBuilder sb, Snake snake, Food food, Map map, boolean paused) {
@@ -61,18 +53,12 @@ public class SnakeView {
                 "长度   : " + snake.length(),
                 "蛇头坐标: (" + head.x + ", " + head.y + ")",
                 "食物坐标: (" + food.x + ", " + food.y + ")",
-                help
-        );
+                help);
         sb.append("\n");
         appendBoard(sb, snake, food, map);
         if (paused) {
             sb.append("\n");
-            appendPanel(
-                    sb,
-                    "已暂停",
-                    "当前棋盘已冻结。",
-                    "按 P 继续，或按 R 重新开始。"
-            );
+            appendPanel(sb, "已暂停", "当前棋盘已冻结。", "按 P 继续，或按 R 重新开始。");
         }
     }
 
@@ -85,8 +71,7 @@ public class SnakeView {
                 "分数     : " + score,
                 "长度     : " + snake.length(),
                 "最终蛇头坐标: (" + head.x + ", " + head.y + ")",
-                "按 R 重新开始，按 Q 退出"
-        );
+                "按 R 重新开始，按 Q 退出");
         sb.append("\n");
         appendBoard(sb, snake, food, map);
     }
@@ -137,9 +122,7 @@ public class SnakeView {
 
         sb.append(".").append(repeat('-', PANEL_WIDTH - 2)).append(".\n");
         for (String line : content) {
-            sb.append("| ")
-                .append(padRight(line, PANEL_WIDTH - 4))
-                .append(" |\n");
+            sb.append("| ").append(padRight(line, PANEL_WIDTH - 4)).append(" |\n");
         }
         sb.append("'").append(repeat('-', PANEL_WIDTH - 2)).append("'\n");
     }

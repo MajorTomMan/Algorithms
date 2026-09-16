@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-/** Historical Huffman exercise. The canonical V2 tree family does not currently expose HuffmanTree. */
+/**
+ * Historical Huffman exercise. The canonical V2 tree family does not currently expose HuffmanTree.
+ */
 public class 霍夫曼编码测试 {
     public static void main(String[] args) {
         Map<String, Integer> frequencies = new HashMap<>();
@@ -20,8 +22,10 @@ public class 霍夫曼编码测试 {
     }
 
     private static HuffmanNode build(Map<String, Integer> frequencies) {
-        PriorityQueue<HuffmanNode> queue = new PriorityQueue<>(Comparator.comparingInt(HuffmanNode::weight));
-        frequencies.forEach((symbol, weight) -> queue.add(new HuffmanNode(symbol, weight, null, null)));
+        PriorityQueue<HuffmanNode> queue =
+                new PriorityQueue<>(Comparator.comparingInt(HuffmanNode::weight));
+        frequencies.forEach(
+                (symbol, weight) -> queue.add(new HuffmanNode(symbol, weight, null, null)));
         while (queue.size() > 1) {
             HuffmanNode left = queue.remove();
             HuffmanNode right = queue.remove();
@@ -42,6 +46,5 @@ public class 霍夫曼编码测试 {
         print(node.right, code + "1");
     }
 
-    private record HuffmanNode(String symbol, int weight, HuffmanNode left, HuffmanNode right) {
-    }
+    private record HuffmanNode(String symbol, int weight, HuffmanNode left, HuffmanNode right) {}
 }

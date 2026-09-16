@@ -10,8 +10,13 @@ import java.util.Objects;
 
 /** Immutable JavaFX-neutral linked-list facts keyed by stable node id. */
 public record LinkedListViewState(Map<Long, Node> nodes) {
-    public LinkedListViewState { nodes = Map.copyOf(Objects.requireNonNull(nodes, "nodes")); }
-    public static LinkedListViewState empty() { return new LinkedListViewState(Map.of()); }
+    public LinkedListViewState {
+        nodes = Map.copyOf(Objects.requireNonNull(nodes, "nodes"));
+    }
+
+    public static LinkedListViewState empty() {
+        return new LinkedListViewState(Map.of());
+    }
 
     public static LinkedListViewState fromValues(List<?> values) {
         List<?> source = List.copyOf(Objects.requireNonNull(values, "values"));
@@ -31,7 +36,13 @@ public record LinkedListViewState(Map<Long, Node> nodes) {
         while (current != null && !nodes.containsKey(current.getId())) {
             Long nextId = current.getNext() == null ? null : current.getNext().getId();
             Long previousId = current.getPrevious() == null ? null : current.getPrevious().getId();
-            nodes.put(current.getId(), new Node(current.getId(), VisualValue.of(current.getValue()), nextId, previousId));
+            nodes.put(
+                    current.getId(),
+                    new Node(
+                            current.getId(),
+                            VisualValue.of(current.getValue()),
+                            nextId,
+                            previousId));
             current = current.getNext();
         }
         return new LinkedListViewState(nodes);
@@ -42,8 +53,17 @@ public record LinkedListViewState(Map<Long, Node> nodes) {
             if (id <= 0) throw new IllegalArgumentException("node id must be positive");
             value = Objects.requireNonNull(value, "value");
         }
-        public Node withValue(Object value) { return new Node(id, VisualValue.of(value), nextId, previousId); }
-        public Node withNext(Long nextId) { return new Node(id, value, nextId, previousId); }
-        public Node withPrevious(Long previousId) { return new Node(id, value, nextId, previousId); }
+
+        public Node withValue(Object value) {
+            return new Node(id, VisualValue.of(value), nextId, previousId);
+        }
+
+        public Node withNext(Long nextId) {
+            return new Node(id, value, nextId, previousId);
+        }
+
+        public Node withPrevious(Long previousId) {
+            return new Node(id, value, nextId, previousId);
+        }
     }
 }

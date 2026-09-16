@@ -1,8 +1,8 @@
 package com.majortom.algorithms.leetcode.ds.graph;
 
-import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.graph.Graph;
 import com.majortom.algorithms.structure.graph.Vertex;
+import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 
 public class 多余连接 {

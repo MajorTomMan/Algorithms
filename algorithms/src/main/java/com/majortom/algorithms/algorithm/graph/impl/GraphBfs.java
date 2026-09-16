@@ -5,8 +5,8 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
-import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.structure.graph.GraphStructure;
+import com.majortom.algorithms.structure.graph.Vertex;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -15,7 +15,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Algorithm(id = "graph-bfs", name = "广度优先遍历", type = Integer.class, structure = GraphStructure.class)
+@Algorithm(
+        id = "graph-bfs",
+        name = "广度优先遍历",
+        type = Integer.class,
+        structure = GraphStructure.class)
 public final class GraphBfs {
     private static final String VERTEX_DOMAIN = "graph.vertex";
 

@@ -1,12 +1,11 @@
 package com.majortom.algorithms.leetcode.algo.dp;
 
-
-
 public class 买卖股票的最佳时机 {
     public static void main(String[] args) {
-        Integer prices[]={7,1,5,3,6,4};
+        Integer prices[] = {7, 1, 5, 3, 6, 4};
         System.out.println(maxProfit(prices));
     }
+
     public static int maxProfit(Integer[] prices) {
         int minprice = Integer.MAX_VALUE;
         int maxprofit = 0;

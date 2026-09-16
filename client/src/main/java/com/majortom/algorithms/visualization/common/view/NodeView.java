@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.common.view;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.geometry.NodeGeometry;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -44,10 +45,14 @@ public final class NodeView extends StackPane {
         this.geometry.addListener((observable, previous, current) -> rebuildShape(current));
         centerX.addListener(observable -> updatePosition());
         centerY.addListener(observable -> updatePosition());
-        selected.addListener((observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
-        highlighted.addListener((observable, previous, current) -> pseudoClassStateChanged(HIGHLIGHTED, current));
-        this.current.addListener((observable, previous, current) -> pseudoClassStateChanged(CURRENT, current));
-        visited.addListener((observable, previous, current) -> pseudoClassStateChanged(VISITED, current));
+        selected.addListener(
+                (observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
+        highlighted.addListener(
+                (observable, previous, current) -> pseudoClassStateChanged(HIGHLIGHTED, current));
+        this.current.addListener(
+                (observable, previous, current) -> pseudoClassStateChanged(CURRENT, current));
+        visited.addListener(
+                (observable, previous, current) -> pseudoClassStateChanged(VISITED, current));
         setGeometry(geometry);
         setText(text);
     }
@@ -166,7 +171,8 @@ public final class NodeView extends StackPane {
             shape = new Rectangle(rectangle.width(), rectangle.height());
             selectionRing = new Rectangle(rectangle.width() + 10.0d, rectangle.height() + 10.0d);
         } else {
-            throw new IllegalArgumentException("Unsupported geometry: " + geometry.getClass().getName());
+            throw new IllegalArgumentException(
+                    "Unsupported geometry: " + geometry.getClass().getName());
         }
         selectionRing.getStyleClass().add("visual-node-selection-ring");
         selectionRing.setMouseTransparent(true);

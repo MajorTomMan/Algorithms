@@ -16,7 +16,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/** Reduces factual tree mutations plus factual runtime observations into replayable presentation state. */
+/**
+ * Reduces factual tree mutations plus factual runtime observations into replayable presentation
+ * state.
+ */
 public final class TreeEventReducer implements EventReducer<TreeViewState> {
     private final TreeViewState initialState;
 
@@ -45,15 +48,23 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
                 node = TreeViewState.Node.binary(inserted.nodeId(), inserted.value(), null, null);
             }
             nodes.put(inserted.nodeId(), node);
-            return changed(copy(previous, previous.rootId(), nodes,
-                    Set.of(inserted.nodeId()), Set.of(), previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(inserted.nodeId()),
+                            Set.of(),
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof TreeStructureEvent.NodeRemoved removed) {
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
             nodes.remove(removed.nodeId());
             Set<Long> visited = new LinkedHashSet<>(previous.visitedNodeIds());
             visited.remove(removed.nodeId());
-            return changed(copy(previous, previous.rootId(), nodes, Set.of(), Set.of(), visited, false));
+            return changed(
+                    copy(previous, previous.rootId(), nodes, Set.of(), Set.of(), visited, false));
         }
         if (event instanceof TreeStructureEvent.ValueChanged changed) {
             TreeViewState.Node node = previous.nodes().get(changed.nodeId());
@@ -62,8 +73,15 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             }
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
             nodes.put(changed.nodeId(), node.withValue(changed.value()));
-            return changed(copy(previous, previous.rootId(), nodes,
-                    Set.of(changed.nodeId()), Set.of(), previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(changed.nodeId()),
+                            Set.of(),
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof TreeStructureEvent.ChildInserted inserted) {
             TreeViewState.Node parent = previous.nodes().get(inserted.parentId());
@@ -75,9 +93,15 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             children.add(index, inserted.childId());
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
             nodes.put(inserted.parentId(), parent.withChildren(children));
-            return changed(copy(previous, previous.rootId(), nodes,
-                    Set.of(inserted.parentId()), existing(previous, inserted.childId()),
-                    previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(inserted.parentId()),
+                            existing(previous, inserted.childId()),
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof TreeStructureEvent.ChildRemoved removed) {
             TreeViewState.Node parent = previous.nodes().get(removed.parentId());
@@ -85,7 +109,8 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
             List<Long> children = new ArrayList<>(parent.childIds());
-            if (removed.index() >= 0 && removed.index() < children.size()
+            if (removed.index() >= 0
+                    && removed.index() < children.size()
                     && children.get(removed.index()) == removed.childId()) {
                 children.remove(removed.index());
             } else {
@@ -93,9 +118,15 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             }
             Map<Long, TreeViewState.Node> nodes = mutableNodes(previous);
             nodes.put(removed.parentId(), parent.withChildren(children));
-            return changed(copy(previous, previous.rootId(), nodes,
-                    Set.of(removed.parentId()), existing(previous, removed.childId()),
-                    previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(removed.parentId()),
+                            existing(previous, removed.childId()),
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof TreeStructureEvent.LeftChanged changed) {
             return relationChanged(previous, changed.nodeId(), changed.childId(), true);
@@ -116,8 +147,15 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             } else {
                 observed = existing(previous, changed.previousRootId());
             }
-            return changed(copy(previous, changed.rootId(), previous.nodes(), current, observed,
-                    previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            changed.rootId(),
+                            previous.nodes(),
+                            current,
+                            observed,
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof ObservationEvent.Visited visited) {
             Long id = treeEntityId(visited.ref());
@@ -126,15 +164,30 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             }
             Set<Long> visitedIds = new LinkedHashSet<>(previous.visitedNodeIds());
             visitedIds.add(id);
-            return changed(copy(previous, previous.rootId(), previous.nodes(), Set.of(id), Set.of(), visitedIds, false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            previous.nodes(),
+                            Set.of(id),
+                            Set.of(),
+                            visitedIds,
+                            false));
         }
         if (event instanceof ObservationEvent.Compared compared) {
             Set<Long> observed = treeEntityIds(compared.leftRef(), compared.rightRef());
             if (observed.isEmpty()) {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
-            return changed(copy(previous, previous.rootId(), previous.nodes(), Set.of(), observed,
-                    previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            previous.nodes(),
+                            Set.of(),
+                            observed,
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof ObservationEvent.Examined examined) {
             Long from = treeEntityId(examined.fromRef());
@@ -154,17 +207,34 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             if (current.isEmpty() && observed.isEmpty()) {
                 return Reduction.unchanged(previous, EventImportance.TRANSIENT);
             }
-            return changed(copy(previous, previous.rootId(), previous.nodes(), current, observed,
-                    previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            previous.nodes(),
+                            current,
+                            observed,
+                            previous.visitedNodeIds(),
+                            false));
         }
         if (event instanceof RunCompletedEvent) {
-            return Reduction.changed(copy(previous, previous.rootId(), previous.nodes(), Set.of(), Set.of(),
-                    previous.visitedNodeIds(), true), EventImportance.TERMINAL, true);
+            return Reduction.changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            previous.nodes(),
+                            Set.of(),
+                            Set.of(),
+                            previous.visitedNodeIds(),
+                            true),
+                    EventImportance.TERMINAL,
+                    true);
         }
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
     }
 
-    private static Reduction<TreeViewState> relationChanged(TreeViewState previous, long nodeId, Long childId, boolean left) {
+    private static Reduction<TreeViewState> relationChanged(
+            TreeViewState previous, long nodeId, Long childId, boolean left) {
         TreeViewState.Node node = previous.nodes().get(nodeId);
         if (node == null) {
             return Reduction.unchanged(previous, EventImportance.TRANSIENT);
@@ -176,19 +246,38 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
             nodes.put(nodeId, node.withRight(childId));
         }
         if (childId == null) {
-            return changed(copy(previous, previous.rootId(), nodes,
-                Set.of(nodeId), Set.of(),
-                previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(nodeId),
+                            Set.of(),
+                            previous.visitedNodeIds(),
+                            false));
         } else {
-            return changed(copy(previous, previous.rootId(), nodes,
-                Set.of(nodeId), existing(previous, childId),
-                previous.visitedNodeIds(), false));
+            return changed(
+                    copy(
+                            previous,
+                            previous.rootId(),
+                            nodes,
+                            Set.of(nodeId),
+                            existing(previous, childId),
+                            previous.visitedNodeIds(),
+                            false));
         }
     }
 
-    private static TreeViewState copy(TreeViewState previous, Long rootId, Map<Long, TreeViewState.Node> nodes,
-            Set<Long> current, Set<Long> observed, Set<Long> visited, boolean completed) {
-        return new TreeViewState(previous.kind(), rootId, nodes, current, observed, visited, completed);
+    private static TreeViewState copy(
+            TreeViewState previous,
+            Long rootId,
+            Map<Long, TreeViewState.Node> nodes,
+            Set<Long> current,
+            Set<Long> observed,
+            Set<Long> visited,
+            boolean completed) {
+        return new TreeViewState(
+                previous.kind(), rootId, nodes, current, observed, visited, completed);
     }
 
     private static Set<Long> existing(TreeViewState state, long id) {
@@ -207,7 +296,8 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
         return null;
     }
 
-    private static Set<Long> treeEntityIds(ObservationEvent.Reference first, ObservationEvent.Reference second) {
+    private static Set<Long> treeEntityIds(
+            ObservationEvent.Reference first, ObservationEvent.Reference second) {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         Long firstId = treeEntityId(first);
         Long secondId = treeEntityId(second);

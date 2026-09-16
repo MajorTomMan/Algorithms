@@ -8,17 +8,21 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Small factual contract for execution observations that do not mutate a Structure.
- * Runtime metadata remains in EventEnvelope; these payloads only describe what happened.
+ * Small factual contract for execution observations that do not mutate a Structure. Runtime
+ * metadata remains in EventEnvelope; these payloads only describe what happened.
  */
 public sealed interface ObservationEvent extends ExecutionEvent, StatisticsContribution
-        permits ObservationEvent.Compared, ObservationEvent.Visited, ObservationEvent.Examined,
-        ObservationEvent.Matched, ObservationEvent.Fallback, ObservationEvent.Backtracked,
-        ObservationEvent.PathTraced, ObservationEvent.PathFound {
+        permits ObservationEvent.Compared,
+                ObservationEvent.Visited,
+                ObservationEvent.Examined,
+                ObservationEvent.Matched,
+                ObservationEvent.Fallback,
+                ObservationEvent.Backtracked,
+                ObservationEvent.PathTraced,
+                ObservationEvent.PathFound {
 
     /** Marker for stable references carried by observation facts. */
-    sealed interface Reference permits EntityRef, IndexRef, CoordinateRef, ValueRef {
-    }
+    sealed interface Reference permits EntityRef, IndexRef, CoordinateRef, ValueRef {}
 
     record EntityRef(String domain, long id) implements Reference {
         public EntityRef {

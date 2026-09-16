@@ -1,9 +1,9 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
-import com.majortom.algorithms.visualization.international.I18N;
-
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
+import com.majortom.algorithms.visualization.international.I18N;
+
 import javafx.beans.InvalidationListener;
 import javafx.scene.Group;
 import javafx.scene.shape.Circle;
@@ -32,7 +32,8 @@ final class LinkedNodeDecoration extends Group {
         nextLabel.getStyleClass().add("linked-port-label");
         previousPort.getStyleClass().add("linked-port-dot");
         nextPort.getStyleClass().add("linked-port-dot");
-        getChildren().addAll(divider, portDivider, previousLabel, nextLabel, previousPort, nextPort);
+        getChildren()
+                .addAll(divider, portDivider, previousLabel, nextLabel, previousPort, nextPort);
         setMouseTransparent(true);
         node.centerXProperty().addListener(geometryListener);
         node.centerYProperty().addListener(geometryListener);

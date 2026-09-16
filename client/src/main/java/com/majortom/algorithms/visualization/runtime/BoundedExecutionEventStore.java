@@ -1,8 +1,8 @@
 package com.majortom.algorithms.visualization.runtime;
 
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
-import com.majortom.algorithms.core.runtime.EventSink;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.runtime.EventSink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,20 +56,22 @@ final class BoundedExecutionEventStore implements EventSink {
             return events.getLast();
         }
         String message = limitMessage();
-        EventEnvelope failedEvent = new EventEnvelope(
-                rejectedEvent.runId(),
-                rejectedEvent.operationId(),
-                rejectedEvent.sequence(),
-                rejectedEvent.timestamp(),
-                rejectedEvent.source(),
-                new RunFailedEvent(LIMIT_FAILURE_CODE, message));
+        EventEnvelope failedEvent =
+                new EventEnvelope(
+                        rejectedEvent.runId(),
+                        rejectedEvent.operationId(),
+                        rejectedEvent.sequence(),
+                        rejectedEvent.timestamp(),
+                        rejectedEvent.source(),
+                        new RunFailedEvent(LIMIT_FAILURE_CODE, message));
         events.add(failedEvent);
         return failedEvent;
     }
 
     synchronized String limitMessage() {
         int retainedEvents = maximumEventCount - 1;
-        return "Execution exceeded the client limit of " + retainedEvents
+        return "Execution exceeded the client limit of "
+                + retainedEvents
                 + " events; one terminal failure event was retained";
     }
 

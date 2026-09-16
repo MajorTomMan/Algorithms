@@ -18,33 +18,36 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Applies separate Chinese/Latin font families without taking ownership of
- * font size, weight, color or Workbench geometry.
+ * Applies separate Chinese/Latin font families without taking ownership of font size, weight, color
+ * or Workbench geometry.
  *
- * <p>Pure-script controls keep their normal JavaFX Labeled rendering and only
- * receive an inline family override. Mixed Chinese/Latin Labeled text is
- * rendered through a TextFlow so each script run can use its own family while
- * the original text property remains available for bindings/accessibility.</p>
+ * <p>Pure-script controls keep their normal JavaFX Labeled rendering and only receive an inline
+ * family override. Mixed Chinese/Latin Labeled text is rendered through a TextFlow so each script
+ * run can use its own family while the original text property remains available for
+ * bindings/accessibility.
  */
 final class ScriptFontSupport {
 
     private static final String INSTALLED_KEY = ScriptFontSupport.class.getName() + ".installed";
     private static final String SETTINGS_KEY = ScriptFontSupport.class.getName() + ".settings";
     private static final String FLOW_KEY = ScriptFontSupport.class.getName() + ".flow";
-    private static final String ORIGINAL_GRAPHIC_KEY = ScriptFontSupport.class.getName() + ".originalGraphic";
-    private static final String ORIGINAL_CONTENT_DISPLAY_KEY = ScriptFontSupport.class.getName() + ".originalContentDisplay";
+    private static final String ORIGINAL_GRAPHIC_KEY =
+            ScriptFontSupport.class.getName() + ".originalGraphic";
+    private static final String ORIGINAL_CONTENT_DISPLAY_KEY =
+            ScriptFontSupport.class.getName() + ".originalContentDisplay";
     private static final String SCRIPT_FLOW_STYLE = "script-font-flow";
 
-    private ScriptFontSupport() {
-    }
+    private ScriptFontSupport() {}
 
-    static void apply(Parent root, FontSettings settings, String chineseFallback, String englishFallback) {
+    static void apply(
+            Parent root, FontSettings settings, String chineseFallback, String englishFallback) {
         if (root == null || settings == null) {
             return;
         }
-        ResolvedSettings resolved = new ResolvedSettings(
-                chooseFamily(settings.chineseFamily(), chineseFallback),
-                chooseFamily(settings.englishFamily(), englishFallback));
+        ResolvedSettings resolved =
+                new ResolvedSettings(
+                        chooseFamily(settings.chineseFamily(), chineseFallback),
+                        chooseFamily(settings.englishFamily(), englishFallback));
         applyNode(root, resolved);
     }
 
@@ -141,7 +144,8 @@ final class ScriptFontSupport {
     }
 
     private static void update(Text text) {
-        if (text.getParent() != null && text.getParent().getStyleClass().contains(SCRIPT_FLOW_STYLE)) {
+        if (text.getParent() != null
+                && text.getParent().getStyleClass().contains(SCRIPT_FLOW_STYLE)) {
             return;
         }
         ResolvedSettings settings = settings(text);
@@ -183,9 +187,8 @@ final class ScriptFontSupport {
         Object originalGraphic = labeled.getProperties().get(ORIGINAL_GRAPHIC_KEY);
         labeled.setGraphic(originalGraphic instanceof Node node ? node : null);
         Object originalDisplay = labeled.getProperties().get(ORIGINAL_CONTENT_DISPLAY_KEY);
-        labeled.setContentDisplay(originalDisplay instanceof ContentDisplay display
-                ? display
-                : ContentDisplay.LEFT);
+        labeled.setContentDisplay(
+                originalDisplay instanceof ContentDisplay display ? display : ContentDisplay.LEFT);
     }
 
     private static Font fontWithFamily(Font base, String family) {
@@ -198,7 +201,9 @@ final class ScriptFontSupport {
             weight = FontWeight.BLACK;
         } else if (style.contains("extra bold") || style.contains("extrabold")) {
             weight = FontWeight.EXTRA_BOLD;
-        } else if (style.contains("semi bold") || style.contains("semibold") || style.contains("demi")) {
+        } else if (style.contains("semi bold")
+                || style.contains("semibold")
+                || style.contains("demi")) {
             weight = FontWeight.SEMI_BOLD;
         } else if (style.contains("bold")) {
             weight = FontWeight.BOLD;
@@ -207,9 +212,10 @@ final class ScriptFontSupport {
         } else if (style.contains("light")) {
             weight = FontWeight.LIGHT;
         }
-        FontPosture posture = style.contains("italic") || style.contains("oblique")
-                ? FontPosture.ITALIC
-                : FontPosture.REGULAR;
+        FontPosture posture =
+                style.contains("italic") || style.contains("oblique")
+                        ? FontPosture.ITALIC
+                        : FontPosture.REGULAR;
         return Font.font(family, weight, posture, base.getSize());
     }
 
@@ -218,9 +224,11 @@ final class ScriptFontSupport {
             return List.of();
         }
         List<CodePointUnit> units = new ArrayList<>();
-        for (int index = 0; index < value.length();) {
+        for (int index = 0; index < value.length(); ) {
             int codePoint = value.codePointAt(index);
-            units.add(new CodePointUnit(new String(Character.toChars(codePoint)), rawScript(codePoint)));
+            units.add(
+                    new CodePointUnit(
+                            new String(Character.toChars(codePoint)), rawScript(codePoint)));
             index += Character.charCount(codePoint);
         }
         resolveNeutralScripts(units);
@@ -352,12 +360,9 @@ final class ScriptFontSupport {
         NEUTRAL
     }
 
-    private record ResolvedSettings(String chineseFamily, String englishFamily) {
-    }
+    private record ResolvedSettings(String chineseFamily, String englishFamily) {}
 
-    private record Run(String text, Script script) {
-    }
+    private record Run(String text, Script script) {}
 
-    private record CodePointUnit(String text, Script script) {
-    }
+    private record CodePointUnit(String text, Script script) {}
 }

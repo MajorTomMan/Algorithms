@@ -1,6 +1,5 @@
 package com.majortom.algorithms.leetcode.others;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,9 +44,8 @@ public class 输出元素种类 {
                         map.put(s, map.get(s) + num);
                     }
                     i = j;
-                }
-                else{
-                    return handle(data,j);
+                } else {
+                    return handle(data, j);
                 }
             }
         }

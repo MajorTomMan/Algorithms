@@ -4,7 +4,10 @@ import com.majortom.algorithms.core.annotation.Problem;
 import com.majortom.algorithms.core.annotation.ProblemEntry;
 import com.majortom.algorithms.core.problem.ProblemSource;
 
-@Problem(source = ProblemSource.LOCAL, id = "infinite-loop-probe", name = "Infinite loop timeout probe")
+@Problem(
+        source = ProblemSource.LOCAL,
+        id = "infinite-loop-probe",
+        name = "Infinite loop timeout probe")
 public final class InfiniteLoopProblem {
     @ProblemEntry
     public static long loop() {

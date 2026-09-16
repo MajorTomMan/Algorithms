@@ -31,13 +31,16 @@ public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
 
     public static <T> WeightedGraph<T> fromSnapshot(WeightedGraphSnapshot<T> snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
-        List<GraphSnapshot.Vertex<T>> vertices = snapshot.vertices().stream()
-                .map(vertex -> new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
-                .toList();
-        List<GraphSnapshot.Edge> edges = snapshot.edges().stream()
-                .map(edge -> new GraphSnapshot.Edge(edge.id(), edge.fromId(), edge.toId()))
-                .toList();
-        Graph<T> topology = Graph.fromSnapshot(new GraphSnapshot<>(snapshot.directed(), vertices, edges));
+        List<GraphSnapshot.Vertex<T>> vertices =
+                snapshot.vertices().stream()
+                        .map(vertex -> new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
+                        .toList();
+        List<GraphSnapshot.Edge> edges =
+                snapshot.edges().stream()
+                        .map(edge -> new GraphSnapshot.Edge(edge.id(), edge.fromId(), edge.toId()))
+                        .toList();
+        Graph<T> topology =
+                Graph.fromSnapshot(new GraphSnapshot<>(snapshot.directed(), vertices, edges));
         LinkedHashMap<Long, Double> weights = new LinkedHashMap<>();
         for (WeightedGraphSnapshot.Edge edge : snapshot.edges()) {
             weights.put(edge.id(), edge.weight());
@@ -52,8 +55,9 @@ public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
         }
         List<WeightedGraphSnapshot.Edge> edges = new ArrayList<>();
         for (Edge<T> edge : graph.edges()) {
-            edges.add(new WeightedGraphSnapshot.Edge(
-                    edge.id(), edge.from().id(), edge.to().id(), weight(edge)));
+            edges.add(
+                    new WeightedGraphSnapshot.Edge(
+                            edge.id(), edge.from().id(), edge.to().id(), weight(edge)));
         }
         return new WeightedGraphSnapshot<>(isDirected(), vertices, edges);
     }
@@ -88,8 +92,11 @@ public final class WeightedGraph<T> implements WeightedGraphStructure<T> {
                 weight = lookupWeight(adjacency, edge.to().value(), edge.from().value());
             }
             if (weight == null) {
-                throw new IllegalArgumentException("weighted adjacency is missing edge weight for "
-                        + edge.from().value() + " -> " + edge.to().value());
+                throw new IllegalArgumentException(
+                        "weighted adjacency is missing edge weight for "
+                                + edge.from().value()
+                                + " -> "
+                                + edge.to().value());
             }
             requireFinite(weight);
             weightsByEdgeId.put(edge.id(), weight);

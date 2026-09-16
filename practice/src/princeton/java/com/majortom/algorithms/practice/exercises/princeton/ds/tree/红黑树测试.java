@@ -1,22 +1,23 @@
 package com.majortom.algorithms.practice.exercises.princeton.ds.tree;
 
+import edu.princeton.cs.algs4.RedBlackBST;
+
 import java.util.Random;
 
-import edu.princeton.cs.algs4.RedBlackBST;
 public class 红黑树测试 {
     public static void main(String[] args) {
-        RedBlackBST<Character,Integer> rBst=new RedBlackBST<>();
-        int i=0;
-        int min=65;
-        int max=90;
-        Random random=new Random();
-        while(i!=10){
-            int temp=random.nextInt(max-min+1)+min;
-            rBst.put((char)temp,temp);
+        RedBlackBST<Character, Integer> rBst = new RedBlackBST<>();
+        int i = 0;
+        int min = 65;
+        int max = 90;
+        Random random = new Random();
+        while (i != 10) {
+            int temp = random.nextInt(max - min + 1) + min;
+            rBst.put((char) temp, temp);
             i++;
         }
-        for (char data:rBst.keys()) {
-            System.out.print(data+" "+rBst.get(data));
+        for (char data : rBst.keys()) {
+            System.out.print(data + " " + rBst.get(data));
             System.out.println();
         }
         System.out.println(rBst.floor('F'));

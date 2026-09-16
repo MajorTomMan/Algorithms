@@ -8,8 +8,7 @@ public final class StructureCatalog {
 
     private static final ComponentRegistry REGISTRY = ComponentDiscovery.discover();
 
-    private StructureCatalog() {
-    }
+    private StructureCatalog() {}
 
     public static String name(String structureId) {
         String key = "label.structure." + structureId;
@@ -17,7 +16,10 @@ public final class StructureCatalog {
             return com.majortom.algorithms.visualization.international.I18N.text(key);
         }
         return REGISTRY.findStructure(structureId)
-                .orElseThrow(() -> new IllegalArgumentException("No Structure registered for id: " + structureId))
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "No Structure registered for id: " + structureId))
                 .name();
     }
 }

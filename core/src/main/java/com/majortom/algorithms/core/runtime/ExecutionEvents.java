@@ -9,8 +9,7 @@ import java.util.Objects;
 public final class ExecutionEvents {
     private static final ThreadLocal<RuntimeEventContext> CURRENT = new ThreadLocal<>();
 
-    private ExecutionEvents() {
-    }
+    private ExecutionEvents() {}
 
     /** Emits one factual non-lifecycle execution event through the bound Runtime context. */
     public static void emit(ExecutionEvent event) {

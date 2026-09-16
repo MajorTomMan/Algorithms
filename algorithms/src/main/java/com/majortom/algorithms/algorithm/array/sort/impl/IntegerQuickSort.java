@@ -8,13 +8,18 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 import java.util.ArrayDeque;
 
 /** In-place three-way quicksort with deterministic pivot selection. */
-@Algorithm(id = "quick-sort", name = "Quick Sort", type = Integer.class, structure = ArrayStructure.class)
+@Algorithm(
+        id = "quick-sort",
+        name = "Quick Sort",
+        type = Integer.class,
+        structure = ArrayStructure.class)
 public final class IntegerQuickSort extends AbstractIntegerSort {
 
     @Override
     public int compare(Integer left, Integer right) {
         return Integer.compare(left, right);
     }
+
     @AlgorithmEntry
     public void sort(ArrayStructure<Integer> array) {
         ArrayDeque<Range> pending = new ArrayDeque<>();
@@ -22,8 +27,7 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
         while (!pending.isEmpty()) {
             Range range = pending.pop();
             if (range.low() >= range.high()) {
-                if (range.low() >= 0 && range.low() < array.size()) {
-                }
+                if (range.low() >= 0 && range.low() < array.size()) {}
                 continue;
             }
             EqualRange equal = partitionThreeWay(array, range.low(), range.high());
@@ -58,9 +62,7 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
         return new EqualRange(lower, upper);
     }
 
-    private record Range(int low, int high) {
-    }
+    private record Range(int low, int high) {}
 
-    private record EqualRange(int low, int high) {
-    }
+    private record EqualRange(int low, int high) {}
 }

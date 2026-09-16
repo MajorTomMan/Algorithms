@@ -5,11 +5,10 @@ import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 数组转二叉树 {
     public static void main(String[] args) {
-        Integer[] nums = { 5, 4, 8, 11, null, 13, 4, 7, 2, null, null, null, 1 };
+        Integer[] nums = {5, 4, 8, 11, null, 13, 4, 7, 2, null, null, null, 1};
         for (Integer integer : nums) {
             transform(null, integer);
         }
-
     }
 
     public static BinaryTreeNode<Integer> transform(BinaryTreeNode<Integer> node, int data) {

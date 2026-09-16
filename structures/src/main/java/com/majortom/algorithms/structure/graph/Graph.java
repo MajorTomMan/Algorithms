@@ -5,9 +5,9 @@ import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,7 +16,8 @@ import java.util.Set;
 public final class Graph<T> implements GraphStructure<T> {
     private final boolean directed;
     private final LinkedHashMap<T, Vertex<T>> verticesByValue = new LinkedHashMap<>();
-    private final LinkedHashMap<Vertex<T>, LinkedHashSet<Vertex<T>>> adjacency = new LinkedHashMap<>();
+    private final LinkedHashMap<Vertex<T>, LinkedHashSet<Vertex<T>>> adjacency =
+            new LinkedHashMap<>();
     private final LinkedHashSet<Edge<T>> edges = new LinkedHashSet<>();
 
     public Graph() {
@@ -34,10 +35,12 @@ public final class Graph<T> implements GraphStructure<T> {
         Set<T> values = new HashSet<>();
         for (GraphSnapshot.Vertex<T> source : snapshot.vertices()) {
             if (verticesById.containsKey(source.id())) {
-                throw new IllegalArgumentException("snapshot contains duplicate vertex id: " + source.id());
+                throw new IllegalArgumentException(
+                        "snapshot contains duplicate vertex id: " + source.id());
             }
             if (!values.add(source.value())) {
-                throw new IllegalArgumentException("snapshot contains duplicate vertex value: " + source.value());
+                throw new IllegalArgumentException(
+                        "snapshot contains duplicate vertex value: " + source.value());
             }
             Vertex<T> vertex = new Vertex<>(source.id(), source.value());
             graph.verticesByValue.put(vertex.value(), vertex);
@@ -49,7 +52,8 @@ public final class Graph<T> implements GraphStructure<T> {
         Set<EdgeKey> edgeKeys = new HashSet<>();
         for (GraphSnapshot.Edge source : snapshot.edges()) {
             if (!edgeIds.add(source.id())) {
-                throw new IllegalArgumentException("snapshot contains duplicate edge id: " + source.id());
+                throw new IllegalArgumentException(
+                        "snapshot contains duplicate edge id: " + source.id());
             }
             Vertex<T> from = verticesById.get(source.fromId());
             Vertex<T> to = verticesById.get(source.toId());
@@ -58,8 +62,11 @@ public final class Graph<T> implements GraphStructure<T> {
             }
             EdgeKey key = EdgeKey.of(source.fromId(), source.toId(), snapshot.directed());
             if (!edgeKeys.add(key)) {
-                throw new IllegalArgumentException("snapshot contains parallel edge: "
-                        + source.fromId() + " -> " + source.toId());
+                throw new IllegalArgumentException(
+                        "snapshot contains parallel edge: "
+                                + source.fromId()
+                                + " -> "
+                                + source.toId());
             }
             Edge<T> edge = new Edge<>(source.id(), from, to);
             graph.edges.add(edge);
@@ -93,7 +100,8 @@ public final class Graph<T> implements GraphStructure<T> {
         for (Map.Entry<T, ? extends java.util.Collection<T>> entry : source.entrySet()) {
             T value = Objects.requireNonNull(entry.getKey(), "vertex value");
             initializedVertices.computeIfAbsent(value, Vertex::new);
-            java.util.Collection<T> neighbors = Objects.requireNonNull(entry.getValue(), "neighbors");
+            java.util.Collection<T> neighbors =
+                    Objects.requireNonNull(entry.getValue(), "neighbors");
             for (T neighborValue : neighbors) {
                 T neighbor = Objects.requireNonNull(neighborValue, "neighbor value");
                 initializedVertices.computeIfAbsent(neighbor, Vertex::new);

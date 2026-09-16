@@ -27,7 +27,6 @@ public record AlgorithmDescriptor(
         Objects.requireNonNull(entryPoint, "entryPoint");
     }
 
-
     public AlgorithmKey key() {
         return AlgorithmKey.of(this);
     }
@@ -35,8 +34,9 @@ public record AlgorithmDescriptor(
     public StructureModule module() {
         Structure metadata = structureContract.getAnnotation(Structure.class);
         if (metadata == null) {
-            throw new RegistrationException("Algorithm structure contract is missing @Structure metadata: "
-                    + structureContract.getName());
+            throw new RegistrationException(
+                    "Algorithm structure contract is missing @Structure metadata: "
+                            + structureContract.getName());
         }
         return metadata.module();
     }
@@ -44,21 +44,34 @@ public record AlgorithmDescriptor(
     public Object invoke(Object structure) {
         Objects.requireNonNull(structure, "structure");
         if (!structureContract.isInstance(structure)) {
-            throw new IllegalArgumentException("Algorithm " + id + " requires structure "
-                    + structureContract.getName() + " but received " + structure.getClass().getName());
+            throw new IllegalArgumentException(
+                    "Algorithm "
+                            + id
+                            + " requires structure "
+                            + structureContract.getName()
+                            + " but received "
+                            + structure.getClass().getName());
         }
         Object algorithm = newInstance();
         try {
             return entryPoint.invoke(algorithm, structure);
         } catch (IllegalAccessException exception) {
-            throw new RegistrationException("Unable to access Algorithm entry " + implementation.getName()
-                    + "#" + entryPoint.getName(), exception);
+            throw new RegistrationException(
+                    "Unable to access Algorithm entry "
+                            + implementation.getName()
+                            + "#"
+                            + entryPoint.getName(),
+                    exception);
         } catch (InvocationTargetException exception) {
             Throwable cause = exception.getCause();
             if (cause instanceof RuntimeException runtime) throw runtime;
             if (cause instanceof Error error) throw error;
-            throw new RegistrationException("Algorithm entry failed: " + implementation.getName()
-                    + "#" + entryPoint.getName(), cause);
+            throw new RegistrationException(
+                    "Algorithm entry failed: "
+                            + implementation.getName()
+                            + "#"
+                            + entryPoint.getName(),
+                    cause);
         }
     }
 
@@ -66,8 +79,9 @@ public record AlgorithmDescriptor(
         try {
             return implementation.getDeclaredConstructor().newInstance();
         } catch (ReflectiveOperationException exception) {
-            throw new RegistrationException("Unable to instantiate Algorithm " + id + " using "
-                    + implementation.getName(), exception);
+            throw new RegistrationException(
+                    "Unable to instantiate Algorithm " + id + " using " + implementation.getName(),
+                    exception);
         }
     }
 }

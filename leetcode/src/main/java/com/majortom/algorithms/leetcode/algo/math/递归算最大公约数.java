@@ -6,25 +6,25 @@ public class 递归算最大公约数 {
     }
 
     public static int highestCommmonFactor(int x, int y) {
-        if (y==0){
+        if (y == 0) {
             return x;
         }
-        if(x<0){
+        if (x < 0) {
             return highestCommmonFactor(-x, y);
         }
-        if(y<0){
+        if (y < 0) {
             return highestCommmonFactor(x, -y);
         }
-          return highestCommmonFactor(y, x%y);
+        return highestCommmonFactor(y, x % y);
     }
 
-    public static int HCF(int x,int y){
-        int temp=0;
-        while(true){
-            temp=y;
-            y=x%y;
-            x=temp;
-            if(y==0){
+    public static int HCF(int x, int y) {
+        int temp = 0;
+        while (true) {
+            temp = y;
+            y = x % y;
+            x = temp;
+            if (y == 0) {
                 return x;
             }
         }

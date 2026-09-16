@@ -1,15 +1,15 @@
 package com.majortom.algorithms.algorithm.maze.pathfinder.impl;
 
-import com.majortom.algorithms.structure.maze.MazeStructure;
+import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.structure.maze.GridPoint;
-import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.structure.maze.GridMaze;
+import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,7 +20,11 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
-@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", type = Boolean.class, structure = MazeStructure.class)
+@Algorithm(
+        id = "maze-pathfinder-astar",
+        name = "A* Search",
+        type = Boolean.class,
+        structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class AStarArrayMazePathfinder {
     @AlgorithmEntry
@@ -35,10 +39,14 @@ public final class AStarArrayMazePathfinder {
         Map<GridPoint, GridPoint> previous = new HashMap<>();
         Map<GridPoint, Integer> distance = new HashMap<>();
         Set<GridPoint> discovered = new HashSet<>();
-        PriorityQueue<GridPoint> frontier = new PriorityQueue<>(Comparator
-                .comparingInt((GridPoint point) -> distance.getOrDefault(point, Integer.MAX_VALUE) + manhattan(point, goal))
-                .thenComparingInt(GridPoint::row)
-                .thenComparingInt(GridPoint::column));
+        PriorityQueue<GridPoint> frontier =
+                new PriorityQueue<>(
+                        Comparator.comparingInt(
+                                        (GridPoint point) ->
+                                                distance.getOrDefault(point, Integer.MAX_VALUE)
+                                                        + manhattan(point, goal))
+                                .thenComparingInt(GridPoint::row)
+                                .thenComparingInt(GridPoint::column));
         distance.put(start, 0);
         discovered.add(start);
         frontier.add(start);
@@ -51,7 +59,8 @@ public final class AStarArrayMazePathfinder {
                 break;
             }
             for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-                Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
+                Observations.examined(
+                        current.row(), current.column(), neighbor.row(), neighbor.column());
                 int candidate = distance.get(current) + 1;
                 if (candidate >= distance.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                     continue;

@@ -6,7 +6,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Declares a discoverable Algorithm implementation and its Structure-driven registration metadata. */
+/**
+ * Declares a discoverable Algorithm implementation and its Structure-driven registration metadata.
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

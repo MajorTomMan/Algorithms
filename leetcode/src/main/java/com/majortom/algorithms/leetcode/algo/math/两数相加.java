@@ -1,18 +1,23 @@
 package com.majortom.algorithms.leetcode.algo.math;
 
+import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
+import com.majortom.algorithms.structure.linked.ListNode;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.majortom.algorithms.structure.linked.ListNode;
-import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
-
 public class 两数相加 {
     public static void main(String[] args) {
-        Integer[] nums_1 = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                1 }, nums_2 = { 5, 6, 4 };
+        Integer[]
+                nums_1 =
+                        {
+                            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0, 0, 1
+                        },
+                nums_2 = {5, 6, 4};
         ListNode<Integer> root_1 = AlgorithmsUtils.buildLinkedList(nums_1),
                 root_2 = AlgorithmsUtils.buildLinkedList(nums_2);
         System.out.println(addTwoNumbers(root_1, root_2));
@@ -22,7 +27,7 @@ public class 两数相加 {
         List<Integer> list_1 = new LinkedList<>();
         List<Integer> list_2 = new LinkedList<>();
         List<Integer> result_list = new ArrayList<>();
-        for (ListNode<Integer> first = l1, second = l2;;) {
+        for (ListNode<Integer> first = l1, second = l2; ; ) {
             if (first != null && second != null) {
                 list_1.add(first.getValue());
                 list_2.add(second.getValue());

@@ -12,9 +12,14 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface Problem {
     ProblemSource source();
+
     String id();
+
     String name() default "";
+
     String number() default "";
+
     ProblemDifficulty difficulty() default ProblemDifficulty.UNKNOWN;
+
     String[] tags() default {};
 }

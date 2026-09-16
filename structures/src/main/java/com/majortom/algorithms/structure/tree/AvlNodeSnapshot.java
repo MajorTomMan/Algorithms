@@ -1,7 +1,8 @@
 package com.majortom.algorithms.structure.tree;
 
 /** Immutable AVL tree node with a stable execution-local identity and derived height. */
-public record AvlNodeSnapshot(long id, int value, int height, AvlNodeSnapshot left, AvlNodeSnapshot right) {
+public record AvlNodeSnapshot(
+        long id, int value, int height, AvlNodeSnapshot left, AvlNodeSnapshot right) {
 
     public AvlNodeSnapshot {
         if (height < 1) {

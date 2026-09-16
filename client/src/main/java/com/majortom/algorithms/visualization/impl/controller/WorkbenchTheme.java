@@ -1,9 +1,10 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import java.util.List;
-
 import atlantafx.base.theme.Styles;
-import javafx.application.Platform;
+
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+
+import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
@@ -19,18 +20,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.collections.ListChangeListener;
 
-/**
- * Applies AtlantaFX control semantics while preserving project-specific layout
- * classes.
- */
+/** Applies AtlantaFX control semantics while preserving project-specific layout classes. */
 final class WorkbenchTheme {
 
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
 
-    private WorkbenchTheme() {
-    }
+    private WorkbenchTheme() {}
 
     static void apply(Node root) {
         if (root == null) {
@@ -79,12 +75,15 @@ final class WorkbenchTheme {
     }
 
     private static void installMazeRunVisibility(VBox host) {
-        if (Boolean.TRUE.equals(host.getProperties().putIfAbsent("mazeRunVisibilityInstalled", Boolean.TRUE))) {
+        if (Boolean.TRUE.equals(
+                host.getProperties().putIfAbsent("mazeRunVisibilityInstalled", Boolean.TRUE))) {
             return;
         }
-        host.getChildren().addListener(
-                (ListChangeListener<Node>) change -> Platform.runLater(() -> refreshMazeRunVisibility(host)));
-        Platform.runLater(() -> refreshMazeRunVisibility(host));
+        host.getChildren()
+                .addListener(
+                        (ListChangeListener<Node>)
+                                change -> FxDispatch.defer(() -> refreshMazeRunVisibility(host)));
+        FxDispatch.defer(() -> refreshMazeRunVisibility(host));
     }
 
     private static void refreshMazeRunVisibility(VBox host) {
@@ -104,19 +103,20 @@ final class WorkbenchTheme {
     }
 
     /**
-     * Upgrades the existing Saved Snapshot button into an arbitrary-snapshot
-     * picker. The menu
-     * delegates to the action already attached to each snapshot card, preserving
-     * one input owner.
+     * Upgrades the existing Saved Snapshot button into an arbitrary-snapshot picker. The menu
+     * delegates to the action already attached to each snapshot card, preserving one input owner.
      */
     private static void installSavedSnapshotPicker(Button button) {
-        if (Boolean.TRUE.equals(button.getProperties().putIfAbsent("savedSnapshotPickerInstalled", Boolean.TRUE))) {
+        if (Boolean.TRUE.equals(
+                button.getProperties().putIfAbsent("savedSnapshotPickerInstalled", Boolean.TRUE))) {
             return;
         }
-        button.addEventFilter(ActionEvent.ACTION, event -> {
-            event.consume();
-            showSavedSnapshotMenu(button);
-        });
+        button.addEventFilter(
+                ActionEvent.ACTION,
+                event -> {
+                    event.consume();
+                    showSavedSnapshotMenu(button);
+                });
     }
 
     private static void showSavedSnapshotMenu(Button source) {
@@ -134,13 +134,17 @@ final class WorkbenchTheme {
         ContextMenu menu = new ContextMenu();
         menu.getStyleClass().add("algorithm-snapshot-menu");
         if (source.getFont() != null) {
-            menu.setStyle(String.format(java.util.Locale.ROOT,
-                    "-fx-font-size: %.2fpx; -fx-font-family: \"%s\";",
-                    source.getFont().getSize(), escapeCssString(source.getFont().getFamily())));
+            menu.setStyle(
+                    String.format(
+                            java.util.Locale.ROOT,
+                            "-fx-font-size: %.2fpx; -fx-font-family: \"%s\";",
+                            source.getFont().getSize(),
+                            escapeCssString(source.getFont().getFamily())));
         }
 
         for (Node node : snapshotCards.getChildren()) {
-            if (!(node instanceof VBox card) || !card.getStyleClass().contains("snapshot-card-saved")) {
+            if (!(node instanceof VBox card)
+                    || !card.getStyleClass().contains("snapshot-card-saved")) {
                 continue;
             }
             Button useInput = lastButton(card);
@@ -149,10 +153,11 @@ final class WorkbenchTheme {
             }
             String label = snapshotCardLabel(card);
             MenuItem item = new MenuItem(label);
-            item.setOnAction(event -> {
-                useInput.fire();
-                Platform.runLater(() -> showSelectedSnapshot(source, root, label));
-            });
+            item.setOnAction(
+                    event -> {
+                        useInput.fire();
+                        FxDispatch.defer(() -> showSelectedSnapshot(source, root, label));
+                    });
             menu.getItems().add(item);
         }
         if (!menu.getItems().isEmpty()) {
@@ -190,13 +195,14 @@ final class WorkbenchTheme {
 
     private static String snapshotCardLabel(VBox card) {
         for (Node child : card.getChildren()) {
-            if (child instanceof Label label && label.getText() != null && !label.getText().isBlank()) {
+            if (child instanceof Label label
+                    && label.getText() != null
+                    && !label.getText().isBlank()) {
                 return label.getText();
             }
         }
         return "Snapshot";
     }
-
 
     private static String escapeCssString(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
@@ -231,14 +237,27 @@ final class WorkbenchTheme {
     }
 
     private static void applyButtonSemantic(Node node) {
-        if (hasAny(node, "btn-primary", "btn-run-neon", "btn-ran-blue", "btn-ran-purple", "btn-neon-cyan")) {
+        if (hasAny(
+                node,
+                "btn-primary",
+                "btn-run-neon",
+                "btn-ran-blue",
+                "btn-ran-purple",
+                "btn-neon-cyan")) {
             add(node, Styles.ACCENT);
         } else if (hasAny(node, "btn-ran-red", "btn-neon-pink")) {
             add(node, Styles.DANGER);
         } else if (hasAny(node, "btn-ran-gold", "btn-ran-yellow")) {
             add(node, Styles.WARNING);
-        } else if (hasAny(node, "btn-ran-white", "shell-toggle-button", "workspace-mode-button",
-                "module-button", "sidebar-catalog-button", "sidebar-algorithm-button", "snapshot-card-action")) {
+        } else if (hasAny(
+                node,
+                "btn-ran-white",
+                "shell-toggle-button",
+                "workspace-mode-button",
+                "module-button",
+                "sidebar-catalog-button",
+                "sidebar-algorithm-button",
+                "snapshot-card-action")) {
             add(node, Styles.BUTTON_OUTLINED);
         }
 

@@ -8,8 +8,5 @@ import com.majortom.algorithms.structure.linked.QueueStructure;
 public class QueueTest {
 
     @AlgorithmEntry
-    public void execute(QueueStructure<Integer> queue) {
-
-    }
-
+    public void execute(QueueStructure<Integer> queue) {}
 }

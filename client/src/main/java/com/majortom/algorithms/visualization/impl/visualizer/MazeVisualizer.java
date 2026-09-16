@@ -5,7 +5,24 @@ import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
+import com.majortom.algorithms.visualization.render.api.ElementGeometry;
+import com.majortom.algorithms.visualization.render.api.LayoutElement;
+import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
+import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
+import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
+import com.majortom.algorithms.visualization.render.runtime.DefaultRenderFramework;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
+import com.majortom.algorithms.visualization.render.viewport.CameraState;
+import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
+
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -13,11 +30,19 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /** Project-owned Canvas/Grid maze renderer hosted by the shared GestureFX visualization surface. */
-public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
+public final class MazeVisualizer extends BaseVisualizer<MazeViewState>
+        implements FxSurfaceAdapter<MazeViewState> {
+    private static final RenderSessionId SESSION_ID = RenderSessionId.of("MAZE");
+    private static final double WORLD_CELL_SIZE = 32.0d;
+    private static final String GRID_ID = "maze:grid";
     private static final Color WALL_FILL = Color.web("#444444");
     private static final Color GRID_STROKE = Color.web("#D6D6D6");
     private static final Color GRID_STROKE_COMPACT = Color.web("#E5E5E5");
@@ -26,7 +51,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     private static final double MIN_AUTO_FIT_SCALE = 0.10d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private Consumer<GridPoint> selectionListener = ignored -> { };
+    private final DefaultRenderFramework renderFramework = RenderRuntime.shared();
+    private volatile MazeViewState lastSubmittedState;
+    private Consumer<GridPoint> selectionListener = ignored -> {};
     private GridPoint selectedCell;
     private VisualDensity density = VisualDensity.DETAIL;
 
@@ -34,43 +61,106 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
+        surface.setFrameworkManagedCamera(true);
+        canvas.widthProperty().unbind();
+        canvas.heightProperty().unbind();
         surface.nodeLayer().getChildren().add(canvas);
-        canvas.setOnMouseClicked(event -> {
-            MazeViewState state = currentState();
-            if (state == null || state.rows() < 1 || state.columns() < 1) return;
-            double cellWidth = canvas.getWidth() / state.columns();
-            double cellHeight = canvas.getHeight() / state.rows();
-            int column = (int) Math.floor(event.getX() / cellWidth);
-            int row = (int) Math.floor(event.getY() / cellHeight);
-            if (row < 0 || row >= state.rows() || column < 0 || column >= state.columns()) return;
-            selectedCell = new GridPoint(row, column);
-            selectionListener.accept(selectedCell);
-            requestRender();
-            event.consume();
-        });
+        canvas.setOnMouseClicked(
+                event -> {
+                    MazeViewState state = currentState();
+                    if (state == null || state.rows() < 1 || state.columns() < 1) return;
+                    double cellWidth = canvas.getWidth() / state.columns();
+                    double cellHeight = canvas.getHeight() / state.rows();
+                    int column = (int) Math.floor(event.getX() / cellWidth);
+                    int row = (int) Math.floor(event.getY() / cellHeight);
+                    if (row < 0 || row >= state.rows() || column < 0 || column >= state.columns())
+                        return;
+                    selectedCell = new GridPoint(row, column);
+                    selectionListener.accept(selectedCell);
+                    submitCurrentPresentation();
+                    event.consume();
+                });
         surface.markViewportPristine();
+        renderFramework.registerSurface(SESSION_ID, this);
     }
 
     @Override
-    protected void draw(MazeViewState state) {
-        fillBackground();
-        if (state.rows() < 1 || state.columns() < 1
-                || state.openCells().size() < state.rows() * state.columns()) {
-            if (!surface.markInitialLayoutReady(MIN_AUTO_FIT_SCALE)) {
-                surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
-            }
-            return;
+    protected synchronized void submitFrameworkRender(MazeViewState state) {
+        MazeViewState previous = lastSubmittedState;
+        boolean initial = previous == null;
+        boolean structural =
+                initial || previous.rows() != state.rows() || previous.columns() != state.columns();
+        lastSubmittedState = state;
+        if (structural) {
+            renderFramework.submit(
+                    new StructuralRenderIntent<>(
+                            SESSION_ID,
+                            state,
+                            initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE,
+                            initial));
+        } else {
+            renderFramework.submit(new PresentationRenderIntent<>(SESSION_ID, state));
         }
+    }
 
+    @Override
+    public LayoutRequest captureLayout(MazeViewState state, RenderCaptureContext context) {
+        List<LayoutElement> elements;
+        if (state.rows() < 1 || state.columns() < 1) {
+            elements = List.of();
+        } else {
+            elements =
+                    List.of(
+                            new LayoutElement(
+                                    GRID_ID,
+                                    state.columns() * WORLD_CELL_SIZE,
+                                    state.rows() * WORLD_CELL_SIZE));
+        }
+        return new LayoutRequest(
+                context.requestId(),
+                context.sessionId(),
+                context.modelRevision(),
+                context.geometryRevision(),
+                FixedLayoutEngine.ID,
+                elements,
+                Map.of("structure", "maze"));
+    }
+
+    @Override
+    public CompletionStage<Void> commitLayout(
+            MazeViewState state, LayoutPatch patch, RenderCommitContext context) {
+        ElementGeometry grid = patch.elements().get(GRID_ID);
+        if (grid == null) {
+            canvas.setWidth(1.0d);
+            canvas.setHeight(1.0d);
+        } else {
+            canvas.setWidth(grid.width());
+            canvas.setHeight(grid.height());
+            canvas.relocate(grid.x(), grid.y());
+        }
+        paint(state);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletionStage<Void> commitPresentation(
+            MazeViewState state, RenderCommitContext context) {
+        paint(state);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void paint(MazeViewState state) {
+        fillBackground();
+        if (state.rows() < 1
+                || state.columns() < 1
+                || state.openCells().size() < state.rows() * state.columns()) return;
         double cellWidth = canvas.getWidth() / state.columns();
         double cellHeight = canvas.getHeight() / state.rows();
-        double cellSize = Math.min(cellWidth, cellHeight);
-        density = densityFor(cellSize);
-
+        double screenCellSize =
+                Math.min(cellWidth, cellHeight) * Math.max(0.01d, surface.cameraState().scale());
+        density = densityFor(screenCellSize);
         drawBaseGrid(state, cellWidth, cellHeight);
-        if (state.graphBased()) {
-            drawGraphEdges(state, cellWidth, cellHeight);
-        }
+        if (state.graphBased()) drawGraphEdges(state, cellWidth, cellHeight);
         drawVisited(state, cellWidth, cellHeight);
         drawObserved(state, cellWidth, cellHeight);
         drawBacktracked(state, cellWidth, cellHeight);
@@ -78,9 +168,6 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         drawCurrent(state, cellWidth, cellHeight);
         drawRoles(state, cellWidth, cellHeight);
         drawSelection(state, cellWidth, cellHeight);
-        if (!surface.markInitialLayoutReady(MIN_AUTO_FIT_SCALE)) {
-            surface.fitWithMinimumScale(MIN_AUTO_FIT_SCALE);
-        }
     }
 
     private void fillBackground() {
@@ -112,7 +199,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
                     gc.setFill(WALL_FILL);
                 }
                 gc.fillRect(x, y, cellWidth, cellHeight);
-                gc.strokeRect(x + 0.5d, y + 0.5d,
+                gc.strokeRect(
+                        x + 0.5d,
+                        y + 0.5d,
                         Math.max(0.0d, cellWidth - 1.0d),
                         Math.max(0.0d, cellHeight - 1.0d));
             }
@@ -171,7 +260,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
             if (!inside(state, point)) continue;
             double x = point.column() * cellWidth;
             double y = point.row() * cellHeight;
-            gc.fillRect(x + inset, y + inset,
+            gc.fillRect(
+                    x + inset,
+                    y + inset,
                     Math.max(0.0d, cellWidth - inset * 2.0d),
                     Math.max(0.0d, cellHeight - inset * 2.0d));
         }
@@ -182,7 +273,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         if (!inside(state, point)) return;
         double inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.16d);
         gc.setFill(RAN_YELLOW);
-        gc.fillRect(point.column() * cellWidth + inset, point.row() * cellHeight + inset,
+        gc.fillRect(
+                point.column() * cellWidth + inset,
+                point.row() * cellHeight + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
     }
@@ -192,7 +285,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         if (!inside(state, point)) return;
         double inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.18d);
         gc.setFill(RAN_YELLOW);
-        gc.fillRect(point.column() * cellWidth + inset, point.row() * cellHeight + inset,
+        gc.fillRect(
+                point.column() * cellWidth + inset,
+                point.row() * cellHeight + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
     }
@@ -228,7 +323,9 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         double inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.10d);
         gc.setStroke(RAN_RED);
         gc.setLineWidth(Math.max(2.0d, Math.min(cellWidth, cellHeight) * 0.16d));
-        gc.strokeRect(point.column() * cellWidth + inset, point.row() * cellHeight + inset,
+        gc.strokeRect(
+                point.column() * cellWidth + inset,
+                point.row() * cellHeight + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
     }
@@ -238,23 +335,35 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         drawRole(state.exit(), "E", RAN_BLACK, state, cellWidth, cellHeight);
     }
 
-    private void drawRole(GridPoint point, String label, Color stroke, MazeViewState state,
-            double cellWidth, double cellHeight) {
+    private void drawRole(
+            GridPoint point,
+            String label,
+            Color stroke,
+            MazeViewState state,
+            double cellWidth,
+            double cellHeight) {
         if (!inside(state, point)) return;
         double x = point.column() * cellWidth;
         double y = point.row() * cellHeight;
         double inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.14d);
         gc.setStroke(stroke);
         gc.setLineWidth(Math.max(1.5d, Math.min(cellWidth, cellHeight) * 0.13d));
-        gc.strokeRect(x + inset, y + inset,
+        gc.strokeRect(
+                x + inset,
+                y + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
         if (density != VisualDensity.DENSE && Math.min(cellWidth, cellHeight) >= 10.0d) {
             gc.setFill(RAN_BLACK);
             gc.setTextAlign(TextAlignment.CENTER);
-            gc.setFont(Font.font("Consolas", FontWeight.BOLD,
-                    Math.max(8.0d, Math.min(cellWidth, cellHeight) * 0.46d)));
-            gc.fillText(label, x + cellWidth / 2.0d,
+            gc.setFont(
+                    Font.font(
+                            "Consolas",
+                            FontWeight.BOLD,
+                            Math.max(8.0d, Math.min(cellWidth, cellHeight) * 0.46d)));
+            gc.fillText(
+                    label,
+                    x + cellWidth / 2.0d,
                     y + cellHeight / 2.0d + Math.min(cellWidth, cellHeight) * 0.16d);
         }
     }
@@ -266,14 +375,16 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         double inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.06d);
         gc.setStroke(RAN_RED);
         gc.setLineWidth(Math.max(2.0d, Math.min(cellWidth, cellHeight) * 0.18d));
-        gc.strokeRect(x + inset, y + inset,
+        gc.strokeRect(
+                x + inset,
+                y + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
     }
 
     public void setSelectionListener(Consumer<GridPoint> listener) {
         if (listener == null) {
-            selectionListener = ignored -> { };
+            selectionListener = ignored -> {};
         } else {
             selectionListener = listener;
         }
@@ -281,7 +392,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
 
     public void clearSelection() {
         selectedCell = null;
-        requestRender();
+        submitCurrentPresentation();
     }
 
     public boolean showSelection(GridPoint point) {
@@ -290,7 +401,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
             return false;
         }
         selectedCell = point;
-        requestRender();
+        submitCurrentPresentation();
         return true;
     }
 
@@ -302,6 +413,60 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
         return density;
     }
 
+    private void submitCurrentPresentation() {
+        MazeViewState state = currentState();
+        if (state != null && isModuleAttached() && !isDisposed()) {
+            renderFramework.submit(new PresentationRenderIntent<>(SESSION_ID, state));
+        }
+    }
+
+    @Override
+    public ViewportSnapshot viewportSnapshot() {
+        return surface.viewportSnapshot();
+    }
+
+    @Override
+    public CameraState cameraState() {
+        return surface.cameraState();
+    }
+
+    @Override
+    public void applyCameraState(CameraState cameraState) {
+        surface.applyCameraState(cameraState);
+    }
+
+    @Override
+    public boolean userControlledCamera() {
+        return surface.isUserViewportChanged();
+    }
+
+    @Override
+    public void prepareInitialFrame() {
+        surface.markViewportPristine();
+    }
+
+    @Override
+    public void revealFrame() {
+        surface.setWorldVisible(true);
+    }
+
+    @Override
+    public void setViewportListener(Consumer<ViewportSnapshot> listener) {
+        surface.setViewportListener(listener);
+    }
+
+    @Override
+    public void onModuleAttached(String moduleId) {
+        renderFramework.activateSession(SESSION_ID);
+        super.onModuleAttached(moduleId);
+    }
+
+    @Override
+    public void onModuleDetached(String moduleId) {
+        renderFramework.deactivateSession(SESSION_ID);
+        super.onModuleDetached(moduleId);
+    }
+
     @Override
     public void setViewportObstructionInsets(Insets insets) {
         surface.setObstructionInsets(insets);
@@ -310,6 +475,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     @Override
     public void onVisualizationReset() {
         selectedCell = null;
+        lastSubmittedState = null;
         fillBackground();
         surface.reset();
         surface.markViewportPristine();
@@ -318,6 +484,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     @Override
     public void dispose() {
         canvas.setOnMouseClicked(null);
+        renderFramework.unregisterSurface(SESSION_ID);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();
@@ -330,7 +497,10 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState> {
     }
 
     private static boolean inside(MazeViewState state, GridPoint point) {
-        return point != null && point.row() >= 0 && point.row() < state.rows()
-                && point.column() >= 0 && point.column() < state.columns();
+        return point != null
+                && point.row() >= 0
+                && point.row() < state.rows()
+                && point.column() >= 0
+                && point.column() < state.columns();
     }
 }

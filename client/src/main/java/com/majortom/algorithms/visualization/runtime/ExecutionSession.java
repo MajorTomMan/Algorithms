@@ -26,7 +26,8 @@ public final class ExecutionSession implements AutoCloseable {
     private final ExecutionScheduler scheduler;
     private final ResourceSampler resourceSampler;
     private final CompletableFuture<ExecutionResult> runtimeCompletion = new CompletableFuture<>();
-    private final CompletableFuture<ExecutionResult> presentationCompletion = new CompletableFuture<>();
+    private final CompletableFuture<ExecutionResult> presentationCompletion =
+            new CompletableFuture<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private final AtomicBoolean cancellationRequested = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -35,12 +36,17 @@ public final class ExecutionSession implements AutoCloseable {
     private volatile Optional<Duration> totalDuration = Optional.empty();
     private volatile ResourceUsage resourceUsage = ResourceUsage.empty();
 
-    ExecutionSession(long generation, DefaultExecutionControl executionControl,
-            BoundedExecutionEventStore authoritativeEvents, JavaFxEventSink observerSink,
-            ExecutionScheduler scheduler, ResourceSampler resourceSampler) {
+    ExecutionSession(
+            long generation,
+            DefaultExecutionControl executionControl,
+            BoundedExecutionEventStore authoritativeEvents,
+            JavaFxEventSink observerSink,
+            ExecutionScheduler scheduler,
+            ResourceSampler resourceSampler) {
         this.generation = generation;
         this.executionControl = Objects.requireNonNull(executionControl, "executionControl");
-        this.authoritativeEvents = Objects.requireNonNull(authoritativeEvents, "authoritativeEvents");
+        this.authoritativeEvents =
+                Objects.requireNonNull(authoritativeEvents, "authoritativeEvents");
         this.observerSink = Objects.requireNonNull(observerSink, "observerSink");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.resourceSampler = Objects.requireNonNull(resourceSampler, "resourceSampler");
@@ -48,34 +54,59 @@ public final class ExecutionSession implements AutoCloseable {
 
     void start(Supplier<ExecutionResult> task) {
         Objects.requireNonNull(task, "task");
-        workerFuture = scheduler.submit(() -> {
-            long startedAtNanos = System.nanoTime();
-            started.set(true);
-            resourceSampler.start();
-            ExecutionResult result = null;
-            Throwable failure = null;
-            try {
-                result = task.get();
-            } catch (Throwable throwable) {
-                failure = throwable;
-            } finally {
-                resourceSampler.stop();
-                resourceUsage = resourceSampler.sample();
-                totalDuration = Optional.of(elapsedSince(startedAtNanos));
-                finishAfterPlayback(result, failure);
-                scheduler.close();
-            }
-        });
+        workerFuture =
+                scheduler.submit(
+                        () -> {
+                            long startedAtNanos = System.nanoTime();
+                            started.set(true);
+                            resourceSampler.start();
+                            ExecutionResult result = null;
+                            Throwable failure = null;
+                            try {
+                                result = task.get();
+                            } catch (Throwable throwable) {
+                                failure = throwable;
+                            } finally {
+                                resourceSampler.stop();
+                                resourceUsage = resourceSampler.sample();
+                                totalDuration = Optional.of(elapsedSince(startedAtNanos));
+                                finishAfterPlayback(result, failure);
+                                scheduler.close();
+                            }
+                        });
     }
 
-    public long generation() { return generation; }
-    public List<EventEnvelope> events() { return authoritativeEvents.events(); }
-    public CompletableFuture<ExecutionResult> runtimeCompletion() { return runtimeCompletion; }
-    public CompletableFuture<ExecutionResult> presentationCompletion() { return presentationCompletion; }
-    public Optional<Duration> totalDuration() { return totalDuration; }
-    public ResourceUsage resourceUsage() { return resourceUsage; }
-    public boolean isCancellationRequested() { return cancellationRequested.get(); }
-    public boolean isClosed() { return closed.get(); }
+    public long generation() {
+        return generation;
+    }
+
+    public List<EventEnvelope> events() {
+        return authoritativeEvents.events();
+    }
+
+    public CompletableFuture<ExecutionResult> runtimeCompletion() {
+        return runtimeCompletion;
+    }
+
+    public CompletableFuture<ExecutionResult> presentationCompletion() {
+        return presentationCompletion;
+    }
+
+    public Optional<Duration> totalDuration() {
+        return totalDuration;
+    }
+
+    public ResourceUsage resourceUsage() {
+        return resourceUsage;
+    }
+
+    public boolean isCancellationRequested() {
+        return cancellationRequested.get();
+    }
+
+    public boolean isClosed() {
+        return closed.get();
+    }
 
     public void pauseExecution() {
         requireOpen();
@@ -113,9 +144,17 @@ public final class ExecutionSession implements AutoCloseable {
         }
     }
 
-    public Optional<RuntimeException> dispatcherFailure() { return observerSink.dispatcherFailure(); }
-    public Optional<RuntimeException> observerFailure() { return observerSink.observerFailure(); }
-    public void closeObserver() { observerSink.close(); }
+    public Optional<RuntimeException> dispatcherFailure() {
+        return observerSink.dispatcherFailure();
+    }
+
+    public Optional<RuntimeException> observerFailure() {
+        return observerSink.observerFailure();
+    }
+
+    public void closeObserver() {
+        observerSink.close();
+    }
 
     @Override
     public void close() {
@@ -130,7 +169,9 @@ public final class ExecutionSession implements AutoCloseable {
         }
     }
 
-    void retire() { close(); }
+    void retire() {
+        close();
+    }
 
     private void finishAfterPlayback(ExecutionResult result, Throwable failure) {
         if (failure != null) {
@@ -139,10 +180,14 @@ public final class ExecutionSession implements AutoCloseable {
             return;
         }
         runtimeCompletion.complete(result);
-        observerSink.drained().whenComplete((ignored, playbackFailure) -> {
-            if (playbackFailure != null) presentationCompletion.completeExceptionally(playbackFailure);
-            else presentationCompletion.complete(result);
-        });
+        observerSink
+                .drained()
+                .whenComplete(
+                        (ignored, playbackFailure) -> {
+                            if (playbackFailure != null)
+                                presentationCompletion.completeExceptionally(playbackFailure);
+                            else presentationCompletion.complete(result);
+                        });
     }
 
     private void requireOpen() {
@@ -154,6 +199,4 @@ public final class ExecutionSession implements AutoCloseable {
     private Duration elapsedSince(long startedAtNanos) {
         return Duration.ofNanos(Math.max(0L, System.nanoTime() - startedAtNanos));
     }
-
-
 }

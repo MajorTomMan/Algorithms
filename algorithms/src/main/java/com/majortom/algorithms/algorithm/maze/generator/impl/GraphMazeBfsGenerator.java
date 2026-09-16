@@ -1,14 +1,14 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
-import com.majortom.algorithms.structure.maze.MazeStructure;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -19,11 +19,16 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", type = Integer.class, structure = MazeStructure.class)
+@Algorithm(
+        id = "graph-generator-bfs",
+        name = "图迷宫生成",
+        type = Integer.class,
+        structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.GRAPH)
 public final class GraphMazeBfsGenerator {
 
     private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
+
     @AlgorithmEntry
     public GraphSnapshot<Integer> generate(MazeStructure maze) {
         MazeDimensions dimensions = maze.dimensions();
@@ -80,8 +85,10 @@ public final class GraphMazeBfsGenerator {
         for (int[] direction : DIRECTIONS) {
             int nextRow = row + direction[0];
             int nextColumn = column + direction[1];
-            if (nextRow >= 0 && nextColumn >= 0
-                    && nextRow < dimensions.rows() && nextColumn < dimensions.columns()) {
+            if (nextRow >= 0
+                    && nextColumn >= 0
+                    && nextRow < dimensions.rows()
+                    && nextColumn < dimensions.columns()) {
                 neighbors.add(nextRow * dimensions.columns() + nextColumn);
             }
         }

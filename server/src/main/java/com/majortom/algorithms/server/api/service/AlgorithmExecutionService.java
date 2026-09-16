@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface AlgorithmExecutionService {
     String execute(ExecutionRequest request);
+
     List<AlgorithmInformationDto> getAlgorithms();
+
     ExecutionUnit getExecution(String runId);
 }

@@ -11,8 +11,8 @@ import java.util.Objects;
 /**
  * Bounded session-local snapshot storage for the JavaFX client.
  *
- * <p>Snapshots are grouped by module and newest entries are returned first.
- * This class intentionally has no file, JSON, or server concern.</p>
+ * <p>Snapshots are grouped by module and newest entries are returned first. This class
+ * intentionally has no file, JSON, or server concern.
  */
 public final class InMemoryStructureSnapshotStore {
 
@@ -39,8 +39,9 @@ public final class InMemoryStructureSnapshotStore {
     /** Saves a snapshot, keeping the newest entries first. */
     public void save(StructureSnapshot<?> snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
-        List<StructureSnapshot<?>> snapshots = snapshotsByModule.computeIfAbsent(
-                snapshot.moduleId(), ignored -> new ArrayList<>());
+        List<StructureSnapshot<?>> snapshots =
+                snapshotsByModule.computeIfAbsent(
+                        snapshot.moduleId(), ignored -> new ArrayList<>());
         snapshots.removeIf(existing -> existing.id().equals(snapshot.id()));
         snapshots.add(0, snapshot);
         if (snapshots.size() > maxSnapshotsPerModule) {
