@@ -5,26 +5,25 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Shared direct helpers for concrete integer sorting algorithms. */
 public abstract class AbstractIntegerSort {
+  protected abstract int compare(Integer left, Integer right);
 
-    protected abstract int compare(Integer left, Integer right);
+  protected final int compareAt(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
+    Observations.compared("array", leftIndex, "array", rightIndex);
+    return compare(array.get(leftIndex), array.get(rightIndex));
+  }
 
-    protected final int compareAt(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
-        Observations.compared("array", leftIndex, "array", rightIndex);
-        return compare(array.get(leftIndex), array.get(rightIndex));
+  protected final int compareValue(ArrayStructure<Integer> array, int index, int value) {
+    Observations.compared("array", index, value);
+    return compare(array.get(index), value);
+  }
+
+  protected final void write(ArrayStructure<Integer> array, int index, int value) {
+    array.set(index, value);
+  }
+
+  protected final void swap(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
+    if (leftIndex != rightIndex) {
+      array.swap(leftIndex, rightIndex);
     }
-
-    protected final int compareValue(ArrayStructure<Integer> array, int index, int value) {
-        Observations.compared("array", index, value);
-        return compare(array.get(index), value);
-    }
-
-    protected final void write(ArrayStructure<Integer> array, int index, int value) {
-        array.set(index, value);
-    }
-
-    protected final void swap(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
-        if (leftIndex != rightIndex) {
-            array.swap(leftIndex, rightIndex);
-        }
-    }
+  }
 }

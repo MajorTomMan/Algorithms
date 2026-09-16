@@ -2,30 +2,26 @@ package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureModule;
-
 import java.util.Map;
 
 /** Graph contract that associates a finite numeric weight with every edge. */
-@Structure(
-        id = "weighted-graph",
-        name = "Weighted Graph",
-        module = StructureModule.GRAPH,
-        implementation = WeightedGraph.class)
+@Structure(id = "weighted-graph", name = "Weighted Graph", module = StructureModule.GRAPH,
+    implementation = WeightedGraph.class)
 public interface WeightedGraphStructure<T> extends GraphStructure<T> {
-    double weight(Edge<T> edge);
+  double weight(Edge<T> edge);
 
-    /**
-     * Trusted weighted bulk-load path. A distinct method name avoids Map erasure collision with
-     * GraphStructure.initialize while keeping the natural JDK Map input shape.
-     */
-    void initializeWeighted(Map<T, ? extends Map<T, Double>> adjacency);
+  /**
+   * Trusted weighted bulk-load path. A distinct method name avoids Map erasure collision with
+   * GraphStructure.initialize while keeping the natural JDK Map input shape.
+   */
+  void initializeWeighted(Map<T, ? extends Map<T, Double>> adjacency);
 
-    Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight);
+  Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight);
 
-    double setWeight(Edge<T> edge, double weight);
+  double setWeight(Edge<T> edge, double weight);
 
-    @Override
-    default Edge<T> addEdge(Vertex<T> from, Vertex<T> to) {
-        return addEdge(from, to, 1.0d);
-    }
+  @Override
+  default Edge<T> addEdge(Vertex<T> from, Vertex<T> to) {
+    return addEdge(from, to, 1.0d);
+  }
 }

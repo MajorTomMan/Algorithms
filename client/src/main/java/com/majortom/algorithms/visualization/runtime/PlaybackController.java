@@ -4,7 +4,7 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.render.timing.RenderTimer;
-
+import com.majortom.algorithms.visualization.runtime.EventReducer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -13,369 +13,360 @@ import java.util.function.Consumer;
 
 /** Replay state machine over reducer-defined visible frames; timing is delegated to RenderClock. */
 public final class PlaybackController<S> implements AutoCloseable {
+  private final EventReducer<S> reducer;
+  private final Consumer<S> stateConsumer;
+  private final Consumer<Runnable> dispatcher;
+  private final RenderTimer timer;
+  private final long baseFrameDelayMillis;
+  private final Object lock = new Object();
 
-    private final EventReducer<S> reducer;
-    private final Consumer<S> stateConsumer;
-    private final Consumer<Runnable> dispatcher;
-    private final RenderTimer timer;
-    private final long baseFrameDelayMillis;
-    private final Object lock = new Object();
+  private ReducedEventTimeline<S> timeline;
+  private int currentIndex = -1;
+  private long generation;
+  private double speed = 1.0d;
+  private boolean playing;
+  private boolean closed;
+  private RuntimeException failure;
+  private long playbackElapsedNanos;
+  private long playbackStartedAtNanos;
 
-    private ReducedEventTimeline<S> timeline;
-    private int currentIndex = -1;
-    private long generation;
-    private double speed = 1.0d;
-    private boolean playing;
-    private boolean closed;
-    private RuntimeException failure;
-    private long playbackElapsedNanos;
-    private long playbackStartedAtNanos;
+  public PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer) {
+    this(reducer, stateConsumer, FxDispatch::defer, Duration.ofMillis(100L));
+  }
 
-    public PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer) {
-        this(reducer, stateConsumer, FxDispatch::defer, Duration.ofMillis(100L));
+  PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer,
+      Consumer<Runnable> dispatcher, Duration baseFrameDelay) {
+    this(reducer, stateConsumer, dispatcher, baseFrameDelay, RenderRuntime.clock());
+  }
+
+  PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer,
+      Consumer<Runnable> dispatcher, Duration baseFrameDelay, RenderTimer timer) {
+    this.reducer = Objects.requireNonNull(reducer, "reducer");
+    this.stateConsumer = Objects.requireNonNull(stateConsumer, "stateConsumer");
+    this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+    this.timer = Objects.requireNonNull(timer, "timer");
+    Objects.requireNonNull(baseFrameDelay, "baseFrameDelay");
+    if (baseFrameDelay.isZero() || baseFrameDelay.isNegative()) {
+      throw new IllegalArgumentException("baseFrameDelay must be positive");
     }
+    baseFrameDelayMillis = Math.max(1L, baseFrameDelay.toMillis());
+  }
 
-    PlaybackController(
-            EventReducer<S> reducer,
-            Consumer<S> stateConsumer,
-            Consumer<Runnable> dispatcher,
-            Duration baseFrameDelay) {
-        this(reducer, stateConsumer, dispatcher, baseFrameDelay, RenderRuntime.clock());
+  public void load(List<EventEnvelope> events) {
+    Objects.requireNonNull(events, "events");
+    ReducedEventTimeline<S> loadedTimeline = new ReducedEventTimeline<>(events, reducer);
+    synchronized (lock) {
+      requireOpen();
+      timeline = loadedTimeline;
+      currentIndex = -1;
+      playing = false;
+      failure = null;
+      playbackElapsedNanos = 0L;
+      playbackStartedAtNanos = 0L;
+      generation++;
     }
+  }
 
-    PlaybackController(
-            EventReducer<S> reducer,
-            Consumer<S> stateConsumer,
-            Consumer<Runnable> dispatcher,
-            Duration baseFrameDelay,
-            RenderTimer timer) {
-        this.reducer = Objects.requireNonNull(reducer, "reducer");
-        this.stateConsumer = Objects.requireNonNull(stateConsumer, "stateConsumer");
-        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
-        this.timer = Objects.requireNonNull(timer, "timer");
-        Objects.requireNonNull(baseFrameDelay, "baseFrameDelay");
-        if (baseFrameDelay.isZero() || baseFrameDelay.isNegative()) {
-            throw new IllegalArgumentException("baseFrameDelay must be positive");
-        }
-        baseFrameDelayMillis = Math.max(1L, baseFrameDelay.toMillis());
+  public void play() {
+    synchronized (lock) {
+      requireOpen();
+      if (playing || !hasNextFrame()) {
+        return;
+      }
+      playing = true;
+      playbackStartedAtNanos = System.nanoTime();
+      generation++;
+      scheduleFrame(generation, 0L);
     }
+  }
 
-    public void load(List<EventEnvelope> events) {
-        Objects.requireNonNull(events, "events");
-        ReducedEventTimeline<S> loadedTimeline = new ReducedEventTimeline<>(events, reducer);
-        synchronized (lock) {
-            requireOpen();
-            timeline = loadedTimeline;
-            currentIndex = -1;
-            playing = false;
-            failure = null;
-            playbackElapsedNanos = 0L;
-            playbackStartedAtNanos = 0L;
-            generation++;
-        }
+  public void pause() {
+    synchronized (lock) {
+      requireOpen();
+      pauseLocked();
     }
+  }
 
-    public void play() {
-        synchronized (lock) {
-            requireOpen();
-            if (playing || !hasNextFrame()) {
-                return;
-            }
-            playing = true;
-            playbackStartedAtNanos = System.nanoTime();
-            generation++;
-            scheduleFrame(generation, 0L);
-        }
+  /** Applies the next visible frame immediately while playback remains paused. */
+  public boolean stepForward() {
+    int targetIndex;
+    long expectedGeneration;
+    synchronized (lock) {
+      requireOpen();
+      pauseLocked();
+      if (!hasNextFrame()) {
+        return false;
+      }
+      targetIndex = currentIndex + 1;
+      expectedGeneration = generation;
     }
+    return applyFrame(expectedGeneration, targetIndex);
+  }
 
-    public void pause() {
-        synchronized (lock) {
-            requireOpen();
-            pauseLocked();
-        }
+  /** Applies the preceding visible frame immediately while playback remains paused. */
+  public boolean stepBackward() {
+    int targetIndex;
+    long expectedGeneration;
+    synchronized (lock) {
+      requireOpen();
+      pauseLocked();
+      if (timeline == null || currentIndex <= 0) {
+        return false;
+      }
+      targetIndex = currentIndex - 1;
+      expectedGeneration = generation;
     }
+    return applyFrame(expectedGeneration, targetIndex);
+  }
 
-    /** Applies the next visible frame immediately while playback remains paused. */
-    public boolean stepForward() {
-        int targetIndex;
-        long expectedGeneration;
-        synchronized (lock) {
-            requireOpen();
-            pauseLocked();
-            if (!hasNextFrame()) {
-                return false;
-            }
-            targetIndex = currentIndex + 1;
-            expectedGeneration = generation;
-        }
-        return applyFrame(expectedGeneration, targetIndex);
+  /** Seeks to one visible frame and leaves playback paused. */
+  public S seek(int frameIndex) {
+    S state;
+    long expectedGeneration;
+    synchronized (lock) {
+      requireOpen();
+      pauseLocked();
+      ReducedEventTimeline<S> loadedTimeline = requireTimeline();
+      expectedGeneration = generation;
+      try {
+        state = loadedTimeline.seek(frameIndex);
+      } catch (RuntimeException exception) {
+        fail(expectedGeneration, exception);
+        throw exception;
+      }
+      currentIndex = frameIndex;
     }
-
-    /** Applies the preceding visible frame immediately while playback remains paused. */
-    public boolean stepBackward() {
-        int targetIndex;
-        long expectedGeneration;
-        synchronized (lock) {
-            requireOpen();
-            pauseLocked();
-            if (timeline == null || currentIndex <= 0) {
-                return false;
-            }
-            targetIndex = currentIndex - 1;
-            expectedGeneration = generation;
-        }
-        return applyFrame(expectedGeneration, targetIndex);
+    try {
+      consumeState(state);
+    } catch (RuntimeException exception) {
+      fail(expectedGeneration, exception);
+      throw exception;
     }
+    return state;
+  }
 
-    /** Seeks to one visible frame and leaves playback paused. */
-    public S seek(int frameIndex) {
-        S state;
-        long expectedGeneration;
-        synchronized (lock) {
-            requireOpen();
-            pauseLocked();
-            ReducedEventTimeline<S> loadedTimeline = requireTimeline();
-            expectedGeneration = generation;
-            try {
-                state = loadedTimeline.seek(frameIndex);
-            } catch (RuntimeException exception) {
-                fail(expectedGeneration, exception);
-                throw exception;
-            }
-            currentIndex = frameIndex;
-        }
-        try {
-            consumeState(state);
-        } catch (RuntimeException exception) {
-            fail(expectedGeneration, exception);
-            throw exception;
-        }
-        return state;
+  /** Rewinds to the state before the first event without emitting a visible frame. */
+  public void restart() {
+    synchronized (lock) {
+      requireOpen();
+      pauseLocked();
+      if (timeline != null) {
+        timeline.restart();
+      }
+      currentIndex = -1;
+      failure = null;
     }
+  }
 
-    /** Rewinds to the state before the first event without emitting a visible frame. */
-    public void restart() {
-        synchronized (lock) {
-            requireOpen();
-            pauseLocked();
-            if (timeline != null) {
-                timeline.restart();
-            }
-            currentIndex = -1;
-            failure = null;
-        }
+  public void setSpeed(double multiplier) {
+    if (!Double.isFinite(multiplier) || multiplier <= 0.0d) {
+      throw new IllegalArgumentException("multiplier must be finite and positive");
     }
-
-    public void setSpeed(double multiplier) {
-        if (!Double.isFinite(multiplier) || multiplier <= 0.0d) {
-            throw new IllegalArgumentException("multiplier must be finite and positive");
-        }
-        synchronized (lock) {
-            requireOpen();
-            speed = multiplier;
-            if (playing) {
-                generation++;
-                scheduleFrame(generation, frameDelayMillis());
-            }
-        }
+    synchronized (lock) {
+      requireOpen();
+      speed = multiplier;
+      if (playing) {
+        generation++;
+        scheduleFrame(generation, frameDelayMillis());
+      }
     }
+  }
 
-    public double speed() {
-        synchronized (lock) {
-            return speed;
-        }
+  public double speed() {
+    synchronized (lock) {
+      return speed;
     }
+  }
 
-    public boolean isPlaying() {
-        synchronized (lock) {
-            return playing;
-        }
+  public boolean isPlaying() {
+    synchronized (lock) {
+      return playing;
     }
+  }
 
-    public int currentIndex() {
-        synchronized (lock) {
-            return currentIndex;
-        }
+  public int currentIndex() {
+    synchronized (lock) {
+      return currentIndex;
     }
+  }
 
-    public int nextIndex() {
-        synchronized (lock) {
-            return currentIndex + 1;
-        }
+  public int nextIndex() {
+    synchronized (lock) {
+      return currentIndex + 1;
     }
+  }
 
-    public int frameCount() {
-        synchronized (lock) {
-            if (timeline == null) {
-                return 0;
-            }
-            return timeline.size();
-        }
+  public int frameCount() {
+    synchronized (lock) {
+      if (timeline == null) {
+        return 0;
+      }
+      return timeline.size();
     }
+  }
 
-    /**
-     * Returns time spent actively scheduling replay frames since the last load. Pauses, seeks, and
-     * time spent before the first play are excluded.
-     */
-    public Duration playbackDuration() {
-        synchronized (lock) {
-            long elapsedNanos = playbackElapsedNanos;
-            if (playing) {
-                elapsedNanos = Math.addExact(elapsedNanos, elapsedPlaybackNanosLocked());
-            }
-            return Duration.ofNanos(elapsedNanos);
-        }
+  /**
+   * Returns time spent actively scheduling replay frames since the last load.
+   * Pauses, seeks, and time spent before the first play are excluded.
+   */
+  public Duration playbackDuration() {
+    synchronized (lock) {
+      long elapsedNanos = playbackElapsedNanos;
+      if (playing) {
+        elapsedNanos = Math.addExact(elapsedNanos, elapsedPlaybackNanosLocked());
+      }
+      return Duration.ofNanos(elapsedNanos);
     }
+  }
 
-    public Optional<RuntimeException> failure() {
-        synchronized (lock) {
-            return Optional.ofNullable(failure);
-        }
+  public Optional<RuntimeException> failure() {
+    synchronized (lock) {
+      return Optional.ofNullable(failure);
     }
+  }
 
-    @Override
-    public void close() {
-        synchronized (lock) {
-            if (closed) {
-                return;
-            }
-            if (playing) {
-                accumulatePlaybackDurationLocked();
-            }
-            closed = true;
-            playing = false;
-            generation++;
-        }
+  @Override
+  public void close() {
+    synchronized (lock) {
+      if (closed) {
+        return;
+      }
+      if (playing) {
+        accumulatePlaybackDurationLocked();
+      }
+      closed = true;
+      playing = false;
+      generation++;
     }
+  }
 
-    private void scheduleFrame(long expectedGeneration, long delayMillis) {
-        try {
-            timer.schedule(
-                    Duration.ofMillis(Math.max(0L, delayMillis)),
-                    () -> dispatchFrame(expectedGeneration));
-        } catch (RuntimeException exception) {
-            fail(expectedGeneration, exception);
-        }
+  private void scheduleFrame(long expectedGeneration, long delayMillis) {
+    try {
+      timer.schedule(
+          Duration.ofMillis(Math.max(0L, delayMillis)), () -> dispatchFrame(expectedGeneration));
+    } catch (RuntimeException exception) {
+      fail(expectedGeneration, exception);
     }
+  }
 
-    private void dispatchFrame(long expectedGeneration) {
-        try {
-            dispatcher.accept(() -> advanceFrame(expectedGeneration));
-        } catch (RuntimeException exception) {
-            fail(expectedGeneration, exception);
-        }
+  private void dispatchFrame(long expectedGeneration) {
+    try {
+      dispatcher.accept(() -> advanceFrame(expectedGeneration));
+    } catch (RuntimeException exception) {
+      fail(expectedGeneration, exception);
     }
+  }
 
-    private void advanceFrame(long expectedGeneration) {
-        int targetIndex;
-        synchronized (lock) {
-            if (closed || !playing || generation != expectedGeneration) {
-                return;
-            }
-            if (!hasNextFrame()) {
-                accumulatePlaybackDurationLocked();
-                playing = false;
-                return;
-            }
-            targetIndex = currentIndex + 1;
-        }
-
-        if (!applyFrame(expectedGeneration, targetIndex)) {
-            return;
-        }
-
-        synchronized (lock) {
-            if (closed || !playing || generation != expectedGeneration) {
-                return;
-            }
-            if (!hasNextFrame()) {
-                accumulatePlaybackDurationLocked();
-                playing = false;
-                return;
-            }
-            scheduleFrame(expectedGeneration, frameDelayMillis());
-        }
-    }
-
-    private boolean applyFrame(long expectedGeneration, int targetIndex) {
-        try {
-            S state;
-            synchronized (lock) {
-                if (closed || generation != expectedGeneration) {
-                    return false;
-                }
-                state = requireTimeline().seek(targetIndex);
-                currentIndex = targetIndex;
-            }
-            consumeState(state);
-            return true;
-        } catch (RuntimeException exception) {
-            fail(expectedGeneration, exception);
-            return false;
-        }
-    }
-
-    private void consumeState(S state) {
-        stateConsumer.accept(state);
-    }
-
-    private void fail(long expectedGeneration, RuntimeException exception) {
-        synchronized (lock) {
-            if (generation != expectedGeneration) {
-                return;
-            }
-            failure = exception;
-            if (playing) {
-                accumulatePlaybackDurationLocked();
-            }
-            playing = false;
-            generation++;
-        }
-    }
-
-    private void pauseLocked() {
-        if (!playing) {
-            return;
-        }
+  private void advanceFrame(long expectedGeneration) {
+    int targetIndex;
+    synchronized (lock) {
+      if (closed || !playing || generation != expectedGeneration) {
+        return;
+      }
+      if (!hasNextFrame()) {
         accumulatePlaybackDurationLocked();
         playing = false;
-        generation++;
+        return;
+      }
+      targetIndex = currentIndex + 1;
     }
 
-    private boolean hasNextFrame() {
-        return timeline != null && currentIndex + 1 < timeline.size();
+    if (!applyFrame(expectedGeneration, targetIndex)) {
+      return;
     }
 
-    private ReducedEventTimeline<S> requireTimeline() {
-        if (timeline == null) {
-            throw new IllegalStateException("No execution timeline is loaded");
+    synchronized (lock) {
+      if (closed || !playing || generation != expectedGeneration) {
+        return;
+      }
+      if (!hasNextFrame()) {
+        accumulatePlaybackDurationLocked();
+        playing = false;
+        return;
+      }
+      scheduleFrame(expectedGeneration, frameDelayMillis());
+    }
+  }
+
+  private boolean applyFrame(long expectedGeneration, int targetIndex) {
+    try {
+      S state;
+      synchronized (lock) {
+        if (closed || generation != expectedGeneration) {
+          return false;
         }
-        return timeline;
+        state = requireTimeline().seek(targetIndex);
+        currentIndex = targetIndex;
+      }
+      consumeState(state);
+      return true;
+    } catch (RuntimeException exception) {
+      fail(expectedGeneration, exception);
+      return false;
     }
+  }
 
-    private long frameDelayMillis() {
-        return Math.max(1L, Math.round(baseFrameDelayMillis / speed));
-    }
+  private void consumeState(S state) {
+    stateConsumer.accept(state);
+  }
 
-    private void requireOpen() {
-        if (closed) {
-            throw new IllegalStateException("Playback controller is closed");
-        }
+  private void fail(long expectedGeneration, RuntimeException exception) {
+    synchronized (lock) {
+      if (generation != expectedGeneration) {
+        return;
+      }
+      failure = exception;
+      if (playing) {
+        accumulatePlaybackDurationLocked();
+      }
+      playing = false;
+      generation++;
     }
+  }
 
-    private void accumulatePlaybackDurationLocked() {
-        playbackElapsedNanos = Math.addExact(playbackElapsedNanos, elapsedPlaybackNanosLocked());
-        playbackStartedAtNanos = 0L;
+  private void pauseLocked() {
+    if (!playing) {
+      return;
     }
+    accumulatePlaybackDurationLocked();
+    playing = false;
+    generation++;
+  }
 
-    private long elapsedPlaybackNanosLocked() {
-        if (playbackStartedAtNanos == 0L) {
-            return 0L;
-        }
-        long elapsedNanos = System.nanoTime() - playbackStartedAtNanos;
-        if (elapsedNanos < 0L) {
-            return 0L;
-        }
-        return elapsedNanos;
+  private boolean hasNextFrame() {
+    return timeline != null && currentIndex + 1 < timeline.size();
+  }
+
+  private ReducedEventTimeline<S> requireTimeline() {
+    if (timeline == null) {
+      throw new IllegalStateException("No execution timeline is loaded");
     }
+    return timeline;
+  }
+
+  private long frameDelayMillis() {
+    return Math.max(1L, Math.round(baseFrameDelayMillis / speed));
+  }
+
+  private void requireOpen() {
+    if (closed) {
+      throw new IllegalStateException("Playback controller is closed");
+    }
+  }
+
+  private void accumulatePlaybackDurationLocked() {
+    playbackElapsedNanos = Math.addExact(playbackElapsedNanos, elapsedPlaybackNanosLocked());
+    playbackStartedAtNanos = 0L;
+  }
+
+  private long elapsedPlaybackNanosLocked() {
+    if (playbackStartedAtNanos == 0L) {
+      return 0L;
+    }
+    long elapsedNanos = System.nanoTime() - playbackStartedAtNanos;
+    if (elapsedNanos < 0L) {
+      return 0L;
+    }
+    return elapsedNanos;
+  }
 }

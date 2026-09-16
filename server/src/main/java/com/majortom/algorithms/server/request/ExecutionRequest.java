@@ -1,11 +1,10 @@
 package com.majortom.algorithms.server.request;
 
-import lombok.Data;
-
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class ExecutionRequest {
-    private String algorithmId;
-    private Map<String, Object> input;
+  private String algorithmId;
+  private Map<String, Object> input;
 }

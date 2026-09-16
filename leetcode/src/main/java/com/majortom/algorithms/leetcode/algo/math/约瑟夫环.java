@@ -1,5 +1,5 @@
 package com.majortom.algorithms.leetcode.algo.math;
 
 public class 约瑟夫环 {
-    public static void main(String[] args) {}
+  public static void main(String[] args) {}
 }

@@ -1,99 +1,98 @@
 package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ListNode<T> {
-    private static final AtomicLong IDS = new AtomicLong(1L);
+  private static final AtomicLong IDS = new AtomicLong(1L);
 
-    private final long id;
-    private T value;
-    private ListNode<T> next;
-    private ListNode<T> previous;
+  private final long id;
+  private T value;
+  private ListNode<T> next;
+  private ListNode<T> previous;
 
-    public ListNode() {
-        this(null);
+  public ListNode() {
+    this(null);
+  }
+
+  public ListNode(T value) {
+    this(IDS.getAndIncrement(), value, null, null);
+  }
+
+  public ListNode(T value, ListNode<T> next, ListNode<T> previous) {
+    this(IDS.getAndIncrement(), value, next, previous);
+  }
+
+  public ListNode(long id, T value, ListNode<T> next, ListNode<T> previous) {
+    if (id <= 0) {
+      throw new IllegalArgumentException("node id must be positive");
     }
+    this.id = id;
+    this.value = value;
+    this.next = next;
+    this.previous = previous;
+  }
 
-    public ListNode(T value) {
-        this(IDS.getAndIncrement(), value, null, null);
-    }
+  public long getId() {
+    return id;
+  }
 
-    public ListNode(T value, ListNode<T> next, ListNode<T> previous) {
-        this(IDS.getAndIncrement(), value, next, previous);
-    }
+  public T getValue() {
+    return value;
+  }
 
-    public ListNode(long id, T value, ListNode<T> next, ListNode<T> previous) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("node id must be positive");
-        }
-        this.id = id;
-        this.value = value;
-        this.next = next;
-        this.previous = previous;
-    }
+  public ListNode<T> getNext() {
+    return next;
+  }
 
-    public long getId() {
-        return id;
-    }
+  public ListNode<T> getPrevious() {
+    return previous;
+  }
 
-    public T getValue() {
-        return value;
+  public void setValue(T value) {
+    if (Objects.equals(this.value, value)) {
+      return;
     }
+    T previousValue = this.value;
+    this.value = value;
+    StructureEvents.linkedValueChanged(id, previousValue, value);
+  }
 
-    public ListNode<T> getNext() {
-        return next;
+  public void setNext(ListNode<T> next) {
+    if (this.next == next) {
+      return;
     }
+    Long previousNextId = id(this.next);
+    this.next = next;
+    StructureEvents.linkedNextChanged(id, previousNextId, id(next));
+  }
 
-    public ListNode<T> getPrevious() {
-        return previous;
+  public void setPrevious(ListNode<T> previous) {
+    if (this.previous == previous) {
+      return;
     }
+    Long previousPreviousId = id(this.previous);
+    this.previous = previous;
+    StructureEvents.linkedPreviousChanged(id, previousPreviousId, id(previous));
+  }
 
-    public void setValue(T value) {
-        if (Objects.equals(this.value, value)) {
-            return;
-        }
-        T previousValue = this.value;
-        this.value = value;
-        StructureEvents.linkedValueChanged(id, previousValue, value);
-    }
+  /** Internal trusted bulk-load hook. It deliberately emits no mutation events. */
+  void initializeLinks(ListNode<T> next, ListNode<T> previous) {
+    this.next = next;
+    this.previous = previous;
+  }
 
-    public void setNext(ListNode<T> next) {
-        if (this.next == next) {
-            return;
-        }
-        Long previousNextId = id(this.next);
-        this.next = next;
-        StructureEvents.linkedNextChanged(id, previousNextId, id(next));
-    }
+  @Override
+  public java.lang.String toString() {
+    return "ListNode{id=" + id + ", value=" + value + "}";
+  }
 
-    public void setPrevious(ListNode<T> previous) {
-        if (this.previous == previous) {
-            return;
-        }
-        Long previousPreviousId = id(this.previous);
-        this.previous = previous;
-        StructureEvents.linkedPreviousChanged(id, previousPreviousId, id(previous));
+  private static Long id(ListNode<?> node) {
+    if (node == null) {
+      return null;
+    } else {
+      return node.id;
     }
-
-    /** Internal trusted bulk-load hook. It deliberately emits no mutation events. */
-    void initializeLinks(ListNode<T> next, ListNode<T> previous) {
-        this.next = next;
-        this.previous = previous;
-    }
-
-    @Override
-    public java.lang.String toString() {
-        return "ListNode{id=" + id + ", value=" + value + "}";
-    }
-
-    private static Long id(ListNode<?> node) {
-        if (node == null) {
-            return null;
-        } else {
-            return node.id;
-        }
-    }
+  }
 }

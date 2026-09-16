@@ -2,46 +2,32 @@ package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureModule;
-
 import java.util.Collection;
 import java.util.Map;
 
 @Structure(
-        id = "graph",
-        name = "Graph",
-        module = StructureModule.GRAPH,
-        implementation = Graph.class)
+    id = "graph", name = "Graph", module = StructureModule.GRAPH, implementation = Graph.class)
 public interface GraphStructure<T> {
-    int vertexCount();
+  int vertexCount();
+  int edgeCount();
 
-    int edgeCount();
+  default boolean isEmpty() {
+    return vertexCount() == 0;
+  }
 
-    default boolean isEmpty() {
-        return vertexCount() == 0;
-    }
+  boolean isDirected();
 
-    boolean isDirected();
+  /** Replaces the complete graph through the trusted bulk-load path. */
+  void initialize(Map<T, ? extends Collection<T>> adjacency);
 
-    /** Replaces the complete graph through the trusted bulk-load path. */
-    void initialize(Map<T, ? extends Collection<T>> adjacency);
-
-    Vertex<T> vertex(T value);
-
-    Vertex<T> addVertex(T value);
-
-    boolean removeVertex(Vertex<T> vertex);
-
-    Edge<T> addEdge(Vertex<T> from, Vertex<T> to);
-
-    boolean removeEdge(Vertex<T> from, Vertex<T> to);
-
-    boolean containsVertex(Vertex<T> vertex);
-
-    boolean containsEdge(Vertex<T> from, Vertex<T> to);
-
-    Iterable<Vertex<T>> vertices();
-
-    Iterable<Edge<T>> edges();
-
-    Iterable<Vertex<T>> neighbors(Vertex<T> vertex);
+  Vertex<T> vertex(T value);
+  Vertex<T> addVertex(T value);
+  boolean removeVertex(Vertex<T> vertex);
+  Edge<T> addEdge(Vertex<T> from, Vertex<T> to);
+  boolean removeEdge(Vertex<T> from, Vertex<T> to);
+  boolean containsVertex(Vertex<T> vertex);
+  boolean containsEdge(Vertex<T> from, Vertex<T> to);
+  Iterable<Vertex<T>> vertices();
+  Iterable<Edge<T>> edges();
+  Iterable<Vertex<T>> neighbors(Vertex<T> vertex);
 }

@@ -1,5 +1,8 @@
 package com.majortom.algorithms.visualization.common.view;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -15,407 +18,416 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.QuadCurveTo;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 /**
  * Edge primitive with boundary attachment, routes, arrows and an optional presentation label slot.
  */
 public final class EdgeView extends Group {
-    private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
-    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
-    private static final double LABEL_NORMAL_OFFSET = 14.0d;
+  private static final PseudoClass HIGHLIGHTED = PseudoClass.getPseudoClass("highlighted");
+  private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+  private static final double LABEL_NORMAL_OFFSET = 14.0d;
 
-    private final NodeView source;
-    private final NodeView target;
-    private final Path hitPath = new Path();
-    private final Path path = new Path();
-    private final Polygon arrow = new Polygon();
-    private final Label label = new Label();
-    private final BooleanProperty directed = new SimpleBooleanProperty();
-    private final BooleanProperty curved = new SimpleBooleanProperty();
-    private final BooleanProperty highlighted = new SimpleBooleanProperty();
-    private final BooleanProperty selected = new SimpleBooleanProperty();
-    private double labelNormalOffset = LABEL_NORMAL_OFFSET;
-    private final InvalidationListener geometryListener = observable -> updateGeometry();
-    private List<Point2D> route = List.of();
+  private final NodeView source;
+  private final NodeView target;
+  private final Path hitPath = new Path();
+  private final Path path = new Path();
+  private final Polygon arrow = new Polygon();
+  private final Label label = new Label();
+  private final BooleanProperty directed = new SimpleBooleanProperty();
+  private final BooleanProperty curved = new SimpleBooleanProperty();
+  private final BooleanProperty highlighted = new SimpleBooleanProperty();
+  private final BooleanProperty selected = new SimpleBooleanProperty();
+  private double labelNormalOffset = LABEL_NORMAL_OFFSET;
+  private final InvalidationListener geometryListener = observable -> updateGeometry();
+  private boolean updatingGeometry;
+  private boolean geometryDirty;
+  private List<Point2D> route = List.of();
 
-    public EdgeView(NodeView source, NodeView target, boolean directed) {
-        this.source = Objects.requireNonNull(source, "source");
-        this.target = Objects.requireNonNull(target, "target");
-        getStyleClass().add("visual-edge");
-        hitPath.getStyleClass().add("visual-edge-hit-path");
-        hitPath.setFill(null);
-        hitPath.setStroke(Color.TRANSPARENT);
-        hitPath.setStrokeWidth(12.0d);
-        path.getStyleClass().add("visual-edge-path");
-        path.setFill(null);
-        path.setStroke(Color.GRAY);
+  public EdgeView(NodeView source, NodeView target, boolean directed) {
+    this.source = Objects.requireNonNull(source, "source");
+    this.target = Objects.requireNonNull(target, "target");
+    getStyleClass().add("visual-edge");
+    hitPath.getStyleClass().add("visual-edge-hit-path");
+    hitPath.setFill(null);
+    hitPath.setStroke(Color.TRANSPARENT);
+    hitPath.setStrokeWidth(12.0d);
+    path.getStyleClass().add("visual-edge-path");
+    path.setFill(null);
+    path.setStroke(Color.GRAY);
+    path.setStrokeWidth(2.0d);
+    arrow.getStyleClass().add("visual-edge-arrow");
+    arrow.fillProperty().bind(path.strokeProperty());
+    label.getStyleClass().add("visual-edge-label");
+    label.setManaged(false);
+    label.setVisible(false);
+    label.setMouseTransparent(true);
+    path.setMouseTransparent(true);
+    arrow.setMouseTransparent(true);
+    getChildren().addAll(hitPath, path, arrow, label);
+    setMouseTransparent(false);
+
+    source.centerXProperty().addListener(geometryListener);
+    source.centerYProperty().addListener(geometryListener);
+    source.geometryProperty().addListener(geometryListener);
+    target.centerXProperty().addListener(geometryListener);
+    target.centerYProperty().addListener(geometryListener);
+    target.geometryProperty().addListener(geometryListener);
+    this.directed.addListener(geometryListener);
+    curved.addListener(geometryListener);
+    highlighted.addListener((observable, previous, current) -> {
+      pseudoClassStateChanged(HIGHLIGHTED, current);
+      if (current) {
+        path.setStrokeWidth(3.5d);
+      } else {
         path.setStrokeWidth(2.0d);
-        arrow.getStyleClass().add("visual-edge-arrow");
-        arrow.fillProperty().bind(path.strokeProperty());
-        label.getStyleClass().add("visual-edge-label");
-        label.setManaged(false);
-        label.setVisible(false);
-        label.setMouseTransparent(true);
-        path.setMouseTransparent(true);
-        arrow.setMouseTransparent(true);
-        getChildren().addAll(hitPath, path, arrow, label);
-        setMouseTransparent(false);
+      }
+    });
+    selected.addListener(
+        (observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
+    setDirected(directed);
+    updateGeometry();
+  }
 
-        source.centerXProperty().addListener(geometryListener);
-        source.centerYProperty().addListener(geometryListener);
-        source.geometryProperty().addListener(geometryListener);
-        target.centerXProperty().addListener(geometryListener);
-        target.centerYProperty().addListener(geometryListener);
-        target.geometryProperty().addListener(geometryListener);
-        this.directed.addListener(geometryListener);
-        curved.addListener(geometryListener);
-        label.layoutBoundsProperty().addListener(geometryListener);
-        highlighted.addListener(
-                (observable, previous, current) -> {
-                    pseudoClassStateChanged(HIGHLIGHTED, current);
-                    if (current) {
-                        path.setStrokeWidth(3.5d);
-                    } else {
-                        path.setStrokeWidth(2.0d);
-                    }
-                });
-        selected.addListener(
-                (observable, previous, current) -> pseudoClassStateChanged(SELECTED, current));
-        setDirected(directed);
-        updateGeometry();
+  public NodeView source() {
+    return source;
+  }
+
+  public NodeView target() {
+    return target;
+  }
+
+  public boolean isDirected() {
+    return directed.get();
+  }
+
+  public void setDirected(boolean directed) {
+    this.directed.set(directed);
+  }
+
+  public BooleanProperty directedProperty() {
+    return directed;
+  }
+
+  public boolean isCurved() {
+    return curved.get();
+  }
+
+  public void setCurved(boolean curved) {
+    this.curved.set(curved);
+  }
+
+  public BooleanProperty curvedProperty() {
+    return curved;
+  }
+
+  public boolean isHighlighted() {
+    return highlighted.get();
+  }
+
+  public void setHighlighted(boolean highlighted) {
+    this.highlighted.set(highlighted);
+  }
+
+  public BooleanProperty highlightedProperty() {
+    return highlighted;
+  }
+
+  public boolean isSelected() {
+    return selected.get();
+  }
+
+  public void setSelected(boolean selected) {
+    this.selected.set(selected);
+  }
+
+  public BooleanProperty selectedProperty() {
+    return selected;
+  }
+
+  public Path hitPath() {
+    return hitPath;
+  }
+
+  public Path path() {
+    return path;
+  }
+
+  /** Optional presentation label reserved for edge metadata such as a future graph weight. */
+  public void setLabelText(String text) {
+    String normalized;
+    if (text == null || text.isBlank()) {
+      normalized = null;
+    } else {
+      normalized = text;
+    }
+    if (normalized == null) {
+      label.setText("");
+    } else {
+      label.setText(normalized);
+    }
+    label.setManaged(normalized != null);
+    label.setVisible(normalized != null);
+    updateGeometry();
+  }
+
+  public String labelText() {
+    if (label.isVisible()) {
+      return label.getText();
+    } else {
+      return null;
+    }
+  }
+
+  public Label labelNode() {
+    return label;
+  }
+
+  /** Presentation-only label offset used to separate dense graph edge metadata. */
+  public void setLabelNormalOffset(double offset) {
+    labelNormalOffset = offset;
+    updateGeometry();
+  }
+
+  public double labelNormalOffset() {
+    return labelNormalOffset;
+  }
+
+  /** Applies presentation-only route geometry, typically produced by ELK. */
+  public void setRoute(List<Point2D> points) {
+    route = List.copyOf(Objects.requireNonNull(points, "points"));
+    updateGeometry();
+  }
+
+  /** Restores project-owned dynamic source/target attachment while nodes are moving. */
+  public void clearRoute() {
+    if (route.isEmpty()) {
+      return;
+    }
+    route = List.of();
+    updateGeometry();
+  }
+
+  public boolean hasRoute() {
+    return !route.isEmpty();
+  }
+
+  /** Releases endpoint listeners when this edge leaves the authoritative SceneGraph. */
+  public void dispose() {
+    source.centerXProperty().removeListener(geometryListener);
+    source.centerYProperty().removeListener(geometryListener);
+    source.geometryProperty().removeListener(geometryListener);
+    target.centerXProperty().removeListener(geometryListener);
+    target.centerYProperty().removeListener(geometryListener);
+    target.geometryProperty().removeListener(geometryListener);
+    directed.removeListener(geometryListener);
+    curved.removeListener(geometryListener);
+    arrow.fillProperty().unbind();
+    route = List.of();
+  }
+
+  private void updateGeometry() {
+    if (updatingGeometry) {
+      geometryDirty = true;
+      return;
+    }
+    do {
+      geometryDirty = false;
+      updatingGeometry = true;
+      try {
+        updateGeometryNow();
+      } finally {
+        updatingGeometry = false;
+      }
+    } while (geometryDirty);
+  }
+
+  private void updateGeometryNow() {
+    if (route.size() >= 2) {
+      updateRoutedGeometry();
+      return;
+    }
+    path.getElements().clear();
+    Point2D sourceCenter = source.center();
+    Point2D targetCenter = target.center();
+    if (source == target) {
+      updateSelfLoop(sourceCenter);
+      return;
+    }
+    if (sourceCenter.equals(targetCenter)) {
+      arrow.setVisible(false);
+      positionLabel(sourceCenter, new Point2D(1.0d, 0.0d), labelNormalOffset);
+      syncHitPath();
+      return;
     }
 
-    public NodeView source() {
-        return source;
+    Point2D start = source.boundaryPointToward(targetCenter);
+    Point2D end = target.boundaryPointToward(sourceCenter);
+    path.getElements().add(new MoveTo(start.getX(), start.getY()));
+
+    Point2D tangent;
+    Point2D labelAnchor;
+    if (isCurved()) {
+      Point2D delta = end.subtract(start);
+      Point2D normal = new Point2D(-delta.getY(), delta.getX()).normalize();
+      double offset = Math.max(28.0d, delta.magnitude() * 0.16d);
+      Point2D control = start.midpoint(end).add(normal.multiply(offset));
+      path.getElements().add(
+          new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
+      tangent = end.subtract(control);
+      labelAnchor = quadraticPoint(start, control, end, 0.5d);
+    } else {
+      path.getElements().add(new LineTo(end.getX(), end.getY()));
+      tangent = end.subtract(start);
+      labelAnchor = start.midpoint(end);
+    }
+    updateArrow(end, tangent);
+    positionLabel(labelAnchor, tangent, labelNormalOffset);
+    syncHitPath();
+  }
+
+  private void updateRoutedGeometry() {
+    path.getElements().clear();
+    if (source == target) {
+      updateSelfLoop(source.center());
+      return;
     }
 
-    public NodeView target() {
-        return target;
+    List<Point2D> points = new ArrayList<>(route);
+    Point2D sourceDirection;
+    if (route.size() > 2) {
+      sourceDirection = route.get(1);
+    } else {
+      sourceDirection = target.center();
+    }
+    if (source.center().equals(sourceDirection)) {
+      sourceDirection = target.center();
     }
 
-    public boolean isDirected() {
-        return directed.get();
+    Point2D targetDirection;
+    if (route.size() > 2) {
+      targetDirection = route.get(route.size() - 2);
+    } else {
+      targetDirection = source.center();
+    }
+    if (target.center().equals(targetDirection)) {
+      targetDirection = source.center();
     }
 
-    public void setDirected(boolean directed) {
-        this.directed.set(directed);
-    }
+    Point2D start = source.boundaryPointToward(sourceDirection);
+    Point2D end = target.boundaryPointToward(targetDirection);
+    points.set(0, start);
+    points.set(points.size() - 1, end);
 
-    public BooleanProperty directedProperty() {
-        return directed;
+    path.getElements().add(new MoveTo(start.getX(), start.getY()));
+    for (int index = 1; index < points.size(); index++) {
+      Point2D point = points.get(index);
+      path.getElements().add(new LineTo(point.getX(), point.getY()));
     }
+    Point2D tangent = end.subtract(points.get(points.size() - 2));
+    updateArrow(end, tangent);
+    PolylineMidpoint midpoint = polylineMidpoint(points);
+    positionLabel(midpoint.point(), midpoint.tangent(), labelNormalOffset);
+    syncHitPath();
+  }
 
-    public boolean isCurved() {
-        return curved.get();
+  private void updateSelfLoop(Point2D center) {
+    Point2D start = source.boundaryPointToward(center.add(1.0d, -1.0d));
+    Point2D end = source.boundaryPointToward(center.add(-1.0d, -1.0d));
+    double width = source.getGeometry().width();
+    double height = source.getGeometry().height();
+    Point2D control1 = center.add(width * 1.1d, -height * 1.7d);
+    Point2D control2 = center.add(-width * 1.1d, -height * 1.7d);
+    path.getElements().add(new MoveTo(start.getX(), start.getY()));
+    path.getElements().add(new CubicCurveTo(control1.getX(), control1.getY(), control2.getX(),
+        control2.getY(), end.getX(), end.getY()));
+    updateArrow(end, end.subtract(control2));
+    positionLabel(center.add(0.0d, -height * 1.9d), new Point2D(1.0d, 0.0d), 0.0d);
+    syncHitPath();
+  }
+
+  private void positionLabel(Point2D anchor, Point2D tangent, double normalOffset) {
+    if (!label.isVisible()) {
+      return;
     }
-
-    public void setCurved(boolean curved) {
-        this.curved.set(curved);
+    Point2D direction;
+    if (tangent.magnitude() == 0.0d) {
+      direction = new Point2D(1.0d, 0.0d);
+    } else {
+      direction = tangent.normalize();
     }
+    Point2D normal = new Point2D(-direction.getY(), direction.getX());
+    Point2D location = anchor.add(normal.multiply(normalOffset));
+    double width = Math.max(1.0d, label.prefWidth(-1.0d));
+    double height = Math.max(1.0d, label.prefHeight(width));
+    label.resizeRelocate(
+        location.getX() - width / 2.0d, location.getY() - height / 2.0d, width, height);
+  }
 
-    public BooleanProperty curvedProperty() {
-        return curved;
+  private PolylineMidpoint polylineMidpoint(List<Point2D> points) {
+    double total = 0.0d;
+    for (int index = 1; index < points.size(); index++) {
+      total += points.get(index).distance(points.get(index - 1));
     }
-
-    public boolean isHighlighted() {
-        return highlighted.get();
-    }
-
-    public void setHighlighted(boolean highlighted) {
-        this.highlighted.set(highlighted);
-    }
-
-    public BooleanProperty highlightedProperty() {
-        return highlighted;
-    }
-
-    public boolean isSelected() {
-        return selected.get();
-    }
-
-    public void setSelected(boolean selected) {
-        this.selected.set(selected);
-    }
-
-    public BooleanProperty selectedProperty() {
-        return selected;
-    }
-
-    public Path hitPath() {
-        return hitPath;
-    }
-
-    public Path path() {
-        return path;
-    }
-
-    /** Optional presentation label reserved for edge metadata such as a future graph weight. */
-    public void setLabelText(String text) {
-        String normalized;
-        if (text == null || text.isBlank()) {
-            normalized = null;
+    double remaining = total / 2.0d;
+    for (int index = 1; index < points.size(); index++) {
+      Point2D start = points.get(index - 1);
+      Point2D end = points.get(index);
+      double segment = start.distance(end);
+      if (remaining <= segment || index == points.size() - 1) {
+        double fraction;
+        if (segment == 0.0d) {
+          fraction = 0.5d;
         } else {
-            normalized = text;
+          fraction = Math.max(0.0d, Math.min(1.0d, remaining / segment));
         }
-        if (normalized == null) {
-            label.setText("");
-        } else {
-            label.setText(normalized);
-        }
-        label.setManaged(normalized != null);
-        label.setVisible(normalized != null);
-        updateGeometry();
+        Point2D point = start.add(end.subtract(start).multiply(fraction));
+        return new PolylineMidpoint(point, end.subtract(start));
+      }
+      remaining -= segment;
     }
+    return new PolylineMidpoint(
+        points.getFirst().midpoint(points.getLast()), points.getLast().subtract(points.getFirst()));
+  }
 
-    public String labelText() {
-        if (label.isVisible()) {
-            return label.getText();
-        } else {
-            return null;
-        }
+  private Point2D quadraticPoint(Point2D start, Point2D control, Point2D end, double t) {
+    double inverse = 1.0d - t;
+    return start.multiply(inverse * inverse)
+        .add(control.multiply(2.0d * inverse * t))
+        .add(end.multiply(t * t));
+  }
+
+  private void syncHitPath() {
+    hitPath.getElements().clear();
+    for (var element : path.getElements()) {
+      if (element instanceof MoveTo move) {
+        hitPath.getElements().add(new MoveTo(move.getX(), move.getY()));
+      } else if (element instanceof LineTo line) {
+        hitPath.getElements().add(new LineTo(line.getX(), line.getY()));
+      } else if (element instanceof QuadCurveTo curve) {
+        hitPath.getElements().add(
+            new QuadCurveTo(curve.getControlX(), curve.getControlY(), curve.getX(), curve.getY()));
+      } else if (element instanceof CubicCurveTo curve) {
+        hitPath.getElements().add(new CubicCurveTo(curve.getControlX1(), curve.getControlY1(),
+            curve.getControlX2(), curve.getControlY2(), curve.getX(), curve.getY()));
+      }
     }
+  }
 
-    public Label labelNode() {
-        return label;
+  private void updateArrow(Point2D tip, Point2D tangent) {
+    if (!isDirected() || tangent.magnitude() == 0.0d) {
+      arrow.setVisible(false);
+      return;
     }
+    Point2D direction = tangent.normalize();
+    Point2D normal = new Point2D(-direction.getY(), direction.getX());
+    double length = 11.0d;
+    double width = 5.5d;
+    Point2D base = tip.subtract(direction.multiply(length));
+    Point2D left = base.add(normal.multiply(width));
+    Point2D right = base.subtract(normal.multiply(width));
+    arrow.getPoints().setAll(
+        tip.getX(), tip.getY(), left.getX(), left.getY(), right.getX(), right.getY());
+    arrow.setVisible(true);
+  }
 
-    /** Presentation-only label offset used to separate dense graph edge metadata. */
-    public void setLabelNormalOffset(double offset) {
-        labelNormalOffset = offset;
-        updateGeometry();
-    }
-
-    public double labelNormalOffset() {
-        return labelNormalOffset;
-    }
-
-    /** Applies presentation-only route geometry, typically produced by ELK. */
-    public void setRoute(List<Point2D> points) {
-        route = List.copyOf(Objects.requireNonNull(points, "points"));
-        updateGeometry();
-    }
-
-    /** Restores project-owned dynamic source/target attachment while nodes are moving. */
-    public void clearRoute() {
-        if (route.isEmpty()) {
-            return;
-        }
-        route = List.of();
-        updateGeometry();
-    }
-
-    public boolean hasRoute() {
-        return !route.isEmpty();
-    }
-
-    private void updateGeometry() {
-        if (route.size() >= 2) {
-            updateRoutedGeometry();
-            return;
-        }
-        path.getElements().clear();
-        Point2D sourceCenter = source.center();
-        Point2D targetCenter = target.center();
-        if (source == target) {
-            updateSelfLoop(sourceCenter);
-            return;
-        }
-        if (sourceCenter.equals(targetCenter)) {
-            arrow.setVisible(false);
-            positionLabel(sourceCenter, new Point2D(1.0d, 0.0d), labelNormalOffset);
-            syncHitPath();
-            return;
-        }
-
-        Point2D start = source.boundaryPointToward(targetCenter);
-        Point2D end = target.boundaryPointToward(sourceCenter);
-        path.getElements().add(new MoveTo(start.getX(), start.getY()));
-
-        Point2D tangent;
-        Point2D labelAnchor;
-        if (isCurved()) {
-            Point2D delta = end.subtract(start);
-            Point2D normal = new Point2D(-delta.getY(), delta.getX()).normalize();
-            double offset = Math.max(28.0d, delta.magnitude() * 0.16d);
-            Point2D control = start.midpoint(end).add(normal.multiply(offset));
-            path.getElements()
-                    .add(new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
-            tangent = end.subtract(control);
-            labelAnchor = quadraticPoint(start, control, end, 0.5d);
-        } else {
-            path.getElements().add(new LineTo(end.getX(), end.getY()));
-            tangent = end.subtract(start);
-            labelAnchor = start.midpoint(end);
-        }
-        updateArrow(end, tangent);
-        positionLabel(labelAnchor, tangent, labelNormalOffset);
-        syncHitPath();
-    }
-
-    private void updateRoutedGeometry() {
-        path.getElements().clear();
-        if (source == target) {
-            updateSelfLoop(source.center());
-            return;
-        }
-
-        List<Point2D> points = new ArrayList<>(route);
-        Point2D sourceDirection;
-        if (route.size() > 2) {
-            sourceDirection = route.get(1);
-        } else {
-            sourceDirection = target.center();
-        }
-        if (source.center().equals(sourceDirection)) {
-            sourceDirection = target.center();
-        }
-
-        Point2D targetDirection;
-        if (route.size() > 2) {
-            targetDirection = route.get(route.size() - 2);
-        } else {
-            targetDirection = source.center();
-        }
-        if (target.center().equals(targetDirection)) {
-            targetDirection = source.center();
-        }
-
-        Point2D start = source.boundaryPointToward(sourceDirection);
-        Point2D end = target.boundaryPointToward(targetDirection);
-        points.set(0, start);
-        points.set(points.size() - 1, end);
-
-        path.getElements().add(new MoveTo(start.getX(), start.getY()));
-        for (int index = 1; index < points.size(); index++) {
-            Point2D point = points.get(index);
-            path.getElements().add(new LineTo(point.getX(), point.getY()));
-        }
-        Point2D tangent = end.subtract(points.get(points.size() - 2));
-        updateArrow(end, tangent);
-        PolylineMidpoint midpoint = polylineMidpoint(points);
-        positionLabel(midpoint.point(), midpoint.tangent(), labelNormalOffset);
-        syncHitPath();
-    }
-
-    private void updateSelfLoop(Point2D center) {
-        Point2D start = source.boundaryPointToward(center.add(1.0d, -1.0d));
-        Point2D end = source.boundaryPointToward(center.add(-1.0d, -1.0d));
-        double width = source.getGeometry().width();
-        double height = source.getGeometry().height();
-        Point2D control1 = center.add(width * 1.1d, -height * 1.7d);
-        Point2D control2 = center.add(-width * 1.1d, -height * 1.7d);
-        path.getElements().add(new MoveTo(start.getX(), start.getY()));
-        path.getElements()
-                .add(
-                        new CubicCurveTo(
-                                control1.getX(), control1.getY(),
-                                control2.getX(), control2.getY(),
-                                end.getX(), end.getY()));
-        updateArrow(end, end.subtract(control2));
-        positionLabel(center.add(0.0d, -height * 1.9d), new Point2D(1.0d, 0.0d), 0.0d);
-        syncHitPath();
-    }
-
-    private void positionLabel(Point2D anchor, Point2D tangent, double normalOffset) {
-        if (!label.isVisible()) {
-            return;
-        }
-        Point2D direction;
-        if (tangent.magnitude() == 0.0d) {
-            direction = new Point2D(1.0d, 0.0d);
-        } else {
-            direction = tangent.normalize();
-        }
-        Point2D normal = new Point2D(-direction.getY(), direction.getX());
-        Point2D location = anchor.add(normal.multiply(normalOffset));
-        double width = Math.max(1.0d, label.prefWidth(-1.0d));
-        double height = Math.max(1.0d, label.prefHeight(width));
-        label.resizeRelocate(
-                location.getX() - width / 2.0d, location.getY() - height / 2.0d, width, height);
-    }
-
-    private PolylineMidpoint polylineMidpoint(List<Point2D> points) {
-        double total = 0.0d;
-        for (int index = 1; index < points.size(); index++) {
-            total += points.get(index).distance(points.get(index - 1));
-        }
-        double remaining = total / 2.0d;
-        for (int index = 1; index < points.size(); index++) {
-            Point2D start = points.get(index - 1);
-            Point2D end = points.get(index);
-            double segment = start.distance(end);
-            if (remaining <= segment || index == points.size() - 1) {
-                double fraction;
-                if (segment == 0.0d) {
-                    fraction = 0.5d;
-                } else {
-                    fraction = Math.max(0.0d, Math.min(1.0d, remaining / segment));
-                }
-                Point2D point = start.add(end.subtract(start).multiply(fraction));
-                return new PolylineMidpoint(point, end.subtract(start));
-            }
-            remaining -= segment;
-        }
-        return new PolylineMidpoint(
-                points.getFirst().midpoint(points.getLast()),
-                points.getLast().subtract(points.getFirst()));
-    }
-
-    private Point2D quadraticPoint(Point2D start, Point2D control, Point2D end, double t) {
-        double inverse = 1.0d - t;
-        return start.multiply(inverse * inverse)
-                .add(control.multiply(2.0d * inverse * t))
-                .add(end.multiply(t * t));
-    }
-
-    private void syncHitPath() {
-        hitPath.getElements().clear();
-        for (var element : path.getElements()) {
-            if (element instanceof MoveTo move) {
-                hitPath.getElements().add(new MoveTo(move.getX(), move.getY()));
-            } else if (element instanceof LineTo line) {
-                hitPath.getElements().add(new LineTo(line.getX(), line.getY()));
-            } else if (element instanceof QuadCurveTo curve) {
-                hitPath.getElements()
-                        .add(
-                                new QuadCurveTo(
-                                        curve.getControlX(),
-                                        curve.getControlY(),
-                                        curve.getX(),
-                                        curve.getY()));
-            } else if (element instanceof CubicCurveTo curve) {
-                hitPath.getElements()
-                        .add(
-                                new CubicCurveTo(
-                                        curve.getControlX1(), curve.getControlY1(),
-                                        curve.getControlX2(), curve.getControlY2(),
-                                        curve.getX(), curve.getY()));
-            }
-        }
-    }
-
-    private void updateArrow(Point2D tip, Point2D tangent) {
-        if (!isDirected() || tangent.magnitude() == 0.0d) {
-            arrow.setVisible(false);
-            return;
-        }
-        Point2D direction = tangent.normalize();
-        Point2D normal = new Point2D(-direction.getY(), direction.getX());
-        double length = 11.0d;
-        double width = 5.5d;
-        Point2D base = tip.subtract(direction.multiply(length));
-        Point2D left = base.add(normal.multiply(width));
-        Point2D right = base.subtract(normal.multiply(width));
-        arrow.getPoints()
-                .setAll(
-                        tip.getX(), tip.getY(),
-                        left.getX(), left.getY(),
-                        right.getX(), right.getY());
-        arrow.setVisible(true);
-    }
-
-    private record PolylineMidpoint(Point2D point, Point2D tangent) {}
+  private record PolylineMidpoint(Point2D point, Point2D tangent) {}
 }

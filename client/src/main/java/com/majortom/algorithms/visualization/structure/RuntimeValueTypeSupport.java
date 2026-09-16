@@ -7,12 +7,12 @@ import java.util.List;
  * topology UI.
  */
 public interface RuntimeValueTypeSupport {
-    Class<?> runtimeValueType();
+  Class<?> runtimeValueType();
 
-    List<Class<?>> supportedValueTypes();
+  List<Class<?>> supportedValueTypes();
 
-    /** Whether changing type would discard values, including inactive variants. */
-    boolean hasValues();
+  /** Whether changing type would discard values, including inactive variants. */
+  boolean hasValues();
 
-    void setRuntimeValueType(Class<?> valueType);
+  void setRuntimeValueType(Class<?> valueType);
 }

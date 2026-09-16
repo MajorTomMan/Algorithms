@@ -4,8 +4,7 @@ import java.util.Objects;
 
 /** Indicates cooperative cancellation or thread interruption. */
 public record RunCancelledEvent(String reason) implements ExecutionLifecycleEvent {
-
-    public RunCancelledEvent {
-        Objects.requireNonNull(reason, "reason");
-    }
+  public RunCancelledEvent {
+    Objects.requireNonNull(reason, "reason");
+  }
 }

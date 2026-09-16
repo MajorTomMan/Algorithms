@@ -13,12 +13,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Algorithm {
-    String id();
+  String id();
 
-    String name() default "";
+  String name() default "";
 
-    Class<?> type();
+  Class<?> type();
 
-    /** Structure capability that determines compatibility and workbench module. */
-    Class<?> structure();
+  /** Structure capability that determines compatibility and workbench module. */
+  Class<?> structure();
 }

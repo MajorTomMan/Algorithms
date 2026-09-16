@@ -24,7 +24,8 @@ public class 前缀表达式求值 {
                 if(ops.getTop()==null||ch.equals(")")){
                     ops.push(ch);
                 }
-                else if(ch.equals("*")||ch.equals("/")&&ops.getTop().data.saveData.equals("+")||ops.getTop().data.saveData.equals("-")){
+                else
+if(ch.equals("*")||ch.equals("/")&&ops.getTop().data.saveData.equals("+")||ops.getTop().data.saveData.equals("-")){
                     ops.push(ch);
                 }
                 else if(ch.equals("+")||ch.equals("-")&&ops.getTop().data.saveData.equals(")")){
@@ -36,7 +37,8 @@ public class 前缀表达式求值 {
                         ops.push(ch);
                     }
                 }
-                else if(ch.equals("+")||ch.equals("-")&&ops.getTop().data.saveData.equals("*")||ops.getTop().data.saveData.equals("/")){
+                else
+if(ch.equals("+")||ch.equals("-")&&ops.getTop().data.saveData.equals("*")||ops.getTop().data.saveData.equals("/")){
                     vals.push(ops.pop());
                     continue;
                 }

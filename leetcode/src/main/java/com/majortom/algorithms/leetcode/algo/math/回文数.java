@@ -5,35 +5,33 @@ import com.majortom.algorithms.structure.linked.QueueStructure;
 import com.majortom.algorithms.structure.linked.StackStructure;
 
 public class 回文数 {
-    public static void main(String[] args) {
-        System.out.println(isPalindrome(-121));
+  public static void main(String[] args) {
+    System.out.println(isPalindrome(-121));
+  }
+  public static boolean isPalindrome(int x) {
+    StackStructure<String> stack = new LinkedList<>();
+    QueueStructure<String> queue = new LinkedList<>();
+    if (x < 0) {
+      return false;
+    } else {
+      isPalindrome(x, stack, queue);
     }
-
-    public static boolean isPalindrome(int x) {
-        StackStructure<String> stack = new LinkedList<>();
-        QueueStructure<String> queue = new LinkedList<>();
-        if (x < 0) {
-            return false;
-        } else {
-            isPalindrome(x, stack, queue);
-        }
-        while (!stack.isEmpty()) {
-            if (!stack.pop().equals(queue.dequeue())) {
-                return false;
-            }
-        }
-        return true;
+    while (!stack.isEmpty()) {
+      if (!stack.pop().equals(queue.dequeue())) {
+        return false;
+      }
     }
-
-    private static int isPalindrome(
-            int x, StackStructure<String> stack, QueueStructure<String> queue) {
-        if (x == 0) {
-            return x;
-        } else if (x < 0) {
-        }
-        stack.push(String.valueOf(x % 10));
-        queue.enqueue(String.valueOf(x % 10));
-        isPalindrome(x / 10, stack, queue);
-        return x;
+    return true;
+  }
+  private static int isPalindrome(
+      int x, StackStructure<String> stack, QueueStructure<String> queue) {
+    if (x == 0) {
+      return x;
+    } else if (x < 0) {
     }
+    stack.push(String.valueOf(x % 10));
+    queue.enqueue(String.valueOf(x % 10));
+    isPalindrome(x / 10, stack, queue);
+    return x;
+  }
 }

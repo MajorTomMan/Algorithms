@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.execution;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -11,25 +10,23 @@ import java.util.concurrent.CompletableFuture;
 
 /** Handle-scoped controls and observations for one local client execution. */
 public interface ExecutionHandle extends AutoCloseable {
+  List<EventEnvelope> events();
 
-    List<EventEnvelope> events();
+  CompletableFuture<ExecutionResult> runtimeCompletion();
 
-    CompletableFuture<ExecutionResult> runtimeCompletion();
+  CompletableFuture<ExecutionResult> presentationCompletion();
 
-    CompletableFuture<ExecutionResult> presentationCompletion();
+  Optional<Duration> totalDuration();
 
-    Optional<Duration> totalDuration();
+  ResourceUsage resourceUsage();
 
-    ResourceUsage resourceUsage();
+  void pauseExecution();
 
-    void pauseExecution();
+  void resumeExecution();
 
-    void resumeExecution();
+  void stepExecution();
 
-    void stepExecution();
+  void closeObserver();
 
-    void closeObserver();
-
-    @Override
-    void close();
+  @Override void close();
 }

@@ -5,18 +5,17 @@ import java.util.Objects;
 /** Receives authoritative execution events. */
 @FunctionalInterface
 public interface EventSink {
+  void accept(EventEnvelope event);
 
-    void accept(EventEnvelope event);
+  static EventSink noop() {
+    return event -> {};
+  }
 
-    static EventSink noop() {
-        return event -> {};
-    }
-
-    default EventSink andThen(EventSink next) {
-        Objects.requireNonNull(next, "next");
-        return event -> {
-            accept(event);
-            next.accept(event);
-        };
-    }
+  default EventSink andThen(EventSink next) {
+    Objects.requireNonNull(next, "next");
+    return event -> {
+      accept(event);
+      next.accept(event);
+    };
+  }
 }

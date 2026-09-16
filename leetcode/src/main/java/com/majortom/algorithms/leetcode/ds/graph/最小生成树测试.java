@@ -3,7 +3,7 @@ package com.majortom.algorithms.leetcode.ds.graph;
 import com.majortom.algorithms.structure.graph.Graph;
 
 public class 最小生成树测试 {
-    private static final Graph<Integer> graph = new Graph<>(false);
+  private static final Graph<Integer> graph = new Graph<>(false);
 
-    public static void main(String[] args) {}
+  public static void main(String[] args) {}
 }

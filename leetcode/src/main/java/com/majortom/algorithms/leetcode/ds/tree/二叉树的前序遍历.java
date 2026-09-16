@@ -9,30 +9,29 @@ package com.majortom.algorithms.leetcode.ds.tree;
 
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class 二叉树的前序遍历 {
-    public static void main(String[] args) {
-        Integer[] nums = {1, null, 2, 3};
-        BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(nums);
-        System.out.println();
-        preorderTraversal(root).stream().forEach(System.out::println);
-    }
+  public static void main(String[] args) {
+    Integer[] nums = {1, null, 2, 3};
+    BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(nums);
+    System.out.println();
+    preorderTraversal(root).stream().forEach(System.out::println);
+  }
 
-    public static List<Integer> preorderTraversal(BinaryTreeNode<Integer> root) {
-        List<Integer> list = new ArrayList<>();
-        preorderTraversal(root, list);
-        return list;
-    }
+  public static List<Integer> preorderTraversal(BinaryTreeNode<Integer> root) {
+    List<Integer> list = new ArrayList<>();
+    preorderTraversal(root, list);
+    return list;
+  }
 
-    public static void preorderTraversal(BinaryTreeNode<Integer> root, List<Integer> list) {
-        if (root == null) {
-            return;
-        }
-        list.add((Integer) root.getValue());
-        preorderTraversal(root.getLeft(), list);
-        preorderTraversal(root.getRight(), list);
+  public static void preorderTraversal(BinaryTreeNode<Integer> root, List<Integer> list) {
+    if (root == null) {
+      return;
     }
+    list.add((Integer) root.getValue());
+    preorderTraversal(root.getLeft(), list);
+    preorderTraversal(root.getRight(), list);
+  }
 }

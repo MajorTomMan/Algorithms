@@ -340,7 +340,6 @@
 /* Do not declare min/pref/max width or height for the major shell regions here.
  * JavaFX CSS is reapplied after layout changes and would otherwise overwrite
  * the USER-origin values installed by WorkbenchUiFramework. */
-.root-pane .lab-top-bar { -fx-padding: 0 1.45em; }
 .root-pane .brand-zone { -fx-spacing: 0.80em; }
 .root-pane .lab-mode-switch .workspace-mode-button {
     -fx-min-width: 0;
@@ -348,10 +347,6 @@
     -fx-pref-height: 3.05em;
     -fx-max-height: 3.05em;
     -fx-padding: 0 1.60em;
-}
-.root-pane .top-context-zone {
-    -fx-spacing: 0.85em;
-    -fx-padding: 0 0 0 0.75em;
 }
 .root-pane .run-state-badge { -fx-padding: 0.55em 1.10em; }
 .root-pane .font-settings-button {
@@ -632,10 +627,8 @@
 .root-pane .timeline-detail-panel .timeline-legend { -fx-padding: 0; }
 
 /* ---------- responsive density: geometry only, never typography ---------- */
-.root-pane:compact-layout .lab-top-bar { -fx-padding: 0 0.82em; }
 .root-pane:compact-layout .brand-zone { -fx-spacing: 0.56em; }
 .root-pane:compact-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.88em; }
-.root-pane:compact-layout .top-context-zone { -fx-spacing: 0.62em; -fx-padding: 0; }
 .root-pane:compact-layout .run-state-badge { -fx-padding: 0.38em 0.62em; }
 .root-pane:compact-layout .structure-control-panel,
 .root-pane:compact-layout .algorithm-control-panel,
@@ -662,10 +655,8 @@
 .root-pane:compact-layout .playback-timeline-area { -fx-min-width: 14em; -fx-padding: 0 0.82em; }
 .root-pane:compact-layout .playback-speed-area { -fx-padding: 0 0 0 0.82em; }
 
-.root-pane:narrow-layout .lab-top-bar { -fx-padding: 0 0.52em; }
 .root-pane:narrow-layout .brand-zone { -fx-spacing: 0.40em; }
 .root-pane:narrow-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.52em; }
-.root-pane:narrow-layout .top-context-zone { -fx-spacing: 0.40em; -fx-padding: 0; }
 .root-pane:narrow-layout .run-state-badge { -fx-padding: 0.32em 0.50em; }
 .root-pane:narrow-layout .structure-control-panel,
 .root-pane:narrow-layout .algorithm-control-panel,
@@ -690,3 +681,39 @@
 .root-pane:narrow-layout .playback-leading-area { -fx-padding: 0 0.62em 0 0; }
 .root-pane:narrow-layout .playback-timeline-area { -fx-min-width: 11.5em; -fx-padding: 0 0.62em; }
 .root-pane:narrow-layout .playback-speed-area { -fx-padding: 0 0 0 0.62em; }
+
+/* ---------- WorkbenchHeader: brand / mode / global actions only ---------- */
+.workbench-header {
+    -fx-background-color: #08090a;
+    -fx-border-color: transparent transparent #2b2b2b transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.workbench-header .brand-zone,
+.workbench-header .lab-mode-switch,
+.workbench-header .header-actions {
+    -fx-alignment: center-left;
+}
+.workbench-header .header-actions { -fx-alignment: center-right; }
+.workbench-header .lab-mode-switch {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+.workbench-header .workspace-mode-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 3px 0;
+    -fx-border-radius: 0;
+    -fx-padding: 0 1.25em;
+    -fx-text-overrun: clip;
+}
+.workbench-header .workspace-mode-button:hover {
+    -fx-background-color: #151515;
+}
+.workbench-header .workspace-mode-button:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #f51b23 transparent;
+    -fx-text-fill: #ffffff;
+}
+.workbench-header .header-actions { -fx-spacing: 0.65em; }

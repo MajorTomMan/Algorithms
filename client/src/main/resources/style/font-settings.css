@@ -14,7 +14,7 @@
     -fx-border-width: 0 0 0 1px;
 }
 
-.lab-top-bar .font-settings-button {
+.workbench-header .font-settings-button {
     -fx-background-color: transparent;
     -fx-border-color: #4b5157;
     -fx-border-width: 1px;
@@ -24,7 +24,7 @@
     -fx-font-weight: 700;
 }
 
-.lab-top-bar .font-settings-button:hover {
+.workbench-header .font-settings-button:hover {
     -fx-background-color: #2d3237;
     -fx-border-color: #697178;
 }

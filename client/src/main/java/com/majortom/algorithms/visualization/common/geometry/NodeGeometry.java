@@ -4,9 +4,9 @@ import javafx.geometry.Point2D;
 
 /** Pure visual boundary geometry used to attach edges to node borders. */
 public interface NodeGeometry {
-    Point2D boundaryPoint(Point2D center, Point2D toward);
+  Point2D boundaryPoint(Point2D center, Point2D toward);
 
-    double width();
+  double width();
 
-    double height();
+  double height();
 }

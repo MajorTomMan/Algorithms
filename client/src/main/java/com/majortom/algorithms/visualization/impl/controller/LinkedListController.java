@@ -18,7 +18,11 @@ import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
@@ -30,626 +34,588 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
-
 /**
- * Linked-list workbench backed by factual node/link events and the family-specific linked
- * visualizer.
+ * Linked-list workbench backed by factual node/link events and the
+ * family-specific linked visualizer.
  */
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
-        implements StructureSnapshotSupport<SequenceSnapshot<Object>>,
-                RuntimeValueTypeSupport,
-                AlgorithmSelectionSupport,
-                SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
-    private static final String MODULE_ID = "linked-list";
+    implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
+               AlgorithmSelectionSupport, SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
+  private static final String MODULE_ID = "linked-list";
 
-    private final LinkedStructure<Object> linkedList;
-    private Class<?> runtimeValueType = Integer.class;
-    private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
-    private final LongProperty valueTypeRevision = new SimpleLongProperty();
-    private boolean structureSelectionEnabled = true;
-    private Long algorithmSelectedNodeId;
-    private Consumer<NodeSelection> selectionListener = ignored -> {};
+  private final LinkedStructure<Object> linkedList;
+  private Class<?> runtimeValueType = Integer.class;
+  private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
+  private final LongProperty valueTypeRevision = new SimpleLongProperty();
+  private boolean structureSelectionEnabled = true;
+  private Long algorithmSelectedNodeId;
+  private Consumer<NodeSelection> selectionListener = ignored -> {};
 
-    @FXML private Label typeLabel;
-    @FXML private Label structureLabel;
-    @FXML private ComboBox<String> structureSelector;
-    @FXML private Label operationsLabel;
-    @FXML private TextField valueField;
-    @FXML private TextField indexField;
-    @FXML private Button primaryBtn;
-    @FXML private Button secondaryBtn;
-    @FXML private Button quaternaryBtn;
+  @FXML private Label typeLabel;
+  @FXML private Label structureLabel;
+  @FXML private ComboBox<String> structureSelector;
+  @FXML private Label operationsLabel;
+  @FXML private TextField valueField;
+  @FXML private TextField indexField;
+  @FXML private Button primaryBtn;
+  @FXML private Button secondaryBtn;
+  @FXML private Button quaternaryBtn;
 
-    @FXML private ComboBox<String> algorithmSelector;
-    private String selectedAlgorithmId;
-    private Consumer<String> algorithmSelectionListener;
-    private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
+  @FXML private ComboBox<String> algorithmSelector;
+  private String selectedAlgorithmId;
+  private Consumer<String> algorithmSelectionListener;
+  private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
 
-    @SuppressWarnings("unchecked")
-    public LinkedListController() {
-        super(new LinkedListVisualizer(), "/fxml/LinearStructureControls.fxml");
-        linkedList = (LinkedStructure<Object>) structure("linked-list", LinkedList.class);
-        seed();
-        renderStructureState(currentState());
+  @SuppressWarnings("unchecked")
+  public LinkedListController() {
+    super(new LinkedListVisualizer(), "/fxml/LinearStructureControls.fxml");
+    linkedList = (LinkedStructure<Object>) structure("linked-list", LinkedList.class);
+    seed();
+    renderStructureState(currentState());
+  }
+
+  @Override
+  public void initialize(URL location, ResourceBundle resources) {
+    super.initialize(location, resources);
+    configureControls();
+    quaternaryBtn.setOnAction(event -> update());
+    linkedVisualizer().setSelectionListener(this::handleVisualSelection);
+    bindAlgorithmSelector();
+  }
+
+  private void bindAlgorithmSelector() {
+    algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
+      ObservableList<String> labels = FXCollections.observableArrayList();
+      for (String id : algorithmIds()) {
+        labels.add(AlgorithmCatalog.name(id));
+      }
+      return labels;
+    }, valueTypeRevision));
+
+    algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
+        (obs, oldIdx, newIdx) -> {
+          List<String> ids = algorithmIds();
+          selectedAlgorithmId = (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
+              ? ids.get(newIdx.intValue())
+              : null;
+          if (algorithmSelectionListener != null && selectedAlgorithmId != null)
+            algorithmSelectionListener.accept(selectedAlgorithmId);
+        });
+  }
+
+  @FXML
+  private void handlePrimary() {
+    insert();
+  }
+
+  @FXML
+  private void handleSecondary() {
+    remove();
+  }
+
+  private void insert() {
+    clearVisualSelection();
+    Object value = value();
+    if (value == null) {
+      return;
+    }
+    Integer parsedIndex = index(true);
+    if (parsedIndex == null) {
+      return;
+    }
+    int target;
+    if (indexField.getText().isBlank()) {
+      target = linkedList.size();
+    } else {
+      target = parsedIndex;
+    }
+    if (target < 0 || target > linkedList.size()) {
+      logI18n("message.error.invalid_linear_index");
+      return;
+    }
+    if (executeAndReduce("insert", () -> linkedList.insert(target, value))) {
+      selectLinkedAtIndex(target);
+      logI18n("message.linear.inserted", value, target);
+    }
+  }
+
+  private void remove() {
+    Integer target = index(false);
+    if (target == null || target < 0 || target >= linkedList.size()) {
+      logI18n("message.error.invalid_linear_index");
+      return;
+    }
+    int index = target;
+    Object[] removed = new Object[1];
+    if (executeAndReduce("remove", () -> removed[0] = linkedList.remove(index))) {
+      selectLinkedAfterRemoval(index);
+      logI18n("message.linear.removed", removed[0], index);
+    }
+  }
+
+  private void selectLinkedAtIndex(int index) {
+    LinkedListViewState state = latestStructureState();
+    if (state == null) {
+      state = currentState();
+    }
+    List<Long> order = orderedNodeIds(state);
+    if (index < 0 || index >= order.size()) {
+      clearVisualSelection();
+      return;
+    }
+    linkedVisualizer().selectNode(order.get(index));
+  }
+
+  private void selectLinkedAfterRemoval(int removedIndex) {
+    LinkedListViewState state = latestStructureState();
+    if (state == null || state.nodes().isEmpty()) {
+      clearVisualSelection();
+      indexField.clear();
+      valueField.clear();
+      return;
+    }
+    List<Long> order = orderedNodeIds(state);
+    if (order.isEmpty()) {
+      clearVisualSelection();
+      indexField.clear();
+      valueField.clear();
+      return;
+    }
+    int nextIndex = removedIndex;
+    if (nextIndex >= order.size()) {
+      nextIndex = order.size() - 1;
+    }
+    linkedVisualizer().selectNode(order.get(nextIndex));
+  }
+
+  private void update() {
+    clearVisualSelection();
+    Integer target = index(false);
+    Object value = value();
+    if (target == null || value == null || target < 0 || target >= linkedList.size()) {
+      logI18n("message.error.invalid_linear_index");
+      return;
+    }
+    int index = target;
+    Object[] previous = new Object[1];
+    if (executeAndReduce("update", () -> previous[0] = linkedList.set(index, value))) {
+      selectLinkedAtIndex(index);
+      logI18n("message.linear.updated", index, previous[0], value);
+    }
+  }
+
+  private boolean executeAndReduce(String operationId, Runnable mutation) {
+    int eventStart = structureEvents().size();
+    LinkedListViewState before = latestStructureState();
+    if (before == null) {
+      before = currentState();
+    }
+    if (!executeStructureOperation(operationId, () -> {
+          mutation.run();
+          return null;
+        })) {
+      return false;
     }
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        super.initialize(location, resources);
-        configureControls();
-        quaternaryBtn.setOnAction(event -> update());
-        linkedVisualizer().setSelectionListener(this::handleVisualSelection);
-        bindAlgorithmSelector();
+    LinkedListEventReducer reducer = new LinkedListEventReducer(before);
+    LinkedListViewState state = before;
+    List<EventEnvelope> events = structureEvents();
+    for (int index = eventStart; index < events.size(); index++) {
+      Reduction<LinkedListViewState> reduction = reducer.reduce(state, events.get(index));
+      state = reduction.state();
     }
+    renderStructureState(state);
+    return true;
+  }
 
-    private void bindAlgorithmSelector() {
-        algorithmSelector
-                .itemsProperty()
-                .bind(
-                        Bindings.createObjectBinding(
-                                () -> {
-                                    ObservableList<String> labels =
-                                            FXCollections.observableArrayList();
-                                    for (String id : algorithmIds()) {
-                                        labels.add(AlgorithmCatalog.name(id));
-                                    }
-                                    return labels;
-                                },
-                                valueTypeRevision));
-
-        algorithmSelector
-                .getSelectionModel()
-                .selectedIndexProperty()
-                .addListener(
-                        (obs, oldIdx, newIdx) -> {
-                            List<String> ids = algorithmIds();
-                            selectedAlgorithmId =
-                                    (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
-                                            ? ids.get(newIdx.intValue())
-                                            : null;
-                            if (algorithmSelectionListener != null && selectedAlgorithmId != null)
-                                algorithmSelectionListener.accept(selectedAlgorithmId);
-                        });
+  private Object value() {
+    try {
+      return valueAdapter.parse(valueField.getText());
+    } catch (RuntimeException exception) {
+      logI18n("message.error.invalid_linear_value");
+      return null;
     }
+  }
 
-    @FXML
-    private void handlePrimary() {
-        insert();
+  private Integer index(boolean optional) {
+    String text = indexField.getText().trim();
+    if (optional && text.isEmpty()) {
+      return 0;
     }
-
-    @FXML
-    private void handleSecondary() {
-        remove();
+    try {
+      return Integer.valueOf(text);
+    } catch (RuntimeException exception) {
+      logI18n("message.error.invalid_linear_index");
+      return null;
     }
+  }
 
-    private void insert() {
-        clearVisualSelection();
-        Object value = value();
-        if (value == null) {
-            return;
-        }
-        Integer parsedIndex = index(true);
-        if (parsedIndex == null) {
-            return;
-        }
-        int target;
-        if (indexField.getText().isBlank()) {
-            target = linkedList.size();
-        } else {
-            target = parsedIndex;
-        }
-        if (target < 0 || target > linkedList.size()) {
-            logI18n("message.error.invalid_linear_index");
-            return;
-        }
-        if (executeAndReduce("insert", () -> linkedList.insert(target, value))) {
-            selectLinkedAtIndex(target);
-            logI18n("message.linear.inserted", value, target);
-        }
+  private void seed() {
+    linkedList.initialize(defaultValues());
+  }
+
+  private List<Object> defaultValues() {
+    if (runtimeValueType == Integer.class) {
+      return List.of(12, 24, 36);
     }
-
-    private void remove() {
-        Integer target = index(false);
-        if (target == null || target < 0 || target >= linkedList.size()) {
-            logI18n("message.error.invalid_linear_index");
-            return;
-        }
-        int index = target;
-        Object[] removed = new Object[1];
-        if (executeAndReduce("remove", () -> removed[0] = linkedList.remove(index))) {
-            selectLinkedAfterRemoval(index);
-            logI18n("message.linear.removed", removed[0], index);
-        }
+    if (runtimeValueType == String.class) {
+      return List.of("alpha", "beta", "gamma");
     }
+    throw new IllegalStateException(
+        "Unsupported LinkedList value type: " + runtimeValueType.getName());
+  }
 
-    private void selectLinkedAtIndex(int index) {
-        LinkedListViewState state = latestStructureState();
-        if (state == null) {
-            state = currentState();
-        }
-        List<Long> order = orderedNodeIds(state);
-        if (index < 0 || index >= order.size()) {
-            clearVisualSelection();
-            return;
-        }
-        linkedVisualizer().selectNode(order.get(index));
+  @Override
+  protected boolean supportsDataTools() {
+    return true;
+  }
+
+  @Override
+  protected void applyBulkData(String input) {
+    List<Object> values = parseBatchInput(input, valueAdapter);
+    if (values == null) {
+      return;
     }
+    replaceValues(values, "bulk-replace", "message.data.bulk_applied");
+  }
 
-    private void selectLinkedAfterRemoval(int removedIndex) {
-        LinkedListViewState state = latestStructureState();
-        if (state == null || state.nodes().isEmpty()) {
-            clearVisualSelection();
-            indexField.clear();
-            valueField.clear();
-            return;
-        }
-        List<Long> order = orderedNodeIds(state);
-        if (order.isEmpty()) {
-            clearVisualSelection();
-            indexField.clear();
-            valueField.clear();
-            return;
-        }
-        int nextIndex = removedIndex;
-        if (nextIndex >= order.size()) {
-            nextIndex = order.size() - 1;
-        }
-        linkedVisualizer().selectNode(order.get(nextIndex));
+  @Override
+  protected void randomizeData() {
+    java.util.Random random = new java.util.Random();
+    List<Object> values = new ArrayList<>();
+    for (int index = 0; index < 8; index++) {
+      if (runtimeValueType == Integer.class) {
+        values.add(random.nextInt(100) + 1);
+      } else {
+        values.add("V" + (random.nextInt(100) + 1));
+      }
     }
+    replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
+  }
 
-    private void update() {
-        clearVisualSelection();
-        Integer target = index(false);
-        Object value = value();
-        if (target == null || value == null || target < 0 || target >= linkedList.size()) {
-            logI18n("message.error.invalid_linear_index");
-            return;
-        }
-        int index = target;
-        Object[] previous = new Object[1];
-        if (executeAndReduce("update", () -> previous[0] = linkedList.set(index, value))) {
-            selectLinkedAtIndex(index);
-            logI18n("message.linear.updated", index, previous[0], value);
-        }
+  private void replaceValues(List<Object> values, String operationId, String messageKey) {
+    clearVisualSelection();
+    if (!executeStructureOperation(operationId, () -> {
+          linkedList.initialize(values);
+          return null;
+        })) {
+      return;
     }
-
-    private boolean executeAndReduce(String operationId, Runnable mutation) {
-        int eventStart = structureEvents().size();
-        LinkedListViewState before = latestStructureState();
-        if (before == null) {
-            before = currentState();
-        }
-        if (!executeStructureOperation(
-                operationId,
-                () -> {
-                    mutation.run();
-                    return null;
-                })) {
-            return false;
-        }
-
-        LinkedListEventReducer reducer = new LinkedListEventReducer(before);
-        LinkedListViewState state = before;
-        List<EventEnvelope> events = structureEvents();
-        for (int index = eventStart; index < events.size(); index++) {
-            Reduction<LinkedListViewState> reduction = reducer.reduce(state, events.get(index));
-            state = reduction.state();
-        }
-        renderStructureState(state);
-        return true;
+    renderStructureState(currentState());
+    if (values.isEmpty()) {
+      valueField.clear();
+      indexField.clear();
+    } else {
+      selectLinkedAtIndex(0);
     }
+    logI18n(messageKey, values.size());
+  }
 
-    private Object value() {
-        try {
-            return valueAdapter.parse(valueField.getText());
-        } catch (RuntimeException exception) {
-            logI18n("message.error.invalid_linear_value");
-            return null;
-        }
+  private LinkedListViewState currentState() {
+    return LinkedListViewState.source(linkedList.head());
+  }
+
+  private List<Object> values() {
+    List<Object> values = new ArrayList<>();
+    for (Object value : linkedList) {
+      values.add(value);
     }
+    return List.copyOf(values);
+  }
 
-    private Integer index(boolean optional) {
-        String text = indexField.getText().trim();
-        if (optional && text.isEmpty()) {
-            return 0;
-        }
-        try {
-            return Integer.valueOf(text);
-        } catch (RuntimeException exception) {
-            logI18n("message.error.invalid_linear_index");
-            return null;
-        }
+  @Override
+  protected String moduleId() {
+    return MODULE_ID;
+  }
+
+  @Override
+  protected String formatStatsMessage() {
+    return I18N.text("stats.linear.size", linkedList.size());
+  }
+
+  @Override
+  protected void setupI18n() {
+    if (typeLabel == null) {
+      return;
     }
+    typeLabel.textProperty().bind(I18N.createStringBinding("label.linear.feature.linked_list"));
+    structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
+    operationsLabel.textProperty().bind(I18N.createStringBinding("label.linear.operations"));
+    valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.value"));
+    indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.index"));
+    primaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.insert"));
+    secondaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.remove"));
+    quaternaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.update"));
+    bindSingleLocalizedChoice(structureSelector, "label.linear.structure.linked_list");
+  }
 
-    private void seed() {
-        linkedList.initialize(defaultValues());
+  @Override
+  public void handleAlgorithmStart() {
+    String algorithmId = selectedAlgorithmId();
+    if (algorithmId == null) {
+      logI18n("message.linear.no_algorithm");
+      return;
     }
+    List<Object> inputValues =
+        algorithmInputSnapshot == null ? values() : algorithmInputSnapshot.state().values();
+    LinkedList<Object> input = new LinkedList<>();
+    input.initialize(inputValues);
+    LinkedListViewState initialState = LinkedListViewState.source(input.head());
+    var descriptor =
+        AlgorithmCatalog.compatibleDescriptor(LinkedStructure.class, runtimeValueType, algorithmId);
+    startAlgorithm(algorithmId, inputValues, () -> {
+      descriptor.invoke(input);
+      return null;
+    }, () -> new LinkedListEventReducer(initialState));
+  }
 
-    private List<Object> defaultValues() {
-        if (runtimeValueType == Integer.class) {
-            return List.of(12, 24, 36);
-        }
-        if (runtimeValueType == String.class) {
-            return List.of("alpha", "beta", "gamma");
-        }
-        throw new IllegalStateException(
-                "Unsupported LinkedList value type: " + runtimeValueType.getName());
+  @Override
+  protected void onResetData() {
+    clearVisualSelection();
+    clearWithoutRuntime();
+    seed();
+    renderStructureState(currentState());
+  }
+
+  @Override
+  public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
+    return StructureSnapshot.create(MODULE_ID, runtimeValueType, new SequenceSnapshot<>(values()));
+  }
+
+  @Override
+  public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
+    if (!MODULE_ID.equals(snapshot.moduleId())) {
+      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
     }
+    snapshot.requireValueType(runtimeValueType);
+    clearVisualSelection();
+    linkedList.initialize(snapshot.state().values());
+    renderStructureState(currentState());
+  }
 
-    @Override
-    protected boolean supportsDataTools() {
-        return true;
+  @Override
+  public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
+    if (!MODULE_ID.equals(snapshot.moduleId())) {
+      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
     }
+    snapshot.requireValueType(runtimeValueType);
+    clearVisualSelection();
+    renderPreviewState(LinkedListViewState.fromValues(snapshot.state().values()));
+  }
 
-    @Override
-    protected void applyBulkData(String input) {
-        List<Object> values = parseBatchInput(input, valueAdapter);
-        if (values == null) {
-            return;
-        }
-        replaceValues(values, "bulk-replace", "message.data.bulk_applied");
+  @Override
+  public String describeStructureSnapshot(SequenceSnapshot<Object> state) {
+    return I18N.text("snapshot.linear.detail", state.values().size());
+  }
+
+  @Override
+  public String snapshotPrimaryCount(SequenceSnapshot<Object> state) {
+    return Integer.toString(state.values().size());
+  }
+
+  public void setSelectionListener(Consumer<NodeSelection> listener) {
+    if (listener == null) {
+      selectionListener = ignored -> {};
+    } else {
+      selectionListener = listener;
     }
+  }
 
-    @Override
-    protected void randomizeData() {
-        java.util.Random random = new java.util.Random();
-        List<Object> values = new ArrayList<>();
-        for (int index = 0; index < 8; index++) {
-            if (runtimeValueType == Integer.class) {
-                values.add(random.nextInt(100) + 1);
-            } else {
-                values.add("V" + (random.nextInt(100) + 1));
-            }
-        }
-        replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
+  public void setStructureSelectionEnabled(boolean enabled) {
+    if (structureSelectionEnabled != enabled) {
+      clearVisualSelection();
     }
+    structureSelectionEnabled = enabled;
+  }
 
-    private void replaceValues(List<Object> values, String operationId, String messageKey) {
-        clearVisualSelection();
-        if (!executeStructureOperation(
-                operationId,
-                () -> {
-                    linkedList.initialize(values);
-                    return null;
-                })) {
-            return;
-        }
-        renderStructureState(currentState());
-        if (values.isEmpty()) {
-            valueField.clear();
-            indexField.clear();
-        } else {
-            selectLinkedAtIndex(0);
-        }
-        logI18n(messageKey, values.size());
+  private void handleVisualSelection(long nodeId) {
+    if (nodeId <= 0L) {
+      clearVisualSelection();
+      return;
     }
-
-    private LinkedListViewState currentState() {
-        return LinkedListViewState.source(linkedList.head());
+    if (!structureSelectionEnabled) {
+      handleAlgorithmSelection(nodeId);
+      return;
     }
-
-    private List<Object> values() {
-        List<Object> values = new ArrayList<>();
-        for (Object value : linkedList) {
-            values.add(value);
-        }
-        return List.copyOf(values);
+    LinkedListViewState state = latestStructureState();
+    if (state == null) {
+      state = currentState();
     }
-
-    @Override
-    protected String moduleId() {
-        return MODULE_ID;
+    LinkedListViewState.Node node = state.nodes().get(nodeId);
+    if (node == null) {
+      clearVisualSelection();
+      return;
     }
-
-    @Override
-    protected String formatStatsMessage() {
-        return I18N.text("stats.linear.size", linkedList.size());
+    List<Long> order = orderedNodeIds(state);
+    int index = order.indexOf(nodeId);
+    valueField.setText(node.value().text());
+    if (index >= 0) {
+      indexField.setText(Integer.toString(index));
     }
+    selectionListener.accept(new NodeSelection(
+        node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+  }
 
-    @Override
-    protected void setupI18n() {
-        if (typeLabel == null) {
-            return;
-        }
-        typeLabel.textProperty().bind(I18N.createStringBinding("label.linear.feature.linked_list"));
-        structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
-        operationsLabel.textProperty().bind(I18N.createStringBinding("label.linear.operations"));
-        valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.value"));
-        indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.linear.index"));
-        primaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.insert"));
-        secondaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.remove"));
-        quaternaryBtn.textProperty().bind(I18N.createStringBinding("action.linked_list.update"));
-        bindSingleLocalizedChoice(structureSelector, "label.linear.structure.linked_list");
+  private void handleAlgorithmSelection(long nodeId) {
+    LinkedListViewState state = latestViewState();
+    if (state == null) {
+      return;
     }
-
-    @Override
-    public void handleAlgorithmStart() {
-        String algorithmId = selectedAlgorithmId();
-        if (algorithmId == null) {
-            logI18n("message.linear.no_algorithm");
-            return;
-        }
-        List<Object> inputValues =
-                algorithmInputSnapshot == null ? values() : algorithmInputSnapshot.state().values();
-        LinkedList<Object> input = new LinkedList<>();
-        input.initialize(inputValues);
-        LinkedListViewState initialState = LinkedListViewState.source(input.head());
-        var descriptor =
-                AlgorithmCatalog.compatibleDescriptor(
-                        LinkedStructure.class, runtimeValueType, algorithmId);
-        startAlgorithm(
-                algorithmId,
-                inputValues,
-                () -> {
-                    descriptor.invoke(input);
-                    return null;
-                },
-                () -> new LinkedListEventReducer(initialState));
+    algorithmSelectedNodeId = nodeId;
+    if (!publishAlgorithmSelection(state, nodeId)) {
+      clearVisualSelection();
     }
+  }
 
-    @Override
-    protected void onResetData() {
-        clearVisualSelection();
-        clearWithoutRuntime();
-        seed();
-        renderStructureState(currentState());
+  private boolean publishAlgorithmSelection(LinkedListViewState state, long nodeId) {
+    LinkedListViewState.Node node = state.nodes().get(nodeId);
+    if (node == null) {
+      return false;
     }
+    int index = orderedNodeIds(state).indexOf(nodeId);
+    selectionListener.accept(new NodeSelection(
+        node.id(), node.value(), node.previousId(), node.nextId(), index, state.nodes().size()));
+    return true;
+  }
 
-    @Override
-    public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
-        return StructureSnapshot.create(
-                MODULE_ID, runtimeValueType, new SequenceSnapshot<>(values()));
+  @Override
+  protected void onPresentationStateChanged(LinkedListViewState state) {
+    if (structureSelectionEnabled || algorithmSelectedNodeId == null) {
+      return;
     }
-
-    @Override
-    public void restoreStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
-        if (!MODULE_ID.equals(snapshot.moduleId())) {
-            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
-        }
-        snapshot.requireValueType(runtimeValueType);
-        clearVisualSelection();
-        linkedList.initialize(snapshot.state().values());
-        renderStructureState(currentState());
+    long nodeId = algorithmSelectedNodeId;
+    if (!linkedVisualizer().showSelection(nodeId) || !publishAlgorithmSelection(state, nodeId)) {
+      clearVisualSelection();
     }
+  }
 
-    @Override
-    public void previewStructureSnapshot(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
-        if (!MODULE_ID.equals(snapshot.moduleId())) {
-            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
-        }
-        snapshot.requireValueType(runtimeValueType);
-        clearVisualSelection();
-        renderPreviewState(LinkedListViewState.fromValues(snapshot.state().values()));
+  private List<Long> orderedNodeIds(LinkedListViewState state) {
+    List<Long> order = new ArrayList<>();
+    Long current = state.nodes()
+                       .values()
+                       .stream()
+                       .filter(candidate -> candidate.previousId() == null)
+                       .map(LinkedListViewState.Node::id)
+                       .findFirst()
+                       .orElse(null);
+    while (current != null && state.nodes().containsKey(current) && !order.contains(current)) {
+      order.add(current);
+      current = state.nodes().get(current).nextId();
     }
+    return List.copyOf(order);
+  }
 
-    @Override
-    public String describeStructureSnapshot(SequenceSnapshot<Object> state) {
-        return I18N.text("snapshot.linear.detail", state.values().size());
+  private void clearVisualSelection() {
+    algorithmSelectedNodeId = null;
+    linkedVisualizer().clearSelection();
+    selectionListener.accept(null);
+  }
+
+  private LinkedListVisualizer linkedVisualizer() {
+    return (LinkedListVisualizer) visualizer;
+  }
+
+  public record
+      NodeSelection(long id, VisualValue value, Long previousId, Long nextId, int index, int size) {
+  }
+
+  private void clearWithoutRuntime() {
+    linkedList.initialize(List.of());
+  }
+
+  private void configureControls() {
+    if (typeLabel == null) {
+      return;
     }
+    indexField.setVisible(true);
+    indexField.setManaged(true);
+    quaternaryBtn.setVisible(true);
+    quaternaryBtn.setManaged(true);
+  }
 
-    @Override
-    public String snapshotPrimaryCount(SequenceSnapshot<Object> state) {
-        return Integer.toString(state.values().size());
+  @Override
+  public Class<?> runtimeValueType() {
+    return runtimeValueType;
+  }
+
+  @Override
+  public boolean hasValues() {
+    return linkedList.size() > 0;
+  }
+
+  @Override
+  public List<Class<?>> supportedValueTypes() {
+    return ValueAdapters.supportedTypes();
+  }
+
+  @Override
+  public void setRuntimeValueType(Class<?> valueType) {
+    if (!supportedValueTypes().contains(valueType)) {
+      throw new IllegalArgumentException(
+          "Unsupported LinkedList value type: " + valueType.getName());
     }
-
-    public void setSelectionListener(Consumer<NodeSelection> listener) {
-        if (listener == null) {
-            selectionListener = ignored -> {};
-        } else {
-            selectionListener = listener;
-        }
+    if (runtimeValueType.equals(valueType)) {
+      return;
     }
-
-    public void setStructureSelectionEnabled(boolean enabled) {
-        if (structureSelectionEnabled != enabled) {
-            clearVisualSelection();
-        }
-        structureSelectionEnabled = enabled;
+    runtimeValueType = valueType;
+    valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+    clearVisualSelection();
+    clearWithoutRuntime();
+    invalidateExecutionForStructureChange();
+    if (controlPanel != null) {
+      renderStructureState(currentState());
+      refreshStatsDisplay();
     }
+  }
 
-    private void handleVisualSelection(long nodeId) {
-        if (nodeId <= 0L) {
-            clearVisualSelection();
-            return;
-        }
-        if (!structureSelectionEnabled) {
-            handleAlgorithmSelection(nodeId);
-            return;
-        }
-        LinkedListViewState state = latestStructureState();
-        if (state == null) {
-            state = currentState();
-        }
-        LinkedListViewState.Node node = state.nodes().get(nodeId);
-        if (node == null) {
-            clearVisualSelection();
-            return;
-        }
-        List<Long> order = orderedNodeIds(state);
-        int index = order.indexOf(nodeId);
-        valueField.setText(node.value().text());
-        if (index >= 0) {
-            indexField.setText(Integer.toString(index));
-        }
-        selectionListener.accept(
-                new NodeSelection(
-                        node.id(),
-                        node.value(),
-                        node.previousId(),
-                        node.nextId(),
-                        index,
-                        state.nodes().size()));
-    }
+  @Override
+  public List<String> algorithmIds() {
+    return AlgorithmCatalog.compatibleAlgorithms(
+        com.majortom.algorithms.structure.linked.LinkedStructure.class, runtimeValueType);
+  }
 
-    private void handleAlgorithmSelection(long nodeId) {
-        LinkedListViewState state = latestViewState();
-        if (state == null) {
-            return;
-        }
-        algorithmSelectedNodeId = nodeId;
-        if (!publishAlgorithmSelection(state, nodeId)) {
-            clearVisualSelection();
-        }
-    }
+  @Override
+  public boolean selectAlgorithm(String algorithmId) {
+    List<String> ids = algorithmIds();
+    int index = ids.indexOf(algorithmId);
+    if (index < 0)
+      return false;
+    algorithmSelector.getSelectionModel().select(index);
+    return true;
+  }
 
-    private boolean publishAlgorithmSelection(LinkedListViewState state, long nodeId) {
-        LinkedListViewState.Node node = state.nodes().get(nodeId);
-        if (node == null) {
-            return false;
-        }
-        int index = orderedNodeIds(state).indexOf(nodeId);
-        selectionListener.accept(
-                new NodeSelection(
-                        node.id(),
-                        node.value(),
-                        node.previousId(),
-                        node.nextId(),
-                        index,
-                        state.nodes().size()));
-        return true;
-    }
+  @Override
+  public String selectedAlgorithmId() {
+    return selectedAlgorithmId;
+  }
 
-    @Override
-    protected void onPresentationStateChanged(LinkedListViewState state) {
-        if (structureSelectionEnabled || algorithmSelectedNodeId == null) {
-            return;
-        }
-        long nodeId = algorithmSelectedNodeId;
-        if (!linkedVisualizer().showSelection(nodeId)
-                || !publishAlgorithmSelection(state, nodeId)) {
-            clearVisualSelection();
-        }
-    }
+  @Override
+  public void setAlgorithmSelectionListener(Consumer<String> listener) {
+    this.algorithmSelectionListener = listener;
+  }
 
-    private List<Long> orderedNodeIds(LinkedListViewState state) {
-        List<Long> order = new ArrayList<>();
-        Long current =
-                state.nodes().values().stream()
-                        .filter(candidate -> candidate.previousId() == null)
-                        .map(LinkedListViewState.Node::id)
-                        .findFirst()
-                        .orElse(null);
-        while (current != null && state.nodes().containsKey(current) && !order.contains(current)) {
-            order.add(current);
-            current = state.nodes().get(current).nextId();
-        }
-        return List.copyOf(order);
-    }
+  @Override
+  public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
+    if (!MODULE_ID.equals(snapshot.moduleId()))
+      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+    snapshot.requireValueType(runtimeValueType);
+    algorithmInputSnapshot = snapshot;
+    invalidateExecutionForInputChange();
+  }
 
-    private void clearVisualSelection() {
-        algorithmSelectedNodeId = null;
-        linkedVisualizer().clearSelection();
-        selectionListener.accept(null);
-    }
+  @Override
+  public void useCurrentStructureAsAlgorithmInput() {
+    algorithmInputSnapshot = null;
+    invalidateExecutionForInputChange();
+  }
 
-    private LinkedListVisualizer linkedVisualizer() {
-        return (LinkedListVisualizer) visualizer;
-    }
+  @Override
+  public String algorithmInputSnapshotId() {
+    return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
+  }
 
-    public record NodeSelection(
-            long id, VisualValue value, Long previousId, Long nextId, int index, int size) {}
-
-    private void clearWithoutRuntime() {
-        linkedList.initialize(List.of());
-    }
-
-    private void configureControls() {
-        if (typeLabel == null) {
-            return;
-        }
-        indexField.setVisible(true);
-        indexField.setManaged(true);
-        quaternaryBtn.setVisible(true);
-        quaternaryBtn.setManaged(true);
-    }
-
-    @Override
-    public Class<?> runtimeValueType() {
-        return runtimeValueType;
-    }
-
-    @Override
-    public boolean hasValues() {
-        return linkedList.size() > 0;
-    }
-
-    @Override
-    public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
-    }
-
-    @Override
-    public void setRuntimeValueType(Class<?> valueType) {
-        if (!supportedValueTypes().contains(valueType)) {
-            throw new IllegalArgumentException(
-                    "Unsupported LinkedList value type: " + valueType.getName());
-        }
-        if (runtimeValueType.equals(valueType)) {
-            return;
-        }
-        runtimeValueType = valueType;
-        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
-        clearVisualSelection();
-        clearWithoutRuntime();
-        invalidateExecutionForStructureChange();
-        if (controlPanel != null) {
-            renderStructureState(currentState());
-            refreshStatsDisplay();
-        }
-    }
-
-    @Override
-    public List<String> algorithmIds() {
-        return AlgorithmCatalog.compatibleAlgorithms(
-                com.majortom.algorithms.structure.linked.LinkedStructure.class, runtimeValueType);
-    }
-
-    @Override
-    public boolean selectAlgorithm(String algorithmId) {
-        List<String> ids = algorithmIds();
-        int index = ids.indexOf(algorithmId);
-        if (index < 0) return false;
-        algorithmSelector.getSelectionModel().select(index);
-        return true;
-    }
-
-    @Override
-    public String selectedAlgorithmId() {
-        return selectedAlgorithmId;
-    }
-
-    @Override
-    public void setAlgorithmSelectionListener(Consumer<String> listener) {
-        this.algorithmSelectionListener = listener;
-    }
-
-    @Override
-    public void useSnapshotAsAlgorithmInput(StructureSnapshot<SequenceSnapshot<Object>> snapshot) {
-        if (!MODULE_ID.equals(snapshot.moduleId()))
-            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
-        snapshot.requireValueType(runtimeValueType);
-        algorithmInputSnapshot = snapshot;
-        invalidateExecutionForInputChange();
-    }
-
-    @Override
-    public void useCurrentStructureAsAlgorithmInput() {
-        algorithmInputSnapshot = null;
-        invalidateExecutionForInputChange();
-    }
-
-    @Override
-    public String algorithmInputSnapshotId() {
-        return algorithmInputSnapshot == null ? null : algorithmInputSnapshot.id();
-    }
-
-    @Override
-    protected boolean algorithmInputTracksCurrentStructure() {
-        return algorithmInputSnapshot == null;
-    }
+  @Override
+  protected boolean algorithmInputTracksCurrentStructure() {
+    return algorithmInputSnapshot == null;
+  }
 }

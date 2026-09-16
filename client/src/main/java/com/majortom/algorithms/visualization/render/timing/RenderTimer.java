@@ -8,5 +8,5 @@ import java.time.Duration;
  */
 @FunctionalInterface
 public interface RenderTimer {
-    void schedule(Duration delay, Runnable task);
+  void schedule(Duration delay, Runnable task);
 }

@@ -9,7 +9,6 @@ import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.MazeStructure;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,79 +18,71 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-@Algorithm(
-        id = "graph-generator-bfs",
-        name = "图迷宫生成",
-        type = Integer.class,
-        structure = MazeStructure.class)
+@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", type = Integer.class,
+    structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.GRAPH)
 public final class GraphMazeBfsGenerator {
-
-    private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
-
-    @AlgorithmEntry
-    public GraphSnapshot<Integer> generate(MazeStructure maze) {
-        MazeDimensions dimensions = maze.dimensions();
-        List<GraphSnapshot.Vertex<Integer>> vertices = vertices(dimensions);
-        List<GraphSnapshot.Edge> edges = new ArrayList<>();
-        Set<Integer> discovered = new HashSet<>();
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        Random random = new Random();
-        long nextEdgeId = 1L;
-        queue.add(0);
-        discovered.add(0);
-        Observations.visited(row(dimensions, 0), column(dimensions, 0));
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            List<Integer> neighbors = neighbors(dimensions, current);
-            Collections.shuffle(neighbors, random);
-            for (int neighbor : neighbors) {
-                if (!discovered.add(neighbor)) {
-                    continue;
-                }
-                Observations.examined(
-                        row(dimensions, current), column(dimensions, current),
-                        row(dimensions, neighbor), column(dimensions, neighbor));
-                edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L));
-                edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L));
-                queue.addLast(neighbor);
-                Observations.visited(row(dimensions, neighbor), column(dimensions, neighbor));
-            }
+  private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
+  @AlgorithmEntry
+  public GraphSnapshot<Integer> generate(MazeStructure maze) {
+    MazeDimensions dimensions = maze.dimensions();
+    List<GraphSnapshot.Vertex<Integer>> vertices = vertices(dimensions);
+    List<GraphSnapshot.Edge> edges = new ArrayList<>();
+    Set<Integer> discovered = new HashSet<>();
+    ArrayDeque<Integer> queue = new ArrayDeque<>();
+    Random random = new Random();
+    long nextEdgeId = 1L;
+    queue.add(0);
+    discovered.add(0);
+    Observations.visited(row(dimensions, 0), column(dimensions, 0));
+    while (!queue.isEmpty()) {
+      int current = queue.removeFirst();
+      List<Integer> neighbors = neighbors(dimensions, current);
+      Collections.shuffle(neighbors, random);
+      for (int neighbor : neighbors) {
+        if (!discovered.add(neighbor)) {
+          continue;
         }
-        return new GraphSnapshot<>(true, vertices, edges);
+        Observations.examined(row(dimensions, current), column(dimensions, current),
+            row(dimensions, neighbor), column(dimensions, neighbor));
+        edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L));
+        edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L));
+        queue.addLast(neighbor);
+        Observations.visited(row(dimensions, neighbor), column(dimensions, neighbor));
+      }
     }
+    return new GraphSnapshot<>(true, vertices, edges);
+  }
 
-    private int row(MazeDimensions dimensions, int node) {
-        return node / dimensions.columns();
-    }
+  private int row(MazeDimensions dimensions, int node) {
+    return node / dimensions.columns();
+  }
 
-    private int column(MazeDimensions dimensions, int node) {
-        return node % dimensions.columns();
-    }
+  private int column(MazeDimensions dimensions, int node) {
+    return node % dimensions.columns();
+  }
 
-    private List<GraphSnapshot.Vertex<Integer>> vertices(MazeDimensions dimensions) {
-        int cellCount = dimensions.cellCount();
-        List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>(cellCount);
-        for (int node = 0; node < cellCount; node++) {
-            vertices.add(new GraphSnapshot.Vertex<>(node + 1L, node));
-        }
-        return vertices;
+  private List<GraphSnapshot.Vertex<Integer>> vertices(MazeDimensions dimensions) {
+    int cellCount = dimensions.cellCount();
+    List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>(cellCount);
+    for (int node = 0; node < cellCount; node++) {
+      vertices.add(new GraphSnapshot.Vertex<>(node + 1L, node));
     }
+    return vertices;
+  }
 
-    private List<Integer> neighbors(MazeDimensions dimensions, int node) {
-        int row = node / dimensions.columns();
-        int column = node % dimensions.columns();
-        List<Integer> neighbors = new ArrayList<>(4);
-        for (int[] direction : DIRECTIONS) {
-            int nextRow = row + direction[0];
-            int nextColumn = column + direction[1];
-            if (nextRow >= 0
-                    && nextColumn >= 0
-                    && nextRow < dimensions.rows()
-                    && nextColumn < dimensions.columns()) {
-                neighbors.add(nextRow * dimensions.columns() + nextColumn);
-            }
-        }
-        return neighbors;
+  private List<Integer> neighbors(MazeDimensions dimensions, int node) {
+    int row = node / dimensions.columns();
+    int column = node % dimensions.columns();
+    List<Integer> neighbors = new ArrayList<>(4);
+    for (int[] direction : DIRECTIONS) {
+      int nextRow = row + direction[0];
+      int nextColumn = column + direction[1];
+      if (nextRow >= 0 && nextColumn >= 0 && nextRow < dimensions.rows()
+          && nextColumn < dimensions.columns()) {
+        neighbors.add(nextRow * dimensions.columns() + nextColumn);
+      }
     }
+    return neighbors;
+  }
 }

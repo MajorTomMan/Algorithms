@@ -2,29 +2,28 @@ package com.majortom.algorithms.leetcode.ds.tree;
 
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class 二叉树的后序遍历 {
-    public static void main(String[] args) {
-        Integer[] nums = {1, null, 2, 3};
-        BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(nums);
-        System.out.println(postTraversal(root));
-    }
+  public static void main(String[] args) {
+    Integer[] nums = {1, null, 2, 3};
+    BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(nums);
+    System.out.println(postTraversal(root));
+  }
 
-    public static List<Integer> postTraversal(BinaryTreeNode<Integer> root) {
-        List<Integer> list = new ArrayList<>();
-        postTraversal(root, list);
-        return list;
-    }
+  public static List<Integer> postTraversal(BinaryTreeNode<Integer> root) {
+    List<Integer> list = new ArrayList<>();
+    postTraversal(root, list);
+    return list;
+  }
 
-    public static void postTraversal(BinaryTreeNode<Integer> root, List<Integer> list) {
-        if (root == null) {
-            return;
-        }
-        postTraversal(root.getLeft(), list);
-        postTraversal(root.getRight(), list);
-        list.add((Integer) root.getValue());
+  public static void postTraversal(BinaryTreeNode<Integer> root, List<Integer> list) {
+    if (root == null) {
+      return;
     }
+    postTraversal(root.getLeft(), list);
+    postTraversal(root.getRight(), list);
+    list.add((Integer) root.getValue());
+  }
 }

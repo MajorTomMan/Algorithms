@@ -11,29 +11,28 @@ import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 平衡二叉树 {
-    public static void main(String[] args) {
-        BinaryTreeNode<Integer> root =
-                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
-        isBalanced(root);
-    }
+  public static void main(String[] args) {
+    BinaryTreeNode<Integer> root = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+    isBalanced(root);
+  }
 
-    public static boolean isBalanced(BinaryTreeNode<Integer> root) {
-        return height(root) != -1;
-    }
+  public static boolean isBalanced(BinaryTreeNode<Integer> root) {
+    return height(root) != -1;
+  }
 
-    public static int height(BinaryTreeNode<Integer> node) {
-        if (node == null) {
-            return 0;
-        }
-        int leftHeigh = height(node.getLeft());
-        int rightHeigh = height(node.getRight());
-        if (leftHeigh == -1 || rightHeigh == -1) {
-            return -1;
-        }
-        if (Math.abs(leftHeigh - rightHeigh) < 2) {
-            return Math.max(leftHeigh, rightHeigh) + 1;
-        } else {
-            return -1;
-        }
+  public static int height(BinaryTreeNode<Integer> node) {
+    if (node == null) {
+      return 0;
     }
+    int leftHeigh = height(node.getLeft());
+    int rightHeigh = height(node.getRight());
+    if (leftHeigh == -1 || rightHeigh == -1) {
+      return -1;
+    }
+    if (Math.abs(leftHeigh - rightHeigh) < 2) {
+      return Math.max(leftHeigh, rightHeigh) + 1;
+    } else {
+      return -1;
+    }
+  }
 }

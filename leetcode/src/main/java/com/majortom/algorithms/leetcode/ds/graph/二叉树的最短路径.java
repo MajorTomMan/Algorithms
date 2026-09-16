@@ -8,5 +8,5 @@
 package com.majortom.algorithms.leetcode.ds.graph;
 
 public class 二叉树的最短路径 {
-    public static void main(String[] args) {}
+  public static void main(String[] args) {}
 }

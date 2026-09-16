@@ -5,14 +5,13 @@ import java.util.Optional;
 
 /** Stores bounded local execution records independently from module controllers. */
 public interface RunHistoryService {
+  void add(ClientExecutionRecord record);
 
-    void add(ClientExecutionRecord record);
+  Optional<ClientExecutionRecord> latest();
 
-    Optional<ClientExecutionRecord> latest();
+  List<ClientExecutionRecord> comparableWith(ClientExecutionRecord record);
 
-    List<ClientExecutionRecord> comparableWith(ClientExecutionRecord record);
+  List<ClientExecutionRecord> all();
 
-    List<ClientExecutionRecord> all();
-
-    void clear();
+  void clear();
 }

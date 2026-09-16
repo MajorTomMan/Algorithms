@@ -2,33 +2,25 @@ package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureModule;
-
+import com.majortom.algorithms.structure.linked.ListNode;
 import java.util.Collection;
 
-@Structure(
-        id = "linked-list",
-        name = "Linked List",
-        module = StructureModule.LINKED_LIST,
-        implementation = LinkedList.class)
+@Structure(id = "linked-list", name = "Linked List", module = StructureModule.LINKED_LIST,
+    implementation = LinkedList.class)
 public interface LinkedStructure<T> extends Iterable<T> {
-    int size();
+  int size();
 
-    default boolean isEmpty() {
-        return size() == 0;
-    }
+  default boolean isEmpty() {
+    return size() == 0;
+  }
 
-    /** Replaces the complete linked topology through the trusted bulk-load path. */
-    void initialize(Collection<? extends T> values);
+  /** Replaces the complete linked topology through the trusted bulk-load path. */
+  void initialize(Collection<? extends T> values);
 
-    T get(int index);
-
-    void insert(int index, T value);
-
-    T remove(int index);
-
-    T set(int index, T value);
-
-    ListNode<T> head();
-
-    ListNode<T> tail();
+  T get(int index);
+  void insert(int index, T value);
+  T remove(int index);
+  T set(int index, T value);
+  ListNode<T> head();
+  ListNode<T> tail();
 }

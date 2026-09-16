@@ -4,13 +4,9 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.tree.AvlTreeStructure;
 
-@Algorithm(
-        id = "avl-tree-test",
-        name = "二叉排序树测试",
-        type = Integer.class,
-        structure = AvlTreeStructure.class)
+@Algorithm(id = "avl-tree-test", name = "二叉排序树测试", type = Integer.class,
+    structure = AvlTreeStructure.class)
 public class AvlTreeTest {
-
-    @AlgorithmEntry
-    public void execute(AvlTreeStructure<Integer> tree) {}
+  @AlgorithmEntry
+  public void execute(AvlTreeStructure<Integer> tree) {}
 }

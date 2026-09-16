@@ -4,21 +4,20 @@ import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.linked.ListNode;
 
 public class 删除链表节点 {
-    public static void main(String[] args) {
-        Integer[] nums = {-3, 5, -99};
-        ListNode<Integer> head = AlgorithmsUtils.buildLinkedList(nums);
-        System.out.println(deleteNode(head, -99));
+  public static void main(String[] args) {
+    Integer[] nums = {-3, 5, -99};
+    ListNode<Integer> head = AlgorithmsUtils.buildLinkedList(nums);
+    System.out.println(deleteNode(head, -99));
+  }
+  public static ListNode<Integer> deleteNode(ListNode<Integer> head, int val) {
+    if (head == null) {
+      return null;
     }
-
-    public static ListNode<Integer> deleteNode(ListNode<Integer> head, int val) {
-        if (head == null) {
-            return null;
-        }
-        if (head.getValue() == val) {
-            return head.getNext();
-        } else {
-            head.setNext(deleteNode(head.getNext(), val));
-        }
-        return head;
+    if (head.getValue() == val) {
+      return head.getNext();
+    } else {
+      head.setNext(deleteNode(head.getNext(), val));
     }
+    return head;
+  }
 }

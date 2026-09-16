@@ -2,47 +2,45 @@ package com.majortom.algorithms.structure.tree;
 
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureModule;
-
 import java.util.List;
 import java.util.Objects;
 
 @Structure(id = "tree", name = "Tree", module = StructureModule.TREE, implementation = Tree.class)
 public interface GeneralTreeStructure<T> extends TreeStructure<T> {
-    /** Lightweight tree-specific input used only by the trusted bulk-load path. */
-    record NodeInput<T>(T value, List<NodeInput<T>> children) {
-        public NodeInput {
-            value = Objects.requireNonNull(value, "value");
-            children = List.copyOf(Objects.requireNonNull(children, "children"));
-        }
-
-        public static <T> NodeInput<T> leaf(T value) {
-            return new NodeInput<>(value, List.of());
-        }
+  /** Lightweight tree-specific input used only by the trusted bulk-load path. */
+  record NodeInput<T>(T value, List<NodeInput<T>> children) {
+    public NodeInput {
+      value = Objects.requireNonNull(value, "value");
+      children = List.copyOf(Objects.requireNonNull(children, "children"));
     }
 
-    @Override
-    GeneralTreeNode<T> root();
+    public static <T> NodeInput<T> leaf(T value) {
+      return new NodeInput<>(value, List.of());
+    }
+  }
 
-    /** Replaces the complete ordered tree through the trusted bulk-load path. Null means empty. */
-    void initialize(NodeInput<T> root);
+  @Override GeneralTreeNode<T> root();
 
-    GeneralTreeNode<T> addRoot(T value);
+  /** Replaces the complete ordered tree through the trusted bulk-load path. Null means empty. */
+  void initialize(NodeInput<T> root);
 
-    GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, T value);
+  GeneralTreeNode<T> addRoot(T value);
 
-    GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, int index, T value);
+  GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, T value);
 
-    GeneralTreeNode<T> addParent(GeneralTreeNode<T> node, T value);
+  GeneralTreeNode<T> addChild(GeneralTreeNode<T> parent, int index, T value);
 
-    T set(GeneralTreeNode<T> node, T value);
+  GeneralTreeNode<T> addParent(GeneralTreeNode<T> node, T value);
 
-    GeneralTreeNode<T> findById(long id);
+  T set(GeneralTreeNode<T> node, T value);
 
-    GeneralTreeNode<T> findFirstByValue(T value);
+  GeneralTreeNode<T> findById(long id);
 
-    boolean remove(GeneralTreeNode<T> node);
+  GeneralTreeNode<T> findFirstByValue(T value);
 
-    void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent);
+  boolean remove(GeneralTreeNode<T> node);
 
-    void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent, int index);
+  void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent);
+
+  void move(GeneralTreeNode<T> node, GeneralTreeNode<T> newParent, int index);
 }

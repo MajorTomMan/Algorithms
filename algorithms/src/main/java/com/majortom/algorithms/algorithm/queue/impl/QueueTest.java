@@ -4,9 +4,9 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 
-@Algorithm(id = "queue-test", name = "队列测试", type = Integer.class, structure = QueueStructure.class)
+@Algorithm(
+    id = "queue-test", name = "队列测试", type = Integer.class, structure = QueueStructure.class)
 public class QueueTest {
-
-    @AlgorithmEntry
-    public void execute(QueueStructure<Integer> queue) {}
+  @AlgorithmEntry
+  public void execute(QueueStructure<Integer> queue) {}
 }

@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface MazeAlgorithm {
-    MazeRole role();
+  MazeRole role();
 
-    MazeModel model() default MazeModel.ARRAY;
+  MazeModel model() default MazeModel.ARRAY;
 }

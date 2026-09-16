@@ -14,34 +14,26 @@ import com.majortom.algorithms.visualization.render.timing.RenderClock;
 import com.majortom.algorithms.visualization.render.viewport.CameraManager;
 
 public final class RenderRuntime {
-    private static final FxExecutor FX = FxDispatch.executor();
-    private static final RenderTrace TRACE = new RenderTrace();
-    private static final RenderClock CLOCK = new RenderClock();
-    private static final DefaultRenderFramework SHARED =
-            new DefaultRenderFramework(
-                    new RenderScheduler(),
-                    new LayoutExecutor(
-                            Math.max(
-                                    2,
-                                    Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
-                    FX,
-                    new FxSurfaceRegistry(),
-                    new LayoutEngineRegistry()
-                            .register(new LinearLayoutEngine())
-                            .register(new FixedLayoutEngine())
-                            .register(new GraphElkLayout())
-                            .register(new TreeElkLayout())
-                            .register(new LinkedListElkLayout()),
-                    new CameraManager(),
-                    TRACE);
+  private static final FxExecutor FX = FxDispatch.executor();
+  private static final RenderTrace TRACE = new RenderTrace();
+  private static final RenderClock CLOCK = new RenderClock();
+  private static final DefaultRenderFramework SHARED = new DefaultRenderFramework(
+      new RenderScheduler(),
+      new LayoutExecutor(Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
+      FX, new FxSurfaceRegistry(),
+      new LayoutEngineRegistry()
+          .register(new LinearLayoutEngine())
+          .register(new FixedLayoutEngine())
+          .register(new GraphElkLayout())
+          .register(new TreeElkLayout())
+          .register(new LinkedListElkLayout()),
+      new CameraManager(), TRACE);
 
-    private RenderRuntime() {}
-
-    public static DefaultRenderFramework shared() {
-        return SHARED;
-    }
-
-    public static RenderClock clock() {
-        return CLOCK;
-    }
+  private RenderRuntime() {}
+  public static DefaultRenderFramework shared() {
+    return SHARED;
+  }
+  public static RenderClock clock() {
+    return CLOCK;
+  }
 }

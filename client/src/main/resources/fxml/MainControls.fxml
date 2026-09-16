@@ -8,6 +8,7 @@
 <?import com.majortom.algorithms.visualization.logging.LogView?>
 <?import com.majortom.algorithms.visualization.common.OverlayPane?>
 <?import com.majortom.algorithms.visualization.layout.PlaybackToolbar?>
+<?import com.majortom.algorithms.visualization.layout.WorkbenchHeader?>
 <?import com.majortom.algorithms.visualization.navigation.FamilyNavigator?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
@@ -15,81 +16,39 @@
     styleClass="root-pane" stylesheets="@../style/theme.css">
 
     <top>
-        <VBox fx:id="topShell" styleClass="top-shell">
-            <HBox fx:id="topBar"
-                styleClass="lab-top-bar" alignment="CENTER_LEFT">
-                <HBox fx:id="brandZone" alignment="CENTER_LEFT"
-                    styleClass="brand-zone">
-                    <StackPane styleClass="brand-mark">
-                        <Polygon styleClass="brand-mark-red">
-                            <points>
-                                <Double fx:value="0" />
-                                <Double fx:value="0" />
-                                <Double fx:value="46" />
-                                <Double fx:value="0" />
-                                <Double fx:value="0" />
-                                <Double fx:value="46" />
-                            </points>
-                        </Polygon>
-                        <Polygon styleClass="brand-mark-white">
-                            <points>
-                                <Double fx:value="46" />
-                                <Double fx:value="46" />
-                                <Double fx:value="12" />
-                                <Double fx:value="46" />
-                                <Double fx:value="46" />
-                                <Double fx:value="12" />
-                            </points>
-                        </Polygon>
-                    </StackPane>
-                    <VBox spacing="1" alignment="CENTER_LEFT">
-                        <Label text="ALGORITHMS / LAB" styleClass="brand-title-main" />
-                        <Label fx:id="brandSubtitle" text="EXPLORE · VISUALIZE · UNDERSTAND"
-                            styleClass="brand-subtitle" />
-                    </VBox>
-                </HBox>
-                <Region HBox.hgrow="ALWAYS" />
-                <HBox fx:id="workspaceModeBox"
-                    styleClass="lab-mode-switch" alignment="CENTER" spacing="0">
-                    <Button fx:id="structureWorkspaceBtn" text="STRUCTURE"
-                        onAction="#selectStructureWorkspace"
-                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                        <styleClass>
-                            <String fx:value="workspace-mode-button" />
-                            <String fx:value="workspace-mode-first" />
-                        </styleClass>
-                    </Button>
-                    <Button fx:id="algorithmWorkspaceBtn" text="ALGORITHM"
-                        onAction="#selectAlgorithmWorkspace"
-                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                        <styleClass>
-                            <String fx:value="workspace-mode-button" />
-                            <String fx:value="workspace-mode-middle" />
-                        </styleClass>
-                    </Button>
-                    <Button fx:id="practiceWorkspaceBtn" text="PRACTICE"
-                        onAction="#selectPracticeWorkspace"
-                        maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                        <styleClass>
-                            <String fx:value="workspace-mode-button" />
-                            <String fx:value="workspace-mode-last" />
-                        </styleClass>
-                    </Button>
-                </HBox>
-                <Region HBox.hgrow="ALWAYS" />
-                <HBox fx:id="topContextZone"
-                    alignment="CENTER_RIGHT" styleClass="top-context-zone">
-                    <Label fx:id="topContextLabel" text="ARRAY / STRUCTURE EDITOR"
-                        styleClass="top-context-title" />
-                    <Label fx:id="runStateLabel" text="EDITING" styleClass="run-state-badge" />
-                    <Label fx:id="runIdLabel" text="" styleClass="run-id-label" />
-                    <Separator orientation="VERTICAL" styleClass="font-settings-divider" />
-                    <Button fx:id="fontSettingsBtn" text="Aa" onAction="#toggleFontSettings"
-                        styleClass="font-settings-button" />
-                </HBox>
-                <Label fx:id="menuTitleLabel" managed="false" visible="false" />
+        <WorkbenchHeader fx:id="topBar">
+            <HBox alignment="CENTER_LEFT" styleClass="brand-zone">
+                <StackPane styleClass="brand-mark">
+                    <Polygon styleClass="brand-mark-red">
+                        <points>
+                            <Double fx:value="0" /><Double fx:value="0" />
+                            <Double fx:value="46" /><Double fx:value="0" />
+                            <Double fx:value="0" /><Double fx:value="46" />
+                        </points>
+                    </Polygon>
+                    <Polygon styleClass="brand-mark-white">
+                        <points>
+                            <Double fx:value="46" /><Double fx:value="46" />
+                            <Double fx:value="12" /><Double fx:value="46" />
+                            <Double fx:value="46" /><Double fx:value="12" />
+                        </points>
+                    </Polygon>
+                </StackPane>
+                <VBox spacing="1" alignment="CENTER_LEFT">
+                    <Label text="ALGORITHMS / LAB" styleClass="brand-title-main" />
+                    <Label text="EXPLORE · VISUALIZE · UNDERSTAND" styleClass="brand-subtitle" />
+                </VBox>
             </HBox>
-        </VBox>
+            <HBox styleClass="lab-mode-switch" alignment="CENTER" spacing="0">
+                <Button fx:id="structureWorkspaceBtn" text="STRUCTURE" onAction="#selectStructureWorkspace" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
+                <Button fx:id="algorithmWorkspaceBtn" text="ALGORITHM" onAction="#selectAlgorithmWorkspace" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
+                <Button fx:id="practiceWorkspaceBtn" text="PRACTICE" onAction="#selectPracticeWorkspace" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="workspace-mode-button" />
+            </HBox>
+            <HBox alignment="CENTER_RIGHT" styleClass="header-actions">
+                <Button fx:id="fontSettingsBtn" text="Aa" onAction="#toggleFontSettings" styleClass="font-settings-button" />
+            </HBox>
+            <Label fx:id="menuTitleLabel" managed="false" visible="false" />
+        </WorkbenchHeader>
     </top>
 
     <center>

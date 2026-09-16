@@ -11,40 +11,37 @@ import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
 public class 树的子结构 {
-    public static void main(String[] args) {
-        BinaryTreeNode<Integer> tree_a =
-                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
-        BinaryTreeNode<Integer> tree_b =
-                AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
-        System.out.println(isSubStructure(tree_a, tree_b));
-    }
+  public static void main(String[] args) {
+    BinaryTreeNode<Integer> tree_a = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+    BinaryTreeNode<Integer> tree_b = AlgorithmsUtils.buildBST(AlgorithmsUtils.randomArray(20, 30));
+    System.out.println(isSubStructure(tree_a, tree_b));
+  }
 
-    // 先检查A和B共同的子树根节点,然后递归判断子树结构
-    public static boolean isSubStructure(BinaryTreeNode<Integer> A, BinaryTreeNode<Integer> B) {
-        if (A == null || B == null) {
-            return false;
-        }
-        if (A.getValue() == B.getValue() && checkSubTree(A, B)) {
-            return true;
-        }
-        return isSubStructure(A.getLeft(), B) || isSubStructure(A.getRight(), B);
+  // 先检查A和B共同的子树根节点,然后递归判断子树结构
+  public static boolean isSubStructure(BinaryTreeNode<Integer> A, BinaryTreeNode<Integer> B) {
+    if (A == null || B == null) {
+      return false;
     }
+    if (A.getValue() == B.getValue() && checkSubTree(A, B)) {
+      return true;
+    }
+    return isSubStructure(A.getLeft(), B) || isSubStructure(A.getRight(), B);
+  }
 
-    /*
-     * 先序遍历判断子树结构,
-     * 当B子树为null 代表B树已经遍历完,即可返回true,
-     * 若A为null 则代表该子树不是A中子树,
-     * 返回false
-     */
-    public static boolean checkSubTree(BinaryTreeNode<Integer> a, BinaryTreeNode<Integer> b) {
-        if (b == null) {
-            return true;
-        }
-        if (a == null) {
-            return false;
-        }
-        return a.getValue() == b.getValue()
-                && checkSubTree(a.getLeft(), b.getLeft())
-                && checkSubTree(a.getRight(), b.getRight());
+  /*
+   * 先序遍历判断子树结构,
+   * 当B子树为null 代表B树已经遍历完,即可返回true,
+   * 若A为null 则代表该子树不是A中子树,
+   * 返回false
+   */
+  public static boolean checkSubTree(BinaryTreeNode<Integer> a, BinaryTreeNode<Integer> b) {
+    if (b == null) {
+      return true;
     }
+    if (a == null) {
+      return false;
+    }
+    return a.getValue() == b.getValue() && checkSubTree(a.getLeft(), b.getLeft())
+        && checkSubTree(a.getRight(), b.getRight());
+  }
 }
