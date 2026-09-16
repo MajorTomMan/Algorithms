@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.render.fx;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-/** Non-blocking hand-off to the next FX queue turn after scene mutations. */
+/** Non-blocking wait for a real JavaFX pulse after scene mutations. */
 public final class PulseBarrier {
     private final FxExecutor fxExecutor;
 
@@ -12,6 +12,6 @@ public final class PulseBarrier {
     }
 
     public CompletionStage<Void> await() {
-        return fxExecutor.defer(() -> {});
+        return fxExecutor.awaitPulse();
     }
 }

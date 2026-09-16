@@ -1,6 +1,5 @@
 package com.majortom.algorithms.leetcode.ds.list;
 
-
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.linked.ListNode;
 

@@ -23,13 +23,17 @@ public final class WorkbenchModules {
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
-                        "array", moduleName(registry, "array", "Array"), ArrayController::new));
+                        "array",
+                        moduleName(registry, "array", "Array"),
+                        new FamilyNavigationMetadata(10, "▦"),
+                        ArrayController::new));
         addIfAvailable(
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
                         "linked-list",
                         moduleName(registry, "linked-list", "Linked List"),
+                        new FamilyNavigationMetadata(20, "⌁"),
                         LinkedListController::new));
         addIfAvailable(
                 modules,
@@ -37,6 +41,7 @@ public final class WorkbenchModules {
                 new WorkbenchModuleDefinition(
                         "stack",
                         moduleName(registry, "stack", "Stack"),
+                        new FamilyNavigationMetadata(30, "▤"),
                         LinearStructureController::stack));
         addIfAvailable(
                 modules,
@@ -44,27 +49,41 @@ public final class WorkbenchModules {
                 new WorkbenchModuleDefinition(
                         "queue",
                         moduleName(registry, "queue", "Queue"),
+                        new FamilyNavigationMetadata(40, "▥"),
                         LinearStructureController::queue));
         addIfAvailable(
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
-                        "tree", moduleName(registry, "tree", "Tree"), TreeController::new));
+                        "tree",
+                        moduleName(registry, "tree", "Tree"),
+                        new FamilyNavigationMetadata(50, "⌘"),
+                        TreeController::new));
         addIfAvailable(
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
-                        "graph", moduleName(registry, "graph", "Graph"), GraphController::new));
+                        "graph",
+                        moduleName(registry, "graph", "Graph"),
+                        new FamilyNavigationMetadata(60, "◇"),
+                        GraphController::new));
         addIfAvailable(
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
-                        "string", moduleName(registry, "string", "String"), StringController::new));
+                        "string",
+                        moduleName(registry, "string", "String"),
+                        new FamilyNavigationMetadata(70, "Aa"),
+                        StringController::new));
         addIfAvailable(
                 modules,
                 registry,
                 new WorkbenchModuleDefinition(
-                        "maze", moduleName(registry, "maze", "Maze"), MazeController::new));
+                        "maze",
+                        moduleName(registry, "maze", "Maze"),
+                        new FamilyNavigationMetadata(80, "▧"),
+                        MazeController::new));
+        modules.sort(java.util.Comparator.comparingInt(module -> module.navigation().order()));
         return List.copyOf(modules);
     }
 

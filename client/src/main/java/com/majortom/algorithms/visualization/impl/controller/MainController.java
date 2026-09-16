@@ -25,6 +25,8 @@ import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.WorkbenchModules;
+import com.majortom.algorithms.visualization.navigation.FamilyEntry;
+import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
@@ -105,8 +107,6 @@ public class MainController implements Initializable {
     @FXML private Label brandSubtitle;
     @FXML private HBox workspaceModeBox;
     @FXML private HBox topContextZone;
-    @FXML private VBox structureNavigationBox;
-    @FXML private VBox algorithmNavigationBox;
     @FXML private Button structureWorkspaceBtn;
     @FXML private Button algorithmWorkspaceBtn;
     @FXML private Button practiceWorkspaceBtn;
@@ -131,8 +131,7 @@ public class MainController implements Initializable {
     @FXML private Label practiceEmptyLabel;
     @FXML private HBox structureWorkspaceBody;
     @FXML private HBox algorithmWorkspaceBody;
-    @FXML private VBox structureFamilyRail;
-    @FXML private VBox algorithmFamilyRail;
+    @FXML private FamilyNavigator familyNavigator;
     @FXML private VBox structureControlsHost;
     @FXML private VBox algorithmControlsHost;
     @FXML private HBox customControlBox;
@@ -289,8 +288,6 @@ public class MainController implements Initializable {
             WorkbenchModules.available(COMPONENTS);
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
-    private final Map<String, List<Button>> structureButtons = new LinkedHashMap<>();
-    private final Map<String, Map<String, Button>> algorithmButtons = new LinkedHashMap<>();
     private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
 
     /**
@@ -1178,7 +1175,6 @@ public class MainController implements Initializable {
         refreshStructureSummary();
         rebuildAlgorithmMenu();
         updateAlgorithmWorkspaceAvailability(activeDefinition.id());
-        clearAlgorithmSelection();
         List<AlgorithmNavigationItem> items = algorithmNavigationItems(activeDefinition.id());
         if (!items.isEmpty() && currentSubController instanceof AlgorithmSelectionSupport support) {
             support.selectAlgorithm(items.getFirst().id());
@@ -1186,75 +1182,61 @@ public class MainController implements Initializable {
     }
 
     private void setupModuleMenu() {
-        structureNavigationBox.getChildren().clear();
-        structureButtons.clear();
-        for (WorkbenchModuleDefinition definition : moduleDefinitions) {
-            Button structureButton = createCatalogButton(definition);
-            structureNavigationBox.getChildren().add(structureButton);
-        }
-        rebuildAlgorithmMenu();
+        familyNavigator.setEntries(
+                moduleDefinitions.stream()
+                        .map(
+                                definition ->
+                                        familyEntry(
+                                                definition, false, () -> selectFamily(definition)))
+                        .toList());
+        syncFamilyNavigatorSelection();
+        updateFamilyNavigatorAvailability();
     }
 
     private void rebuildAlgorithmMenu() {
-        algorithmNavigationBox.getChildren().clear();
-        algorithmButtons.clear();
-        for (WorkbenchModuleDefinition definition : moduleDefinitions) {
-            List<AlgorithmNavigationItem> navigationItems =
-                    algorithmNavigationItems(definition.id());
-            if (navigationItems.isEmpty()) {
-                Button unavailable = createFamilyRailButton(definition);
-                unavailable.setDisable(true);
-                algorithmNavigationBox.getChildren().add(unavailable);
-                continue;
-            }
-            AlgorithmNavigationItem first = navigationItems.getFirst();
-            Button familyButton = createAlgorithmFamilyButton(definition, first);
-            algorithmNavigationBox.getChildren().add(familyButton);
-            Map<String, Button> byAlgorithm =
-                    algorithmButtons.computeIfAbsent(
-                            definition.id(), ignored -> new LinkedHashMap<>());
-            for (AlgorithmNavigationItem item : navigationItems) {
-                byAlgorithm.put(item.id(), familyButton);
-            }
+        updateFamilyNavigatorAvailability();
+        syncFamilyNavigatorSelection();
+    }
+
+    private void selectFamily(WorkbenchModuleDefinition definition) {
+        if (definition == null || workspaceMode == WorkspaceMode.PRACTICE) {
+            return;
         }
+        if (workspaceMode == WorkspaceMode.STRUCTURE) {
+            switchToModule(definition);
+            return;
+        }
+        List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
+        if (navigationItems.isEmpty()) {
+            return;
+        }
+        String preferred =
+                activeDefinition != null && activeDefinition.id().equals(definition.id())
+                        ? selectedAlgorithmId
+                        : null;
+        String targetAlgorithm =
+                navigationItems.stream()
+                        .map(AlgorithmNavigationItem::id)
+                        .filter(id -> java.util.Objects.equals(id, preferred))
+                        .findFirst()
+                        .orElse(navigationItems.getFirst().id());
+        switchToModule(definition, WorkspaceMode.ALGORITHM, targetAlgorithm);
     }
 
-    private Button createAlgorithmFamilyButton(
-            WorkbenchModuleDefinition definition, AlgorithmNavigationItem first) {
-        Button button = createFamilyRailButton(definition);
-        button.setOnAction(
-                event -> switchToModule(definition, WorkspaceMode.ALGORITHM, first.id()));
-        return button;
+    private FamilyEntry familyEntry(
+            WorkbenchModuleDefinition definition, boolean disabled, Runnable action) {
+        return new FamilyEntry(
+                definition.id(),
+                definition.navigation().glyph(),
+                javafx.beans.binding.Bindings.createStringBinding(
+                        () -> familyName(definition.id()), I18N.localeProperty()),
+                disabled,
+                action);
     }
 
-    private Button createCatalogButton(WorkbenchModuleDefinition definition) {
-        Button button = createFamilyRailButton(definition);
-        button.setOnAction(event -> switchToModule(definition));
-        structureButtons
-                .computeIfAbsent(definition.id(), ignored -> new java.util.ArrayList<>())
-                .add(button);
-        return button;
-    }
-
-    private Button createFamilyRailButton(WorkbenchModuleDefinition definition) {
-        Button button = new Button();
-        button.setMinWidth(0.0d);
-        button.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.getStyleClass().add("family-rail-button");
-        button.textProperty()
-                .bind(
-                        javafx.beans.binding.Bindings.createStringBinding(
-                                () -> familyRailText(definition), I18N.localeProperty()));
-        return button;
-    }
-
-    private String familyRailText(WorkbenchModuleDefinition definition) {
-        return familyIndex(definition.id())
-                + "   "
-                + familyGlyph(definition.id())
-                + "  "
-                + familyName(definition.id());
+    private void syncFamilyNavigatorSelection() {
+        String familyId = activeDefinition == null ? null : activeDefinition.id();
+        familyNavigator.setSelectedFamily(familyId);
     }
 
     private String familyName(String moduleId) {
@@ -1262,45 +1244,12 @@ public class MainController implements Initializable {
     }
 
     private String familyIndex(String moduleId) {
-        return switch (moduleId) {
-            case "array" -> "01";
-            case "linked-list" -> "02";
-            case "stack" -> "03";
-            case "queue" -> "04";
-            case "tree" -> "05";
-            case "graph" -> "06";
-            case "string" -> "07";
-            case "maze" -> "08";
-            default -> "--";
-        };
-    }
-
-    private String familyGlyph(String moduleId) {
-        return switch (moduleId) {
-            case "array" -> "▦";
-            case "linked-list" -> "⌁";
-            case "stack" -> "▤";
-            case "queue" -> "▥";
-            case "tree" -> "⌘";
-            case "graph" -> "◇";
-            case "string" -> "Aa";
-            case "maze" -> "▧";
-            default -> "·";
-        };
-    }
-
-    private Button createAlgorithmButton(
-            WorkbenchModuleDefinition definition, AlgorithmNavigationItem item) {
-        Button button = new Button();
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.getStyleClass().add("sidebar-algorithm-button");
-        button.getStyleClass().add(moduleAccentStyleClass(definition.id()));
-        button.setText(AlgorithmCatalog.name(item.id()));
-        button.setOnAction(event -> selectAlgorithm(definition, item.id()));
-        algorithmButtons
-                .computeIfAbsent(definition.id(), ignored -> new LinkedHashMap<>())
-                .put(item.id(), button);
-        return button;
+        for (int index = 0; index < moduleDefinitions.size(); index++) {
+            if (moduleDefinitions.get(index).id().equals(moduleId)) {
+                return "%02d".formatted(index + 1);
+            }
+        }
+        return "--";
     }
 
     private void selectAlgorithm(WorkbenchModuleDefinition definition, String algorithmId) {
@@ -1315,25 +1264,6 @@ public class MainController implements Initializable {
         setWorkspaceMode(WorkspaceMode.ALGORITHM);
         if (currentSubController instanceof AlgorithmSelectionSupport support) {
             support.selectAlgorithm(algorithmId);
-        }
-    }
-
-    private void selectAlgorithmButton(String moduleId, String algorithmId) {
-        algorithmButtons
-                .values()
-                .forEach(
-                        buttons ->
-                                buttons.values()
-                                        .forEach(
-                                                button ->
-                                                        button.pseudoClassStateChanged(
-                                                                SELECTED, false)));
-        Map<String, Button> buttons = algorithmButtons.get(moduleId);
-        if (buttons != null) {
-            Button selectedButton = buttons.get(algorithmId);
-            if (selectedButton != null) {
-                selectedButton.pseudoClassStateChanged(SELECTED, true);
-            }
         }
     }
 
@@ -1434,6 +1364,10 @@ public class MainController implements Initializable {
         boolean structure = mode == WorkspaceMode.STRUCTURE;
         boolean algorithm = mode == WorkspaceMode.ALGORITHM;
         boolean practice = mode == WorkspaceMode.PRACTICE;
+
+        familyNavigator.setManaged(!practice);
+        familyNavigator.setVisible(!practice);
+        updateFamilyNavigatorAvailability();
 
         structureWorkspaceBtn.pseudoClassStateChanged(SELECTED, structure);
         algorithmWorkspaceBtn.pseudoClassStateChanged(SELECTED, algorithm);
@@ -1727,8 +1661,7 @@ public class MainController implements Initializable {
                         topContextLabel,
                         runIdLabel,
                         fontSettingsBtn,
-                        structureFamilyRail,
-                        algorithmFamilyRail,
+                        familyNavigator,
                         structureControlRail,
                         algorithmControlRail,
                         practiceControlRail,
@@ -1845,12 +1778,7 @@ public class MainController implements Initializable {
             refreshExecutionPresentation();
             updateWorkspaceInteractionState();
             refreshUiFramework();
-            structureButtons.forEach(
-                    (id, buttons) ->
-                            buttons.forEach(
-                                    button ->
-                                            button.pseudoClassStateChanged(
-                                                    SELECTED, id.equals(definition.id()))));
+            syncFamilyNavigatorSelection();
         } finally {
             moduleTransitionInProgress = false;
         }
@@ -1865,6 +1793,19 @@ public class MainController implements Initializable {
         updateWorkspaceInteractionState();
     }
 
+    private void updateFamilyNavigatorAvailability() {
+        if (familyNavigator == null) {
+            return;
+        }
+        boolean running = currentSubController != null && currentSubController.isRunning();
+        boolean algorithmMode = workspaceMode == WorkspaceMode.ALGORITHM;
+        for (WorkbenchModuleDefinition definition : moduleDefinitions) {
+            boolean unavailableInAlgorithm =
+                    algorithmMode && algorithmNavigationItems(definition.id()).isEmpty();
+            familyNavigator.setFamilyDisabled(definition.id(), running || unavailableInAlgorithm);
+        }
+    }
+
     private void updateWorkspaceInteractionState() {
         boolean running = currentSubController != null && currentSubController.isRunning();
         boolean algorithmAvailable =
@@ -1873,12 +1814,7 @@ public class MainController implements Initializable {
         structureWorkspaceBtn.setDisable(running);
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
         practiceWorkspaceBtn.setDisable(running);
-        structureButtons
-                .values()
-                .forEach(buttons -> buttons.forEach(button -> button.setDisable(running)));
-        algorithmButtons
-                .values()
-                .forEach(buttons -> buttons.values().forEach(button -> button.setDisable(running)));
+        updateFamilyNavigatorAvailability();
         if (structureControlsHost != null) {
             structureControlsHost.setDisable(running || structureSnapshotPreviewActive);
         }
@@ -1958,18 +1894,6 @@ public class MainController implements Initializable {
         bottomDock.setDisable(!visible);
     }
 
-    private void clearAlgorithmSelection() {
-        algorithmButtons
-                .values()
-                .forEach(
-                        buttons ->
-                                buttons.values()
-                                        .forEach(
-                                                button ->
-                                                        button.pseudoClassStateChanged(
-                                                                SELECTED, false)));
-    }
-
     private void syncAlgorithmSelectionFromController() {
         String algorithmId = null;
         if (currentSubController instanceof AlgorithmSelectionSupport support) {
@@ -1981,10 +1905,7 @@ public class MainController implements Initializable {
     private void handleAlgorithmSelectionChanged(String algorithmId) {
         selectedAlgorithmId = algorithmId;
         rebuildAlgorithmMenu();
-        clearAlgorithmSelection();
-        if (activeDefinition != null && algorithmId != null) {
-            selectAlgorithmButton(activeDefinition.id(), algorithmId);
-        }
+        syncFamilyNavigatorSelection();
         if (activeDefinition != null) {
             updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         }

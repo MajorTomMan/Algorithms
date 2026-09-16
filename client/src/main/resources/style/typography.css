@@ -23,11 +23,9 @@
 .root-pane .run-state-badge { -fx-font-size: 0.86em; }
 .root-pane .run-id-label { -fx-font-size: 0.80em; }
 .root-pane .font-settings-button { -fx-font-size: 1.05em; }
-.root-pane .family-rail-button {
-    -fx-font-size: 0.80em;
-    -fx-text-overrun: ellipsis;
-    -fx-ellipsis-string: "…";
-}
+.root-pane .family-item-index { -fx-font-size: 0.68em; }
+.root-pane .family-item-icon { -fx-font-size: 0.88em; }
+.root-pane .family-item-name { -fx-font-size: 0.80em; }
 
 /* ---------- left workbench controls ---------- */
 .root-pane .panel-eyebrow,

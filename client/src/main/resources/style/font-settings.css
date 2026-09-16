@@ -217,7 +217,9 @@
 .root-pane.font-color-custom .top-context-title,
 .root-pane.font-color-custom .run-id-label,
 .root-pane.font-color-custom .font-settings-button,
-.root-pane.font-color-custom .family-rail-button,
+.root-pane.font-color-custom .family-item-index,
+.root-pane.font-color-custom .family-item-icon,
+.root-pane.font-color-custom .family-item-name,
 .root-pane.font-color-custom .panel-eyebrow,
 .root-pane.font-color-custom .panel-section-title,
 .root-pane.font-color-custom .inspector-heading,
@@ -258,7 +260,8 @@
     -fx-text-fill: -ui-user-text;
 }
 
-.root-pane.font-color-custom .family-rail-button:selected,
+.root-pane.font-color-custom .family-item:selected .family-item-icon,
+.root-pane.font-color-custom .family-item:selected .family-item-name,
 .root-pane.font-color-custom .speed-button:selected {
     -fx-text-fill: #ffffff;
 }

@@ -619,7 +619,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
                 .values()
                 .forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
         nodeDecorations.values().forEach(LinkedNodeDecoration::dispose);
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

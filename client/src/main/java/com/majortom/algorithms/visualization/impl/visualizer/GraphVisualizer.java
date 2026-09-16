@@ -97,6 +97,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState>
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
+        // Graph nodes carry ids/edge labels around the factual node geometry. Keep a larger
+        // top breathing room so FIT_CONTENT never pins the highest node against the workspace
+        // chrome while preserving the common right/bottom toolbar reserves.
+        surface.setSafeInsets(new javafx.geometry.Insets(56.0d, 16.0d, 62.0d, 16.0d));
         surface.setFrameworkManagedCamera(true);
         renderFramework.registerSurface(SESSION_ID, this);
     }
@@ -777,7 +781,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState>
         nodeViews
                 .values()
                 .forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

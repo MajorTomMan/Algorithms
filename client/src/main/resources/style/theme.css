@@ -341,29 +341,53 @@
 }
 
 /* ---------- family navigation rail ---------- */
-.family-rail {
+.family-navigator {
     -fx-background-color: #08090a;
     -fx-border-color: transparent #2d2d2d transparent transparent;
     -fx-border-width: 0 1px 0 0;
 }
-.family-rail-button {
+.family-item {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-border-width: 0 0 0 0;
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-text-fill: #eeeeee;
-    -fx-font-weight: 700;
+    -fx-border-width: 0;
 }
-.family-rail-button:hover {
-    -fx-background-color: #1c1c1c;
+.family-item:hover {
+    -fx-background-color: #151617;
 }
-.family-rail-button:selected {
+.family-item:selected {
+    -fx-background-color: #171819;
+}
+.family-item-selection-mark {
+    -fx-background-color: transparent;
+}
+.family-item:selected .family-item-selection-mark {
     -fx-background-color: #f51b23;
+}
+.family-item-index {
+    -fx-text-fill: #6f7478;
+    -fx-font-weight: 600;
+}
+.family-item-icon {
+    -fx-text-fill: #b8bdc2;
+    -fx-font-weight: 600;
+}
+.family-item-name {
+    -fx-text-fill: #eeeeee;
+    -fx-font-weight: 600;
+}
+.family-item:selected .family-item-index {
+    -fx-text-fill: #9ca2a8;
+}
+.family-item:selected .family-item-icon,
+.family-item:selected .family-item-name {
     -fx-text-fill: #ffffff;
 }
-.family-rail-button:disabled {
-    -fx-opacity: 0.42;
+.family-item:focused {
+    -fx-border-color: #404348;
+    -fx-border-width: 1px 0 1px 0;
+}
+.family-item:disabled {
+    -fx-opacity: 0.38;
 }
 
 /* ---------- left operation panels ---------- */
@@ -1164,7 +1188,7 @@
     -fx-text-fill: #f5b400;
 }
 .lab-mode-switch .workspace-mode-button:selected:disabled,
-.family-rail-button:selected:disabled {
+.family-item:selected:disabled {
     -fx-opacity: 1.0;
     -fx-background-color: #f51b23;
     -fx-text-fill: #ffffff;

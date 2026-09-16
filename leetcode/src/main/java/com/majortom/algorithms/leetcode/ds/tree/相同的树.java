@@ -1,6 +1,5 @@
 package com.majortom.algorithms.leetcode.ds.tree;
 
-
 import com.majortom.algorithms.leetcode.support.AlgorithmsUtils;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 

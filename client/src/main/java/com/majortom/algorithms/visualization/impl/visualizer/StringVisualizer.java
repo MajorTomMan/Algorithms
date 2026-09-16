@@ -865,7 +865,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState>
     @Override
     public void dispose() {
         stopActiveAnimation();
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

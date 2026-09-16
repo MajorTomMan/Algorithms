@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
     private static final double MIN_CAMERA_SCALE = 0.10d;
-    private static final double MAX_CAMERA_SCALE = 8.0d;
+    private static final double MAX_AUTO_FIT_SCALE = 1.35d;
 
     private final RenderScheduler scheduler;
     private final LayoutExecutor layoutExecutor;
@@ -88,8 +88,9 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                 });
     }
 
-    public CompletionStage<Void> unregisterSurface(RenderSessionId id) {
-        return fxExecutor.execute(() -> surfaces.unregister(id));
+    public CompletionStage<Void> unregisterSurface(
+            RenderSessionId id, FxSurfaceAdapter<?> adapter) {
+        return fxExecutor.execute(() -> surfaces.unregister(id, adapter));
     }
 
     public CompletionStage<Void> activateSession(RenderSessionId id) {
@@ -403,20 +404,81 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                             FxSurfaceAdapter<S> target = surfaces.require(session.id);
                             ViewportSnapshot viewport = target.viewportSnapshot();
                             CameraState current = target.cameraState();
+                            // The first authoritative layout of a session has no meaningful camera
+                            // history.
+                            // Even when it is a geometry successor carrying ENSURE_VISIBLE/KEEP,
+                            // treat it as
+                            // the initial presentation and fit the complete primary content.
+                            // Revisited sessions
+                            // keep their cached layout/camera and continue to honor RESTORE/KEEP
+                            // normally.
+                            CameraPolicy effectivePolicy =
+                                    session.layout == null
+                                            ? CameraPolicy.FIT_CONTENT
+                                            : intent.cameraPolicy();
                             CameraState resolved =
                                     cameraManager.resolve(
-                                            intent.cameraPolicy(),
+                                            effectivePolicy,
                                             layoutResult.bounds(),
                                             viewport,
                                             current,
                                             session.camera,
                                             target.userControlledCamera(),
                                             MIN_CAMERA_SCALE,
-                                            MAX_CAMERA_SCALE);
-                            if (!resolved.equals(current)) target.applyCameraState(resolved);
-                            if (intent.initialFrame()) target.revealFrame();
+                                            MAX_AUTO_FIT_SCALE);
+                            if (!cameraClose(resolved, current)) target.applyCameraState(resolved);
+                            // Reveal only after an authoritative structural transaction has
+                            // completed
+                            // layout, FX apply, pulse and camera. This is intentionally not
+                            // restricted
+                            // to the original initial-frame intent: an initial transaction may be
+                            // superseded after prepareInitialFrame() hid the world (for example by
+                            // a
+                            // geometry invalidation raised during CSS measurement). Its
+                            // authoritative
+                            // successor must still be able to reveal the completed frame.
+                            // revealFrame()
+                            // is idempotent for already-visible surfaces.
+                            target.revealFrame();
                             return resolved;
                         })
+                .thenCompose(
+                        expectedCamera ->
+                                pulseBarrier
+                                        .await()
+                                        .thenCompose(
+                                                ignored ->
+                                                        fxExecutor.supply(
+                                                                () -> {
+                                                                    FxSurfaceAdapter<S> target =
+                                                                            surfaces.require(
+                                                                                    session.id);
+                                                                    CameraState actualCamera =
+                                                                            target.cameraState();
+                                                                    // GesturePane may normalize the
+                                                                    // target once more on the pulse
+                                                                    // after new
+                                                                    // world bounds are committed.
+                                                                    // The RenderFramework camera
+                                                                    // remains the
+                                                                    // authority: once that
+                                                                    // normalization has settled,
+                                                                    // replay the resolved
+                                                                    // camera exactly once. Never
+                                                                    // override a camera the user
+                                                                    // took control of
+                                                                    // while this transaction was in
+                                                                    // flight.
+                                                                    if (!target
+                                                                                    .userControlledCamera()
+                                                                            && !cameraClose(
+                                                                                    expectedCamera,
+                                                                                    actualCamera)) {
+                                                                        target.applyCameraState(
+                                                                                expectedCamera);
+                                                                    }
+                                                                    return expectedCamera;
+                                                                })))
                 .thenCompose(
                         camera ->
                                 onScheduler(
@@ -438,6 +500,14 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                                                     layoutResult.bounds(),
                                                     null);
                                         }));
+    }
+
+    private static boolean cameraClose(CameraState left, CameraState right) {
+        if (left == right) return true;
+        if (left == null || right == null) return false;
+        return Math.abs(left.scale() - right.scale()) < 0.0001d
+                && Math.abs(left.translateX() - right.translateX()) < 0.05d
+                && Math.abs(left.translateY() - right.translateY()) < 0.05d;
     }
 
     private <S> CompletionStage<RenderResult> processPresentation(
@@ -554,7 +624,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                                             session.camera,
                                             target.userControlledCamera(),
                                             MIN_CAMERA_SCALE,
-                                            MAX_CAMERA_SCALE);
+                                            MAX_AUTO_FIT_SCALE);
                             if (!resolved.equals(current)) target.applyCameraState(resolved);
                             return resolved;
                         })

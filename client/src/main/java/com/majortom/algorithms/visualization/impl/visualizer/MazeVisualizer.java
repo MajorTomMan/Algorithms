@@ -484,7 +484,7 @@ public final class MazeVisualizer extends BaseVisualizer<MazeViewState>
     @Override
     public void dispose() {
         canvas.setOnMouseClicked(null);
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

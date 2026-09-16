@@ -547,7 +547,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         items.values()
                 .forEach(item -> item.layoutBoundsProperty().removeListener(elementSizeListener));
         I18N.localeProperty().removeListener(localeListener);
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

@@ -8,6 +8,7 @@
 <?import com.majortom.algorithms.visualization.logging.LogView?>
 <?import com.majortom.algorithms.visualization.common.OverlayPane?>
 <?import com.majortom.algorithms.visualization.layout.PlaybackToolbar?>
+<?import com.majortom.algorithms.visualization.navigation.FamilyNavigator?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
@@ -92,16 +93,13 @@
     </top>
 
     <center>
-        <StackPane fx:id="workspaceLayer" styleClass="workspace-layer">
+        <HBox fx:id="workbenchShell" styleClass="workbench-shell">
+            <FamilyNavigator fx:id="familyNavigator" HBox.hgrow="NEVER" />
+            <StackPane fx:id="workspaceLayer" HBox.hgrow="ALWAYS" styleClass="workspace-layer">
             <!-- ========================== STRUCTURE MODE ========================== -->
             <VBox fx:id="structureWorkspacePane" focusTraversable="true" styleClass="lab-workspace">
                 <HBox fx:id="structureWorkspaceBody" VBox.vgrow="ALWAYS"
                     styleClass="lab-workspace-body">
-                    <VBox fx:id="structureFamilyRail" styleClass="family-rail">
-                        <VBox fx:id="structureNavigationBox" fillWidth="true" spacing="0"
-                            VBox.vgrow="ALWAYS" styleClass="family-nav" />
-                    </VBox>
-
                     <VBox fx:id="structureControlRail" styleClass="structure-control-panel">
                         <HBox alignment="CENTER_LEFT" styleClass="panel-topline">
                             <Label fx:id="structureWorkspaceTitleLabel" text="STRUCTURE"
@@ -366,11 +364,6 @@
                 visible="false" styleClass="lab-workspace">
                 <HBox fx:id="algorithmWorkspaceBody" VBox.vgrow="ALWAYS"
                     styleClass="lab-workspace-body">
-                    <VBox fx:id="algorithmFamilyRail" styleClass="family-rail">
-                        <VBox fx:id="algorithmNavigationBox" fillWidth="true" spacing="0"
-                            VBox.vgrow="ALWAYS" styleClass="family-nav" />
-                    </VBox>
-
                     <VBox fx:id="algorithmControlRail" styleClass="algorithm-control-panel">
                         <HBox alignment="CENTER_LEFT" styleClass="panel-topline">
                             <Label fx:id="algorithmWorkspaceTitleLabel" text="ALGORITHM"
@@ -779,6 +772,7 @@
                     </VBox>
                 </HBox>
             </VBox>
-        </StackPane>
+            </StackPane>
+        </HBox>
     </center>
 </BorderPane>

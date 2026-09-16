@@ -1,6 +1,5 @@
 package com.majortom.algorithms.practice.exercises.concurrency.patterns.pc;
 
-
 public class Consumer implements Runnable {
     private BufferQueue queue;
     private String TAG;

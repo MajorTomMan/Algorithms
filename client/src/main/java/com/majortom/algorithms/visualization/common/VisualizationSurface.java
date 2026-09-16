@@ -196,12 +196,8 @@ public final class VisualizationSurface extends StackPane {
     }
 
     public CameraState cameraState() {
-        ViewportSnapshot viewport = viewportSnapshot();
-        double scale = zoom();
-        Point2D worldAtCentre = gesturePane.targetPointAtViewportCentre();
-        double translateX = viewport.width() / 2.0d - worldAtCentre.getX() * scale;
-        double translateY = viewport.height() / 2.0d - worldAtCentre.getY() * scale;
-        return new CameraState(scale, translateX, translateY);
+        var worldTransform = worldPane.getLocalToParentTransform();
+        return new CameraState(zoom(), worldTransform.getTx(), worldTransform.getTy());
     }
 
     public void applyCameraState(CameraState state) {
@@ -210,14 +206,21 @@ public final class VisualizationSurface extends StackPane {
         if (!(viewport.width() > 0.0d) || !(viewport.height() > 0.0d)) {
             return;
         }
-        Point2D worldAtViewportCentre =
+        // GesturePane normalizes a target whose layout bounds do not start at (0, 0) by
+        // relocating that target. CameraState, however, is expressed in the visualizer's
+        // factual world coordinates. Compensate for the target relocation before asking
+        // GesturePane to centre its affine transform; otherwise non-zero world origins are
+        // applied twice and content drifts toward the top/left of the viewport.
+        double affineTranslateX = state.translateX() - worldPane.getLayoutX();
+        double affineTranslateY = state.translateY() - worldPane.getLayoutY();
+        Point2D targetAtViewportCentre =
                 new Point2D(
-                        (viewport.width() / 2.0d - state.translateX()) / state.scale(),
-                        (viewport.height() / 2.0d - state.translateY()) / state.scale());
+                        (viewport.width() / 2.0d - affineTranslateX) / state.scale(),
+                        (viewport.height() / 2.0d - affineTranslateY) / state.scale());
         runProgrammatic(
                 () -> {
-                    gesturePane.zoomTo(clamp(state.scale()), worldAtViewportCentre);
-                    gesturePane.centreOn(worldAtViewportCentre);
+                    gesturePane.zoomTo(clamp(state.scale()), targetAtViewportCentre);
+                    gesturePane.centreOn(targetAtViewportCentre);
                 });
     }
 
@@ -519,9 +522,13 @@ public final class VisualizationSurface extends StackPane {
             targetScale = fitScale;
         }
         Point2D center = worldCenter(bounds);
+        Point2D targetCenter =
+                new Point2D(
+                        center.getX() + worldPane.getLayoutX(),
+                        center.getY() + worldPane.getLayoutY());
         runProgrammatic(
                 () -> {
-                    gesturePane.zoomTo(targetScale, center);
+                    gesturePane.zoomTo(targetScale, targetCenter);
                     centerOnSafeViewport(center);
                 });
         if (!initialFit) {
@@ -541,7 +548,11 @@ public final class VisualizationSurface extends StackPane {
     }
 
     private void centerOnSafeViewport(Point2D worldCenter) {
-        gesturePane.centreOn(worldCenter);
+        Point2D targetCenter =
+                new Point2D(
+                        worldCenter.getX() + worldPane.getLayoutX(),
+                        worldCenter.getY() + worldPane.getLayoutY());
+        gesturePane.centreOn(targetCenter);
         Insets insets = effectiveSafeInsets();
         double xOffset = (insets.getRight() - insets.getLeft()) / 2.0d;
         double yOffset = (insets.getBottom() - insets.getTop()) / 2.0d;

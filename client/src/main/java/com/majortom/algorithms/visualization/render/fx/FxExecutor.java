@@ -10,5 +10,9 @@ public interface FxExecutor {
 
     <T> CompletionStage<T> supply(Supplier<T> supplier);
 
+    default CompletionStage<Void> awaitPulse() {
+        return defer(() -> {});
+    }
+
     boolean isFxThread();
 }

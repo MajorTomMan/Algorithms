@@ -112,12 +112,12 @@
     -fx-spacing: 0;
 }
 
-.family-nav {
+.family-navigator {
     -fx-padding: 0;
 }
 
-.family-rail-button {
-    -fx-alignment: CENTER;
+.family-item {
+    -fx-cursor: hand;
 }
 
 .snapshot-quick-block {
@@ -364,16 +364,8 @@
     -fx-padding: 0;
 }
 
-/* ---------- family rail ---------- */
-.root-pane .family-rail-button {
-    -fx-min-width: 0;
-    -fx-pref-width: -1;
-    -fx-max-width: Infinity;
-    -fx-min-height: -1;
-    -fx-pref-height: -1;
-    -fx-max-height: -1;
-    -fx-padding: 0 0.95em;
-}
+/* ---------- family navigator ---------- */
+.root-pane .family-navigator { -fx-padding: 0; }
 
 /* ---------- control rails ---------- */
 .root-pane .structure-control-panel,
@@ -645,7 +637,6 @@
 .root-pane:compact-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.88em; }
 .root-pane:compact-layout .top-context-zone { -fx-spacing: 0.62em; -fx-padding: 0; }
 .root-pane:compact-layout .run-state-badge { -fx-padding: 0.38em 0.62em; }
-.root-pane:compact-layout .family-rail-button { -fx-padding: 0 0.62em; }
 .root-pane:compact-layout .structure-control-panel,
 .root-pane:compact-layout .algorithm-control-panel,
 .root-pane:compact-layout .practice-control-panel { -fx-padding: 0 0.62em 0.55em 0.74em; }
@@ -676,7 +667,6 @@
 .root-pane:narrow-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.52em; }
 .root-pane:narrow-layout .top-context-zone { -fx-spacing: 0.40em; -fx-padding: 0; }
 .root-pane:narrow-layout .run-state-badge { -fx-padding: 0.32em 0.50em; }
-.root-pane:narrow-layout .family-rail-button { -fx-padding: 0 0.44em; }
 .root-pane:narrow-layout .structure-control-panel,
 .root-pane:narrow-layout .algorithm-control-panel,
 .root-pane:narrow-layout .practice-control-panel { -fx-padding: 0 0.50em 0.44em 0.56em; }

@@ -61,7 +61,7 @@ class RenderArchitectureInvariantTest {
                                                 path.endsWith("render/timing/RenderClock.java"),
                                                 () ->
                                                         "scheduled timing leaked outside"
-                                                            + " RenderClock: "
+                                                                + " RenderClock: "
                                                                 + path);
                                     }
                                 } catch (IOException failure) {

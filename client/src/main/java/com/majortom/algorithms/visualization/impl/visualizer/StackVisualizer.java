@@ -487,7 +487,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         stopActiveAnimation();
         items.values()
                 .forEach(item -> item.layoutBoundsProperty().removeListener(elementSizeListener));
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

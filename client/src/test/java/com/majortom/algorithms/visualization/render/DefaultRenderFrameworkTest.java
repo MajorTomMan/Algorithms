@@ -181,6 +181,55 @@ class DefaultRenderFrameworkTest {
                 RenderStatus.PRESENTED,
                 newer.toCompletableFuture().get(3, TimeUnit.SECONDS).status());
         assertEquals(1, fixture.target.layoutCommits.get());
+        assertEquals(
+                1,
+                fixture.target.revealCalls.get(),
+                "authoritative successor must reveal a world hidden by a superseded initial frame");
+        assertTrue(fixture.target.worldVisible);
+        assertEquals(
+                1.35d,
+                fixture.target.camera.scale(),
+                0.0001d,
+                "first committed layout must fit even when its successor intent says"
+                    + " ENSURE_VISIBLE");
+    }
+
+    @Test
+    void staleSurfaceCannotUnregisterItsReplacement() {
+        CountingLayoutEngine engine = new CountingLayoutEngine();
+        RenderSessionId id = RenderSessionId.of("REPLACED");
+        RenderTrace trace = new RenderTrace();
+        FxSurfaceRegistry registry = new FxSurfaceRegistry();
+        framework =
+                new DefaultRenderFramework(
+                        new RenderScheduler(),
+                        new LayoutExecutor(2),
+                        new DirectFxExecutor(),
+                        registry,
+                        new LayoutEngineRegistry().register(engine),
+                        new CameraManager(),
+                        trace);
+
+        FakeTarget previous = new FakeTarget(id, engine.id());
+        FakeTarget replacement = new FakeTarget(id, engine.id());
+        framework.registerSurface(id, previous).toCompletableFuture().join();
+        framework.registerSurface(id, replacement).toCompletableFuture().join();
+        framework.unregisterSurface(id, previous).toCompletableFuture().join();
+        framework.activateSession(id).toCompletableFuture().join();
+
+        RenderResult result =
+                framework
+                        .submit(
+                                new StructuralRenderIntent<>(
+                                        id, "replacement", CameraPolicy.FIT_CONTENT, true))
+                        .toCompletableFuture()
+                        .join();
+
+        assertEquals(RenderStatus.PRESENTED, result.status());
+        assertEquals(0, previous.layoutCommits.get());
+        assertEquals(1, replacement.layoutCommits.get());
+        assertTrue(previous.viewportListener == null);
+        assertTrue(replacement.viewportListener != null);
     }
 
     @Test
@@ -207,7 +256,10 @@ class DefaultRenderFrameworkTest {
                 .join();
 
         fixture.framework.deactivateSession(fixture.id).toCompletableFuture().join();
-        fixture.framework.unregisterSurface(fixture.id).toCompletableFuture().join();
+        fixture.framework
+                .unregisterSurface(fixture.id, fixture.target)
+                .toCompletableFuture()
+                .join();
         FakeTarget revisited = new FakeTarget(fixture.id, engine.id());
         fixture.framework.registerSurface(fixture.id, revisited).toCompletableFuture().join();
         fixture.framework.activateSession(fixture.id).toCompletableFuture().join();
@@ -295,6 +347,8 @@ class DefaultRenderFrameworkTest {
         private final String engineId;
         private final AtomicInteger layoutCommits = new AtomicInteger();
         private final AtomicInteger presentationCommits = new AtomicInteger();
+        private final AtomicInteger revealCalls = new AtomicInteger();
+        private volatile boolean worldVisible = true;
         private CameraState camera = new CameraState(1.0d, 0.0d, 0.0d);
         private Consumer<ViewportSnapshot> viewportListener;
 
@@ -350,10 +404,15 @@ class DefaultRenderFrameworkTest {
         }
 
         @Override
-        public void prepareInitialFrame() {}
+        public void prepareInitialFrame() {
+            worldVisible = false;
+        }
 
         @Override
-        public void revealFrame() {}
+        public void revealFrame() {
+            worldVisible = true;
+            revealCalls.incrementAndGet();
+        }
 
         @Override
         public void setViewportListener(Consumer<ViewportSnapshot> listener) {

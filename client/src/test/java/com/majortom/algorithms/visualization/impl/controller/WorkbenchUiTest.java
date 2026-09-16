@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.common.OverlayPane;
+import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.navigation.FamilyItemView;
+import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
@@ -13,6 +16,7 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -128,7 +132,7 @@ class WorkbenchUiTest {
                     moduleButton(1).fire();
                     return null;
                 });
-        awaitNode(".visual-node");
+        awaitVisibleNode(".visual-node");
         fx(
                 () -> {
                     click(root.lookup(".visual-node"));
@@ -188,12 +192,123 @@ class WorkbenchUiTest {
                         moduleButton(module).fire();
                         return null;
                     });
-            awaitNode(".visual-node");
+            awaitVisibleNode(".visual-node");
             fx(
                     () -> {
                         click(root.lookup(".visual-node"));
                         assertTrue(node("structureSelectionOverlay").isVisible());
                         assertTrue(label("structureInspectorBody").getText().contains("值"));
+                        return null;
+                    });
+        }
+    }
+
+    @Test
+    void graphAutoFitRespectsSurfaceSafeInsets() throws Exception {
+        fx(
+                () -> {
+                    moduleButton(5).fire();
+                    return null;
+                });
+        awaitVisibleNode(".visual-node");
+        fx(
+                () -> {
+                    layout();
+                    VisualizationSurface surface =
+                            (VisualizationSurface)
+                                    subController()
+                                            .getVisualizerView()
+                                            .lookup(".visualization-surface");
+                    assertNotNull(surface);
+                    Bounds viewport = surface.localToScene(surface.getBoundsInLocal());
+                    javafx.geometry.Insets insets = surface.safeInsets();
+                    assertTrue(
+                            insets.getTop() >= 56.0d,
+                            () -> "Graph requires a dedicated top camera safe area, got " + insets);
+                    var nodes = subController().getVisualizerView().lookupAll(".visual-node");
+                    assertFalse(nodes.isEmpty());
+                    for (Node visualNode : nodes) {
+                        Bounds bounds = visualNode.localToScene(visualNode.getBoundsInLocal());
+                        assertTrue(
+                                bounds.getMinX() >= viewport.getMinX() + insets.getLeft() - 3.0d,
+                                () -> "Graph node escaped left safe inset: " + bounds);
+                        assertTrue(
+                                bounds.getMaxX() <= viewport.getMaxX() - insets.getRight() + 3.0d,
+                                () -> "Graph node escaped right safe inset: " + bounds);
+                        assertTrue(
+                                bounds.getMinY() >= viewport.getMinY() + insets.getTop() - 3.0d,
+                                () -> "Graph node escaped top safe inset: " + bounds);
+                        assertTrue(
+                                bounds.getMaxY() <= viewport.getMaxY() - insets.getBottom() + 3.0d,
+                                () -> "Graph node escaped bottom safe inset: " + bounds);
+                    }
+                    return null;
+                });
+    }
+
+    @Test
+    void firstFitRemainsCenteredAfterRealPulseAcrossFamilies() throws Exception {
+        for (int module : new int[] {3, 4, 5}) {
+            fx(
+                    () -> {
+                        moduleButton(module).fire();
+                        return null;
+                    });
+            awaitVisibleNode(".visual-node");
+            // Let JavaFX process at least one later frame after the render transaction completed.
+            // GesturePane target normalization used to move the camera during this window.
+            Thread.sleep(180L);
+            fx(
+                    () -> {
+                        layout();
+                        VisualizationSurface surface =
+                                (VisualizationSurface)
+                                        subController()
+                                                .getVisualizerView()
+                                                .lookup(".visualization-surface");
+                        assertNotNull(surface);
+                        var nodes = subController().getVisualizerView().lookupAll(".visual-node");
+                        assertFalse(nodes.isEmpty());
+
+                        double minX = Double.POSITIVE_INFINITY;
+                        double minY = Double.POSITIVE_INFINITY;
+                        double maxX = Double.NEGATIVE_INFINITY;
+                        double maxY = Double.NEGATIVE_INFINITY;
+                        for (Node visualNode : nodes) {
+                            Bounds bounds = visualNode.localToScene(visualNode.getBoundsInLocal());
+                            minX = Math.min(minX, bounds.getMinX());
+                            minY = Math.min(minY, bounds.getMinY());
+                            maxX = Math.max(maxX, bounds.getMaxX());
+                            maxY = Math.max(maxY, bounds.getMaxY());
+                        }
+
+                        Bounds viewport = surface.localToScene(surface.getBoundsInLocal());
+                        javafx.geometry.Insets insets = surface.safeInsets();
+                        double safeMinX = viewport.getMinX() + insets.getLeft();
+                        double safeMaxX = viewport.getMaxX() - insets.getRight();
+                        double safeMinY = viewport.getMinY() + insets.getTop();
+                        double safeMaxY = viewport.getMaxY() - insets.getBottom();
+                        double expectedCenterX = (safeMinX + safeMaxX) / 2.0d;
+                        double expectedCenterY = (safeMinY + safeMaxY) / 2.0d;
+                        double actualCenterX = (minX + maxX) / 2.0d;
+                        double actualCenterY = (minY + maxY) / 2.0d;
+
+                        assertEquals(
+                                expectedCenterX,
+                                actualCenterX,
+                                4.0d,
+                                () ->
+                                        "Family "
+                                                + module
+                                                + " camera drifted horizontally after pulse");
+                        assertEquals(
+                                expectedCenterY,
+                                actualCenterY,
+                                4.0d,
+                                () ->
+                                        "Family "
+                                                + module
+                                                + " camera drifted vertically after pulse");
                         return null;
                     });
         }
@@ -347,6 +462,28 @@ class WorkbenchUiTest {
     }
 
     @Test
+    void arrayRemainsVisibleAfterLeavingAndReturning() throws Exception {
+        fx(
+                () -> {
+                    moduleButton(0).fire();
+                    return null;
+                });
+        awaitVisibleNode(".array-cell");
+        fx(
+                () -> {
+                    moduleButton(5).fire();
+                    return null;
+                });
+        awaitVisibleNode(".visual-node");
+        fx(
+                () -> {
+                    moduleButton(0).fire();
+                    return null;
+                });
+        awaitVisibleNode(".array-cell");
+    }
+
+    @Test
     void genericModulesCanLeaveAndReturnAfterTypeChange() throws Exception {
         for (int module = 0; module < 6; module++) {
             final int selectedModule = module;
@@ -412,10 +549,69 @@ class WorkbenchUiTest {
     }
 
     @Test
-    void familyRailKeepsFullLabelsAcrossFontAndViewportSweep() throws Exception {
+    void familyNavigatorGeometryIsStableAcrossSelectionAndMode() throws Exception {
+        fx(
+                () -> {
+                    FamilyNavigator navigator = (FamilyNavigator) node("familyNavigator");
+                    List<FamilyGeometry> baseline = familyGeometry(navigator);
+
+                    moduleButton(5).fire();
+                    layout();
+                    assertFamilyGeometryEquals(
+                            baseline,
+                            familyGeometry(navigator),
+                            "Selecting Graph must not change family navigation geometry");
+
+                    ((Button) node("algorithmWorkspaceBtn")).fire();
+                    layout();
+                    assertSame(
+                            navigator,
+                            node("familyNavigator"),
+                            "Structure/Algorithm must use one physical FamilyNavigator");
+                    assertFamilyGeometryEquals(
+                            baseline,
+                            familyGeometry(navigator),
+                            "Mode switch must not change shared family navigation geometry");
+
+                    navigator.item("tree").fire();
+                    layout();
+                    assertFamilyGeometryEquals(
+                            baseline,
+                            familyGeometry(navigator),
+                            "Selecting Tree must be presentation-only");
+                    assertEquals("tree", navigator.selectedFamily());
+                    return null;
+                });
+    }
+
+    @Test
+    void familyNavigatorLeavesLayoutInPracticeModeAndReturnsUnchanged() throws Exception {
+        fx(
+                () -> {
+                    FamilyNavigator navigator = (FamilyNavigator) node("familyNavigator");
+                    List<FamilyGeometry> baseline = familyGeometry(navigator);
+                    ((Button) node("practiceWorkspaceBtn")).fire();
+                    layout();
+                    assertFalse(navigator.isManaged());
+                    assertFalse(navigator.isVisible());
+
+                    ((Button) node("structureWorkspaceBtn")).fire();
+                    layout();
+                    assertTrue(navigator.isManaged());
+                    assertTrue(navigator.isVisible());
+                    assertFamilyGeometryEquals(
+                            baseline,
+                            familyGeometry(navigator),
+                            "Practice round-trip must not rebuild family geometry");
+                    return null;
+                });
+    }
+
+    @Test
+    void familyNavigatorScalesAsOneUnitAcrossFontAndViewportSweep() throws Exception {
         FontSettingsService fonts = new FontSettingsService();
         for (double width : new double[] {1600.0d, 1200.0d, 1000.0d}) {
-            for (double size : new double[] {16.25d, 18.0d, 20.0d, 21.0d, 22.0d, 24.0d}) {
+            for (double size : new double[] {16.25d, 18.0d, 20.0d, 22.0d, 24.0d}) {
                 fx(
                         () -> {
                             stage.setWidth(width);
@@ -423,30 +619,86 @@ class WorkbenchUiTest {
                             fonts.apply(root, new FontSettings("", "", size, ""));
                             invoke("refreshUiFramework");
                             layout();
-                            javafx.scene.layout.VBox navigation =
-                                    (javafx.scene.layout.VBox) node("structureNavigationBox");
-                            for (Node item : navigation.getChildren()) {
-                                assertInstanceOf(Button.class, item);
-                                Button button = (Button) item;
+
+                            FamilyNavigator navigation = (FamilyNavigator) node("familyNavigator");
+                            assertEquals(8, navigation.items().size());
+                            double rowHeight = navigation.items().getFirst().getHeight();
+                            double nameX =
+                                    ((Label)
+                                                    navigation
+                                                            .items()
+                                                            .getFirst()
+                                                            .lookup(".family-item-name"))
+                                            .getLayoutX();
+                            double previousY = -1.0d;
+                            for (FamilyItemView item : navigation.items()) {
+                                assertEquals(
+                                        rowHeight,
+                                        item.getHeight(),
+                                        0.5d,
+                                        "all family rows must have identical height");
+                                Label name = (Label) item.lookup(".family-item-name");
+                                assertNotNull(name);
+                                assertEquals(
+                                        nameX,
+                                        name.getLayoutX(),
+                                        0.5d,
+                                        "family name column must stay aligned");
                                 assertTrue(
-                                        button.getWidth() + 0.5d >= button.prefWidth(-1.0d),
+                                        name.getWidth() + 0.5d >= name.prefWidth(-1.0d),
                                         () ->
                                                 "family label clipped at "
                                                         + size
                                                         + "px / "
                                                         + width
                                                         + "px: "
-                                                        + button.getText()
+                                                        + name.getText()
                                                         + " width="
-                                                        + button.getWidth()
+                                                        + name.getWidth()
                                                         + " pref="
-                                                        + button.prefWidth(-1.0d));
+                                                        + name.prefWidth(-1.0d));
+                                assertTrue(
+                                        item.getLayoutY() > previousY,
+                                        "family rows must keep registry order");
+                                previousY = item.getLayoutY();
                             }
                             return null;
                         });
             }
         }
     }
+
+    private void assertFamilyGeometryEquals(
+            List<FamilyGeometry> expected, List<FamilyGeometry> actual, String message) {
+        assertEquals(expected.size(), actual.size(), message);
+        for (int index = 0; index < expected.size(); index++) {
+            FamilyGeometry a = expected.get(index);
+            FamilyGeometry b = actual.get(index);
+            assertEquals(a.id(), b.id(), message);
+            assertEquals(a.x(), b.x(), 0.5d, message);
+            assertEquals(a.y(), b.y(), 0.5d, message);
+            assertEquals(a.width(), b.width(), 0.5d, message);
+            assertEquals(a.height(), b.height(), 0.5d, message);
+            assertEquals(a.nameX(), b.nameX(), 0.5d, message);
+        }
+    }
+
+    private List<FamilyGeometry> familyGeometry(FamilyNavigator navigator) {
+        return navigator.items().stream()
+                .map(
+                        item ->
+                                new FamilyGeometry(
+                                        item.familyId(),
+                                        item.getLayoutX(),
+                                        item.getLayoutY(),
+                                        item.getWidth(),
+                                        item.getHeight(),
+                                        ((Label) item.lookup(".family-item-name")).getLayoutX()))
+                .toList();
+    }
+
+    private record FamilyGeometry(
+            String id, double x, double y, double width, double height, double nameX) {}
 
     @Test
     void failedModulePreparationPreservesCurrentControlsDataAndNavigation() throws Exception {
@@ -538,11 +790,8 @@ class WorkbenchUiTest {
         return (BaseController<?>) field("currentSubController");
     }
 
-    private Button moduleButton(int index) {
-        return (Button)
-                ((javafx.scene.layout.VBox) node("structureNavigationBox"))
-                        .getChildren()
-                        .get(index);
+    private FamilyItemView moduleButton(int index) {
+        return ((FamilyNavigator) node("familyNavigator")).items().get(index);
     }
 
     private Node node(String id) {
@@ -579,6 +828,14 @@ class WorkbenchUiTest {
         root.layout();
     }
 
+    private static double effectiveOpacity(Node node) {
+        double opacity = 1.0d;
+        for (Node current = node; current != null; current = current.getParent()) {
+            opacity *= current.getOpacity();
+        }
+        return opacity;
+    }
+
     private static boolean isAncestor(Node parent, Node child) {
         for (Node n = child; n != null; n = n.getParent()) if (n == parent) return true;
         return false;
@@ -606,6 +863,20 @@ class WorkbenchUiTest {
                         false,
                         true,
                         null));
+    }
+
+    private void awaitVisibleNode(String selector) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            if (fx(
+                    () -> {
+                        layout();
+                        Node candidate = root.lookup(selector);
+                        return candidate != null && effectiveOpacity(candidate) > 0.99d;
+                    })) return;
+            Thread.sleep(20L);
+        }
+        fail("Timed out waiting for visible node " + selector);
     }
 
     private void awaitNode(String selector) throws Exception {

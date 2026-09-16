@@ -1,6 +1,5 @@
 package com.majortom.algorithms.leetcode.others;
 
-
 public class 最长前缀 {
     public static void main(String[] args) {
         String[] strs = {"cir", "car"};

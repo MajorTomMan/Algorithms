@@ -385,7 +385,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState>
         settledPositions.clear();
         settledIndexPositions.clear();
         exitingCells.clear();
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

@@ -888,7 +888,7 @@ public abstract class BaseController<S> implements Initializable {
         ExecutionTiming timing = summary.timing();
         return String.format(
                 "%s | event-span=%dms | total=%s | cpu=%s | memory=%s | events=%d | frames=%d |"
-                    + " compares=%d",
+                        + " compares=%d",
                 record.operationId(),
                 timing.eventSpan().toMillis(),
                 formatDuration(timing.totalDuration()),

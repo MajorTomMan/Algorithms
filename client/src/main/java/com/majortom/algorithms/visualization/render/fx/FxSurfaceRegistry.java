@@ -11,12 +11,17 @@ public final class FxSurfaceRegistry {
     private final Map<RenderSessionId, FxSurfaceAdapter<?>> adapters = new HashMap<>();
 
     public <S> void register(RenderSessionId id, FxSurfaceAdapter<S> adapter) {
-        adapters.put(Objects.requireNonNull(id, "id"), Objects.requireNonNull(adapter, "adapter"));
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(adapter, "adapter");
+        FxSurfaceAdapter<?> previous = adapters.put(id, adapter);
+        if (previous != null && previous != adapter) previous.setViewportListener(null);
     }
 
-    public void unregister(RenderSessionId id) {
-        FxSurfaceAdapter<?> adapter = adapters.remove(id);
-        if (adapter != null) adapter.setViewportListener(null);
+    public void unregister(RenderSessionId id, FxSurfaceAdapter<?> adapter) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(adapter, "adapter");
+        if (adapters.get(id) == adapter) adapters.remove(id);
+        adapter.setViewportListener(null);
     }
 
     @SuppressWarnings("unchecked")

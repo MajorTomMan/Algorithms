@@ -94,7 +94,7 @@ public final class RegistrationValidator {
         if (method.isVarArgs() || method.getParameterCount() != 1) {
             throw new RegistrationException(
                     "Algorithm entry method must declare exactly one parameter and it must be a"
-                        + " Structure contract: "
+                            + " Structure contract: "
                             + method);
         }
         Class<?> actualStructure = method.getParameterTypes()[0];

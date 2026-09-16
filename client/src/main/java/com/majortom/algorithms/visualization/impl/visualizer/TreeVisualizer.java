@@ -726,7 +726,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState>
         nodeViews
                 .values()
                 .forEach(view -> view.layoutBoundsProperty().removeListener(elementSizeListener));
-        renderFramework.unregisterSurface(SESSION_ID);
+        renderFramework.unregisterSurface(SESSION_ID, this);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
         super.dispose();

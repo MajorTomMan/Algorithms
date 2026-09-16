@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.render.fx;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +51,30 @@ public final class FxExecutorImpl implements FxExecutor {
                         future.completeExceptionally(failure);
                     }
                 });
+        return future;
+    }
+
+    @Override
+    public CompletionStage<Void> awaitPulse() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Runnable arm =
+                () -> {
+                    AnimationTimer timer =
+                            new AnimationTimer() {
+                                @Override
+                                public void handle(long now) {
+                                    stop();
+                                    future.complete(null);
+                                }
+                            };
+                    timer.start();
+                    Platform.requestNextPulse();
+                };
+        if (Platform.isFxApplicationThread()) {
+            arm.run();
+        } else {
+            Platform.runLater(arm);
+        }
         return future;
     }
 
