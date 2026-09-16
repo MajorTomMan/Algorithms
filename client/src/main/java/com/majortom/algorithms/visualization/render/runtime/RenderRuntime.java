@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.render.runtime;
 
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
-import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
 import com.majortom.algorithms.visualization.render.diagnostics.RenderTrace;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -26,7 +26,7 @@ public final class RenderRuntime {
           .register(new FixedLayoutEngine())
           .register(new GraphElkLayout())
           .register(new TreeElkLayout())
-          .register(new LinkedListElkLayout()),
+          .register(new LinkedListLayout()),
       new CameraManager(), TRACE);
 
   private RenderRuntime() {}

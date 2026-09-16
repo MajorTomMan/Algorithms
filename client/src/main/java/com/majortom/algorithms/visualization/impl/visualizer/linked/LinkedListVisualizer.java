@@ -100,7 +100,7 @@ public final class LinkedListVisualizer
         continue;
       double width = DetachedMetrics.boxWidth(
           label(node), context.contentStyle(), MIN_NODE_WIDTH, LABEL_HORIZONTAL_PADDING);
-      elements.add(new LayoutElement(LinkedListElkLayout.nodeId(id), width,
+      elements.add(new LayoutElement(LinkedListLayout.nodeId(id), width,
           Math.max(MIN_NODE_HEIGHT, 54.0d + context.contentStyle().fontSize())));
     }
 
@@ -109,12 +109,12 @@ public final class LinkedListVisualizer
       LinkedListViewState.Node node = state.nodes().get(id);
       if (node != null && node.nextId() != null && state.nodes().containsKey(node.nextId())) {
         EdgeKey key = new EdgeKey(node.id(), node.nextId(), Relation.NEXT);
-        links.add(new LayoutLink(routeId(key), LinkedListElkLayout.nodeId(node.id()),
-            LinkedListElkLayout.nodeId(node.nextId()), "NEXT", links.size()));
+        links.add(new LayoutLink(routeId(key), LinkedListLayout.nodeId(node.id()),
+            LinkedListLayout.nodeId(node.nextId()), "NEXT", links.size()));
       }
     }
     return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
-        context.geometryRevision(), LinkedListElkLayout.ID, elements, links,
+        context.geometryRevision(), LinkedListLayout.ID, elements, links,
         Map.of("structure", "linked-list"));
   }
 
@@ -128,7 +128,7 @@ public final class LinkedListVisualizer
     // Existing edges temporarily follow their endpoints while factual node positions are committed.
     clearCurrentRoutes();
     for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
-      ElementGeometry bounds = patch.elements().get(LinkedListElkLayout.nodeId(entry.getKey()));
+      ElementGeometry bounds = patch.elements().get(LinkedListLayout.nodeId(entry.getKey()));
       if (bounds == null)
         continue;
       NodeView view = entry.getValue();
@@ -296,8 +296,8 @@ public final class LinkedListVisualizer
       tailLabel.relocate(120.0d, 30.0d);
       return;
     }
-    ElementGeometry head = patch.elements().get(LinkedListElkLayout.nodeId(order.getFirst()));
-    ElementGeometry tail = patch.elements().get(LinkedListElkLayout.nodeId(order.getLast()));
+    ElementGeometry head = patch.elements().get(LinkedListLayout.nodeId(order.getFirst()));
+    ElementGeometry tail = patch.elements().get(LinkedListLayout.nodeId(order.getLast()));
     if (head != null)
       headLabel.relocate(head.x() + 8.0d, Math.max(2.0d, head.y() - 28.0d));
     if (tail != null) {
