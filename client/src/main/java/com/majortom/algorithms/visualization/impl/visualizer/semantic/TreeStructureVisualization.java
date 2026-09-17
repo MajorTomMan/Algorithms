@@ -1,6 +1,9 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
+import com.majortom.algorithms.core.domain.relation.TreeRelationTypes;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
@@ -41,25 +44,28 @@ public final class TreeStructureVisualization implements StructureVisualization<
                 for (int index = 0; index < node.childIds().size(); index++) {
                     Long targetId = node.childIds().get(index);
                     if (targetId == null || !state.nodes().containsKey(targetId)) continue;
-                    links.add(new LayoutLink(routeId("child", index, node.id(), targetId),
+                    links.add(new LayoutLink(TreeVisualIds.childEdge(index, node.id(), targetId),
                             TreeElkLayout.nodeId(node.id()), TreeElkLayout.nodeId(targetId),
-                            "CHILD", index));
+                            TreeRelationTypes.CHILD, index));
                 }
             } else {
-                addLayoutLink(links, state, node.id(), node.leftId(), "left", "LEFT", 0);
-                addLayoutLink(links, state, node.id(), node.rightId(), "right", "RIGHT", 1);
+                addLayoutLink(links, state, node.id(), node.leftId(), TreeRelationTypes.LEFT, 0);
+                addLayoutLink(links, state, node.id(), node.rightId(), TreeRelationTypes.RIGHT, 1);
             }
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), TreeElkLayout.ID, nodes, links,
-                Map.of("kind", state.kind().name()));
+                Map.of(LayoutMetadataKeys.KIND, state.kind().name()));
     }
 
     private static void addLayoutLink(List<LayoutLink> links, TreeViewState state, long sourceId,
-            Long targetId, String routeRelation, String relation, int index) {
+            Long targetId, String relation, int index) {
         if (targetId == null || !state.nodes().containsKey(targetId)) return;
-        links.add(new LayoutLink(routeId(routeRelation, index, sourceId, targetId),
-                TreeElkLayout.nodeId(sourceId), TreeElkLayout.nodeId(targetId), relation, index));
+        String routeId = TreeRelationTypes.LEFT.equals(relation)
+                ? TreeVisualIds.leftEdge(sourceId, targetId)
+                : TreeVisualIds.rightEdge(sourceId, targetId);
+        links.add(new LayoutLink(routeId, TreeElkLayout.nodeId(sourceId),
+                TreeElkLayout.nodeId(targetId), relation, index));
     }
 
     private static List<Long> orderedNodeIds(TreeViewState state) {
@@ -83,9 +89,7 @@ public final class TreeStructureVisualization implements StructureVisualization<
         }
     }
 
-    private static String routeId(String relation, int index, long sourceId, long targetId) {
-        return "tree:" + relation + ":" + index + ":" + sourceId + ":" + targetId;
-    }
+
 
     private static double quantize(double value) { return Math.rint(value * 100.0d) / 100.0d; }
 }

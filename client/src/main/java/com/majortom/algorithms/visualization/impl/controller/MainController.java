@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
@@ -1025,7 +1026,7 @@ public class MainController implements Initializable {
             return;
         }
         String moduleId = activeDefinition.id();
-        boolean maze = "maze".equals(moduleId);
+        boolean maze = StructureIds.MAZE.equals(moduleId);
         setControlVisibility(valueTypeBox, !maze);
         if (maze) {
             return;
@@ -1045,12 +1046,12 @@ public class MainController implements Initializable {
 
             valueTypeLabel.textProperty().unbind();
             String typeLabelKey = switch (moduleId) {
-                case "tree" -> "label.value_type.node";
-                case "graph" -> "label.value_type.vertex";
+                case StructureIds.TREE -> "label.value_type.node";
+                case StructureIds.GRAPH -> "label.value_type.vertex";
                 default -> "label.value_type.element";
             };
             valueTypeLabel.setText(I18N.text(typeLabelKey));
-            valueTypeSelector.setDisable("string".equals(moduleId) || !isStructurePageVisible()
+            valueTypeSelector.setDisable(StructureIds.STRING.equals(moduleId) || !isStructurePageVisible()
                     || structureSnapshotPreviewActive
                     || (currentSubController != null && currentSubController.isRunning()));
             List<String> available = availableValueTypes(moduleId);
@@ -1100,8 +1101,8 @@ public class MainController implements Initializable {
 
     private List<String> availableValueTypes(String moduleId) {
         return switch (moduleId) {
-            case "array", "linked-list", "stack", "queue", "tree", "graph" -> ValueAdapters.supportedTypeNames();
-            case "string" -> List.of(String.class.getSimpleName());
+            case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK, StructureIds.QUEUE, StructureIds.TREE, StructureIds.GRAPH -> ValueAdapters.supportedTypeNames();
+            case StructureIds.STRING -> List.of(String.class.getSimpleName());
             default -> COMPONENTS.algorithmValueTypes(StructureModule.fromId(moduleId));
         };
     }
@@ -1253,7 +1254,7 @@ public class MainController implements Initializable {
      */
     private List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         List<String> algorithmIds = new ArrayList<>();
-        if ("maze".equals(moduleId)) {
+        if (StructureIds.MAZE.equals(moduleId)) {
             algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId));
         } else {
             String selected = selectedValueType(moduleId);
@@ -2690,11 +2691,11 @@ public class MainController implements Initializable {
 
     private String moduleAccentStyleClass(String moduleId) {
         return switch (moduleId) {
-            case "array", "stack" -> "btn-ran-blue";
-            case "linked-list", "tree" -> "btn-ran-gold";
-            case "queue", "graph" -> "btn-ran-white";
-            case "maze" -> "btn-ran-red";
-            case "string" -> "btn-ran-gold";
+            case StructureIds.ARRAY, StructureIds.STACK -> "btn-ran-blue";
+            case StructureIds.LINKED_LIST, StructureIds.TREE -> "btn-ran-gold";
+            case StructureIds.QUEUE, StructureIds.GRAPH -> "btn-ran-white";
+            case StructureIds.MAZE -> "btn-ran-red";
+            case StructureIds.STRING -> "btn-ran-gold";
             case "hash-table" -> "btn-ran-red";
             default -> "btn-ran-blue";
         };

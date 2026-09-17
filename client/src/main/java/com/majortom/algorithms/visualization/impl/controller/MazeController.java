@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -259,9 +260,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     protected String formatStatsMessage() {
-        String structureName = StructureCatalog.name("array");
+        String structureName = StructureCatalog.name(StructureIds.ARRAY);
         if (!solving && graphGenerators.contains(selectedId(generatorSelector, allGenerators))) {
-            structureName = StructureCatalog.name("graph");
+            structureName = StructureCatalog.name(StructureIds.GRAPH);
         }
         String mode = "Generation";
         if (solving) {
@@ -617,12 +618,12 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     @Override
     protected String moduleId() {
-        return "maze";
+        return StructureIds.MAZE;
     }
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
-                StructureCatalog.name("array"), StructureCatalog.name("graph")));
+                StructureCatalog.name(StructureIds.ARRAY), StructureCatalog.name(StructureIds.GRAPH)));
         generatorSelector.itemsProperty().bind(Bindings.createObjectBinding(
                 () -> labels(allGenerators), I18N.localeProperty()));
         pathfinderSelector.itemsProperty().bind(Bindings.createObjectBinding(

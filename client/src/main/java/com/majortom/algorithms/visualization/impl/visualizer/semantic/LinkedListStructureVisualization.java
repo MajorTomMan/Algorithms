@@ -1,6 +1,10 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
+import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.domain.relation.LinkedRelationTypes;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
@@ -38,14 +42,14 @@ public final class LinkedListStructureVisualization implements StructureVisualiz
         for (Long id : order) {
             LinkedListViewState.Node node = state.nodes().get(id);
             if (node != null && node.nextId() != null && state.nodes().containsKey(node.nextId())) {
-                links.add(new LayoutLink(routeId(node.id(), node.nextId()),
+                links.add(new LayoutLink(LinkedListVisualIds.nextEdge(node.id(), node.nextId()),
                         LinkedListLayout.nodeId(node.id()), LinkedListLayout.nodeId(node.nextId()),
-                        "NEXT", links.size()));
+                        LinkedRelationTypes.NEXT, links.size()));
             }
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), LinkedListLayout.ID, elements, links,
-                Map.of("structure", "linked-list"));
+                Map.of(LayoutMetadataKeys.STRUCTURE, StructureIds.LINKED_LIST));
     }
 
     private static List<Long> orderedNodeIds(LinkedListViewState state) {
@@ -68,7 +72,5 @@ public final class LinkedListStructureVisualization implements StructureVisualiz
         }
     }
 
-    private static String routeId(long sourceId, long targetId) {
-        return "linked:next:" + sourceId + ":" + targetId;
-    }
+
 }

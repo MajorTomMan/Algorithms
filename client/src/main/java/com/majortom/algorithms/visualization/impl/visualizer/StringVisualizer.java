@@ -11,6 +11,7 @@ import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringVisualIds;
 import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationPlanner;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -545,12 +546,8 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
 
         private Integer activeIndex(String logicalId) {
-            if (logicalId == null || !logicalId.startsWith("string:")) return null;
-            try {
-                return Integer.parseInt(logicalId.substring("string:".length()));
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
+            int index = StringVisualIds.nodeIndex(logicalId);
+            return index < 0 ? null : index;
         }
     }
 
@@ -627,6 +624,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private static String id(int index) {
-        return "string:" + index;
+        return StringVisualIds.node(index);
     }
 }

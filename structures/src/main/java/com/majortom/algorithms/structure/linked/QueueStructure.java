@@ -1,10 +1,11 @@
 package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
 @Structure(
-    id = "queue", name = "Queue", module = StructureModule.QUEUE, implementation = LinkedList.class)
+    id = StructureIds.QUEUE, name = "Queue", module = StructureModule.QUEUE, implementation = LinkedList.class)
 public interface QueueStructure<T> extends Iterable<T> {
   int size();
 

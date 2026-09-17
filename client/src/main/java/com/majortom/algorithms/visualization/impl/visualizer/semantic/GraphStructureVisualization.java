@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
@@ -42,7 +43,7 @@ public final class GraphStructureVisualization implements StructureVisualization
                 .toList();
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), GraphElkLayout.ID, nodes, links,
-                Map.of("directed", Boolean.toString(state.directed())));
+                Map.of(LayoutMetadataKeys.DIRECTED, Boolean.toString(state.directed())));
     }
 
     private static double quantize(double value) { return Math.rint(value * 100.0d) / 100.0d; }

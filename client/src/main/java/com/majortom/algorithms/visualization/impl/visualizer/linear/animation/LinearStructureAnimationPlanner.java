@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linear.animation;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlanner;
 import com.majortom.algorithms.visualization.animation.api.AnimationStep;
@@ -16,7 +17,7 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
     private final String kind;
 
     public LinearStructureAnimationPlanner(String kind) {
-        if (!"stack".equals(kind) && !"queue".equals(kind)) {
+        if (!StructureIds.STACK.equals(kind) && !StructureIds.QUEUE.equals(kind)) {
             throw new IllegalArgumentException("Unsupported linear animation kind: " + kind);
         }
         this.kind = kind;
@@ -33,13 +34,13 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
         int newSize = nextState.values().size();
         LinearStructureViewState.Type type = nextState.mutation().type();
 
-        if ("stack".equals(kind) && type == LinearStructureViewState.Type.PUSH) {
+        if (StructureIds.STACK.equals(kind) && type == LinearStructureViewState.Type.PUSH) {
             planFrontInsertion(plan, previousLayout, nextLayout, oldSize, newSize);
-        } else if ("stack".equals(kind) && type == LinearStructureViewState.Type.POP) {
+        } else if (StructureIds.STACK.equals(kind) && type == LinearStructureViewState.Type.POP) {
             planFrontRemoval(plan, previousLayout, nextLayout, oldSize, newSize);
-        } else if ("queue".equals(kind) && type == LinearStructureViewState.Type.ENQUEUE) {
+        } else if (StructureIds.QUEUE.equals(kind) && type == LinearStructureViewState.Type.ENQUEUE) {
             planTailInsertion(plan, previousLayout, nextLayout, oldSize, newSize);
-        } else if ("queue".equals(kind) && type == LinearStructureViewState.Type.DEQUEUE) {
+        } else if (StructureIds.QUEUE.equals(kind) && type == LinearStructureViewState.Type.DEQUEUE) {
             planFrontRemoval(plan, previousLayout, nextLayout, oldSize, newSize);
         } else {
             planFallback(plan, previousState, previousLayout, nextState, nextLayout);

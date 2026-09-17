@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -108,11 +109,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     public static LinearStructureController stack(RenderContext renderContext) {
-        return new LinearStructureController(Kind.STACK, "stack", renderContext);
+        return new LinearStructureController(Kind.STACK, StructureIds.STACK, renderContext);
     }
 
     public static LinearStructureController queue(RenderContext renderContext) {
-        return new LinearStructureController(Kind.QUEUE, "queue", renderContext);
+        return new LinearStructureController(Kind.QUEUE, StructureIds.QUEUE, renderContext);
     }
 
     @Override

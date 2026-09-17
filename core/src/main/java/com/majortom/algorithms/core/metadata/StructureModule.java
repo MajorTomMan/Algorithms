@@ -4,15 +4,15 @@ import java.util.Arrays;
 
 /** Stable workbench/domain grouping derived from a Structure contract. */
 public enum StructureModule {
-  ARRAY("array"),
-  LINKED_LIST("linked-list"),
-  STACK("stack"),
-  QUEUE("queue"),
-  TREE("tree"),
-  GRAPH("graph"),
-  STRING("string"),
-  MAZE("maze"),
-  HASH("hash");
+  ARRAY(StructureIds.ARRAY),
+  LINKED_LIST(StructureIds.LINKED_LIST),
+  STACK(StructureIds.STACK),
+  QUEUE(StructureIds.QUEUE),
+  TREE(StructureIds.TREE),
+  GRAPH(StructureIds.GRAPH),
+  STRING(StructureIds.STRING),
+  MAZE(StructureIds.MAZE),
+  HASH(StructureIds.HASH);
 
   private final String id;
 

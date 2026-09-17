@@ -6,6 +6,7 @@ import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import java.util.ArrayDeque;
@@ -48,7 +49,7 @@ public final class GraphElkLayout implements LayoutEngine {
       return new LayoutResult(request.requestId(), request.modelRevision(), Map.of(), List.of(),
           BoundsSnapshot.empty());
     }
-    boolean directed = Boolean.parseBoolean(request.metadata().getOrDefault("directed", "false"));
+    boolean directed = Boolean.parseBoolean(request.metadata().getOrDefault(LayoutMetadataKeys.DIRECTED, Boolean.FALSE.toString()));
     if (directed && isDirectedAcyclic(request))
       return layeredLayout(request);
     return topologyLayout.layout(request);
@@ -158,9 +159,9 @@ public final class GraphElkLayout implements LayoutEngine {
   }
 
   public static String nodeId(long id) {
-    return "graph:node:" + id;
+    return GraphVisualIds.node(id);
   }
   public static String edgeId(long id) {
-    return "graph:edge:" + id;
+    return GraphVisualIds.edge(id);
   }
 }

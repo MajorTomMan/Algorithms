@@ -10,6 +10,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.semantic.ArrayStruc
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayCellView;
+import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayVisualIds;
 import com.majortom.algorithms.visualization.impl.visualizer.array.animation.ArrayAnimationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.array.animation.ArrayAnimationPlanner;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -414,12 +415,8 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
 
         private Integer activeIndex(String logicalId) {
-            if (logicalId == null || !logicalId.startsWith("array:")) return null;
-            try {
-                return Integer.parseInt(logicalId.substring("array:".length()));
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
+            int index = ArrayVisualIds.nodeIndex(logicalId);
+            return index < 0 ? null : index;
         }
     }
 
@@ -476,6 +473,6 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     }
 
     private static String id(int index) {
-        return "array:" + index;
+        return ArrayVisualIds.node(index);
     }
 }

@@ -1,11 +1,12 @@
 package com.majortom.algorithms.structure.array;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import java.util.Collection;
 
 @Structure(
-    id = "array", name = "Array", module = StructureModule.ARRAY, implementation = Array.class)
+    id = StructureIds.ARRAY, name = "Array", module = StructureModule.ARRAY, implementation = Array.class)
 public interface ArrayStructure<T> extends Iterable<T> {
   int size();
 

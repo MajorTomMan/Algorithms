@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
@@ -45,7 +46,7 @@ import java.util.function.Consumer;
 public final class LinkedListController extends BaseModuleController<LinkedListViewState>
         implements StructureSnapshotSupport<SequenceSnapshot<Object>>, RuntimeValueTypeSupport,
         AlgorithmSelectionSupport, SnapshotAlgorithmInputSupport<SequenceSnapshot<Object>> {
-    private static final String MODULE_ID = "linked-list";
+    private static final String MODULE_ID = StructureIds.LINKED_LIST;
 
     private final LinkedStructure<Object> linkedList;
     private Class<?> runtimeValueType = Integer.class;
@@ -84,7 +85,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @SuppressWarnings("unchecked")
     public LinkedListController(RenderContext renderContext) {
         super(new LinkedListVisualizer(), new LinkedListPresenter(), "/fxml/LinearStructureControls.fxml", renderContext);
-        linkedList = (LinkedStructure<Object>) structure("linked-list", LinkedList.class);
+        linkedList = (LinkedStructure<Object>) structure(StructureIds.LINKED_LIST, LinkedList.class);
         seed();
         renderStructureState(currentState());
     }

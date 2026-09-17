@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
+
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.animation.api.AnimationControl;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
@@ -15,6 +17,7 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
@@ -32,7 +35,7 @@ import java.util.function.IntConsumer;
 /** Logical LIFO visualization: a vertical stack whose first value is TOP. */
 public final class StackVisualizer extends BaseVisualizer<LinearStructureViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("STACK");
-    private static final StructureVisualization<LinearStructureViewState> STRUCTURE_VISUALIZATION = new LinearStructureVisualization("stack", "DOWN", 108.0d, 48.0d, 30.0d, 30.0d);
+    private static final StructureVisualization<LinearStructureViewState> STRUCTURE_VISUALIZATION = new LinearStructureVisualization(StructureIds.STACK, LinearLayoutDirection.DOWN, 108.0d, 48.0d, 30.0d, 30.0d);
     private static final double ITEM_MIN_WIDTH = 108.0d;
     private static final double ITEM_HEIGHT = 48.0d;
     private static final double ITEM_HORIZONTAL_PADDING = 30.0d;
@@ -40,9 +43,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     private final VisualizationSurface surface = new VisualizationSurface();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
     private final StructureAnimationRuntime<LinearStructureViewState> animationRuntime =
-            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner("stack"));
+            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner(StructureIds.STACK));
     private final LinearAnimationSceneAdapter animationScene =
-            new LinearAnimationSceneAdapter("stack", surface, items);
+            new LinearAnimationSceneAdapter(StructureIds.STACK, surface, items);
     private final Text topLabel = new Text();
     private int selectedIndex = -1;
     private int pendingSelectedIndex = -1;

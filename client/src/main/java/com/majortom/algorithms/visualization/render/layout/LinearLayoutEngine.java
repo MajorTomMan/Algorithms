@@ -4,10 +4,11 @@ import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
+import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /** Deterministic JavaFX-neutral layout for strictly linear structures. */
@@ -28,9 +29,9 @@ public final class LinearLayoutEngine implements LayoutEngine {
           BoundsSnapshot.empty());
     }
 
-    LinearDirection direction = LinearDirection.parse(request.metadata().get("direction"));
-    double padding = positiveDouble(request.metadata().get("padding"), PADDING);
-    double spacing = nonNegativeDouble(request.metadata().get("spacing"), 0.0d);
+    LinearLayoutDirection direction = LinearLayoutDirection.parse(request.metadata().get(LayoutMetadataKeys.DIRECTION));
+    double padding = positiveDouble(request.metadata().get(LayoutMetadataKeys.PADDING), PADDING);
+    double spacing = nonNegativeDouble(request.metadata().get(LayoutMetadataKeys.SPACING), 0.0d);
     double primaryExtent = primaryExtent(input, direction.horizontal(), spacing);
 
     Map<String, ElementGeometry> elements = new LinkedHashMap<>();
@@ -95,40 +96,6 @@ public final class LinearLayoutEngine implements LayoutEngine {
       return value >= 0.0d ? value : fallback;
     } catch (NumberFormatException ignored) {
       return fallback;
-    }
-  }
-
-  private enum LinearDirection {
-    RIGHT(true, false),
-    DOWN(false, false),
-    LEFT(true, true),
-    UP(false, true);
-
-    private final boolean horizontal;
-    private final boolean reverse;
-
-    LinearDirection(boolean horizontal, boolean reverse) {
-      this.horizontal = horizontal;
-      this.reverse = reverse;
-    }
-
-    boolean horizontal() {
-      return horizontal;
-    }
-
-    boolean reverse() {
-      return reverse;
-    }
-
-    static LinearDirection parse(String raw) {
-      if (raw == null) {
-        return RIGHT;
-      }
-      try {
-        return valueOf(raw.toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException ignored) {
-        return RIGHT;
-      }
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.linked;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
@@ -18,8 +19,8 @@ public final class LinearStructureEventReducer implements EventReducer<LinearStr
   public LinearStructureEventReducer(String kind, List<?> values) {
     Objects.requireNonNull(kind, "kind");
     this.initialState = new LinearStructureViewState(kind, values);
-    this.stack = "stack".equals(kind);
-    if (!stack && !"queue".equals(kind)) {
+    this.stack = StructureIds.STACK.equals(kind);
+    if (!stack && !StructureIds.QUEUE.equals(kind)) {
       throw new IllegalArgumentException("Unsupported linear structure kind: " + kind);
     }
   }

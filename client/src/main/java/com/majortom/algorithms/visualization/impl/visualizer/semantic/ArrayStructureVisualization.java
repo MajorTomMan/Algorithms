@@ -1,6 +1,9 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
@@ -31,10 +34,10 @@ public final class ArrayStructureVisualization implements StructureVisualization
             elements.add(new LayoutElement(elementId(index), width, height));
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
-                context.geometryRevision(), LinearLayoutEngine.ID, elements, Map.of("structure", "array"));
+                context.geometryRevision(), LinearLayoutEngine.ID, elements, Map.of(LayoutMetadataKeys.STRUCTURE, StructureIds.ARRAY));
     }
 
-    public static String elementId(int index) { return "array:" + index; }
+    public static String elementId(int index) { return ArrayVisualIds.node(index); }
 
     private static VisualDensity densityFor(int size) {
         if (size <= 16) return VisualDensity.DETAIL;

@@ -1,11 +1,12 @@
 package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.structure.linked.ListNode;
 import java.util.Collection;
 
-@Structure(id = "linked-list", name = "Linked List", module = StructureModule.LINKED_LIST,
+@Structure(id = StructureIds.LINKED_LIST, name = "Linked List", module = StructureModule.LINKED_LIST,
     implementation = LinkedList.class)
 public interface LinkedStructure<T> extends Iterable<T> {
   int size();

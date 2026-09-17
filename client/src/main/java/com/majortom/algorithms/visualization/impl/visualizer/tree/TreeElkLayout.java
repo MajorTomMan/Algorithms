@@ -6,6 +6,7 @@ import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public final class TreeElkLayout implements LayoutEngine {
   private static final double NODE_SPACING = 42.0d;
   private static final double LEVEL_SPACING = 68.0d;
   private static final int RANDOM_SEED = 1;
+  private static final String BINARY_KIND = "BINARY";
 
   @Override
   public String id() {
@@ -49,7 +51,7 @@ public final class TreeElkLayout implements LayoutEngine {
       return new LayoutResult(request.requestId(), request.modelRevision(), Map.of(), List.of(),
           BoundsSnapshot.empty());
     }
-    boolean binary = "BINARY".equals(request.metadata().get("kind"));
+    boolean binary = BINARY_KIND.equals(request.metadata().get(LayoutMetadataKeys.KIND));
     ElkNode graph = ElkGraphUtil.createGraph();
     graph.setProperty(CoreOptions.ALGORITHM, LayeredOptions.ALGORITHM_ID);
     graph.setProperty(CoreOptions.DIRECTION, Direction.DOWN);
@@ -148,6 +150,6 @@ public final class TreeElkLayout implements LayoutEngine {
   }
 
   public static String nodeId(long id) {
-    return "tree:" + id;
+    return TreeVisualIds.node(id);
   }
 }

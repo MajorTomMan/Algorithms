@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -80,7 +81,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     @SuppressWarnings("unchecked")
     public ArrayController(RenderContext renderContext) {
         super(new ArrayVisualizer(), new ArrayPresenter(), "/fxml/ArrayControls.fxml", renderContext);
-        sourceArray = structure("array", Array.class);
+        sourceArray = structure(StructureIds.ARRAY, Array.class);
         replaceArrayContents(randomValues());
     }
 
@@ -614,7 +615,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     protected String moduleId() {
-        return "array";
+        return StructureIds.ARRAY;
     }
 
     @Override
@@ -652,7 +653,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void bindStructureSelector() {
-        structureSelector.setItems(FXCollections.observableArrayList("array"));
+        structureSelector.setItems(FXCollections.observableArrayList(StructureIds.ARRAY));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
         FxDispatch.defer(() -> structureSelector.getSelectionModel().selectFirst());
     }

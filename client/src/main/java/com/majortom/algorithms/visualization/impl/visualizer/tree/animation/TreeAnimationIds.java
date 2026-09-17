@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.tree.animation;
 
+import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeVisualIds;
+
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -9,19 +11,19 @@ public final class TreeAnimationIds {
     private TreeAnimationIds() {}
 
     public static String node(long id) {
-        return "tree:" + id;
+        return TreeVisualIds.node(id);
     }
 
     public static String childEdge(int index, long sourceId, long targetId) {
-        return edge("child", index, sourceId, targetId);
+        return TreeVisualIds.childEdge(index, sourceId, targetId);
     }
 
     public static String leftEdge(long sourceId, long targetId) {
-        return edge("left", 0, sourceId, targetId);
+        return TreeVisualIds.leftEdge(sourceId, targetId);
     }
 
     public static String rightEdge(long sourceId, long targetId) {
-        return edge("right", 1, sourceId, targetId);
+        return TreeVisualIds.rightEdge(sourceId, targetId);
     }
 
     public static Set<String> edgeIds(TreeViewState state) {
@@ -46,7 +48,5 @@ public final class TreeAnimationIds {
         return ids;
     }
 
-    private static String edge(String relation, int index, long sourceId, long targetId) {
-        return "tree:" + relation + ":" + index + ":" + sourceId + ":" + targetId;
-    }
+
 }

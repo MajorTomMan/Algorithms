@@ -61,6 +61,6 @@ public final class LinkedListLayout implements LayoutEngine {
   }
 
   public static String nodeId(long id) {
-    return "linked:" + id;
+    return LinkedListVisualIds.node(id);
   }
 }

@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
+
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.animation.api.AnimationControl;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
@@ -15,6 +17,7 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
@@ -32,7 +35,7 @@ import java.util.function.IntConsumer;
 /** Logical FIFO visualization: a horizontal flow lane from FRONT to REAR. */
 public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("QUEUE");
-    private static final StructureVisualization<LinearStructureViewState> STRUCTURE_VISUALIZATION = new LinearStructureVisualization("queue", "RIGHT", 90.0d, 50.0d, 28.0d, 30.0d);
+    private static final StructureVisualization<LinearStructureViewState> STRUCTURE_VISUALIZATION = new LinearStructureVisualization(StructureIds.QUEUE, LinearLayoutDirection.RIGHT, 90.0d, 50.0d, 28.0d, 30.0d);
     private static final double ITEM_MIN_WIDTH = 90.0d;
     private static final double ITEM_HEIGHT = 50.0d;
     private static final double ITEM_HORIZONTAL_PADDING = 28.0d;
@@ -40,9 +43,9 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     private final VisualizationSurface surface = new VisualizationSurface();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
     private final StructureAnimationRuntime<LinearStructureViewState> animationRuntime =
-            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner("queue"));
+            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner(StructureIds.QUEUE));
     private final LinearAnimationSceneAdapter animationScene =
-            new LinearAnimationSceneAdapter("queue", surface, items);
+            new LinearAnimationSceneAdapter(StructureIds.QUEUE, surface, items);
     private final Text frontLabel = new Text();
     private final Text rearLabel = new Text();
     private final Text dequeueLabel = new Text();

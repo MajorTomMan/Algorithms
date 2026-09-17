@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linear.animation;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
 import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
@@ -51,18 +52,18 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
 
     private String logicalIdForSource(int source, LinearStructureViewState.Mutation mutation, int newSize) {
         return switch (mutation.type()) {
-            case PUSH -> "stack".equals(kind)
+            case PUSH -> StructureIds.STACK.equals(kind)
                     ? LinearAnimationIds.node(kind, source + 1)
                     : fallbackId(source, newSize);
-            case POP -> "stack".equals(kind)
+            case POP -> StructureIds.STACK.equals(kind)
                     ? source == 0
                             ? LinearAnimationIds.exit(kind, source)
                             : LinearAnimationIds.node(kind, source - 1)
                     : fallbackId(source, newSize);
-            case ENQUEUE -> "queue".equals(kind)
+            case ENQUEUE -> StructureIds.QUEUE.equals(kind)
                     ? LinearAnimationIds.node(kind, source)
                     : fallbackId(source, newSize);
-            case DEQUEUE -> "queue".equals(kind)
+            case DEQUEUE -> StructureIds.QUEUE.equals(kind)
                     ? source == 0
                             ? LinearAnimationIds.exit(kind, source)
                             : LinearAnimationIds.node(kind, source - 1)

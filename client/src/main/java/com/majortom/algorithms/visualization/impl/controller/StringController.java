@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -60,7 +61,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     public StringController(RenderContext renderContext) {
         super(new StringVisualizer(), new StringPresenter(), "/fxml/StringControls.fxml", renderContext);
-        source = structure("string", com.majortom.algorithms.structure.string.String.class);
+        source = structure(StructureIds.STRING, com.majortom.algorithms.structure.string.String.class);
         source.replace(0, source.length(), "ABABDABACDABABCABAB");
         renderSource();
     }
@@ -381,7 +382,7 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     protected String moduleId() {
-        return "string";
+        return StructureIds.STRING;
     }
 
     @Override
@@ -403,7 +404,7 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void bindSelectors() {
-        structureSelector.setItems(FXCollections.observableArrayList("string"));
+        structureSelector.setItems(FXCollections.observableArrayList(StructureIds.STRING));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
         javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
         for (String id : algorithmIds) {

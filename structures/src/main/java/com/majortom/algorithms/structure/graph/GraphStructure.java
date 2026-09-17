@@ -1,12 +1,13 @@
 package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import java.util.Collection;
 import java.util.Map;
 
 @Structure(
-    id = "graph", name = "Graph", module = StructureModule.GRAPH, implementation = Graph.class)
+    id = StructureIds.GRAPH, name = "Graph", module = StructureModule.GRAPH, implementation = Graph.class)
 public interface GraphStructure<T> {
   int vertexCount();
   int edgeCount();

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -79,9 +80,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     public TreeController(RenderContext renderContext) {
         super(new TreeVisualizer(), new TreePresenter(), "/fxml/TreeControls.fxml", renderContext);
         @SuppressWarnings("unchecked")
-        Tree<Object> resolvedGeneralTree = (Tree<Object>) structure("tree", Tree.class);
+        Tree<Object> resolvedGeneralTree = (Tree<Object>) structure(StructureIds.TREE, Tree.class);
         generalTree = resolvedGeneralTree;
-        avlTree = structure("avl-tree", AVLTree.class);
+        avlTree = structure(StructureIds.AVL_TREE, AVLTree.class);
         initializeSampleGeneralTree();
         initializeSampleAvlTree();
         treeVisualizer().setSelectionListener(this::handleVisualSelection);
@@ -1339,7 +1340,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     protected String moduleId() {
-        return "tree";
+        return StructureIds.TREE;
     }
 
     @Override
@@ -1359,7 +1360,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
-                "tree", "avl-tree"));
+                StructureIds.TREE, StructureIds.AVL_TREE));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
         localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {

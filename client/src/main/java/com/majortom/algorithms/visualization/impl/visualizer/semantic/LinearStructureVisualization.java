@@ -1,5 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
@@ -14,13 +16,13 @@ import java.util.Map;
 /** JavaFX-neutral deterministic layout semantics for stack/queue families. */
 public final class LinearStructureVisualization implements StructureVisualization<LinearStructureViewState> {
     private final String structure;
-    private final String direction;
+    private final LinearLayoutDirection direction;
     private final double minWidth;
     private final double height;
     private final double horizontalPadding;
     private final double layoutPadding;
 
-    public LinearStructureVisualization(String structure, String direction, double minWidth,
+    public LinearStructureVisualization(String structure, LinearLayoutDirection direction, double minWidth,
             double height, double horizontalPadding, double layoutPadding) {
         this.structure = structure;
         this.direction = direction;
@@ -41,8 +43,10 @@ public final class LinearStructureVisualization implements StructureVisualizatio
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), LinearLayoutEngine.ID, elements,
-                Map.of("structure", structure, "direction", direction,
-                        "padding", number(layoutPadding), "spacing", "0"));
+                Map.of(LayoutMetadataKeys.STRUCTURE, structure,
+                        LayoutMetadataKeys.DIRECTION, direction.name(),
+                        LayoutMetadataKeys.PADDING, number(layoutPadding),
+                        LayoutMetadataKeys.SPACING, "0"));
     }
 
     public static String elementId(String structure, int index) { return structure + ":" + index; }

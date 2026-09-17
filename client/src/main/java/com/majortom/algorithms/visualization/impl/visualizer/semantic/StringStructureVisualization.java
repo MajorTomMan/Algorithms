@@ -1,6 +1,10 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
+import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
@@ -32,10 +36,12 @@ public final class StringStructureVisualization implements StructureVisualizatio
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), LinearLayoutEngine.ID, elements,
-                Map.of("structure", "string", "direction", "RIGHT", "padding", "28", "spacing", "0"));
+                Map.of(LayoutMetadataKeys.STRUCTURE, StructureIds.STRING,
+                        LayoutMetadataKeys.DIRECTION, LinearLayoutDirection.RIGHT.name(),
+                        LayoutMetadataKeys.PADDING, "28", LayoutMetadataKeys.SPACING, "0"));
     }
 
-    public static String elementId(int index) { return "string:" + index; }
+    public static String elementId(int index) { return StringVisualIds.node(index); }
 
     private static VisualDensity densityFor(int size) {
         if (size <= 24) return VisualDensity.DETAIL;

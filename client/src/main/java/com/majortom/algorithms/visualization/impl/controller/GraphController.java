@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -595,7 +596,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     protected String moduleId() {
-        return "graph";
+        return StructureIds.GRAPH;
     }
 
     @Override
