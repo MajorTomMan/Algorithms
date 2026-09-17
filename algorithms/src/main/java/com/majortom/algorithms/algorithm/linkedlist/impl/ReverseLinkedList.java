@@ -12,12 +12,15 @@ public class ReverseLinkedList {
   public void reverse(LinkedStructure<Integer> list) {
     ListNode<Integer> prev = null;
     ListNode<Integer> current = list.getHead();
+    ListNode<Integer> oldHead = list.getHead();
     while (current != null) {
       ListNode<Integer> next = current.getNext();
       current.setNext(prev);
+      current.setPrevious(next);
       prev = current;
       current = next;
     }
     list.setHead(prev);
+    list.setTail(oldHead);
   }
 }
