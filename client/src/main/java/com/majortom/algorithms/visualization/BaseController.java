@@ -187,7 +187,7 @@ public abstract class BaseController<S> implements Initializable {
         this.renderSurfaceHost = Objects.requireNonNull(renderSurfaceHost, "renderSurfaceHost");
         this.renderSurface = visualizer == null
                 ? null
-                : new RenderSurface<>(visualizer.sessionId(), visualizer, visualizer.fxSurfaceAdapter());
+                : new RenderSurface<>(visualizer.sessionId(), visualizer.structureVisualization(), visualizer, visualizer.fxSurfaceAdapter());
         this.execution = Objects.requireNonNull(execution, "execution");
         this.executionHistory = Objects.requireNonNull(executionHistory, "executionHistory");
         this.inputFingerprintService = Objects.requireNonNull(inputFingerprint, "inputFingerprint");

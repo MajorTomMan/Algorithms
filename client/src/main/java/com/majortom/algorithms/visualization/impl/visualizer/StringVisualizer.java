@@ -1,24 +1,21 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.StringStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
-import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 
@@ -38,6 +35,7 @@ import java.util.function.IntConsumer;
 /** String visualizer with a JavaFX-neutral capture and authoritative SceneGraph commit. */
 public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("STRING");
+    private static final StructureVisualization<StringViewState> STRUCTURE_VISUALIZATION = new StringStructureVisualization();
     private static final double EMPTY_X = 36.0d;
     private static final double EMPTY_Y = 64.0d;
 
@@ -149,35 +147,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(StringViewState state, RenderCaptureContext context) {
-        int size = state.value().length();
-        VisualDensity density = densityFor(size);
-        double baseWidth = switch (density) {
-            case DETAIL -> 52.0d;
-            case COMPACT -> 40.0d;
-            case DENSE -> 28.0d;
-        };
-        double height = Math.max(78.0d, 62.0d + context.contentStyle().fontSize());
-        List<LayoutElement> elements = new ArrayList<>(size);
-        for (int index = 0; index < size; index++) {
-            String value = Character.toString(state.value().charAt(index));
-            double width = DetachedMetrics.boxWidth(value, context.contentStyle(), baseWidth, 16.0d);
-            elements.add(new LayoutElement(id(index), width, height));
-        }
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                LinearLayoutEngine.ID,
-                elements,
-                Map.of(
-                        "structure", "string",
-                        "direction", "RIGHT",
-                        "padding", "28",
-                        "spacing", "0"));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -476,6 +445,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         if (size <= 24) return VisualDensity.DETAIL;
         if (size <= 48) return VisualDensity.COMPACT;
         return VisualDensity.DENSE;
+    }
+
+    @Override
+    public StructureVisualization<StringViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
     }
 
     @Override

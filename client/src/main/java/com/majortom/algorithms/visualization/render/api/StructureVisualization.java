@@ -1,15 +1,14 @@
 package com.majortom.algorithms.visualization.render.api;
 
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import java.util.concurrent.CompletionStage;
 
 /**
- * Structure-specific render semantics. It describes layout input and applies authoritative
- * structure/presentation commits, but it does not own viewport or camera behavior.
+ * JavaFX-neutral structure semantics for one visualization family.
+ *
+ * <p>This side only describes factual layout input. It never creates or mutates JavaFX nodes and
+ * never owns viewport, camera, lifecycle or commit timing.</p>
  */
+@FunctionalInterface
 public interface StructureVisualization<S> {
     LayoutRequest captureLayout(S snapshot, RenderCaptureContext context);
-    CompletionStage<Void> commitLayout(S snapshot, LayoutPatch patch, RenderCommitContext context);
-    CompletionStage<Void> commitPresentation(S snapshot, RenderCommitContext context);
 }

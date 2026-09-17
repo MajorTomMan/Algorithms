@@ -1,26 +1,24 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.TreeStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Point2D;
 
@@ -42,6 +40,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private static final double LABEL_PADDING = 18.0d;
 
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("TREE");
+    private static final StructureVisualization<TreeViewState> STRUCTURE_VISUALIZATION = new TreeStructureVisualization();
     private final VisualizationSurface surface = new VisualizationSurface();
     private final RenderPort renderPort;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
@@ -76,70 +75,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(TreeViewState state, RenderCaptureContext context) {
-        List<Long> order = orderedNodeIds(state);
-        List<LayoutElement> nodes = new ArrayList<>(order.size());
-        for (Long id : order) {
-            TreeViewState.Node node = state.nodes().get(id);
-            if (node == null) continue;
-            double diameter = Math.max(
-                    MIN_RADIUS * 2.0d,
-                    DetachedMetrics.boxWidth(
-                            node.value().text(), context.contentStyle(), MIN_RADIUS * 2.0d, LABEL_PADDING));
-            nodes.add(new LayoutElement(
-                    TreeElkLayout.nodeId(id), quantize(diameter), quantize(diameter)));
-        }
 
-        List<LayoutLink> links = new ArrayList<>();
-        for (Long id : order) {
-            TreeViewState.Node node = state.nodes().get(id);
-            if (node == null) continue;
-            if (state.kind() == TreeViewState.Kind.GENERAL) {
-                for (int index = 0; index < node.childIds().size(); index++) {
-                    Long targetId = node.childIds().get(index);
-                    if (targetId == null || !state.nodes().containsKey(targetId)) continue;
-                    EdgeKey key = new EdgeKey(node.id(), targetId, Relation.CHILD, index);
-                    links.add(new LayoutLink(
-                            routeId(key),
-                            TreeElkLayout.nodeId(node.id()),
-                            TreeElkLayout.nodeId(targetId),
-                            "CHILD",
-                            index));
-                }
-            } else {
-                addLayoutLink(links, state, node.id(), node.leftId(), Relation.LEFT, 0);
-                addLayoutLink(links, state, node.id(), node.rightId(), Relation.RIGHT, 1);
-            }
-        }
-
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                TreeElkLayout.ID,
-                nodes,
-                links,
-                Map.of("kind", state.kind().name()));
-    }
-
-    private void addLayoutLink(
-            List<LayoutLink> links,
-            TreeViewState state,
-            long sourceId,
-            Long targetId,
-            Relation relation,
-            int index) {
-        if (targetId == null || !state.nodes().containsKey(targetId)) return;
-        EdgeKey key = new EdgeKey(sourceId, targetId, relation, index);
-        links.add(new LayoutLink(
-                routeId(key),
-                TreeElkLayout.nodeId(sourceId),
-                TreeElkLayout.nodeId(targetId),
-                relation.name(),
-                index));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -358,6 +294,11 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     }
 
     @Override
+    public StructureVisualization<TreeViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
+    }
+
+    @Override
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
@@ -401,9 +342,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
                 + key.sourceId() + ":" + key.targetId();
     }
 
-    private static double quantize(double value) {
-        return Math.rint(value * 100.0d) / 100.0d;
-    }
 
 
     private enum Relation {

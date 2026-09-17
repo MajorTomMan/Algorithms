@@ -1,29 +1,25 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinearStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
-import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +31,7 @@ import java.util.function.IntConsumer;
 /** Logical FIFO visualization: a horizontal flow lane from FRONT to REAR. */
 public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("QUEUE");
+    private static final StructureVisualization<LinearStructureViewState> STRUCTURE_VISUALIZATION = new LinearStructureVisualization("queue", "RIGHT", 90.0d, 50.0d, 28.0d, 30.0d);
     private static final double ITEM_MIN_WIDTH = 90.0d;
     private static final double ITEM_HEIGHT = 50.0d;
     private static final double ITEM_HORIZONTAL_PADDING = 28.0d;
@@ -91,28 +88,6 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(LinearStructureViewState state, RenderCaptureContext context) {
-        List<LayoutElement> elements = new ArrayList<>(state.values().size());
-        for (int index = 0; index < state.values().size(); index++) {
-            String text = state.values().get(index).text();
-            double width = DetachedMetrics.boxWidth(
-                    text, context.contentStyle(), ITEM_MIN_WIDTH, ITEM_HORIZONTAL_PADDING);
-            elements.add(new LayoutElement(id(index), width, ITEM_HEIGHT));
-        }
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                LinearLayoutEngine.ID,
-                elements,
-                Map.of(
-                        "structure", "queue",
-                        "direction", "RIGHT",
-                        "padding", "30",
-                        "spacing", "0"));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -295,6 +270,11 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (pendingSelectedIndex < 0) return;
         if (pendingSelectedIndex < size) selectedIndex = pendingSelectedIndex;
         pendingSelectedIndex = -1;
+    }
+
+    @Override
+    public StructureVisualization<LinearStructureViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
     }
 
     @Override

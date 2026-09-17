@@ -1,31 +1,25 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.ArrayStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayCellView;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
-import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
-import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +31,7 @@ import java.util.function.IntConsumer;
 /** Array reference implementation with pure capture and authoritative FX commit. */
 public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("ARRAY");
+    private static final StructureVisualization<ArrayViewState> STRUCTURE_VISUALIZATION = new ArrayStructureVisualization();
     private static final double EMPTY_X = 36.0d;
     private static final double EMPTY_Y = 64.0d;
 
@@ -120,31 +115,6 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(ArrayViewState state, RenderCaptureContext context) {
-        int size = state.values().size();
-        VisualDensity density = densityFor(size);
-        List<LayoutElement> elements = new ArrayList<>(size);
-        double baseWidth = switch (density) {
-            case DETAIL -> 64.0d;
-            case COMPACT -> 50.0d;
-            case DENSE -> 38.0d;
-        };
-        double height = Math.max(78.0d, 63.0d + context.contentStyle().fontSize());
-        for (int index = 0; index < size; index++) {
-            String text = state.values().get(index).text();
-            double width = DetachedMetrics.boxWidth(text, context.contentStyle(), baseWidth, 20.0d);
-            elements.add(new LayoutElement(id(index), width, height));
-        }
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                LinearLayoutEngine.ID,
-                elements,
-                Map.of("structure", "array"));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -295,6 +265,11 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     private void clearCells() {
         cells.clear();
         surface.nodeLayer().getChildren().clear();
+    }
+
+    @Override
+    public StructureVisualization<ArrayViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
     }
 
     @Override

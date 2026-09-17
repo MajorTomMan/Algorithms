@@ -1,25 +1,22 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinkedListStructureVisualization;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
-import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 
@@ -41,6 +38,7 @@ import java.util.function.LongConsumer;
 /** Linked-list renderer with pure capture and stable node identity keyed by factual node id. */
 public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("LINKED_LIST");
+    private static final StructureVisualization<LinkedListViewState> STRUCTURE_VISUALIZATION = new LinkedListStructureVisualization();
     private static final double MIN_NODE_WIDTH = 112.0d;
     private static final double MIN_NODE_HEIGHT = 72.0d;
     private static final double LABEL_HORIZONTAL_PADDING = 40.0d;
@@ -94,46 +92,6 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(LinkedListViewState state, RenderCaptureContext context) {
-        List<Long> order = orderedNodeIds(state);
-        List<LayoutElement> elements = new ArrayList<>(order.size());
-        for (Long id : order) {
-            LinkedListViewState.Node node = state.nodes().get(id);
-            if (node == null) continue;
-            double width = DetachedMetrics.boxWidth(
-                    label(node), context.contentStyle(), MIN_NODE_WIDTH, LABEL_HORIZONTAL_PADDING);
-            elements.add(
-                    new LayoutElement(
-                            LinkedListLayout.nodeId(id),
-                            width,
-                            Math.max(MIN_NODE_HEIGHT, 54.0d + context.contentStyle().fontSize())));
-        }
-
-        List<LayoutLink> links = new ArrayList<>();
-        for (Long id : order) {
-            LinkedListViewState.Node node = state.nodes().get(id);
-            if (node != null && node.nextId() != null && state.nodes().containsKey(node.nextId())) {
-                EdgeKey key = new EdgeKey(node.id(), node.nextId(), Relation.NEXT);
-                links.add(
-                        new LayoutLink(
-                                routeId(key),
-                                LinkedListLayout.nodeId(node.id()),
-                                LinkedListLayout.nodeId(node.nextId()),
-                                "NEXT",
-                                links.size()));
-            }
-        }
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                LinkedListLayout.ID,
-                elements,
-                links,
-                Map.of("structure", "linked-list"));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -386,6 +344,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             selectedNodeId = pendingSelectedNodeId;
         }
         pendingSelectedNodeId = null;
+    }
+
+    @Override
+    public StructureVisualization<LinkedListViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
     }
 
     @Override

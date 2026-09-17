@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.GraphStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
@@ -8,20 +9,16 @@ import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
-import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
@@ -29,7 +26,6 @@ import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +44,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final double EDGE_LABEL_COLLISION_PADDING = 4.0d;
 
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("GRAPH");
+    private static final StructureVisualization<GraphViewState> STRUCTURE_VISUALIZATION = new GraphStructureVisualization();
     private final VisualizationSurface surface = new VisualizationSurface();
     private final RenderPort renderPort;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
@@ -91,43 +88,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
     }
 
-    @Override
-    public LayoutRequest captureLayout(GraphViewState state, RenderCaptureContext context) {
-        List<GraphViewState.Node> orderedNodes = state.nodes().stream()
-                .sorted(Comparator.comparingLong(GraphViewState.Node::id))
-                .toList();
-        List<LayoutElement> nodes = new ArrayList<>(orderedNodes.size());
-        for (GraphViewState.Node node : orderedNodes) {
-            double diameter = Math.max(
-                    MIN_RADIUS * 2.0d,
-                    DetachedMetrics.boxWidth(
-                            node.value().text(), context.contentStyle(), MIN_RADIUS * 2.0d, LABEL_PADDING));
-            nodes.add(new LayoutElement(
-                    GraphElkLayout.nodeId(node.id()), quantize(diameter), quantize(diameter)));
-        }
-
-        Set<String> available = nodes.stream()
-                .map(LayoutElement::id)
-                .collect(java.util.stream.Collectors.toSet());
-        List<LayoutLink> links = state.edges().stream()
-                .filter(edge -> available.contains(GraphElkLayout.nodeId(edge.fromId()))
-                        && available.contains(GraphElkLayout.nodeId(edge.toId())))
-                .sorted(Comparator.comparingLong(GraphViewState.Edge::id))
-                .map(edge -> new LayoutLink(
-                        GraphElkLayout.edgeId(edge.id()),
-                        GraphElkLayout.nodeId(edge.fromId()),
-                        GraphElkLayout.nodeId(edge.toId())))
-                .toList();
-        return new LayoutRequest(
-                context.requestId(),
-                context.sessionId(),
-                context.modelRevision(),
-                context.geometryRevision(),
-                GraphElkLayout.ID,
-                nodes,
-                links,
-                Map.of("directed", Boolean.toString(state.directed())));
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(
@@ -393,6 +353,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     @Override
+    public StructureVisualization<GraphViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
+    }
+
+    @Override
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
@@ -563,8 +528,5 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
 
-    private static double quantize(double value) {
-        return Math.rint(value * 100.0d) / 100.0d;
-    }
 
 }

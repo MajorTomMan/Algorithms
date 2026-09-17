@@ -294,7 +294,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         return fxExecutor.supply(() -> {
                     RenderSurface<S> target = surfaces.require(session.id);
                     target.fxSurface().applyPrimaryContentBounds(patch.primaryContentBounds());
-                    return target.visualization().commitLayout(intent.snapshot(), patch, commitContext);
+                    return target.renderer().commitLayout(intent.snapshot(), patch, commitContext);
                 })
                 .thenCompose(stage -> stage)
                 .thenCompose(ignored -> pulseBarrier.await())
@@ -394,7 +394,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                 session.layoutRevision,
                 presentationRevision);
         trace(transaction, RenderPipeline.WAIT_APPLY);
-        return fxExecutor.supply(() -> surfaces.<S>require(session.id).visualization().commitPresentation(intent.snapshot(), context))
+        return fxExecutor.supply(() -> surfaces.<S>require(session.id).renderer().commitPresentation(intent.snapshot(), context))
                 .thenCompose(stage -> stage)
                 .thenCompose(ignored -> onScheduler(() -> {
                     if (session.generation != generation || !session.active()) return RenderResult.cancelled(session.id);

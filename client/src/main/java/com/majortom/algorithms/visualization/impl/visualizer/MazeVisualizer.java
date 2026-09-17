@@ -3,21 +3,19 @@ package com.majortom.algorithms.visualization.impl.visualizer;
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.CanvasVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.semantic.MazeStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
@@ -28,7 +26,6 @@ import javafx.scene.text.TextAlignment;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -36,6 +33,7 @@ import java.util.function.Consumer;
 /** Project-owned Canvas/Grid maze renderer hosted by the shared GestureFX visualization surface. */
 public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("MAZE");
+    private static final StructureVisualization<MazeViewState> STRUCTURE_VISUALIZATION = new MazeStructureVisualization();
     private static final double WORLD_CELL_SIZE = 32.0d;
     private static final String GRID_ID = "maze:grid";
     private static final Color WALL_FILL = Color.web("#444444");
@@ -91,17 +89,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         } else {
             renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
         }
-    }
-    @Override
-    public LayoutRequest captureLayout(MazeViewState state, RenderCaptureContext context) {
-        List<LayoutElement> elements;
-        if (state.rows() < 1 || state.columns() < 1) {
-            elements = List.of();
-        } else {
-            elements = List.of(new LayoutElement(GRID_ID, state.columns() * WORLD_CELL_SIZE, state.rows() * WORLD_CELL_SIZE));
-        }
-        return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
-                context.geometryRevision(), FixedLayoutEngine.ID, elements, Map.of("structure", "maze"));
     }
 
     @Override
@@ -368,6 +355,11 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         if (state != null && isModuleAttached() && !isDisposed()) {
             renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
         }
+    }
+
+    @Override
+    public StructureVisualization<MazeViewState> structureVisualization() {
+        return STRUCTURE_VISUALIZATION;
     }
 
     @Override
