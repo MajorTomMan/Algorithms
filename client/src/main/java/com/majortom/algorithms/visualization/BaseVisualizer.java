@@ -6,55 +6,31 @@ import com.majortom.algorithms.visualization.render.fx.FxStructureRenderer;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import javafx.scene.layout.StackPane;
 
-/** Common lifecycle base for structure visualizers. Rendering technology stays in subclasses. */
+/** Passive JavaFX renderer for one structure family. Render submission is owned outside FX. */
 public abstract class BaseVisualizer<S> extends StackPane implements FxStructureRenderer<S> {
-    private S lastData;
-    private boolean moduleAttached;
-    private boolean disposed;
+  private Runnable presentationInvalidationHandler = () -> {};
 
-    /** Stores factual state and submits it when the module is attached. */
-    public final void render(S data) {
-        lastData = data;
-        requestRender();
-    }
+  public abstract RenderSessionId sessionId();
+  public abstract StructureVisualization<S> structureVisualization();
+  public abstract FxSurfaceAdapter fxSurfaceAdapter();
 
-    /** Stable routing identity; lifecycle remains owned by RenderSurfaceHost. */
-    public abstract RenderSessionId sessionId();
+  /** Installed by the controller-owned render driver for FX-local presentation changes. */
+  public final void setPresentationInvalidationHandler(Runnable handler) {
+    presentationInvalidationHandler = handler == null ? () -> {} : handler;
+  }
 
-    /** JavaFX-neutral structure semantics hosted beside this FX renderer. */
-    public abstract StructureVisualization<S> structureVisualization();
+  /** Requests a presentation-only re-commit without exposing RenderPort or render intents to FX. */
+  protected final void invalidatePresentation() {
+    presentationInvalidationHandler.run();
+  }
 
-    /** The viewport/camera adapter hosted beside this FX renderer. */
-    public abstract FxSurfaceAdapter fxSurfaceAdapter();
+  public void setPlaybackSpeed(double speed) {}
+  public void setScrubbing(boolean scrubbing) {}
+  public void setViewportObstructionInsets(javafx.geometry.Insets insets) {}
+  public void onVisualizationReset() {}
 
-    /** Every concrete structure visualizer submits immutable state through its injected RenderPort. */
-    protected abstract void submitFrameworkRender(S data);
-
-    protected final void requestRender() {
-        if (disposed || !moduleAttached || lastData == null) return;
-        submitFrameworkRender(lastData);
-    }
-
-    protected final S currentState() { return lastData; }
-
-    public void setPlaybackSpeed(double speed) {}
-    public void setScrubbing(boolean scrubbing) {}
-    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {}
-    public void onVisualizationReset() {}
-
-    /** Marks the module active. RenderSurfaceHost activates the RenderSession before requestRender(). */
-    public void onModuleAttached(String moduleId) { moduleAttached = true; }
-
-    /** Stops this visualizer from publishing additional render work. */
-    public void onModuleDetached(String moduleId) { moduleAttached = false; }
-
-    /** Definitively releases visualizer-owned resources. Called on the FX thread by RenderSurfaceHost. */
-    public void dispose() {
-        if (disposed) return;
-        disposed = true;
-        moduleAttached = false;
-    }
-
-    protected final boolean isModuleAttached() { return moduleAttached; }
-    protected final boolean isDisposed() { return disposed; }
+  /** Definitively releases visualizer-owned resources on the FX thread. */
+  public void dispose() {
+    presentationInvalidationHandler = () -> {};
+  }
 }
