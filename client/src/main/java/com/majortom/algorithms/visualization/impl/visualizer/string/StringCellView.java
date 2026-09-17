@@ -59,6 +59,7 @@ public final class StringCellView extends StackPane {
     });
     setIndex(index);
     setValue(value);
+    configureWidth(52.0d);
     setDensity(VisualDensity.DETAIL, true);
   }
 
@@ -120,20 +121,17 @@ public final class StringCellView extends StackPane {
     switch (density) {
       case DETAIL -> {
         getStyleClass().add("string-cell-detail");
-        configureWidth(52.0d);
         indexText.setVisible(true);
         indexText.setManaged(true);
       }
       case COMPACT -> {
         getStyleClass().add("string-cell-compact");
-        configureWidth(40.0d);
         boolean showIndex = importantIndex || index % 2 == 0;
         indexText.setVisible(showIndex);
         indexText.setManaged(true);
       }
       case DENSE -> {
         getStyleClass().add("string-cell-dense");
-        configureWidth(28.0d);
         boolean showIndex = importantIndex || index % 5 == 0;
         indexText.setVisible(showIndex);
         indexText.setManaged(true);

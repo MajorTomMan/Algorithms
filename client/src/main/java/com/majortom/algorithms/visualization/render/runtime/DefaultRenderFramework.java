@@ -325,16 +325,17 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
             FxSurfaceAdapter target = surfaces.<S>require(session.id).fxSurface();
             ViewportSnapshot viewport = target.viewportSnapshot();
             CameraState current = target.cameraState();
-            // The first authoritative layout of a session has no meaningful camera history.
-            // Even when it is a geometry successor carrying ENSURE_VISIBLE/KEEP, treat it as
-            // the initial presentation and fit the complete primary content. Revisited sessions
-            // keep their cached layout/camera and continue to honor RESTORE/KEEP normally.
+            // The first authoritative layout normally has no meaningful camera history and is
+            // therefore fitted. KEEP is the explicit opt-out used by dense linear structures: it
+            // preserves a readable 1:1-ish camera instead of shrinking hundreds of cells merely
+            // to make the complete strip visible at once. Revisited sessions continue to honor
+            // RESTORE/KEEP normally.
             // RESTORE is valid only while the cached layout still describes the same factual
             // geometry. A recreated visualizer may request RESTORE while content style/model
             // changes have already produced a new layout; applying the old camera to that new
             // geometry creates a stable but visibly off-centre frame.
             CameraPolicy effectivePolicy = intent.cameraPolicy();
-            if (session.layout == null
+            if ((session.layout == null && effectivePolicy != CameraPolicy.KEEP)
                     || (effectivePolicy == CameraPolicy.RESTORE && layoutChanged)) {
                 effectivePolicy = CameraPolicy.FIT_CONTENT;
             }

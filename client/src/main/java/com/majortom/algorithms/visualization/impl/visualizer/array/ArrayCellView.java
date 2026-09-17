@@ -60,6 +60,7 @@ public final class ArrayCellView extends StackPane {
     });
     setIndex(index);
     setValue(value);
+    configureWidth(64.0d);
     setDensity(VisualDensity.DETAIL, true);
   }
 
@@ -121,20 +122,17 @@ public final class ArrayCellView extends StackPane {
     switch (density) {
       case DETAIL -> {
         getStyleClass().add("array-cell-detail");
-        configureWidth(64.0d);
         indexText.setVisible(true);
         indexText.setManaged(true);
       }
       case COMPACT -> {
         getStyleClass().add("array-cell-compact");
-        configureWidth(50.0d);
         boolean showIndex = importantIndex || index % 2 == 0;
         indexText.setVisible(showIndex);
         indexText.setManaged(true);
       }
       case DENSE -> {
         getStyleClass().add("array-cell-dense");
-        configureWidth(38.0d);
         boolean showIndex = importantIndex || index % 5 == 0;
         indexText.setVisible(showIndex);
         indexText.setManaged(true);

@@ -16,9 +16,11 @@ public final class StringPresenter implements StructurePresenter<StringViewState
         boolean initial = coldOrRevisit || replacement;
         boolean structural = initial || !previous.value().equals(current.value());
         if (!structural) return new PresentationRenderIntent<>(sessionId, current);
-        CameraPolicy cameraPolicy = replacement
-                ? CameraPolicy.FIT_CONTENT
-                : (coldOrRevisit ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE);
+        CameraPolicy cameraPolicy = current.value().length() > 48
+                ? CameraPolicy.KEEP
+                : replacement
+                    ? CameraPolicy.FIT_CONTENT
+                    : (coldOrRevisit ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE);
         return new StructuralRenderIntent<>(sessionId, current, cameraPolicy, initial);
     }
 

@@ -16,9 +16,11 @@ public final class ArrayPresenter implements StructurePresenter<ArrayViewState> 
         boolean initial = coldOrRevisit || replacement;
         boolean structural = initial || requiresStructuralLayout(previous, current);
         if (!structural) return new PresentationRenderIntent<>(sessionId, current);
-        CameraPolicy cameraPolicy = replacement
-                ? CameraPolicy.FIT_CONTENT
-                : (coldOrRevisit ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE);
+        CameraPolicy cameraPolicy = current.values().size() > 40
+                ? CameraPolicy.KEEP
+                : replacement
+                    ? CameraPolicy.FIT_CONTENT
+                    : (coldOrRevisit ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE);
         return new StructuralRenderIntent<>(sessionId, current, cameraPolicy, initial);
     }
 

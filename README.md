@@ -255,7 +255,7 @@ GestureFX   -> center canvas zoom / pan / fit / center / reset
 ELK         -> client-only transient layout calculation
 ```
 
-Array/String/Stack/Queue/LinkedList/Tree/Graph 使用 family-specific ELK adapter；Maze 保留 project-owned Canvas/Grid Layout，只复用 GestureFX viewport。ELK graph model 是瞬态计算对象，不进入 Structure/Event/Snapshot/ViewState/core/algorithms/server。
+当前布局实现按结构选择：Array/String/Stack/Queue 使用确定性的 `LinearLayoutEngine`，LinkedList 使用 project-owned `LinkedListLayout`，Maze 使用 project-owned Fixed/Grid Layout；只有 Tree/Graph 使用 transient ELK layout。ELK graph model 是瞬态计算对象，不进入 Structure/Event/Snapshot/ViewState/core/algorithms/server。
 
 Playback speed 是 presentation-only：x8 按基础动画时长的 `1/8` 播放，x16 与 timeline scrub 直接 snap，避免积压无界 JavaFX animation backlog。
 
