@@ -1,24 +1,17 @@
 package com.majortom.algorithms.visualization;
 
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.fx.FxStructureRenderer;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import javafx.scene.layout.StackPane;
 
-/** Common lifecycle base for structure visualizers. Rendering technology stays in subclasses. */
+/** Passive JavaFX renderer base. Render submission and lifecycle state live outside the FX renderer. */
 public abstract class BaseVisualizer<S> extends StackPane implements FxStructureRenderer<S> {
-    private S lastData;
-    private boolean moduleAttached;
     private boolean disposed;
 
-    /** Stores factual state and submits it when the module is attached. */
-    public final void render(S data) {
-        lastData = data;
-        requestRender();
-    }
-
-    /** Stable routing identity; lifecycle remains owned by RenderSurfaceHost. */
+    /** Stable routing identity used when composing the hosted RenderSurface. */
     public abstract RenderSessionId sessionId();
 
     /** JavaFX-neutral structure semantics hosted beside this FX renderer. */
@@ -27,34 +20,21 @@ public abstract class BaseVisualizer<S> extends StackPane implements FxStructure
     /** The viewport/camera adapter hosted beside this FX renderer. */
     public abstract FxSurfaceAdapter fxSurfaceAdapter();
 
-    /** Every concrete structure visualizer submits immutable state through its injected RenderPort. */
-    protected abstract void submitFrameworkRender(S data);
+    protected AnimationControl animationControl() { return AnimationControl.NONE; }
 
-    protected final void requestRender() {
-        if (disposed || !moduleAttached || lastData == null) return;
-        submitFrameworkRender(lastData);
-    }
-
-    protected final S currentState() { return lastData; }
-
-    public void setPlaybackSpeed(double speed) {}
-    public void setScrubbing(boolean scrubbing) {}
+    public final void setPlaybackSpeed(double speed) { animationControl().setSpeed(speed); }
+    public final void setScrubbing(boolean scrubbing) { animationControl().setScrubbing(scrubbing); }
+    public final void pauseAnimations() { animationControl().pause(); }
+    public final void resumeAnimations() { animationControl().resume(); }
     public void setViewportObstructionInsets(javafx.geometry.Insets insets) {}
-    public void onVisualizationReset() {}
+    public void onVisualizationReset() { animationControl().reset(); }
 
-    /** Marks the module active. RenderSurfaceHost activates the RenderSession before requestRender(). */
-    public void onModuleAttached(String moduleId) { moduleAttached = true; }
-
-    /** Stops this visualizer from publishing additional render work. */
-    public void onModuleDetached(String moduleId) { moduleAttached = false; }
-
-    /** Definitively releases visualizer-owned resources. Called on the FX thread by RenderSurfaceHost. */
+    /** Definitively releases renderer-owned resources. Called on the surface lifecycle thread. */
     public void dispose() {
         if (disposed) return;
+        animationControl().dispose();
         disposed = true;
-        moduleAttached = false;
     }
 
-    protected final boolean isModuleAttached() { return moduleAttached; }
     protected final boolean isDisposed() { return disposed; }
 }

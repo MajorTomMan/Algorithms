@@ -59,7 +59,7 @@ public abstract class CanvasVisualizer<S> extends BaseVisualizer<S> {
         }
     }
 
-    @Override public void onVisualizationReset() { clear(); }
+    @Override public void onVisualizationReset() { super.onVisualizationReset(); clear(); }
 
     @Override
     public void dispose() {

@@ -3,6 +3,7 @@ package com.majortom.algorithms.algorithm.string.impl;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
+import com.majortom.algorithms.core.domain.observation.StringObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.string.StringStructure;
 import java.util.ArrayList;
@@ -25,7 +26,8 @@ public final class KmpSearch {
     for (int targetIndex = 0; targetIndex < text.length(); targetIndex++) {
       boolean matchedCharacter = false;
       while (true) {
-        Observations.compared("target", targetIndex, "pattern", patternIndex);
+        Observations.compared(StringObservationDomains.TARGET_SOURCE, targetIndex,
+            StringObservationDomains.PATTERN_SOURCE, patternIndex);
         if (text.charAt(targetIndex) == pattern.charAt(patternIndex)) {
           patternIndex++;
           matchedCharacter = true;

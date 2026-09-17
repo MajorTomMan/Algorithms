@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import java.util.List;

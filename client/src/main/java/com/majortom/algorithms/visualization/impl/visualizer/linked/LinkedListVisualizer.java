@@ -2,33 +2,39 @@ package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinkedListStructureVisualization;
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.api.AnimationStep;
+import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.impl.visualizer.linked.animation.LinkedListAnimationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.linked.animation.LinkedListAnimationPlanner;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 
 import javafx.geometry.Point2D;
+import javafx.scene.Node;
 import javafx.scene.text.Text;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -44,21 +50,20 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private static final double LABEL_HORIZONTAL_PADDING = 40.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, LinkedNodeDecoration> nodeDecorations = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
+    private final StructureAnimationRuntime<LinkedListViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new LinkedListAnimationPlanner());
+    private final LinkedAnimationSceneAdapter animationScene = new LinkedAnimationSceneAdapter();
     private final Text headLabel = new Text();
     private final Text tailLabel = new Text();
-
-    private volatile LinkedListViewState lastSubmittedState;
     private LayoutPatch lastPatch;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> {};
 
-    public LinkedListVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public LinkedListVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -74,33 +79,20 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(LinkedListViewState state) {
-        LinkedListViewState previous = lastSubmittedState;
-        boolean initial = previous == null;
-        boolean structural = initial || !previous.nodes().equals(state.nodes());
-        lastSubmittedState = state;
-        if (structural) {
-            renderPort.submit(
-                    new StructuralRenderIntent<>(
-                            SESSION_ID,
-                            state,
-                            initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE,
-                            initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
 
     @Override
     public CompletionStage<Void> commitLayout(
             LinkedListViewState state, LayoutPatch patch, RenderCommitContext context) {
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch);
+
         reconcileNodes(state);
         applyPendingSelection(state);
         applyPresentation(state);
 
-        // Existing edges temporarily follow their endpoints while factual node positions are committed.
+        // LayoutPatch remains authoritative. Node movement uses temporary translate only.
         clearCurrentRoutes();
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             ElementGeometry bounds = patch.elements().get(LinkedListLayout.nodeId(entry.getKey()));
@@ -109,15 +101,19 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
             view.setGeometry(new RectangleGeometry(bounds.width(), bounds.height()));
             Point2D target = center(bounds);
             view.setCenter(target.getX(), target.getY());
-            view.setOpacity(1.0d);
-            view.setScaleX(1.0d);
-            view.setScaleY(1.0d);
         }
 
         reconcileEdges(state);
-        applyRoutes(patch);
-        positionRoleLabels(state, patch);
         lastPatch = patch;
+        if (plan.isEmpty()) {
+            applyRoutes(patch);
+            positionRoleLabels(state, patch);
+        } else {
+            // While nodes move, edges follow endpoint translations. Stable routes return on finish.
+            clearCurrentRoutes();
+            positionRoleLabels(state, patch);
+        }
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -128,7 +124,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         applyPendingSelection(state);
         applyPresentation(state);
         reconcileEdges(state);
-        if (lastPatch != null) {
+        if (lastPatch != null && !animationRuntime.isAnimating()) {
             applyRoutes(lastPatch);
             positionRoleLabels(state, lastPatch);
         }
@@ -312,7 +308,6 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     public void clearSelection() {
         selectedNodeId = null;
         pendingSelectedNodeId = null;
-        submitCurrentPresentation();
     }
 
     public void selectNode(long nodeId) {
@@ -320,19 +315,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     public boolean showSelection(long nodeId) {
-        LinkedListViewState state = currentState();
-        if (state == null || !state.nodes().containsKey(nodeId)) return false;
         selectedNodeId = nodeId;
         pendingSelectedNodeId = nodeViews.containsKey(nodeId) ? null : nodeId;
-        submitCurrentPresentation();
         return true;
-    }
-
-    private void submitCurrentPresentation() {
-        LinkedListViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
     private void applyPendingSelection(LinkedListViewState state) {
@@ -347,6 +332,11 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
+    }
+
+    @Override
     public StructureVisualization<LinkedListViewState> structureVisualization() {
         return STRUCTURE_VISUALIZATION;
     }
@@ -358,6 +348,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     @Override public void setViewportObstructionInsets(javafx.geometry.Insets insets) { surface.setObstructionInsets(insets); }
 @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         nodeDecorations.values().forEach(LinkedNodeDecoration::dispose);
         nodeViews.clear();
         nodeDecorations.clear();
@@ -368,7 +359,6 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         surface.decorationLayer().getChildren().setAll(headLabel, tailLabel);
         selectedNodeId = null;
         pendingSelectedNodeId = null;
-        lastSubmittedState = null;
         lastPatch = null;
         surface.reset();
         surface.markViewportPristine();
@@ -376,10 +366,12 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
 
     @Override
     public void dispose() {
+        if (isDisposed()) return;
+        super.dispose();
         nodeDecorations.values().forEach(LinkedNodeDecoration::dispose);
+        edgeViews.values().forEach(EdgeView::dispose);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
-        super.dispose();
     }
 
     private static String label(LinkedListViewState.Node node) {
@@ -387,12 +379,151 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     }
 
     private static String routeId(EdgeKey key) {
-        return "linked:"
-                + key.relation().name().toLowerCase()
-                + ":"
-                + key.sourceId()
-                + ":"
-                + key.targetId();
+        return key.relation() == Relation.NEXT
+                ? LinkedListAnimationIds.nextEdge(key.sourceId(), key.targetId())
+                : LinkedListAnimationIds.previousEdge(key.sourceId(), key.targetId());
+    }
+
+    private final class LinkedAnimationSceneAdapter implements AnimationSceneAdapter {
+        private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
+        private final Map<String, List<Point2D>> capturedRoutes = new LinkedHashMap<>();
+        private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
+        private final Map<Long, LinkedNodeDecoration> exitingDecorations = new LinkedHashMap<>();
+        private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
+        private LinkedListViewState targetState;
+        private LayoutPatch targetPatch;
+
+        void prepare(AnimationPlan plan, LinkedListViewState state, LayoutPatch patch) {
+            capturedCenters.clear();
+            capturedRoutes.clear();
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                capturedCenters.put(LinkedListAnimationIds.node(entry.getKey()), entry.getValue().visualCenter());
+            }
+            for (Map.Entry<EdgeKey, EdgeView> entry : edgeViews.entrySet()) {
+                capturedRoutes.put(routeId(entry.getKey()), entry.getValue().routeSnapshot());
+            }
+            targetState = state;
+            targetPatch = patch;
+
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.EdgeRemove remove) detachEdge(remove.targetId());
+            }
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.NodeExit exit) detachNode(exit.targetId());
+            }
+            edgeViews.values().forEach(EdgeView::clearRoute);
+            exitingEdges.values().forEach(EdgeView::clearRoute);
+        }
+
+        private void detachNode(String logicalId) {
+            long id;
+            try { id = Long.parseLong(logicalId); } catch (NumberFormatException ignored) { return; }
+            NodeView view = nodeViews.remove(id);
+            if (view != null) exitingNodes.put(id, view);
+            LinkedNodeDecoration decoration = nodeDecorations.remove(id);
+            if (decoration != null) exitingDecorations.put(id, decoration);
+            if (java.util.Objects.equals(selectedNodeId, id)) {
+                selectedNodeId = null;
+                selectionListener.accept(-1L);
+            }
+        }
+
+        private void detachEdge(String logicalId) {
+            EdgeKey key = edgeViews.keySet().stream()
+                    .filter(candidate -> routeId(candidate).equals(logicalId))
+                    .findFirst().orElse(null);
+            if (key == null) return;
+            EdgeView edge = edgeViews.remove(key);
+            if (edge != null) exitingEdges.put(logicalId, edge);
+        }
+
+        @Override
+        public Optional<NodeTarget> node(String logicalId) {
+            long id;
+            try { id = Long.parseLong(logicalId); } catch (NumberFormatException ignored) { return Optional.empty(); }
+            NodeView view = nodeViews.get(id);
+            if (view == null) view = exitingNodes.get(id);
+            if (view == null) return Optional.empty();
+            LinkedNodeDecoration decoration = nodeDecorations.get(id);
+            if (decoration == null) decoration = exitingDecorations.get(id);
+            List<Node> companions = decoration == null ? List.of() : List.of(decoration);
+            return Optional.of(new NodeTarget(logicalId, view, companions));
+        }
+
+        @Override
+        public Optional<EdgeTarget> edge(String logicalId) {
+            EdgeView active = edgeViews.entrySet().stream()
+                    .filter(entry -> routeId(entry.getKey()).equals(logicalId))
+                    .map(Map.Entry::getValue).findFirst().orElse(null);
+            EdgeView edge = active == null ? exitingEdges.get(logicalId) : active;
+            return edge == null ? Optional.empty() : Optional.of(new EdgeTarget(logicalId, edge));
+        }
+
+        @Override
+        public Optional<Point2D> capturedNodeCenter(String logicalId) {
+            return Optional.ofNullable(capturedCenters.get(logicalId));
+        }
+
+        @Override
+        public Optional<List<Point2D>> capturedEdgeRoute(String logicalId) {
+            return Optional.ofNullable(capturedRoutes.get(logicalId));
+        }
+
+        @Override
+        public Collection<NodeTarget> activeNodes() {
+            List<NodeTarget> result = new ArrayList<>(nodeViews.size());
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                LinkedNodeDecoration decoration = nodeDecorations.get(entry.getKey());
+                result.add(new NodeTarget(LinkedListAnimationIds.node(entry.getKey()), entry.getValue(),
+                        decoration == null ? List.of() : List.of(decoration)));
+            }
+            return result;
+        }
+
+        @Override
+        public Collection<EdgeTarget> activeEdges() {
+            return edgeViews.entrySet().stream()
+                    .map(entry -> new EdgeTarget(routeId(entry.getKey()), entry.getValue()))
+                    .toList();
+        }
+
+        @Override
+        public void discardExitedVisuals() {
+            exitingEdges.values().forEach(edge -> {
+                surface.edgeLayer().getChildren().remove(edge);
+                edge.dispose();
+            });
+            exitingEdges.clear();
+            exitingDecorations.values().forEach(decoration -> {
+                surface.decorationLayer().getChildren().remove(decoration);
+                decoration.dispose();
+            });
+            exitingDecorations.clear();
+            exitingNodes.values().forEach(node -> surface.nodeLayer().getChildren().remove(node));
+            exitingNodes.clear();
+        }
+
+        @Override
+        public void stabilize(AnimationPlan plan) {
+            for (NodeTarget target : activeNodes()) {
+                javafx.scene.Node node = target.node();
+                node.setTranslateX(0.0d);
+                node.setTranslateY(0.0d);
+                node.setOpacity(1.0d);
+                node.setScaleX(1.0d);
+                node.setScaleY(1.0d);
+                target.companions().forEach(companion -> companion.setOpacity(1.0d));
+            }
+            for (EdgeTarget target : activeEdges()) {
+                target.edge().setRevealProgress(1.0d);
+                target.edge().setOpacity(1.0d);
+            }
+            discardExitedVisuals();
+            if (targetPatch != null) applyRoutes(targetPatch);
+            if (targetState != null && targetPatch != null) positionRoleLabels(targetState, targetPatch);
+            capturedCenters.clear();
+            capturedRoutes.clear();
+        }
     }
 
     private static Point2D center(ElementGeometry geometry) {

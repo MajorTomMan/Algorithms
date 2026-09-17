@@ -20,7 +20,7 @@ import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderSurfaceRegistry;
 import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.fx.PulseBarrier;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Single-control-plane render runtime. No stage blocks another thread; every boundary is a CompletionStage continuation.
  */
-public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
+public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLifecyclePort, AutoCloseable {
     private static final double MIN_CAMERA_SCALE = 0.10d;
     private static final double MAX_AUTO_FIT_SCALE = 1.35d;
 
@@ -75,6 +75,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         this.trace = Objects.requireNonNull(trace, "trace");
     }
 
+    @Override
     public <S> CompletionStage<Void> registerSurface(RenderSurface<S> surface) {
         Objects.requireNonNull(surface, "surface");
         return fxExecutor.execute(() -> {
@@ -88,11 +89,13 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         });
     }
 
+    @Override
     public CompletionStage<Void> unregisterSurface(RenderSurface<?> surface) {
         Objects.requireNonNull(surface, "surface");
         return fxExecutor.execute(() -> surfaces.unregister(surface));
     }
 
+    @Override
     public CompletionStage<Void> activateSession(RenderSessionId id) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
@@ -104,6 +107,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         return future;
     }
 
+    @Override
     public CompletionStage<Void> deactivateSession(RenderSessionId id) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
@@ -175,7 +179,11 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
     }
 
     public RenderTrace trace() { return trace; }
-    public FxExecutor fxExecutor() { return fxExecutor; }
+
+    @Override
+    public CompletionStage<Void> disposeSurface(Runnable dispose) {
+        return fxExecutor.execute(Objects.requireNonNull(dispose, "dispose"));
+    }
 
     private void drain(RenderSessionId sessionId) {
         RenderSession session = sessions.getOrCreate(sessionId);

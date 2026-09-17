@@ -104,6 +104,11 @@ public final class NodeView extends StackPane {
     return new Point2D(getCenterX(), getCenterY());
   }
 
+  /** Current on-screen center including animation-only translation. */
+  public Point2D visualCenter() {
+    return new Point2D(getCenterX() + getTranslateX(), getCenterY() + getTranslateY());
+  }
+
   public void setCenter(double x, double y) {
     centerX.set(x);
     centerY.set(y);
@@ -111,6 +116,11 @@ public final class NodeView extends StackPane {
 
   public Point2D boundaryPointToward(Point2D target) {
     return getGeometry().boundaryPoint(center(), target);
+  }
+
+  /** Boundary point based on the current animation-translated visual center. */
+  public Point2D visualBoundaryPointToward(Point2D target) {
+    return getGeometry().boundaryPoint(visualCenter(), target);
   }
 
   public boolean isSelected() {

@@ -16,6 +16,7 @@ import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.GraphPresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
@@ -86,7 +87,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     public GraphController(RenderContext renderContext) {
-        super(new GraphVisualizer(renderContext.renderPort()), "/fxml/GraphControls.fxml", renderContext.surfaceHost());
+        super(new GraphVisualizer(), new GraphPresenter(), "/fxml/GraphControls.fxml", renderContext);
         undirectedGraph = randomWeightedGraph(10, 16, false);
         directedGraph = randomWeightedGraph(10, 16, true);
         graphVisualizer().setNodeSelectionListener(this::handleVisualNodeSelection);
@@ -947,6 +948,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void handleVisualNodeSelection(long nodeId) {
+        requestPresentationRender();
         if (!structureSelectionEnabled) {
             handleAlgorithmNodeSelection(nodeId);
             return;
@@ -999,6 +1001,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void handleVisualEdgeSelection(long edgeId) {
+        requestPresentationRender();
         if (!structureSelectionEnabled) {
             handleAlgorithmEdgeSelection(edgeId);
             return;
@@ -1068,6 +1071,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             long nodeId = algorithmSelectedNodeId;
             if (!graphVisualizer().showNodeSelection(nodeId) || !publishAlgorithmNodeSelection(state, nodeId)) {
                 clearVisualSelection();
+            } else {
+                requestPresentationRender();
             }
             return;
         }
@@ -1075,6 +1080,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             long edgeId = algorithmSelectedEdgeId;
             if (!graphVisualizer().showEdgeSelection(edgeId) || !publishAlgorithmEdgeSelection(state, edgeId)) {
                 clearVisualSelection();
+            } else {
+                requestPresentationRender();
             }
         }
     }
@@ -1090,6 +1097,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         algorithmSelectedNodeId = null;
         algorithmSelectedEdgeId = null;
         graphVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 

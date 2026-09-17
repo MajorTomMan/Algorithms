@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.logging.Log;
+import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
@@ -21,7 +22,6 @@ import java.util.stream.Collectors;
 
 @Algorithm(id = "graph-dfs", name = "深度优先遍历", type = Integer.class, structure = GraphStructure.class)
 public final class GraphDfs {
-  private static final String VERTEX_DOMAIN = "graph.vertex";
   private static Map<Integer, Boolean> isVisited = new HashMap<>();
 
   @AlgorithmEntry
@@ -38,10 +38,10 @@ public final class GraphDfs {
 
   private static void dfs(GraphStructure<Integer> graph, Vertex<Integer> vertex) {
     if (!isVisited.containsKey(vertex.value())) {
-      Observations.visited(VERTEX_DOMAIN, vertex.id());
+      Observations.visited(GraphObservationDomains.VERTEX, vertex.id());
       isVisited.put(vertex.value(), true);
       for (Vertex<Integer> neighbor : graph.neighbors(vertex)) {
-        Observations.examined(VERTEX_DOMAIN, vertex.id(), neighbor.id());
+        Observations.examined(GraphObservationDomains.VERTEX, vertex.id(), neighbor.id());
         dfs(graph, neighbor);
       }
     } else {

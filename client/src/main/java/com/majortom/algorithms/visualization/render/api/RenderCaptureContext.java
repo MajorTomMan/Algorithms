@@ -1,12 +1,8 @@
-package com.majortom.algorithms.visualization.render.fx;
+package com.majortom.algorithms.visualization.render.api;
 
-import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
-import com.majortom.algorithms.visualization.render.api.LayoutRequestId;
-import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.StructuralChange;
 import java.util.Objects;
 
-/** Immutable input visible to the FX capture phase. */
+/** Immutable JavaFX-neutral input visible to the structure capture phase. */
 public record RenderCaptureContext(long transactionId, RenderSessionId sessionId, long generation,
     long modelRevision, long geometryRevision, LayoutRequestId requestId, StructuralChange change,
     ContentStyleSnapshot contentStyle, boolean initialFrame) {

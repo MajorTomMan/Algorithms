@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.string;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.observation.StringObservationDomains;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
@@ -56,8 +57,8 @@ public final class StringEventReducer implements EventReducer<StringViewState> {
           previous.patternStart()));
     }
     if (event instanceof ObservationEvent.Compared compared) {
-      Integer targetIndex = index(compared.leftRef(), "target");
-      Integer patternIndex = index(compared.rightRef(), "pattern");
+      Integer targetIndex = index(compared.leftRef(), StringObservationDomains.TARGET_SOURCE);
+      Integer patternIndex = index(compared.rightRef(), StringObservationDomains.PATTERN_SOURCE);
       if (targetIndex != null && patternIndex != null) {
         int patternStart = targetIndex - patternIndex;
         return observation(new StringViewState(previous.value(), StringViewState.Mutation.none(),

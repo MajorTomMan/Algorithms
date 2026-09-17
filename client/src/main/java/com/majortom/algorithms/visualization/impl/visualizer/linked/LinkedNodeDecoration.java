@@ -36,6 +36,8 @@ final class LinkedNodeDecoration extends Group {
     node.centerXProperty().addListener(geometryListener);
     node.centerYProperty().addListener(geometryListener);
     node.geometryProperty().addListener(geometryListener);
+    node.translateXProperty().addListener(geometryListener);
+    node.translateYProperty().addListener(geometryListener);
     updateGeometry();
   }
 
@@ -50,14 +52,16 @@ final class LinkedNodeDecoration extends Group {
     node.centerXProperty().removeListener(geometryListener);
     node.centerYProperty().removeListener(geometryListener);
     node.geometryProperty().removeListener(geometryListener);
+    node.translateXProperty().removeListener(geometryListener);
+    node.translateYProperty().removeListener(geometryListener);
   }
 
   private void updateGeometry() {
     if (!(node.getGeometry() instanceof RectangleGeometry geometry)) {
       return;
     }
-    double cx = node.getCenterX();
-    double cy = node.getCenterY();
+    double cx = node.getCenterX() + node.getTranslateX();
+    double cy = node.getCenterY() + node.getTranslateY();
     double left = cx - geometry.width() / 2.0d;
     double right = cx + geometry.width() / 2.0d;
     double top = cy - geometry.height() / 2.0d;

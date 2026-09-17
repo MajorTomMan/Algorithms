@@ -10,6 +10,7 @@ import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.QueueVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.StackVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.LinearPresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
@@ -88,7 +89,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @SuppressWarnings("unchecked")
     private LinearStructureController(Kind kind, String moduleId, RenderContext renderContext) {
-        super(visualizer(kind, renderContext), "/fxml/LinearStructureControls.fxml", renderContext.surfaceHost());
+        super(visualizer(kind), new LinearPresenter(), "/fxml/LinearStructureControls.fxml", renderContext);
         this.kind = kind;
         this.moduleId = moduleId;
         linkedList = (LinkedList<Object>) structure(moduleId, LinkedList.class);
@@ -98,11 +99,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
         renderStructureState(currentState());
     }
 
-    private static BaseVisualizer<LinearStructureViewState> visualizer(Kind kind, RenderContext renderContext) {
+    private static BaseVisualizer<LinearStructureViewState> visualizer(Kind kind) {
         if (kind == Kind.STACK) {
-            return new StackVisualizer(renderContext.renderPort());
+            return new StackVisualizer();
         } else {
-            return new QueueVisualizer(renderContext.renderPort());
+            return new QueueVisualizer();
         }
     }
 
@@ -440,6 +441,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void handleVisualSelection(int index) {
+        requestPresentationRender();
         if (!structureSelectionEnabled) {
             handleAlgorithmSelection(index);
             return;
@@ -490,6 +492,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
             return;
         }
         publishAlgorithmSelection(state, algorithmSelectedIndex);
+        requestPresentationRender();
     }
 
     private String selectionRole(int index, int size) {
@@ -513,10 +516,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void clearVisualSelection() {
         algorithmSelectedIndex = -1;
-        if (kind == Kind.STACK)
+        if (kind == Kind.STACK) {
             stackVisualizer().clearSelection();
-        else
+        } else {
             queueVisualizer().clearSelection();
+        }
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 
@@ -631,5 +636,17 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     protected boolean algorithmInputTracksCurrentStructure() {
         return algorithmInputSnapshot == null;
+    }
+
+    @Override
+    protected void restoreAlgorithmState() {
+        if (latestViewState() != null) {
+            super.restoreAlgorithmState();
+            return;
+        }
+        List<Object> inputValues = algorithmInputSnapshot == null
+                ? values()
+                : algorithmInputSnapshot.state().values();
+        renderViewState(new LinearStructureViewState(moduleId, inputValues));
     }
 }

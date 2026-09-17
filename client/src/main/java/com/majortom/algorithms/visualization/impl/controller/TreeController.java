@@ -16,6 +16,7 @@ import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.TreeVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.TreePresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
@@ -76,7 +77,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @FXML private Button randomBtn;
 
     public TreeController(RenderContext renderContext) {
-        super(new TreeVisualizer(renderContext.renderPort()), "/fxml/TreeControls.fxml", renderContext.surfaceHost());
+        super(new TreeVisualizer(), new TreePresenter(), "/fxml/TreeControls.fxml", renderContext);
         @SuppressWarnings("unchecked")
         Tree<Object> resolvedGeneralTree = (Tree<Object>) structure("tree", Tree.class);
         generalTree = resolvedGeneralTree;
@@ -120,6 +121,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void handleVisualSelection(long nodeId) {
+        requestPresentationRender();
         if (!structureSelectionEnabled) {
             handleAlgorithmSelection(nodeId);
             return;
@@ -166,6 +168,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         long nodeId = algorithmSelectedNodeId;
         if (!treeVisualizer().showSelection(nodeId) || !publishAlgorithmSelection(state, nodeId)) {
             clearNodeSelection();
+        } else {
+            requestPresentationRender();
         }
     }
 
@@ -1075,6 +1079,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         selectedNodeId = null;
         algorithmSelectedNodeId = null;
         treeVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
         refreshOperationAvailability();
     }

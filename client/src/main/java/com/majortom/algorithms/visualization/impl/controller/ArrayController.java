@@ -7,6 +7,7 @@ import com.majortom.algorithms.structure.array.Array;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.ArrayPresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
@@ -78,7 +79,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @SuppressWarnings("unchecked")
     public ArrayController(RenderContext renderContext) {
-        super(new ArrayVisualizer(renderContext.renderPort()), "/fxml/ArrayControls.fxml", renderContext.surfaceHost());
+        super(new ArrayVisualizer(), new ArrayPresenter(), "/fxml/ArrayControls.fxml", renderContext);
         sourceArray = structure("array", Array.class);
         replaceArrayContents(randomValues());
     }
@@ -406,6 +407,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void handleArraySelection(int index) {
+        requestPresentationRender();
         if (structureSelectionEnabled) {
             handleStructureArraySelection(index);
             return;
@@ -428,6 +430,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
             return;
         }
         arrayVisualizer().showSelection(algorithmSelectedIndex);
+        requestPresentationRender();
         selectionListener.accept(new IndexSelection(
                 algorithmSelectedIndex,
                 state.values().get(algorithmSelectedIndex),
@@ -449,6 +452,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private void clearArraySelection() {
         algorithmSelectedIndex = -1;
         arrayVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 

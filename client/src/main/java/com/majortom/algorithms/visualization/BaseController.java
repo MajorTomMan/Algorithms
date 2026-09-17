@@ -1,8 +1,11 @@
 package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.render.api.RenderPort;
+import com.majortom.algorithms.visualization.render.api.StructurePresenter;
 import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.runtime.RenderSurfaceHost;
+import com.majortom.algorithms.visualization.render.runtime.StructureRenderDriver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
@@ -99,6 +102,7 @@ public abstract class BaseController<S> implements Initializable {
     protected final BaseVisualizer<S> visualizer;
     private final RenderSurfaceHost renderSurfaceHost;
     private final RenderSurface<S> renderSurface;
+    private final StructureRenderDriver<S> renderDriver;
 
     protected Label statsLabel;
     protected LogView logView;
@@ -166,9 +170,15 @@ public abstract class BaseController<S> implements Initializable {
             };
     private boolean disposed;
 
-    protected BaseController(BaseVisualizer<S> visualizer, RenderSurfaceHost renderSurfaceHost) {
+    protected BaseController(
+            BaseVisualizer<S> visualizer,
+            StructurePresenter<S> presenter,
+            RenderPort renderPort,
+            RenderSurfaceHost renderSurfaceHost) {
         this(
                 visualizer,
+                presenter,
+                renderPort,
                 renderSurfaceHost,
                 new LocalClientExecutionService(),
                 DEFAULT_EXECUTION_HISTORY,
@@ -178,6 +188,8 @@ public abstract class BaseController<S> implements Initializable {
 
     protected BaseController(
             BaseVisualizer<S> visualizer,
+            StructurePresenter<S> presenter,
+            RenderPort renderPort,
             RenderSurfaceHost renderSurfaceHost,
             ClientExecutionService execution,
             RunHistoryService executionHistory,
@@ -185,9 +197,16 @@ public abstract class BaseController<S> implements Initializable {
             ExecutionExporter executionExporter) {
         this.visualizer = visualizer;
         this.renderSurfaceHost = Objects.requireNonNull(renderSurfaceHost, "renderSurfaceHost");
-        this.renderSurface = visualizer == null
-                ? null
-                : new RenderSurface<>(visualizer.sessionId(), visualizer.structureVisualization(), visualizer, visualizer.fxSurfaceAdapter());
+        if (visualizer == null) {
+            this.renderSurface = null;
+            this.renderDriver = null;
+        } else {
+            this.renderSurface = new RenderSurface<>(visualizer.sessionId(), visualizer.structureVisualization(), visualizer, visualizer.fxSurfaceAdapter());
+            this.renderDriver = new StructureRenderDriver<>(
+                    visualizer.sessionId(),
+                    Objects.requireNonNull(renderPort, "renderPort"),
+                    Objects.requireNonNull(presenter, "presenter"));
+        }
         this.execution = Objects.requireNonNull(execution, "execution");
         this.executionHistory = Objects.requireNonNull(executionHistory, "executionHistory");
         this.inputFingerprintService = Objects.requireNonNull(inputFingerprint, "inputFingerprint");
@@ -293,9 +312,11 @@ public abstract class BaseController<S> implements Initializable {
         if (replayController != null && !running.get()) {
             if (replayController.isPlaying()) {
                 replayController.pause();
+                if (visualizer != null) visualizer.pauseAnimations();
                 paused.set(true);
             } else {
                 replayController.play();
+                if (visualizer != null) visualizer.resumeAnimations();
                 paused.set(false);
             }
             refreshStatsDisplay();
@@ -306,9 +327,11 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (paused.get()) {
             currentSession.resumeExecution();
+            if (visualizer != null) visualizer.resumeAnimations();
             paused.set(false);
         } else {
             currentSession.pauseExecution();
+            if (visualizer != null) visualizer.pauseAnimations();
             paused.set(true);
         }
         updatePlaybackButtonState();
@@ -634,7 +657,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         latestViewState = state;
         if (visualizer != null) {
-            visualizer.render(state);
+            renderDriver.render(state);
         }
         onPresentationStateChanged(state);
     }
@@ -653,7 +676,7 @@ public abstract class BaseController<S> implements Initializable {
     /** Renders a transient read-only preview without changing structure or algorithm cursors. */
     protected final void renderPreviewState(S state) {
         if (state != null && visualizer != null) {
-            visualizer.render(state);
+            renderDriver.render(state);
         }
     }
 
@@ -661,7 +684,7 @@ public abstract class BaseController<S> implements Initializable {
     protected final void renderStructureState(S state) {
         storeStructureState(state);
         if (state != null && visualizer != null) {
-            visualizer.render(state);
+            renderDriver.render(state);
         }
     }
 
@@ -687,19 +710,24 @@ public abstract class BaseController<S> implements Initializable {
     /** Hook for modules that can preview a selected structure snapshot before execution starts. */
     protected void restoreAlgorithmState() {
         if (latestViewState != null && visualizer != null) {
-            visualizer.render(latestViewState);
+            renderDriver.render(latestViewState);
         }
     }
 
     /** Hook for modules that need to rebuild their structure projection. */
     protected void restoreStructureState() {
         if (latestStructureState != null && visualizer != null) {
-            visualizer.render(latestStructureState);
+            renderDriver.render(latestStructureState);
             return;
         }
         if (latestViewState != null && visualizer != null) {
-            visualizer.render(latestViewState);
+            renderDriver.render(latestViewState);
         }
+    }
+
+    /** Requests a presentation-only commit after renderer-local UI state changes. */
+    protected final void requestPresentationRender() {
+        if (renderDriver != null) renderDriver.requestPresentation();
     }
 
     /** Returns the latest reducer state observed by this module. */
@@ -737,6 +765,7 @@ public abstract class BaseController<S> implements Initializable {
         if (replayController != null) {
             replayController.pause();
         }
+        if (visualizer != null) visualizer.resumeAnimations();
         paused.set(false);
     }
 
@@ -874,21 +903,25 @@ public abstract class BaseController<S> implements Initializable {
 
     public final void dispatchVisualizerReset() {
         if (visualizer != null) {
+            renderDriver.resetPresentationHistory();
             visualizer.onVisualizationReset();
         }
     }
 
     public final CompletionStage<Void> dispatchVisualizerAttached() {
         if (visualizer == null) return CompletableFuture.completedFuture(null);
-        visualizer.onModuleAttached(moduleId());
-        return renderSurfaceHost.attach(renderSurface()).thenRun(visualizer::requestRender);
+        renderDriver.attach();
+        return renderSurfaceHost.attach(renderSurface()).thenRun(renderDriver::requestRender);
     }
 
     public final CompletionStage<Void> dispatchVisualizerDetached() {
         dispose(); // Stop event production before the RenderSession is deactivated.
         if (visualizer == null) return CompletableFuture.completedFuture(null);
-        visualizer.onModuleDetached(moduleId());
-        return renderSurfaceHost.detach(renderSurface(), visualizer::dispose);
+        renderDriver.detach();
+        return renderSurfaceHost.detach(renderSurface(), () -> {
+            visualizer.dispose();
+            renderDriver.dispose();
+        });
     }
 
     private RenderSurface<?> renderSurface() {

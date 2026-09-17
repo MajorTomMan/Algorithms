@@ -11,34 +11,34 @@ import java.util.function.Supplier;
 
 /** Owns surface registration and RenderSession activation/deactivation order. */
 public final class RenderSurfaceHost {
-    private final DefaultRenderFramework framework;
+    private final RenderSurfaceLifecyclePort lifecycle;
     private final Map<RenderSessionId, CompletionStage<Void>> lifecycleTails = new HashMap<>();
 
-    public RenderSurfaceHost(DefaultRenderFramework framework) {
-        this.framework = Objects.requireNonNull(framework, "framework");
+    public RenderSurfaceHost(RenderSurfaceLifecyclePort lifecycle) {
+        this.lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");
     }
 
     public CompletionStage<Void> attach(RenderSurface<?> surface) {
         Objects.requireNonNull(surface, "surface");
         return serialized(surface.sessionId(), () -> register(surface)
-                .thenCompose(ignored -> framework.activateSession(surface.sessionId())));
+                .thenCompose(ignored -> lifecycle.activateSession(surface.sessionId())));
     }
 
-    /** Strict order: deactivate -> unregister -> FX-thread dispose. */
+    /** Strict order: deactivate -> unregister -> lifecycle-owned dispose. */
     public CompletionStage<Void> detach(RenderSurface<?> surface, Runnable dispose) {
         Objects.requireNonNull(surface, "surface");
         Objects.requireNonNull(dispose, "dispose");
-        return serialized(surface.sessionId(), () -> framework.deactivateSession(surface.sessionId())
+        return serialized(surface.sessionId(), () -> lifecycle.deactivateSession(surface.sessionId())
                 .thenCompose(ignored -> unregister(surface))
-                .thenCompose(ignored -> framework.fxExecutor().execute(dispose)));
+                .thenCompose(ignored -> lifecycle.disposeSurface(dispose)));
     }
 
     private CompletionStage<Void> register(RenderSurface<?> surface) {
-        return framework.registerSurface(surface);
+        return lifecycle.registerSurface(surface);
     }
 
     private CompletionStage<Void> unregister(RenderSurface<?> surface) {
-        return framework.unregisterSurface(surface);
+        return lifecycle.unregisterSurface(surface);
     }
 
     private synchronized CompletionStage<Void> serialized(

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.array;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.observation.ArrayObservationDomains;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
@@ -13,7 +14,6 @@ import java.util.List;
 
 /** Reduces factual Array mutations, comparisons and Runtime lifecycle into ArrayViewState. */
 public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
-  private static final String ARRAY_SOURCE = "array";
   private final List<?> initialValues;
 
   public ArrayEventReducer() {
@@ -89,7 +89,7 @@ public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
 
   private static Integer arrayIndex(ObservationEvent.Reference reference) {
     if (reference instanceof ObservationEvent.IndexRef indexRef
-        && ARRAY_SOURCE.equals(indexRef.source()))
+        && ArrayObservationDomains.INDEX_SOURCE.equals(indexRef.source()))
       return indexRef.index();
     return null;
   }

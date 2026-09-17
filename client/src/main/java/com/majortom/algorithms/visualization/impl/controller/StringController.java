@@ -10,6 +10,7 @@ import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.StringPresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.string.StringEventReducer;
@@ -58,7 +59,7 @@ public final class StringController extends BaseModuleController<StringViewState
     @FXML private Button runBtn;
 
     public StringController(RenderContext renderContext) {
-        super(new StringVisualizer(renderContext.renderPort()), "/fxml/StringControls.fxml", renderContext.surfaceHost());
+        super(new StringVisualizer(), new StringPresenter(), "/fxml/StringControls.fxml", renderContext);
         source = structure("string", com.majortom.algorithms.structure.string.String.class);
         source.replace(0, source.length(), "ABABDABACDABABCABAB");
         renderSource();
@@ -223,6 +224,7 @@ public final class StringController extends BaseModuleController<StringViewState
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
         var descriptor = algorithm(algorithmId, java.lang.String.class);
         stringVisualizer().clearAlgorithmPattern();
+        requestPresentationRender();
         startAlgorithm(
                 algorithmId,
                 target,
@@ -480,9 +482,11 @@ public final class StringController extends BaseModuleController<StringViewState
         }
         structureSelectionEnabled = enabled;
         stringVisualizer().clearAlgorithmPattern();
+        requestPresentationRender();
     }
 
     private void handleStringSelection(int index) {
+        requestPresentationRender();
         if (structureSelectionEnabled) {
             handleStructureStringSelection(index);
             return;
@@ -505,6 +509,7 @@ public final class StringController extends BaseModuleController<StringViewState
             return;
         }
         stringVisualizer().showSelection(algorithmSelectedIndex);
+        requestPresentationRender();
         selectionListener.accept(new IndexSelection(
                 algorithmSelectedIndex,
                 state.value().charAt(algorithmSelectedIndex),
@@ -525,6 +530,7 @@ public final class StringController extends BaseModuleController<StringViewState
     private void clearStringSelection() {
         algorithmSelectedIndex = -1;
         stringVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 

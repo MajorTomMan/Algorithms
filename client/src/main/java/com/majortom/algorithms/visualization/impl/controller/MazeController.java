@@ -14,6 +14,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.algorithm.MazeAlgorithmCatalog;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.MazePresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
@@ -82,7 +83,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     @FXML private Button resetMazeBtn;
 
     public MazeController(RenderContext renderContext) {
-        super(new MazeVisualizer(renderContext.renderPort()), "/fxml/MazeControls.fxml", renderContext.surfaceHost());
+        super(new MazeVisualizer(), new MazePresenter(), "/fxml/MazeControls.fxml", renderContext);
         renderEmpty();
     }
 
@@ -533,6 +534,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private void handleCellSelection(GridPoint point) {
+        requestPresentationRender();
         if (point == null) return;
         MazeViewState state;
         if (structureSelectionEnabled) {
@@ -564,6 +566,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             return;
         }
         mazeVisualizer().showSelection(point);
+        requestPresentationRender();
         selectionListener.accept(new CellSelection(point.row(), point.column(), cellState(state, point)));
     }
 
@@ -581,6 +584,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private void clearCellSelection() {
         algorithmSelectedCell = null;
         mazeVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 

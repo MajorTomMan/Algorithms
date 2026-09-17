@@ -2,6 +2,7 @@ package com.majortom.algorithms.algorithm.graph.impl;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
@@ -45,7 +46,7 @@ public final class KruskalMinimumSpanning {
     }
 
     for (Edge<Integer> edge : edges) {
-      Observations.examined("graph.vertex", edge.from().id(), edge.to().id());
+      Observations.examined(GraphObservationDomains.VERTEX, edge.from().id(), edge.to().id());
       long fromRoot = find(parent, edge.from().id());
       long toRoot = find(parent, edge.to().id());
       if (fromRoot == toRoot) {

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
@@ -16,7 +17,6 @@ import java.util.Set;
 
 /** Reduces factual Graph mutations, observations and Runtime lifecycle into GraphViewState. */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
-  private static final String VERTEX_DOMAIN = "graph.vertex";
   private final GraphSnapshotState<?> initialGraph;
 
   public GraphEventReducer(GraphSnapshot<?> graph) {
@@ -118,7 +118,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
 
   private static Long graphNodeId(ObservationEvent.Reference reference) {
     if (reference instanceof ObservationEvent.EntityRef entity
-        && VERTEX_DOMAIN.equals(entity.domain())) {
+        && GraphObservationDomains.VERTEX.equals(entity.domain())) {
       return entity.id();
     }
     return null;

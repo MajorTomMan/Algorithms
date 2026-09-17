@@ -2,6 +2,7 @@ package com.majortom.algorithms.algorithm.array.sort.impl;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.domain.observation.ArrayObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
@@ -19,7 +20,7 @@ public final class StringInsertionSort {
       int scanIndex = insertionIndex - 1;
       while (scanIndex >= 0) {
         String existingValue = array.get(scanIndex);
-        Observations.compared("array", scanIndex, insertionValue);
+        Observations.compared(ArrayObservationDomains.INDEX_SOURCE, scanIndex, insertionValue);
         if (compare(existingValue, insertionValue) <= 0)
           break;
         array.set(scanIndex + 1, existingValue);

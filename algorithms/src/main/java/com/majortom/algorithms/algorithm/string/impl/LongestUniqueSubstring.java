@@ -4,6 +4,7 @@ import com.majortom.algorithms.algorithm.string.SubstringRange;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.domain.observation.StringObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.structure.string.StringStructure;
 import java.util.HashMap;
@@ -26,7 +27,8 @@ public final class LongestUniqueSubstring {
       char value = source.charAt(index);
       Integer previous = lastSeen.put(value, index);
       if (previous != null) {
-        Observations.compared("target", previous, "target", index);
+        Observations.compared(StringObservationDomains.TARGET_SOURCE, previous,
+            StringObservationDomains.TARGET_SOURCE, index);
         if (previous >= windowStart) {
           windowStart = previous + 1;
         }

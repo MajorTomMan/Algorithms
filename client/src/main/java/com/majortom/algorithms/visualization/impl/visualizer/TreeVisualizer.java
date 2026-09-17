@@ -1,33 +1,39 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.api.AnimationStep;
+import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.TreeStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.tree.animation.TreeAnimationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.tree.animation.TreeAnimationPlanner;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Point2D;
+import javafx.scene.Node;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -42,17 +48,17 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("TREE");
     private static final StructureVisualization<TreeViewState> STRUCTURE_VISUALIZATION = new TreeStructureVisualization();
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<EdgeKey, EdgeView> edgeViews = new LinkedHashMap<>();
-
-    private volatile TreeViewState lastSubmittedState;
+    private final StructureAnimationRuntime<TreeViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new TreeAnimationPlanner());
+    private final TreeAnimationSceneAdapter animationScene = new TreeAnimationSceneAdapter();
+    private LayoutPatch lastPatch;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> { };
 
-    public TreeVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public TreeVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -61,25 +67,16 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(TreeViewState state) {
-        TreeViewState previous = lastSubmittedState;
-        boolean initial = previous == null;
-        boolean structural = initial || requiresStructuralLayout(previous, state);
-        lastSubmittedState = state;
-        if (structural) {
-            renderPort.submit(new StructuralRenderIntent<>(SESSION_ID, state,
-                    initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE, initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
 
 
     @Override
     public CompletionStage<Void> commitLayout(
             TreeViewState state, LayoutPatch patch, RenderCommitContext context) {
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch);
+
         reconcileNodes(state);
         reconcileEdges(state);
         applyPendingSelection(state);
@@ -91,11 +88,10 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             NodeView view = entry.getValue();
             view.setGeometry(new CircleGeometry(Math.max(MIN_RADIUS, bounds.width() / 2.0d)));
             view.setCenter(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
-            view.setOpacity(1.0d);
-            view.setScaleX(1.0d);
-            view.setScaleY(1.0d);
         }
         applyRoutes(patch);
+        lastPatch = patch;
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -255,7 +251,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     public void clearSelection() {
         selectedNodeId = null;
         pendingSelectedNodeId = null;
-        submitCurrentPresentation();
     }
 
     public Long selectedNodeId() {
@@ -270,27 +265,20 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     }
 
     public boolean showSelection(long nodeId) {
-        TreeViewState state = currentState();
-        if (state == null || !state.nodes().containsKey(nodeId)) {
-            return false;
-        }
         selectedNodeId = nodeId;
         pendingSelectedNodeId = nodeViews.containsKey(nodeId) ? null : nodeId;
-        submitCurrentPresentation();
         return true;
-    }
-
-    private void submitCurrentPresentation() {
-        TreeViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
     private void syncSelectionState() {
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             entry.getValue().setSelected(selectedNodeId != null && selectedNodeId.equals(entry.getKey()));
         }
+    }
+
+    @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
     }
 
     @Override
@@ -309,40 +297,166 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
 
     @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         nodeViews.clear();
         edgeViews.values().forEach(EdgeView::dispose);
         edgeViews.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
-        lastSubmittedState = null;
         selectedNodeId = null;
         pendingSelectedNodeId = null;
+        lastPatch = null;
         surface.reset();
         surface.markViewportPristine();
     }
 
     @Override
     public void dispose() {
+        if (isDisposed()) return;
+        super.dispose();
         edgeViews.values().forEach(EdgeView::dispose);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
-        super.dispose();
     }
 
-    private static boolean requiresStructuralLayout(TreeViewState previous, TreeViewState current) {
-        return previous == null || previous.kind() != current.kind()
-                || !java.util.Objects.equals(previous.rootId(), current.rootId())
-                || !previous.nodes().equals(current.nodes());
-    }
 
 
     private static String routeId(EdgeKey key) {
-        return "tree:" + key.relation().name().toLowerCase() + ":" + key.index() + ":"
-                + key.sourceId() + ":" + key.targetId();
+        return switch (key.relation()) {
+            case CHILD -> TreeAnimationIds.childEdge(key.index(), key.sourceId(), key.targetId());
+            case LEFT -> TreeAnimationIds.leftEdge(key.sourceId(), key.targetId());
+            case RIGHT -> TreeAnimationIds.rightEdge(key.sourceId(), key.targetId());
+        };
     }
 
 
+
+    private final class TreeAnimationSceneAdapter implements AnimationSceneAdapter {
+        private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
+        private final Map<String, List<Point2D>> capturedRoutes = new LinkedHashMap<>();
+        private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
+        private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
+        private LayoutPatch targetPatch;
+
+        void prepare(AnimationPlan plan, TreeViewState state, LayoutPatch patch) {
+            capturedCenters.clear();
+            capturedRoutes.clear();
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                capturedCenters.put(TreeAnimationIds.node(entry.getKey()), entry.getValue().visualCenter());
+            }
+            for (Map.Entry<EdgeKey, EdgeView> entry : edgeViews.entrySet()) {
+                capturedRoutes.put(routeId(entry.getKey()), entry.getValue().routeSnapshot());
+            }
+            targetPatch = patch;
+
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.EdgeRemove remove) detachEdge(remove.targetId());
+            }
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.NodeExit exit) detachNode(exit.targetId());
+            }
+        }
+
+        private void detachNode(String logicalId) {
+            Long id = nodeViews.keySet().stream()
+                    .filter(candidate -> TreeAnimationIds.node(candidate).equals(logicalId))
+                    .findFirst().orElse(null);
+            if (id == null) return;
+            NodeView view = nodeViews.remove(id);
+            if (view != null) exitingNodes.put(id, view);
+            if (java.util.Objects.equals(selectedNodeId, id)) selectedNodeId = null;
+        }
+
+        private void detachEdge(String logicalId) {
+            EdgeKey key = edgeViews.keySet().stream()
+                    .filter(candidate -> routeId(candidate).equals(logicalId))
+                    .findFirst().orElse(null);
+            if (key == null) return;
+            EdgeView edge = edgeViews.remove(key);
+            if (edge != null) exitingEdges.put(logicalId, edge);
+        }
+
+        @Override
+        public Optional<NodeTarget> node(String logicalId) {
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                if (TreeAnimationIds.node(entry.getKey()).equals(logicalId)) {
+                    return Optional.of(new NodeTarget(logicalId, entry.getValue(), List.of()));
+                }
+            }
+            for (Map.Entry<Long, NodeView> entry : exitingNodes.entrySet()) {
+                if (TreeAnimationIds.node(entry.getKey()).equals(logicalId)) {
+                    return Optional.of(new NodeTarget(logicalId, entry.getValue(), List.of()));
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<EdgeTarget> edge(String logicalId) {
+            EdgeView active = edgeViews.entrySet().stream()
+                    .filter(entry -> routeId(entry.getKey()).equals(logicalId))
+                    .map(Map.Entry::getValue).findFirst().orElse(null);
+            EdgeView edge = active == null ? exitingEdges.get(logicalId) : active;
+            return edge == null ? Optional.empty() : Optional.of(new EdgeTarget(logicalId, edge));
+        }
+
+        @Override
+        public Optional<Point2D> capturedNodeCenter(String logicalId) {
+            return Optional.ofNullable(capturedCenters.get(logicalId));
+        }
+
+        @Override
+        public Optional<List<Point2D>> capturedEdgeRoute(String logicalId) {
+            return Optional.ofNullable(capturedRoutes.get(logicalId));
+        }
+
+        @Override
+        public Collection<NodeTarget> activeNodes() {
+            List<NodeTarget> result = new ArrayList<>(nodeViews.size());
+            nodeViews.forEach((id, view) -> result.add(
+                    new NodeTarget(TreeAnimationIds.node(id), view, List.of())));
+            return result;
+        }
+
+        @Override
+        public Collection<EdgeTarget> activeEdges() {
+            return edgeViews.entrySet().stream()
+                    .map(entry -> new EdgeTarget(routeId(entry.getKey()), entry.getValue()))
+                    .toList();
+        }
+
+        @Override
+        public void discardExitedVisuals() {
+            exitingEdges.values().forEach(edge -> {
+                surface.edgeLayer().getChildren().remove(edge);
+                edge.dispose();
+            });
+            exitingEdges.clear();
+            exitingNodes.values().forEach(node -> surface.nodeLayer().getChildren().remove(node));
+            exitingNodes.clear();
+        }
+
+        @Override
+        public void stabilize(AnimationPlan plan) {
+            for (NodeTarget target : activeNodes()) {
+                Node node = target.node();
+                node.setTranslateX(0.0d);
+                node.setTranslateY(0.0d);
+                node.setOpacity(1.0d);
+                node.setScaleX(1.0d);
+                node.setScaleY(1.0d);
+            }
+            for (EdgeTarget target : activeEdges()) {
+                target.edge().setRevealProgress(1.0d);
+                target.edge().setOpacity(1.0d);
+            }
+            discardExitedVisuals();
+            if (targetPatch != null) applyRoutes(targetPatch);
+            capturedCenters.clear();
+            capturedRoutes.clear();
+        }
+    }
 
     private enum Relation {
         CHILD("tree-child-edge"),

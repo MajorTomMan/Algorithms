@@ -1,6 +1,5 @@
 package com.majortom.algorithms.visualization.render.api;
 
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 
 /**
  * JavaFX-neutral structure semantics for one visualization family.

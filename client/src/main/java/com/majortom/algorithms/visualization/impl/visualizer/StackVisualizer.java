@@ -10,13 +10,9 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
@@ -37,17 +33,13 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     private static final double ITEM_HORIZONTAL_PADDING = 30.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
     private final Text topLabel = new Text();
-
-    private volatile LinearStructureViewState lastSubmittedState;
     private int selectedIndex = -1;
     private int pendingSelectedIndex = -1;
     private IntConsumer selectionListener = ignored -> {};
 
-    public StackVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public StackVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -61,22 +53,6 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(LinearStructureViewState state) {
-        LinearStructureViewState previous = lastSubmittedState;
-        boolean initial = previous == null;
-        boolean structural = initial || !previous.values().equals(state.values());
-        lastSubmittedState = state;
-        if (structural) {
-            renderPort.submit(new StructuralRenderIntent<>(
-                    SESSION_ID,
-                    state,
-                    initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE,
-                    initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
 
     @Override
@@ -166,8 +142,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     private void installSelectionHandler(NodeView item, int index) {
         item.setOnMouseClicked(event -> {
             selectedIndex = index;
-            submitCurrentPresentation();
-            selectionListener.accept(index);
+                selectionListener.accept(index);
             event.consume();
         });
     }
@@ -190,7 +165,6 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     public void clearSelection() {
         selectedIndex = -1;
         pendingSelectedIndex = -1;
-        submitCurrentPresentation();
     }
 
     public void selectIndex(int index) {
@@ -199,20 +173,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     public boolean showSelection(int index) {
         if (index < 0) return false;
-        LinearStructureViewState state = currentState();
-        int currentSize = state == null ? items.size() : state.values().size();
-        if (index >= currentSize) return false;
         selectedIndex = index;
         pendingSelectedIndex = items.containsKey(index) ? -1 : index;
-        submitCurrentPresentation();
         return true;
-    }
-
-    private void submitCurrentPresentation() {
-        LinearStructureViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
     private void applyPendingSelection(int size) {
@@ -234,13 +197,13 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     @Override public void setViewportObstructionInsets(javafx.geometry.Insets insets) { surface.setObstructionInsets(insets); }
 @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         items.clear();
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().setAll(topLabel);
         selectedIndex = -1;
         pendingSelectedIndex = -1;
-        lastSubmittedState = null;
         surface.reset();
         surface.markViewportPristine();
     }

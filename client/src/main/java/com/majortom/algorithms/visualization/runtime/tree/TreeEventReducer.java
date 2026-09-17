@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.tree;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.observation.TreeObservationDomains;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
@@ -203,7 +204,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
 
   private static Long treeEntityId(ObservationEvent.Reference reference) {
     if (reference instanceof ObservationEvent.EntityRef entity
-        && "tree".equalsIgnoreCase(entity.domain())) {
+        && TreeObservationDomains.NODE.equalsIgnoreCase(entity.domain())) {
       return entity.id();
     }
     return null;

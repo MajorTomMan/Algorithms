@@ -4,7 +4,7 @@ import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
-import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;

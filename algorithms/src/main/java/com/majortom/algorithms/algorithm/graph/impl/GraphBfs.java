@@ -2,6 +2,7 @@ package com.majortom.algorithms.algorithm.graph.impl;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
@@ -17,7 +18,6 @@ import java.util.Set;
 @Algorithm(
     id = "graph-bfs", name = "广度优先遍历", type = Integer.class, structure = GraphStructure.class)
 public final class GraphBfs {
-  private static final String VERTEX_DOMAIN = "graph.vertex";
 
   @AlgorithmEntry
   public List<Integer> traverse(GraphStructure<Integer> graph) {
@@ -34,10 +34,10 @@ public final class GraphBfs {
     discovered.add(startVertex);
     while (!queue.isEmpty()) {
       Vertex<Integer> node = queue.removeFirst();
-      Observations.visited(VERTEX_DOMAIN, node.id());
+      Observations.visited(GraphObservationDomains.VERTEX, node.id());
       order.add(node.value());
       for (Vertex<Integer> neighbor : graph.neighbors(node)) {
-        Observations.examined(VERTEX_DOMAIN, node.id(), neighbor.id());
+        Observations.examined(GraphObservationDomains.VERTEX, node.id(), neighbor.id());
         if (discovered.add(neighbor)) {
           queue.addLast(neighbor);
         }

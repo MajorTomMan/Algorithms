@@ -8,6 +8,7 @@ import com.majortom.algorithms.structure.linked.LinkedList;
 import com.majortom.algorithms.structure.linked.LinkedStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListVisualizer;
+import com.majortom.algorithms.visualization.impl.visualizer.presenter.LinkedListPresenter;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
@@ -82,7 +83,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @SuppressWarnings("unchecked")
     public LinkedListController(RenderContext renderContext) {
-        super(new LinkedListVisualizer(renderContext.renderPort()), "/fxml/LinearStructureControls.fxml", renderContext.surfaceHost());
+        super(new LinkedListVisualizer(), new LinkedListPresenter(), "/fxml/LinearStructureControls.fxml", renderContext);
         linkedList = (LinkedStructure<Object>) structure("linked-list", LinkedList.class);
         seed();
         renderStructureState(currentState());
@@ -444,6 +445,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void handleVisualSelection(long nodeId) {
+        requestPresentationRender();
         if (nodeId <= 0L) {
             clearVisualSelection();
             return;
@@ -501,6 +503,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         long nodeId = algorithmSelectedNodeId;
         if (!linkedVisualizer().showSelection(nodeId) || !publishAlgorithmSelection(state, nodeId)) {
             clearVisualSelection();
+        } else {
+            requestPresentationRender();
         }
     }
 
@@ -521,6 +525,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private void clearVisualSelection() {
         algorithmSelectedNodeId = null;
         linkedVisualizer().clearSelection();
+        requestPresentationRender();
         selectionListener.accept(null);
     }
 
@@ -627,6 +632,18 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     protected boolean algorithmInputTracksCurrentStructure() {
         return algorithmInputSnapshot == null;
+    }
+
+    @Override
+    protected void restoreAlgorithmState() {
+        if (latestViewState() != null) {
+            super.restoreAlgorithmState();
+            return;
+        }
+        List<Object> inputValues = algorithmInputSnapshot == null
+                ? values()
+                : algorithmInputSnapshot.state().values();
+        renderViewState(LinkedListViewState.fromValues(inputValues));
     }
 
 }

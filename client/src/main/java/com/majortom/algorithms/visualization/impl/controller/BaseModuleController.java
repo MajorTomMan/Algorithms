@@ -1,7 +1,8 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
-import com.majortom.algorithms.visualization.render.runtime.RenderSurfaceHost;
+import com.majortom.algorithms.visualization.render.api.StructurePresenter;
+import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 
 import com.majortom.algorithms.visualization.BaseController;
 import com.majortom.algorithms.visualization.BaseVisualizer;
@@ -34,8 +35,12 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     private final String fxmlPath;
     protected Node controlPanel;
 
-    protected BaseModuleController(BaseVisualizer<S> visualizer, String fxmlPath, RenderSurfaceHost renderSurfaceHost) {
-        super(visualizer, renderSurfaceHost);
+    protected BaseModuleController(
+            BaseVisualizer<S> visualizer,
+            StructurePresenter<S> presenter,
+            String fxmlPath,
+            RenderContext renderContext) {
+        super(visualizer, presenter, renderContext.renderPort(), renderContext.surfaceHost());
         this.fxmlPath = fxmlPath;
     }
 

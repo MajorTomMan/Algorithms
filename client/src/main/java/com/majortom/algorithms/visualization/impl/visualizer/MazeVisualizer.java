@@ -10,13 +10,9 @@ import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -44,14 +40,12 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final double MIN_AUTO_FIT_SCALE = 0.10d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
-    private volatile MazeViewState lastSubmittedState;
     private Consumer<GridPoint> selectionListener = ignored -> { };
     private GridPoint selectedCell;
+    private MazeViewState renderedState;
     private VisualDensity density = VisualDensity.DETAIL;
 
-    public MazeVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public MazeVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -60,7 +54,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         canvas.heightProperty().unbind();
         surface.nodeLayer().getChildren().add(canvas);
         canvas.setOnMouseClicked(event -> {
-            MazeViewState state = currentState();
+            MazeViewState state = renderedState;
             if (state == null || state.rows() < 1 || state.columns() < 1) return;
             double cellWidth = canvas.getWidth() / state.columns();
             double cellHeight = canvas.getHeight() / state.rows();
@@ -69,7 +63,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             if (row < 0 || row >= state.rows() || column < 0 || column >= state.columns()) return;
             selectedCell = new GridPoint(row, column);
             selectionListener.accept(selectedCell);
-            submitCurrentPresentation();
             event.consume();
         });
         surface.markViewportPristine();
@@ -77,22 +70,10 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(MazeViewState state) {
-        MazeViewState previous = lastSubmittedState;
-        boolean initial = previous == null;
-        boolean structural = initial || previous.rows() != state.rows() || previous.columns() != state.columns();
-        lastSubmittedState = state;
-        if (structural) {
-            renderPort.submit(new StructuralRenderIntent<>(SESSION_ID, state,
-                    initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE, initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
     @Override
     public CompletionStage<Void> commitLayout(MazeViewState state, LayoutPatch patch, RenderCommitContext context) {
+        renderedState = state;
         ElementGeometry grid = patch.elements().get(GRID_ID);
         if (grid == null) {
             canvas.setWidth(1.0d);
@@ -108,6 +89,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
     @Override
     public CompletionStage<Void> commitPresentation(MazeViewState state, RenderCommitContext context) {
+        renderedState = state;
         paint(state);
         return CompletableFuture.completedFuture(null);
     }
@@ -329,16 +311,13 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
     public void clearSelection() {
         selectedCell = null;
-        submitCurrentPresentation();
     }
 
     public boolean showSelection(GridPoint point) {
-        MazeViewState state = currentState();
-        if (state == null || !inside(state, point)) {
+        if (point == null || (renderedState != null && !inside(renderedState, point))) {
             return false;
         }
         selectedCell = point;
-        submitCurrentPresentation();
         return true;
     }
 
@@ -348,13 +327,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
     public VisualDensity density() {
         return density;
-    }
-
-    private void submitCurrentPresentation() {
-        MazeViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
     @Override
@@ -373,8 +345,9 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
     @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         selectedCell = null;
-        lastSubmittedState = null;
+        renderedState = null;
         fillBackground();
         surface.reset();
         surface.markViewportPristine();

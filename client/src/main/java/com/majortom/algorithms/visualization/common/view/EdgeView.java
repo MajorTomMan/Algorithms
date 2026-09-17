@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
@@ -36,6 +38,7 @@ public final class EdgeView extends Group {
   private final BooleanProperty curved = new SimpleBooleanProperty();
   private final BooleanProperty highlighted = new SimpleBooleanProperty();
   private final BooleanProperty selected = new SimpleBooleanProperty();
+  private final DoubleProperty revealProgress = new SimpleDoubleProperty(1.0d);
   private double labelNormalOffset = LABEL_NORMAL_OFFSET;
   private final InvalidationListener geometryListener = observable -> updateGeometry();
   private boolean updatingGeometry;
@@ -68,11 +71,16 @@ public final class EdgeView extends Group {
     source.centerXProperty().addListener(geometryListener);
     source.centerYProperty().addListener(geometryListener);
     source.geometryProperty().addListener(geometryListener);
+    source.translateXProperty().addListener(geometryListener);
+    source.translateYProperty().addListener(geometryListener);
     target.centerXProperty().addListener(geometryListener);
     target.centerYProperty().addListener(geometryListener);
     target.geometryProperty().addListener(geometryListener);
+    target.translateXProperty().addListener(geometryListener);
+    target.translateYProperty().addListener(geometryListener);
     this.directed.addListener(geometryListener);
     curved.addListener(geometryListener);
+    revealProgress.addListener(geometryListener);
     highlighted.addListener((observable, previous, current) -> {
       pseudoClassStateChanged(HIGHLIGHTED, current);
       if (current) {
@@ -143,6 +151,19 @@ public final class EdgeView extends Group {
     return selected;
   }
 
+
+  public double getRevealProgress() {
+    return revealProgress.get();
+  }
+
+  public void setRevealProgress(double progress) {
+    revealProgress.set(Math.max(0.0d, Math.min(1.0d, progress)));
+  }
+
+  public DoubleProperty revealProgressProperty() {
+    return revealProgress;
+  }
+
   public Path hitPath() {
     return hitPath;
   }
@@ -210,16 +231,26 @@ public final class EdgeView extends Group {
     return !route.isEmpty();
   }
 
+  /** Immutable snapshot of the currently rendered route for animation continuity. */
+  public List<Point2D> routeSnapshot() {
+    return List.copyOf(route);
+  }
+
   /** Releases endpoint listeners when this edge leaves the authoritative SceneGraph. */
   public void dispose() {
     source.centerXProperty().removeListener(geometryListener);
     source.centerYProperty().removeListener(geometryListener);
     source.geometryProperty().removeListener(geometryListener);
+    source.translateXProperty().removeListener(geometryListener);
+    source.translateYProperty().removeListener(geometryListener);
     target.centerXProperty().removeListener(geometryListener);
     target.centerYProperty().removeListener(geometryListener);
     target.geometryProperty().removeListener(geometryListener);
+    target.translateXProperty().removeListener(geometryListener);
+    target.translateYProperty().removeListener(geometryListener);
     directed.removeListener(geometryListener);
     curved.removeListener(geometryListener);
+    revealProgress.removeListener(geometryListener);
     arrow.fillProperty().unbind();
     route = List.of();
   }
@@ -246,8 +277,8 @@ public final class EdgeView extends Group {
       return;
     }
     path.getElements().clear();
-    Point2D sourceCenter = source.center();
-    Point2D targetCenter = target.center();
+    Point2D sourceCenter = source.visualCenter();
+    Point2D targetCenter = target.visualCenter();
     if (source == target) {
       updateSelfLoop(sourceCenter);
       return;
@@ -259,27 +290,32 @@ public final class EdgeView extends Group {
       return;
     }
 
-    Point2D start = source.boundaryPointToward(targetCenter);
-    Point2D end = target.boundaryPointToward(sourceCenter);
+    Point2D start = source.visualBoundaryPointToward(targetCenter);
+    Point2D end = target.visualBoundaryPointToward(sourceCenter);
     path.getElements().add(new MoveTo(start.getX(), start.getY()));
 
+    double progress = getRevealProgress();
     Point2D tangent;
+    Point2D visibleEnd;
     Point2D labelAnchor;
     if (isCurved()) {
       Point2D delta = end.subtract(start);
       Point2D normal = new Point2D(-delta.getY(), delta.getX()).normalize();
       double offset = Math.max(28.0d, delta.magnitude() * 0.16d);
       Point2D control = start.midpoint(end).add(normal.multiply(offset));
-      path.getElements().add(
-          new QuadCurveTo(control.getX(), control.getY(), end.getX(), end.getY()));
-      tangent = end.subtract(control);
-      labelAnchor = quadraticPoint(start, control, end, 0.5d);
+      Point2D partialControl = interpolate(start, control, progress);
+      visibleEnd = quadraticPoint(start, control, end, progress);
+      path.getElements().add(new QuadCurveTo(
+          partialControl.getX(), partialControl.getY(), visibleEnd.getX(), visibleEnd.getY()));
+      tangent = visibleEnd.subtract(partialControl);
+      labelAnchor = quadraticPoint(start, control, end, progress * 0.5d);
     } else {
-      path.getElements().add(new LineTo(end.getX(), end.getY()));
-      tangent = end.subtract(start);
-      labelAnchor = start.midpoint(end);
+      visibleEnd = interpolate(start, end, progress);
+      path.getElements().add(new LineTo(visibleEnd.getX(), visibleEnd.getY()));
+      tangent = visibleEnd.subtract(start);
+      labelAnchor = start.midpoint(visibleEnd);
     }
-    updateArrow(end, tangent);
+    if (progress <= 0.001d) arrow.setVisible(false); else updateArrow(visibleEnd, tangent);
     positionLabel(labelAnchor, tangent, labelNormalOffset);
     syncHitPath();
   }
@@ -287,7 +323,7 @@ public final class EdgeView extends Group {
   private void updateRoutedGeometry() {
     path.getElements().clear();
     if (source == target) {
-      updateSelfLoop(source.center());
+      updateSelfLoop(source.visualCenter());
       return;
     }
 
@@ -296,50 +332,59 @@ public final class EdgeView extends Group {
     if (route.size() > 2) {
       sourceDirection = route.get(1);
     } else {
-      sourceDirection = target.center();
+      sourceDirection = target.visualCenter();
     }
-    if (source.center().equals(sourceDirection)) {
-      sourceDirection = target.center();
+    if (source.visualCenter().equals(sourceDirection)) {
+      sourceDirection = target.visualCenter();
     }
 
     Point2D targetDirection;
     if (route.size() > 2) {
       targetDirection = route.get(route.size() - 2);
     } else {
-      targetDirection = source.center();
+      targetDirection = source.visualCenter();
     }
-    if (target.center().equals(targetDirection)) {
-      targetDirection = source.center();
+    if (target.visualCenter().equals(targetDirection)) {
+      targetDirection = source.visualCenter();
     }
 
-    Point2D start = source.boundaryPointToward(sourceDirection);
-    Point2D end = target.boundaryPointToward(targetDirection);
+    Point2D start = source.visualBoundaryPointToward(sourceDirection);
+    Point2D end = target.visualBoundaryPointToward(targetDirection);
     points.set(0, start);
     points.set(points.size() - 1, end);
 
+    points = trimPolyline(points, getRevealProgress());
     path.getElements().add(new MoveTo(start.getX(), start.getY()));
     for (int index = 1; index < points.size(); index++) {
       Point2D point = points.get(index);
       path.getElements().add(new LineTo(point.getX(), point.getY()));
     }
-    Point2D tangent = end.subtract(points.get(points.size() - 2));
-    updateArrow(end, tangent);
+    Point2D visibleEnd = points.getLast();
+    Point2D tangent = points.size() > 1 ? visibleEnd.subtract(points.get(points.size() - 2)) : new Point2D(0.0d, 0.0d);
+    if (getRevealProgress() <= 0.001d) arrow.setVisible(false); else updateArrow(visibleEnd, tangent);
     PolylineMidpoint midpoint = polylineMidpoint(points);
     positionLabel(midpoint.point(), midpoint.tangent(), labelNormalOffset);
     syncHitPath();
   }
 
   private void updateSelfLoop(Point2D center) {
-    Point2D start = source.boundaryPointToward(center.add(1.0d, -1.0d));
-    Point2D end = source.boundaryPointToward(center.add(-1.0d, -1.0d));
+    Point2D start = source.visualBoundaryPointToward(center.add(1.0d, -1.0d));
+    Point2D end = source.visualBoundaryPointToward(center.add(-1.0d, -1.0d));
     double width = source.getGeometry().width();
     double height = source.getGeometry().height();
     Point2D control1 = center.add(width * 1.1d, -height * 1.7d);
     Point2D control2 = center.add(-width * 1.1d, -height * 1.7d);
+    double progress = getRevealProgress();
+    Point2D first = interpolate(start, control1, progress);
+    Point2D middle = interpolate(control1, control2, progress);
+    Point2D last = interpolate(control2, end, progress);
+    Point2D second = interpolate(first, middle, progress);
+    Point2D third = interpolate(middle, last, progress);
+    Point2D visibleEnd = interpolate(second, third, progress);
     path.getElements().add(new MoveTo(start.getX(), start.getY()));
-    path.getElements().add(new CubicCurveTo(control1.getX(), control1.getY(), control2.getX(),
-        control2.getY(), end.getX(), end.getY()));
-    updateArrow(end, end.subtract(control2));
+    path.getElements().add(new CubicCurveTo(first.getX(), first.getY(), second.getX(),
+        second.getY(), visibleEnd.getX(), visibleEnd.getY()));
+    if (progress <= 0.001d) arrow.setVisible(false); else updateArrow(visibleEnd, visibleEnd.subtract(second));
     positionLabel(center.add(0.0d, -height * 1.9d), new Point2D(1.0d, 0.0d), 0.0d);
     syncHitPath();
   }
@@ -386,6 +431,36 @@ public final class EdgeView extends Group {
     }
     return new PolylineMidpoint(
         points.getFirst().midpoint(points.getLast()), points.getLast().subtract(points.getFirst()));
+  }
+
+
+  private static Point2D interpolate(Point2D start, Point2D end, double t) {
+    double clamped = Math.max(0.0d, Math.min(1.0d, t));
+    return start.add(end.subtract(start).multiply(clamped));
+  }
+
+  private static List<Point2D> trimPolyline(List<Point2D> points, double progress) {
+    if (points.size() < 2 || progress >= 0.999999d) return points;
+    double clamped = Math.max(0.0d, Math.min(1.0d, progress));
+    double total = 0.0d;
+    for (int index = 1; index < points.size(); index++) total += points.get(index - 1).distance(points.get(index));
+    double remaining = total * clamped;
+    List<Point2D> visible = new ArrayList<>();
+    visible.add(points.getFirst());
+    for (int index = 1; index < points.size(); index++) {
+      Point2D start = points.get(index - 1);
+      Point2D end = points.get(index);
+      double segment = start.distance(end);
+      if (remaining >= segment) {
+        visible.add(end);
+        remaining -= segment;
+        continue;
+      }
+      visible.add(segment == 0.0d ? start : interpolate(start, end, remaining / segment));
+      break;
+    }
+    if (visible.size() == 1) visible.add(visible.getFirst());
+    return visible;
   }
 
   private Point2D quadraticPoint(Point2D start, Point2D control, Point2D end, double t) {

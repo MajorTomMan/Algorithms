@@ -1,35 +1,41 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.api.AnimationStep;
+import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.StringStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
+import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationPlanner;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 /** String visualizer with a JavaFX-neutral capture and authoritative SceneGraph commit. */
@@ -40,23 +46,22 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private static final double EMPTY_Y = 64.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
     private final Map<Integer, StringCellView> cells = new LinkedHashMap<>();
+    private final StructureAnimationRuntime<StringViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new StringAnimationPlanner());
+    private final StringAnimationSceneAdapter animationScene = new StringAnimationSceneAdapter();
     private final Text emptyLabel = new Text();
     private final Text observationLabel = new Text();
     private final Label patternCaption = new Label();
     private final HBox patternTrack = new HBox(0.0d);
     private final List<KmpPatternCellView> patternCells = new ArrayList<>();
-
-    private volatile StringViewState lastSubmittedState;
     private String lastRenderedValue = "";
     private int selectedIndex = -1;
     private int pendingSelectedIndex = -1;
     private String algorithmPattern = "";
     private IntConsumer onIndexSelected = ignored -> {};
 
-    public StringVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public StringVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -76,24 +81,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(StringViewState state) {
-        StringViewState previous = lastSubmittedState;
-        boolean coldOrRevisit = previous == null;
-        boolean replacement = sourceReplacement(previous, state);
-        boolean initial = coldOrRevisit || replacement;
-        boolean structural = initial || !previous.value().equals(state.value());
-        lastSubmittedState = state;
-        if (structural) {
-            CameraPolicy cameraPolicy = replacement
-                    ? CameraPolicy.FIT_CONTENT
-                    : (coldOrRevisit ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE);
-            renderPort.submit(
-                    new StructuralRenderIntent<>(SESSION_ID, state, cameraPolicy, initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
     public void setOnIndexSelected(IntConsumer onIndexSelected) {
         this.onIndexSelected = onIndexSelected == null ? ignored -> {} : onIndexSelected;
@@ -104,19 +91,16 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         String next = pattern == null ? "" : pattern;
         if (next.equals(algorithmPattern)) return;
         algorithmPattern = next;
-        submitCurrentPresentation();
     }
 
     public void clearAlgorithmPattern() {
         if (algorithmPattern.isEmpty() && patternCells.isEmpty()) return;
         algorithmPattern = "";
-        submitCurrentPresentation();
     }
 
     public void clearSelection() {
         selectedIndex = -1;
         pendingSelectedIndex = -1;
-        submitCurrentPresentation();
     }
 
     public int selectedIndex() {
@@ -131,31 +115,25 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     /** Keeps a presentation selection on the same character index without re-firing the click callback. */
     public boolean showSelection(int index) {
         if (index < 0) return false;
-        StringViewState state = currentState();
-        int currentSize = state == null ? lastRenderedValue.length() : state.value().length();
-        if (index >= currentSize) return false;
         selectedIndex = index;
         pendingSelectedIndex = cells.containsKey(index) ? -1 : index;
-        submitCurrentPresentation();
         return true;
-    }
-
-    private void submitCurrentPresentation() {
-        StringViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
 
     @Override
     public CompletionStage<Void> commitLayout(
             StringViewState state, LayoutPatch patch, RenderCommitContext context) {
+        int previousCellCount = cells.size();
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch, previousCellCount);
+
         if (context.modelChange()) {
             if (context.initialFrame() && sourceReplacement(lastRenderedValue, state)) {
                 clearCells();
             } else {
-                applyModelIdentity(state.mutation(), state.value().length());
+                applyModelIdentity(state.mutation(), state.value().length(), previousCellCount);
             }
         }
         reconcileCells(state);
@@ -168,12 +146,10 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             StringCellView cell = entry.getValue();
             cell.setLayoutWidth(target.width());
             cell.relocate(target.x(), target.y());
-            cell.setOpacity(1.0d);
-            cell.setScaleX(1.0d);
-            cell.setScaleY(1.0d);
         }
         updateDecorations(state);
         lastRenderedValue = state.value();
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -188,9 +164,8 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         return CompletableFuture.completedFuture(null);
     }
 
-    private void applyModelIdentity(StringViewState.Mutation mutation, int newSize) {
-        if (mutation == null || mutation.type() == StringViewState.Type.NONE || cells.isEmpty()) return;
-        int oldSize = cells.size();
+    private void applyModelIdentity(StringViewState.Mutation mutation, int newSize, int oldSize) {
+        if (mutation == null || mutation.type() == StringViewState.Type.NONE) return;
         int index = mutation.index();
         int length = Math.max(0, mutation.length());
         switch (mutation.type()) {
@@ -201,6 +176,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             }
             case REMOVED -> {
                 if (length > 0 && newSize + length == oldSize && index >= 0 && index < oldSize) {
+                    // Exit visuals may already be detached by the animation adapter.
                     removeRange(index, Math.min(oldSize, index + length));
                     shiftIndexes(index + length, oldSize - 1, -length);
                 }
@@ -208,12 +184,15 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             case REPLACED -> {
                 int delta = newSize - oldSize;
                 int oldLength = length - delta;
-                if (oldLength >= 0 && index >= 0 && index <= oldSize) {
-                    if (oldLength != length) {
-                        removeRange(index, Math.min(oldSize, index + oldLength));
+                if (oldLength >= 0 && index >= 0 && index + oldLength <= oldSize) {
+                    int common = Math.min(oldLength, length);
+                    if (oldLength > common) {
+                        removeRange(index + common, index + oldLength);
+                    }
+                    if (delta != 0) {
                         shiftIndexes(index + oldLength, oldSize - 1, delta);
                     }
-                    // Equal-length replacement keeps index identity; presentation updates values.
+                    // Common replacement cells retain identity and pulse their value change.
                 }
             }
             case UPDATED, NONE -> {
@@ -290,11 +269,12 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private void normalizeCellOrder() {
-        List<javafx.scene.Node> ordered = cells.entrySet().stream()
+        List<javafx.scene.Node> ordered = new ArrayList<>(cells.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .map(javafx.scene.Node.class::cast)
-                .toList();
+                .toList());
+        ordered.addAll(animationScene.exitingCells());
         surface.nodeLayer().getChildren().setAll(ordered);
     }
 
@@ -427,6 +407,167 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         };
     }
 
+    private final class StringAnimationSceneAdapter implements AnimationSceneAdapter {
+        private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
+        private final Map<String, StringCellView> exitingCells = new LinkedHashMap<>();
+        private LayoutPatch targetPatch;
+
+        void prepare(AnimationPlan plan, StringViewState state, LayoutPatch patch, int oldSize) {
+            capturedCenters.clear();
+            targetPatch = patch;
+            captureCentersForMutation(state.mutation(), oldSize, state.value().length());
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.NodeExit exit) detachExit(exit.targetId());
+            }
+        }
+
+        private void captureCentersForMutation(
+                StringViewState.Mutation mutation, int oldSize, int newSize) {
+            if (mutation == null) {
+                cells.forEach((index, cell) -> capturedCenters.put(
+                        StringAnimationIds.node(index), visualCenter(cell)));
+                return;
+            }
+            int index = mutation.index();
+            int length = Math.max(0, mutation.length());
+            int delta = newSize - oldSize;
+            int oldReplacementLength = mutation.type() == StringViewState.Type.REPLACED
+                    ? length - delta
+                    : 0;
+            int commonReplacement = Math.min(Math.max(0, oldReplacementLength), length);
+
+            for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
+                int source = entry.getKey();
+                String logicalId = switch (mutation.type()) {
+                    case INSERTED -> StringAnimationIds.node(source >= index ? source + length : source);
+                    case REMOVED -> source >= index && source < index + length
+                            ? StringAnimationIds.exit(source)
+                            : StringAnimationIds.node(source >= index + length ? source - length : source);
+                    case REPLACED -> {
+                        if (source >= index + commonReplacement
+                                && source < index + oldReplacementLength) {
+                            yield StringAnimationIds.exit(source);
+                        }
+                        if (source >= index + oldReplacementLength) {
+                            yield StringAnimationIds.node(source + delta);
+                        }
+                        yield StringAnimationIds.node(source);
+                    }
+                    case UPDATED -> StringAnimationIds.node(source);
+                    case NONE -> source < newSize
+                            ? StringAnimationIds.node(source)
+                            : StringAnimationIds.exit(source);
+                };
+                capturedCenters.put(logicalId, visualCenter(entry.getValue()));
+            }
+        }
+
+        private void detachExit(String logicalId) {
+            int previousIndex = StringAnimationIds.exitIndex(logicalId);
+            if (previousIndex < 0) return;
+            StringCellView cell = cells.remove(previousIndex);
+            if (cell != null) exitingCells.put(logicalId, cell);
+        }
+
+        Collection<javafx.scene.Node> exitingCells() {
+            return List.copyOf(exitingCells.values());
+        }
+
+        @Override
+        public Optional<NodeTarget> node(String logicalId) {
+            int exitIndex = StringAnimationIds.exitIndex(logicalId);
+            if (exitIndex >= 0) {
+                StringCellView exiting = exitingCells.get(logicalId);
+                Point2D center = capturedCenters.get(logicalId);
+                return exiting == null || center == null
+                        ? Optional.empty()
+                        : Optional.of(new NodeTarget(logicalId, exiting, center, List.of()));
+            }
+            Integer index = activeIndex(logicalId);
+            if (index == null) return Optional.empty();
+            StringCellView cell = cells.get(index);
+            ElementGeometry geometry = targetPatch == null ? null : targetPatch.elements().get(id(index));
+            if (cell == null || geometry == null) return Optional.empty();
+            return Optional.of(new NodeTarget(logicalId, cell, center(geometry), List.of()));
+        }
+
+        @Override
+        public Optional<EdgeTarget> edge(String logicalId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Point2D> capturedNodeCenter(String logicalId) {
+            return Optional.ofNullable(capturedCenters.get(logicalId));
+        }
+
+        @Override
+        public Optional<List<Point2D>> capturedEdgeRoute(String logicalId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Collection<NodeTarget> activeNodes() {
+            List<NodeTarget> result = new ArrayList<>(cells.size());
+            for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
+                ElementGeometry geometry = targetPatch == null ? null : targetPatch.elements().get(id(entry.getKey()));
+                if (geometry != null) {
+                    result.add(new NodeTarget(StringAnimationIds.node(entry.getKey()), entry.getValue(),
+                            center(geometry), List.of()));
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public Collection<EdgeTarget> activeEdges() {
+            return List.of();
+        }
+
+        @Override
+        public void discardExitedVisuals() {
+            exitingCells.values().forEach(cell -> surface.nodeLayer().getChildren().remove(cell));
+            exitingCells.clear();
+        }
+
+        @Override
+        public void stabilize(AnimationPlan plan) {
+            for (NodeTarget target : activeNodes()) {
+                javafx.scene.Node node = target.node();
+                node.setTranslateX(0.0d);
+                node.setTranslateY(0.0d);
+                node.setOpacity(1.0d);
+                node.setScaleX(1.0d);
+                node.setScaleY(1.0d);
+            }
+            discardExitedVisuals();
+            capturedCenters.clear();
+        }
+
+        private Integer activeIndex(String logicalId) {
+            if (logicalId == null || !logicalId.startsWith("string:")) return null;
+            try {
+                return Integer.parseInt(logicalId.substring("string:".length()));
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+    }
+
+    private static Point2D visualCenter(javafx.scene.Node node) {
+        Bounds bounds = node.getBoundsInParent();
+        return new Point2D(
+                bounds.getMinX() + bounds.getWidth() / 2.0d,
+                bounds.getMinY() + bounds.getHeight() / 2.0d);
+    }
+
+    private static Point2D center(ElementGeometry geometry) {
+        return new Point2D(
+                geometry.x() + geometry.width() / 2.0d,
+                geometry.y() + geometry.height() / 2.0d);
+    }
+
+
     private static boolean sourceReplacement(StringViewState previous, StringViewState current) {
         return previous != null
                 && current.mutation().type() == StringViewState.Type.NONE
@@ -448,6 +589,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
+    }
+
+    @Override
     public StructureVisualization<StringViewState> structureVisualization() {
         return STRUCTURE_VISUALIZATION;
     }
@@ -459,6 +605,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     @Override public void setViewportObstructionInsets(javafx.geometry.Insets insets) { surface.setObstructionInsets(insets); }
 @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         clearCells();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
@@ -468,7 +615,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         selectedIndex = -1;
         pendingSelectedIndex = -1;
         lastRenderedValue = "";
-        lastSubmittedState = null;
         surface.reset();
         surface.markViewportPristine();
     }

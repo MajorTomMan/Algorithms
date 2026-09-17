@@ -1,6 +1,11 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.api.AnimationStep;
+import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.GraphStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.VisualDensity;
@@ -8,27 +13,28 @@ import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.animation.GraphAnimationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.animation.GraphAnimationPlanner;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
-import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
-import com.majortom.algorithms.visualization.render.api.RenderPort;
-import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -46,12 +52,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("GRAPH");
     private static final StructureVisualization<GraphViewState> STRUCTURE_VISUALIZATION = new GraphStructureVisualization();
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final RenderPort renderPort;
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
     private final Map<Long, Label> nodeIdLabels = new LinkedHashMap<>();
-
-    private volatile GraphViewState lastSubmittedState;
+    private final StructureAnimationRuntime<GraphViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new GraphAnimationPlanner());
+    private final GraphAnimationSceneAdapter animationScene = new GraphAnimationSceneAdapter();
+    private LayoutPatch lastPatch;
     private Long selectedNodeId;
     private Long selectedEdgeId;
     private Long pendingSelectedNodeId;
@@ -60,8 +67,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private LongConsumer edgeSelectionListener = ignored -> { };
     private VisualDensity density = VisualDensity.DETAIL;
 
-    public GraphVisualizer(RenderPort renderPort) {
-        this.renderPort = java.util.Objects.requireNonNull(renderPort, "renderPort");
+    public GraphVisualizer() {
         getChildren().setAll(surface);
         surface.prefWidthProperty().bind(widthProperty());
         surface.prefHeightProperty().bind(heightProperty());
@@ -74,24 +80,15 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
 
-    @Override
-    protected synchronized void submitFrameworkRender(GraphViewState state) {
-        GraphViewState previous = lastSubmittedState;
-        boolean initial = previous == null;
-        boolean structural = initial || requiresStructuralLayout(previous, state);
-        lastSubmittedState = state;
-        if (structural) {
-            CameraPolicy cameraPolicy = initial ? CameraPolicy.RESTORE : CameraPolicy.ENSURE_VISIBLE;
-            renderPort.submit(new StructuralRenderIntent<>(SESSION_ID, state, cameraPolicy, initial));
-        } else {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
-    }
 
 
     @Override
     public CompletionStage<Void> commitLayout(
             GraphViewState state, LayoutPatch patch, RenderCommitContext context) {
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch);
+
         reconcileNodes(state);
         reconcileEdges(state);
         applyPendingSelection(state);
@@ -103,12 +100,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             NodeView view = entry.getValue();
             view.setGeometry(new CircleGeometry(Math.max(MIN_RADIUS, bounds.width() / 2.0d)));
             view.setCenter(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
-            view.setOpacity(1.0d);
-            view.setScaleX(1.0d);
-            view.setScaleY(1.0d);
         }
         applyRoutes(patch);
+        lastPatch = patch;
         resolveEdgeLabelCollisions();
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -165,10 +161,16 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
 
         for (GraphViewState.Edge edge : state.edges()) {
-            if (edgeViews.containsKey(edge.id())) continue;
             NodeView source = nodeViews.get(edge.fromId());
             NodeView target = nodeViews.get(edge.toId());
             if (source == null || target == null) continue;
+            EdgeView existing = edgeViews.get(edge.id());
+            if (existing != null && existing.source() == source && existing.target() == target) continue;
+            if (existing != null) {
+                edgeViews.remove(edge.id());
+                existing.dispose();
+                surface.edgeLayer().getChildren().remove(existing);
+            }
             EdgeView view = new EdgeView(source, target, state.directed());
             long edgeId = edge.id();
             view.setOnMouseClicked(event -> {
@@ -253,7 +255,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         selectedEdgeId = null;
         pendingSelectedNodeId = null;
         pendingSelectedEdgeId = null;
-        submitCurrentPresentation();
     }
 
     public Long selectedNodeId() {
@@ -272,16 +273,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public boolean showNodeSelection(long nodeId) {
-        GraphViewState state = currentState();
-        boolean exists = state != null && state.nodes().stream().anyMatch(node -> node.id() == nodeId);
-        if (!exists) {
-            return false;
-        }
         selectedNodeId = nodeId;
         selectedEdgeId = null;
         pendingSelectedNodeId = nodeViews.containsKey(nodeId) ? null : nodeId;
         pendingSelectedEdgeId = null;
-        submitCurrentPresentation();
         return true;
     }
 
@@ -293,24 +288,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public boolean showEdgeSelection(long edgeId) {
-        GraphViewState state = currentState();
-        boolean exists = state != null && state.edges().stream().anyMatch(edge -> edge.id() == edgeId);
-        if (!exists) {
-            return false;
-        }
         selectedEdgeId = edgeId;
         selectedNodeId = null;
         pendingSelectedEdgeId = edgeViews.containsKey(edgeId) ? null : edgeId;
         pendingSelectedNodeId = null;
-        submitCurrentPresentation();
         return true;
-    }
-
-    private void submitCurrentPresentation() {
-        GraphViewState state = currentState();
-        if (state != null && isModuleAttached() && !isDisposed()) {
-            renderPort.submit(new PresentationRenderIntent<>(SESSION_ID, state));
-        }
     }
 
     private void syncSelectionState() {
@@ -323,8 +305,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         Label label = new Label("#" + nodeId);
         label.getStyleClass().add("graph-node-id-label");
         label.setMouseTransparent(true);
-        label.layoutXProperty().bind(view.centerXProperty().subtract(label.widthProperty().divide(2.0d)));
-        label.layoutYProperty().bind(view.centerYProperty().add(MIN_RADIUS + 6.0d));
+        label.layoutXProperty().bind(view.centerXProperty().add(view.translateXProperty())
+                .subtract(label.widthProperty().divide(2.0d)));
+        label.layoutYProperty().bind(view.centerYProperty().add(view.translateYProperty())
+                .add(MIN_RADIUS + 6.0d));
         nodeIdLabels.put(nodeId, label);
         surface.decorationLayer().getChildren().add(label);
     }
@@ -353,6 +337,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
+    }
+
+    @Override
     public StructureVisualization<GraphViewState> structureVisualization() {
         return STRUCTURE_VISUALIZATION;
     }
@@ -368,6 +357,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     @Override
     public void onVisualizationReset() {
+        super.onVisualizationReset();
         edgeViews.values().forEach(EdgeView::dispose);
         nodeViews.clear();
         edgeViews.clear();
@@ -375,34 +365,171 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
-        lastSubmittedState = null;
         selectedNodeId = null;
         selectedEdgeId = null;
         pendingSelectedNodeId = null;
         pendingSelectedEdgeId = null;
+        lastPatch = null;
         surface.reset();
         surface.markViewportPristine();
     }
 
     @Override
     public void dispose() {
+        if (isDisposed()) return;
+        super.dispose();
         edgeViews.values().forEach(EdgeView::dispose);
         surface.prefWidthProperty().unbind();
         surface.prefHeightProperty().unbind();
-        super.dispose();
     }
 
-    private static boolean requiresStructuralLayout(GraphViewState previous, GraphViewState current) {
-        if (previous == null || previous.directed() != current.directed() || !previous.nodes().equals(current.nodes())) return true;
-        if (previous.edges().size() != current.edges().size()) return true;
-        for (int index = 0; index < previous.edges().size(); index++) {
-            GraphViewState.Edge left = previous.edges().get(index);
-            GraphViewState.Edge right = current.edges().get(index);
-            if (left.id() != right.id() || left.fromId() != right.fromId() || left.toId() != right.toId()) return true;
+
+
+    private final class GraphAnimationSceneAdapter implements AnimationSceneAdapter {
+        private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
+        private final Map<String, List<Point2D>> capturedRoutes = new LinkedHashMap<>();
+        private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
+        private final Map<Long, Label> exitingNodeLabels = new LinkedHashMap<>();
+        private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
+        private LayoutPatch targetPatch;
+
+        void prepare(AnimationPlan plan, GraphViewState state, LayoutPatch patch) {
+            capturedCenters.clear();
+            capturedRoutes.clear();
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                capturedCenters.put(GraphAnimationIds.node(entry.getKey()), entry.getValue().visualCenter());
+            }
+            for (Map.Entry<Long, EdgeView> entry : edgeViews.entrySet()) {
+                capturedRoutes.put(GraphAnimationIds.edge(entry.getKey()), entry.getValue().routeSnapshot());
+            }
+            targetPatch = patch;
+
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.EdgeRemove remove) detachEdge(remove.targetId());
+            }
+            for (var timed : plan.steps()) {
+                if (timed.step() instanceof AnimationStep.NodeExit exit) detachNode(exit.targetId());
+            }
         }
-        return false;
-    }
 
+        private void detachNode(String logicalId) {
+            Long id = nodeViews.keySet().stream()
+                    .filter(candidate -> GraphAnimationIds.node(candidate).equals(logicalId))
+                    .findFirst().orElse(null);
+            if (id == null) return;
+            NodeView view = nodeViews.remove(id);
+            if (view != null) exitingNodes.put(id, view);
+            Label label = nodeIdLabels.remove(id);
+            if (label != null) exitingNodeLabels.put(id, label);
+            if (java.util.Objects.equals(selectedNodeId, id)) selectedNodeId = null;
+        }
+
+        private void detachEdge(String logicalId) {
+            Long id = edgeViews.keySet().stream()
+                    .filter(candidate -> GraphAnimationIds.edge(candidate).equals(logicalId)
+                            || GraphAnimationIds.rewiredExitEdge(candidate).equals(logicalId))
+                    .findFirst().orElse(null);
+            if (id == null) return;
+            EdgeView edge = edgeViews.remove(id);
+            if (edge != null) exitingEdges.put(logicalId, edge);
+            if (java.util.Objects.equals(selectedEdgeId, id)) selectedEdgeId = null;
+        }
+
+        @Override
+        public Optional<NodeTarget> node(String logicalId) {
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                if (GraphAnimationIds.node(entry.getKey()).equals(logicalId)) {
+                    Label label = nodeIdLabels.get(entry.getKey());
+                    return Optional.of(new NodeTarget(logicalId, entry.getValue(),
+                            label == null ? List.of() : List.of(label)));
+                }
+            }
+            for (Map.Entry<Long, NodeView> entry : exitingNodes.entrySet()) {
+                if (GraphAnimationIds.node(entry.getKey()).equals(logicalId)) {
+                    Label label = exitingNodeLabels.get(entry.getKey());
+                    return Optional.of(new NodeTarget(logicalId, entry.getValue(),
+                            label == null ? List.of() : List.of(label)));
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<EdgeTarget> edge(String logicalId) {
+            EdgeView active = edgeViews.entrySet().stream()
+                    .filter(entry -> GraphAnimationIds.edge(entry.getKey()).equals(logicalId))
+                    .map(Map.Entry::getValue).findFirst().orElse(null);
+            EdgeView edge = active == null ? exitingEdges.get(logicalId) : active;
+            return edge == null ? Optional.empty() : Optional.of(new EdgeTarget(logicalId, edge));
+        }
+
+        @Override
+        public Optional<Point2D> capturedNodeCenter(String logicalId) {
+            return Optional.ofNullable(capturedCenters.get(logicalId));
+        }
+
+        @Override
+        public Optional<List<Point2D>> capturedEdgeRoute(String logicalId) {
+            return Optional.ofNullable(capturedRoutes.get(logicalId));
+        }
+
+        @Override
+        public Collection<NodeTarget> activeNodes() {
+            List<NodeTarget> result = new ArrayList<>(nodeViews.size());
+            for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
+                Label label = nodeIdLabels.get(entry.getKey());
+                result.add(new NodeTarget(GraphAnimationIds.node(entry.getKey()), entry.getValue(),
+                        label == null ? List.of() : List.of(label)));
+            }
+            return result;
+        }
+
+        @Override
+        public Collection<EdgeTarget> activeEdges() {
+            return edgeViews.entrySet().stream()
+                    .map(entry -> new EdgeTarget(GraphAnimationIds.edge(entry.getKey()), entry.getValue()))
+                    .toList();
+        }
+
+        @Override
+        public void discardExitedVisuals() {
+            exitingEdges.values().forEach(edge -> {
+                surface.edgeLayer().getChildren().remove(edge);
+                edge.dispose();
+            });
+            exitingEdges.clear();
+            exitingNodeLabels.values().forEach(label -> {
+                label.layoutXProperty().unbind();
+                label.layoutYProperty().unbind();
+                surface.decorationLayer().getChildren().remove(label);
+            });
+            exitingNodeLabels.clear();
+            exitingNodes.values().forEach(node -> surface.nodeLayer().getChildren().remove(node));
+            exitingNodes.clear();
+        }
+
+        @Override
+        public void stabilize(AnimationPlan plan) {
+            for (NodeTarget target : activeNodes()) {
+                Node node = target.node();
+                node.setTranslateX(0.0d);
+                node.setTranslateY(0.0d);
+                node.setOpacity(1.0d);
+                node.setScaleX(1.0d);
+                node.setScaleY(1.0d);
+                target.companions().forEach(companion -> companion.setOpacity(1.0d));
+            }
+            for (EdgeTarget target : activeEdges()) {
+                target.edge().setRevealProgress(1.0d);
+                target.edge().setOpacity(1.0d);
+            }
+            discardExitedVisuals();
+            if (targetPatch != null) applyRoutes(targetPatch);
+            resolveEdgeLabelCollisions();
+            capturedCenters.clear();
+            capturedRoutes.clear();
+        }
+    }
 
     private static boolean isObservedNode(GraphViewState.Observation observation, long nodeId) {
         return switch (observation.type()) {
