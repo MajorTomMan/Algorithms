@@ -1,24 +1,21 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.visualization.render.runtime.RenderContext;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.string.StringStructure;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
+import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.StringVisualizer;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.runtime.string.StringEventReducer;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
-import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
+import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -27,556 +24,548 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
+
 public final class StringController extends BaseModuleController<StringViewState>
-    implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>,
-               SnapshotAlgorithmInputSupport<StringSnapshot> {
-  private final List<String> algorithmIds =
-      AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
-  private final StringStructure source;
-  private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
-  private boolean structureSelectionEnabled = true;
-  private int algorithmSelectedIndex = -1;
-  private Consumer<IndexSelection> selectionListener = ignored -> {};
-  private Consumer<String> algorithmSelectionListener = ignored -> {};
+        implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
 
-  @FXML private Label structureLabel;
-  @FXML private ComboBox<String> structureSelector;
-  @FXML private Label algorithmLabel;
-  @FXML private ComboBox<String> algorithmSelector;
-  @FXML private Label editSectionLabel;
-  @FXML private Label searchSectionLabel;
-  @FXML private TextField valueField;
-  @FXML private TextField indexField;
-  @FXML private TextField lengthField;
-  @FXML private TextField characterField;
-  @FXML private Button replaceBtn;
-  @FXML private Button insertBtn;
-  @FXML private Button removeBtn;
-  @FXML private Button updateBtn;
-  @FXML private Button runBtn;
+    private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
+    private final StringStructure source;
+    private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
+    private boolean structureSelectionEnabled = true;
+    private int algorithmSelectedIndex = -1;
+    private Consumer<IndexSelection> selectionListener = ignored -> { };
+    private Consumer<String> algorithmSelectionListener = ignored -> { };
 
-  public StringController() {
-    super(new StringVisualizer(), "/fxml/StringControls.fxml");
-    source = structure("string", com.majortom.algorithms.structure.string.String.class);
-    source.replace(0, source.length(), "ABABDABACDABABCABAB");
-    renderSource();
-  }
+    @FXML private Label structureLabel;
+    @FXML private ComboBox<String> structureSelector;
+    @FXML private Label algorithmLabel;
+    @FXML private ComboBox<String> algorithmSelector;
+    @FXML private Label editSectionLabel;
+    @FXML private Label searchSectionLabel;
+    @FXML private TextField valueField;
+    @FXML private TextField indexField;
+    @FXML private TextField lengthField;
+    @FXML private TextField characterField;
+    @FXML private Button replaceBtn;
+    @FXML private Button insertBtn;
+    @FXML private Button removeBtn;
+    @FXML private Button updateBtn;
+    @FXML private Button runBtn;
 
-  @Override
-  public void initialize(URL location, ResourceBundle resources) {
-    super.initialize(location, resources);
-    stringVisualizer().setOnIndexSelected(this::handleStringSelection);
-    bindSelectors();
-    valueField.setText(source.value());
-    renderSource();
-  }
+    public StringController(RenderContext renderContext) {
+        super(new StringVisualizer(renderContext.renderPort()), "/fxml/StringControls.fxml", renderContext.surfaceHost());
+        source = structure("string", com.majortom.algorithms.structure.string.String.class);
+        source.replace(0, source.length(), "ABABDABACDABABCABAB");
+        renderSource();
+    }
 
-  @FXML
-  private void handleReplace() {
-    clearStringSelection();
-    String value = valueField.getText();
-    if (executeStructureOperation("replace", () -> {
-          source.replace(0, source.length(), value);
-          return null;
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        super.initialize(location, resources);
+        stringVisualizer().setOnIndexSelected(this::handleStringSelection);
+        bindSelectors();
+        valueField.setText(source.value());
+        renderSource();
+    }
+
+    @FXML
+    private void handleReplace() {
+        clearStringSelection();
+        String value = valueField.getText();
+        if (executeStructureOperation("replace", () -> {
+            source.replace(0, source.length(), value);
+            return null;
         })) {
-      renderLatestStructureMutation();
-      if (source.length() > 0) {
-        stringVisualizer().selectIndex(0);
-      } else {
-        indexField.clear();
-        characterField.clear();
-        lengthField.clear();
-      }
+            renderLatestStructureMutation();
+            if (source.length() > 0) {
+                stringVisualizer().selectIndex(0);
+            } else {
+                indexField.clear();
+                characterField.clear();
+                lengthField.clear();
+            }
+        }
     }
-  }
 
-  @Override
-  protected boolean supportsDataTools() {
-    return true;
-  }
-
-  @Override
-  protected String bulkInputPromptKey() {
-    return "prompt.data.bulk.string";
-  }
-
-  @Override
-  protected void applyBulkData(String input) {
-    replaceFromDataTool(input == null ? "" : input, "message.data.bulk_applied");
-  }
-
-  @Override
-  protected void randomizeData() {
-    java.util.Random random = new java.util.Random();
-    StringBuilder builder = new StringBuilder(20);
-    for (int index = 0; index < 20; index++) {
-      builder.append((char) ('A' + random.nextInt(26)));
+    @Override
+    protected boolean supportsDataTools() {
+        return true;
     }
-    replaceFromDataTool(builder.toString(), "message.data.randomized");
-  }
 
-  private void replaceFromDataTool(String value, String messageKey) {
-    clearStringSelection();
-    if (!executeStructureOperation("bulk-replace", () -> {
-          source.replace(0, source.length(), value);
-          return null;
+    @Override
+    protected String bulkInputPromptKey() {
+        return "prompt.data.bulk.string";
+    }
+
+    @Override
+    protected void applyBulkData(String input) {
+        replaceFromDataTool(input == null ? "" : input, "message.data.bulk_applied");
+    }
+
+    @Override
+    protected void randomizeData() {
+        java.util.Random random = new java.util.Random();
+        StringBuilder builder = new StringBuilder(20);
+        for (int index = 0; index < 20; index++) {
+            builder.append((char) ('A' + random.nextInt(26)));
+        }
+        replaceFromDataTool(builder.toString(), "message.data.randomized");
+    }
+
+    private void replaceFromDataTool(String value, String messageKey) {
+        clearStringSelection();
+        if (!executeStructureOperation("bulk-replace", () -> {
+            source.replace(0, source.length(), value);
+            return null;
         })) {
-      return;
+            return;
+        }
+        if (valueField != null) {
+            valueField.setText(value);
+        }
+        renderLatestStructureMutation();
+        if (source.length() > 0) {
+            stringVisualizer().selectIndex(0);
+        } else {
+            indexField.clear();
+            characterField.clear();
+            lengthField.clear();
+        }
+        logI18n(messageKey, value.length());
     }
-    if (valueField != null) {
-      valueField.setText(value);
-    }
-    renderLatestStructureMutation();
-    if (source.length() > 0) {
-      stringVisualizer().selectIndex(0);
-    } else {
-      indexField.clear();
-      characterField.clear();
-      lengthField.clear();
-    }
-    logI18n(messageKey, value.length());
-  }
 
-  @FXML
-  private void handleInsert() {
-    clearStringSelection();
-    Integer index = parseIndex(indexField, true);
-    if (index == null)
-      return;
-    String value = valueField.getText();
-    if (value.isEmpty())
-      return;
-    if (executeStructureOperation("insert", () -> {
-          source.insert(index, value);
-          return null;
+    @FXML
+    private void handleInsert() {
+        clearStringSelection();
+        Integer index = parseIndex(indexField, true);
+        if (index == null) return;
+        String value = valueField.getText();
+        if (value.isEmpty()) return;
+        if (executeStructureOperation("insert", () -> {
+            source.insert(index, value);
+            return null;
         })) {
-      renderLatestStructureMutation();
-      stringVisualizer().selectIndex(index);
+            renderLatestStructureMutation();
+            stringVisualizer().selectIndex(index);
+        }
     }
-  }
 
-  @FXML
-  private void handleRemove() {
-    Integer index = parseIndex(indexField, false);
-    Integer length = parsePositive(lengthField);
-    if (index == null || length == null || index + length > source.length()) {
-      logI18n("message.string.invalid_range");
-      return;
-    }
-    if (executeStructureOperation("remove", () -> {
-          source.remove(index, length);
-          return null;
+    @FXML
+    private void handleRemove() {
+        Integer index = parseIndex(indexField, false);
+        Integer length = parsePositive(lengthField);
+        if (index == null || length == null || index + length > source.length()) {
+            logI18n("message.string.invalid_range");
+            return;
+        }
+        if (executeStructureOperation("remove", () -> {
+            source.remove(index, length);
+            return null;
         })) {
-      renderLatestStructureMutation();
-      selectStringAfterRemoval(index);
+            renderLatestStructureMutation();
+            selectStringAfterRemoval(index);
+        }
     }
-  }
 
-  private void selectStringAfterRemoval(int removedIndex) {
-    if (source.length() == 0) {
-      clearStringSelection();
-      indexField.clear();
-      characterField.clear();
-      lengthField.clear();
-      return;
+    private void selectStringAfterRemoval(int removedIndex) {
+        if (source.length() == 0) {
+            clearStringSelection();
+            indexField.clear();
+            characterField.clear();
+            lengthField.clear();
+            return;
+        }
+        int nextIndex = removedIndex;
+        if (nextIndex >= source.length()) {
+            nextIndex = source.length() - 1;
+        }
+        stringVisualizer().selectIndex(nextIndex);
     }
-    int nextIndex = removedIndex;
-    if (nextIndex >= source.length()) {
-      nextIndex = source.length() - 1;
-    }
-    stringVisualizer().selectIndex(nextIndex);
-  }
 
-  @FXML
-  private void handleUpdate() {
-    clearStringSelection();
-    Integer index = parseIndex(indexField, false);
-    String value = characterField.getText();
-    if (index == null || value.length() != 1) {
-      logI18n("message.string.invalid_character");
-      return;
-    }
-    char character = value.charAt(0);
-    if (executeStructureOperation("update", () -> {
-          source.set(index, character);
-          return null;
+    @FXML
+    private void handleUpdate() {
+        clearStringSelection();
+        Integer index = parseIndex(indexField, false);
+        String value = characterField.getText();
+        if (index == null || value.length() != 1) {
+            logI18n("message.string.invalid_character");
+            return;
+        }
+        char character = value.charAt(0);
+        if (executeStructureOperation("update", () -> {
+            source.set(index, character);
+            return null;
         })) {
-      renderLatestStructureMutation();
-      stringVisualizer().selectIndex(index);
+            renderLatestStructureMutation();
+            stringVisualizer().selectIndex(index);
+        }
     }
-  }
 
-  @Override
-  @FXML
-  public void handleAlgorithmStart() {
-    if (isRunning()) {
-      return;
+    @Override
+    @FXML
+    public void handleAlgorithmStart() {
+        if (isRunning()) {
+            return;
+        }
+        String algorithmId = selectedAlgorithmId();
+        if (algorithmId == null) {
+            return;
+        }
+        StructureSnapshot<StringSnapshot> inputSnapshot = algorithmInputSnapshot == null
+                ? captureStructureSnapshot()
+                : algorithmInputSnapshot;
+        String target = inputSnapshot.state().value();
+        StringStructure input = new com.majortom.algorithms.structure.string.String(target);
+        var descriptor = algorithm(algorithmId, java.lang.String.class);
+        stringVisualizer().clearAlgorithmPattern();
+        startAlgorithm(
+                algorithmId,
+                target,
+                () -> descriptor.invoke(input),
+                () -> new StringEventReducer(target));
     }
-    String algorithmId = selectedAlgorithmId();
-    if (algorithmId == null) {
-      return;
+
+    @Override
+    public boolean selectAlgorithm(String algorithmId) {
+        int index = algorithmIds.indexOf(algorithmId);
+        if (index < 0) {
+            return false;
+        }
+        if (algorithmSelector != null) {
+            algorithmSelector.getSelectionModel().select(index);
+        }
+        notifyAlgorithmSelection();
+        return true;
     }
-    StructureSnapshot<StringSnapshot> inputSnapshot =
-        algorithmInputSnapshot == null ? captureStructureSnapshot() : algorithmInputSnapshot;
-    String target = inputSnapshot.state().value();
-    StringStructure input = new com.majortom.algorithms.structure.string.String(target);
-    var descriptor = algorithm(algorithmId, java.lang.String.class);
-    stringVisualizer().clearAlgorithmPattern();
-    startAlgorithm(
-        algorithmId, target, () -> descriptor.invoke(input), () -> new StringEventReducer(target));
-  }
 
-  @Override
-  public boolean selectAlgorithm(String algorithmId) {
-    int index = algorithmIds.indexOf(algorithmId);
-    if (index < 0) {
-      return false;
+    @Override
+    public List<String> algorithmIds() {
+        return algorithmIds;
     }
-    if (algorithmSelector != null) {
-      algorithmSelector.getSelectionModel().select(index);
+
+    @Override
+    public void setAlgorithmSelectionListener(Consumer<String> listener) {
+        if (listener == null) {
+            algorithmSelectionListener = ignored -> { };
+        } else {
+            algorithmSelectionListener = listener;
+        }
+        notifyAlgorithmSelection();
     }
-    notifyAlgorithmSelection();
-    return true;
-  }
 
-  @Override
-  public List<String> algorithmIds() {
-    return algorithmIds;
-  }
-
-  @Override
-  public void setAlgorithmSelectionListener(Consumer<String> listener) {
-    if (listener == null) {
-      algorithmSelectionListener = ignored -> {};
-    } else {
-      algorithmSelectionListener = listener;
+    @Override
+    public StructureSnapshot<StringSnapshot> captureStructureSnapshot() {
+        return StructureSnapshot.create(moduleId(), new StringSnapshot(source.value()));
     }
-    notifyAlgorithmSelection();
-  }
 
-  @Override
-  public StructureSnapshot<StringSnapshot> captureStructureSnapshot() {
-    return StructureSnapshot.create(moduleId(), new StringSnapshot(source.value()));
-  }
-
-  @Override
-  public void restoreStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
-    if (!moduleId().equals(snapshot.moduleId())) {
-      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+    @Override
+    public void restoreStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearStringSelection();
+        source.replace(0, source.length(), snapshot.state().value());
+        invalidateExecutionForStructureChange();
+        if (valueField != null) valueField.setText(source.value());
+        renderSource();
     }
-    clearStringSelection();
-    source.replace(0, source.length(), snapshot.state().value());
-    invalidateExecutionForStructureChange();
-    if (valueField != null)
-      valueField.setText(source.value());
-    renderSource();
-  }
 
-  @Override
-  public void useSnapshotAsAlgorithmInput(StructureSnapshot<StringSnapshot> snapshot) {
-    if (!moduleId().equals(snapshot.moduleId()))
-      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
-    algorithmInputSnapshot = snapshot;
-    invalidateExecutionForInputChange();
-  }
-
-  @Override
-  public void useCurrentStructureAsAlgorithmInput() {
-    algorithmInputSnapshot = null;
-    invalidateExecutionForInputChange();
-  }
-
-  @Override
-  public String algorithmInputSnapshotId() {
-    if (algorithmInputSnapshot == null) {
-      return null;
-    } else {
-      return algorithmInputSnapshot.id();
+    @Override
+    public void useSnapshotAsAlgorithmInput(StructureSnapshot<StringSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        algorithmInputSnapshot = snapshot;
+        invalidateExecutionForInputChange();
     }
-  }
 
-  @Override
-  protected boolean algorithmInputTracksCurrentStructure() {
-    return algorithmInputSnapshot == null;
-  }
-
-  @Override
-  protected void restoreAlgorithmState() {
-    if (latestViewState() != null) {
-      super.restoreAlgorithmState();
-      return;
+    @Override
+    public void useCurrentStructureAsAlgorithmInput() {
+        algorithmInputSnapshot = null;
+        invalidateExecutionForInputChange();
     }
-    String value;
-    if (algorithmInputSnapshot == null) {
-      value = source.value();
-    } else {
-      value = algorithmInputSnapshot.state().value();
+
+    @Override
+    public String algorithmInputSnapshotId() {
+        if (algorithmInputSnapshot == null) {
+            return null;
+        } else {
+            return algorithmInputSnapshot.id();
+        }
     }
-    renderViewState(StringViewState.source(value));
-  }
 
-  @Override
-  public void previewStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
-    if (!moduleId().equals(snapshot.moduleId())) {
-      throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+    @Override
+    protected boolean algorithmInputTracksCurrentStructure() {
+        return algorithmInputSnapshot == null;
     }
-    clearStringSelection();
-    renderPreviewState(StringViewState.source(snapshot.state().value()));
-  }
 
-  @Override
-  public String describeStructureSnapshot(StringSnapshot state) {
-    String value = state.value();
-    String preview;
-    if (value.length() <= 18) {
-      preview = value;
-    } else {
-      preview = value.substring(0, 18) + "…";
+
+    @Override
+    protected void restoreAlgorithmState() {
+        if (latestViewState() != null) {
+            super.restoreAlgorithmState();
+            return;
+        }
+        String value;
+        if (algorithmInputSnapshot == null) {
+            value = source.value();
+        } else {
+            value = algorithmInputSnapshot.state().value();
+        }
+        renderViewState(StringViewState.source(value));
     }
-    return I18N.text("snapshot.string.detail", value.length(), preview);
-  }
 
-  @Override
-  public String snapshotPrimaryCount(StringSnapshot state) {
-    return Integer.toString(state.value().length());
-  }
 
-  @Override
-  protected String formatStatsMessage() {
-    return String.format("%s | %s | %s", I18N.text("stats.size", source.length()),
-        formatMetric("stats.compare", stats.metric("comparisons")),
-        I18N.text("stats.frames", visualFrameCount()));
-  }
-
-  @Override
-  protected void onResetData() {
-    clearStringSelection();
-    source.replace(0, source.length(), "ABABDABACDABABCABAB");
-    if (valueField != null)
-      valueField.setText(source.value());
-    renderSource();
-  }
-
-  @Override
-  protected void setupI18n() {
-    if (structureLabel != null)
-      structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
-    if (algorithmLabel != null)
-      algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
-    if (editSectionLabel != null)
-      editSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.edit"));
-    if (searchSectionLabel != null)
-      searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.search"));
-    bindButton(replaceBtn, "action.string.replace");
-    bindButton(insertBtn, "action.string.insert");
-    bindButton(removeBtn, "action.string.remove");
-    bindButton(updateBtn, "action.string.update");
-    bindButton(runBtn, "action.string.run");
-    if (valueField != null)
-      valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.value"));
-    if (indexField != null)
-      indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.index"));
-    if (lengthField != null)
-      lengthField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.length"));
-    if (characterField != null)
-      characterField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.character"));
-  }
-
-  @Override
-  protected String moduleId() {
-    return "string";
-  }
-
-  @Override
-  public String selectedAlgorithmId() {
-    int index;
-    if (algorithmSelector == null) {
-      index = 0;
-    } else {
-      index = algorithmSelector.getSelectionModel().getSelectedIndex();
+    @Override
+    public void previewStructureSnapshot(StructureSnapshot<StringSnapshot> snapshot) {
+        if (!moduleId().equals(snapshot.moduleId())) {
+            throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
+        }
+        clearStringSelection();
+        renderPreviewState(StringViewState.source(snapshot.state().value()));
     }
-    if (index < 0) {
-      index = 0;
-    }
-    if (algorithmIds.isEmpty()) {
-      return null;
-    } else {
-      return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
-    }
-  }
 
-  private void bindSelectors() {
-    structureSelector.setItems(FXCollections.observableArrayList("string"));
-    localizeChoiceCells(structureSelector, StructureCatalog::name);
-    javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
-    for (String id : algorithmIds) {
-      algorithmLabels.add(AlgorithmCatalog.name(id));
+    @Override
+    public String describeStructureSnapshot(StringSnapshot state) {
+        String value = state.value();
+        String preview;
+        if (value.length() <= 18) {
+            preview = value;
+        } else {
+            preview = value.substring(0, 18) + "…";
+        }
+        return I18N.text("snapshot.string.detail", value.length(), preview);
     }
-    algorithmSelector.setItems(algorithmLabels);
-    algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-        (observable, previous, current) -> {
-          refreshAlgorithmControls();
-          notifyAlgorithmSelection();
+
+    @Override
+    public String snapshotPrimaryCount(StringSnapshot state) {
+        return Integer.toString(state.value().length());
+    }
+
+    @Override
+    protected String formatStatsMessage() {
+        return String.format("%s | %s | %s", I18N.text("stats.size", source.length()),
+                formatMetric("stats.compare", stats.metric("comparisons")),
+                I18N.text("stats.frames", visualFrameCount()));
+    }
+
+    @Override
+    protected void onResetData() {
+        clearStringSelection();
+        source.replace(0, source.length(), "ABABDABACDABABCABAB");
+        if (valueField != null) valueField.setText(source.value());
+        renderSource();
+    }
+
+    @Override
+    protected void setupI18n() {
+        if (structureLabel != null) structureLabel.textProperty().bind(I18N.createStringBinding("label.common.structure"));
+        if (algorithmLabel != null) algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
+        if (editSectionLabel != null) editSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.edit"));
+        if (searchSectionLabel != null) searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.search"));
+        bindButton(replaceBtn, "action.string.replace");
+        bindButton(insertBtn, "action.string.insert");
+        bindButton(removeBtn, "action.string.remove");
+        bindButton(updateBtn, "action.string.update");
+        bindButton(runBtn, "action.string.run");
+        if (valueField != null) valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.value"));
+        if (indexField != null) indexField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.index"));
+        if (lengthField != null) lengthField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.length"));
+        if (characterField != null) characterField.promptTextProperty().bind(I18N.createStringBinding("prompt.string.character"));
+    }
+
+    @Override
+    protected String moduleId() {
+        return "string";
+    }
+
+    @Override
+    public String selectedAlgorithmId() {
+        int index;
+        if (algorithmSelector == null) {
+            index = 0;
+        } else {
+            index = algorithmSelector.getSelectionModel().getSelectedIndex();
+        }
+        if (index < 0) {
+            index = 0;
+        }
+        if (algorithmIds.isEmpty()) {
+            return null;
+        } else {
+            return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
+        }
+    }
+
+    private void bindSelectors() {
+        structureSelector.setItems(FXCollections.observableArrayList("string"));
+        localizeChoiceCells(structureSelector, StructureCatalog::name);
+        javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
+        for (String id : algorithmIds) {
+            algorithmLabels.add(AlgorithmCatalog.name(id));
+        }
+        algorithmSelector.setItems(algorithmLabels);
+        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
+            refreshAlgorithmControls();
+            notifyAlgorithmSelection();
         });
-    FxDispatch.defer(() -> {
-      structureSelector.getSelectionModel().selectFirst();
-      algorithmSelector.getSelectionModel().selectFirst();
-      refreshAlgorithmControls();
-      notifyAlgorithmSelection();
-    });
-  }
-
-  private void notifyAlgorithmSelection() {
-    algorithmSelectionListener.accept(selectedAlgorithmId());
-  }
-
-  private void refreshAlgorithmControls() {
-    String algorithmId = selectedAlgorithmId();
-    if (searchSectionLabel != null) {
-      searchSectionLabel.textProperty().unbind();
-      searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.algorithm"));
+        FxDispatch.defer(() -> {
+            structureSelector.getSelectionModel().selectFirst();
+            algorithmSelector.getSelectionModel().selectFirst();
+            refreshAlgorithmControls();
+            notifyAlgorithmSelection();
+        });
     }
-  }
 
-  private void renderSource() {
-    renderStructureState(StringViewState.source(source.value()));
-    if (valueField != null && !valueField.isFocused())
-      valueField.setText(source.value());
-    refreshStatsDisplay();
-  }
-
-  /** Projects the latest factual String StructureEvent into Structure presentation state. */
-  private void renderLatestStructureMutation() {
-    renderStructureState(new StringViewState(
-        source.value(), latestStringMutation(), StringViewState.Observation.none(), 0, false));
-    if (valueField != null && !valueField.isFocused())
-      valueField.setText(source.value());
-    refreshStatsDisplay();
-  }
-
-  private StringViewState.Mutation latestStringMutation() {
-    List<com.majortom.algorithms.core.runtime.EventEnvelope> events = structureEvents();
-    for (int index = events.size() - 1; index >= 0; index--) {
-      Object event = events.get(index).event();
-      if (event instanceof StringStructureEvent.Inserted inserted) {
-        return StringViewState.Mutation.inserted(inserted.index(), inserted.value().length());
-      }
-      if (event instanceof StringStructureEvent.Removed removed) {
-        return StringViewState.Mutation.removed(removed.index(), removed.value().length());
-      }
-      if (event instanceof StringStructureEvent.Updated updated) {
-        return StringViewState.Mutation.updated(updated.index());
-      }
-      if (event instanceof StringStructureEvent.Replaced replaced) {
-        return StringViewState.Mutation.replaced(replaced.index(), replaced.value().length());
-      }
+    private void notifyAlgorithmSelection() {
+        algorithmSelectionListener.accept(selectedAlgorithmId());
     }
-    return StringViewState.Mutation.none();
-  }
 
-  public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
-    if (selectionListener == null) {
-      this.selectionListener = ignored -> {};
-    } else {
-      this.selectionListener = selectionListener;
+    private void refreshAlgorithmControls() {
+        String algorithmId = selectedAlgorithmId();
+        if (searchSectionLabel != null) {
+            searchSectionLabel.textProperty().unbind();
+            searchSectionLabel.textProperty().bind(I18N.createStringBinding("label.string.algorithm"));
+        }
     }
-  }
 
-  public void setStructureSelectionEnabled(boolean enabled) {
-    if (structureSelectionEnabled != enabled) {
-      clearStringSelection();
+    private void renderSource() {
+        renderStructureState(StringViewState.source(source.value()));
+        if (valueField != null && !valueField.isFocused()) valueField.setText(source.value());
+        refreshStatsDisplay();
     }
-    structureSelectionEnabled = enabled;
-    stringVisualizer().clearAlgorithmPattern();
-  }
 
-  private void handleStringSelection(int index) {
-    if (structureSelectionEnabled) {
-      handleStructureStringSelection(index);
-      return;
+    /** Projects the latest factual String StructureEvent into Structure presentation state. */
+    private void renderLatestStructureMutation() {
+        renderStructureState(new StringViewState(source.value(), latestStringMutation(),
+                StringViewState.Observation.none(), 0, false));
+        if (valueField != null && !valueField.isFocused()) valueField.setText(source.value());
+        refreshStatsDisplay();
     }
-    StringViewState state = latestViewState();
-    if (state == null || index < 0 || index >= state.value().length()) {
-      return;
+
+    private StringViewState.Mutation latestStringMutation() {
+        List<com.majortom.algorithms.core.runtime.EventEnvelope> events = structureEvents();
+        for (int index = events.size() - 1; index >= 0; index--) {
+            Object event = events.get(index).event();
+            if (event instanceof StringStructureEvent.Inserted inserted) {
+                return StringViewState.Mutation.inserted(inserted.index(), inserted.value().length());
+            }
+            if (event instanceof StringStructureEvent.Removed removed) {
+                return StringViewState.Mutation.removed(removed.index(), removed.value().length());
+            }
+            if (event instanceof StringStructureEvent.Updated updated) {
+                return StringViewState.Mutation.updated(updated.index());
+            }
+            if (event instanceof StringStructureEvent.Replaced replaced) {
+                return StringViewState.Mutation.replaced(replaced.index(), replaced.value().length());
+            }
+        }
+        return StringViewState.Mutation.none();
     }
-    algorithmSelectedIndex = index;
-    selectionListener.accept(
-        new IndexSelection(index, state.value().charAt(index), state.value().length()));
-  }
 
-  @Override
-  protected void onPresentationStateChanged(StringViewState state) {
-    if (structureSelectionEnabled || algorithmSelectedIndex < 0) {
-      return;
+    public void setSelectionListener(Consumer<IndexSelection> selectionListener) {
+        if (selectionListener == null) {
+            this.selectionListener = ignored -> { };
+        } else {
+            this.selectionListener = selectionListener;
+        }
     }
-    if (algorithmSelectedIndex >= state.value().length()) {
-      clearStringSelection();
-      return;
+
+    public void setStructureSelectionEnabled(boolean enabled) {
+        if (structureSelectionEnabled != enabled) {
+            clearStringSelection();
+        }
+        structureSelectionEnabled = enabled;
+        stringVisualizer().clearAlgorithmPattern();
     }
-    stringVisualizer().showSelection(algorithmSelectedIndex);
-    selectionListener.accept(new IndexSelection(algorithmSelectedIndex,
-        state.value().charAt(algorithmSelectedIndex), state.value().length()));
-  }
 
-  private void handleStructureStringSelection(int index) {
-    if (index < 0 || index >= source.length()) {
-      return;
+    private void handleStringSelection(int index) {
+        if (structureSelectionEnabled) {
+            handleStructureStringSelection(index);
+            return;
+        }
+        StringViewState state = latestViewState();
+        if (state == null || index < 0 || index >= state.value().length()) {
+            return;
+        }
+        algorithmSelectedIndex = index;
+        selectionListener.accept(new IndexSelection(index, state.value().charAt(index), state.value().length()));
     }
-    char value = source.charAt(index);
-    if (indexField != null)
-      indexField.setText(Integer.toString(index));
-    if (characterField != null)
-      characterField.setText(Character.toString(value));
-    if (lengthField != null)
-      lengthField.setText("1");
-    selectionListener.accept(new IndexSelection(index, value, source.length()));
-  }
 
-  private void clearStringSelection() {
-    algorithmSelectedIndex = -1;
-    stringVisualizer().clearSelection();
-    selectionListener.accept(null);
-  }
-
-  private StringVisualizer stringVisualizer() {
-    return (StringVisualizer) visualizer;
-  }
-
-  public record IndexSelection(int index, char value, int length) {}
-
-  private Integer parseIndex(TextField field, boolean allowEnd) {
-    try {
-      int index = Integer.parseInt(field.getText().trim());
-      int max;
-      if (allowEnd) {
-        max = source.length();
-      } else {
-        max = source.length() - 1;
-      }
-      if (index < 0 || index > max)
-        throw new NumberFormatException();
-      return index;
-    } catch (RuntimeException exception) {
-      logI18n("message.string.invalid_index");
-      return null;
+    @Override
+    protected void onPresentationStateChanged(StringViewState state) {
+        if (structureSelectionEnabled || algorithmSelectedIndex < 0) {
+            return;
+        }
+        if (algorithmSelectedIndex >= state.value().length()) {
+            clearStringSelection();
+            return;
+        }
+        stringVisualizer().showSelection(algorithmSelectedIndex);
+        selectionListener.accept(new IndexSelection(
+                algorithmSelectedIndex,
+                state.value().charAt(algorithmSelectedIndex),
+                state.value().length()));
     }
-  }
 
-  private Integer parsePositive(TextField field) {
-    try {
-      int value = Integer.parseInt(field.getText().trim());
-      if (value > 0) {
-        return value;
-      } else {
-        return null;
-      }
-    } catch (RuntimeException exception) {
-      return null;
+    private void handleStructureStringSelection(int index) {
+        if (index < 0 || index >= source.length()) {
+            return;
+        }
+        char value = source.charAt(index);
+        if (indexField != null) indexField.setText(Integer.toString(index));
+        if (characterField != null) characterField.setText(Character.toString(value));
+        if (lengthField != null) lengthField.setText("1");
+        selectionListener.accept(new IndexSelection(index, value, source.length()));
     }
-  }
 
-  private void bindButton(Button button, String key) {
-    if (button != null)
-      button.textProperty().bind(I18N.createStringBinding(key));
-  }
+    private void clearStringSelection() {
+        algorithmSelectedIndex = -1;
+        stringVisualizer().clearSelection();
+        selectionListener.accept(null);
+    }
+
+    private StringVisualizer stringVisualizer() {
+        return (StringVisualizer) visualizer;
+    }
+
+    public record IndexSelection(int index, char value, int length) {
+    }
+
+    private Integer parseIndex(TextField field, boolean allowEnd) {
+        try {
+            int index = Integer.parseInt(field.getText().trim());
+            int max;
+            if (allowEnd) {
+                max = source.length();
+            } else {
+                max = source.length() - 1;
+            }
+            if (index < 0 || index > max) throw new NumberFormatException();
+            return index;
+        } catch (RuntimeException exception) {
+            logI18n("message.string.invalid_index");
+            return null;
+        }
+    }
+
+    private Integer parsePositive(TextField field) {
+        try {
+            int value = Integer.parseInt(field.getText().trim());
+            if (value > 0) {
+                return value;
+            } else {
+                return null;
+            }
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private void bindButton(Button button, String key) {
+        if (button != null) button.textProperty().bind(I18N.createStringBinding(key));
+    }
 }
