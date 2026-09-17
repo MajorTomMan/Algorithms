@@ -1,7 +1,12 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinearStructureVisualization;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.animation.LinearAnimationSceneAdapter;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.animation.LinearStructureAnimationPlanner;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
@@ -34,6 +39,10 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
+    private final StructureAnimationRuntime<LinearStructureViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner("queue"));
+    private final LinearAnimationSceneAdapter animationScene =
+            new LinearAnimationSceneAdapter("queue", surface, items);
     private final Text frontLabel = new Text();
     private final Text rearLabel = new Text();
     private final Text dequeueLabel = new Text();
@@ -68,7 +77,12 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
     @Override
     public CompletionStage<Void> commitLayout(
             LinearStructureViewState state, LayoutPatch patch, RenderCommitContext context) {
-        if (context.modelChange()) applyModelIdentity(state.mutation());
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch);
+        if (context.modelChange()) {
+            applyModelIdentity(state.mutation());
+        }
         reconcileItems(state);
         applyPendingSelection(state.values().size());
         applyPresentation(state);
@@ -83,6 +97,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         }
         lastGeometry = Map.copyOf(patch.elements());
         positionLabels(lastGeometry);
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -100,8 +115,10 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (mutation == null || mutation.type() != LinearStructureViewState.Type.DEQUEUE || items.isEmpty()) {
             return;
         }
-        NodeView removed = items.remove(0);
-        if (removed != null) surface.nodeLayer().getChildren().remove(removed);
+        if (!animationScene.exitDetached(0)) {
+            NodeView removed = items.remove(0);
+            if (removed != null) surface.nodeLayer().getChildren().remove(removed);
+        }
         Map<Integer, NodeView> shifted = new LinkedHashMap<>();
         items.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -233,6 +250,11 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (pendingSelectedIndex < 0) return;
         if (pendingSelectedIndex < size) selectedIndex = pendingSelectedIndex;
         pendingSelectedIndex = -1;
+    }
+
+    @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
     }
 
     @Override

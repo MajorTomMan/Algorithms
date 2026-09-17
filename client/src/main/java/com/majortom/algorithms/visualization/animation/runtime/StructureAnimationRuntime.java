@@ -73,6 +73,11 @@ public final class StructureAnimationRuntime<S> implements AnimationControl {
   }
 
   @Override
+  public void step() {
+    player.step();
+  }
+
+  @Override
   public void finishImmediately() {
     player.finishImmediately();
   }

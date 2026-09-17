@@ -343,10 +343,12 @@ public abstract class BaseController<S> implements Initializable {
         }
         if (replayController.isPlaying()) {
             replayController.pause();
+            if (visualizer != null) visualizer.pauseAnimations();
             paused.set(true);
             refreshStatsDisplay();
             return;
         }
+        if (visualizer != null) visualizer.resumeAnimations();
         if (replayController.currentIndex() + 1 >= replayController.frameCount()) {
             replayController.restart();
             if (replayController.stepForward()) {
@@ -364,12 +366,15 @@ public abstract class BaseController<S> implements Initializable {
             if (currentSession == null || !paused.get()) {
                 return false;
             }
+            if (visualizer != null) visualizer.stepAnimations();
             currentSession.stepExecution();
             return true;
         }
         if (!hasExecutionData()) {
             return false;
         }
+        boolean canAdvance = replayController.currentIndex() + 1 < replayController.frameCount();
+        if (canAdvance && visualizer != null) visualizer.stepAnimations();
         boolean advanced = replayController.stepForward();
         paused.set(true);
         if (advanced) {
@@ -384,6 +389,8 @@ public abstract class BaseController<S> implements Initializable {
         if (!hasExecutionData() || running.get()) {
             return false;
         }
+        boolean canRewind = replayController.currentIndex() > 0;
+        if (canRewind && visualizer != null) visualizer.stepAnimations();
         boolean rewound = replayController.stepBackward();
         paused.set(true);
         if (rewound) {
@@ -399,7 +406,10 @@ public abstract class BaseController<S> implements Initializable {
             return false;
         }
         stopReplay();
+        beginScrubbing();
+        long generation = scrubGeneration;
         boolean moved = seekReplayFrame(0);
+        releaseScrubbingAfterQueuedRender(generation);
         paused.set(true);
         if (moved) {
             syncTimelineSlider(0, replayController.frameCount());
@@ -414,8 +424,11 @@ public abstract class BaseController<S> implements Initializable {
             return false;
         }
         stopReplay();
+        beginScrubbing();
+        long generation = scrubGeneration;
         int last = Math.max(0, replayController.frameCount() - 1);
         boolean moved = seekReplayFrame(last);
+        releaseScrubbingAfterQueuedRender(generation);
         paused.set(true);
         if (moved) {
             syncTimelineSlider(last, replayController.frameCount());

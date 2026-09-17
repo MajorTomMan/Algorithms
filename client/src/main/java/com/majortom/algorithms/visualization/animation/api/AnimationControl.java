@@ -8,6 +8,7 @@ public interface AnimationControl {
     default void setScrubbing(boolean scrubbing) {}
     default void pause() {}
     default void resume() {}
+    default void step() {}
     default void finishImmediately() {}
     default void reset() {}
     default void dispose() {}

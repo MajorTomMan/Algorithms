@@ -1,7 +1,12 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.visualization.BaseVisualizer;
+import com.majortom.algorithms.visualization.animation.api.AnimationControl;
+import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
+import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinearStructureVisualization;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.animation.LinearAnimationSceneAdapter;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.animation.LinearStructureAnimationPlanner;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
@@ -34,6 +39,10 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     private final VisualizationSurface surface = new VisualizationSurface();
     private final Map<Integer, NodeView> items = new LinkedHashMap<>();
+    private final StructureAnimationRuntime<LinearStructureViewState> animationRuntime =
+            new StructureAnimationRuntime<>(new LinearStructureAnimationPlanner("stack"));
+    private final LinearAnimationSceneAdapter animationScene =
+            new LinearAnimationSceneAdapter("stack", surface, items);
     private final Text topLabel = new Text();
     private int selectedIndex = -1;
     private int pendingSelectedIndex = -1;
@@ -58,6 +67,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     @Override
     public CompletionStage<Void> commitLayout(
             LinearStructureViewState state, LayoutPatch patch, RenderCommitContext context) {
+        boolean animate = context.modelChange() && !context.initialFrame();
+        AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
+        animationScene.prepare(plan, state, patch);
         if (context.modelChange()) {
             applyModelIdentity(state.mutation());
         }
@@ -77,6 +89,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (top == null) topLabel.relocate(48.0d, 40.0d);
         else topLabel.relocate(
                 Math.max(2.0d, top.x() - 52.0d), top.y() + top.height() / 2.0d - 8.0d);
+        animationRuntime.play(plan, animationScene);
         return CompletableFuture.completedFuture(null);
     }
 
@@ -100,9 +113,11 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
             shifted.entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(entry -> items.put(entry.getKey(), entry.getValue()));
-        } else if (mutation.type() == LinearStructureViewState.Type.POP && !items.isEmpty()) {
-            NodeView removed = items.remove(0);
-            if (removed != null) surface.nodeLayer().getChildren().remove(removed);
+        } else if (mutation.type() == LinearStructureViewState.Type.POP) {
+            if (!animationScene.exitDetached(0)) {
+                NodeView removed = items.remove(0);
+                if (removed != null) surface.nodeLayer().getChildren().remove(removed);
+            }
             Map<Integer, NodeView> shifted = new LinkedHashMap<>();
             items.entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
@@ -183,6 +198,11 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (pendingSelectedIndex < 0) return;
         if (pendingSelectedIndex < size) selectedIndex = pendingSelectedIndex;
         pendingSelectedIndex = -1;
+    }
+
+    @Override
+    protected AnimationControl animationControl() {
+        return animationRuntime;
     }
 
     @Override

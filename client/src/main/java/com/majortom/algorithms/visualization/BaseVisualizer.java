@@ -26,6 +26,7 @@ public abstract class BaseVisualizer<S> extends StackPane implements FxStructure
     public final void setScrubbing(boolean scrubbing) { animationControl().setScrubbing(scrubbing); }
     public final void pauseAnimations() { animationControl().pause(); }
     public final void resumeAnimations() { animationControl().resume(); }
+    public final void stepAnimations() { animationControl().step(); }
     public void setViewportObstructionInsets(javafx.geometry.Insets insets) {}
     public void onVisualizationReset() { animationControl().reset(); }
 

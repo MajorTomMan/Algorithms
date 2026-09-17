@@ -32,6 +32,8 @@ public final class FxAnimationPlayer implements AnimationControl {
     private AnimationPlan currentPlan = AnimationPlan.empty();
     private double speed = 1.0d;
     private boolean scrubbing;
+    private boolean paused;
+    private boolean stepRequested;
     private boolean disposed;
 
     /**
@@ -143,7 +145,10 @@ public final class FxAnimationPlayer implements AnimationControl {
             if (finishedScene != null) finishedScene.stabilize(finishedPlan);
         });
         timeline = next;
+        boolean playOneTransition = stepRequested;
+        stepRequested = false;
         next.play();
+        if (paused && !playOneTransition) next.pause();
     }
 
     private void animateNodeMove(Timeline timeline, TimedAnimationStep timed, AnimationSceneAdapter.NodeTarget target) {
@@ -316,24 +321,43 @@ public final class FxAnimationPlayer implements AnimationControl {
 
     @Override
     public void pause() {
+        paused = true;
         if (timeline != null) timeline.pause();
     }
 
     @Override
     public void resume() {
+        paused = false;
+        stepRequested = false;
         if (timeline != null) timeline.play();
+    }
+
+    /** Plays exactly one current/next transition while keeping global playback paused. */
+    @Override
+    public void step() {
+        if (disposed) return;
+        paused = true;
+        if (timeline != null) {
+            stepRequested = false;
+            timeline.play();
+        } else {
+            stepRequested = true;
+        }
     }
 
     @Override
     public void reset() {
         finishImmediately();
         scrubbing = false;
+        paused = false;
+        stepRequested = false;
     }
 
     @Override
     public void dispose() {
         if (disposed) return;
         disposed = true;
+        stepRequested = false;
         finishImmediately();
     }
 
@@ -344,6 +368,7 @@ public final class FxAnimationPlayer implements AnimationControl {
 
     @Override
     public void finishImmediately() {
+        stepRequested = false;
         if (timeline != null) {
             timeline.stop();
             timeline = null;
