@@ -37,7 +37,7 @@ public class Snake {
   }
 
   private void checkSelfCollision() {
-    ListNode<Point> head = snake.head();
+    ListNode<Point> head = snake.getHead();
     ListNode<Point> body = head.getNext();
     while (body != null) {
       if (head.getValue().x == body.getValue().x && head.getValue().y == body.getValue().y) {
@@ -48,7 +48,7 @@ public class Snake {
   }
 
   public Point getHead() {
-    return snake.head().getValue();
+    return snake.getHead().getValue();
   }
 
   public int length() {
@@ -60,7 +60,7 @@ public class Snake {
   }
 
   public boolean contains(int x, int y) {
-    ListNode<Point> node = snake.head();
+    ListNode<Point> node = snake.getHead();
     while (node != null) {
       if (node.getValue().x == x && node.getValue().y == y) {
         return true;
@@ -71,7 +71,7 @@ public class Snake {
   }
 
   public boolean contains(Point point) {
-    ListNode<Point> node = snake.head();
+    ListNode<Point> node = snake.getHead();
     while (node != null) {
       if (node.getValue().x == point.x && node.getValue().y == point.y) {
         return true;

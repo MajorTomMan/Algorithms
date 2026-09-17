@@ -21,6 +21,8 @@ public interface LinkedStructure<T> extends Iterable<T> {
   void insert(int index, T value);
   T remove(int index);
   T set(int index, T value);
-  ListNode<T> head();
-  ListNode<T> tail();
+  ListNode<T> getHead();
+  ListNode<T> getTail();
+  void setHead(ListNode<T> node);
+  void setTail(ListNode<T> node);
 }

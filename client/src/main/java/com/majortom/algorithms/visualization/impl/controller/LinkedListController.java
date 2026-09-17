@@ -325,7 +325,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private LinkedListViewState currentState() {
-        return LinkedListViewState.source(linkedList.head());
+        return LinkedListViewState.source(linkedList.getHead());
     }
 
     private List<Object> values() {
@@ -374,7 +374,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
                 : algorithmInputSnapshot.state().values();
         LinkedList<Object> input = new LinkedList<>();
         input.initialize(inputValues);
-        LinkedListViewState initialState = LinkedListViewState.source(input.head());
+        LinkedListViewState initialState = LinkedListViewState.source(input.getHead());
         var descriptor = AlgorithmCatalog.compatibleDescriptor(
                 LinkedStructure.class, runtimeValueType, algorithmId);
         startAlgorithm(algorithmId, inputValues, () -> {

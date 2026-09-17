@@ -108,15 +108,25 @@ public final class LinkedList<T>
   }
 
   @Override
-  public ListNode<T> head() {
+  public ListNode<T> getHead() {
     return head;
   }
 
   @Override
-  public ListNode<T> tail() {
+  public ListNode<T> getTail() {
     return tail;
   }
 
+
+  @Override
+  public void setHead(ListNode<T> node) {
+    this.head = node;
+  }
+
+  @Override
+  public void setTail(ListNode<T> node) {
+      this.tail = node;
+  }
   @Override
   public void push(T value) {
     insert(0, value);
