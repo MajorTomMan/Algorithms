@@ -6,7 +6,6 @@ import com.majortom.algorithms.visualization.CanvasVisualizer;
 import com.majortom.algorithms.visualization.common.VisualDensity;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
-import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
@@ -15,13 +14,11 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
-import com.majortom.algorithms.visualization.render.fx.RenderSurface;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
-import com.majortom.algorithms.visualization.render.viewport.CameraState;
-import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -37,7 +34,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /** Project-owned Canvas/Grid maze renderer hosted by the shared GestureFX visualization surface. */
-public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> implements RenderSurface<MazeViewState> {
+public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("MAZE");
     private static final double WORLD_CELL_SIZE = 32.0d;
     private static final String GRID_ID = "maze:grid";
@@ -373,15 +370,10 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> implem
         }
     }
 
-    @Override public void applyPrimaryContentBounds(BoundsSnapshot bounds) { surface.setPrimaryContentBounds(bounds); }
-    @Override public ViewportSnapshot viewportSnapshot() { return surface.viewportSnapshot(); }
-    @Override public CameraState cameraState() { return surface.cameraState(); }
-    @Override public void applyCameraState(CameraState cameraState) { surface.applyCameraState(cameraState); }
-    @Override public boolean userControlledCamera() { return surface.isUserViewportChanged(); }
-    @Override public void prepareInitialFrame() { surface.markViewportPristine(); }
-    @Override public void revealFrame() { surface.setWorldVisible(true); }
-    @Override public void setViewportListener(Consumer<ViewportSnapshot> listener) { surface.setViewportListener(listener); }
-    @Override public void setCameraCommandListener(Consumer<CameraPolicy> listener) { surface.setCameraCommandListener(listener); }
+    @Override
+    public FxSurfaceAdapter fxSurfaceAdapter() {
+        return surface;
+    }
 @Override
     public void setViewportObstructionInsets(Insets insets) {
         surface.setObstructionInsets(insets);

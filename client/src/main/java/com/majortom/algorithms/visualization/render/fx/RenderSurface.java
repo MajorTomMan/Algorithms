@@ -1,8 +1,17 @@
 package com.majortom.algorithms.visualization.render.fx;
 
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
+import java.util.Objects;
 
-/** FX surface with a stable RenderSession identity; lifecycle is owned by RenderSurfaceHost. */
-public interface RenderSurface<S> extends FxSurfaceAdapter<S> {
-    RenderSessionId sessionId();
+/** Immutable binding between one RenderSession, structure renderer and FX viewport adapter. */
+public record RenderSurface<S>(
+        RenderSessionId sessionId,
+        StructureVisualization<S> visualization,
+        FxSurfaceAdapter fxSurface) {
+    public RenderSurface {
+        Objects.requireNonNull(sessionId, "sessionId");
+        Objects.requireNonNull(visualization, "visualization");
+        Objects.requireNonNull(fxSurface, "fxSurface");
+    }
 }

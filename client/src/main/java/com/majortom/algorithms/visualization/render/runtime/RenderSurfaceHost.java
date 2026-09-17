@@ -33,13 +33,12 @@ public final class RenderSurfaceHost {
                 .thenCompose(ignored -> framework.fxExecutor().execute(dispose)));
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private CompletionStage<Void> register(RenderSurface<?> surface) {
-        return framework.registerSurface(surface.sessionId(), (RenderSurface) surface);
+        return framework.registerSurface(surface);
     }
 
     private CompletionStage<Void> unregister(RenderSurface<?> surface) {
-        return framework.unregisterSurface(surface.sessionId(), surface);
+        return framework.unregisterSurface(surface);
     }
 
     private synchronized CompletionStage<Void> serialized(

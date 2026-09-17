@@ -98,6 +98,7 @@ public abstract class BaseController<S> implements Initializable {
     protected ExecutionStatistics stats = ExecutionStatistics.empty();
     protected final BaseVisualizer<S> visualizer;
     private final RenderSurfaceHost renderSurfaceHost;
+    private final RenderSurface<S> renderSurface;
 
     protected Label statsLabel;
     protected LogView logView;
@@ -184,6 +185,9 @@ public abstract class BaseController<S> implements Initializable {
             ExecutionExporter executionExporter) {
         this.visualizer = visualizer;
         this.renderSurfaceHost = Objects.requireNonNull(renderSurfaceHost, "renderSurfaceHost");
+        this.renderSurface = visualizer == null
+                ? null
+                : new RenderSurface<>(visualizer.sessionId(), visualizer, visualizer.fxSurfaceAdapter());
         this.execution = Objects.requireNonNull(execution, "execution");
         this.executionHistory = Objects.requireNonNull(executionHistory, "executionHistory");
         this.inputFingerprintService = Objects.requireNonNull(inputFingerprint, "inputFingerprint");
@@ -888,8 +892,8 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private RenderSurface<?> renderSurface() {
-        if (visualizer instanceof RenderSurface<?> surface) return surface;
-        throw new IllegalStateException("Visualizer is not a hosted RenderSurface: " + visualizer.getClass().getName());
+        if (renderSurface != null) return renderSurface;
+        throw new IllegalStateException("No hosted RenderSurface is available");
     }
 
     public final void dispose() {

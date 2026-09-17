@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.common;
 
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
 import com.majortom.algorithms.visualization.render.viewport.ViewportInsets;
@@ -38,7 +39,7 @@ import java.util.function.Consumer;
  * <p>This class owns presentation-space concerns only: layers, GestureFX viewport behavior,
  * safe-area-aware fit/center and the viewport toolbar. It never interprets Structure/Event data.</p>
  */
-public final class VisualizationSurface extends StackPane {
+public final class VisualizationSurface extends StackPane implements FxSurfaceAdapter {
     private static final double MIN_ZOOM = 0.10d;
     private static final double MAX_ZOOM = 8.00d;
     private static final double DEFAULT_ZOOM = 1.00d;
@@ -158,6 +159,7 @@ public final class VisualizationSurface extends StackPane {
         if (frameworkManagedCamera) notifyViewportChanged();
     }
 
+    @Override
     public void setViewportListener(Consumer<ViewportSnapshot> listener) {
         viewportListener = listener == null ? ignored -> { } : listener;
         if (frameworkManagedCamera) {
@@ -165,10 +167,12 @@ public final class VisualizationSurface extends StackPane {
         }
     }
 
+    @Override
     public void setCameraCommandListener(Consumer<CameraPolicy> listener) {
         cameraCommandListener = listener == null ? ignored -> { } : listener;
     }
 
+    @Override
     public ViewportSnapshot viewportSnapshot() {
         Insets insets = effectiveSafeInsets();
         double width = gesturePane.getViewportWidth() > 0.0d ? gesturePane.getViewportWidth() : getWidth();
@@ -179,11 +183,13 @@ public final class VisualizationSurface extends StackPane {
                 new ViewportInsets(insets.getTop(), insets.getRight(), insets.getBottom(), insets.getLeft()));
     }
 
+    @Override
     public CameraState cameraState() {
         var affine = gesturePane.getAffine();
         return new CameraState(zoom(), affine.getTx(), affine.getTy());
     }
 
+    @Override
     public void applyCameraState(CameraState state) {
         Objects.requireNonNull(state, "state");
         ViewportSnapshot viewport = viewportSnapshot();
@@ -200,6 +206,26 @@ public final class VisualizationSurface extends StackPane {
             gesturePane.zoomTo(clamp(state.scale()), targetAtViewportCentre);
             gesturePane.centreOn(targetAtViewportCentre);
         });
+    }
+
+    @Override
+    public void applyPrimaryContentBounds(BoundsSnapshot bounds) {
+        setPrimaryContentBounds(bounds);
+    }
+
+    @Override
+    public boolean userControlledCamera() {
+        return userViewportChanged;
+    }
+
+    @Override
+    public void prepareInitialFrame() {
+        markViewportPristine();
+    }
+
+    @Override
+    public void revealFrame() {
+        setWorldVisible(true);
     }
 
     public void setWorldVisible(boolean visible) {

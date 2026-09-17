@@ -6,7 +6,6 @@ import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.international.I18N;
-import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
@@ -15,14 +14,12 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
-import com.majortom.algorithms.visualization.render.fx.RenderSurface;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
-import com.majortom.algorithms.visualization.render.viewport.CameraState;
-import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
@@ -36,8 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 /** Logical LIFO visualization: a vertical stack whose first value is TOP. */
-public final class StackVisualizer extends BaseVisualizer<LinearStructureViewState>
-        implements RenderSurface<LinearStructureViewState> {
+public final class StackVisualizer extends BaseVisualizer<LinearStructureViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("STACK");
     private static final double ITEM_MIN_WIDTH = 108.0d;
     private static final double ITEM_HEIGHT = 48.0d;
@@ -252,18 +248,9 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
     }
 
     @Override
-    public void applyPrimaryContentBounds(BoundsSnapshot bounds) {
-        surface.setPrimaryContentBounds(bounds);
+    public FxSurfaceAdapter fxSurfaceAdapter() {
+        return surface;
     }
-
-    @Override public ViewportSnapshot viewportSnapshot() { return surface.viewportSnapshot(); }
-    @Override public CameraState cameraState() { return surface.cameraState(); }
-    @Override public void applyCameraState(CameraState cameraState) { surface.applyCameraState(cameraState); }
-    @Override public boolean userControlledCamera() { return surface.isUserViewportChanged(); }
-    @Override public void prepareInitialFrame() { surface.markViewportPristine(); }
-    @Override public void revealFrame() { surface.setWorldVisible(true); }
-    @Override public void setViewportListener(Consumer<ViewportSnapshot> listener) { surface.setViewportListener(listener); }
-    @Override public void setCameraCommandListener(Consumer<CameraPolicy> listener) { surface.setCameraCommandListener(listener); }
     @Override public void setViewportObstructionInsets(javafx.geometry.Insets insets) { surface.setObstructionInsets(insets); }
 @Override
     public void onVisualizationReset() {

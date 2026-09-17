@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.render.runtime;
 import com.majortom.algorithms.visualization.render.diagnostics.RenderTrace;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.fx.FxExecutor;
-import com.majortom.algorithms.visualization.render.fx.FxSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.fx.RenderSurfaceRegistry;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
 import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
 import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
@@ -21,7 +21,7 @@ public final class RenderRuntime {
             new RenderScheduler(),
             new LayoutExecutor(Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
             FX,
-            new FxSurfaceRegistry(),
+            new RenderSurfaceRegistry(),
             new LayoutEngineRegistry()
                     .register(new LinearLayoutEngine())
                     .register(new FixedLayoutEngine())

@@ -7,7 +7,6 @@ import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
-import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
@@ -18,13 +17,11 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
-import com.majortom.algorithms.visualization.render.fx.RenderSurface;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
-import com.majortom.algorithms.visualization.render.viewport.CameraState;
-import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import javafx.geometry.Point2D;
 
 import java.util.ArrayList;
@@ -40,7 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 /** General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX viewport. */
-public final class TreeVisualizer extends BaseVisualizer<TreeViewState> implements RenderSurface<TreeViewState> {
+public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private static final double MIN_RADIUS = 24.0d;
     private static final double LABEL_PADDING = 18.0d;
 
@@ -360,15 +357,10 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> implemen
         }
     }
 
-    @Override public void applyPrimaryContentBounds(BoundsSnapshot bounds) { surface.setPrimaryContentBounds(bounds); }
-    @Override public ViewportSnapshot viewportSnapshot() { return surface.viewportSnapshot(); }
-    @Override public CameraState cameraState() { return surface.cameraState(); }
-    @Override public void applyCameraState(CameraState cameraState) { surface.applyCameraState(cameraState); }
-    @Override public boolean userControlledCamera() { return surface.isUserViewportChanged(); }
-    @Override public void prepareInitialFrame() { surface.markViewportPristine(); }
-    @Override public void revealFrame() { surface.setWorldVisible(true); }
-    @Override public void setViewportListener(Consumer<ViewportSnapshot> listener) { surface.setViewportListener(listener); }
-    @Override public void setCameraCommandListener(Consumer<CameraPolicy> listener) { surface.setCameraCommandListener(listener); }
+    @Override
+    public FxSurfaceAdapter fxSurfaceAdapter() {
+        return surface;
+    }
 @Override
     public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
         surface.setObstructionInsets(insets);

@@ -1,9 +1,12 @@
 package com.majortom.algorithms.visualization;
 
+import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import javafx.scene.layout.StackPane;
 
 /** Common lifecycle base for structure visualizers. Rendering technology stays in subclasses. */
-public abstract class BaseVisualizer<S> extends StackPane {
+public abstract class BaseVisualizer<S> extends StackPane implements StructureVisualization<S> {
     private S lastData;
     private boolean moduleAttached;
     private boolean disposed;
@@ -13,6 +16,12 @@ public abstract class BaseVisualizer<S> extends StackPane {
         lastData = data;
         requestRender();
     }
+
+    /** Stable routing identity; lifecycle remains owned by RenderSurfaceHost. */
+    public abstract RenderSessionId sessionId();
+
+    /** The viewport/camera adapter hosted beside this structure visualization. */
+    public abstract FxSurfaceAdapter fxSurfaceAdapter();
 
     /** Every concrete structure visualizer submits immutable state through its injected RenderPort. */
     protected abstract void submitFrameworkRender(S data);

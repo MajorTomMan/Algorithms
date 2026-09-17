@@ -8,7 +8,6 @@ import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
-import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
@@ -19,13 +18,11 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
-import com.majortom.algorithms.visualization.render.fx.RenderSurface;
+import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
-import com.majortom.algorithms.visualization.render.viewport.CameraState;
-import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -43,7 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 /** Graph renderer using measured JavaFX nodes, transient ELK Layered routes and GestureFX viewport. */
-public final class GraphVisualizer extends BaseVisualizer<GraphViewState> implements RenderSurface<GraphViewState> {
+public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final double MIN_RADIUS = 28.0d;
     private static final double LABEL_PADDING = 24.0d;
     private static final double EDGE_LABEL_OFFSET = 20.0d;
@@ -395,15 +392,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> implem
         return VisualDensity.DENSE;
     }
 
-    @Override public void applyPrimaryContentBounds(BoundsSnapshot bounds) { surface.setPrimaryContentBounds(bounds); }
-    @Override public ViewportSnapshot viewportSnapshot() { return surface.viewportSnapshot(); }
-    @Override public CameraState cameraState() { return surface.cameraState(); }
-    @Override public void applyCameraState(CameraState cameraState) { surface.applyCameraState(cameraState); }
-    @Override public boolean userControlledCamera() { return surface.isUserViewportChanged(); }
-    @Override public void prepareInitialFrame() { surface.markViewportPristine(); }
-    @Override public void revealFrame() { surface.setWorldVisible(true); }
-    @Override public void setViewportListener(Consumer<ViewportSnapshot> listener) { surface.setViewportListener(listener); }
-    @Override public void setCameraCommandListener(Consumer<CameraPolicy> listener) { surface.setCameraCommandListener(listener); }
+    @Override
+    public FxSurfaceAdapter fxSurfaceAdapter() {
+        return surface;
+    }
 @Override
     public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
         surface.setObstructionInsets(insets);

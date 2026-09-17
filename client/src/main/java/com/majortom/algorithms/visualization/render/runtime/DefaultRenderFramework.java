@@ -17,7 +17,8 @@ import com.majortom.algorithms.visualization.render.api.ViewportRenderIntent;
 import com.majortom.algorithms.visualization.render.diagnostics.RenderTrace;
 import com.majortom.algorithms.visualization.render.fx.FxExecutor;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.FxSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.fx.RenderSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.fx.PulseBarrier;
 import com.majortom.algorithms.visualization.render.fx.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
@@ -46,7 +47,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
     private final LayoutExecutor layoutExecutor;
     private final FxExecutor fxExecutor;
     private final PulseBarrier pulseBarrier;
-    private final FxSurfaceRegistry surfaces;
+    private final RenderSurfaceRegistry surfaces;
     private final LayoutEngineRegistry layoutEngines;
     private final CameraManager cameraManager;
     private final RenderTrace trace;
@@ -60,7 +61,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
             RenderScheduler scheduler,
             LayoutExecutor layoutExecutor,
             FxExecutor fxExecutor,
-            FxSurfaceRegistry surfaces,
+            RenderSurfaceRegistry surfaces,
             LayoutEngineRegistry layoutEngines,
             CameraManager cameraManager,
             RenderTrace trace) {
@@ -74,18 +75,22 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         this.trace = Objects.requireNonNull(trace, "trace");
     }
 
-    public <S> CompletionStage<Void> registerSurface(RenderSessionId id, FxSurfaceAdapter<S> adapter) {
+    public <S> CompletionStage<Void> registerSurface(RenderSurface<S> surface) {
+        Objects.requireNonNull(surface, "surface");
         return fxExecutor.execute(() -> {
-            surfaces.register(id, adapter);
-            adapter.setViewportListener(viewport -> submit(new ViewportRenderIntent(id, viewport, CameraPolicy.KEEP)));
+            surfaces.register(surface);
+            FxSurfaceAdapter adapter = surface.fxSurface();
+            RenderSessionId id = surface.sessionId();
+            adapter.setViewportListener(viewport ->
+                    submit(new ViewportRenderIntent(id, viewport, CameraPolicy.KEEP)));
             adapter.setCameraCommandListener(policy ->
                     submit(new ViewportRenderIntent(id, adapter.viewportSnapshot(), policy)));
         });
     }
 
-    public CompletionStage<Void> unregisterSurface(
-            RenderSessionId id, FxSurfaceAdapter<?> adapter) {
-        return fxExecutor.execute(() -> surfaces.unregister(id, adapter));
+    public CompletionStage<Void> unregisterSurface(RenderSurface<?> surface) {
+        Objects.requireNonNull(surface, "surface");
+        return fxExecutor.execute(() -> surfaces.unregister(surface));
     }
 
     public CompletionStage<Void> activateSession(RenderSessionId id) {
@@ -217,7 +222,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         trace(transaction, RenderPipeline.CAPTURE);
 
         CompletionStage<Void> prepareStage = intent.initialFrame()
-                ? fxExecutor.execute(() -> surfaces.<S>require(session.id).prepareInitialFrame())
+                ? fxExecutor.execute(() -> surfaces.<S>require(session.id).fxSurface().prepareInitialFrame())
                 : CompletableFuture.completedFuture(null);
 
         RenderCaptureContext captureContext = new RenderCaptureContext(
@@ -234,7 +239,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
 
         return prepareStage
                 .thenCompose(ignored -> fxExecutor.supply(
-                        () -> surfaces.<S>require(session.id).captureLayout(intent.snapshot(), captureContext)))
+                        () -> surfaces.<S>require(session.id).visualization().captureLayout(intent.snapshot(), captureContext)))
                 .thenCompose(request -> onScheduler(() -> continueStructuralAfterCapture(session, transaction, intent, request)))
                 .thenCompose(stage -> stage);
     }
@@ -287,9 +292,9 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         trace(transaction, RenderPipeline.WAIT_APPLY);
 
         return fxExecutor.supply(() -> {
-                    FxSurfaceAdapter<S> target = surfaces.require(session.id);
-                    target.applyPrimaryContentBounds(patch.primaryContentBounds());
-                    return target.commitLayout(intent.snapshot(), patch, commitContext);
+                    RenderSurface<S> target = surfaces.require(session.id);
+                    target.fxSurface().applyPrimaryContentBounds(patch.primaryContentBounds());
+                    return target.visualization().commitLayout(intent.snapshot(), patch, commitContext);
                 })
                 .thenCompose(stage -> stage)
                 .thenCompose(ignored -> pulseBarrier.await())
@@ -309,7 +314,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
         trace(transaction, RenderPipeline.WAIT_PULSE);
         trace(transaction, RenderPipeline.CAMERA);
         return fxExecutor.supply(() -> {
-            FxSurfaceAdapter<S> target = surfaces.require(session.id);
+            FxSurfaceAdapter target = surfaces.<S>require(session.id).fxSurface();
             ViewportSnapshot viewport = target.viewportSnapshot();
             CameraState current = target.cameraState();
             // The first authoritative layout of a session has no meaningful camera history.
@@ -340,7 +345,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
             return resolved;
         }).thenCompose(expectedCamera -> pulseBarrier.await()
                 .thenCompose(ignored -> fxExecutor.supply(() -> {
-                    FxSurfaceAdapter<S> target = surfaces.require(session.id);
+                    FxSurfaceAdapter target = surfaces.<S>require(session.id).fxSurface();
                     CameraState actualCamera = target.cameraState();
                     // GesturePane may normalize the target once more on the pulse after new
                     // world bounds are committed. The RenderFramework camera remains the
@@ -389,7 +394,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                 session.layoutRevision,
                 presentationRevision);
         trace(transaction, RenderPipeline.WAIT_APPLY);
-        return fxExecutor.supply(() -> surfaces.<S>require(session.id).commitPresentation(intent.snapshot(), context))
+        return fxExecutor.supply(() -> surfaces.<S>require(session.id).visualization().commitPresentation(intent.snapshot(), context))
                 .thenCompose(stage -> stage)
                 .thenCompose(ignored -> onScheduler(() -> {
                     if (session.generation != generation || !session.active()) return RenderResult.cancelled(session.id);
@@ -412,7 +417,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                     false, BoundsSnapshot.empty(), null));
         }
         if (intent.cameraPolicy() == CameraPolicy.KEEP) {
-            return fxExecutor.supply(() -> surfaces.<Object>require(session.id).cameraState())
+            return fxExecutor.supply(() -> surfaces.<Object>require(session.id).fxSurface().cameraState())
                     .thenCompose(camera -> onScheduler(() -> {
                         if (session.generation != generation || !session.active()) return RenderResult.cancelled(session.id);
                         session.camera = camera;
@@ -421,7 +426,7 @@ public final class DefaultRenderFramework implements RenderPort, AutoCloseable {
                     }));
         }
         return fxExecutor.supply(() -> {
-            FxSurfaceAdapter<Object> target = surfaces.require(session.id);
+            FxSurfaceAdapter target = surfaces.<Object>require(session.id).fxSurface();
             CameraState current = target.cameraState();
             CameraState resolved = cameraManager.resolve(intent.cameraPolicy(), session.layout.bounds(), intent.viewport(),
                     current, session.camera, target.userControlledCamera(), MIN_CAMERA_SCALE, MAX_AUTO_FIT_SCALE);
