@@ -1,22 +1,19 @@
 package com.majortom.algorithms.visualization.render.runtime;
 
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
-import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import java.util.Objects;
 
 /**
- * Owns render submission state and lifecycle outside the JavaFX visualizer.
- *
- * <p>The driver caches the latest factual state while detached, delegates structural/presentation
- * classification to a presenter, and is the only module-side owner of RenderPort submission.</p>
+ * Owns factual render state, module lifecycle and RenderPort submission outside JavaFX renderers.
  */
 public final class StructureRenderDriver<S> {
   private final RenderSessionId sessionId;
   private final RenderPort renderPort;
   private final StructureRenderPresenter<S> presenter;
   private S currentState;
+  private S previousSubmittedState;
   private boolean attached;
   private boolean disposed;
 
@@ -28,40 +25,49 @@ public final class StructureRenderDriver<S> {
   }
 
   public synchronized void render(S state) {
-    Objects.requireNonNull(state, "state");
     if (disposed) return;
-    S previous = currentState;
-    currentState = state;
-    if (attached) submit(presenter.present(sessionId, previous, state));
+    currentState = Objects.requireNonNull(state, "state");
+    if (attached) submitCurrent();
   }
 
-  public synchronized void attach() {
-    if (disposed || attached) return;
-    attached = true;
-    if (currentState != null) submit(presenter.present(sessionId, null, currentState));
+  public synchronized S currentState() {
+    return currentState;
   }
 
-  public synchronized void detach() {
+  public synchronized void attach(String ignoredModuleId) {
+    if (!disposed) attached = true;
+  }
+
+  public synchronized void detach(String ignoredModuleId) {
     attached = false;
   }
 
-  /** Re-submit the current factual state as presentation-only after an FX-local interaction. */
-  public synchronized void requestPresentation() {
+  /** Called after RenderSurfaceHost has activated the session. */
+  public synchronized void requestCurrent() {
     if (disposed || !attached || currentState == null) return;
-    submit(new PresentationRenderIntent<>(sessionId, currentState));
+    submitCurrent();
+  }
+
+  /** FX-local selections/overlays are presentation-only and never choose camera/layout policy. */
+  public synchronized void presentCurrent() {
+    if (disposed || !attached || currentState == null) return;
+    renderPort.submit(new PresentationRenderIntent<>(sessionId, currentState));
   }
 
   public synchronized void reset() {
     currentState = null;
+    previousSubmittedState = null;
   }
 
   public synchronized void dispose() {
     disposed = true;
     attached = false;
     currentState = null;
+    previousSubmittedState = null;
   }
 
-  private void submit(RenderIntent intent) {
-    renderPort.submit(Objects.requireNonNull(intent, "intent"));
+  private void submitCurrent() {
+    renderPort.submit(presenter.present(sessionId, previousSubmittedState, currentState));
+    previousSubmittedState = currentState;
   }
 }
