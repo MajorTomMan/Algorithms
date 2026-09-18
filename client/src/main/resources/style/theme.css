@@ -1728,3 +1728,67 @@
     -fx-border-color: #f51b23;
     -fx-text-fill: #f51b23;
 }
+
+/* ---------- runtime overview cards ---------- */
+.runtime-overview-title {
+    -fx-text-fill: #171a1f;
+}
+
+.runtime-overview-subtitle {
+    -fx-text-fill: #92979e;
+}
+
+.runtime-live-pill {
+    -fx-background-color: #fff5f5;
+    -fx-background-radius: 999px;
+    -fx-border-color: #ffe1e3;
+    -fx-border-width: 1px;
+    -fx-border-radius: 999px;
+}
+
+.runtime-live-dot {
+    -fx-background-color: #f51b23;
+    -fx-background-radius: 999px;
+}
+
+.runtime-live-label {
+    -fx-text-fill: #d61b22;
+}
+
+.runtime-section-title {
+    -fx-text-fill: #727981;
+}
+
+.runtime-metric-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e1e4e8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+}
+
+.runtime-metric-card:hover {
+    -fx-background-color: #fcfcfd;
+    -fx-border-color: #cfd4da;
+}
+
+.runtime-metric-card-primary {
+    -fx-border-color: #f51b23 #e1e4e8 #e1e4e8 #f51b23;
+    -fx-border-width: 1px 1px 1px 3px;
+}
+
+.runtime-metric-card-title {
+    -fx-text-fill: #747b83;
+}
+
+.runtime-metric-card-value {
+    -fx-text-fill: #111418;
+}
+
+.runtime-metric-card-algorithm .runtime-metric-card-value {
+    -fx-text-fill: #22262b;
+}
+
+.runtime-metric-card-performance .runtime-metric-card-value {
+    -fx-text-fill: #2e3338;
+}

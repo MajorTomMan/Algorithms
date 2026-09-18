@@ -717,3 +717,30 @@
     -fx-text-fill: #ffffff;
 }
 .workbench-header .header-actions { -fx-spacing: 0.65em; }
+
+/* ---------- runtime overview cards ---------- */
+.runtime-overview-header {
+    -fx-padding: 0.08em 0.08em 0.42em 0.08em;
+}
+
+.runtime-live-pill {
+    -fx-padding: 0.16em 0.46em;
+}
+
+.runtime-live-dot {
+    -fx-min-width: 0.32em;
+    -fx-pref-width: 0.32em;
+    -fx-max-width: 0.32em;
+    -fx-min-height: 0.32em;
+    -fx-pref-height: 0.32em;
+    -fx-max-height: 0.32em;
+}
+
+.runtime-metrics-section {
+    -fx-padding: 0;
+}
+
+.runtime-metric-card {
+    -fx-padding: 0.72em 0.78em;
+    -fx-min-height: 4.15em;
+}

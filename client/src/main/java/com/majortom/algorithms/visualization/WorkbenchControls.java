@@ -19,4 +19,8 @@ import javafx.scene.layout.HBox;
 public record WorkbenchControls(Label statsLabel, LogView logView, LogView structureLogView, LogChannelStore logChannelStore, Slider delaySlider,
     Slider timelineSlider, HBox customControlBox, Button startButton, Button pauseButton,
     Button resetButton, Button replayButton, Button stepBackwardButton, Button stepForwardButton,
-    Button exportButton, Button compareButton) {}
+    Button exportButton, Button compareButton, Runnable statisticsRefresh) {
+  public WorkbenchControls {
+    if (statisticsRefresh == null) statisticsRefresh = () -> {};
+  }
+}

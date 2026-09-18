@@ -116,6 +116,7 @@ public abstract class BaseController<S> implements Initializable {
     private final StructureRenderDriver<S> renderDriver;
 
     protected Label statsLabel;
+    private Runnable statisticsRefresh = () -> {};
     protected LogView logView;
     protected LogView structureLogView;
     private LogChannelStore logChannelStore;
@@ -1100,6 +1101,7 @@ public abstract class BaseController<S> implements Initializable {
         if (statsLabel != null) {
             statsLabel.setText(RuntimeOverviewText.format(runtimeOverview()));
         }
+        statisticsRefresh.run();
         updatePlaybackButtonState();
     }
 
@@ -1216,6 +1218,7 @@ public abstract class BaseController<S> implements Initializable {
     public final void setUIReferences(WorkbenchControls controls) {
         Objects.requireNonNull(controls, "controls");
         this.statsLabel = controls.statsLabel();
+        this.statisticsRefresh = controls.statisticsRefresh();
         this.logView = controls.logView();
         this.structureLogView = controls.structureLogView();
         this.logChannelStore = Objects.requireNonNull(controls.logChannelStore(), "logChannelStore");

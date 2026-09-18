@@ -69,6 +69,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -416,6 +417,22 @@ public class MainController implements Initializable {
     @FXML
     private Label statsTitleLabel;
     @FXML
+    private Label statsSubtitleLabel;
+    @FXML
+    private Label structureMetricsHeadingLabel;
+    @FXML
+    private Label algorithmMetricsHeadingLabel;
+    @FXML
+    private Label performanceMetricsHeadingLabel;
+    @FXML
+    private VBox algorithmMetricsSection;
+    @FXML
+    private GridPane structureMetricsGrid;
+    @FXML
+    private GridPane algorithmMetricsGrid;
+    @FXML
+    private GridPane performanceMetricsGrid;
+    @FXML
     private Label liveLabel;
     @FXML
     private Label logTitleLabel;
@@ -575,6 +592,10 @@ public class MainController implements Initializable {
         viewportHintLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.algorithm.preview.hint"));
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
+        statsSubtitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.statistics.subtitle"));
+        structureMetricsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.statistics.structure"));
+        algorithmMetricsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.statistics.algorithm"));
+        performanceMetricsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.statistics.performance"));
         statisticsTab.textProperty().bind(I18N.createStringBinding("label.workspace.statistics"));
         eventTab.textProperty().bind(I18N.createStringBinding("label.workspace.event"));
         logTab.textProperty().bind(I18N.createStringBinding("label.panel.algorithm_log.tab"));
@@ -1879,7 +1900,8 @@ public class MainController implements Initializable {
                 stepBackwardBtn,
                 stepForwardBtn,
                 exportBtn,
-                compareBtn));
+                compareBtn,
+                this::refreshRunSummary));
 
         currentSubController = newController;
         currentSubController.pausedProperty().addListener((observable, oldValue, newValue) -> {
@@ -1915,6 +1937,7 @@ public class MainController implements Initializable {
             updateWorkspaceInteractionState();
         };
         currentSubController.structureRevisionProperty().addListener(structureRevisionListener);
+        refreshRunSummary();
 
         // The caller decides the final workspace first, then attaches and reveals the visualizer.
         // This prevents an intermediate parent size/mode from triggering a visible first layout.
@@ -3348,8 +3371,10 @@ public class MainController implements Initializable {
     }
 
     private void refreshRunSummary() {
-        if (runMetric1Title == null || currentSubController == null) return;
+        if (currentSubController == null) return;
         RuntimeOverviewModel overview = currentSubController.runtimeOverview();
+        renderRuntimeOverview(overview);
+        if (runMetric1Title == null) return;
         List<MetricItem> algorithm = overview.algorithmMetrics();
         List<MetricDisplay> metrics = new ArrayList<>();
         for (MetricItem metric : algorithm) {
@@ -3370,6 +3395,63 @@ public class MainController implements Initializable {
         setMetric(runMetric2Title, runMetric2Value, metrics.get(1));
         setMetric(runMetric3Title, runMetric3Value, metrics.get(2));
         setMetric(runMetric4Title, runMetric4Value, metrics.get(3));
+    }
+
+    private void renderRuntimeOverview(RuntimeOverviewModel overview) {
+        if (overview == null) return;
+        populateMetricCards(structureMetricsGrid, overview.structureMetrics(), "runtime-metric-card-structure");
+        populateMetricCards(algorithmMetricsGrid, overview.algorithmMetrics(), "runtime-metric-card-algorithm");
+        populateMetricCards(performanceMetricsGrid, overview.performanceMetrics(), "runtime-metric-card-performance");
+        if (algorithmMetricsSection != null) {
+            boolean hasAlgorithmMetrics = !overview.algorithmMetrics().isEmpty();
+            algorithmMetricsSection.setManaged(hasAlgorithmMetrics);
+            algorithmMetricsSection.setVisible(hasAlgorithmMetrics);
+        }
+    }
+
+    private void populateMetricCards(GridPane grid, List<MetricItem> metrics, String kindStyleClass) {
+        if (grid == null) return;
+        boolean reusable = grid.getChildren().size() == metrics.size();
+        if (reusable) {
+            for (int index = 0; index < metrics.size(); index++) {
+                Node node = grid.getChildren().get(index);
+                if (!(node instanceof VBox card) || !metrics.get(index).key().equals(card.getUserData())) {
+                    reusable = false;
+                    break;
+                }
+            }
+        }
+        if (!reusable) {
+            grid.getChildren().clear();
+            for (int index = 0; index < metrics.size(); index++) {
+                MetricItem metric = metrics.get(index);
+                VBox card = new VBox(4.0d);
+                card.setUserData(metric.key());
+                card.setMaxWidth(Double.MAX_VALUE);
+                card.getStyleClass().addAll("runtime-metric-card", kindStyleClass);
+                if (index == 0) card.getStyleClass().add("runtime-metric-card-primary");
+
+                Label title = new Label();
+                title.setWrapText(true);
+                title.setMaxWidth(Double.MAX_VALUE);
+                title.getStyleClass().add("runtime-metric-card-title");
+
+                Label value = new Label();
+                value.setWrapText(true);
+                value.setMaxWidth(Double.MAX_VALUE);
+                value.getStyleClass().add("runtime-metric-card-value");
+
+                card.getChildren().addAll(title, value);
+                GridPane.setHgrow(card, Priority.ALWAYS);
+                grid.add(card, index % 2, index / 2);
+            }
+        }
+        for (int index = 0; index < metrics.size(); index++) {
+            MetricItem metric = metrics.get(index);
+            VBox card = (VBox) grid.getChildren().get(index);
+            ((Label) card.getChildren().get(0)).setText(RuntimeOverviewText.label(metric));
+            ((Label) card.getChildren().get(1)).setText(RuntimeOverviewText.value(metric));
+        }
     }
 
     private void setMetric(Label title, Label value, MetricDisplay metric) {

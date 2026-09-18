@@ -142,3 +142,33 @@
 .root-pane .current-step-overlay .current-step-detail {
     -fx-wrap-text: true;
 }
+
+/* ---------- runtime overview cards ---------- */
+.root-pane .runtime-overview-title {
+    -fx-font-size: 0.98em;
+    -fx-font-weight: 700;
+}
+
+.root-pane .runtime-overview-subtitle {
+    -fx-font-size: 0.66em;
+}
+
+.root-pane .runtime-live-label {
+    -fx-font-size: 0.62em;
+    -fx-font-weight: 700;
+}
+
+.root-pane .runtime-section-title {
+    -fx-font-size: 0.66em;
+    -fx-font-weight: 800;
+}
+
+.root-pane .runtime-metric-card-title {
+    -fx-font-size: 0.61em;
+    -fx-font-weight: 600;
+}
+
+.root-pane .runtime-metric-card-value {
+    -fx-font-size: 1.18em;
+    -fx-font-weight: 800;
+}
