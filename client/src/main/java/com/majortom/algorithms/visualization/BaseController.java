@@ -11,12 +11,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
+import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionRecording;
 import com.majortom.algorithms.core.runtime.ExecutionRecordingState;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.event.ExecutionEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
+import com.majortom.algorithms.core.logging.LogLevel;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionStatus;
@@ -106,6 +108,7 @@ public abstract class BaseController<S> implements Initializable {
 
     protected Label statsLabel;
     protected LogView logView;
+    protected LogView structureLogView;
     protected Slider delaySlider;
     protected Slider timelineSlider;
     protected HBox customControlBox;
@@ -269,27 +272,68 @@ public abstract class BaseController<S> implements Initializable {
         Objects.requireNonNull(operationId, "operationId");
         Objects.requireNonNull(operation, "operation");
         invalidateExecutionForStructureChange();
+        int eventStart = structureTimeline.events().size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), operation);
+        appendStructureEventsSince(eventStart);
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
         }
         String message = result.failure().map(failure -> failure.message()).orElse("Structure operation failed");
-        appendLog(message);
+        appendStructureLog(message);
         return false;
     }
 
     /** Records a non-mutation auxiliary event such as snapshot lifecycle state. */
     public final boolean recordAuxiliaryEvent(String operationId, ExecutionEvent event) {
         Objects.requireNonNull(event, "event");
+        int eventStart = structureTimeline.events().size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), () -> {
                     ExecutionEvents.emit(event);
                     return null;
                 });
+        appendStructureEventsSince(eventStart);
         return result.status() == ExecutionStatus.COMPLETED;
+    }
+
+    private void appendStructureEventsSince(int eventStart) {
+        if (structureLogView == null) {
+            return;
+        }
+        List<EventEnvelope> events = structureTimeline.events();
+        int start = Math.max(0, Math.min(eventStart, events.size()));
+        for (int index = start; index < events.size(); index++) {
+            EventEnvelope envelope = events.get(index);
+            if (envelope.event() instanceof ExecutionLifecycleEvent) {
+                continue;
+            }
+            if (envelope.event() instanceof LogEvent logEvent) {
+                Runnable task = () -> structureLogView.append(logEvent, envelope.timestamp());
+                if (FxDispatch.isFxThread()) {
+                    task.run();
+                } else {
+                    FxDispatch.defer(task);
+                }
+                continue;
+            }
+            String operation = envelope.operationId();
+            int lastDot = operation.lastIndexOf('.');
+            if (lastDot >= 0 && lastDot + 1 < operation.length()) {
+                operation = operation.substring(lastDot + 1);
+            }
+            String tag = operation.isBlank() ? "STRUCTURE" : operation;
+            String message = envelope.event().toString();
+            Runnable task = () -> structureLogView.append(
+                    envelope.timestamp(), LogLevel.INFO, tag, message);
+            if (FxDispatch.isFxThread()) {
+                task.run();
+            } else {
+                FxDispatch.defer(task);
+            }
+        }
     }
 
     /** Returns the complete structure-operation history retained by this controller. */
@@ -903,10 +947,19 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     protected final void appendLog(String message) {
-        if (logView == null) {
+        appendToLog(logView, message);
+    }
+
+    /** Writes a structure-workspace message without contaminating the algorithm execution log. */
+    protected final void appendStructureLog(String message) {
+        appendToLog(structureLogView, message);
+    }
+
+    private void appendToLog(LogView target, String message) {
+        if (target == null) {
             return;
         }
-        Runnable task = () -> logView.appendSystem(message);
+        Runnable task = () -> target.appendSystem(message);
         if (FxDispatch.isFxThread()) {
             task.run();
         } else {
@@ -1091,6 +1144,7 @@ public abstract class BaseController<S> implements Initializable {
         Objects.requireNonNull(controls, "controls");
         this.statsLabel = controls.statsLabel();
         this.logView = controls.logView();
+        this.structureLogView = controls.structureLogView();
         this.delaySlider = controls.delaySlider();
         this.timelineSlider = controls.timelineSlider();
         this.customControlBox = controls.customControlBox();

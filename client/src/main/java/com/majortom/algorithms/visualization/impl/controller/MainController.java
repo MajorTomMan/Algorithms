@@ -248,6 +248,8 @@ public class MainController implements Initializable {
     @FXML
     private Tab structureSnapshotsTab;
     @FXML
+    private Tab structureLogTab;
+    @FXML
     private VBox inspectorSnapshotCards;
     @FXML
     private Label structurePrimaryMetricTitleLabel;
@@ -414,6 +416,8 @@ public class MainController implements Initializable {
     @FXML
     private Label logTitleLabel;
     @FXML
+    private Label structureLogTitleLabel;
+    @FXML
     private Label statsLabel;
     @FXML
     private Label delayLabel;
@@ -429,6 +433,8 @@ public class MainController implements Initializable {
     private Label timelineObservationLegendLabel;
     @FXML
     private LogView logView;
+    @FXML
+    private LogView structureLogView;
     @FXML
     private Button startBtn;
     @FXML
@@ -547,6 +553,7 @@ public class MainController implements Initializable {
         algorithmSelectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
         structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
         structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
+        structureLogTab.textProperty().bind(I18N.createStringBinding("label.panel.structure_log.tab"));
         inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         structureSnapshotPreviewBadgeLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
@@ -570,13 +577,14 @@ public class MainController implements Initializable {
         statsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
         statisticsTab.textProperty().bind(I18N.createStringBinding("label.workspace.statistics"));
         eventTab.textProperty().bind(I18N.createStringBinding("label.workspace.event"));
-        logTab.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        logTab.textProperty().bind(I18N.createStringBinding("label.panel.algorithm_log.tab"));
         resultTab.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
         currentEventHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.event.current"));
         eventRunSummaryHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
         resultPreviewHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result.preview"));
         resultHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
-        logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.log"));
+        logTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.algorithm_log"));
+        structureLogTitleLabel.textProperty().bind(I18N.createStringBinding("label.panel.structure_log"));
         liveLabel.textProperty().bind(I18N.createStringBinding("label.panel.live"));
         startBtn.textProperty().bind(I18N.createStringBinding("action.execution.run_algorithm"));
         resetBtn.setText("✕");
@@ -590,8 +598,11 @@ public class MainController implements Initializable {
         timelineStructureLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.structure"));
         timelineObservationLegendLabel.textProperty().bind(I18N.createStringBinding("label.execution.legend.observation"));
         Label logPlaceholder = new Label();
-        logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.log.prompt"));
+        logPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.algorithm_log.prompt"));
         logView.setPlaceholder(logPlaceholder);
+        Label structureLogPlaceholder = new Label();
+        structureLogPlaceholder.textProperty().bind(I18N.createStringBinding("label.panel.structure_log.prompt"));
+        structureLogView.setPlaceholder(structureLogPlaceholder);
         stepBackwardBtn.setText("‹");
         stepBackwardBtn.accessibleTextProperty().bind(
                 I18N.createStringBinding("action.execution.step.backward"));
@@ -1853,6 +1864,7 @@ public class MainController implements Initializable {
         newController.setUIReferences(new WorkbenchControls(
                 statsLabel,
                 logView,
+                structureLogView,
                 delaySlider,
                 timelineSlider,
                 customControlBox,
@@ -2580,7 +2592,7 @@ public class MainController implements Initializable {
                 "snapshot-created", new SnapshotLifecycleEvent.Created(snapshot.id(), snapshot.moduleId()));
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
-        appendSystemLog(I18N.text("message.snapshot.saved", shortSnapshotId(snapshot)));
+        appendStructureSystemLog(I18N.text("message.snapshot.saved", shortSnapshotId(snapshot)));
     }
 
     private void restoreSnapshot(StructureSnapshot<?> snapshot) {
@@ -2600,7 +2612,7 @@ public class MainController implements Initializable {
             currentSubController.recordAuxiliaryEvent(
                     "snapshot-restored", new SnapshotLifecycleEvent.Restored(snapshot.id(), snapshot.moduleId()));
         } catch (RuntimeException exception) {
-            appendSystemLog(I18N.text("message.snapshot.restore_failed"));
+            appendStructureSystemLog(I18N.text("message.snapshot.restore_failed"));
             return;
         }
         if (isStructurePageVisible()) {
@@ -2614,7 +2626,7 @@ public class MainController implements Initializable {
         updateSnapshotActionState();
         updateWorkspaceInteractionState();
         refreshTopContext();
-        appendSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
+        appendStructureSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
     }
 
     private boolean confirmSnapshotRestore(StructureSnapshot<?> snapshot) {
@@ -2686,6 +2698,12 @@ public class MainController implements Initializable {
     private void appendSystemLog(String message) {
         if (logView != null) {
             logView.appendSystem(message);
+        }
+    }
+
+    private void appendStructureSystemLog(String message) {
+        if (structureLogView != null) {
+            structureLogView.appendSystem(message);
         }
     }
 

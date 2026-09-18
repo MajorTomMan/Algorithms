@@ -15,7 +15,7 @@ import javafx.scene.layout.HBox;
  * single controller continues to own run, pause, replay, statistics and export
  * state.</p>
  */
-public record WorkbenchControls(Label statsLabel, LogView logView, Slider delaySlider,
+public record WorkbenchControls(Label statsLabel, LogView logView, LogView structureLogView, Slider delaySlider,
     Slider timelineSlider, HBox customControlBox, Button startButton, Button pauseButton,
     Button resetButton, Button replayButton, Button stepBackwardButton, Button stepForwardButton,
     Button exportButton, Button compareButton) {}

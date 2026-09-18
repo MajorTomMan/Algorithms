@@ -255,7 +255,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             renderViewState(completedViewState(input, new java.util.LinkedHashSet<>(path)));
         }
         updateControlState();
-        logI18n("message.execution.finished");
+        algorithmLogI18n("message.execution.finished");
     }
 
     @Override

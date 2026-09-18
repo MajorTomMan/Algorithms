@@ -364,7 +364,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     public void handleAlgorithmStart() {
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
-            logI18n("message.linear.no_algorithm");
+            algorithmLogI18n("message.linear.no_algorithm");
             return;
         }
         List<Object> inputValues = algorithmInputSnapshot == null

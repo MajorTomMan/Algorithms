@@ -293,6 +293,14 @@
                                         </ScrollPane>
                                     </VBox>
                                 </Tab>
+                                <Tab fx:id="structureLogTab" text="STRUCTURE LOG">
+                                    <VBox spacing="8" styleClass="snapshot-tab-content">
+                                        <Label fx:id="structureLogTitleLabel" text="STRUCTURE EXECUTION LOG"
+                                            styleClass="inspector-heading" />
+                                        <LogView fx:id="structureLogView" VBox.vgrow="ALWAYS"
+                                            styleClass="log-view-light" />
+                                    </VBox>
+                                </Tab>
                             </tabs>
                         </TabPane>
                     </VBox>

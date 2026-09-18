@@ -416,8 +416,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         }
 
         private void detachNode(String logicalId) {
-            long id;
-            try { id = Long.parseLong(logicalId); } catch (NumberFormatException ignored) { return; }
+            var parsedId = LinkedListVisualIds.parseNodeId(logicalId);
+            if (parsedId.isEmpty()) return;
+            long id = parsedId.getAsLong();
             NodeView view = nodeViews.remove(id);
             if (view != null) exitingNodes.put(id, view);
             LinkedNodeDecoration decoration = nodeDecorations.remove(id);
@@ -439,8 +440,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
 
         @Override
         public Optional<NodeTarget> node(String logicalId) {
-            long id;
-            try { id = Long.parseLong(logicalId); } catch (NumberFormatException ignored) { return Optional.empty(); }
+            var parsedId = LinkedListVisualIds.parseNodeId(logicalId);
+            if (parsedId.isEmpty()) return Optional.empty();
+            long id = parsedId.getAsLong();
             NodeView view = nodeViews.get(id);
             if (view == null) view = exitingNodes.get(id);
             if (view == null) return Optional.empty();

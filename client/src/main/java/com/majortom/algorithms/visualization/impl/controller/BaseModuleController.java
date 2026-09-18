@@ -71,6 +71,16 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     }
 
     protected final void logI18n(String key, Object... arguments) {
+        Runnable task = () -> appendStructureLog(I18N.text(key, arguments));
+        if (FxDispatch.isFxThread()) {
+            task.run();
+        } else {
+            FxDispatch.defer(task);
+        }
+    }
+
+    /** Explicit algorithm-workspace message; kept separate from structure execution logging. */
+    protected final void algorithmLogI18n(String key, Object... arguments) {
         Runnable task = () -> appendLog(I18N.text(key, arguments));
         if (FxDispatch.isFxThread()) {
             task.run();

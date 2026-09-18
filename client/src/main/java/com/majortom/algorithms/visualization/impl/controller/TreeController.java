@@ -521,7 +521,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     public void handleAlgorithmStart() {
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
-            logI18n("message.tree.no_algorithm");
+            algorithmLogI18n("message.tree.no_algorithm");
             return;
         }
 
@@ -1211,7 +1211,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @Override
     protected void onAlgorithmFinished(com.majortom.algorithms.core.runtime.ExecutionResult result) {
         super.onAlgorithmFinished(result);
-        logI18n("message.execution.finished");
+        algorithmLogI18n("message.execution.finished");
     }
 
     @Override

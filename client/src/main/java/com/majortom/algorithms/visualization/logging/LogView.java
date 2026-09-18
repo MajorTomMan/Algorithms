@@ -35,7 +35,7 @@ public final class LogView extends ListView<LogView.Line> {
     append(LogLevel.INFO, "SYSTEM", message);
   }
 
-  private void append(Instant timestamp, LogLevel level, String tag, String message) {
+  public void append(Instant timestamp, LogLevel level, String tag, String message) {
     String normalizedTag;
     if (tag == null) {
       normalizedTag = "";
