@@ -178,24 +178,41 @@
     -fx-font-size: 0.62em;
     -fx-font-weight: 700;
 }
+.root-pane .memory-hero-title {
+    -fx-font-size: 0.62em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-hero-value {
+    -fx-font-size: 1.58em;
+    -fx-font-weight: 800;
+}
+.root-pane .memory-mini-metric-title {
+    -fx-font-size: 0.55em;
+    -fx-font-weight: 600;
+}
+.root-pane .memory-mini-metric-value {
+    -fx-font-size: 0.82em;
+    -fx-font-weight: 800;
+}
 .root-pane .memory-chart-summary {
-    -fx-font-size: 0.68em;
+    -fx-font-size: 0.64em;
     -fx-font-weight: 700;
 }
 .root-pane .memory-chart-axis-label,
 .root-pane .memory-detail-label,
 .root-pane .memory-notice,
 .root-pane .memory-empty-state {
-    -fx-font-size: 0.64em;
+    -fx-font-size: 0.61em;
 }
 .root-pane .memory-detail-value {
-    -fx-font-size: 0.68em;
+    -fx-font-size: 0.72em;
     -fx-font-weight: 700;
 }
-
-.root-pane .memory-analysis-name {
-    -fx-font-size: 11px;
+.root-pane .memory-disclosure > .title {
+    -fx-font-size: 0.70em;
+    -fx-font-weight: 800;
 }
+.root-pane .memory-analysis-name,
 .root-pane .memory-analysis-value {
-    -fx-font-size: 11px;
+    -fx-font-size: 0.64em;
 }

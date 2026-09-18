@@ -4,9 +4,11 @@ import com.majortom.algorithms.visualization.international.I18N;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -61,15 +63,18 @@ public final class MemoryProfileView extends VBox {
     private Runnable chartInvalidationAction = () -> {};
 
     public MemoryProfileView() {
-        setSpacing(14.0d);
+        setSpacing(10.0d);
         setFillWidth(true);
         getStyleClass().addAll("inspector-content", "memory-profile-view");
         buildHeader();
+        buildNotices();
         buildMetrics();
         buildChart();
         buildDetails();
         buildDeepAnalysis();
-        buildNotices();
+        hideInitially(metricsSection);
+        hideInitially(chartSection);
+        hideInitially(detailsSection);
         bindings = new Bindings(
                 scopeLabel,
                 statusLabel,
@@ -125,7 +130,7 @@ public final class MemoryProfileView extends VBox {
     }
 
     private void buildHeader() {
-        VBox titleBlock = new VBox(3.0d);
+        VBox titleBlock = new VBox(2.0d);
         Label title = new Label();
         title.textProperty().bind(I18N.createStringBinding("label.workspace.memory.overview"));
         title.getStyleClass().add("runtime-overview-title");
@@ -144,19 +149,53 @@ public final class MemoryProfileView extends VBox {
         HBox header = new HBox(10.0d, titleBlock, statusPill);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setFillHeight(false);
-        header.getStyleClass().add("runtime-overview-header");
+        header.getStyleClass().addAll("runtime-overview-header", "memory-profile-header");
         getChildren().add(header);
     }
 
+    private void buildNotices() {
+        timingNotice.setWrapText(true);
+        timingNotice.getStyleClass().add("memory-notice");
+        capabilityNotice.setWrapText(true);
+        capabilityNotice.getStyleClass().add("memory-notice");
+        emptyState.setWrapText(true);
+        emptyState.getStyleClass().add("memory-empty-state");
+        hideInitially(timingNotice);
+        hideInitially(capabilityNotice);
+        hideInitially(emptyState);
+
+        VBox notices = new VBox(6.0d, timingNotice, capabilityNotice, emptyState);
+        notices.getStyleClass().add("memory-notice-stack");
+        getChildren().add(notices);
+    }
+
     private void buildMetrics() {
-        Label heading = sectionHeading("label.workspace.memory.metrics");
-        GridPane grid = metricGrid();
-        addMetricCard(grid, 0, 0, "label.workspace.memory.allocated", allocatedValue, true);
-        addMetricCard(grid, 1, 0, "label.workspace.memory.average_rate", averageRateValue, false);
-        addMetricCard(grid, 0, 1, "label.workspace.memory.peak_rate", peakRateValue, false);
-        addMetricCard(grid, 1, 1, "label.workspace.memory.gc", gcValue, false);
-        metricsSection.getStyleClass().add("runtime-metrics-section");
-        metricsSection.getChildren().addAll(heading, grid);
+        VBox hero = new VBox(3.0d);
+        hero.setMaxWidth(Double.MAX_VALUE);
+        hero.getStyleClass().add("memory-hero-card");
+        Label title = new Label();
+        title.textProperty().bind(I18N.createStringBinding("label.workspace.memory.allocated"));
+        title.getStyleClass().add("memory-hero-title");
+        allocatedValue.getStyleClass().add("memory-hero-value");
+        allocatedValue.setWrapText(false);
+        hero.getChildren().addAll(title, allocatedValue);
+
+        GridPane compactGrid = new GridPane();
+        compactGrid.setHgap(7.0d);
+        compactGrid.setVgap(0.0d);
+        compactGrid.setMaxWidth(Double.MAX_VALUE);
+        compactGrid.getStyleClass().add("memory-compact-metric-grid");
+        for (int index = 0; index < 3; index++) {
+            ColumnConstraints column = new ColumnConstraints();
+            column.setPercentWidth(100.0d / 3.0d);
+            compactGrid.getColumnConstraints().add(column);
+        }
+        addCompactMetric(compactGrid, 0, "label.workspace.memory.average_rate", averageRateValue);
+        addCompactMetric(compactGrid, 1, "label.workspace.memory.peak_rate", peakRateValue);
+        addCompactMetric(compactGrid, 2, "label.workspace.memory.gc", gcValue);
+
+        metricsSection.getStyleClass().add("memory-metrics-section");
+        metricsSection.getChildren().addAll(hero, compactGrid);
         getChildren().add(metricsSection);
     }
 
@@ -169,8 +208,8 @@ public final class MemoryProfileView extends VBox {
         chartHeader.setAlignment(Pos.CENTER_LEFT);
 
         chartHost.getStyleClass().add("memory-allocation-chart");
-        chartHost.setMinHeight(118.0d);
-        chartHost.setPrefHeight(136.0d);
+        chartHost.setMinHeight(104.0d);
+        chartHost.setPrefHeight(118.0d);
         chartHost.setMaxWidth(Double.MAX_VALUE);
         chartHost.widthProperty().addListener((observable, previous, current) -> chartInvalidationAction.run());
         chartHost.heightProperty().addListener((observable, previous, current) -> chartInvalidationAction.run());
@@ -182,35 +221,36 @@ public final class MemoryProfileView extends VBox {
         HBox.setHgrow(axisSpacer, Priority.ALWAYS);
         HBox axis = new HBox(chartStartLabel, axisSpacer, chartEndLabel);
         axis.setAlignment(Pos.CENTER_LEFT);
+        axis.getStyleClass().add("memory-chart-axis");
 
-        chartSection.getStyleClass().add("memory-chart-section");
+        chartSection.getStyleClass().addAll("memory-chart-section", "memory-panel-card");
         chartSection.getChildren().addAll(chartHeader, chartHost, axis);
         getChildren().add(chartSection);
     }
 
     private void buildDetails() {
-        detailsSection.getStyleClass().add("memory-details-section");
-        detailsSection.getChildren().add(sectionHeading("label.workspace.memory.details"));
-
         GridPane grid = new GridPane();
-        grid.setHgap(12.0d);
+        grid.setHgap(7.0d);
         grid.setVgap(7.0d);
-        ColumnConstraints labelColumn = new ColumnConstraints();
-        labelColumn.setPercentWidth(54.0d);
-        ColumnConstraints valueColumn = new ColumnConstraints();
-        valueColumn.setPercentWidth(46.0d);
-        grid.getColumnConstraints().addAll(labelColumn, valueColumn);
-        addDetailRow(grid, 0, "label.workspace.memory.duration", durationValue);
-        addDetailRow(grid, 1, "label.workspace.memory.gc_time", gcTimeValue);
-        addDetailRow(grid, 2, "label.workspace.memory.heap_delta", heapDeltaValue);
-        addDetailRow(grid, 3, "label.workspace.memory.samples", samplesValue);
+        grid.setMaxWidth(Double.MAX_VALUE);
+        for (int index = 0; index < 2; index++) {
+            ColumnConstraints column = new ColumnConstraints();
+            column.setPercentWidth(50.0d);
+            grid.getColumnConstraints().add(column);
+        }
+        addDetailTile(grid, 0, 0, "label.workspace.memory.duration", durationValue);
+        addDetailTile(grid, 1, 0, "label.workspace.memory.heap_delta", heapDeltaValue);
+        addDetailTile(grid, 0, 1, "label.workspace.memory.gc_time", gcTimeValue);
+        addDetailTile(grid, 1, 1, "label.workspace.memory.samples", samplesValue);
+        detailsSection.getStyleClass().add("memory-details-section");
         detailsSection.getChildren().add(grid);
         getChildren().add(detailsSection);
     }
 
     private void buildDeepAnalysis() {
-        Label heading = sectionHeading("label.workspace.memory.deep_analysis");
         deepAnalysisToggle.textProperty().bind(I18N.createStringBinding("label.workspace.memory.deep_toggle"));
+        deepAnalysisToggle.setWrapText(true);
+        deepAnalysisToggle.setMaxWidth(Double.MAX_VALUE);
         deepAnalysisToggle.setOnAction(event -> deepAnalysisAction.accept(deepAnalysisToggle.isSelected()));
 
         footprintButton.textProperty().bind(I18N.createStringBinding("action.workspace.memory.measure_footprint"));
@@ -220,6 +260,7 @@ public final class MemoryProfileView extends VBox {
 
         deepNotice.setWrapText(true);
         deepNotice.getStyleClass().add("memory-notice");
+        hideInitially(deepNotice);
         allocationTypes.getStyleClass().add("memory-analysis-list");
         allocationSites.getStyleClass().add("memory-analysis-list");
         footprintBox.getStyleClass().add("memory-footprint-box");
@@ -234,49 +275,31 @@ public final class MemoryProfileView extends VBox {
 
         deepSection.getStyleClass().add("memory-deep-section");
         deepSection.getChildren().addAll(
-                heading, deepAnalysisToggle, footprintButton, deepNotice, allocationTypes, allocationSites, footprintBox);
-        getChildren().add(deepSection);
+                deepAnalysisToggle, footprintButton, deepNotice, allocationTypes, allocationSites, footprintBox);
+
+        TitledPane disclosure = new TitledPane();
+        disclosure.textProperty().bind(I18N.createStringBinding("label.workspace.memory.deep_analysis"));
+        disclosure.setContent(deepSection);
+        disclosure.setExpanded(false);
+        disclosure.setAnimated(false);
+        disclosure.setMaxWidth(Double.MAX_VALUE);
+        disclosure.getStyleClass().add("memory-disclosure");
+        getChildren().add(disclosure);
     }
 
-    private void buildNotices() {
-        timingNotice.setWrapText(true);
-        timingNotice.getStyleClass().add("memory-notice");
-        capabilityNotice.setWrapText(true);
-        capabilityNotice.getStyleClass().add("memory-notice");
-        emptyState.setWrapText(true);
-        emptyState.getStyleClass().add("memory-empty-state");
-        getChildren().addAll(timingNotice, capabilityNotice, emptyState);
-    }
-
-    private static GridPane metricGrid() {
-        GridPane grid = new GridPane();
-        grid.setHgap(8.0d);
-        grid.setVgap(8.0d);
-        grid.setMaxWidth(Double.MAX_VALUE);
-        grid.getStyleClass().add("runtime-metric-grid");
-        ColumnConstraints first = new ColumnConstraints();
-        first.setPercentWidth(50.0d);
-        ColumnConstraints second = new ColumnConstraints();
-        second.setPercentWidth(50.0d);
-        grid.getColumnConstraints().addAll(first, second);
-        return grid;
-    }
-
-    private static void addMetricCard(
-            GridPane grid, int column, int row, String labelKey, Label value, boolean primary) {
-        VBox card = new VBox(4.0d);
+    private static void addCompactMetric(GridPane grid, int column, String labelKey, Label value) {
+        VBox card = new VBox(3.0d);
         card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().addAll("runtime-metric-card", "memory-metric-card");
-        if (primary) card.getStyleClass().add("runtime-metric-card-primary");
+        card.getStyleClass().add("memory-mini-metric-card");
         Label title = new Label();
         title.textProperty().bind(I18N.createStringBinding(labelKey));
         title.setWrapText(true);
-        title.getStyleClass().add("runtime-metric-card-title");
-        value.getStyleClass().add("runtime-metric-card-value");
-        value.setWrapText(true);
+        title.getStyleClass().add("memory-mini-metric-title");
+        value.getStyleClass().add("memory-mini-metric-value");
+        value.setWrapText(false);
         card.getChildren().addAll(title, value);
         GridPane.setHgrow(card, Priority.ALWAYS);
-        grid.add(card, column, row);
+        grid.add(card, column, 0);
     }
 
     private static Label valueLabel() {
@@ -292,6 +315,22 @@ public final class MemoryProfileView extends VBox {
         return label;
     }
 
+    private static void addDetailTile(GridPane grid, int column, int row, String key, Label value) {
+        VBox tile = new VBox(2.0d);
+        tile.setMaxWidth(Double.MAX_VALUE);
+        tile.getStyleClass().add("memory-detail-tile");
+        Label title = new Label();
+        title.textProperty().bind(I18N.createStringBinding(key));
+        title.setWrapText(true);
+        title.getStyleClass().add("memory-detail-label");
+        value.getStyleClass().add("memory-detail-value");
+        value.setMaxWidth(Double.MAX_VALUE);
+        value.setWrapText(false);
+        tile.getChildren().addAll(title, value);
+        GridPane.setHgrow(tile, Priority.ALWAYS);
+        grid.add(tile, column, row);
+    }
+
     private static void addDetailRow(GridPane grid, int row, String key, Label value) {
         Label title = new Label();
         title.textProperty().bind(I18N.createStringBinding(key));
@@ -300,6 +339,11 @@ public final class MemoryProfileView extends VBox {
         value.setMaxWidth(Double.MAX_VALUE);
         grid.add(title, 0, row);
         grid.add(value, 1, row);
+    }
+
+    private static void hideInitially(Node node) {
+        node.setManaged(false);
+        node.setVisible(false);
     }
 
     public record Bindings(

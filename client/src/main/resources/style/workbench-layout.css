@@ -747,7 +747,10 @@
 
 /* ---------- memory profiler ---------- */
 .memory-profile-view {
-    -fx-spacing: 0.88em;
+    -fx-spacing: 0.62em;
+}
+.memory-profile-header {
+    -fx-padding: 0.02em 0.02em 0.24em 0.02em;
 }
 .memory-status-pill {
     -fx-padding: 0.16em 0.48em;
@@ -760,33 +763,55 @@
     -fx-pref-height: 0.32em;
     -fx-max-height: 0.32em;
 }
-.memory-metric-card {
-    -fx-min-height: 4.15em;
-    -fx-padding: 0.72em 0.78em;
+.memory-metrics-section {
+    -fx-spacing: 0.48em;
+}
+.memory-hero-card {
+    -fx-min-height: 4.55em;
+    -fx-padding: 0.72em 0.82em;
+}
+.memory-mini-metric-card {
+    -fx-min-height: 3.38em;
+    -fx-padding: 0.52em 0.58em;
+}
+.memory-panel-card {
+    -fx-padding: 0.70em 0.74em 0.56em 0.74em;
 }
 .memory-allocation-chart {
-    -fx-min-height: 7.5em;
-    -fx-pref-height: 8.5em;
+    -fx-min-height: 6.50em;
+    -fx-pref-height: 7.35em;
 }
-.memory-details-section,
-.memory-chart-section {
+.memory-chart-axis {
+    -fx-padding: 0 0.08em;
+}
+.memory-details-section {
     -fx-padding: 0;
 }
-
+.memory-detail-tile {
+    -fx-min-height: 3.05em;
+    -fx-padding: 0.48em 0.58em;
+}
+.memory-notice-stack {
+    -fx-spacing: 0.36em;
+}
+.memory-disclosure {
+    -fx-padding: 0;
+}
 .memory-deep-section {
-    -fx-spacing: 10;
+    -fx-spacing: 0.55em;
+    -fx-padding: 0.68em 0.72em 0.74em 0.72em;
 }
 .memory-analysis-button {
     -fx-max-width: Infinity;
 }
 .memory-analysis-list,
 .memory-footprint-box {
-    -fx-spacing: 6;
+    -fx-spacing: 0.38em;
 }
 .memory-analysis-row {
-    -fx-min-height: 28;
-    -fx-padding: 5 8;
+    -fx-min-height: 2.00em;
+    -fx-padding: 0.32em 0.48em;
 }
 .memory-analysis-name {
-    -fx-max-width: 260;
+    -fx-max-width: 16em;
 }

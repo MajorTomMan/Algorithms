@@ -25,6 +25,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
@@ -42,15 +43,22 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private final Line topGrid = gridLine();
   private final Line middleGrid = gridLine();
   private final Line bottomGrid = gridLine();
+  private final Path area = new Path();
   private final Path curve = new Path();
-  private final Circle cursorMarker = new Circle(3.5d);
+  private final Line cursorGuide = new Line();
+  private final Circle cursorMarker = new Circle(4.0d);
   private final Rectangle clip = new Rectangle();
   private boolean chartInstalled;
 
   public FxMemoryRenderer(MemoryProfileView target) {
     this.view = Objects.requireNonNull(target, "target").bindings();
+    area.getStyleClass().add("memory-allocation-area");
+    area.setMouseTransparent(true);
     curve.getStyleClass().add("memory-allocation-curve");
     curve.setMouseTransparent(true);
+    cursorGuide.getStyleClass().add("memory-allocation-cursor-guide");
+    cursorGuide.setMouseTransparent(true);
+    cursorGuide.setVisible(false);
     cursorMarker.getStyleClass().add("memory-allocation-cursor");
     cursorMarker.setMouseTransparent(true);
   }
@@ -115,7 +123,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     visible(view.chartSection(), showTimeline);
     OptionalLong chartMaximum = chartMaximum(profile, model.timelineSamples());
     view.chartMaxLabel().setText(chartMaximum.isPresent()
-        ? formatBytes(chartMaximum.getAsLong())
+        ? I18N.text("label.workspace.memory.chart_max") + " " + formatBytes(chartMaximum.getAsLong())
         : "—");
     view.chartStartLabel().setText("0 ms");
     view.chartEndLabel().setText(formatDuration(profile.durationNanos()));
@@ -220,7 +228,9 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     positionGrid(middleGrid, x0, x1, middle);
     positionGrid(bottomGrid, x0, x1, y1);
 
+    area.getElements().clear();
     curve.getElements().clear();
+    cursorGuide.setVisible(false);
     cursorMarker.setVisible(false);
     List<MemoryAllocationSample> samples = model.timelineSamples();
     MemoryFacts profile = model.facts().orElse(null);
@@ -236,42 +246,52 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     long visibleElapsed = model.cursorProjected()
         ? Math.min(maxElapsed, model.visibleElapsedNanos())
         : maxElapsed;
-    boolean started = false;
+
+    curve.getElements().add(new MoveTo(x0, y1));
+    area.getElements().add(new MoveTo(x0, y1));
+    double lastX = x0;
+    double lastY = y1;
     for (MemoryAllocationSample sample : samples) {
       if (sample.elapsedNanos() > visibleElapsed) break;
       double x = chartX(sample.elapsedNanos(), maxElapsed, x0, x1);
       double y = chartY(sample.allocatedBytes(), maxAllocated, y0, y1);
-      if (!started) {
-        curve.getElements().add(new MoveTo(x, y));
-        started = true;
-      } else {
-        curve.getElements().add(new LineTo(x, y));
-      }
+      curve.getElements().add(new LineTo(x, y));
+      area.getElements().add(new LineTo(x, y));
+      lastX = x;
+      lastY = y;
     }
 
     OptionalLong currentBytes = model.currentAllocatedBytes();
-    if (currentBytes.isPresent() && visibleElapsed >= 0L) {
+    if (currentBytes.isPresent()) {
       double x = chartX(visibleElapsed, maxElapsed, x0, x1);
       double y = chartY(currentBytes.getAsLong(), maxAllocated, y0, y1);
-      if (!started) {
-        curve.getElements().add(new MoveTo(x0, y1));
-        started = true;
-      }
       MemoryAllocationSample lastVisible = lastVisibleSample(samples, visibleElapsed);
       if (lastVisible == null
           || lastVisible.elapsedNanos() != visibleElapsed
           || lastVisible.allocatedBytes() != currentBytes.getAsLong()) {
         curve.getElements().add(new LineTo(x, y));
+        area.getElements().add(new LineTo(x, y));
       }
+      lastX = x;
+      lastY = y;
+      cursorGuide.setStartX(x);
+      cursorGuide.setEndX(x);
+      cursorGuide.setStartY(y0);
+      cursorGuide.setEndY(y1);
+      cursorGuide.setVisible(true);
       cursorMarker.setCenterX(x);
       cursorMarker.setCenterY(y);
       cursorMarker.setVisible(true);
     }
+
+    area.getElements().add(new LineTo(lastX, y1));
+    area.getElements().add(new ClosePath());
   }
 
   private void ensureChartInstalled() {
     if (chartInstalled) return;
-    view.chartHost().getChildren().setAll(topGrid, middleGrid, bottomGrid, curve, cursorMarker);
+    view.chartHost().getChildren().setAll(
+        topGrid, middleGrid, bottomGrid, area, curve, cursorGuide, cursorMarker);
     view.chartHost().setClip(clip);
     chartInstalled = true;
   }

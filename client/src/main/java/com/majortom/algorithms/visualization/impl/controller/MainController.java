@@ -713,7 +713,16 @@ public class MainController implements Initializable {
                         structureMetricsGrid,
                         algorithmMetricsSection,
                         algorithmMetricsGrid,
-                        performanceMetricsGrid));
+                        performanceMetricsGrid,
+                        new FxRuntimeOverviewRenderer.RunSummaryBindings(
+                                runMetric1Title,
+                                runMetric1Value,
+                                runMetric2Title,
+                                runMetric2Value,
+                                runMetric3Title,
+                                runMetric3Value,
+                                runMetric4Title,
+                                runMetric4Value)));
         presentationSurfacePort.registerPresentationSurface(surface)
                 .thenCompose(ignored ->
                         presentationSurfacePort.activatePresentationSurface(RUNTIME_OVERVIEW_SURFACE_ID))
@@ -3501,29 +3510,7 @@ public class MainController implements Initializable {
     private void refreshRunSummary() {
         if (currentSubController == null) return;
         publishMemoryPresentations();
-        RuntimeOverviewModel overview = currentSubController.runtimeOverview();
-        publishRuntimeOverview(overview);
-        if (runMetric1Title == null) return;
-        List<MetricItem> algorithm = overview.algorithmMetrics();
-        List<MetricDisplay> metrics = new ArrayList<>();
-        for (MetricItem metric : algorithm) {
-            if (metrics.size() >= 3) break;
-            metrics.add(new MetricDisplay(RuntimeOverviewText.label(metric), RuntimeOverviewText.value(metric)));
-        }
-        while (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(I18N.text("label.workspace.metric.events"), "0"));
-        }
-        MetricItem duration = overview.performanceMetrics().stream()
-                .filter(metric -> "totalDuration".equals(metric.key()))
-                .findFirst()
-                .orElse(null);
-        metrics.add(duration == null
-                ? new MetricDisplay(I18N.text("label.workspace.metric.duration"), "—")
-                : new MetricDisplay(RuntimeOverviewText.label(duration), RuntimeOverviewText.value(duration)));
-        setMetric(runMetric1Title, runMetric1Value, metrics.get(0));
-        setMetric(runMetric2Title, runMetric2Value, metrics.get(1));
-        setMetric(runMetric3Title, runMetric3Value, metrics.get(2));
-        setMetric(runMetric4Title, runMetric4Value, metrics.get(3));
+        publishRuntimeOverview(currentSubController.runtimeOverview());
     }
 
     private void publishRuntimeOverview(RuntimeOverviewModel overview) {
@@ -3531,11 +3518,6 @@ public class MainController implements Initializable {
         runtimeOverviewPresentationSource.publish(
                 overview == null ? RuntimeOverviewModel.empty() : overview);
         presentationSurfacePort.invalidatePresentationSurface(RUNTIME_OVERVIEW_SURFACE_ID);
-    }
-
-    private void setMetric(Label title, Label value, MetricDisplay metric) {
-        title.setText(metric.title());
-        value.setText(metric.value());
     }
 
     private void publishMemoryPresentations() {
@@ -3615,7 +3597,6 @@ public class MainController implements Initializable {
         timelineCursorLabel.setVisible(true);
     }
 
-    private record MetricDisplay(String title, String value) {}
 
     private void rebuildTimelineMarkers() {
         if (timelineMarkers == null || currentSubController == null) {

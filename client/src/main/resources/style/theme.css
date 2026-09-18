@@ -1794,6 +1794,10 @@
 }
 
 /* ---------- memory profiler ---------- */
+.memory-profile-header {
+    -fx-border-color: transparent transparent #eceef1 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
 .memory-status-pill {
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
@@ -1822,21 +1826,62 @@
 .memory-status-dot {
     -fx-background-radius: 999px;
 }
-.memory-allocation-chart {
+.memory-hero-card {
+    -fx-background-color: linear-gradient(to right, #fff7f7, #ffffff);
+    -fx-background-radius: 8px;
+    -fx-border-color: #f51b23 #e6e8eb #e6e8eb #f51b23;
+    -fx-border-width: 1px 1px 1px 3px;
+    -fx-border-radius: 8px;
+}
+.memory-hero-title,
+.memory-mini-metric-title {
+    -fx-text-fill: #777e86;
+}
+.memory-hero-value {
+    -fx-text-fill: #111418;
+}
+.memory-mini-metric-card,
+.memory-detail-tile {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e7eaed;
+    -fx-border-width: 1px;
+    -fx-border-radius: 7px;
+}
+.memory-mini-metric-value {
+    -fx-text-fill: #24282d;
+}
+.memory-panel-card {
     -fx-background-color: #ffffff;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e3e6e9;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}
+.memory-allocation-chart {
+    -fx-background-color: #fbfcfd;
     -fx-background-radius: 6px;
-    -fx-border-color: #e1e4e8;
+    -fx-border-color: #edf0f2;
     -fx-border-width: 1px;
     -fx-border-radius: 6px;
 }
 .memory-chart-grid-line {
-    -fx-stroke: #edf0f2;
+    -fx-stroke: #e9edf0;
     -fx-stroke-width: 1px;
+}
+.memory-allocation-area {
+    -fx-fill: rgba(245, 27, 35, 0.09);
+    -fx-stroke: transparent;
 }
 .memory-allocation-curve {
     -fx-fill: transparent;
     -fx-stroke: #f51b23;
     -fx-stroke-width: 2px;
+}
+.memory-allocation-cursor-guide {
+    -fx-stroke: rgba(245, 27, 35, 0.45);
+    -fx-stroke-width: 1px;
+    -fx-stroke-dash-array: 3 3;
 }
 .memory-allocation-cursor {
     -fx-fill: #f51b23;
@@ -1854,47 +1899,73 @@
     -fx-text-fill: #24282d;
 }
 .memory-notice {
-    -fx-text-fill: #7a6530;
+    -fx-text-fill: #725d29;
     -fx-background-color: #fffaf0;
-    -fx-background-radius: 6px;
+    -fx-background-radius: 7px;
     -fx-border-color: #f0e4c4;
-    -fx-border-radius: 6px;
-    -fx-padding: 0.70em 0.78em;
+    -fx-border-radius: 7px;
+    -fx-padding: 0.62em 0.70em;
 }
 .memory-empty-state {
-    -fx-text-fill: #777e86;
+    -fx-text-fill: #737a82;
     -fx-background-color: #f8f9fa;
-    -fx-background-radius: 6px;
-    -fx-border-color: #e6e9ec;
-    -fx-border-radius: 6px;
-    -fx-padding: 0.86em;
+    -fx-background-radius: 8px;
+    -fx-border-color: #dfe3e7;
+    -fx-border-style: segments(3, 3);
+    -fx-border-radius: 8px;
+    -fx-padding: 0.80em;
 }
-
-.memory-deep-section {
-    -fx-background-color: rgba(248, 249, 251, 0.76);
-    -fx-background-radius: 10;
-    -fx-border-color: rgba(30, 36, 48, 0.08);
-    -fx-border-radius: 10;
-    -fx-padding: 12;
+.memory-disclosure {
+    -fx-background-color: transparent;
+    -fx-text-fill: #24282d;
+}
+.memory-disclosure > .title {
+    -fx-background-color: #f7f8fa;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e3e6e9;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}
+.memory-disclosure:expanded > .title {
+    -fx-background-radius: 8px 8px 0 0;
+    -fx-border-radius: 8px 8px 0 0;
+}
+.memory-disclosure > .content {
+    -fx-background-color: #fbfcfd;
+    -fx-background-radius: 0 0 8px 8px;
+    -fx-border-color: transparent #e3e6e9 #e3e6e9 #e3e6e9;
+    -fx-border-width: 0 1px 1px 1px;
+    -fx-border-radius: 0 0 8px 8px;
 }
 .memory-analysis-row {
-    -fx-background-color: rgba(255, 255, 255, 0.72);
-    -fx-background-radius: 7;
-    -fx-border-color: rgba(30, 36, 48, 0.07);
-    -fx-border-radius: 7;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e8ebee;
+    -fx-border-radius: 6px;
 }
 .memory-analysis-name {
-    -fx-text-fill: #777e86;
+    -fx-text-fill: #737a82;
 }
 .memory-analysis-value {
     -fx-text-fill: #24282d;
     -fx-font-weight: 700;
 }
 .memory-footprint-box {
-    -fx-padding: 10;
-    -fx-background-color: rgba(255, 255, 255, 0.68);
-    -fx-background-radius: 8;
+    -fx-padding: 0.65em;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 7px;
+    -fx-border-color: #e8ebee;
+    -fx-border-radius: 7px;
 }
 .memory-analysis-button {
-    -fx-background-radius: 8;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d6dbe0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-text-fill: #262a2f;
+}
+.memory-analysis-button:hover {
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #d61b22;
 }

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.render.presentation.metrics;
 
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.metrics.MetricItem;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
@@ -15,25 +16,28 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-/** RenderFramework-owned FX commit for the runtime statistics inspector. */
+/** RenderFramework-owned FX commit for runtime statistics and run-summary presentation. */
 public final class FxRuntimeOverviewRenderer
     implements PresentationRenderer<RuntimeOverviewModel> {
   private final GridPane structureMetricsGrid;
   private final VBox algorithmMetricsSection;
   private final GridPane algorithmMetricsGrid;
   private final GridPane performanceMetricsGrid;
+  private final RunSummaryBindings runSummary;
 
   public FxRuntimeOverviewRenderer(
       GridPane structureMetricsGrid,
       VBox algorithmMetricsSection,
       GridPane algorithmMetricsGrid,
-      GridPane performanceMetricsGrid) {
+      GridPane performanceMetricsGrid,
+      RunSummaryBindings runSummary) {
     this.structureMetricsGrid = Objects.requireNonNull(structureMetricsGrid, "structureMetricsGrid");
     this.algorithmMetricsSection =
         Objects.requireNonNull(algorithmMetricsSection, "algorithmMetricsSection");
     this.algorithmMetricsGrid = Objects.requireNonNull(algorithmMetricsGrid, "algorithmMetricsGrid");
     this.performanceMetricsGrid =
         Objects.requireNonNull(performanceMetricsGrid, "performanceMetricsGrid");
+    this.runSummary = Objects.requireNonNull(runSummary, "runSummary");
   }
 
   @Override
@@ -49,7 +53,39 @@ public final class FxRuntimeOverviewRenderer
     boolean hasAlgorithmMetrics = !model.algorithmMetrics().isEmpty();
     algorithmMetricsSection.setManaged(hasAlgorithmMetrics);
     algorithmMetricsSection.setVisible(hasAlgorithmMetrics);
+    renderRunSummary(model);
     return CompletableFuture.completedFuture(null);
+  }
+
+  private void renderRunSummary(RuntimeOverviewModel model) {
+    List<MetricItem> algorithm = model.algorithmMetrics();
+    setRunMetric(runSummary.metric1Title(), runSummary.metric1Value(), algorithm, 0);
+    setRunMetric(runSummary.metric2Title(), runSummary.metric2Value(), algorithm, 1);
+    setRunMetric(runSummary.metric3Title(), runSummary.metric3Value(), algorithm, 2);
+
+    MetricItem duration = model.performanceMetrics().stream()
+        .filter(metric -> "totalDuration".equals(metric.key()))
+        .findFirst()
+        .orElse(null);
+    if (duration == null) {
+      runSummary.metric4Title().setText(I18N.text("label.workspace.metric.duration"));
+      runSummary.metric4Value().setText("—");
+    } else {
+      runSummary.metric4Title().setText(RuntimeOverviewText.label(duration));
+      runSummary.metric4Value().setText(RuntimeOverviewText.value(duration));
+    }
+  }
+
+  private static void setRunMetric(
+      Label title, Label value, List<MetricItem> metrics, int index) {
+    if (index < metrics.size()) {
+      MetricItem metric = metrics.get(index);
+      title.setText(RuntimeOverviewText.label(metric));
+      value.setText(RuntimeOverviewText.value(metric));
+      return;
+    }
+    title.setText(I18N.text("label.workspace.metric.events"));
+    value.setText("0");
   }
 
   private static void populateMetricCards(
@@ -94,6 +130,28 @@ public final class FxRuntimeOverviewRenderer
       VBox card = (VBox) grid.getChildren().get(index);
       ((Label) card.getChildren().get(0)).setText(RuntimeOverviewText.label(metric));
       ((Label) card.getChildren().get(1)).setText(RuntimeOverviewText.value(metric));
+    }
+  }
+
+  /** Static JavaFX targets; all dynamic run-summary values are committed by this renderer. */
+  public record RunSummaryBindings(
+      Label metric1Title,
+      Label metric1Value,
+      Label metric2Title,
+      Label metric2Value,
+      Label metric3Title,
+      Label metric3Value,
+      Label metric4Title,
+      Label metric4Value) {
+    public RunSummaryBindings {
+      Objects.requireNonNull(metric1Title, "metric1Title");
+      Objects.requireNonNull(metric1Value, "metric1Value");
+      Objects.requireNonNull(metric2Title, "metric2Title");
+      Objects.requireNonNull(metric2Value, "metric2Value");
+      Objects.requireNonNull(metric3Title, "metric3Title");
+      Objects.requireNonNull(metric3Value, "metric3Value");
+      Objects.requireNonNull(metric4Title, "metric4Title");
+      Objects.requireNonNull(metric4Value, "metric4Value");
     }
   }
 }
