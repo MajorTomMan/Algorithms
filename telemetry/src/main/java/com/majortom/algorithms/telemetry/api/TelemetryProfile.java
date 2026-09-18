@@ -41,6 +41,14 @@ public record TelemetryProfile(
     return Optional.ofNullable(summary.get(metricId));
   }
 
+  /**
+   * Preserves factual totals while suppressing wall-time-derived samples for debugger-instrumented runs.
+   */
+  public TelemetryProfile withoutRepresentativeTiming() {
+    return new TelemetryProfile(
+        sessionId, state, capabilities, false, durationNanos, descriptors, summary, List.of());
+  }
+
   private static <V> Map<String, V> immutableMap(Map<String, V> source, String name) {
     Objects.requireNonNull(source, name);
     Map<String, V> copy = new LinkedHashMap<>();

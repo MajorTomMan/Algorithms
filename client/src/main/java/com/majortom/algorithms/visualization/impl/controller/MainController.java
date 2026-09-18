@@ -1,7 +1,8 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.core.memory.MemoryDomain;
+import com.majortom.algorithms.telemetry.api.TelemetryDomain;
+import com.majortom.algorithms.telemetry.memory.analysis.StructureFootprint;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
@@ -43,6 +44,14 @@ import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSup
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
+import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
+import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.PresentationSurface;
+import com.majortom.algorithms.visualization.render.presentation.MutablePresentationModelSource;
+import com.majortom.algorithms.visualization.render.presentation.metrics.FxRuntimeOverviewRenderer;
+import com.majortom.algorithms.visualization.render.presentation.memory.FxMemoryRenderer;
+import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationInput;
+import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationSource;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.settings.FontSettings;
@@ -113,6 +122,12 @@ public class MainController implements Initializable {
     private static final FontSettingsService FONT_SETTINGS_SERVICE = new FontSettingsService();
     private static final PracticeProblemRegistry PRACTICE_PROBLEMS =
             PracticeProblemRegistry.discover("com.majortom.algorithms");
+    private static final RenderSessionId RUNTIME_OVERVIEW_SURFACE_ID =
+            RenderSessionId.of("workbench:runtime-overview");
+    private static final RenderSessionId STRUCTURE_MEMORY_SURFACE_ID =
+            RenderSessionId.of("workbench:memory:structure");
+    private static final RenderSessionId ALGORITHM_MEMORY_SURFACE_ID =
+            RenderSessionId.of("workbench:memory:algorithm");
 
     @FXML
     private BorderPane rootPane;
@@ -523,6 +538,15 @@ public class MainController implements Initializable {
     private boolean timelineObservationVisible = true;
     /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
+    private final PresentationSurfacePort presentationSurfacePort = RenderRuntime.presentationSurfaces();
+    private MutablePresentationModelSource<RuntimeOverviewModel> runtimeOverviewPresentationSource;
+    private MemoryPresentationSource structureMemoryPresentationSource;
+    private MemoryPresentationSource algorithmMemoryPresentationSource;
+    private FxMemoryRenderer structureMemoryRenderer;
+    private FxMemoryRenderer algorithmMemoryRenderer;
+    private StructureFootprint structureFootprint;
+    private boolean structureFootprintBusy;
+    private long memoryContextGeneration;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -540,6 +564,8 @@ public class MainController implements Initializable {
         setupPlaybackSpeedButtons();
         setupPlaybackShellActions();
         setupTimelinePresentation();
+        setupStatisticsPresentationSurface();
+        setupMemoryPresentationSurfaces();
         setupGlobalEffects();
         setupLayoutClips();
         setStructureHistoryExpanded(false);
@@ -661,6 +687,7 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
+            publishMemoryPresentations();
             if (uiFramework != null) uiFramework.scheduleRefresh();
             boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
@@ -674,6 +701,82 @@ public class MainController implements Initializable {
         };
         I18N.localeProperty().addListener(new javafx.beans.value.WeakChangeListener<>(localeListener));
         refreshPauseText();
+    }
+
+    private void setupStatisticsPresentationSurface() {
+        runtimeOverviewPresentationSource =
+                new MutablePresentationModelSource<>(RuntimeOverviewModel.empty());
+        PresentationSurface<RuntimeOverviewModel> surface = PresentationSurface.standalone(
+                RUNTIME_OVERVIEW_SURFACE_ID,
+                runtimeOverviewPresentationSource,
+                new FxRuntimeOverviewRenderer(
+                        structureMetricsGrid,
+                        algorithmMetricsSection,
+                        algorithmMetricsGrid,
+                        performanceMetricsGrid));
+        presentationSurfacePort.registerPresentationSurface(surface)
+                .thenCompose(ignored ->
+                        presentationSurfacePort.activatePresentationSurface(RUNTIME_OVERVIEW_SURFACE_ID))
+                .exceptionally(failure -> {
+                    System.err.println("Failed to initialize runtime overview presentation surface: "
+                            + failure);
+                    return null;
+                });
+    }
+
+    private void setupMemoryPresentationSurfaces() {
+        if (structureMemoryView == null || algorithmMemoryView == null) return;
+        structureMemoryPresentationSource =
+                new MemoryPresentationSource(MemoryPresentationInput.empty(TelemetryDomain.STRUCTURE));
+        algorithmMemoryPresentationSource =
+                new MemoryPresentationSource(MemoryPresentationInput.empty(TelemetryDomain.ALGORITHM));
+        structureMemoryRenderer = new FxMemoryRenderer(structureMemoryView);
+        algorithmMemoryRenderer = new FxMemoryRenderer(algorithmMemoryView);
+
+        structureMemoryView.setDeepAnalysisAction(this::setDeepMemoryAnalysisEnabled);
+        algorithmMemoryView.setDeepAnalysisAction(this::setDeepMemoryAnalysisEnabled);
+        structureMemoryView.setFootprintAction(this::requestStructureFootprint);
+        structureMemoryView.setChartInvalidationAction(
+                () -> invalidateMemorySurface(STRUCTURE_MEMORY_SURFACE_ID));
+        algorithmMemoryView.setChartInvalidationAction(
+                () -> invalidateMemorySurface(ALGORITHM_MEMORY_SURFACE_ID));
+
+        registerMemorySurface(PresentationSurface.standalone(
+                STRUCTURE_MEMORY_SURFACE_ID, structureMemoryPresentationSource, structureMemoryRenderer));
+        registerMemorySurface(PresentationSurface.standalone(
+                ALGORITHM_MEMORY_SURFACE_ID, algorithmMemoryPresentationSource, algorithmMemoryRenderer));
+    }
+
+    private <M> void registerMemorySurface(PresentationSurface<M> surface) {
+        presentationSurfacePort.registerPresentationSurface(surface)
+                .thenCompose(ignored ->
+                        presentationSurfacePort.activatePresentationSurface(surface.sessionId()))
+                .exceptionally(failure -> {
+                    System.err.println("Failed to initialize Memory presentation surface: " + failure);
+                    return null;
+                });
+    }
+
+    private void bindMemoryPresentationCursor(RenderSessionId cursorSessionId) {
+        if (cursorSessionId == null
+                || structureMemoryPresentationSource == null
+                || algorithmMemoryPresentationSource == null) {
+            return;
+        }
+        presentationSurfacePort.registerPresentationSurface(PresentationSurface.followingCursor(
+                STRUCTURE_MEMORY_SURFACE_ID,
+                cursorSessionId,
+                structureMemoryPresentationSource,
+                structureMemoryRenderer));
+        presentationSurfacePort.registerPresentationSurface(PresentationSurface.followingCursor(
+                ALGORITHM_MEMORY_SURFACE_ID,
+                cursorSessionId,
+                algorithmMemoryPresentationSource,
+                algorithmMemoryRenderer));
+    }
+
+    private void invalidateMemorySurface(RenderSessionId surfaceId) {
+        presentationSurfacePort.invalidatePresentationSurface(surfaceId);
     }
 
     private void setupSnapshotPreviewPresentation() {
@@ -1916,6 +2019,12 @@ public class MainController implements Initializable {
                 this::refreshRunSummary));
 
         currentSubController = newController;
+        memoryContextGeneration++;
+        structureFootprint = null;
+        structureFootprintBusy = false;
+        if (currentSubController.getVisualizer() != null) {
+            bindMemoryPresentationCursor(currentSubController.getVisualizer().sessionId());
+        }
         currentSubController.pausedProperty().addListener((observable, oldValue, newValue) -> {
             refreshPauseText();
             refreshTopContext();
@@ -1944,6 +2053,9 @@ public class MainController implements Initializable {
                     selectedSnapshotIds.remove(activeDefinition.id());
                 }
             }
+            memoryContextGeneration++;
+            structureFootprint = null;
+            structureFootprintBusy = false;
             refreshSnapshotCards();
             refreshStructureSummary();
             updateWorkspaceInteractionState();
@@ -1959,6 +2071,9 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
+        memoryContextGeneration++;
+        structureFootprint = null;
+        structureFootprintBusy = false;
         if (structureRevisionListener != null) {
             currentSubController.structureRevisionProperty().removeListener(structureRevisionListener);
             structureRevisionListener = null;
@@ -2901,7 +3016,7 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
-        refreshMemoryViews();
+        publishMemoryPresentations();
         StructureSnapshot<?> previewSnapshot = null;
         StructureSnapshotSupport<?> snapshotSupport = null;
         if (structureSnapshotPreviewActive && activeDefinition != null) {
@@ -3385,9 +3500,9 @@ public class MainController implements Initializable {
 
     private void refreshRunSummary() {
         if (currentSubController == null) return;
-        refreshMemoryViews();
+        publishMemoryPresentations();
         RuntimeOverviewModel overview = currentSubController.runtimeOverview();
-        renderRuntimeOverview(overview);
+        publishRuntimeOverview(overview);
         if (runMetric1Title == null) return;
         List<MetricItem> algorithm = overview.algorithmMetrics();
         List<MetricDisplay> metrics = new ArrayList<>();
@@ -3411,61 +3526,11 @@ public class MainController implements Initializable {
         setMetric(runMetric4Title, runMetric4Value, metrics.get(3));
     }
 
-    private void renderRuntimeOverview(RuntimeOverviewModel overview) {
-        if (overview == null) return;
-        populateMetricCards(structureMetricsGrid, overview.structureMetrics(), "runtime-metric-card-structure");
-        populateMetricCards(algorithmMetricsGrid, overview.algorithmMetrics(), "runtime-metric-card-algorithm");
-        populateMetricCards(performanceMetricsGrid, overview.performanceMetrics(), "runtime-metric-card-performance");
-        if (algorithmMetricsSection != null) {
-            boolean hasAlgorithmMetrics = !overview.algorithmMetrics().isEmpty();
-            algorithmMetricsSection.setManaged(hasAlgorithmMetrics);
-            algorithmMetricsSection.setVisible(hasAlgorithmMetrics);
-        }
-    }
-
-    private void populateMetricCards(GridPane grid, List<MetricItem> metrics, String kindStyleClass) {
-        if (grid == null) return;
-        boolean reusable = grid.getChildren().size() == metrics.size();
-        if (reusable) {
-            for (int index = 0; index < metrics.size(); index++) {
-                Node node = grid.getChildren().get(index);
-                if (!(node instanceof VBox card) || !metrics.get(index).key().equals(card.getUserData())) {
-                    reusable = false;
-                    break;
-                }
-            }
-        }
-        if (!reusable) {
-            grid.getChildren().clear();
-            for (int index = 0; index < metrics.size(); index++) {
-                MetricItem metric = metrics.get(index);
-                VBox card = new VBox(4.0d);
-                card.setUserData(metric.key());
-                card.setMaxWidth(Double.MAX_VALUE);
-                card.getStyleClass().addAll("runtime-metric-card", kindStyleClass);
-                if (index == 0) card.getStyleClass().add("runtime-metric-card-primary");
-
-                Label title = new Label();
-                title.setWrapText(true);
-                title.setMaxWidth(Double.MAX_VALUE);
-                title.getStyleClass().add("runtime-metric-card-title");
-
-                Label value = new Label();
-                value.setWrapText(true);
-                value.setMaxWidth(Double.MAX_VALUE);
-                value.getStyleClass().add("runtime-metric-card-value");
-
-                card.getChildren().addAll(title, value);
-                GridPane.setHgrow(card, Priority.ALWAYS);
-                grid.add(card, index % 2, index / 2);
-            }
-        }
-        for (int index = 0; index < metrics.size(); index++) {
-            MetricItem metric = metrics.get(index);
-            VBox card = (VBox) grid.getChildren().get(index);
-            ((Label) card.getChildren().get(0)).setText(RuntimeOverviewText.label(metric));
-            ((Label) card.getChildren().get(1)).setText(RuntimeOverviewText.value(metric));
-        }
+    private void publishRuntimeOverview(RuntimeOverviewModel overview) {
+        if (runtimeOverviewPresentationSource == null) return;
+        runtimeOverviewPresentationSource.publish(
+                overview == null ? RuntimeOverviewModel.empty() : overview);
+        presentationSurfacePort.invalidatePresentationSurface(RUNTIME_OVERVIEW_SURFACE_ID);
     }
 
     private void setMetric(Label title, Label value, MetricDisplay metric) {
@@ -3473,43 +3538,72 @@ public class MainController implements Initializable {
         value.setText(metric.value());
     }
 
-    private void refreshMemoryViews() {
-        if (currentSubController == null) {
+    private void publishMemoryPresentations() {
+        if (structureMemoryPresentationSource == null || algorithmMemoryPresentationSource == null) {
             return;
         }
-        if (structureMemoryView != null) {
-            structureMemoryView.showProfile(
-                    currentSubController.structureMemoryProfile().orElse(null),
-                    currentSubController.memoryCapabilities(),
-                    MemoryDomain.STRUCTURE);
-            structureMemoryView.showDeepAnalysis(
-                    currentSubController.structureLogScopeId(),
-                    currentSubController.structureDeepMemoryProfile().orElse(null),
-                    currentSubController.memoryCapabilities().jfrAvailable(),
+        if (currentSubController == null) {
+            structureMemoryPresentationSource.publish(
+                    MemoryPresentationInput.empty(TelemetryDomain.STRUCTURE));
+            algorithmMemoryPresentationSource.publish(
+                    MemoryPresentationInput.empty(TelemetryDomain.ALGORITHM));
+        } else {
+            var capabilities = currentSubController.memoryCapabilities();
+            structureMemoryPresentationSource.publish(new MemoryPresentationInput(
+                    TelemetryDomain.STRUCTURE,
+                    capabilities,
+                    currentSubController.structureMemoryProfile(),
+                    currentSubController.latestStructureExecutionAnchors(),
+                    currentSubController.structureDeepMemoryProfile(),
+                    java.util.Optional.ofNullable(structureFootprint),
                     currentSubController.isDeepMemoryAnalysisEnabled(),
-                    enabled -> {
-                        currentSubController.setDeepMemoryAnalysisEnabled(enabled);
-                        refreshMemoryViews();
-                    },
                     currentSubController.structureFootprintAvailable(),
-                    currentSubController::analyzeStructureFootprint);
-        }
-        if (algorithmMemoryView != null) {
-            algorithmMemoryView.showProfile(
-                    currentSubController.algorithmMemoryProfile().orElse(null),
-                    currentSubController.memoryCapabilities(),
-                    MemoryDomain.ALGORITHM);
-            algorithmMemoryView.showDeepAnalysis(
-                    currentSubController.structureLogScopeId(),
-                    currentSubController.algorithmDeepMemoryProfile().orElse(null),
-                    currentSubController.memoryCapabilities().jfrAvailable(),
+                    structureFootprintBusy));
+            algorithmMemoryPresentationSource.publish(new MemoryPresentationInput(
+                    TelemetryDomain.ALGORITHM,
+                    capabilities,
+                    currentSubController.algorithmMemoryProfile(),
+                    currentSubController.latestExecutionAnchors(),
+                    currentSubController.algorithmDeepMemoryProfile(),
+                    java.util.Optional.empty(),
                     currentSubController.isDeepMemoryAnalysisEnabled(),
-                    enabled -> {
-                        currentSubController.setDeepMemoryAnalysisEnabled(enabled);
-                        refreshMemoryViews();
-                    },
                     false,
-                    null);
+                    false));
+        }
+        invalidateMemorySurface(STRUCTURE_MEMORY_SURFACE_ID);
+        invalidateMemorySurface(ALGORITHM_MEMORY_SURFACE_ID);
+    }
+
+    private void setDeepMemoryAnalysisEnabled(boolean enabled) {
+        if (currentSubController == null) return;
+        currentSubController.setDeepMemoryAnalysisEnabled(enabled);
+        publishMemoryPresentations();
+    }
+
+    private void requestStructureFootprint() {
+        BaseController<?> owner = currentSubController;
+        if (owner == null || structureFootprintBusy || !owner.structureFootprintAvailable()) return;
+        long generation = memoryContextGeneration;
+        structureFootprintBusy = true;
+        structureFootprint = null;
+        publishMemoryPresentations();
+        try {
+            owner.analyzeStructureFootprint().whenComplete((result, failure) -> FxDispatch.defer(() -> {
+                if (owner != currentSubController || generation != memoryContextGeneration) return;
+                structureFootprintBusy = false;
+                structureFootprint = failure == null
+                        ? result
+                        : StructureFootprint.unavailable(
+                                failure.getMessage() == null
+                                        ? failure.getClass().getSimpleName()
+                                        : failure.getMessage());
+                publishMemoryPresentations();
+            }));
+        } catch (RuntimeException failure) {
+            structureFootprintBusy = false;
+            structureFootprint = StructureFootprint.unavailable(
+                    failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage());
+            publishMemoryPresentations();
         }
     }
 

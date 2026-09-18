@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.animation.fx.FxAnimationPlayer;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import java.util.Objects;
+import java.util.function.DoubleConsumer;
 
 /**
  * Commit-boundary animation coordinator. It remembers only the previous committed facts/layout and
@@ -44,12 +45,16 @@ public final class StructureAnimationRuntime<S> implements AnimationControl {
     return plan;
   }
 
-  public void play(AnimationPlan plan, AnimationSceneAdapter scene) {
+  public void play(AnimationPlan plan, AnimationSceneAdapter scene, DoubleConsumer progressSink) {
     if (disposed) {
+      if (progressSink != null) progressSink.accept(1.0d);
       scene.stabilize(plan);
       return;
     }
-    player.play(Objects.requireNonNull(plan, "plan"), Objects.requireNonNull(scene, "scene"));
+    player.play(
+        Objects.requireNonNull(plan, "plan"),
+        Objects.requireNonNull(scene, "scene"),
+        progressSink);
   }
 
   @Override

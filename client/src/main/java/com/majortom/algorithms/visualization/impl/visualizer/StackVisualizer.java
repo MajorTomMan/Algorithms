@@ -20,7 +20,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
@@ -92,7 +92,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         if (top == null) topLabel.relocate(48.0d, 40.0d);
         else topLabel.relocate(
                 Math.max(2.0d, top.x() - 52.0d), top.y() + top.height() / 2.0d - 8.0d);
-        animationRuntime.play(plan, animationScene);
+        animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
 

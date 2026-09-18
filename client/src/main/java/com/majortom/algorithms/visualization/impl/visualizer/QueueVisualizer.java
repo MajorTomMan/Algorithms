@@ -20,7 +20,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import javafx.geometry.Point2D;
 import javafx.scene.text.Text;
 
@@ -100,7 +100,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
         }
         lastGeometry = Map.copyOf(patch.elements());
         positionLabels(lastGeometry);
-        animationRuntime.play(plan, animationScene);
+        animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
 

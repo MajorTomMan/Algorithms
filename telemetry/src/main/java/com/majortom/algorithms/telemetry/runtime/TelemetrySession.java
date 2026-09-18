@@ -12,6 +12,12 @@ public interface TelemetrySession extends AutoCloseable {
 
   boolean attachCurrentThread();
 
+  /**
+   * Establishes the exact execution boundary after optional profiler/analyzer setup.
+   * Existing samples are discarded and probe baselines are reset before a new zero-point sample.
+   */
+  void rebase();
+
   /** Forces one factual sample now; useful at important execution/event boundaries. */
   void sampleNow();
 

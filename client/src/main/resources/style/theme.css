@@ -1838,6 +1838,11 @@
     -fx-stroke: #f51b23;
     -fx-stroke-width: 2px;
 }
+.memory-allocation-cursor {
+    -fx-fill: #f51b23;
+    -fx-stroke: #ffffff;
+    -fx-stroke-width: 1.5px;
+}
 .memory-chart-summary {
     -fx-text-fill: #d61b22;
 }

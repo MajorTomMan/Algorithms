@@ -6,6 +6,9 @@ import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
+import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
+import com.majortom.algorithms.visualization.render.api.PresentationSurfaceRenderIntent;
+import com.majortom.algorithms.visualization.render.api.PresentationCursorPort;
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.RenderResult;
@@ -17,17 +20,22 @@ import com.majortom.algorithms.visualization.render.api.ViewportRenderIntent;
 import com.majortom.algorithms.visualization.render.diagnostics.RenderTrace;
 import com.majortom.algorithms.visualization.render.fx.FxExecutor;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
+import com.majortom.algorithms.visualization.render.fx.FxPresentationSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.api.PresentationSurface;
 import com.majortom.algorithms.visualization.render.fx.RenderSurfaceRegistry;
 import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.fx.PulseBarrier;
 import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
 import com.majortom.algorithms.visualization.render.viewport.CameraManager;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
 import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
+import com.majortom.algorithms.visualization.render.api.PresentationCursor;
+import com.majortom.algorithms.visualization.render.api.PresentationProgressSink;
+import com.majortom.algorithms.visualization.render.api.PresentationSnapshotContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Single-control-plane render runtime. No stage blocks another thread; every boundary is a CompletionStage continuation.
  */
-public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLifecyclePort, AutoCloseable {
+public final class DefaultRenderFramework implements RenderPort, PresentationCursorPort, PresentationSurfacePort, RenderSurfaceLifecyclePort, AutoCloseable {
     private static final double MIN_CAMERA_SCALE = 0.10d;
     private static final double MAX_AUTO_FIT_SCALE = 1.35d;
 
@@ -48,6 +56,8 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
     private final FxExecutor fxExecutor;
     private final PulseBarrier pulseBarrier;
     private final RenderSurfaceRegistry surfaces;
+    private final FxPresentationSurfaceRegistry presentationSurfaces;
+    private final PresentationSourceRegistry presentationSources = new PresentationSourceRegistry();
     private final LayoutEngineRegistry layoutEngines;
     private final CameraManager cameraManager;
     private final RenderTrace trace;
@@ -62,6 +72,7 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
             LayoutExecutor layoutExecutor,
             FxExecutor fxExecutor,
             RenderSurfaceRegistry surfaces,
+            FxPresentationSurfaceRegistry presentationSurfaces,
             LayoutEngineRegistry layoutEngines,
             CameraManager cameraManager,
             RenderTrace trace) {
@@ -70,6 +81,7 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
         this.fxExecutor = Objects.requireNonNull(fxExecutor, "fxExecutor");
         this.pulseBarrier = new PulseBarrier(fxExecutor);
         this.surfaces = Objects.requireNonNull(surfaces, "surfaces");
+        this.presentationSurfaces = Objects.requireNonNull(presentationSurfaces, "presentationSurfaces");
         this.layoutEngines = Objects.requireNonNull(layoutEngines, "layoutEngines");
         this.cameraManager = Objects.requireNonNull(cameraManager, "cameraManager");
         this.trace = Objects.requireNonNull(trace, "trace");
@@ -96,6 +108,62 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
     }
 
     @Override
+    public <M> CompletionStage<Void> registerPresentationSurface(PresentationSurface<M> surface) {
+        Objects.requireNonNull(surface, "surface");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        scheduler.execute(() -> {
+            presentationSources.register(surface.sessionId(), surface.cursorSessionId(), surface.source());
+            fxExecutor.execute(() -> presentationSurfaces.register(surface.sessionId(), surface.renderer()))
+                    .whenComplete((ignored, failure) -> scheduler.execute(() -> {
+                        if (failure != null) {
+                            presentationSources.unregister(surface.sessionId());
+                            future.completeExceptionally(failure);
+                            return;
+                        }
+                        future.complete(null);
+                    }));
+        });
+        return future;
+    }
+
+    @Override
+    public CompletionStage<Void> unregisterPresentationSurface(RenderSessionId surfaceId) {
+        Objects.requireNonNull(surfaceId, "surfaceId");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        scheduler.execute(() -> {
+            RenderMailbox mailbox = mailboxes.get(surfaceId);
+            if (mailbox != null) mailbox.cancelPending();
+            presentationSources.unregister(surfaceId);
+            RenderSession session = sessions.getOrCreate(surfaceId);
+            session.deactivate();
+            fxExecutor.execute(() -> presentationSurfaces.unregister(surfaceId))
+                    .whenComplete((ignored, failure) -> {
+                        if (failure == null) future.complete(null);
+                        else future.completeExceptionally(failure);
+                    });
+        });
+        return future;
+    }
+
+    @Override
+    public CompletionStage<Void> activatePresentationSurface(RenderSessionId surfaceId) {
+        return activateSession(Objects.requireNonNull(surfaceId, "surfaceId"));
+    }
+
+    @Override
+    public CompletionStage<Void> deactivatePresentationSurface(RenderSessionId surfaceId) {
+        return deactivateSession(Objects.requireNonNull(surfaceId, "surfaceId"));
+    }
+
+    @Override
+    public CompletionStage<RenderResult> invalidatePresentationSurface(RenderSessionId surfaceId) {
+        Objects.requireNonNull(surfaceId, "surfaceId");
+        CompletableFuture<RenderResult> future = new CompletableFuture<>();
+        scheduler.execute(() -> enqueuePresentationSurfaceInvalidation(surfaceId, future));
+        return future;
+    }
+
+    @Override
     public CompletionStage<Void> activateSession(RenderSessionId id) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
@@ -115,6 +183,38 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
             session.deactivate();
             RenderMailbox mailbox = mailboxes.get(id);
             if (mailbox != null) mailbox.cancelPending();
+            future.complete(null);
+        });
+        return future;
+    }
+
+    @Override
+    public CompletionStage<Void> publishPresentationCursor(
+            RenderSessionId sessionId, PresentationCursor cursor) {
+        Objects.requireNonNull(sessionId, "sessionId");
+        Objects.requireNonNull(cursor, "cursor");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        scheduler.execute(() -> {
+            RenderSession session = sessions.getOrCreate(sessionId);
+            session.presentationCursor = cursor;
+            session.presentationCursorRevision++;
+            invalidateCursorDependents(sessionId);
+            future.complete(null);
+        });
+        return future;
+    }
+
+    @Override
+    public CompletionStage<Void> clearPresentationCursor(RenderSessionId sessionId) {
+        Objects.requireNonNull(sessionId, "sessionId");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        scheduler.execute(() -> {
+            RenderSession session = sessions.getOrCreate(sessionId);
+            if (session.presentationCursor != null) {
+                session.presentationCursor = null;
+                session.presentationCursorRevision++;
+                invalidateCursorDependents(sessionId);
+            }
             future.complete(null);
         });
         return future;
@@ -217,6 +317,9 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
             return processStructural(session, structural, submission.modelRevision(), submission.geometryRevision());
         }
         if (intent instanceof PresentationRenderIntent<?> presentation) return processPresentation(session, presentation);
+        if (intent instanceof PresentationSurfaceRenderIntent presentationSurface) {
+            return processPresentationSurface(session, presentationSurface);
+        }
         if (intent instanceof ViewportRenderIntent viewport) return processViewport(session, viewport);
         return CompletableFuture.failedFuture(new IllegalArgumentException("Unsupported render intent: " + intent));
     }
@@ -296,7 +399,8 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
                 nextLayoutRevision,
                 session.presentationRevision,
                 intent.change(),
-                intent.initialFrame());
+                intent.initialFrame(),
+                presentationProgressSink(session));
         trace(transaction, RenderPipeline.WAIT_APPLY);
 
         return fxExecutor.supply(() -> {
@@ -414,6 +518,60 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
                 }));
     }
 
+    private CompletionStage<RenderResult> processPresentationSurface(
+            RenderSession session, PresentationSurfaceRenderIntent intent) {
+        long transactionId = transactionSequence.incrementAndGet();
+        long generation = session.generation;
+        long modelRevision = session.modelRevision;
+        RenderTransaction transaction = new RenderTransaction(
+                transactionId, session.id, intent.kind(), generation, modelRevision,
+                session.geometryRevision, System.nanoTime());
+        long presentationRevision = ++session.presentationRevision;
+
+        PresentationSourceRegistry.Entry<Object> entry = presentationSources.require(session.id);
+        PresentationCursor cursor = null;
+        long cursorRevision = 0L;
+        if (entry.cursorSessionId().isPresent()) {
+            RenderSession cursorSession = sessions.getOrCreate(entry.cursorSessionId().orElseThrow());
+            cursor = cursorSession.presentationCursor;
+            cursorRevision = cursorSession.presentationCursorRevision;
+        }
+        PresentationSnapshotContext snapshotContext = new PresentationSnapshotContext(
+                session.id,
+                generation,
+                presentationRevision,
+                java.util.Optional.ofNullable(cursor),
+                cursorRevision);
+        Object model = Objects.requireNonNull(
+                entry.source().snapshot(snapshotContext), "presentation model");
+        RenderCommitContext commitContext = RenderCommitContext.presentation(
+                transactionId,
+                session.id,
+                generation,
+                modelRevision,
+                session.layoutRevision,
+                presentationRevision);
+        trace(transaction, RenderPipeline.CAPTURE);
+        trace(transaction, RenderPipeline.WAIT_APPLY);
+        return fxExecutor.supply(() ->
+                        presentationSurfaces.<Object>require(session.id).commit(model, commitContext))
+                .thenCompose(stage -> stage)
+                .thenCompose(ignored -> onScheduler(() -> {
+                    if (session.generation != generation || !session.active()) {
+                        return RenderResult.cancelled(session.id);
+                    }
+                    trace(transaction, RenderPipeline.COMMIT);
+                    trace(transaction, RenderPipeline.PRESENTED);
+                    return new RenderResult(
+                            RenderStatus.PRESENTED,
+                            session.id,
+                            modelRevision,
+                            false,
+                            BoundsSnapshot.empty(),
+                            null);
+                }));
+    }
+
     private CompletionStage<RenderResult> processViewport(RenderSession session, ViewportRenderIntent intent) {
         session.viewport = intent.viewport();
         session.viewportRevision++;
@@ -448,6 +606,33 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
         }));
     }
 
+    private PresentationProgressSink presentationProgressSink(RenderSession session) {
+        PresentationCursor cursor = session.presentationCursor;
+        if (cursor == null) return PresentationProgressSink.NONE;
+        String runId = cursor.runId();
+        long eventSequence = cursor.eventSequence();
+        return progress -> publishPresentationProgress(session.id, runId, eventSequence, progress);
+    }
+
+    private void publishPresentationProgress(
+            RenderSessionId sessionId, String runId, long eventSequence, double requestedProgress) {
+        double progress = Math.max(0.0d, Math.min(1.0d, requestedProgress));
+        scheduler.execute(() -> {
+            RenderSession session = sessions.getOrCreate(sessionId);
+            PresentationCursor current = session.presentationCursor;
+            if (current == null
+                    || !current.runId().equals(runId)
+                    || current.eventSequence() != eventSequence) {
+                return;
+            }
+            if (Math.abs(current.intraEventProgress() - progress) < 0.0025d) return;
+            session.presentationCursor = new PresentationCursor(
+                    current.runId(), current.eventSequence(), progress, current.mode());
+            session.presentationCursorRevision++;
+            invalidateCursorDependents(sessionId);
+        });
+    }
+
     private boolean authoritative(
             RenderSession session, RenderTransaction transaction, StructuralChange change) {
         if (!session.active()
@@ -459,6 +644,24 @@ public final class DefaultRenderFramework implements RenderPort, RenderSurfaceLi
         // GEOMETRY is derived work and remains latest-wins within the same model revision.
         return change == StructuralChange.MODEL
                 || session.geometryRevision == transaction.geometryRevision();
+    }
+
+    private void invalidateCursorDependents(RenderSessionId cursorSessionId) {
+        for (RenderSessionId surfaceId : presentationSources.dependentSurfaces(cursorSessionId)) {
+            enqueuePresentationSurfaceInvalidation(surfaceId, new CompletableFuture<>());
+        }
+    }
+
+    private void enqueuePresentationSurfaceInvalidation(
+            RenderSessionId surfaceId, CompletableFuture<RenderResult> future) {
+        RenderSession session = sessions.getOrCreate(surfaceId);
+        RenderMailbox mailbox = mailboxes.computeIfAbsent(surfaceId, ignored -> new RenderMailbox());
+        mailbox.enqueue(new RenderMailbox.Submission(
+                new PresentationSurfaceRenderIntent(surfaceId),
+                future,
+                session.modelRevision,
+                session.geometryRevision));
+        if (session.active()) drain(surfaceId);
     }
 
     private static boolean sameGeometryInput(LayoutRequest previous, LayoutRequest current) {

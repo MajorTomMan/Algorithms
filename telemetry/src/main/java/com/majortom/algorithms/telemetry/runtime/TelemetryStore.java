@@ -1,5 +1,6 @@
 package com.majortom.algorithms.telemetry.runtime;
 
+import com.majortom.algorithms.telemetry.api.TelemetryDomain;
 import com.majortom.algorithms.telemetry.api.TelemetryProfile;
 import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
 import java.util.ArrayDeque;
@@ -44,6 +45,26 @@ public final class TelemetryStore {
   public synchronized Optional<TelemetryProfile> latest(TelemetryScopeId scope) {
     ArrayDeque<TelemetryProfile> values = history.get(Objects.requireNonNull(scope, "scope"));
     return values == null || values.isEmpty() ? Optional.empty() : Optional.of(values.getLast());
+  }
+
+  /** Returns the newest terminal profile for one stable component across its execution ids. */
+  public synchronized Optional<TelemetryProfile> latestByComponent(
+      TelemetryDomain domain, String componentId) {
+    Objects.requireNonNull(domain, "domain");
+    Objects.requireNonNull(componentId, "componentId");
+    TelemetryProfile newest = null;
+    for (Map.Entry<TelemetryScopeId, ArrayDeque<TelemetryProfile>> candidate : history.entrySet()) {
+      TelemetryScopeId scope = candidate.getKey();
+      ArrayDeque<TelemetryProfile> profiles = candidate.getValue();
+      if (scope.domain() != domain || !scope.componentId().equals(componentId) || profiles.isEmpty()) {
+        continue;
+      }
+      TelemetryProfile value = profiles.getLast();
+      if (newest == null || value.sessionId().sequence() > newest.sessionId().sequence()) {
+        newest = value;
+      }
+    }
+    return Optional.ofNullable(newest);
   }
 
   public synchronized List<TelemetryProfile> history(TelemetryScopeId scope) {

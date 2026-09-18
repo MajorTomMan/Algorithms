@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.majortom.algorithms.core.event.ExecutionEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.runtime.ExecutionAnchor;
 import com.majortom.algorithms.core.runtime.ExecutionFailure;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
@@ -21,7 +22,7 @@ import java.util.OptionalLong;
 
 /** Converts a client record to a JSON-safe, versioned export payload. */
 public final class ExecutionExportCodec {
-  private static final int EXPORT_SCHEMA_VERSION = 3;
+  private static final int EXPORT_SCHEMA_VERSION = 4;
   private final ObjectMapper mapper;
 
   public ExecutionExportCodec(ObjectMapper mapper) {
@@ -49,6 +50,7 @@ public final class ExecutionExportCodec {
     payload.put("visualFrameCount", record.visualFrameCount());
     payload.put("summary", encodeSummary(summary));
     payload.put("events", encodeEvents(record.recording().events()));
+    payload.put("executionAnchors", encodeExecutionAnchors(record.executionAnchors().anchors()));
     return Map.copyOf(payload);
   }
 
@@ -102,6 +104,16 @@ public final class ExecutionExportCodec {
     payload.put("duration", statistics.duration().toString());
     payload.put("metrics", statistics.metrics());
     return payload;
+  }
+
+  private List<Map<String, Object>> encodeExecutionAnchors(List<ExecutionAnchor> anchors) {
+    List<Map<String, Object>> result = new ArrayList<>(anchors.size());
+    for (ExecutionAnchor anchor : anchors) {
+      result.add(Map.of(
+          "eventSequence", anchor.eventSequence(),
+          "elapsedNanos", anchor.elapsedNanos()));
+    }
+    return List.copyOf(result);
   }
 
   private List<Map<String, Object>> encodeEvents(List<EventEnvelope> events) {

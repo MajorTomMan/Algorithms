@@ -22,7 +22,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutLink;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 
@@ -91,7 +91,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
         applyRoutes(patch);
         lastPatch = patch;
-        animationRuntime.play(plan, animationScene);
+        animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
 

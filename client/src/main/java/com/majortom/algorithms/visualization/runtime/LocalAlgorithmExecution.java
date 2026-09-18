@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.runtime;
 import com.majortom.algorithms.core.runtime.DefaultExecutionControl;
 import com.majortom.algorithms.core.runtime.EventSink;
 import com.majortom.algorithms.core.runtime.ExecutionFailure;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorRecorder;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
@@ -99,6 +100,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
           Objects.requireNonNull(resourceSamplerFactory.get(), "resourceSamplerFactory result");
       BoundedExecutionEventStore authoritativeEvents =
           new BoundedExecutionEventStore(maximumEventCount);
+      ExecutionAnchorRecorder executionAnchorRecorder = new ExecutionAnchorRecorder();
       ReductionCursor<S> reductionCursor = new ReductionCursor<>(reducer);
       JavaFxEventSink observerSink = new JavaFxEventSink(dispatcher, event -> {
         if (generation.get() != runGeneration)
@@ -115,17 +117,18 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
       }, maximumEventCount, delayMillisSupplier);
       EventSink eventSink = event -> {
         authoritativeEvents.accept(event);
+        executionAnchorRecorder.accept(event);
         observerSink.accept(event);
         resourceSampler.sample();
       };
       ExecutionScheduler scheduler =
           ExecutionScheduler.single("algorithm-run-" + runGeneration + "-");
       ExecutionSession session = new ExecutionSession(runGeneration, executionControl,
-          authoritativeEvents, observerSink, scheduler, resourceSampler);
+          authoritativeEvents, observerSink, executionAnchorRecorder, scheduler, resourceSampler);
       currentSession = session;
       session.start(()
                         -> runWithEventLimit(operationId, operation, eventSink, executionControl,
-                            authoritativeEvents, observerSink));
+                            authoritativeEvents, observerSink, executionAnchorRecorder));
       return session;
     }
   }
@@ -158,11 +161,13 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
 
   private ExecutionResult runWithEventLimit(String operationId, ExecutionOperation<?> operation,
       EventSink eventSink, DefaultExecutionControl executionControl,
-      BoundedExecutionEventStore authoritativeEvents, JavaFxEventSink observerSink) {
+      BoundedExecutionEventStore authoritativeEvents, JavaFxEventSink observerSink,
+      ExecutionAnchorRecorder executionAnchorRecorder) {
     ExecutionResult result = runtime.execute(operationId, eventSink, executionControl, operation);
     if (!authoritativeEvents.limitExceeded())
       return result;
     var failureEvent = authoritativeEvents.recordLimitFailure();
+    executionAnchorRecorder.accept(failureEvent);
     observerSink.accept(failureEvent);
     ExecutionFailure failure = new ExecutionFailure(BoundedExecutionEventStore.limitFailureCode(),
         authoritativeEvents.limitMessage(),

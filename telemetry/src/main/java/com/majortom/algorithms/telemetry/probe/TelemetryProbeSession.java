@@ -10,6 +10,12 @@ public interface TelemetryProbeSession extends AutoCloseable {
     return false;
   }
 
+  /**
+   * Resets probe-owned baselines immediately before the measured execution body starts.
+   * Framework/bootstrap work performed before this boundary must not contaminate attributed facts.
+   */
+  default void rebase() {}
+
   /** Returns current point-in-time/cumulative sampled facts. */
   Map<String, TelemetryValue> sample();
 

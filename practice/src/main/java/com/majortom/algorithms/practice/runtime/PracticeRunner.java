@@ -1,12 +1,11 @@
 package com.majortom.algorithms.practice.runtime;
 
-import com.majortom.algorithms.core.memory.JdkMemoryProfiler;
-import com.majortom.algorithms.core.memory.MemoryDomain;
-import com.majortom.algorithms.core.memory.MemoryProfile;
-import com.majortom.algorithms.core.memory.MemoryProfileSession;
-import com.majortom.algorithms.core.memory.MemoryProfileStore;
-import com.majortom.algorithms.core.memory.MemoryProfiler;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
+import com.majortom.algorithms.telemetry.api.TelemetryProfile;
+import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryRun;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryService;
+import com.majortom.algorithms.telemetry.runtime.TelemetryStore;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -14,16 +13,15 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class PracticeRunner {
-  private final MemoryProfiler memoryProfiler;
-  private final MemoryProfileStore memoryProfiles = new MemoryProfileStore();
-  private volatile MemoryProfile lastMemoryProfile;
+  private final MemoryTelemetryService memoryTelemetry;
+  private volatile TelemetryProfile lastMemoryProfile;
 
   public PracticeRunner() {
-    this(JdkMemoryProfiler.shared());
+    this(MemoryTelemetryService.shared());
   }
 
-  PracticeRunner(MemoryProfiler memoryProfiler) {
-    this.memoryProfiler = Objects.requireNonNull(memoryProfiler, "memoryProfiler");
+  PracticeRunner(MemoryTelemetryService memoryTelemetry) {
+    this.memoryTelemetry = Objects.requireNonNull(memoryTelemetry, "memoryTelemetry");
   }
 
   public Object run(ProblemDescriptor descriptor, Object... arguments) {
@@ -34,21 +32,26 @@ public final class PracticeRunner {
       if (!Modifier.isStatic(entry.getModifiers())) {
         receiver = descriptor.implementation().getDeclaredConstructor().newInstance();
       }
-      MemoryProfileSession memory =
-          memoryProfiler.begin(MemoryDomain.PRACTICE, descriptor.stableId());
+      MemoryTelemetryRun memory =
+          memoryTelemetry.begin(TelemetryScopeId.practice(descriptor.stableId()), false);
       try {
-        return entry.invoke(receiver, arguments);
+        Object result = entry.invoke(receiver, arguments);
+        memory.complete();
+        return result;
+      } catch (InvocationTargetException exception) {
+        memory.fail();
+        throw exception;
+      } catch (RuntimeException | Error exception) {
+        memory.fail();
+        throw exception;
       } finally {
-        memory.close();
+        if (!memory.finished()) memory.cancel();
         lastMemoryProfile = memory.snapshot();
-        memoryProfiles.record(lastMemoryProfile);
       }
     } catch (InvocationTargetException exception) {
       Throwable cause = exception.getCause();
-      if (cause instanceof RuntimeException runtime)
-        throw runtime;
-      if (cause instanceof Error error)
-        throw error;
+      if (cause instanceof RuntimeException runtime) throw runtime;
+      if (cause instanceof Error error) throw error;
       throw new PracticeExecutionException("Problem entry failed: " + descriptor.stableId(), cause);
     } catch (ReflectiveOperationException exception) {
       throw new PracticeExecutionException(
@@ -56,12 +59,12 @@ public final class PracticeRunner {
     }
   }
 
-  public Optional<MemoryProfile> lastMemoryProfile() {
+  public Optional<TelemetryProfile> lastMemoryProfile() {
     return Optional.ofNullable(lastMemoryProfile);
   }
 
-  public MemoryProfileStore memoryProfiles() {
-    return memoryProfiles;
+  public TelemetryStore memoryProfiles() {
+    return memoryTelemetry.store();
   }
 
   public static final class PracticeExecutionException extends RuntimeException {

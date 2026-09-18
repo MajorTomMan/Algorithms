@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.render.runtime;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.PresentationCursor;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
 import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 
@@ -13,6 +14,7 @@ final class RenderSession {
   long geometryRevision;
   long layoutRevision;
   long presentationRevision;
+  long presentationCursorRevision;
   long viewportRevision;
   long committedRevision;
   RenderSessionState state = RenderSessionState.INACTIVE;
@@ -21,6 +23,7 @@ final class RenderSession {
   ViewportSnapshot viewport;
   CameraState camera;
   Object latestStructuralSnapshot;
+  PresentationCursor presentationCursor;
 
   RenderSession(RenderSessionId id) {
     this.id = id;

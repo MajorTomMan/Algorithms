@@ -19,7 +19,7 @@ import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
-import com.majortom.algorithms.visualization.render.fx.RenderCommitContext;
+import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
 import javafx.geometry.Bounds;
@@ -121,7 +121,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         }
         updateEmptyLabel(state.values().isEmpty());
         lastRenderedValues = state.values();
-        animationRuntime.play(plan, animationScene);
+        animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
 

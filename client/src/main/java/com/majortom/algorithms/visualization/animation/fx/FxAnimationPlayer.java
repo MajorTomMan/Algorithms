@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.DoubleConsumer;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -35,6 +36,7 @@ public final class FxAnimationPlayer implements AnimationControl {
     private boolean paused;
     private boolean stepRequested;
     private boolean disposed;
+    private DoubleConsumer currentProgressSink = ignored -> {};
 
     /**
      * Interrupts a running transition without snapping authoritative visuals to their old target.
@@ -48,16 +50,20 @@ public final class FxAnimationPlayer implements AnimationControl {
         if (currentScene != null) currentScene.discardExitedVisuals();
         currentScene = null;
         currentPlan = AnimationPlan.empty();
+        currentProgressSink = ignored -> {};
     }
 
     /** Executes a prepared plan. The call itself is non-blocking and never owns Render scheduling. */
-    public void play(AnimationPlan plan, AnimationSceneAdapter scene) {
+    public void play(AnimationPlan plan, AnimationSceneAdapter scene, DoubleConsumer progressSink) {
+        DoubleConsumer sink = progressSink == null ? ignored -> {} : progressSink;
         if (disposed) {
+            sink.accept(1.0d);
             scene.stabilize(plan);
             return;
         }
         currentScene = scene;
         currentPlan = plan;
+        currentProgressSink = sink;
         if (scrubbing || plan.isEmpty()) {
             finishImmediately();
             return;
@@ -135,13 +141,19 @@ public final class FxAnimationPlayer implements AnimationControl {
             return;
         }
         next.setRate(speed);
+        double totalMillis = Math.max(1.0d, next.getTotalDuration().toMillis());
+        sink.accept(0.0d);
+        next.currentTimeProperty().addListener((observable, previous, current) ->
+                sink.accept(Math.max(0.0d, Math.min(1.0d, current.toMillis() / totalMillis))));
         next.setOnFinished(event -> {
             if (timeline != next) return;
+            sink.accept(1.0d);
             timeline = null;
             AnimationSceneAdapter finishedScene = currentScene;
             AnimationPlan finishedPlan = currentPlan;
             currentScene = null;
             currentPlan = AnimationPlan.empty();
+            currentProgressSink = ignored -> {};
             if (finishedScene != null) finishedScene.stabilize(finishedPlan);
         });
         timeline = next;
@@ -369,6 +381,7 @@ public final class FxAnimationPlayer implements AnimationControl {
     @Override
     public void finishImmediately() {
         stepRequested = false;
+        DoubleConsumer sink = currentProgressSink;
         if (timeline != null) {
             timeline.stop();
             timeline = null;
@@ -377,6 +390,8 @@ public final class FxAnimationPlayer implements AnimationControl {
         AnimationPlan plan = currentPlan;
         currentScene = null;
         currentPlan = AnimationPlan.empty();
+        currentProgressSink = ignored -> {};
+        sink.accept(1.0d);
         if (scene != null) scene.stabilize(plan);
     }
 }

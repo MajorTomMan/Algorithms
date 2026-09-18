@@ -1,8 +1,8 @@
 package com.majortom.algorithms.practice.runtime.worker;
 
-import com.majortom.algorithms.core.memory.JdkMemoryProfiler;
-import com.majortom.algorithms.core.memory.MemoryDomain;
-import com.majortom.algorithms.core.memory.MemoryProfileSession;
+import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryRun;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryService;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -15,8 +15,7 @@ public final class PracticeWorkerMain {
   private PracticeWorkerMain() {}
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 1)
-      throw new IllegalArgumentException("worker expects one encoded invocation");
+    if (args.length != 1) throw new IllegalArgumentException("worker expects one encoded invocation");
     WorkerInvocation invocation = (WorkerInvocation) WorkerCodec.decode(args[0]);
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
     Class<?> owner = Class.forName(invocation.className(), true, loader);
@@ -29,26 +28,28 @@ public final class PracticeWorkerMain {
     Object receiver = Modifier.isStatic(method.getModifiers())
         ? null
         : owner.getDeclaredConstructor().newInstance();
-    MemoryProfileSession memory =
-        JdkMemoryProfiler.shared().begin(MemoryDomain.PRACTICE, invocation.stableId());
+    MemoryTelemetryRun memory = MemoryTelemetryService.shared().begin(
+        TelemetryScopeId.practice(invocation.stableId()), false);
     try {
       Object result = method.invoke(receiver, invocation.arguments());
+      memory.complete();
       System.out.println(RESULT_PREFIX + WorkerCodec.encode(result));
     } catch (InvocationTargetException exception) {
+      memory.fail();
       Throwable cause = exception.getCause();
-      if (cause instanceof Exception checked)
-        throw checked;
-      if (cause instanceof Error error)
-        throw error;
+      if (cause instanceof Exception checked) throw checked;
+      if (cause instanceof Error error) throw error;
+      throw exception;
+    } catch (RuntimeException | Error exception) {
+      memory.fail();
       throw exception;
     } finally {
-      memory.close();
+      if (!memory.finished()) memory.cancel();
       System.out.println(MEMORY_PREFIX + WorkerCodec.encode(memory.snapshot()));
     }
   }
 
-  private static Class<?> resolveType(String name, ClassLoader loader)
-      throws ClassNotFoundException {
+  private static Class<?> resolveType(String name, ClassLoader loader) throws ClassNotFoundException {
     return switch (name) {
       case "boolean" -> boolean.class;
       case "byte" -> byte.class;

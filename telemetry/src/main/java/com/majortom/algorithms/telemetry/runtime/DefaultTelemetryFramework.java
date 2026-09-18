@@ -77,7 +77,7 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
     private final Object lock = new Object();
     private final List<TelemetryProbeSession> probeSessions = new ArrayList<>();
     private final List<TelemetrySample> samples = new ArrayList<>();
-    private final long startedAtNanos = System.nanoTime();
+    private long startedAtNanos = System.nanoTime();
 
     private TelemetrySessionState state = TelemetrySessionState.CREATED;
     private ScheduledFuture<?> samplingTask;
@@ -138,6 +138,26 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
         }
       }
       return attached;
+    }
+
+    @Override
+    public void rebase() {
+      synchronized (lock) {
+        if (state != TelemetrySessionState.RECORDING) {
+          throw new IllegalStateException("Cannot rebase telemetry session from " + state);
+        }
+        for (TelemetryProbeSession probe : probeSessions) {
+          try {
+            probe.rebase();
+          } catch (RuntimeException ignored) {
+            // Probe-specific reset failure degrades that probe only.
+          }
+        }
+        startedAtNanos = System.nanoTime();
+        samples.clear();
+        Map<String, TelemetryValue> values = readProbeValues(false);
+        appendSampleLocked(0L, values);
+      }
     }
 
     @Override

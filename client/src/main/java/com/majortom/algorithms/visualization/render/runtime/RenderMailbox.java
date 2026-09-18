@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.render.runtime;
 
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
+import com.majortom.algorithms.visualization.render.api.PresentationSurfaceRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderResult;
 import com.majortom.algorithms.visualization.render.api.StructuralChange;
@@ -15,6 +16,7 @@ final class RenderMailbox {
   Submission pendingModel;
   Submission pendingGeometry;
   Submission pendingViewport;
+  Submission pendingSurfacePresentation;
   final Deque<Submission> presentationQueue = new ArrayDeque<>();
   boolean inFlight;
 
@@ -34,6 +36,9 @@ final class RenderMailbox {
     } else if (intent instanceof ViewportRenderIntent) {
       supersede(pendingViewport, intent);
       pendingViewport = submission;
+    } else if (intent instanceof PresentationSurfaceRenderIntent) {
+      supersede(pendingSurfacePresentation, intent);
+      pendingSurfacePresentation = submission;
     } else if (intent instanceof PresentationRenderIntent<?>) {
       presentationQueue.addLast(submission);
     } else {
@@ -54,6 +59,11 @@ final class RenderMailbox {
     }
     if (!presentationQueue.isEmpty())
       return presentationQueue.removeFirst();
+    if (pendingSurfacePresentation != null) {
+      Submission next = pendingSurfacePresentation;
+      pendingSurfacePresentation = null;
+      return next;
+    }
     if (pendingViewport != null) {
       Submission next = pendingViewport;
       pendingViewport = null;
@@ -66,9 +76,11 @@ final class RenderMailbox {
     cancel(pendingModel);
     cancel(pendingGeometry);
     cancel(pendingViewport);
+    cancel(pendingSurfacePresentation);
     pendingModel = null;
     pendingGeometry = null;
     pendingViewport = null;
+    pendingSurfacePresentation = null;
     while (!presentationQueue.isEmpty()) cancel(presentationQueue.removeFirst());
   }
 

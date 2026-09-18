@@ -4,6 +4,8 @@ import com.majortom.algorithms.visualization.render.diagnostics.RenderTrace;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.fx.FxExecutor;
 import com.majortom.algorithms.visualization.render.fx.RenderSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.fx.FxPresentationSurfaceRegistry;
+import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
 import com.majortom.algorithms.visualization.render.layout.FixedLayoutEngine;
 import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
@@ -22,6 +24,7 @@ public final class RenderRuntime {
             new LayoutExecutor(Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
             FX,
             new RenderSurfaceRegistry(),
+            new FxPresentationSurfaceRegistry(),
             new LayoutEngineRegistry()
                     .register(new LinearLayoutEngine())
                     .register(new FixedLayoutEngine())
@@ -36,5 +39,6 @@ public final class RenderRuntime {
     private RenderRuntime() { }
     public static DefaultRenderFramework shared() { return SHARED; }
     public static RenderContext context() { return CONTEXT; }
+    public static PresentationSurfacePort presentationSurfaces() { return SHARED; }
     public static RenderClock clock() { return CLOCK; }
 }

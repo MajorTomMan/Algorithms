@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.execution;
 
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorTimeline;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
@@ -55,6 +56,11 @@ public final class LocalClientExecutionService implements ClientExecutionService
     @Override
     public List<EventEnvelope> events() {
       return delegate.events();
+    }
+
+    @Override
+    public Optional<ExecutionAnchorTimeline> executionAnchors() {
+      return delegate.executionAnchors();
     }
 
     @Override

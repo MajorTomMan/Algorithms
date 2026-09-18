@@ -2,28 +2,30 @@ package com.majortom.algorithms.visualization;
 
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
+import com.majortom.algorithms.visualization.render.api.PresentationCursorPort;
 import com.majortom.algorithms.visualization.render.api.StructurePresenter;
 import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.runtime.RenderSurfaceHost;
 import com.majortom.algorithms.visualization.render.runtime.StructureRenderDriver;
+import com.majortom.algorithms.visualization.render.api.PresentationCursor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
-import com.majortom.algorithms.core.memory.JdkMemoryProfiler;
-import com.majortom.algorithms.core.memory.JfrAllocationAnalyzer;
-import com.majortom.algorithms.core.memory.MemoryCapabilities;
-import com.majortom.algorithms.core.memory.MemoryDomain;
-import com.majortom.algorithms.core.memory.MemoryDeepProfile;
-import com.majortom.algorithms.core.memory.MemoryDeepProfileSession;
-import com.majortom.algorithms.core.memory.MemoryDeepProfileStore;
-import com.majortom.algorithms.core.memory.MemoryProfile;
-import com.majortom.algorithms.core.memory.MemoryProfileSession;
-import com.majortom.algorithms.core.memory.MemoryProfileStore;
-import com.majortom.algorithms.core.memory.MemoryProfiler;
+import com.majortom.algorithms.telemetry.api.TelemetryDomain;
+import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
+import com.majortom.algorithms.telemetry.memory.api.MemoryCapabilities;
+import com.majortom.algorithms.telemetry.memory.api.MemoryFacts;
+import com.majortom.algorithms.telemetry.memory.analysis.MemoryAllocationAnalysis;
+import com.majortom.algorithms.telemetry.memory.analysis.StructureFootprint;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryRun;
+import com.majortom.algorithms.telemetry.memory.runtime.MemoryTelemetryService;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.runtime.EventSink;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorRecorder;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorTimeline;
 import com.majortom.algorithms.core.runtime.ExecutionRecording;
 import com.majortom.algorithms.core.runtime.ExecutionRecordingState;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
@@ -44,8 +46,6 @@ import com.majortom.algorithms.visualization.logging.LogChannelId;
 import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.metrics.RuntimeMetricTracker;
-import com.majortom.algorithms.visualization.memory.JolStructureFootprintAnalyzer;
-import com.majortom.algorithms.visualization.memory.StructureFootprint;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewService;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
@@ -120,7 +120,7 @@ public abstract class BaseController<S> implements Initializable {
     private static final ExecutionExporter DEFAULT_EXECUTION_EXPORTER =
             new JsonExecutionExporter(java.nio.file.Path.of("exports"), JSON_MAPPER, DEFAULT_EXPORT_CODEC);
     private static final RuntimeOverviewService RUNTIME_OVERVIEW = new RuntimeOverviewService();
-    private static final MemoryProfiler MEMORY_PROFILER = JdkMemoryProfiler.shared();
+    private static final MemoryTelemetryService MEMORY_TELEMETRY = MemoryTelemetryService.shared();
 
     protected final DoubleProperty delayMs = new SimpleDoubleProperty(50.0d);
     protected ExecutionStatistics stats = ExecutionStatistics.empty();
@@ -128,6 +128,7 @@ public abstract class BaseController<S> implements Initializable {
     private final RenderSurfaceHost renderSurfaceHost;
     private final RenderSurface<S> renderSurface;
     private final StructureRenderDriver<S> renderDriver;
+    private final PresentationCursorPort presentationCursorPort;
 
     protected Label statsLabel;
     private Runnable statisticsRefresh = () -> {};
@@ -164,15 +165,15 @@ public abstract class BaseController<S> implements Initializable {
     private S latestStructureState;
     private ExecutionHandle currentSession;
     private ClientExecutionRecord lastExecution;
+    private ExecutionAnchorTimeline lastExecutionAnchors;
+    private ExecutionAnchorTimeline lastStructureExecutionAnchors;
     private ReducedEventTimeline<S> lastTimeline;
     private PlaybackController<S> replayController;
     private boolean updatingTimelineSlider;
     private long lastLiveStatsRefreshNanos;
     private final AtomicLong livePlaybackDelayMillis = new AtomicLong(50L);
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
-    private final MemoryProfileStore memoryProfileStore = new MemoryProfileStore();
-    private final MemoryDeepProfileStore deepMemoryProfileStore = new MemoryDeepProfileStore();
-    private volatile MemoryProfileSession activeAlgorithmMemorySession;
+    private volatile MemoryTelemetryRun activeAlgorithmMemoryRun;
     private volatile boolean deepMemoryAnalysisEnabled;
     private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
         livePlaybackDelayMillis.set(Math.max(0L, newValue.longValue()));
@@ -242,6 +243,9 @@ public abstract class BaseController<S> implements Initializable {
                     Objects.requireNonNull(renderPort, "renderPort"),
                     Objects.requireNonNull(presenter, "presenter"));
         }
+        this.presentationCursorPort = renderPort instanceof PresentationCursorPort cursorPort
+                ? cursorPort
+                : null;
         this.execution = Objects.requireNonNull(execution, "execution");
         this.executionHistory = Objects.requireNonNull(executionHistory, "executionHistory");
         this.inputFingerprintService = Objects.requireNonNull(inputFingerprint, "inputFingerprint");
@@ -278,12 +282,10 @@ public abstract class BaseController<S> implements Initializable {
         updatePlaybackButtonState();
         appendLog("Started: " + algorithmId);
 
-        String memoryScopeId = memoryScopeId(algorithmId);
+        TelemetryScopeId memoryScope = TelemetryScopeId.algorithm(structureLogScopeId(), algorithmId);
         ExecutionOperation<?> profiledOperation = profileOperation(
-                MemoryDomain.ALGORITHM,
-                memoryScopeId,
+                memoryScope,
                 operation,
-                profile -> {},
                 true);
         currentSession = execution.start(
                 algorithmId,
@@ -317,13 +319,19 @@ public abstract class BaseController<S> implements Initializable {
         int eventStart = structureTimeline.events().size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionOperation<?> profiledOperation = profileOperation(
-                MemoryDomain.STRUCTURE,
-                memoryScopeId(operationId),
+                TelemetryScopeId.structure(structureLogScopeId(), operationId),
                 operation,
-                profile -> {},
                 false);
+        ExecutionAnchorRecorder executionAnchorRecorder = new ExecutionAnchorRecorder();
+        EventSink structureEventSink = event -> {
+            structureTimeline.accept(event);
+            executionAnchorRecorder.accept(event);
+            publishPresentationCursor(PresentationCursor.completedEvent(
+                    event.runId(), event.sequence(), PresentationCursor.Mode.LIVE));
+        };
         ExecutionResult result = new ExecutionRuntime().execute(
-                runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), profiledOperation);
+                runtimeOperationId, moduleId(), structureEventSink, RunControl.unrestricted(), profiledOperation);
+        lastStructureExecutionAnchors = executionAnchorRecorder.snapshot().orElse(null);
         appendStructureEventsSince(eventStart);
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
@@ -347,56 +355,39 @@ public abstract class BaseController<S> implements Initializable {
         return result.status() == ExecutionStatus.COMPLETED;
     }
 
-    private String memoryScopeId(String ownerId) {
-        return structureLogScopeId() + "/" + Objects.requireNonNull(ownerId, "ownerId");
-    }
-
     private ExecutionOperation<?> profileOperation(
-            MemoryDomain domain,
-            String scopeId,
+            TelemetryScopeId scope,
             ExecutionOperation<?> operation,
-            java.util.function.Consumer<MemoryProfile> completion,
             boolean exposeAsActiveAlgorithm) {
-        Objects.requireNonNull(domain, "domain");
-        Objects.requireNonNull(scopeId, "scopeId");
+        Objects.requireNonNull(scope, "scope");
         Objects.requireNonNull(operation, "operation");
-        Objects.requireNonNull(completion, "completion");
         return () -> {
-            MemoryDeepProfileSession deepSession = deepMemoryAnalysisEnabled
-                    ? JfrAllocationAnalyzer.begin(domain, scopeId)
-                    : null;
-            MemoryProfileSession memorySession = MEMORY_PROFILER.begin(domain, scopeId);
+            MemoryTelemetryRun memoryRun = MEMORY_TELEMETRY.begin(scope, deepMemoryAnalysisEnabled);
             if (exposeAsActiveAlgorithm) {
-                activeAlgorithmMemorySession = memorySession;
-            }
-            if (deepSession != null) {
-                deepSession.markExecutionStart();
+                activeAlgorithmMemoryRun = memoryRun;
             }
             try {
-                return operation.execute();
+                Object result = operation.execute();
+                memoryRun.complete();
+                return result;
+            } catch (InterruptedException exception) {
+                memoryRun.cancel();
+                throw exception;
+            } catch (RuntimeException | Error exception) {
+                memoryRun.fail();
+                throw exception;
             } finally {
-                if (deepSession != null) {
-                    deepSession.markExecutionEnd();
+                if (!memoryRun.finished()) {
+                    memoryRun.cancel();
                 }
-                // Close the exact ThreadMXBean scope before the optional JFR post-processing so
-                // deep-analysis bookkeeping never contaminates the authoritative allocation total.
-                memorySession.close();
-                MemoryProfile profile = memorySession.snapshot();
-                memoryProfileStore.record(profile);
-                completion.accept(profile);
-                if (exposeAsActiveAlgorithm && activeAlgorithmMemorySession == memorySession) {
-                    activeAlgorithmMemorySession = null;
+                if (exposeAsActiveAlgorithm && activeAlgorithmMemoryRun == memoryRun) {
+                    activeAlgorithmMemoryRun = null;
                 }
-                if (deepSession != null) {
-                    deepSession.close();
-                    deepSession.completion().whenComplete((deepProfile, deepError) -> {
-                        if (deepError != null || deepProfile == null) {
-                            return;
-                        }
-                        deepMemoryProfileStore.record(deepProfile);
+                memoryRun.analysisCompletion().whenComplete((analysis, error) -> {
+                    if (error == null && analysis != null) {
                         FxDispatch.defer(this::refreshStatsDisplay);
-                    });
-                }
+                    }
+                });
             }
         };
     }
@@ -461,10 +452,12 @@ public abstract class BaseController<S> implements Initializable {
                 replayController.pause();
                 if (visualizer != null) visualizer.pauseAnimations();
                 paused.set(true);
+                republishCurrentPresentationCursor(PresentationCursor.Mode.REPLAY);
             } else {
                 replayController.play();
                 if (visualizer != null) visualizer.resumeAnimations();
                 paused.set(false);
+                republishCurrentPresentationCursor(PresentationCursor.Mode.REPLAY);
             }
             refreshStatsDisplay();
             return;
@@ -476,10 +469,12 @@ public abstract class BaseController<S> implements Initializable {
             currentSession.resumeExecution();
             if (visualizer != null) visualizer.resumeAnimations();
             paused.set(false);
+            republishCurrentPresentationCursor(PresentationCursor.Mode.LIVE);
         } else {
             currentSession.pauseExecution();
             if (visualizer != null) visualizer.pauseAnimations();
             paused.set(true);
+            republishCurrentPresentationCursor(PresentationCursor.Mode.LIVE);
         }
         updatePlaybackButtonState();
     }
@@ -492,6 +487,7 @@ public abstract class BaseController<S> implements Initializable {
             replayController.pause();
             if (visualizer != null) visualizer.pauseAnimations();
             paused.set(true);
+            republishCurrentPresentationCursor(PresentationCursor.Mode.REPLAY);
             refreshStatsDisplay();
             return;
         }
@@ -504,6 +500,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         replayController.play();
         paused.set(false);
+        republishCurrentPresentationCursor(PresentationCursor.Mode.REPLAY);
         refreshStatsDisplay();
     }
 
@@ -712,6 +709,7 @@ public abstract class BaseController<S> implements Initializable {
             return;
         }
         List<EventEnvelope> events = session.events();
+        lastExecutionAnchors = session.executionAnchors().orElse(null);
         session.closeObserver();
         session.close();
         running.set(false);
@@ -724,7 +722,8 @@ public abstract class BaseController<S> implements Initializable {
         Duration eventSpan = stats.eventSpan();
         ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
                 ExecutionTiming.of(eventSpan, session.totalDuration()));
-        lastExecution = createExecutionRecord(algorithmId, input, result, error, summary, events, timeline.size());
+        lastExecution = createExecutionRecord(
+                algorithmId, input, result, error, summary, events, lastExecutionAnchors, timeline.size());
         lastTimeline = timeline;
         replacePlaybackController(reducer, events);
         if (lastExecution != null) {
@@ -765,6 +764,8 @@ public abstract class BaseController<S> implements Initializable {
                 LogChannel target = algorithmLogChannel();
                 if (target != null) target.append(logEvent, envelope.timestamp());
             }
+            publishPresentationCursor(PresentationCursor.completedEvent(
+                    envelope.runId(), envelope.sequence(), PresentationCursor.Mode.LIVE));
         };
         if (FxDispatch.isFxThread()) {
             task.run();
@@ -965,7 +966,10 @@ public abstract class BaseController<S> implements Initializable {
                 refreshStatsDisplay();
                 if (timeline != null && frameIndex >= 0 && frameIndex < timeline.size()) {
                     presentationEventIndex = timeline.eventIndex(frameIndex);
-                    presentationEvent.set(timeline.event(frameIndex));
+                    EventEnvelope event = timeline.event(frameIndex);
+                    presentationEvent.set(event);
+                    publishPresentationCursor(PresentationCursor.completedEvent(
+                            event.runId(), event.sequence(), PresentationCursor.Mode.REPLAY));
                 }
             }
         });
@@ -1021,11 +1025,13 @@ public abstract class BaseController<S> implements Initializable {
         stats = ExecutionStatistics.empty();
         runtimeMetricTracker.reset();
         lastExecution = null;
+        lastExecutionAnchors = null;
         lastTimeline = null;
         latestViewState = null;
         presentationEventIndex = -1;
         liveEventIndex = -1;
         presentationEvent.set(null);
+        clearPresentationCursor();
         if (timelineSlider != null) {
             timelineSlider.setDisable(true);
             updatingTimelineSlider = true;
@@ -1095,31 +1101,31 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Runtime capability snapshot for the cross-platform execution memory profiler. */
     public final MemoryCapabilities memoryCapabilities() {
-        return MEMORY_PROFILER.capabilities();
+        return MEMORY_TELEMETRY.capabilities();
     }
 
     /** Live algorithm allocation profile when running, otherwise the most recently completed one. */
-    public final Optional<MemoryProfile> algorithmMemoryProfile() {
-        MemoryProfileSession active = activeAlgorithmMemorySession;
+    public final Optional<MemoryFacts> algorithmMemoryProfile() {
+        MemoryTelemetryRun active = activeAlgorithmMemoryRun;
         if (active != null) {
-            return Optional.of(active.snapshot());
+            return Optional.of(MemoryFacts.from(active.snapshot()));
         }
         String algorithmId = activeAlgorithmLogId;
         if (algorithmId == null) {
             return Optional.empty();
         }
-        return memoryProfileStore.latest(MemoryDomain.ALGORITHM, memoryScopeId(algorithmId));
+        return MEMORY_TELEMETRY.latest(TelemetryScopeId.algorithm(structureLogScopeId(), algorithmId)).map(MemoryFacts::from);
     }
 
     /** Most recently completed editable-structure operation profile for this controller. */
-    public final Optional<MemoryProfile> structureMemoryProfile() {
-        return memoryProfileStore.latestByScopePrefix(
-                MemoryDomain.STRUCTURE, structureLogScopeId() + "/");
+    public final Optional<MemoryFacts> structureMemoryProfile() {
+        return MEMORY_TELEMETRY.latestByComponent(TelemetryDomain.STRUCTURE, structureLogScopeId())
+                .map(MemoryFacts::from);
     }
 
-    /** Bounded completed-profile history used by the future Memory workspace. */
-    public final MemoryProfileStore memoryProfiles() {
-        return memoryProfileStore;
+    /** Generic factual telemetry history. Presentation code must consume immutable snapshots only. */
+    public final com.majortom.algorithms.telemetry.runtime.TelemetryStore telemetryProfiles() {
+        return MEMORY_TELEMETRY.store();
     }
 
     /** Enables JFR sampled allocation class/site analysis for subsequent structure and algorithm runs. */
@@ -1131,27 +1137,26 @@ public abstract class BaseController<S> implements Initializable {
         return deepMemoryAnalysisEnabled;
     }
 
-    public final Optional<MemoryDeepProfile> algorithmDeepMemoryProfile() {
+    public final Optional<MemoryAllocationAnalysis> algorithmDeepMemoryProfile() {
         String algorithmId = activeAlgorithmLogId;
         if (algorithmId == null) {
             return Optional.empty();
         }
-        return deepMemoryProfileStore.latest(MemoryDomain.ALGORITHM, memoryScopeId(algorithmId));
+        return MEMORY_TELEMETRY.latestAnalysis(TelemetryScopeId.algorithm(structureLogScopeId(), algorithmId));
     }
 
-    public final Optional<MemoryDeepProfile> structureDeepMemoryProfile() {
-        return deepMemoryProfileStore.latestByScopePrefix(
-                MemoryDomain.STRUCTURE, structureLogScopeId() + "/");
+    public final Optional<MemoryAllocationAnalysis> structureDeepMemoryProfile() {
+        return MEMORY_TELEMETRY.latestAnalysisByComponent(TelemetryDomain.STRUCTURE, structureLogScopeId());
     }
 
     /** True when the optional JOL runtime is present; ordinary builds intentionally do not require it. */
     public final boolean structureFootprintAvailable() {
-        return JolStructureFootprintAnalyzer.shared().isAvailable();
+        return MEMORY_TELEMETRY.footprintAvailable();
     }
 
     /** Measures only the editable structure object graph, never JavaFX/render objects. */
     public final CompletionStage<StructureFootprint> analyzeStructureFootprint() {
-        return JolStructureFootprintAnalyzer.shared().analyze(structureMemoryRoot());
+        return MEMORY_TELEMETRY.analyzeFootprint(structureMemoryRoot());
     }
 
     /** Concrete modules override this when their true editable structure root differs from the view state. */
@@ -1492,7 +1497,47 @@ public abstract class BaseController<S> implements Initializable {
         }
         paused.set(true);
         presentationEventIndex = exactEventIndex;
-        presentationEvent.set(lastTimeline.events().get(exactEventIndex));
+        EventEnvelope exactEvent = lastTimeline.events().get(exactEventIndex);
+        presentationEvent.set(exactEvent);
+        publishPresentationCursor(PresentationCursor.completedEvent(
+                exactEvent.runId(), exactEvent.sequence(), PresentationCursor.Mode.REPLAY));
+    }
+
+    /** Monotonic anchors for the latest editable-structure operation. */
+    public final Optional<ExecutionAnchorTimeline> latestStructureExecutionAnchors() {
+        return Optional.ofNullable(lastStructureExecutionAnchors);
+    }
+
+    /** Monotonic algorithm anchors retained even when no terminal history record can be created. */
+    public final Optional<ExecutionAnchorTimeline> latestExecutionAnchors() {
+        if (currentSession != null) {
+            Optional<ExecutionAnchorTimeline> live = currentSession.executionAnchors();
+            if (live.isPresent()) return live;
+        }
+        return Optional.ofNullable(lastExecutionAnchors);
+    }
+
+    private void publishPresentationCursor(PresentationCursor cursor) {
+        if (presentationCursorPort == null || visualizer == null || cursor == null) {
+            return;
+        }
+        presentationCursorPort.publishPresentationCursor(visualizer.sessionId(), cursor);
+    }
+
+    private void republishCurrentPresentationCursor(PresentationCursor.Mode mode) {
+        EventEnvelope event = currentPresentationEvent();
+        if (event == null) {
+            return;
+        }
+        publishPresentationCursor(PresentationCursor.completedEvent(
+                event.runId(), event.sequence(), mode));
+    }
+
+    private void clearPresentationCursor() {
+        if (presentationCursorPort == null || visualizer == null) {
+            return;
+        }
+        presentationCursorPort.clearPresentationCursor(visualizer.sessionId());
     }
 
     public final String latestRunId() {
@@ -1601,8 +1646,12 @@ public abstract class BaseController<S> implements Initializable {
             Throwable error,
             ExecutionSummary summary,
             List<EventEnvelope> events,
+            ExecutionAnchorTimeline executionAnchors,
             long visualFrameCount) {
         if (events.isEmpty()) {
+            return null;
+        }
+        if (executionAnchors == null) {
             return null;
         }
         if (!hasTerminalLifecycleEvent(events)) {
@@ -1637,7 +1686,8 @@ public abstract class BaseController<S> implements Initializable {
                             exceptionType));
         }
         return new ClientExecutionRecord(
-                moduleId(), operationId, inputFingerprint(input), effectiveResult, recording, visualFrameCount);
+                moduleId(), operationId, inputFingerprint(input), effectiveResult, recording,
+                executionAnchors, visualFrameCount);
     }
 
     private boolean hasTerminalLifecycleEvent(List<EventEnvelope> events) {

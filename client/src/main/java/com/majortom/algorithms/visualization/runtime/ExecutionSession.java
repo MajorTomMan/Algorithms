@@ -2,6 +2,8 @@ package com.majortom.algorithms.visualization.runtime;
 
 import com.majortom.algorithms.core.runtime.DefaultExecutionControl;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorRecorder;
+import com.majortom.algorithms.core.runtime.ExecutionAnchorTimeline;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.ResourceSampler;
@@ -21,6 +23,7 @@ public final class ExecutionSession implements AutoCloseable {
   private final DefaultExecutionControl executionControl;
   private final BoundedExecutionEventStore authoritativeEvents;
   private final JavaFxEventSink observerSink;
+  private final ExecutionAnchorRecorder executionAnchorRecorder;
   private final ExecutionScheduler scheduler;
   private final ResourceSampler resourceSampler;
   private final CompletableFuture<ExecutionResult> runtimeCompletion = new CompletableFuture<>();
@@ -36,11 +39,13 @@ public final class ExecutionSession implements AutoCloseable {
 
   ExecutionSession(long generation, DefaultExecutionControl executionControl,
       BoundedExecutionEventStore authoritativeEvents, JavaFxEventSink observerSink,
+      ExecutionAnchorRecorder executionAnchorRecorder,
       ExecutionScheduler scheduler, ResourceSampler resourceSampler) {
     this.generation = generation;
     this.executionControl = Objects.requireNonNull(executionControl, "executionControl");
     this.authoritativeEvents = Objects.requireNonNull(authoritativeEvents, "authoritativeEvents");
     this.observerSink = Objects.requireNonNull(observerSink, "observerSink");
+    this.executionAnchorRecorder = Objects.requireNonNull(executionAnchorRecorder, "executionAnchorRecorder");
     this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
     this.resourceSampler = Objects.requireNonNull(resourceSampler, "resourceSampler");
   }
@@ -72,6 +77,9 @@ public final class ExecutionSession implements AutoCloseable {
   }
   public List<EventEnvelope> events() {
     return authoritativeEvents.events();
+  }
+  public Optional<ExecutionAnchorTimeline> executionAnchors() {
+    return executionAnchorRecorder.snapshot();
   }
   public CompletableFuture<ExecutionResult> runtimeCompletion() {
     return runtimeCompletion;

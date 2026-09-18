@@ -26,7 +26,7 @@ class PracticeRuntimeTest {
             new Integer[] {1, 3, 5, 6}, 5);
     assertEquals(2, result);
     assertTrue(runner.lastMemoryProfile().isPresent());
-    assertTrue(runner.lastMemoryProfile().orElseThrow().complete());
+    assertTrue(runner.lastMemoryProfile().orElseThrow().state().executionEnded());
   }
 
   @Test
@@ -38,7 +38,7 @@ class PracticeRuntimeTest {
     assertEquals(8, recording.result());
     assertFalse(recording.frames().isEmpty());
     assertTrue(recording.memoryProfile().isPresent());
-    assertTrue(recording.memoryProfile().orElseThrow().complete());
+    assertTrue(recording.memoryProfile().orElseThrow().state().executionEnded());
     var first = recording.frames().getFirst();
     assertTrue(first.lineNumber() > 0);
     assertEquals(first, recording.frames().getFirst());
