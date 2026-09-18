@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -559,8 +560,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return String.format("%s | %s | %s",
                 I18N.text("stats.graph.nodes", graph.vertexCount()),
                 I18N.text("stats.graph.edges", graph.edgeCount()),
-                formatMetric("stats.action", stats.metric("nodes.visited")
-                        + stats.metric("edges.examined")));
+                formatMetric("stats.action", stats.metric(MetricKeys.NODES_VISITED)
+                        + stats.metric(MetricKeys.EDGES_EXAMINED)));
     }
 
     @Override

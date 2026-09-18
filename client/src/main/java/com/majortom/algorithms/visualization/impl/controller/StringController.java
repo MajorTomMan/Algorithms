@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -351,7 +352,7 @@ public final class StringController extends BaseModuleController<StringViewState
     @Override
     protected String formatStatsMessage() {
         return String.format("%s | %s | %s", I18N.text("stats.size", source.length()),
-                formatMetric("stats.compare", stats.metric("comparisons")),
+                formatMetric("stats.compare", stats.metric(MetricKeys.COMPARISONS)),
                 I18N.text("stats.frames", visualFrameCount()));
     }
 

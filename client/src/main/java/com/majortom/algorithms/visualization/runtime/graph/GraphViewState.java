@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Immutable JavaFX-neutral Graph facts plus persistent visited and current observation state. */
-public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edges,
+public record GraphViewState(boolean directed, boolean weighted, List<Node> nodes, List<Edge> edges,
     Set<Long> visitedNodeIds, Observation observation, boolean completed) {
   public GraphViewState {
     nodes = List.copyOf(Objects.requireNonNull(nodes, "nodes"));
@@ -47,7 +47,7 @@ public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edge
                            .stream()
                            .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), null))
                            .toList();
-    return new GraphViewState(graph.directed(), nodes, edges, Set.of(), Observation.none(), false);
+    return new GraphViewState(graph.directed(), false, nodes, edges, Set.of(), Observation.none(), false);
   }
 
   private static GraphViewState initialWeighted(WeightedGraphSnapshot<?> graph) {
@@ -60,7 +60,7 @@ public record GraphViewState(boolean directed, List<Node> nodes, List<Edge> edge
             .stream()
             .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight()))
             .toList();
-    return new GraphViewState(graph.directed(), nodes, edges, Set.of(), Observation.none(), false);
+    return new GraphViewState(graph.directed(), true, nodes, edges, Set.of(), Observation.none(), false);
   }
 
   public Map<Long, Node> nodesById() {

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -1265,7 +1266,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return String.format("%s | %s | %s",
                 I18N.text("stats.size", size),
                 I18N.text("stats.height", height),
-                formatMetric("stats.action", stats.metric("nodes.inserted") + stats.metric("nodes.removed")));
+                formatMetric("stats.action", stats.metric(MetricKeys.NODES_VISITED) + stats.metric(MetricKeys.EDGES_EXAMINED)));
     }
 
     @Override

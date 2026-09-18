@@ -32,12 +32,17 @@ import com.majortom.algorithms.visualization.logging.LogChannel;
 import com.majortom.algorithms.visualization.logging.LogChannelId;
 import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
+import com.majortom.algorithms.visualization.metrics.RuntimeMetricTracker;
+import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
+import com.majortom.algorithms.visualization.metrics.RuntimeOverviewService;
+import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ExecutionSummary;
 import com.majortom.algorithms.core.runtime.ExecutionTiming;
 import com.majortom.algorithms.core.runtime.StatisticsReducer;
 import com.majortom.algorithms.core.runtime.RunControl;
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.timeline.Timeline;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.execution.ClientExecutionRecord;
@@ -101,6 +106,7 @@ public abstract class BaseController<S> implements Initializable {
     private static final ExecutionExportCodec DEFAULT_EXPORT_CODEC = new ExecutionExportCodec(JSON_MAPPER);
     private static final ExecutionExporter DEFAULT_EXECUTION_EXPORTER =
             new JsonExecutionExporter(java.nio.file.Path.of("exports"), JSON_MAPPER, DEFAULT_EXPORT_CODEC);
+    private static final RuntimeOverviewService RUNTIME_OVERVIEW = new RuntimeOverviewService();
 
     protected final DoubleProperty delayMs = new SimpleDoubleProperty(50.0d);
     protected ExecutionStatistics stats = ExecutionStatistics.empty();
@@ -148,6 +154,7 @@ public abstract class BaseController<S> implements Initializable {
     private boolean updatingTimelineSlider;
     private long lastLiveStatsRefreshNanos;
     private final AtomicLong livePlaybackDelayMillis = new AtomicLong(50L);
+    private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
     private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
         livePlaybackDelayMillis.set(Math.max(0L, newValue.longValue()));
         updatePlaybackSpeed(newValue.doubleValue());
@@ -245,6 +252,8 @@ public abstract class BaseController<S> implements Initializable {
         refreshStatsDisplay();
 
         EventReducer<S> liveReducer = reducerFactory.get();
+        runtimeMetricTracker.reset();
+        runtimeMetricTracker.observe(RUNTIME_OVERVIEW.structures(), structureLogScopeId(), liveReducer.initialState());
         running.set(true);
         paused.set(false);
         updatePlaybackButtonState();
@@ -680,6 +689,7 @@ public abstract class BaseController<S> implements Initializable {
 
     private void renderLiveState(S state) {
         liveVisualFrameCount++;
+        runtimeMetricTracker.observe(RUNTIME_OVERVIEW.structures(), structureLogScopeId(), state);
         renderViewState(state);
     }
 
@@ -923,6 +933,7 @@ public abstract class BaseController<S> implements Initializable {
             replayController = null;
         }
         stats = ExecutionStatistics.empty();
+        runtimeMetricTracker.reset();
         lastExecution = null;
         lastTimeline = null;
         latestViewState = null;
@@ -948,7 +959,7 @@ public abstract class BaseController<S> implements Initializable {
                 formatBytes(summary.resources().peakMemoryBytes()),
                 record.recording().statistics().totalEventCount(),
                 record.visualFrameCount(),
-                record.recording().statistics().metric("comparisons"));
+                record.recording().statistics().metric(MetricKeys.COMPARISONS));
     }
 
     private String inputFingerprint(Object input) {
@@ -1087,11 +1098,7 @@ public abstract class BaseController<S> implements Initializable {
 
     protected void refreshStatsDisplay() {
         if (statsLabel != null) {
-            String message = formatStatsMessage();
-            if (lastExecution != null) {
-                message = message + " | " + formatSummaryMessage(executionSummary());
-            }
-            statsLabel.setText(message);
+            statsLabel.setText(RuntimeOverviewText.format(runtimeOverview()));
         }
         updatePlaybackButtonState();
     }
@@ -1360,9 +1367,9 @@ public abstract class BaseController<S> implements Initializable {
         return stats;
     }
 
-    /** Family-specific structure summary for the presentation shell. */
+    /** Semantic structure summary rendered from the same provider model as the metric tiles. */
     public String structureSummaryText() {
-        return formatStatsMessage();
+        return RuntimeOverviewText.formatStructure(structureOverview());
     }
 
     public String structurePrimaryCount() {
@@ -1377,6 +1384,29 @@ public abstract class BaseController<S> implements Initializable {
     public final ExecutionSummary executionSummary() {
         if (lastExecution == null) return ExecutionSummary.from(stats);
         return lastExecution.recording().summary();
+    }
+
+    /** Complete structured overview for the current algorithm frame (or structure state when idle). */
+    public final RuntimeOverviewModel runtimeOverview() {
+        S state = latestViewState != null ? latestViewState : latestStructureState;
+        return buildRuntimeOverview(state);
+    }
+
+    /** Structured overview for the editable structure, independent of algorithm playback. */
+    public final RuntimeOverviewModel structureOverview() {
+        return buildRuntimeOverview(latestStructureState);
+    }
+
+    private RuntimeOverviewModel buildRuntimeOverview(S state) {
+        return RUNTIME_OVERVIEW.build(
+                structureLogScopeId(),
+                state,
+                structureEvents(),
+                stats,
+                executionEvents(),
+                executionSummary(),
+                currentPlaybackDuration(),
+                runtimeMetricTracker.peaks());
     }
 
     private Optional<Duration> currentPlaybackDuration() {

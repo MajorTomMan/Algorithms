@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -552,8 +553,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     protected String formatStatsMessage() {
         return String.format("%s | %s | %s | %s",
                 I18N.text("stats.size", sourceArray.size()),
-                formatMetric("stats.action", stats.metric("writes")),
-                formatMetric("stats.compare", stats.metric("comparisons")),
+                formatMetric("stats.action", stats.metric(MetricKeys.WRITES)),
+                formatMetric("stats.compare", stats.metric(MetricKeys.COMPARISONS)),
                 I18N.text("stats.frames", visualFrameCount()));
     }
 

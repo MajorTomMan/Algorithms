@@ -113,7 +113,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
   private static GraphViewState state(GraphViewState previous, List<GraphViewState.Node> nodes,
       List<GraphViewState.Edge> edges, Set<Long> visited, GraphViewState.Observation observation,
       boolean completed) {
-    return new GraphViewState(previous.directed(), nodes, edges, visited, observation, completed);
+    return new GraphViewState(previous.directed(), previous.weighted(), nodes, edges, visited, observation, completed);
   }
 
   private static Long graphNodeId(ObservationEvent.Reference reference) {

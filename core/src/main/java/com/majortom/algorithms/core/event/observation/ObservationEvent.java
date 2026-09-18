@@ -1,6 +1,7 @@
 package com.majortom.algorithms.core.event.observation;
 
 import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.statistics.StatisticsContribution;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("comparisons", 1L);
+      return Map.of(MetricKeys.COMPARISONS, 1L);
     }
   }
 
@@ -69,7 +70,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("nodesVisited", 1L);
+      return Map.of(MetricKeys.NODES_VISITED, 1L);
     }
   }
 
@@ -81,7 +82,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("edgesExamined", 1L);
+      return Map.of(MetricKeys.EDGES_EXAMINED, 1L);
     }
   }
 
@@ -97,7 +98,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("matches", 1L);
+      return Map.of(MetricKeys.MATCHES, 1L);
     }
   }
 
@@ -113,7 +114,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("fallbacks", 1L);
+      return Map.of(MetricKeys.FALLBACKS, 1L);
     }
   }
 
@@ -124,7 +125,7 @@ public sealed interface ObservationEvent
 
     @Override
     public Map<String, Long> metricDeltas() {
-      return Map.of("backtracks", 1L);
+      return Map.of(MetricKeys.BACKTRACKS, 1L);
     }
   }
 

@@ -19,6 +19,9 @@ import com.majortom.algorithms.visualization.module.WorkbenchModules;
 import com.majortom.algorithms.visualization.logging.LogChannelId;
 import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
+import com.majortom.algorithms.visualization.metrics.MetricItem;
+import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
+import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchHeader;
 import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
@@ -29,7 +32,6 @@ import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
@@ -549,8 +551,6 @@ public class MainController implements Initializable {
                 I18N.createStringBinding("label.workspace.structure.preview.hint"));
         snapshotTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         snapshotQuickTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshot.quick"));
-        structurePrimaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
-        structureSecondaryMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
         structureStateMetricTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
         selectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
         algorithmSelectedValueCaptionLabel.textProperty().bind(I18N.createStringBinding("label.workspace.selection.value"));
@@ -566,9 +566,6 @@ public class MainController implements Initializable {
                 I18N.createStringBinding("label.workspace.snapshot.preview_hint"));
         snapshotPreviewRestoreBtn.textProperty().bind(
                 I18N.createStringBinding("action.workspace.restore_snapshot"));
-        overviewPrimaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.nodes"));
-        overviewSecondaryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.height"));
-        overviewEventsTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.events"));
         overviewStateTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.metric.state"));
         structureHistoryTitleLabel.textProperty().bind(I18N.createStringBinding("label.workspace.structure.history"));
         saveSnapshotBtn.textProperty().bind(I18N.createStringBinding("action.workspace.save_snapshot"));
@@ -2907,6 +2904,8 @@ public class MainController implements Initializable {
             }
             return;
         }
+        RuntimeOverviewModel overview = currentSubController.structureOverview();
+        List<MetricItem> structureMetrics = overview.structureMetrics();
         String summary = currentSubController.structureSummaryText();
         if (structureOverviewLabel != null) {
             if (summary == null || summary.isBlank()) {
@@ -2915,27 +2914,38 @@ public class MainController implements Initializable {
                 structureOverviewLabel.setText(summary);
             }
         }
-        if (structureNodeCountLabel != null) {
-            structureNodeCountLabel.setText(currentSubController.structurePrimaryCount());
-        }
-        if (structureHeightLabel != null) {
-            structureHeightLabel.setText(currentSubController.structureSecondaryCount());
-        }
+        applyStructureMetric(0, structurePrimaryMetricTitleLabel, structureNodeCountLabel,
+                overviewPrimaryTitleLabel, overviewPrimaryValue, structureMetrics);
+        applyStructureMetric(1, structureSecondaryMetricTitleLabel, structureHeightLabel,
+                overviewSecondaryTitleLabel, overviewSecondaryValue, structureMetrics);
+        applyStructureMetric(2, null, null, overviewEventsTitleLabel, overviewEventsValue, structureMetrics);
         if (structureStateLabel != null) {
             structureStateLabel.setText(workspaceStatusText("READY"));
-        }
-        if (overviewPrimaryValue != null) {
-            overviewPrimaryValue.setText(currentSubController.structurePrimaryCount());
-        }
-        if (overviewSecondaryValue != null) {
-            overviewSecondaryValue.setText(currentSubController.structureSecondaryCount());
-        }
-        if (overviewEventsValue != null) {
-            overviewEventsValue.setText(Integer.toString(currentSubController.structureEvents().size()));
         }
         if (overviewStateValue != null) {
             overviewStateValue.setText(workspaceStatusText("READY"));
         }
+    }
+
+    private void applyStructureMetric(
+            int index,
+            Label compactTitle,
+            Label compactValue,
+            Label overviewTitle,
+            Label overviewValue,
+            List<MetricItem> metrics) {
+        if (index < 0 || index >= metrics.size()) {
+            if (compactValue != null) compactValue.setText("—");
+            if (overviewValue != null) overviewValue.setText("—");
+            return;
+        }
+        MetricItem metric = metrics.get(index);
+        String title = RuntimeOverviewText.label(metric);
+        String value = RuntimeOverviewText.value(metric);
+        if (compactTitle != null) compactTitle.setText(title);
+        if (compactValue != null) compactValue.setText(value);
+        if (overviewTitle != null) overviewTitle.setText(title);
+        if (overviewValue != null) overviewValue.setText(value);
     }
 
     @SuppressWarnings("unchecked")
@@ -3339,62 +3349,32 @@ public class MainController implements Initializable {
 
     private void refreshRunSummary() {
         if (runMetric1Title == null || currentSubController == null) return;
-        ExecutionStatistics statistics = currentSubController.currentExecutionStatistics();
-        List<MetricDisplay> metrics = metricDisplays(statistics);
+        RuntimeOverviewModel overview = currentSubController.runtimeOverview();
+        List<MetricItem> algorithm = overview.algorithmMetrics();
+        List<MetricDisplay> metrics = new ArrayList<>();
+        for (MetricItem metric : algorithm) {
+            if (metrics.size() >= 3) break;
+            metrics.add(new MetricDisplay(RuntimeOverviewText.label(metric), RuntimeOverviewText.value(metric)));
+        }
+        while (metrics.size() < 3) {
+            metrics.add(new MetricDisplay(I18N.text("label.workspace.metric.events"), "0"));
+        }
+        MetricItem duration = overview.performanceMetrics().stream()
+                .filter(metric -> "totalDuration".equals(metric.key()))
+                .findFirst()
+                .orElse(null);
+        metrics.add(duration == null
+                ? new MetricDisplay(I18N.text("label.workspace.metric.duration"), "—")
+                : new MetricDisplay(RuntimeOverviewText.label(duration), RuntimeOverviewText.value(duration)));
         setMetric(runMetric1Title, runMetric1Value, metrics.get(0));
         setMetric(runMetric2Title, runMetric2Value, metrics.get(1));
         setMetric(runMetric3Title, runMetric3Value, metrics.get(2));
         setMetric(runMetric4Title, runMetric4Value, metrics.get(3));
     }
 
-    private List<MetricDisplay> metricDisplays(ExecutionStatistics statistics) {
-        Map<String, Long> values = statistics.metrics();
-        List<MetricDisplay> metrics = new ArrayList<>();
-        addMetricIfPresent(metrics, values, "nodesVisited", I18N.text("label.workspace.metric.nodes_visited"));
-        addMetricIfPresent(metrics, values, "edgesExamined", I18N.text("label.workspace.metric.edges_examined"));
-        addMetricIfPresent(metrics, values, "comparisons", I18N.text("label.workspace.metric.comparisons"));
-        addMetricIfPresent(metrics, values, "writes", I18N.text("label.workspace.metric.writes"));
-        addMetricIfPresent(metrics, values, "swaps", I18N.text("label.workspace.metric.swaps"));
-        addMetricIfPresent(metrics, values, "matches", I18N.text("label.workspace.metric.matches"));
-        addMetricIfPresent(metrics, values, "fallbacks", I18N.text("label.workspace.metric.fallbacks"));
-        addMetricIfPresent(metrics, values, "backtracks", I18N.text("label.workspace.metric.backtracks"));
-        if (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(
-                    I18N.text("label.workspace.metric.domain_events"),
-                    Long.toString(statistics.domainEventCount())));
-        }
-        if (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(
-                    I18N.text("label.workspace.metric.total_events"),
-                    Long.toString(statistics.totalEventCount())));
-        }
-        while (metrics.size() < 3) {
-            metrics.add(new MetricDisplay(I18N.text("label.workspace.metric.events"), "0"));
-        }
-        List<MetricDisplay> result = new ArrayList<>(metrics.subList(0, 3));
-        result.add(new MetricDisplay(
-                I18N.text("label.workspace.metric.duration"),
-                formatDuration(statistics.duration())));
-        return result;
-    }
-
-    private void addMetricIfPresent(List<MetricDisplay> metrics, Map<String, Long> values, String key, String title) {
-        long value = values.getOrDefault(key, 0L);
-        if (value > 0L) metrics.add(new MetricDisplay(title, Long.toString(value)));
-    }
-
     private void setMetric(Label title, Label value, MetricDisplay metric) {
         title.setText(metric.title());
         value.setText(metric.value());
-    }
-
-    private String formatDuration(java.time.Duration duration) {
-        long millis = Math.max(0L, duration.toMillis());
-        long hours = millis / 3_600_000L;
-        long minutes = (millis % 3_600_000L) / 60_000L;
-        long seconds = (millis % 60_000L) / 1_000L;
-        long milliseconds = millis % 1_000L;
-        return String.format(Locale.ROOT, "%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {

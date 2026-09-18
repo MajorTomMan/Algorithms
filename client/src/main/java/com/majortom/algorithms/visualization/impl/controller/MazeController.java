@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
@@ -276,7 +277,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     private long mazeActionCount() {
-        return stats.metric("nodesVisited") + stats.metric("edgesExamined") + stats.metric("backtracks");
+        return stats.metric(MetricKeys.NODES_VISITED) + stats.metric(MetricKeys.EDGES_EXAMINED) + stats.metric(MetricKeys.BACKTRACKS);
     }
 
     @Override
