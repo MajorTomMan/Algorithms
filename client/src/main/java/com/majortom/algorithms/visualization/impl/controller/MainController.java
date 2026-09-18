@@ -16,6 +16,8 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.module.WorkbenchModules;
+import com.majortom.algorithms.visualization.logging.LogChannelId;
+import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchHeader;
@@ -468,6 +470,7 @@ public class MainController implements Initializable {
     private final List<WorkbenchModuleDefinition> moduleDefinitions = WorkbenchModules.available(COMPONENTS, renderContext);
     private final InMemoryStructureSnapshotStore structureSnapshotStore =
             new InMemoryStructureSnapshotStore();
+    private final LogChannelStore logChannelStore = new LogChannelStore();
     private final Map<String, String> selectedValueTypes = new LinkedHashMap<>();
     /** Snapshot-card selection is independent from restore and algorithm execution. Null means live/current. */
     private final Map<String, String> selectedSnapshotIds = new LinkedHashMap<>();
@@ -1829,6 +1832,9 @@ public class MainController implements Initializable {
 
     private void handleAlgorithmSelectionChanged(String algorithmId) {
         selectedAlgorithmId = algorithmId;
+        if (currentSubController != null) {
+            currentSubController.activateAlgorithmLog(algorithmId);
+        }
         rebuildAlgorithmMenu();
         syncFamilyNavigatorSelection();
         if (activeDefinition != null) {
@@ -1865,6 +1871,7 @@ public class MainController implements Initializable {
                 statsLabel,
                 logView,
                 structureLogView,
+                logChannelStore,
                 delaySlider,
                 timelineSlider,
                 customControlBox,
@@ -2696,14 +2703,24 @@ public class MainController implements Initializable {
     }
 
     private void appendSystemLog(String message) {
-        if (logView != null) {
-            logView.appendSystem(message);
+        if (currentSubController == null) {
+            logChannelStore.channel(LogChannelId.system()).appendSystem(message);
+            return;
+        }
+        if (workspaceMode == WorkspaceMode.STRUCTURE) {
+            currentSubController.appendStructureSystemMessage(message);
+        } else if (workspaceMode == WorkspaceMode.ALGORITHM && selectedAlgorithmId != null) {
+            currentSubController.appendAlgorithmSystemMessage(message);
+        } else {
+            logChannelStore.channel(LogChannelId.system()).appendSystem(message);
         }
     }
 
     private void appendStructureSystemLog(String message) {
-        if (structureLogView != null) {
-            structureLogView.appendSystem(message);
+        if (currentSubController != null) {
+            currentSubController.appendStructureSystemMessage(message);
+        } else {
+            logChannelStore.channel(LogChannelId.system()).appendSystem(message);
         }
     }
 

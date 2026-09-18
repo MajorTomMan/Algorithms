@@ -763,6 +763,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void activateVariant(TreeVariant variant) {
+        setStructureLogScopeId(variant == TreeVariant.GENERAL ? StructureIds.TREE : StructureIds.AVL_TREE);
         if (activeVariant == variant) {
             refreshVariantControls();
             return;

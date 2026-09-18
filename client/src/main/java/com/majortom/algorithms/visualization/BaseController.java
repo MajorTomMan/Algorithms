@@ -28,6 +28,9 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
+import com.majortom.algorithms.visualization.logging.LogChannel;
+import com.majortom.algorithms.visualization.logging.LogChannelId;
+import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
@@ -109,6 +112,9 @@ public abstract class BaseController<S> implements Initializable {
     protected Label statsLabel;
     protected LogView logView;
     protected LogView structureLogView;
+    private LogChannelStore logChannelStore;
+    private String structureLogScopeId;
+    private String activeAlgorithmLogId;
     protected Slider delaySlider;
     protected Slider timelineSlider;
     protected HBox customControlBox;
@@ -230,6 +236,7 @@ public abstract class BaseController<S> implements Initializable {
             throw new IllegalStateException("Controller is disposed");
         }
         stopAlgorithm();
+        activateAlgorithmLog(algorithmId);
         clearExecutionState();
         liveVisualFrameCount = 0L;
         liveEventIndex = -1;
@@ -300,7 +307,8 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private void appendStructureEventsSince(int eventStart) {
-        if (structureLogView == null) {
+        LogChannel target = structureLogChannel();
+        if (target == null) {
             return;
         }
         List<EventEnvelope> events = structureTimeline.events();
@@ -311,7 +319,7 @@ public abstract class BaseController<S> implements Initializable {
                 continue;
             }
             if (envelope.event() instanceof LogEvent logEvent) {
-                Runnable task = () -> structureLogView.append(logEvent, envelope.timestamp());
+                Runnable task = () -> target.append(logEvent, envelope.timestamp());
                 if (FxDispatch.isFxThread()) {
                     task.run();
                 } else {
@@ -326,7 +334,7 @@ public abstract class BaseController<S> implements Initializable {
             }
             String tag = operation.isBlank() ? "STRUCTURE" : operation;
             String message = envelope.event().toString();
-            Runnable task = () -> structureLogView.append(
+            Runnable task = () -> target.append(
                     envelope.timestamp(), LogLevel.INFO, tag, message);
             if (FxDispatch.isFxThread()) {
                 task.run();
@@ -658,8 +666,9 @@ public abstract class BaseController<S> implements Initializable {
                 presentationEventIndex = eventIndex;
                 presentationEvent.set(envelope);
             }
-            if (envelope.event() instanceof LogEvent logEvent && logView != null) {
-                logView.append(logEvent, envelope.timestamp());
+            if (envelope.event() instanceof LogEvent logEvent) {
+                LogChannel target = algorithmLogChannel();
+                if (target != null) target.append(logEvent, envelope.timestamp());
             }
         };
         if (FxDispatch.isFxThread()) {
@@ -947,15 +956,72 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     protected final void appendLog(String message) {
-        appendToLog(logView, message);
+        appendToLog(algorithmLogChannel(), message);
     }
 
-    /** Writes a structure-workspace message without contaminating the algorithm execution log. */
+    /** Writes a structure-workspace message into this structure's independent log channel. */
     protected final void appendStructureLog(String message) {
-        appendToLog(structureLogView, message);
+        appendToLog(structureLogChannel(), message);
     }
 
-    private void appendToLog(LogView target, String message) {
+    /** Main-workbench bridge for system messages that belong to the selected algorithm. */
+    public final void appendAlgorithmSystemMessage(String message) {
+        appendLog(message);
+    }
+
+    /** Main-workbench bridge for system messages that belong to the active structure. */
+    public final void appendStructureSystemMessage(String message) {
+        appendStructureLog(message);
+    }
+
+    /** Selects which algorithm log is visible/writable without merging it with another algorithm. */
+    public final void activateAlgorithmLog(String algorithmId) {
+        activeAlgorithmLogId = normalizeLogOwnerId(algorithmId);
+        bindAlgorithmLogView();
+    }
+
+    /**
+     * Allows a controller with multiple real structure variants to switch log ownership explicitly.
+     * Ordinary controllers inherit their stable {@link #moduleId()} automatically.
+     */
+    protected final void setStructureLogScopeId(String structureId) {
+        String normalized = Objects.requireNonNull(normalizeLogOwnerId(structureId), "structureId");
+        if (Objects.equals(structureLogScopeId, normalized)) return;
+        structureLogScopeId = normalized;
+        bindStructureLogView();
+        bindAlgorithmLogView();
+    }
+
+    public final String structureLogScopeId() {
+        return structureLogScopeId == null ? moduleId() : structureLogScopeId;
+    }
+
+    private LogChannel structureLogChannel() {
+        if (logChannelStore == null) return null;
+        return logChannelStore.channel(LogChannelId.structure(structureLogScopeId()));
+    }
+
+    private LogChannel algorithmLogChannel() {
+        if (logChannelStore == null || activeAlgorithmLogId == null) return null;
+        return logChannelStore.channel(
+                LogChannelId.algorithm(structureLogScopeId(), activeAlgorithmLogId));
+    }
+
+    private void bindStructureLogView() {
+        if (structureLogView != null) structureLogView.showChannel(structureLogChannel());
+    }
+
+    private void bindAlgorithmLogView() {
+        if (logView != null) logView.showChannel(algorithmLogChannel());
+    }
+
+    private static String normalizeLogOwnerId(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private void appendToLog(LogChannel target, String message) {
         if (target == null) {
             return;
         }
@@ -1145,6 +1211,10 @@ public abstract class BaseController<S> implements Initializable {
         this.statsLabel = controls.statsLabel();
         this.logView = controls.logView();
         this.structureLogView = controls.structureLogView();
+        this.logChannelStore = Objects.requireNonNull(controls.logChannelStore(), "logChannelStore");
+        if (this.structureLogScopeId == null) this.structureLogScopeId = moduleId();
+        bindStructureLogView();
+        bindAlgorithmLogView();
         this.delaySlider = controls.delaySlider();
         this.timelineSlider = controls.timelineSlider();
         this.customControlBox = controls.customControlBox();

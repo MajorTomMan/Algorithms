@@ -1,10 +1,8 @@
 package com.majortom.algorithms.visualization.logging;
 
-import com.majortom.algorithms.core.logging.LogEvent;
-import com.majortom.algorithms.core.logging.LogLevel;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -13,44 +11,30 @@ import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
-/** Virtualized log list with level/tag prefix styling. */
-public final class LogView extends ListView<LogView.Line> {
+/** Virtualized view over one independently retained log channel. */
+public final class LogView extends ListView<LogEntry> {
   private static final DateTimeFormatter TIME_FORMAT =
       DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
   public LogView() {
     getStyleClass().add("log-view");
     setCellFactory(ignored -> new LogCell());
+    setItems(FXCollections.observableArrayList());
   }
 
-  public void append(LogEvent event, Instant timestamp) {
-    append(timestamp, event.level(), event.tag(), event.message());
-  }
-
-  public void append(LogLevel level, String tag, String message) {
-    append(Instant.now(), level, tag, message);
-  }
-
-  public void appendSystem(String message) {
-    append(LogLevel.INFO, "SYSTEM", message);
-  }
-
-  public void append(Instant timestamp, LogLevel level, String tag, String message) {
-    String normalizedTag;
-    if (tag == null) {
-      normalizedTag = "";
-    } else {
-      normalizedTag = tag;
+  /** Switches the visible list without copying or merging another channel's history. */
+  public void showChannel(LogChannel channel) {
+    if (channel == null) {
+      setItems(FXCollections.observableArrayList());
+      return;
     }
-    getItems().add(new Line(TIME_FORMAT.format(timestamp), level, normalizedTag, message));
-    scrollTo(getItems().size() - 1);
+    setItems(channel.entries());
+    if (!getItems().isEmpty()) scrollTo(getItems().size() - 1);
   }
 
-  public record Line(String time, LogLevel level, String tag, String message) {}
-
-  private static final class LogCell extends ListCell<Line> {
+  private static final class LogCell extends ListCell<LogEntry> {
     @Override
-    protected void updateItem(Line line, boolean empty) {
+    protected void updateItem(LogEntry line, boolean empty) {
       super.updateItem(line, empty);
       if (empty || line == null) {
         setGraphic(null);
@@ -62,14 +46,9 @@ public final class LogView extends ListView<LogView.Line> {
       bullet.getStyleClass().addAll(
           "log-bullet", "log-bullet-" + line.level().name().toLowerCase());
 
-      Text time = new Text(line.time() + "  ");
+      Text time = new Text(TIME_FORMAT.format(line.timestamp()) + "  ");
       time.getStyleClass().add("log-time");
-      String tag;
-      if (line.tag().isBlank()) {
-        tag = "";
-      } else {
-        tag = line.tag() + ": ";
-      }
+      String tag = line.tag().isBlank() ? "" : line.tag() + ": ";
       Text message = new Text(tag + line.message());
       message.getStyleClass().add("log-message");
       TextFlow flow = new TextFlow(time, message);
