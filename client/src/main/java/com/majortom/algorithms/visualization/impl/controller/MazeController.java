@@ -281,6 +281,11 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return generatedMaze != null ? generatedMaze : mazeSnapshot();
+    }
+
+    @Override
     protected void onResetData() {
         generatedMaze = null;
         algorithmResultSnapshot = null;

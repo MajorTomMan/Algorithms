@@ -10,6 +10,7 @@
 <?import com.majortom.algorithms.visualization.layout.PlaybackToolbar?>
 <?import com.majortom.algorithms.visualization.layout.WorkbenchHeader?>
 <?import com.majortom.algorithms.visualization.navigation.FamilyNavigator?>
+<?import com.majortom.algorithms.visualization.memory.MemoryProfileView?>
 
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
     fx:controller="com.majortom.algorithms.visualization.impl.controller.MainController"
@@ -301,6 +302,14 @@
                                             styleClass="log-view-light" />
                                     </VBox>
                                 </Tab>
+                                <Tab fx:id="structureMemoryTab" text="MEMORY">
+                                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER"
+                                        styleClass="light-scroll-pane">
+                                        <content>
+                                            <MemoryProfileView fx:id="structureMemoryView" />
+                                        </content>
+                                    </ScrollPane>
+                                </Tab>
                             </tabs>
                         </TabPane>
                     </VBox>
@@ -586,6 +595,14 @@
                                         <LogView fx:id="logView" VBox.vgrow="ALWAYS"
                                             styleClass="log-view-light" />
                                     </VBox>
+                                </Tab>
+                                <Tab fx:id="memoryTab" text="MEMORY">
+                                    <ScrollPane fitToWidth="true" hbarPolicy="NEVER"
+                                        styleClass="light-scroll-pane">
+                                        <content>
+                                            <MemoryProfileView fx:id="algorithmMemoryView" />
+                                        </content>
+                                    </ScrollPane>
                                 </Tab>
                                 <Tab fx:id="resultTab" text="RESULT">
                                     <VBox spacing="12" styleClass="inspector-content">

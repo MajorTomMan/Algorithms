@@ -1792,3 +1792,104 @@
 .runtime-metric-card-performance .runtime-metric-card-value {
     -fx-text-fill: #2e3338;
 }
+
+/* ---------- memory profiler ---------- */
+.memory-status-pill {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+}
+.memory-status-live {
+    -fx-background-color: #fff5f5;
+    -fx-border-color: #ffe1e3;
+}
+.memory-status-live .memory-status-dot {
+    -fx-background-color: #f51b23;
+}
+.memory-status-live .memory-status-label {
+    -fx-text-fill: #d61b22;
+}
+.memory-status-complete {
+    -fx-background-color: #f5f7f8;
+    -fx-border-color: #e2e6e9;
+}
+.memory-status-complete .memory-status-dot {
+    -fx-background-color: #7b838c;
+}
+.memory-status-complete .memory-status-label {
+    -fx-text-fill: #606870;
+}
+.memory-status-dot {
+    -fx-background-radius: 999px;
+}
+.memory-allocation-chart {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e1e4e8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+}
+.memory-chart-grid-line {
+    -fx-stroke: #edf0f2;
+    -fx-stroke-width: 1px;
+}
+.memory-allocation-curve {
+    -fx-fill: transparent;
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 2px;
+}
+.memory-chart-summary {
+    -fx-text-fill: #d61b22;
+}
+.memory-chart-axis-label,
+.memory-detail-label {
+    -fx-text-fill: #858b92;
+}
+.memory-detail-value {
+    -fx-text-fill: #24282d;
+}
+.memory-notice {
+    -fx-text-fill: #7a6530;
+    -fx-background-color: #fffaf0;
+    -fx-background-radius: 6px;
+    -fx-border-color: #f0e4c4;
+    -fx-border-radius: 6px;
+    -fx-padding: 0.70em 0.78em;
+}
+.memory-empty-state {
+    -fx-text-fill: #777e86;
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 6px;
+    -fx-border-color: #e6e9ec;
+    -fx-border-radius: 6px;
+    -fx-padding: 0.86em;
+}
+
+.memory-deep-section {
+    -fx-background-color: rgba(248, 249, 251, 0.76);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(30, 36, 48, 0.08);
+    -fx-border-radius: 10;
+    -fx-padding: 12;
+}
+.memory-analysis-row {
+    -fx-background-color: rgba(255, 255, 255, 0.72);
+    -fx-background-radius: 7;
+    -fx-border-color: rgba(30, 36, 48, 0.07);
+    -fx-border-radius: 7;
+}
+.memory-analysis-name {
+    -fx-text-fill: #777e86;
+}
+.memory-analysis-value {
+    -fx-text-fill: #24282d;
+    -fx-font-weight: 700;
+}
+.memory-footprint-box {
+    -fx-padding: 10;
+    -fx-background-color: rgba(255, 255, 255, 0.68);
+    -fx-background-radius: 8;
+}
+.memory-analysis-button {
+    -fx-background-radius: 8;
+}

@@ -383,6 +383,11 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return linkedList;
+    }
+
+    @Override
     protected void onResetData() {
         clearVisualSelection();
         seed();

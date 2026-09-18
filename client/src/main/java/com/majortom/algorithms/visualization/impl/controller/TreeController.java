@@ -1270,6 +1270,11 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return activeVariant == TreeVariant.GENERAL ? generalTree : avlTree;
+    }
+
+    @Override
     protected void onResetData() {
         clearNodeSelection();
         if (activeVariant == TreeVariant.GENERAL) {

@@ -559,6 +559,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return sourceArray;
+    }
+
+    @Override
     protected void onResetData() {
         clearArraySelection();
         replaceArrayContents(randomValues());

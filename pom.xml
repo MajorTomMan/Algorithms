@@ -19,6 +19,7 @@
 
     <modules>
         <module>core</module>
+        <module>telemetry</module>
         <module>structures</module>
         <module>algorithms</module>
         <module>practice</module>
@@ -37,6 +38,7 @@
         <gesturefx.version>0.8.0</gesturefx.version>
         <elk.version>0.12.0</elk.version>
         <xtext.version>2.36.0</xtext.version>
+        <jol.version>0.17</jol.version>
     </properties>
 
 </project>

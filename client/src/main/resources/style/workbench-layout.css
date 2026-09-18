@@ -744,3 +744,49 @@
     -fx-padding: 0.72em 0.78em;
     -fx-min-height: 4.15em;
 }
+
+/* ---------- memory profiler ---------- */
+.memory-profile-view {
+    -fx-spacing: 0.88em;
+}
+.memory-status-pill {
+    -fx-padding: 0.16em 0.48em;
+}
+.memory-status-dot {
+    -fx-min-width: 0.32em;
+    -fx-pref-width: 0.32em;
+    -fx-max-width: 0.32em;
+    -fx-min-height: 0.32em;
+    -fx-pref-height: 0.32em;
+    -fx-max-height: 0.32em;
+}
+.memory-metric-card {
+    -fx-min-height: 4.15em;
+    -fx-padding: 0.72em 0.78em;
+}
+.memory-allocation-chart {
+    -fx-min-height: 7.5em;
+    -fx-pref-height: 8.5em;
+}
+.memory-details-section,
+.memory-chart-section {
+    -fx-padding: 0;
+}
+
+.memory-deep-section {
+    -fx-spacing: 10;
+}
+.memory-analysis-button {
+    -fx-max-width: Infinity;
+}
+.memory-analysis-list,
+.memory-footprint-box {
+    -fx-spacing: 6;
+}
+.memory-analysis-row {
+    -fx-min-height: 28;
+    -fx-padding: 5 8;
+}
+.memory-analysis-name {
+    -fx-max-width: 260;
+}

@@ -1,5 +1,8 @@
 package com.majortom.algorithms.practice.runtime.worker;
 
+import com.majortom.algorithms.core.memory.JdkMemoryProfiler;
+import com.majortom.algorithms.core.memory.MemoryDomain;
+import com.majortom.algorithms.core.memory.MemoryProfileSession;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -7,6 +10,7 @@ import java.lang.reflect.Modifier;
 /** Child-JVM entry point. It executes only already-resolved metadata supplied by the host. */
 public final class PracticeWorkerMain {
   static final String RESULT_PREFIX = "PRACTICE_RESULT:";
+  static final String MEMORY_PREFIX = "PRACTICE_MEMORY:";
 
   private PracticeWorkerMain() {}
 
@@ -25,6 +29,8 @@ public final class PracticeWorkerMain {
     Object receiver = Modifier.isStatic(method.getModifiers())
         ? null
         : owner.getDeclaredConstructor().newInstance();
+    MemoryProfileSession memory =
+        JdkMemoryProfiler.shared().begin(MemoryDomain.PRACTICE, invocation.stableId());
     try {
       Object result = method.invoke(receiver, invocation.arguments());
       System.out.println(RESULT_PREFIX + WorkerCodec.encode(result));
@@ -35,6 +41,9 @@ public final class PracticeWorkerMain {
       if (cause instanceof Error error)
         throw error;
       throw exception;
+    } finally {
+      memory.close();
+      System.out.println(MEMORY_PREFIX + WorkerCodec.encode(memory.snapshot()));
     }
   }
 

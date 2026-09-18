@@ -172,3 +172,30 @@
     -fx-font-size: 1.18em;
     -fx-font-weight: 800;
 }
+
+/* ---------- memory profiler ---------- */
+.root-pane .memory-status-label {
+    -fx-font-size: 0.62em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-chart-summary {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-chart-axis-label,
+.root-pane .memory-detail-label,
+.root-pane .memory-notice,
+.root-pane .memory-empty-state {
+    -fx-font-size: 0.64em;
+}
+.root-pane .memory-detail-value {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 700;
+}
+
+.root-pane .memory-analysis-name {
+    -fx-font-size: 11px;
+}
+.root-pane .memory-analysis-value {
+    -fx-font-size: 11px;
+}

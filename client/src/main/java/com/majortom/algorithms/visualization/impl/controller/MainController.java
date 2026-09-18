@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.memory.MemoryDomain;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
@@ -22,6 +23,7 @@ import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.metrics.MetricItem;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
+import com.majortom.algorithms.visualization.memory.MemoryProfileView;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchHeader;
 import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
@@ -255,6 +257,10 @@ public class MainController implements Initializable {
     @FXML
     private Tab structureLogTab;
     @FXML
+    private Tab structureMemoryTab;
+    @FXML
+    private MemoryProfileView structureMemoryView;
+    @FXML
     private VBox inspectorSnapshotCards;
     @FXML
     private Label structurePrimaryMetricTitleLabel;
@@ -344,6 +350,10 @@ public class MainController implements Initializable {
     private Tab eventTab;
     @FXML
     private Tab logTab;
+    @FXML
+    private Tab memoryTab;
+    @FXML
+    private MemoryProfileView algorithmMemoryView;
     @FXML
     private Tab resultTab;
     @FXML
@@ -574,6 +584,7 @@ public class MainController implements Initializable {
         structureInspectorTab.textProperty().bind(I18N.createStringBinding("label.workspace.inspector"));
         structureSnapshotsTab.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         structureLogTab.textProperty().bind(I18N.createStringBinding("label.panel.structure_log.tab"));
+        structureMemoryTab.textProperty().bind(I18N.createStringBinding("label.workspace.memory"));
         inspectorSnapshotsHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.snapshots"));
         structureSnapshotPreviewBadgeLabel.textProperty().bind(
                 I18N.createStringBinding("label.workspace.snapshot.preview_read_only"));
@@ -599,6 +610,7 @@ public class MainController implements Initializable {
         statisticsTab.textProperty().bind(I18N.createStringBinding("label.workspace.statistics"));
         eventTab.textProperty().bind(I18N.createStringBinding("label.workspace.event"));
         logTab.textProperty().bind(I18N.createStringBinding("label.panel.algorithm_log.tab"));
+        memoryTab.textProperty().bind(I18N.createStringBinding("label.workspace.memory"));
         resultTab.textProperty().bind(I18N.createStringBinding("label.workspace.result"));
         currentEventHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.event.current"));
         eventRunSummaryHeadingLabel.textProperty().bind(I18N.createStringBinding("label.workspace.run_summary"));
@@ -2889,6 +2901,7 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
+        refreshMemoryViews();
         StructureSnapshot<?> previewSnapshot = null;
         StructureSnapshotSupport<?> snapshotSupport = null;
         if (structureSnapshotPreviewActive && activeDefinition != null) {
@@ -3372,6 +3385,7 @@ public class MainController implements Initializable {
 
     private void refreshRunSummary() {
         if (currentSubController == null) return;
+        refreshMemoryViews();
         RuntimeOverviewModel overview = currentSubController.runtimeOverview();
         renderRuntimeOverview(overview);
         if (runMetric1Title == null) return;
@@ -3457,6 +3471,46 @@ public class MainController implements Initializable {
     private void setMetric(Label title, Label value, MetricDisplay metric) {
         title.setText(metric.title());
         value.setText(metric.value());
+    }
+
+    private void refreshMemoryViews() {
+        if (currentSubController == null) {
+            return;
+        }
+        if (structureMemoryView != null) {
+            structureMemoryView.showProfile(
+                    currentSubController.structureMemoryProfile().orElse(null),
+                    currentSubController.memoryCapabilities(),
+                    MemoryDomain.STRUCTURE);
+            structureMemoryView.showDeepAnalysis(
+                    currentSubController.structureLogScopeId(),
+                    currentSubController.structureDeepMemoryProfile().orElse(null),
+                    currentSubController.memoryCapabilities().jfrAvailable(),
+                    currentSubController.isDeepMemoryAnalysisEnabled(),
+                    enabled -> {
+                        currentSubController.setDeepMemoryAnalysisEnabled(enabled);
+                        refreshMemoryViews();
+                    },
+                    currentSubController.structureFootprintAvailable(),
+                    currentSubController::analyzeStructureFootprint);
+        }
+        if (algorithmMemoryView != null) {
+            algorithmMemoryView.showProfile(
+                    currentSubController.algorithmMemoryProfile().orElse(null),
+                    currentSubController.memoryCapabilities(),
+                    MemoryDomain.ALGORITHM);
+            algorithmMemoryView.showDeepAnalysis(
+                    currentSubController.structureLogScopeId(),
+                    currentSubController.algorithmDeepMemoryProfile().orElse(null),
+                    currentSubController.memoryCapabilities().jfrAvailable(),
+                    currentSubController.isDeepMemoryAnalysisEnabled(),
+                    enabled -> {
+                        currentSubController.setDeepMemoryAnalysisEnabled(enabled);
+                        refreshMemoryViews();
+                    },
+                    false,
+                    null);
+        }
     }
 
     private void updateTimelineCursorCallout(EventEnvelope current) {

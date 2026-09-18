@@ -565,6 +565,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return currentWeightedGraph();
+    }
+
+    @Override
     protected void onResetData() {
         renderGraph();
     }

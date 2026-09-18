@@ -1,5 +1,6 @@
 package com.majortom.algorithms.practice.runtime.worker;
 
+import com.majortom.algorithms.core.memory.MemoryProfile;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
@@ -59,7 +60,7 @@ public final class PracticeWorkerLauncher {
                                   .map(Class::getName)
                                   .toArray(String[] ::new);
     WorkerInvocation invocation = new WorkerInvocation(
-        descriptor.implementation().getName(), entry.getName(), parameterNames, arguments);
+        descriptor.stableId(), descriptor.implementation().getName(), entry.getName(), parameterNames, arguments);
     return launch(invocation, timeout);
   }
 
@@ -148,8 +149,13 @@ public final class PracticeWorkerLauncher {
       String stdout = read(worker.getInputStream());
       String stderr = read(worker.getErrorStream());
       Object result = timedOut ? null : parseResult(stdout);
+      MemoryProfile memoryProfile = timedOut ? null : parseMemoryProfile(stdout);
+      if (memoryProfile != null) {
+        memoryProfile = memoryProfile.withoutRepresentativeTiming();
+      }
       return new PracticeRecording(
-          frames, exceptions, result, timedOut ? TIMEOUT_EXIT_CODE : exitCode, timedOut, stderr);
+          frames, exceptions, result, timedOut ? TIMEOUT_EXIT_CODE : exitCode, timedOut, stderr,
+          java.util.Optional.ofNullable(memoryProfile));
     } catch (Exception exception) {
       if (worker != null && worker.isAlive())
         worker.destroyForcibly();
@@ -276,6 +282,18 @@ public final class PracticeWorkerLauncher {
     for (String line : stdout.lines().toList()) {
       if (line.startsWith(PracticeWorkerMain.RESULT_PREFIX)) {
         return WorkerCodec.decode(line.substring(PracticeWorkerMain.RESULT_PREFIX.length()));
+      }
+    }
+    return null;
+  }
+
+  private static MemoryProfile parseMemoryProfile(String stdout) {
+    for (String line : stdout.lines().toList()) {
+      if (line.startsWith(PracticeWorkerMain.MEMORY_PREFIX)) {
+        Object decoded = WorkerCodec.decode(line.substring(PracticeWorkerMain.MEMORY_PREFIX.length()));
+        if (decoded instanceof MemoryProfile profile) {
+          return profile;
+        }
       }
     }
     return null;

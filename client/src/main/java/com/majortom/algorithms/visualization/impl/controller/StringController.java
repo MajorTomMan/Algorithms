@@ -357,6 +357,11 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return source;
+    }
+
+    @Override
     protected void onResetData() {
         clearStringSelection();
         source.replace(0, source.length(), "ABABDABACDABABCABAB");

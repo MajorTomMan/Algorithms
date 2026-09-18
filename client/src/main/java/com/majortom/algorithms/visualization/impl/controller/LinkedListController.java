@@ -386,6 +386,11 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     @Override
+    protected Object structureMemoryRoot() {
+        return linkedList;
+    }
+
+    @Override
     protected void onResetData() {
         clearVisualSelection();
         clearWithoutRuntime();

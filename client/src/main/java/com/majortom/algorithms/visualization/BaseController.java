@@ -12,6 +12,17 @@ import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
+import com.majortom.algorithms.core.memory.JdkMemoryProfiler;
+import com.majortom.algorithms.core.memory.JfrAllocationAnalyzer;
+import com.majortom.algorithms.core.memory.MemoryCapabilities;
+import com.majortom.algorithms.core.memory.MemoryDomain;
+import com.majortom.algorithms.core.memory.MemoryDeepProfile;
+import com.majortom.algorithms.core.memory.MemoryDeepProfileSession;
+import com.majortom.algorithms.core.memory.MemoryDeepProfileStore;
+import com.majortom.algorithms.core.memory.MemoryProfile;
+import com.majortom.algorithms.core.memory.MemoryProfileSession;
+import com.majortom.algorithms.core.memory.MemoryProfileStore;
+import com.majortom.algorithms.core.memory.MemoryProfiler;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionRecording;
 import com.majortom.algorithms.core.runtime.ExecutionRecordingState;
@@ -33,6 +44,8 @@ import com.majortom.algorithms.visualization.logging.LogChannelId;
 import com.majortom.algorithms.visualization.logging.LogChannelStore;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.metrics.RuntimeMetricTracker;
+import com.majortom.algorithms.visualization.memory.JolStructureFootprintAnalyzer;
+import com.majortom.algorithms.visualization.memory.StructureFootprint;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewService;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
@@ -107,6 +120,7 @@ public abstract class BaseController<S> implements Initializable {
     private static final ExecutionExporter DEFAULT_EXECUTION_EXPORTER =
             new JsonExecutionExporter(java.nio.file.Path.of("exports"), JSON_MAPPER, DEFAULT_EXPORT_CODEC);
     private static final RuntimeOverviewService RUNTIME_OVERVIEW = new RuntimeOverviewService();
+    private static final MemoryProfiler MEMORY_PROFILER = JdkMemoryProfiler.shared();
 
     protected final DoubleProperty delayMs = new SimpleDoubleProperty(50.0d);
     protected ExecutionStatistics stats = ExecutionStatistics.empty();
@@ -156,6 +170,10 @@ public abstract class BaseController<S> implements Initializable {
     private long lastLiveStatsRefreshNanos;
     private final AtomicLong livePlaybackDelayMillis = new AtomicLong(50L);
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
+    private final MemoryProfileStore memoryProfileStore = new MemoryProfileStore();
+    private final MemoryDeepProfileStore deepMemoryProfileStore = new MemoryDeepProfileStore();
+    private volatile MemoryProfileSession activeAlgorithmMemorySession;
+    private volatile boolean deepMemoryAnalysisEnabled;
     private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
         livePlaybackDelayMillis.set(Math.max(0L, newValue.longValue()));
         updatePlaybackSpeed(newValue.doubleValue());
@@ -260,9 +278,16 @@ public abstract class BaseController<S> implements Initializable {
         updatePlaybackButtonState();
         appendLog("Started: " + algorithmId);
 
+        String memoryScopeId = memoryScopeId(algorithmId);
+        ExecutionOperation<?> profiledOperation = profileOperation(
+                MemoryDomain.ALGORITHM,
+                memoryScopeId,
+                operation,
+                profile -> {},
+                true);
         currentSession = execution.start(
                 algorithmId,
-                operation,
+                profiledOperation,
                 liveReducer,
                 this::consumeLiveEvent,
                 this::renderLiveState,
@@ -291,8 +316,14 @@ public abstract class BaseController<S> implements Initializable {
         invalidateExecutionForStructureChange();
         int eventStart = structureTimeline.events().size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
+        ExecutionOperation<?> profiledOperation = profileOperation(
+                MemoryDomain.STRUCTURE,
+                memoryScopeId(operationId),
+                operation,
+                profile -> {},
+                false);
         ExecutionResult result = new ExecutionRuntime().execute(
-                runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), operation);
+                runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), profiledOperation);
         appendStructureEventsSince(eventStart);
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
@@ -314,6 +345,60 @@ public abstract class BaseController<S> implements Initializable {
                 });
         appendStructureEventsSince(eventStart);
         return result.status() == ExecutionStatus.COMPLETED;
+    }
+
+    private String memoryScopeId(String ownerId) {
+        return structureLogScopeId() + "/" + Objects.requireNonNull(ownerId, "ownerId");
+    }
+
+    private ExecutionOperation<?> profileOperation(
+            MemoryDomain domain,
+            String scopeId,
+            ExecutionOperation<?> operation,
+            java.util.function.Consumer<MemoryProfile> completion,
+            boolean exposeAsActiveAlgorithm) {
+        Objects.requireNonNull(domain, "domain");
+        Objects.requireNonNull(scopeId, "scopeId");
+        Objects.requireNonNull(operation, "operation");
+        Objects.requireNonNull(completion, "completion");
+        return () -> {
+            MemoryDeepProfileSession deepSession = deepMemoryAnalysisEnabled
+                    ? JfrAllocationAnalyzer.begin(domain, scopeId)
+                    : null;
+            MemoryProfileSession memorySession = MEMORY_PROFILER.begin(domain, scopeId);
+            if (exposeAsActiveAlgorithm) {
+                activeAlgorithmMemorySession = memorySession;
+            }
+            if (deepSession != null) {
+                deepSession.markExecutionStart();
+            }
+            try {
+                return operation.execute();
+            } finally {
+                if (deepSession != null) {
+                    deepSession.markExecutionEnd();
+                }
+                // Close the exact ThreadMXBean scope before the optional JFR post-processing so
+                // deep-analysis bookkeeping never contaminates the authoritative allocation total.
+                memorySession.close();
+                MemoryProfile profile = memorySession.snapshot();
+                memoryProfileStore.record(profile);
+                completion.accept(profile);
+                if (exposeAsActiveAlgorithm && activeAlgorithmMemorySession == memorySession) {
+                    activeAlgorithmMemorySession = null;
+                }
+                if (deepSession != null) {
+                    deepSession.close();
+                    deepSession.completion().whenComplete((deepProfile, deepError) -> {
+                        if (deepError != null || deepProfile == null) {
+                            return;
+                        }
+                        deepMemoryProfileStore.record(deepProfile);
+                        FxDispatch.defer(this::refreshStatsDisplay);
+                    });
+                }
+            }
+        };
     }
 
     private void appendStructureEventsSince(int eventStart) {
@@ -1006,6 +1091,72 @@ public abstract class BaseController<S> implements Initializable {
 
     public final String structureLogScopeId() {
         return structureLogScopeId == null ? moduleId() : structureLogScopeId;
+    }
+
+    /** Runtime capability snapshot for the cross-platform execution memory profiler. */
+    public final MemoryCapabilities memoryCapabilities() {
+        return MEMORY_PROFILER.capabilities();
+    }
+
+    /** Live algorithm allocation profile when running, otherwise the most recently completed one. */
+    public final Optional<MemoryProfile> algorithmMemoryProfile() {
+        MemoryProfileSession active = activeAlgorithmMemorySession;
+        if (active != null) {
+            return Optional.of(active.snapshot());
+        }
+        String algorithmId = activeAlgorithmLogId;
+        if (algorithmId == null) {
+            return Optional.empty();
+        }
+        return memoryProfileStore.latest(MemoryDomain.ALGORITHM, memoryScopeId(algorithmId));
+    }
+
+    /** Most recently completed editable-structure operation profile for this controller. */
+    public final Optional<MemoryProfile> structureMemoryProfile() {
+        return memoryProfileStore.latestByScopePrefix(
+                MemoryDomain.STRUCTURE, structureLogScopeId() + "/");
+    }
+
+    /** Bounded completed-profile history used by the future Memory workspace. */
+    public final MemoryProfileStore memoryProfiles() {
+        return memoryProfileStore;
+    }
+
+    /** Enables JFR sampled allocation class/site analysis for subsequent structure and algorithm runs. */
+    public final void setDeepMemoryAnalysisEnabled(boolean enabled) {
+        deepMemoryAnalysisEnabled = enabled && memoryCapabilities().jfrAvailable();
+    }
+
+    public final boolean isDeepMemoryAnalysisEnabled() {
+        return deepMemoryAnalysisEnabled;
+    }
+
+    public final Optional<MemoryDeepProfile> algorithmDeepMemoryProfile() {
+        String algorithmId = activeAlgorithmLogId;
+        if (algorithmId == null) {
+            return Optional.empty();
+        }
+        return deepMemoryProfileStore.latest(MemoryDomain.ALGORITHM, memoryScopeId(algorithmId));
+    }
+
+    public final Optional<MemoryDeepProfile> structureDeepMemoryProfile() {
+        return deepMemoryProfileStore.latestByScopePrefix(
+                MemoryDomain.STRUCTURE, structureLogScopeId() + "/");
+    }
+
+    /** True when the optional JOL runtime is present; ordinary builds intentionally do not require it. */
+    public final boolean structureFootprintAvailable() {
+        return JolStructureFootprintAnalyzer.shared().isAvailable();
+    }
+
+    /** Measures only the editable structure object graph, never JavaFX/render objects. */
+    public final CompletionStage<StructureFootprint> analyzeStructureFootprint() {
+        return JolStructureFootprintAnalyzer.shared().analyze(structureMemoryRoot());
+    }
+
+    /** Concrete modules override this when their true editable structure root differs from the view state. */
+    protected Object structureMemoryRoot() {
+        return latestStructureState != null ? latestStructureState : latestViewState;
     }
 
     private LogChannel structureLogChannel() {

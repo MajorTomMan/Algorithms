@@ -20,10 +20,13 @@ class PracticeRuntimeTest {
     assertEquals(3, registry.problems().size());
     assertEquals("Search Insert Problem",
         registry.require(ProblemSource.LOCAL, "search-insert-probe").name());
+    PracticeRunner runner = new PracticeRunner();
     Object result =
-        new PracticeRunner().run(registry.require(ProblemSource.LOCAL, "search-insert-probe"),
+        runner.run(registry.require(ProblemSource.LOCAL, "search-insert-probe"),
             new Integer[] {1, 3, 5, 6}, 5);
     assertEquals(2, result);
+    assertTrue(runner.lastMemoryProfile().isPresent());
+    assertTrue(runner.lastMemoryProfile().orElseThrow().complete());
   }
 
   @Test
@@ -34,6 +37,8 @@ class PracticeRuntimeTest {
     assertEquals(0, recording.exitCode());
     assertEquals(8, recording.result());
     assertFalse(recording.frames().isEmpty());
+    assertTrue(recording.memoryProfile().isPresent());
+    assertTrue(recording.memoryProfile().orElseThrow().complete());
     var first = recording.frames().getFirst();
     assertTrue(first.lineNumber() > 0);
     assertEquals(first, recording.frames().getFirst());
