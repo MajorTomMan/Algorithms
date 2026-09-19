@@ -51,6 +51,64 @@ public final class WorkbenchFormLayout {
     installSectionMetrics(root);
   }
 
+  /** The module form owns single-line control heights, even after MainController
+   * moves a section from its original FXML panel into the shared workbench rail. */
+  static boolean ownsControl(Node node) {
+    for (Node parent = node == null ? null : node.getParent();
+        parent != null; parent = parent.getParent()) {
+      if (parent.getStyleClass().contains("control-section")
+          || parent.getStyleClass().contains("module-control-panel")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * A ComboBox is one row high regardless of its popup contents. In particular,
+   * USE_PREF_SIZE is not a safe maximum here: the native ComboBox skin may
+   * recompute its preferred height after the popup closes, and the next VBox
+   * layout would then enlarge the *closed* selector to the popup height.
+   *
+   * Called by the shell after CSS / compact-density has settled. Measuring the
+   * selected button cell (not popup rows) preserves the user's font/locale and
+   * doesn't require a fixed-pixel rule in every module's FXML.
+   */
+  static void synchronizeChoiceHeights(Node node, Font fallbackFont) {
+    if (node == null) {
+      return;
+    }
+    if (node instanceof ComboBoxBase<?> combo && ownsControl(combo)) {
+      // The popup and even its selected ListCell may change prefHeight on
+      // execution/replay; neither participates in this single-row measurement.
+      Font font = fallbackFont == null ? Font.getDefault() : fallbackFont;
+      if (combo instanceof javafx.scene.control.ComboBox<?> choice
+          && choice.getButtonCell() != null) {
+        font = choice.getButtonCell().getFont();
+      }
+      Text probe = new Text("国Ag");
+      probe.setFont(font);
+      double insets = combo.getInsets().getTop() + combo.getInsets().getBottom();
+      double minimum = combo.getStyleClass().contains("small") ? 34.0d : 40.0d;
+      double height = Math.ceil(Math.max(minimum,
+          Math.max(font.getSize() * 2.55d, probe.getLayoutBounds().getHeight() + 11.0d)
+              + insets));
+      // All three bounds must be finite and equal. A dynamic USE_PREF_SIZE
+      // maximum follows the broken skin measurement and does not prevent this.
+      if (combo.getMinHeight() != height || combo.getPrefHeight() != height
+          || combo.getMaxHeight() != height) {
+        combo.setMinHeight(height);
+        combo.setPrefHeight(height);
+        combo.setMaxHeight(height);
+      }
+    }
+    if (node instanceof Parent parent) {
+      for (Node child : parent.getChildrenUnmodifiable()) {
+        synchronizeChoiceHeights(child, fallbackFont);
+      }
+    }
+  }
+
   private static void normalize(Node node) {
     if (node instanceof VBox box && isSection(box)) {
       box.setSpacing(SECTION_SPACING);
@@ -61,18 +119,21 @@ public final class WorkbenchFormLayout {
       input.setMaxWidth(Double.MAX_VALUE);
       input.setMinHeight(Region.USE_PREF_SIZE);
       input.setPrefHeight(Region.USE_COMPUTED_SIZE);
+      input.setMaxHeight(Region.USE_PREF_SIZE);
     } else if (node instanceof ComboBoxBase<?> comboBox) {
       comboBox.setMinWidth(0.0d);
       comboBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
       comboBox.setMaxWidth(Double.MAX_VALUE);
       comboBox.setMinHeight(Region.USE_PREF_SIZE);
       comboBox.setPrefHeight(Region.USE_COMPUTED_SIZE);
+      comboBox.setMaxHeight(Region.USE_PREF_SIZE);
     } else if (node instanceof Button button) {
       button.setMinWidth(0.0d);
       button.setPrefWidth(Region.USE_COMPUTED_SIZE);
       button.setMaxWidth(Double.MAX_VALUE);
       button.setMinHeight(Region.USE_PREF_SIZE);
       button.setPrefHeight(Region.USE_COMPUTED_SIZE);
+      button.setMaxHeight(Region.USE_PREF_SIZE);
       // The row wraps whole controls. Keep button labels on one line so
       // CJK and Latin text follow the same geometry policy.
       button.setWrapText(false);
@@ -270,6 +331,7 @@ public final class WorkbenchFormLayout {
     for (Region control : controls) {
       control.setMinHeight(commonHeight);
       control.setPrefHeight(commonHeight);
+      control.setMaxHeight(Region.USE_PREF_SIZE);
     }
   }
 

@@ -127,11 +127,20 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         AlgorithmDescriptor descriptor = algorithm(algorithmId, runtimeValueType);
+        // A minimum spanning tree is built in a separate graph. Present the original
+        // vertices without the source edges, so each emitted EdgeAdded builds the
+        // result instead of overlaying it on the input graph.
+        GraphSnapshotState<Object> presentationSnapshot = inputSnapshot;
+        if ("kruskal-minimum-spanning".equals(algorithmId)) {
+            WeightedGraphSnapshot<Object> source = asWeightedSnapshot(inputSnapshot);
+            presentationSnapshot = new WeightedGraphSnapshot<>(false, source.vertices(), List.of());
+        }
+        GraphSnapshotState<Object> initialPresentation = presentationSnapshot;
         startAlgorithm(
                 algorithmId,
                 inputSnapshot,
                 () -> descriptor.invoke(inputGraph),
-                () -> new GraphEventReducer(inputSnapshot));
+                () -> new GraphEventReducer(initialPresentation));
     }
 
     @Override

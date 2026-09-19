@@ -40,10 +40,15 @@ public final class KruskalMinimumSpanning {
     }
     edges.sort(Comparator.comparingDouble(graph::weight).thenComparingLong(Edge::id));
 
-    WeightedGraph<Integer> result = new WeightedGraph<>(false);
+    // Build the result from the input vertices without recording a second set of
+    // VertexAdded events. Keeping vertex identities also lets the presentation
+    // reducer apply the ordinary EdgeAdded events to its vertex-only initial state.
+    List<WeightedGraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
     for (Vertex<Integer> vertex : graph.vertices()) {
-      result.addVertex(vertex.value());
+      vertices.add(new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
     }
+    WeightedGraph<Integer> result =
+        WeightedGraph.fromSnapshot(new WeightedGraphSnapshot<>(false, vertices, List.of()));
 
     for (Edge<Integer> edge : edges) {
       Observations.examined(GraphObservationDomains.VERTEX, edge.from().id(), edge.to().id());

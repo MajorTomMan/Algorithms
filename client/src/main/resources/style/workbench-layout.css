@@ -400,7 +400,7 @@
 
 /* ---------- inspector ---------- */
 .root-pane .inspector-tabs { -fx-tab-min-height: 2.80em; }
-.root-pane .inspector-tabs .tab { -fx-padding: 0 0.90em; }
+.root-pane .inspector-tabs .tab { -fx-padding: 0 0.56em; }
 .root-pane .inspector-content,
 .root-pane .snapshot-tab-content { -fx-padding: 1.00em 0.86em; }
 .root-pane .inspector-section { -fx-padding: 0 0 1.10em 0; }

@@ -750,6 +750,12 @@
 .inspector-tabs .tab-content-area {
     -fx-background-color: #ffffff;
 }
+/* The native TabPane overflow control remains accessible at narrow widths.
+   Its arrow gets the inspector-overflow-arrow class from WorkbenchUiFramework:
+   a direct selector is needed for this particular skin-owned Region. */
+.inspector-overflow-arrow {
+    -fx-background-color: #444444;
+}
 .inspector-content,
 .snapshot-tab-content {
     -fx-background-color: #ffffff;

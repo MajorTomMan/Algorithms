@@ -9,6 +9,8 @@
   -fx-background-insets: 0;
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 8, 0.08, 0, 2);
   -fx-control-inner-background: #ffffff;
+  /* Bound all single-line choice rows independently of ListCell.prefHeight. */
+  -fx-fixed-cell-size: 2.65em;
   -fx-border-color: #d7dce1;
   -fx-border-width: 1px;
   -fx-border-radius: 2px;
@@ -26,6 +28,27 @@
 }
 .combo-box-popup .list-cell:filled:selected {
   -fx-background-color: #ff1f2d;
+  -fx-text-fill: #ffffff;
+}
+/* The TabPaneSkin overflow menu is a native ContextMenu in a separate
+ * popup scene. Workbench uses light inspector and snapshot menus; keep both
+ * native menu entry points readable without replacing the TabPane skin. */
+.context-menu {
+  -fx-background-color: #ffffff;
+  -fx-border-color: #d7dce1;
+  -fx-border-width: 1px;
+  -fx-padding: 0.188em;
+}
+.context-menu .menu-item {
+  -fx-background-color: #ffffff;
+}
+.context-menu .menu-item .label {
+  -fx-text-fill: #202124;
+}
+.context-menu .menu-item:focused {
+  -fx-background-color: #ff1f2d;
+}
+.context-menu .menu-item:focused .label {
   -fx-text-fill: #ffffff;
 }
 .context-menu.algorithm-snapshot-menu {

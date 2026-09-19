@@ -41,6 +41,7 @@ public final class WorkbenchUiFramework {
   private static final double MIN_CONTROL_WIDTH = 260.0d;
   private static final double MIN_INSPECTOR_WIDTH = 300.0d;
   private static final double CONTROL_VERTICAL_PADDING = 12.0d;
+  private static final String INSPECTOR_OVERFLOW_ARROW = "inspector-overflow-arrow";
 
   private final BorderPane root;
   private final WorkbenchHeader header;
@@ -96,6 +97,16 @@ public final class WorkbenchUiFramework {
     root.widthProperty().addListener((observable, oldValue, newValue) -> scheduleRefresh());
     root.heightProperty().addListener((observable, oldValue, newValue) -> scheduleRefresh());
     root.sceneProperty().addListener((observable, oldValue, newValue) -> scheduleRefresh());
+    // TabPaneSkin can recreate its overflow node on a skin change. Reapply
+    // only the inspector's semantic paint class, never alter TabPane behavior.
+    if (structureTabs != null) {
+      structureTabs.skinProperty().addListener((observable, oldSkin, newSkin)
+          -> FxDispatch.defer(() -> styleInspectorOverflowArrow(structureTabs)));
+    }
+    if (algorithmTabs != null) {
+      algorithmTabs.skinProperty().addListener((observable, oldSkin, newSkin)
+          -> FxDispatch.defer(() -> styleInspectorOverflowArrow(algorithmTabs)));
+    }
     scheduleRefresh();
   }
 
@@ -152,8 +163,8 @@ public final class WorkbenchUiFramework {
     setOverlayWidth(currentStepOverlay, overlayWidth(scale, compact, narrow));
     setOverlayWidth(algorithmOverlay, overlayWidth(scale, compact, narrow));
     setVisibleManaged(algorithmInspector, !narrow);
-    configureInspectorTabs(structureTabs, inspectorWidth);
-    configureInspectorTabs(algorithmTabs, inspectorWidth);
+    configureInspectorTabs(structureTabs);
+    configureInspectorTabs(algorithmTabs);
     applyControlDensity(root, compact);
     // Density classes and pseudo-classes must settle before Family Rail geometry is
     // applied. Family navigation is identity/navigation chrome, not a compact form
@@ -161,6 +172,9 @@ public final class WorkbenchUiFramework {
     if (root.getScene() != null) {
       root.applyCss();
     }
+    // Single-line form selectors must not inherit the popup skin's preferred
+    // height. Apply this only after theme/typography and density CSS settle.
+    WorkbenchFormLayout.synchronizeChoiceHeights(root, shellFont());
     layoutFamilyRail(familyNavigator, familyWidth);
     layoutStructureHistory(compact, narrow);
 
@@ -238,13 +252,31 @@ public final class WorkbenchUiFramework {
     return Math.max(MIN_INSPECTOR_WIDTH, total);
   }
 
-  private void configureInspectorTabs(TabPane tabs, double panelWidth) {
+  private void configureInspectorTabs(TabPane tabs) {
     if (tabs == null || tabs.getTabs().isEmpty()) {
       return;
     }
-    double available = Math.max(56.0d, (panelWidth - 8.0d) / tabs.getTabs().size());
-    tabs.setTabMinWidth(Math.min(available, 132.0d));
-    tabs.setTabMaxWidth(Math.max(available, 132.0d));
+    // tabMinWidth is the *label* width; JavaFX adds the tab's CSS padding on
+    // either side. The old min-width calculation counted that padding twice,
+    // forcing overflow even when all titles would fit naturally. Let the Skin
+    // measure each localized label; it will expose its native overflow menu
+    // only when the labels really cannot fit the available inspector width.
+    tabs.setTabMinWidth(0.0d);
+    tabs.setTabMaxWidth(132.0d);
+    styleInspectorOverflowArrow(tabs);
+  }
+
+  private static void styleInspectorOverflowArrow(TabPane tabs) {
+    if (tabs == null || tabs.getSkin() == null) {
+      return;
+    }
+    // JavaFX's skin-owned arrow is not reliably matched by ancestor-scoped
+    // author CSS under AtlantaFX. Give that single region a semantic class;
+    // a direct author rule then wins without recoloring unrelated arrows.
+    Node arrow = tabs.lookup(".control-buttons-tab .arrow");
+    if (arrow != null && !arrow.getStyleClass().contains(INSPECTOR_OVERFLOW_ARROW)) {
+      arrow.getStyleClass().add(INSPECTOR_OVERFLOW_ARROW);
+    }
   }
 
   private double fontScale() {
@@ -260,12 +292,17 @@ public final class WorkbenchUiFramework {
     if (node == null || isVisualizationSubtree(node)) {
       return;
     }
-    if (node instanceof Button button) {
-      button.setMinHeight(Math.max(32.0d, textControlHeight(button)));
-    } else if (node instanceof TextInputControl input) {
-      input.setMinHeight(Math.max(32.0d, textControlHeight(input)));
-    } else if (node instanceof ComboBoxBase<?> combo) {
-      combo.setMinHeight(Math.max(32.0d, textControlHeight(combo)));
+    // The form owns all three vertical bounds for its single-line controls.
+    // Shell chrome retains its independent, font-aware minimum height.
+    if (!WorkbenchFormLayout.ownsControl(node)) {
+      if (node instanceof Button button) {
+        button.setMinHeight(Math.max(32.0d, textControlHeight(button)));
+      } else if (node instanceof TextInputControl input) {
+        input.setMinHeight(Math.max(32.0d, textControlHeight(input)));
+      } else if (node instanceof ComboBoxBase<?> combo) {
+        combo.setMinHeight(Math.max(32.0d, textControlHeight(combo)));
+        combo.setMaxHeight(Region.USE_PREF_SIZE);
+      }
     }
     if (node instanceof Region region
         && (node.getStyleClass().contains("run-summary-grid")
