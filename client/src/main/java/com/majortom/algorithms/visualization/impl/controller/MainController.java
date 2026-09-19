@@ -54,6 +54,7 @@ import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPr
 import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationSource;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.runtime.UiRenderCoordinator;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import javafx.css.PseudoClass;
@@ -101,6 +102,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 单 Workbench JavaFX 外壳。
@@ -536,6 +539,7 @@ public class MainController implements Initializable {
     private WorkspaceMode workspaceMode = WorkspaceMode.STRUCTURE;
     private boolean moduleTransitionInProgress;
     private WorkbenchUiFramework uiFramework;
+    private UiRenderCoordinator uiRenderCoordinator;
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
@@ -820,11 +824,11 @@ public class MainController implements Initializable {
         publishContentStyle(appliedFontSettings);
     }
 
-    private void publishContentStyle(FontSettings settings) {
+    private CompletionStage<Void> publishContentStyle(FontSettings settings) {
         if (settings == null) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
-        RenderRuntime.shared().updateContentStyle(new ContentStyleSnapshot(
+        return RenderRuntime.shared().updateContentStyle(new ContentStyleSnapshot(
                 settings.size(), settings.chineseFamily(), settings.englishFamily()));
     }
 
@@ -1056,30 +1060,18 @@ public class MainController implements Initializable {
             Locale selectedLocale = draftLocale[0];
             boolean languageChanged = selectedLocale != null
                     && !I18N.getLocale().getLanguage().equals(selectedLocale.getLanguage());
-            FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
             FONT_SETTINGS_SERVICE.save(normalized);
             appliedFontSettings = normalized;
-            publishContentStyle(normalized);
             if (languageChanged) {
                 I18N.setLocale(selectedLocale);
                 appendSystemLog(I18N.text(
                         "message.system.language_switched",
                         selectedLocale.getDisplayLanguage(selectedLocale)));
             }
-            rootPane.applyCss();
-            rootPane.layout();
-            refreshUiFramework();
             boolean timelineExpanded = timelineDetailPanel != null && timelineDetailPanel.isVisible();
             setTimelineExpanded(timelineExpanded);
-            rootPane.requestLayout();
-            FxDispatch.defer(() -> {
-                if (rootPane == null) {
-                    return;
-                }
-                rootPane.applyCss();
-                rootPane.layout();
-                refreshUiFramework();
-            });
+            // One request owns CSS preparation, Workbench layout and structure invalidation.
+            uiRenderCoordinator.requestFont(normalized);
             popup.hide();
         });
 
@@ -1865,18 +1857,39 @@ public class MainController implements Initializable {
                 playbackToolbar,
                 structureHistoryDock,
                 structureHistoryDetails);
+        uiRenderCoordinator = new UiRenderCoordinator(
+                FxDispatch.executor(), new UiRenderCoordinator.Participant() {
+                    @Override public void applyFont(FontSettings settings) {
+                        FONT_SETTINGS_SERVICE.apply(rootPane, settings);
+                    }
+
+                    @Override public void prepareStyles(boolean fontChanged) {
+                        if (!fontChanged && appliedFontSettings != null) {
+                            FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
+                        }
+                        if (rootPane.getScene() != null) rootPane.applyCss();
+                    }
+
+                    @Override public void refreshWorkbench() {
+                        applyWorkbenchLayout();
+                    }
+
+                    @Override public CompletionStage<Void> refreshContentGeometry(FontSettings settings) {
+                        return publishContentStyle(settings);
+                    }
+                });
+        uiFramework.setRefreshRequester(this::refreshUiFramework);
         uiFramework.setStructureHistoryExpanded(structureHistoryExpanded);
         uiFramework.install();
         refreshUiFramework();
     }
 
     private void refreshUiFramework() {
-        if (rootPane != null && appliedFontSettings != null) {
-            FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
-        }
-        if (uiFramework == null) {
-            return;
-        }
+        if (uiRenderCoordinator != null) uiRenderCoordinator.requestWorkbench();
+    }
+
+    private void applyWorkbenchLayout() {
+        if (uiFramework == null) return;
         WorkbenchUiFramework.LayoutState state = uiFramework.refresh();
         compactLayout = state.compact();
         narrowLayout = state.narrow();
@@ -2255,6 +2268,8 @@ public class MainController implements Initializable {
             structurePreviewEmpty.setVisible(!structurePage);
             structurePreviewEmpty.setManaged(!structurePage);
         }
+        // CSS for the just-mounted visualizer must be prepared before its first model intent.
+        if (uiRenderCoordinator != null) uiRenderCoordinator.prepareMountedContent();
     }
 
     private boolean isStructurePageVisible() {

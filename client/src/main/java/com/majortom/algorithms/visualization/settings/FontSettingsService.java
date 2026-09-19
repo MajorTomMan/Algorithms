@@ -1,6 +1,5 @@
 package com.majortom.algorithms.visualization.settings;
 
-import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import java.util.List;
 import java.util.Locale;
 import java.util.prefs.Preferences;
@@ -61,12 +60,6 @@ public final class FontSettingsService {
     setCustomColorClass(root, !normalized.color().isBlank());
     setFontSizeClass(root, normalized.size());
     refreshScriptFonts(root, normalized);
-    FxDispatch.defer(() -> {
-      if (root.getScene() != null) {
-        root.applyCss();
-      }
-      refreshScriptFonts(root, normalized);
-    });
   }
 
   /** Applies a draft only to preview content; application preferences are unchanged. */

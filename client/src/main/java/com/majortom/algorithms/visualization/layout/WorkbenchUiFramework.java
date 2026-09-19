@@ -65,6 +65,7 @@ public final class WorkbenchUiFramework {
   private LayoutState state = new LayoutState(false, false);
   private boolean structureHistoryExpanded;
   private boolean refreshScheduled;
+  private Runnable refreshRequester = this::scheduleLegacyRefresh;
 
   public WorkbenchUiFramework(BorderPane root, WorkbenchHeader header, Region familyNavigator,
       Region structureControlRail, Region algorithmControlRail, Region practiceControlRail,
@@ -195,11 +196,18 @@ public final class WorkbenchUiFramework {
     scheduleRefresh();
   }
 
-  /** Recompute after locale/font changes or after a module control panel is replaced. */
+  /** The shell reports changes; its owner chooses when to execute the refresh. */
+  public void setRefreshRequester(Runnable requester) {
+    refreshRequester = java.util.Objects.requireNonNull(requester, "requester");
+  }
+
   public void scheduleRefresh() {
-    if (refreshScheduled) {
-      return;
-    }
+    refreshRequester.run();
+  }
+
+  /** Compatibility path for a standalone shell without a render coordinator. */
+  private void scheduleLegacyRefresh() {
+    if (refreshScheduled) return;
     refreshScheduled = true;
     FxDispatch.defer(() -> {
       refreshScheduled = false;
