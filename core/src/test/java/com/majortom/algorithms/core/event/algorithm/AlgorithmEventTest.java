@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.event.observation;
+package com.majortom.algorithms.core.event.algorithm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -11,29 +11,29 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionRuntime;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.InMemoryEventSink;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.core.runtime.StatisticsReducer;
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class AlgorithmObservationEventTest {
-  private record MemoCalculated(String memo) implements AlgorithmObservationEvent {}
+class AlgorithmEventTest {
+  private record MemoCalculated(String memo) implements AlgorithmEvent {}
 
   @Test
   void searchAndCacheEventsStayOnTheOrderedObservationStream() {
     InMemoryEventSink sink = new InMemoryEventSink();
     var result = new ExecutionRuntime().execute("test.search", sink, () -> {
-      Observations.searchStarted("lookup", new ObservationEvent.ValueRef("needle"));
-      Observations.searchProbed("lookup", new ObservationEvent.IndexRef("array", 0));
-      Observations.cacheMiss("memo", "0");
-      Observations.cacheStored("memo", "0");
-      Observations.cacheHit("memo", "0");
-      Observations.searchFound("lookup", new ObservationEvent.IndexRef("array", 0));
-      Observations.cacheEvicted("memo", "0");
-      Observations.searchCompleted("lookup", 1);
-      Observations.algorithm(new MemoCalculated("memo"));
+      AlgorithmEvents.searchStarted("lookup", new AlgorithmEvent.ValueRef("needle"));
+      AlgorithmEvents.searchProbed("lookup", new AlgorithmEvent.IndexRef("array", 0));
+      AlgorithmEvents.cacheMiss("memo", "0");
+      AlgorithmEvents.cacheStored("memo", "0");
+      AlgorithmEvents.cacheHit("memo", "0");
+      AlgorithmEvents.searchFound("lookup", new AlgorithmEvent.IndexRef("array", 0));
+      AlgorithmEvents.cacheEvicted("memo", "0");
+      AlgorithmEvents.searchCompleted("lookup", 1);
+      AlgorithmEvents.emit(new MemoCalculated("memo"));
       return 42;
     });
 
@@ -41,10 +41,10 @@ class AlgorithmObservationEventTest {
     assertEquals(11, events.size()); // run-start, nine observations, run-completed
     for (int i = 0; i < events.size(); i++) assertEquals(i, events.get(i).sequence());
     assertEquals(42, result.output().orElseThrow());
-    assertEquals(9, events.stream().filter(e -> e.event() instanceof ObservationEvent).count());
+    assertEquals(9, events.stream().filter(e -> e.event() instanceof AlgorithmEvent).count());
     assertFalse(events.stream().anyMatch(e -> e.event() instanceof StructureEvent));
-    assertInstanceOf(AlgorithmObservationEvent.SearchStarted.class, events.get(1).event());
-    assertInstanceOf(AlgorithmObservationEvent.SearchCompleted.class, events.get(8).event());
+    assertInstanceOf(AlgorithmEvent.SearchStarted.class, events.get(1).event());
+    assertInstanceOf(AlgorithmEvent.SearchCompleted.class, events.get(8).event());
     assertInstanceOf(MemoCalculated.class, events.get(9).event());
 
     StatisticsReducer reducer = new StatisticsReducer();
@@ -61,13 +61,13 @@ class AlgorithmObservationEventTest {
   @Test
   void invalidFactsAreRejectedWithoutMutatingAnything() {
     assertThrows(IllegalArgumentException.class,
-        () -> new AlgorithmObservationEvent.SearchCompleted("search", -1));
+        () -> new AlgorithmEvent.SearchCompleted("search", -1));
     assertThrows(IllegalArgumentException.class,
-        () -> new AlgorithmObservationEvent.CacheHit(" ", "key"));
+        () -> new AlgorithmEvent.CacheHit(" ", "key"));
     assertThrows(IllegalArgumentException.class,
-        () -> new AlgorithmObservationEvent.CacheStored("memo", " "));
+        () -> new AlgorithmEvent.CacheStored("memo", " "));
     assertThrows(NullPointerException.class,
-        () -> new AlgorithmObservationEvent.SearchProbed("search", null));
+        () -> new AlgorithmEvent.SearchProbed("search", null));
     assertTrue(new MemoCalculated("memo").metricDeltas().isEmpty());
   }
 }

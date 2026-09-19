@@ -6,7 +6,7 @@ import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeStructure;
@@ -47,13 +47,13 @@ public final class AStarArrayMazePathfinder {
     boolean found = false;
     while (!frontier.isEmpty()) {
       GridPoint current = frontier.remove();
-      Observations.visited(current.row(), current.column());
+      AlgorithmEvents.visited(current.row(), current.column());
       if (current.equals(goal)) {
         found = true;
         break;
       }
       for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-        Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
+        AlgorithmEvents.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
         int candidate = distance.get(current) + 1;
         if (candidate >= distance.getOrDefault(neighbor, Integer.MAX_VALUE)) {
           continue;
@@ -69,7 +69,7 @@ public final class AStarArrayMazePathfinder {
       return List.of();
     List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
     ArrayMazeSupport.tracePath(path);
-    Observations.pathFound(path, GridPoint::row, GridPoint::column);
+    AlgorithmEvents.pathFound(path, GridPoint::row, GridPoint::column);
     return path;
   }
 

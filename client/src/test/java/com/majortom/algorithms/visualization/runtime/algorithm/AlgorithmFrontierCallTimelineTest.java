@@ -2,8 +2,7 @@ package com.majortom.algorithms.visualization.runtime.algorithm;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.majortom.algorithms.core.event.observation.AlgorithmObservationEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.time.Instant;
 import java.util.List;
@@ -18,15 +17,15 @@ class AlgorithmFrontierCallTimelineTest {
   @Test
   void seekReconstructsCandidateAndNestedCallStateWithoutChangingSearchOrCache() {
     List<EventEnvelope> events = List.of(
-        event("a", 0, new AlgorithmObservationEvent.SearchStarted("s", new ObservationEvent.ValueRef("needle"))),
-        event("a", 1, new AlgorithmObservationEvent.CandidateAdded("f", "n1", new ObservationEvent.IndexRef("arr", 1))),
-        event("a", 2, new AlgorithmObservationEvent.CandidateAdded("f", "n2", new ObservationEvent.IndexRef("arr", 2))),
-        event("a", 3, new AlgorithmObservationEvent.CandidateSelected("f", "n1")),
-        event("a", 4, new AlgorithmObservationEvent.CallEntered("root", null, "f(1)")),
-        event("a", 5, new AlgorithmObservationEvent.CallEntered("child", "root", "f(2)")),
-        event("a", 6, new AlgorithmObservationEvent.CandidatePruned("f", "n2")),
-        event("a", 7, new AlgorithmObservationEvent.CallReturned("child", "2")),
-        event("a", 8, new AlgorithmObservationEvent.CallReturned("root", "3")));
+        event("a", 0, new AlgorithmEvent.SearchStarted("s", new AlgorithmEvent.ValueRef("needle"))),
+        event("a", 1, new AlgorithmEvent.CandidateAdded("f", "n1", new AlgorithmEvent.IndexRef("arr", 1))),
+        event("a", 2, new AlgorithmEvent.CandidateAdded("f", "n2", new AlgorithmEvent.IndexRef("arr", 2))),
+        event("a", 3, new AlgorithmEvent.CandidateSelected("f", "n1")),
+        event("a", 4, new AlgorithmEvent.CallEntered("root", null, "f(1)")),
+        event("a", 5, new AlgorithmEvent.CallEntered("child", "root", "f(2)")),
+        event("a", 6, new AlgorithmEvent.CandidatePruned("f", "n2")),
+        event("a", 7, new AlgorithmEvent.CallReturned("child", "2")),
+        event("a", 8, new AlgorithmEvent.CallReturned("root", "3")));
     var timeline = new AlgorithmObservationTimeline();
     var middle = timeline.at(events, 5);
     assertEquals(2, middle.callStack().size());
@@ -40,7 +39,7 @@ class AlgorithmFrontierCallTimelineTest {
     assertEquals(2, timeline.at(events, 5).callStack().size());
     assertTrue(timeline.at(events, 8).callStack().isEmpty());
     var next = timeline.at(List.of(event("b", 0,
-        new AlgorithmObservationEvent.CallEntered("other", null, "different"))), 0);
+        new AlgorithmEvent.CallEntered("other", null, "different"))), 0);
     assertTrue(next.frontiers().isEmpty());
     assertNull(next.currentSearch());
     assertEquals(1, next.callStack().size());
@@ -49,9 +48,9 @@ class AlgorithmFrontierCallTimelineTest {
   @Test
   void invalidOutOfOrderReturnDoesNotLoseExistingFrames() {
     var first = AlgorithmObservationModel.apply(AlgorithmObservationModel.empty(),
-        event("r", 0, new AlgorithmObservationEvent.CallEntered("root", null, "root")));
+        event("r", 0, new AlgorithmEvent.CallEntered("root", null, "root")));
     var invalid = AlgorithmObservationModel.apply(first,
-        event("r", 1, new AlgorithmObservationEvent.CallReturned("missing", "")));
+        event("r", 1, new AlgorithmEvent.CallReturned("missing", "")));
     assertEquals(first.callStack(), invalid.callStack());
     assertEquals(AlgorithmObservationModel.Kind.CALL_INVALID, invalid.pulse().kind());
   }

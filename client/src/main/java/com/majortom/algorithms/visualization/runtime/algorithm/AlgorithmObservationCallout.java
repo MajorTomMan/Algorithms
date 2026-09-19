@@ -1,7 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.algorithm;
 
-import com.majortom.algorithms.core.event.observation.AlgorithmObservationEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.util.Objects;
 
@@ -32,7 +31,7 @@ public record AlgorithmObservationCallout(String runId, int cursorIndex, long se
   /** Observe only the current event. Earlier observations must not linger over a structure step. */
   public static AlgorithmObservationCallout at(EventEnvelope current,
       AlgorithmObservationModel model, int cursorIndex) {
-    if (current == null || cursorIndex < 0 || !(current.event() instanceof ObservationEvent event)) {
+    if (current == null || cursorIndex < 0 || !(current.event() instanceof AlgorithmEvent event)) {
       return hidden(current, cursorIndex);
     }
     Objects.requireNonNull(model, "model");
@@ -40,61 +39,63 @@ public record AlgorithmObservationCallout(String runId, int cursorIndex, long se
     String subject = "";
     String detail = "";
     String name = event.getClass().getSimpleName();
-    if (event instanceof AlgorithmObservationEvent.SearchStarted e) {
+    if (event instanceof AlgorithmEvent.SearchStarted e) {
       category = "search"; subject = reference(e.target()); detail = e.searchId();
-    } else if (event instanceof AlgorithmObservationEvent.SearchProbed e) {
+    } else if (event instanceof AlgorithmEvent.SearchProbed e) {
       category = "search"; subject = reference(e.candidate()); detail = e.searchId();
-    } else if (event instanceof AlgorithmObservationEvent.SearchFound e) {
+    } else if (event instanceof AlgorithmEvent.SearchFound e) {
       category = "search"; subject = reference(e.result()); detail = e.searchId();
-    } else if (event instanceof AlgorithmObservationEvent.SearchCompleted e) {
+    } else if (event instanceof AlgorithmEvent.SearchCompleted e) {
       category = "search"; subject = e.searchId(); detail = Long.toString(e.resultCount());
-    } else if (event instanceof AlgorithmObservationEvent.CacheHit e) {
+    } else if (event instanceof AlgorithmEvent.CacheHit e) {
       category = "cache"; subject = e.key(); detail = e.cacheId();
-    } else if (event instanceof AlgorithmObservationEvent.CacheMiss e) {
+    } else if (event instanceof AlgorithmEvent.CacheMiss e) {
       category = "cache"; subject = e.key(); detail = e.cacheId();
-    } else if (event instanceof AlgorithmObservationEvent.CacheStored e) {
+    } else if (event instanceof AlgorithmEvent.CacheStored e) {
       category = "cache"; subject = e.key(); detail = e.cacheId();
-    } else if (event instanceof AlgorithmObservationEvent.CacheEvicted e) {
+    } else if (event instanceof AlgorithmEvent.CacheEvicted e) {
       category = "cache"; subject = e.key(); detail = e.cacheId();
-    } else if (event instanceof AlgorithmObservationEvent.CandidateAdded e) {
+    } else if (event instanceof AlgorithmEvent.CandidateAdded e) {
       category = "frontier"; subject = candidate(e.frontierId(), e.candidateId(), model);
       detail = e.frontierId();
-    } else if (event instanceof AlgorithmObservationEvent.CandidateSelected e) {
+    } else if (event instanceof AlgorithmEvent.CandidateSelected e) {
       category = "frontier"; subject = candidate(e.frontierId(), e.candidateId(), model);
       detail = e.frontierId();
-    } else if (event instanceof AlgorithmObservationEvent.CandidateRejected e) {
+    } else if (event instanceof AlgorithmEvent.CandidateRejected e) {
       category = "frontier"; subject = candidate(e.frontierId(), e.candidateId(), model);
       detail = e.frontierId();
-    } else if (event instanceof AlgorithmObservationEvent.CandidatePruned e) {
+    } else if (event instanceof AlgorithmEvent.CandidatePruned e) {
       category = "pruned"; subject = candidate(e.frontierId(), e.candidateId(), model);
       detail = e.frontierId();
-    } else if (event instanceof AlgorithmObservationEvent.CallEntered e) {
+    } else if (event instanceof AlgorithmEvent.CallEntered e) {
       category = "call"; subject = e.label(); detail = e.callId();
-    } else if (event instanceof AlgorithmObservationEvent.CallReturned e) {
+    } else if (event instanceof AlgorithmEvent.CallReturned e) {
       category = "call"; subject = e.callId(); detail = e.resultSummary();
-    } else if (event instanceof ObservationEvent.Visited e) {
+    } else if (event instanceof AlgorithmEvent.Visited e) {
       subject = reference(e.ref());
-    } else if (event instanceof ObservationEvent.Examined e) {
+    } else if (event instanceof AlgorithmEvent.Examined e) {
       subject = reference(e.fromRef()) + " → " + reference(e.toRef());
-    } else if (event instanceof ObservationEvent.Compared e) {
+    } else if (event instanceof AlgorithmEvent.Compared e) {
       subject = reference(e.leftRef()) + " ↔ " + reference(e.rightRef());
-    } else if (event instanceof ObservationEvent.Backtracked e) {
+    } else if (event instanceof AlgorithmEvent.Backtracked e) {
       subject = reference(e.ref());
-    } else if (event instanceof ObservationEvent.PathTraced e) {
+    } else if (event instanceof AlgorithmEvent.PathTraced e) {
       subject = reference(e.ref());
-    } else if (event instanceof ObservationEvent.Matched e) {
+    } else if (event instanceof AlgorithmEvent.Matched e) {
       subject = Integer.toString(e.index()); detail = Integer.toString(e.length());
-    } else if (event instanceof ObservationEvent.Fallback e) {
+    } else if (event instanceof AlgorithmEvent.Fallback e) {
       subject = e.fromIndex() + " → " + e.toIndex();
-    } else if (event instanceof ObservationEvent.PathFound e) {
+    } else if (event instanceof AlgorithmEvent.PathFound e) {
       subject = Integer.toString(e.refs().size());
+    } else if (event instanceof AlgorithmEvent.Targeted targeted) {
+      subject = reference(targeted.target());
     } else {
       // Custom algorithm events are visible without requiring edits to this presenter.
       // Avoid traversing arbitrary user-defined object graphs or guessing a pruning reason.
       subject = name.replaceAll("([a-z0-9])([A-Z])", "$1 $2");
     }
-    boolean known = event.getClass().getEnclosingClass() == AlgorithmObservationEvent.class
-        || event.getClass().getEnclosingClass() == ObservationEvent.class;
+    boolean known = event.getClass().getEnclosingClass() == AlgorithmEvent.class
+        || event.getClass().getEnclosingClass() == AlgorithmEvent.class;
     String titleKey = known ? "label.algorithm.observation." + camelToSnake(name) : "";
     String fallback = known ? "" : name.replaceAll("([a-z0-9])([A-Z])", "$1 $2");
     return new AlgorithmObservationCallout(current.runId(), cursorIndex, current.sequence(),
@@ -107,7 +108,7 @@ public record AlgorithmObservationCallout(String runId, int cursorIndex, long se
     return candidate == null ? id : id + " · " + candidate.reference();
   }
 
-  private static String reference(ObservationEvent.Reference ref) {
+  private static String reference(AlgorithmEvent.Reference ref) {
     return AlgorithmObservationModel.referenceText(ref);
   }
 

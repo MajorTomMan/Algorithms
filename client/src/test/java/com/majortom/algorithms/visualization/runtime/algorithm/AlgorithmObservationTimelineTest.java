@@ -1,8 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.algorithm;
 
 import static org.junit.jupiter.api.Assertions.*;
-import com.majortom.algorithms.core.event.observation.AlgorithmObservationEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,14 +17,14 @@ class AlgorithmObservationTimelineTest {
   @Test
   void searchAndCacheReplayAreIndependentAndSeekable() {
     List<EventEnvelope> events = List.of(
-        envelope("a", 0, new AlgorithmObservationEvent.SearchStarted("search", new ObservationEvent.ValueRef("target"))),
-        envelope("a", 1, new AlgorithmObservationEvent.SearchProbed("search", new ObservationEvent.IndexRef("array", 2))),
-        envelope("a", 2, new AlgorithmObservationEvent.SearchFound("search", new ObservationEvent.IndexRef("array", 2))),
-        envelope("a", 3, new AlgorithmObservationEvent.CacheMiss("memo", "k")),
-        envelope("a", 4, new AlgorithmObservationEvent.CacheStored("memo", "k")),
-        envelope("a", 5, new ObservationEvent.Visited(new ObservationEvent.EntityRef("node", 1))),
-        envelope("a", 6, new AlgorithmObservationEvent.CacheHit("memo", "k")),
-        envelope("a", 7, new AlgorithmObservationEvent.SearchCompleted("search", 1)));
+        envelope("a", 0, new AlgorithmEvent.SearchStarted("search", new AlgorithmEvent.ValueRef("target"))),
+        envelope("a", 1, new AlgorithmEvent.SearchProbed("search", new AlgorithmEvent.IndexRef("array", 2))),
+        envelope("a", 2, new AlgorithmEvent.SearchFound("search", new AlgorithmEvent.IndexRef("array", 2))),
+        envelope("a", 3, new AlgorithmEvent.CacheMiss("memo", "k")),
+        envelope("a", 4, new AlgorithmEvent.CacheStored("memo", "k")),
+        envelope("a", 5, new AlgorithmEvent.Visited(new AlgorithmEvent.EntityRef("node", 1))),
+        envelope("a", 6, new AlgorithmEvent.CacheHit("memo", "k")),
+        envelope("a", 7, new AlgorithmEvent.SearchCompleted("search", 1)));
     AlgorithmObservationTimeline timeline = new AlgorithmObservationTimeline();
     var last = timeline.at(events, 7);
     assertEquals(1, last.currentSearch().resultCount());
@@ -47,10 +46,10 @@ class AlgorithmObservationTimelineTest {
   void differentRunAndChangedEventPrefixDoNotLeakOldState() {
     AlgorithmObservationTimeline timeline = new AlgorithmObservationTimeline();
     List<EventEnvelope> a = List.of(envelope("a", 0,
-        new AlgorithmObservationEvent.CacheStored("memo", "old")));
+        new AlgorithmEvent.CacheStored("memo", "old")));
     assertTrue(timeline.at(a, 0).hasContent());
     List<EventEnvelope> b = List.of(envelope("b", 0,
-        new AlgorithmObservationEvent.SearchStarted("s", new ObservationEvent.ValueRef("new"))));
+        new AlgorithmEvent.SearchStarted("s", new AlgorithmEvent.ValueRef("new"))));
     var state = timeline.at(b, 0);
     assertEquals("b", state.runId());
     assertTrue(state.recentCache().isEmpty());
@@ -61,9 +60,9 @@ class AlgorithmObservationTimelineTest {
   void recentCacheIsBoundedAndDoesNotPretendToBeTheActualCache() {
     List<EventEnvelope> events = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
-      events.add(envelope("run", i, new AlgorithmObservationEvent.CacheStored("memo", "key-" + i)));
+      events.add(envelope("run", i, new AlgorithmEvent.CacheStored("memo", "key-" + i)));
     }
-    events.add(envelope("run", 20, new AlgorithmObservationEvent.CacheEvicted("memo", "key-19")));
+    events.add(envelope("run", 20, new AlgorithmEvent.CacheEvicted("memo", "key-19")));
     var last = new AlgorithmObservationTimeline().at(events, 20);
     assertEquals(AlgorithmObservationModel.MAX_RECENT_CACHE, last.recentCache().size());
     assertEquals("key-19", last.recentCache().getFirst().key());

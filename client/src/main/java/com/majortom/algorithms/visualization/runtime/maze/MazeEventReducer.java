@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.maze;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
@@ -31,7 +31,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
   @Override
   public Reduction<MazeViewState> reduce(MazeViewState previous, EventEnvelope envelope) {
     Object event = envelope.event();
-    if (event instanceof ObservationEvent.Visited visited) {
+    if (event instanceof AlgorithmEvent.Visited visited) {
       GridPoint point = point(visited.ref());
       if (point != null) {
         MazeViewState next;
@@ -43,7 +43,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         return observation(next);
       }
     }
-    if (event instanceof ObservationEvent.Examined examined) {
+    if (event instanceof AlgorithmEvent.Examined examined) {
       GridPoint from = point(examined.fromRef());
       GridPoint to = point(examined.toRef());
       if (to != null) {
@@ -54,15 +54,15 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         return observation(next);
       }
     }
-    if (event instanceof ObservationEvent.PathTraced pathTraced) {
+    if (event instanceof AlgorithmEvent.PathTraced pathTraced) {
       GridPoint point = point(pathTraced.ref());
       if (point != null) {
         return Reduction.changed(previous.tracePath(point), EventImportance.STATE_CHANGE, true);
       }
     }
-    if (event instanceof ObservationEvent.PathFound pathFound) {
+    if (event instanceof AlgorithmEvent.PathFound pathFound) {
       java.util.LinkedHashSet<GridPoint> path = new java.util.LinkedHashSet<>();
-      for (ObservationEvent.Reference ref : pathFound.refs()) {
+      for (AlgorithmEvent.Reference ref : pathFound.refs()) {
         GridPoint point = point(ref);
         if (point != null)
           path.add(point);
@@ -71,7 +71,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
         return Reduction.changed(previous.withPath(path), EventImportance.STATE_CHANGE, true);
       }
     }
-    if (event instanceof ObservationEvent.Backtracked backtracked) {
+    if (event instanceof AlgorithmEvent.Backtracked backtracked) {
       GridPoint point = point(backtracked.ref());
       if (point != null) {
         return observation(previous.backtrack(point));
@@ -83,8 +83,8 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
     return Reduction.unchanged(previous, EventImportance.TRANSIENT);
   }
 
-  private static GridPoint point(ObservationEvent.Reference reference) {
-    if (reference instanceof ObservationEvent.CoordinateRef coordinate) {
+  private static GridPoint point(AlgorithmEvent.Reference reference) {
+    if (reference instanceof AlgorithmEvent.CoordinateRef coordinate) {
       return new GridPoint(coordinate.row(), coordinate.column());
     }
     return null;

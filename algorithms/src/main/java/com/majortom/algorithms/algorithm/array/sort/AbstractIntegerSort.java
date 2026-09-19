@@ -1,7 +1,7 @@
 package com.majortom.algorithms.algorithm.array.sort;
 
 import com.majortom.algorithms.core.domain.observation.ArrayObservationDomains;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Shared direct helpers for concrete integer sorting algorithms. */
@@ -9,13 +9,13 @@ public abstract class AbstractIntegerSort {
   protected abstract int compare(Integer left, Integer right);
 
   protected final int compareAt(ArrayStructure<Integer> array, int leftIndex, int rightIndex) {
-    Observations.compared(ArrayObservationDomains.INDEX_SOURCE, leftIndex,
+    AlgorithmEvents.compared(ArrayObservationDomains.INDEX_SOURCE, leftIndex,
         ArrayObservationDomains.INDEX_SOURCE, rightIndex);
     return compare(array.get(leftIndex), array.get(rightIndex));
   }
 
   protected final int compareValue(ArrayStructure<Integer> array, int index, int value) {
-    Observations.compared(ArrayObservationDomains.INDEX_SOURCE, index, value);
+    AlgorithmEvents.compared(ArrayObservationDomains.INDEX_SOURCE, index, value);
     return compare(array.get(index), value);
   }
 

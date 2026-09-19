@@ -2,7 +2,8 @@ package com.majortom.algorithms.algorithm.linkedlist.impl;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
+import com.majortom.algorithms.core.event.algorithm.LinkedAlgorithmEvent;
 import com.majortom.algorithms.structure.linked.LinkedStructure;
 import com.majortom.algorithms.structure.linked.ListNode;
 
@@ -14,6 +15,7 @@ public class ReverseLinkedList {
     ListNode<Integer> current = list.getHead();
     ListNode<Integer> oldHead = list.getHead();
     while (current != null) {
+      AlgorithmEvents.emit(new LinkedAlgorithmEvent.CursorMoved("current", current.getId()));
       ListNode<Integer> next = current.getNext();
       current.setNext(prev);
       current.setPrevious(next);

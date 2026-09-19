@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
@@ -85,7 +85,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
       return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
           GraphViewState.Observation.none(), false));
     }
-    if (event instanceof ObservationEvent.Visited visitedEvent) {
+    if (event instanceof AlgorithmEvent.Visited visitedEvent) {
       Long nodeId = graphNodeId(visitedEvent.ref());
       if (nodeId != null) {
         Set<Long> visited = previous.visitedWith(nodeId);
@@ -93,7 +93,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
             GraphViewState.Observation.visited(nodeId), false));
       }
     }
-    if (event instanceof ObservationEvent.Examined examined) {
+    if (event instanceof AlgorithmEvent.Examined examined) {
       Long fromId = graphNodeId(examined.fromRef());
       Long toId = graphNodeId(examined.toRef());
       if (fromId != null && toId != null) {
@@ -116,8 +116,8 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
     return new GraphViewState(previous.directed(), previous.weighted(), nodes, edges, visited, observation, completed);
   }
 
-  private static Long graphNodeId(ObservationEvent.Reference reference) {
-    if (reference instanceof ObservationEvent.EntityRef entity
+  private static Long graphNodeId(AlgorithmEvent.Reference reference) {
+    if (reference instanceof AlgorithmEvent.EntityRef entity
         && GraphObservationDomains.VERTEX.equals(entity.domain())) {
       return entity.id();
     }

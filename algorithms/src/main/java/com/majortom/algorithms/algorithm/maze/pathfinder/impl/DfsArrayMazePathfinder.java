@@ -6,7 +6,7 @@ import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeStructure;
@@ -38,18 +38,18 @@ public final class DfsArrayMazePathfinder {
       return List.of();
     List<GridPoint> path = ArrayMazeSupport.reconstruct(previous, start, goal);
     ArrayMazeSupport.tracePath(path);
-    Observations.pathFound(path, GridPoint::row, GridPoint::column);
+    AlgorithmEvents.pathFound(path, GridPoint::row, GridPoint::column);
     return path;
   }
 
   private boolean visit(GridMaze maze, GridPoint current, GridPoint goal, Set<GridPoint> discovered,
       Map<GridPoint, GridPoint> previous) {
-    Observations.visited(current.row(), current.column());
+    AlgorithmEvents.visited(current.row(), current.column());
     if (current.equals(goal)) {
       return true;
     }
     for (GridPoint neighbor : ArrayMazeSupport.neighbors(maze, current)) {
-      Observations.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
+      AlgorithmEvents.examined(current.row(), current.column(), neighbor.row(), neighbor.column());
       if (!discovered.add(neighbor)) {
         continue;
       }
@@ -58,7 +58,7 @@ public final class DfsArrayMazePathfinder {
         return true;
       }
     }
-    Observations.backtracked(current.row(), current.column());
+    AlgorithmEvents.backtracked(current.row(), current.column());
     return false;
   }
 }

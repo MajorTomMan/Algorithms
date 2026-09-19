@@ -3,6 +3,8 @@ package com.majortom.algorithms.algorithm.array.sort.impl;
 import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.event.algorithm.ArrayAlgorithmEvent;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 import java.util.ArrayDeque;
 
@@ -37,6 +39,7 @@ public final class IntegerQuickSort extends AbstractIntegerSort {
 
   private EqualRange partitionThreeWay(ArrayStructure<Integer> array, int low, int high) {
     int pivotSource = low + (high - low) / 2;
+    AlgorithmEvents.emit(new ArrayAlgorithmEvent.PivotSelected(pivotSource, low, high + 1));
     int pivot = array.get(pivotSource);
     int lower = low;
     int index = low;

@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.runtime.tree;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.observation.TreeObservationDomains;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
@@ -120,7 +120,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
       return changed(copy(previous, changed.rootId(), previous.nodes(), current, observed,
           previous.visitedNodeIds(), false));
     }
-    if (event instanceof ObservationEvent.Visited visited) {
+    if (event instanceof AlgorithmEvent.Visited visited) {
       Long id = treeEntityId(visited.ref());
       if (id == null || !previous.nodes().containsKey(id)) {
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
@@ -130,7 +130,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
       return changed(copy(
           previous, previous.rootId(), previous.nodes(), Set.of(id), Set.of(), visitedIds, false));
     }
-    if (event instanceof ObservationEvent.Compared compared) {
+    if (event instanceof AlgorithmEvent.Compared compared) {
       Set<Long> observed = treeEntityIds(compared.leftRef(), compared.rightRef());
       if (observed.isEmpty()) {
         return Reduction.unchanged(previous, EventImportance.TRANSIENT);
@@ -138,7 +138,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
       return changed(copy(previous, previous.rootId(), previous.nodes(), Set.of(), observed,
           previous.visitedNodeIds(), false));
     }
-    if (event instanceof ObservationEvent.Examined examined) {
+    if (event instanceof AlgorithmEvent.Examined examined) {
       Long from = treeEntityId(examined.fromRef());
       Long to = treeEntityId(examined.toRef());
       Set<Long> current;
@@ -202,8 +202,8 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
     }
   }
 
-  private static Long treeEntityId(ObservationEvent.Reference reference) {
-    if (reference instanceof ObservationEvent.EntityRef entity
+  private static Long treeEntityId(AlgorithmEvent.Reference reference) {
+    if (reference instanceof AlgorithmEvent.EntityRef entity
         && TreeObservationDomains.NODE.equalsIgnoreCase(entity.domain())) {
       return entity.id();
     }
@@ -211,7 +211,7 @@ public final class TreeEventReducer implements EventReducer<TreeViewState> {
   }
 
   private static Set<Long> treeEntityIds(
-      ObservationEvent.Reference first, ObservationEvent.Reference second) {
+      AlgorithmEvent.Reference first, AlgorithmEvent.Reference second) {
     LinkedHashSet<Long> ids = new LinkedHashSet<>();
     Long firstId = treeEntityId(first);
     Long secondId = treeEntityId(second);

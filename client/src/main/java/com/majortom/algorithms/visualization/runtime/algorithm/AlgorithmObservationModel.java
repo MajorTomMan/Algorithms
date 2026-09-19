@@ -1,7 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.algorithm;
 
-import com.majortom.algorithms.core.event.observation.AlgorithmObservationEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -58,45 +57,45 @@ public record AlgorithmObservationModel(String runId, long sequence,
     String currentFrontier = state.currentFrontierId();
     List<CallFrame> callStack = state.callStack();
     Pulse pulse = Pulse.none();
-    if (fact instanceof AlgorithmObservationEvent.SearchStarted start) {
+    if (fact instanceof AlgorithmEvent.SearchStarted start) {
       searches = copyWith(searches, start.searchId(),
           new Search(start.searchId(), referenceText(start.target()), "", "", 0, 0, false));
       currentSearch = start.searchId();
       pulse = new Pulse(Kind.SEARCH_STARTED, start.searchId(), referenceText(start.target()));
-    } else if (fact instanceof AlgorithmObservationEvent.SearchProbed probe) {
+    } else if (fact instanceof AlgorithmEvent.SearchProbed probe) {
       Search before = searches.getOrDefault(probe.searchId(), Search.unknown(probe.searchId()));
       String candidate = referenceText(probe.candidate());
       searches = copyWith(searches, probe.searchId(), new Search(probe.searchId(), before.target(),
           candidate, before.lastFound(), before.probes() + 1, before.resultCount(), false));
       currentSearch = probe.searchId();
       pulse = new Pulse(Kind.SEARCH_PROBED, probe.searchId(), candidate);
-    } else if (fact instanceof AlgorithmObservationEvent.SearchFound found) {
+    } else if (fact instanceof AlgorithmEvent.SearchFound found) {
       Search before = searches.getOrDefault(found.searchId(), Search.unknown(found.searchId()));
       String result = referenceText(found.result());
       searches = copyWith(searches, found.searchId(), new Search(found.searchId(), before.target(),
           before.candidate(), result, before.probes(), before.resultCount() + 1, false));
       currentSearch = found.searchId();
       pulse = new Pulse(Kind.SEARCH_FOUND, found.searchId(), result);
-    } else if (fact instanceof AlgorithmObservationEvent.SearchCompleted done) {
+    } else if (fact instanceof AlgorithmEvent.SearchCompleted done) {
       Search before = searches.getOrDefault(done.searchId(), Search.unknown(done.searchId()));
       searches = copyWith(searches, done.searchId(), new Search(done.searchId(), before.target(),
           before.candidate(), before.lastFound(), before.probes(), done.resultCount(), true));
       currentSearch = done.searchId();
       pulse = new Pulse(Kind.SEARCH_COMPLETED, done.searchId(), Long.toString(done.resultCount()));
-    } else if (fact instanceof AlgorithmObservationEvent.CacheHit hit) {
+    } else if (fact instanceof AlgorithmEvent.CacheHit hit) {
       cache = updateCache(cache, hit.cacheId(), hit.key(), Kind.CACHE_HIT);
       pulse = new Pulse(Kind.CACHE_HIT, hit.cacheId(), safeText(hit.key()));
-    } else if (fact instanceof AlgorithmObservationEvent.CacheMiss miss) {
+    } else if (fact instanceof AlgorithmEvent.CacheMiss miss) {
       cache = updateCache(cache, miss.cacheId(), miss.key(), Kind.CACHE_MISS);
       pulse = new Pulse(Kind.CACHE_MISS, miss.cacheId(), safeText(miss.key()));
-    } else if (fact instanceof AlgorithmObservationEvent.CacheStored stored) {
+    } else if (fact instanceof AlgorithmEvent.CacheStored stored) {
       cache = updateCache(cache, stored.cacheId(), stored.key(), Kind.CACHE_STORED);
       pulse = new Pulse(Kind.CACHE_STORED, stored.cacheId(), safeText(stored.key()));
-    } else if (fact instanceof AlgorithmObservationEvent.CacheEvicted evicted) {
+    } else if (fact instanceof AlgorithmEvent.CacheEvicted evicted) {
       cache = updateCache(cache, evicted.cacheId(), evicted.key(), Kind.CACHE_EVICTED);
       pulse = new Pulse(Kind.CACHE_EVICTED, evicted.cacheId(), safeText(evicted.key()));
     }
-    if (fact instanceof AlgorithmObservationEvent.CandidateAdded added) {
+    if (fact instanceof AlgorithmEvent.CandidateAdded added) {
       Frontier before = frontiers.getOrDefault(added.frontierId(), Frontier.empty(added.frontierId()));
       Map<String, Candidate> candidates = new LinkedHashMap<>(before.candidates());
       candidates.put(added.candidateId(), new Candidate(added.candidateId(),
@@ -104,19 +103,19 @@ public record AlgorithmObservationModel(String runId, long sequence,
       frontiers = copyWith(frontiers, added.frontierId(), new Frontier(added.frontierId(), candidates));
       currentFrontier = added.frontierId();
       pulse = new Pulse(Kind.CANDIDATE_ADDED, added.frontierId(), added.candidateId());
-    } else if (fact instanceof AlgorithmObservationEvent.CandidateSelected selected) {
+    } else if (fact instanceof AlgorithmEvent.CandidateSelected selected) {
       frontiers = changeCandidate(frontiers, selected.frontierId(), selected.candidateId(), CandidateStatus.SELECTED);
       currentFrontier = selected.frontierId();
       pulse = new Pulse(Kind.CANDIDATE_SELECTED, selected.frontierId(), selected.candidateId());
-    } else if (fact instanceof AlgorithmObservationEvent.CandidateRejected rejected) {
+    } else if (fact instanceof AlgorithmEvent.CandidateRejected rejected) {
       frontiers = changeCandidate(frontiers, rejected.frontierId(), rejected.candidateId(), CandidateStatus.REJECTED);
       currentFrontier = rejected.frontierId();
       pulse = new Pulse(Kind.CANDIDATE_REJECTED, rejected.frontierId(), rejected.candidateId());
-    } else if (fact instanceof AlgorithmObservationEvent.CandidatePruned pruned) {
+    } else if (fact instanceof AlgorithmEvent.CandidatePruned pruned) {
       frontiers = changeCandidate(frontiers, pruned.frontierId(), pruned.candidateId(), CandidateStatus.PRUNED);
       currentFrontier = pruned.frontierId();
       pulse = new Pulse(Kind.CANDIDATE_PRUNED, pruned.frontierId(), pruned.candidateId());
-    } else if (fact instanceof AlgorithmObservationEvent.CallEntered entered) {
+    } else if (fact instanceof AlgorithmEvent.CallEntered entered) {
       // A bad parent reference must not corrupt the active call stack during replay.
       String currentId = callStack.isEmpty() ? null : callStack.getLast().id();
       if (Objects.equals(currentId, entered.parentCallId())
@@ -128,7 +127,7 @@ public record AlgorithmObservationModel(String runId, long sequence,
       } else {
         pulse = new Pulse(Kind.CALL_INVALID, entered.callId(), "invalid parent or duplicate call id");
       }
-    } else if (fact instanceof AlgorithmObservationEvent.CallReturned returned) {
+    } else if (fact instanceof AlgorithmEvent.CallReturned returned) {
       if (!callStack.isEmpty() && callStack.getLast().id().equals(returned.callId())) {
         callStack = List.copyOf(callStack.subList(0, callStack.size() - 1));
         pulse = new Pulse(Kind.CALL_RETURNED, returned.callId(), safeText(returned.resultSummary()));
@@ -185,11 +184,11 @@ public record AlgorithmObservationModel(String runId, long sequence,
     return List.copyOf(updated);
   }
 
-  static String referenceText(ObservationEvent.Reference ref) {
-    if (ref instanceof ObservationEvent.IndexRef index) return safeText(index.source()) + "[" + index.index() + "]";
-    if (ref instanceof ObservationEvent.EntityRef entity) return safeText(entity.domain()) + " #" + entity.id();
-    if (ref instanceof ObservationEvent.CoordinateRef position) return "(" + position.row() + ", " + position.column() + ")";
-    if (ref instanceof ObservationEvent.ValueRef value) {
+  static String referenceText(AlgorithmEvent.Reference ref) {
+    if (ref instanceof AlgorithmEvent.IndexRef index) return safeText(index.source()) + "[" + index.index() + "]";
+    if (ref instanceof AlgorithmEvent.EntityRef entity) return safeText(entity.domain()) + " #" + entity.id();
+    if (ref instanceof AlgorithmEvent.CoordinateRef position) return "(" + position.row() + ", " + position.column() + ")";
+    if (ref instanceof AlgorithmEvent.ValueRef value) {
       try { return safeText(String.valueOf(value.value())); }
       catch (RuntimeException failure) { return "<value unavailable>"; }
     }

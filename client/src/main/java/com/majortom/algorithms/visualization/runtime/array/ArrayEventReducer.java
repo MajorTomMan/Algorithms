@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.runtime.array;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.observation.ArrayObservationDomains;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
@@ -53,7 +53,7 @@ public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
       return changed(state(
           values, ArrayViewState.Mutation.swapped(swapped.leftIndex(), swapped.rightIndex())));
     }
-    if (event instanceof ObservationEvent.Compared compared) {
+    if (event instanceof AlgorithmEvent.Compared compared) {
       ArrayViewState.Observation observation = observation(compared);
       if (observation.type() != ArrayViewState.ObservationType.NONE) {
         return Reduction.changed(new ArrayViewState(previous.values(),
@@ -73,22 +73,22 @@ public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
     return new ArrayViewState(values, mutation, ArrayViewState.Observation.none(), false);
   }
 
-  private static ArrayViewState.Observation observation(ObservationEvent.Compared compared) {
+  private static ArrayViewState.Observation observation(AlgorithmEvent.Compared compared) {
     Integer leftIndex = arrayIndex(compared.leftRef());
     Integer rightIndex = arrayIndex(compared.rightRef());
     if (leftIndex != null && rightIndex != null)
       return ArrayViewState.Observation.comparedIndexes(leftIndex, rightIndex);
-    if (leftIndex != null && compared.rightRef() instanceof ObservationEvent.ValueRef valueRef) {
+    if (leftIndex != null && compared.rightRef() instanceof AlgorithmEvent.ValueRef valueRef) {
       return ArrayViewState.Observation.comparedValue(leftIndex, valueRef.value());
     }
-    if (rightIndex != null && compared.leftRef() instanceof ObservationEvent.ValueRef valueRef) {
+    if (rightIndex != null && compared.leftRef() instanceof AlgorithmEvent.ValueRef valueRef) {
       return ArrayViewState.Observation.comparedValue(rightIndex, valueRef.value());
     }
     return ArrayViewState.Observation.none();
   }
 
-  private static Integer arrayIndex(ObservationEvent.Reference reference) {
-    if (reference instanceof ObservationEvent.IndexRef indexRef
+  private static Integer arrayIndex(AlgorithmEvent.Reference reference) {
+    if (reference instanceof AlgorithmEvent.IndexRef indexRef
         && ArrayObservationDomains.INDEX_SOURCE.equals(indexRef.source()))
       return indexRef.index();
     return null;

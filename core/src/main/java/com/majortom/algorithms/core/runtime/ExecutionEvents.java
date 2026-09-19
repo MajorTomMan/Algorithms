@@ -1,7 +1,7 @@
 package com.majortom.algorithms.core.runtime;
 
 import com.majortom.algorithms.core.event.ExecutionEvent;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.StructureEvent;
 import java.util.Objects;
 
@@ -10,22 +10,39 @@ public final class ExecutionEvents {
 
   private ExecutionEvents() {}
 
-  /** Emits one factual non-lifecycle execution event through the bound Runtime context. */
+  /** Auxiliary events (logs and snapshots) only; domain events use typed channels. */
   public static void emit(ExecutionEvent event) {
     Objects.requireNonNull(event, "event");
+    if (event instanceof AlgorithmEvent || event instanceof StructureEvent) {
+      throw new IllegalArgumentException("Use algorithm() or structure() for domain events");
+    }
     RuntimeEventContext context = CURRENT.get();
-    if (context == null) {
-      return;
-    }
-    if (event instanceof StructureEvent || event instanceof ObservationEvent) {
-      domainCheckpoint(context);
-    }
-    context.emit(event);
+    if (context != null) context.emit(event);
   }
 
-  /** Convenience entry point that makes read-only observations explicit at call sites. */
-  public static void observe(ObservationEvent event) {
-    emit(Objects.requireNonNull(event, "event"));
+  /** One algorithm fact: one checkpoint and one globally ordered envelope. */
+  public static void algorithm(AlgorithmEvent event) {
+    Objects.requireNonNull(event, "event");
+    if (event instanceof StructureEvent) {
+      throw new IllegalArgumentException("Algorithm event cannot also be a StructureEvent");
+    }
+    emitDomain(event);
+  }
+
+  /** One canonical structure mutation: independent from algorithm presentation. */
+  public static void structure(StructureEvent event) {
+    Objects.requireNonNull(event, "event");
+    if (event instanceof AlgorithmEvent) {
+      throw new IllegalArgumentException("Structure event cannot also be an AlgorithmEvent");
+    }
+    emitDomain(event);
+  }
+
+  private static void emitDomain(ExecutionEvent event) {
+    RuntimeEventContext context = CURRENT.get();
+    if (context == null) return;
+    domainCheckpoint(context);
+    context.emit(event);
   }
 
   /** Cooperative execution checkpoint. A paused run consumes one step permit to pass it. */

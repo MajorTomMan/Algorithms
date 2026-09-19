@@ -1,4 +1,4 @@
-package com.majortom.algorithms.core.event.observation;
+package com.majortom.algorithms.core.event.algorithm;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,25 +8,25 @@ import com.majortom.algorithms.core.statistics.MetricKeys;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class AlgorithmFrontierCallObservationTest {
+class AlgorithmFrontierCallEventTest {
   @Test
   void frontierAndRecursionUseExistingObservationStreamAndSeparateStatistics() {
     var sink = new InMemoryEventSink();
     var result = new ExecutionRuntime().execute("generic", sink, () -> {
-      Observations.candidateAdded("frontier", "candidate-1", new ObservationEvent.IndexRef("array", 0));
-      Observations.candidateSelected("frontier", "candidate-1");
-      Observations.candidateRejected("frontier", "candidate-1");
-      Observations.candidatePruned("frontier", "candidate-1");
-      Observations.callEntered("root", null, "visit(root)");
-      Observations.callEntered("child", "root", "visit(child)");
-      Observations.callReturned("child", "ok");
-      Observations.callReturned("root", "ok");
+      AlgorithmEvents.candidateAdded("frontier", "candidate-1", new AlgorithmEvent.IndexRef("array", 0));
+      AlgorithmEvents.candidateSelected("frontier", "candidate-1");
+      AlgorithmEvents.candidateRejected("frontier", "candidate-1");
+      AlgorithmEvents.candidatePruned("frontier", "candidate-1");
+      AlgorithmEvents.callEntered("root", null, "visit(root)");
+      AlgorithmEvents.callEntered("child", "root", "visit(child)");
+      AlgorithmEvents.callReturned("child", "ok");
+      AlgorithmEvents.callReturned("root", "ok");
       return 123;
     });
     assertEquals(123, result.output().orElseThrow());
     List<EventEnvelope> events = sink.events();
     assertEquals(10, events.size());
-    assertEquals(8, events.stream().filter(e -> e.event() instanceof AlgorithmObservationEvent).count());
+    assertEquals(8, events.stream().filter(e -> e.event() instanceof AlgorithmEvent).count());
     assertFalse(events.stream().anyMatch(e -> e.event() instanceof StructureEvent));
     for (int i = 0; i < events.size(); i++) assertEquals(i, events.get(i).sequence());
     var reducer = new StatisticsReducer();
@@ -43,13 +43,13 @@ class AlgorithmFrontierCallObservationTest {
 
   @Test
   void invalidFactsAreRejectedAtConstruction() {
-    assertThrows(IllegalArgumentException.class, () -> new AlgorithmObservationEvent.CandidateAdded(
-        " ", "a", new ObservationEvent.ValueRef(1)));
-    assertThrows(NullPointerException.class, () -> new AlgorithmObservationEvent.CandidateAdded(
+    assertThrows(IllegalArgumentException.class, () -> new AlgorithmEvent.CandidateAdded(
+        " ", "a", new AlgorithmEvent.ValueRef(1)));
+    assertThrows(NullPointerException.class, () -> new AlgorithmEvent.CandidateAdded(
         "f", "a", null));
-    assertThrows(IllegalArgumentException.class, () -> new AlgorithmObservationEvent.CallEntered(
+    assertThrows(IllegalArgumentException.class, () -> new AlgorithmEvent.CallEntered(
         "a", "a", "x"));
-    assertThrows(IllegalArgumentException.class, () -> new AlgorithmObservationEvent.CallEntered(
+    assertThrows(IllegalArgumentException.class, () -> new AlgorithmEvent.CallEntered(
         "a", null, " "));
   }
 }

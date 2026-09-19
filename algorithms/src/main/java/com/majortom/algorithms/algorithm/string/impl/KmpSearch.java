@@ -4,7 +4,8 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.domain.observation.StringObservationDomains;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
+import com.majortom.algorithms.core.event.algorithm.StringAlgorithmEvent;
 import com.majortom.algorithms.structure.string.StringStructure;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,8 @@ public final class KmpSearch {
     for (int targetIndex = 0; targetIndex < text.length(); targetIndex++) {
       boolean matchedCharacter = false;
       while (true) {
-        Observations.compared(StringObservationDomains.TARGET_SOURCE, targetIndex,
+        AlgorithmEvents.emit(new StringAlgorithmEvent.PatternAligned(targetIndex, patternIndex));
+        AlgorithmEvents.compared(StringObservationDomains.TARGET_SOURCE, targetIndex,
             StringObservationDomains.PATTERN_SOURCE, patternIndex);
         if (text.charAt(targetIndex) == pattern.charAt(patternIndex)) {
           patternIndex++;
@@ -38,7 +40,7 @@ public final class KmpSearch {
         }
         int previousPatternIndex = patternIndex;
         patternIndex = prefix[patternIndex - 1];
-        Observations.fallback(previousPatternIndex, patternIndex);
+        AlgorithmEvents.fallback(previousPatternIndex, patternIndex);
       }
       if (!matchedCharacter) {
         continue;
@@ -46,11 +48,11 @@ public final class KmpSearch {
       if (patternIndex == pattern.length()) {
         int matchIndex = targetIndex - pattern.length() + 1;
         matches.add(matchIndex);
-        Observations.matched(matchIndex, pattern.length());
+        AlgorithmEvents.matched(matchIndex, pattern.length());
         int previousPatternIndex = patternIndex;
         patternIndex = prefix[patternIndex - 1];
         if (patternIndex != previousPatternIndex) {
-          Observations.fallback(previousPatternIndex, patternIndex);
+          AlgorithmEvents.fallback(previousPatternIndex, patternIndex);
         }
       }
     }

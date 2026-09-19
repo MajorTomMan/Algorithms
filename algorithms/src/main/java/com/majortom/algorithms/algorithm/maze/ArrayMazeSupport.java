@@ -1,6 +1,6 @@
 package com.majortom.algorithms.algorithm.maze;
 
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
@@ -30,7 +30,7 @@ public final class ArrayMazeSupport {
       return;
     }
     open[index] = true;
-    Observations.visited(point.row(), point.column());
+    AlgorithmEvents.visited(point.row(), point.column());
   }
 
   public static GridMaze complete(MazeDimensions dimensions, GenerationState state) {
@@ -91,7 +91,7 @@ public final class ArrayMazeSupport {
   public static void tracePath(List<GridPoint> path) {
     for (int index = path.size() - 1; index >= 0; index--) {
       GridPoint point = path.get(index);
-      Observations.pathTraced(point.row(), point.column());
+      AlgorithmEvents.pathTraced(point.row(), point.column());
     }
   }
 

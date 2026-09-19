@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.runtime.string;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.observation.StringObservationDomains;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
@@ -56,7 +56,7 @@ public final class StringEventReducer implements EventReducer<StringViewState> {
           StringViewState.Mutation.replaced(replaced.index(), replaced.value().length()),
           previous.patternStart()));
     }
-    if (event instanceof ObservationEvent.Compared compared) {
+    if (event instanceof AlgorithmEvent.Compared compared) {
       Integer targetIndex = index(compared.leftRef(), StringObservationDomains.TARGET_SOURCE);
       Integer patternIndex = index(compared.rightRef(), StringObservationDomains.PATTERN_SOURCE);
       if (targetIndex != null && patternIndex != null) {
@@ -65,12 +65,12 @@ public final class StringEventReducer implements EventReducer<StringViewState> {
             StringViewState.Observation.compared(targetIndex, patternIndex), patternStart, false));
       }
     }
-    if (event instanceof ObservationEvent.Matched matched) {
+    if (event instanceof AlgorithmEvent.Matched matched) {
       return observation(new StringViewState(previous.value(), StringViewState.Mutation.none(),
           StringViewState.Observation.matched(matched.index(), matched.length()), matched.index(),
           false));
     }
-    if (event instanceof ObservationEvent.Fallback fallback) {
+    if (event instanceof AlgorithmEvent.Fallback fallback) {
       int shift = fallback.fromIndex() - fallback.toIndex();
       int patternStart = previous.patternStart() + shift;
       return observation(new StringViewState(previous.value(), StringViewState.Mutation.none(),
@@ -92,8 +92,8 @@ public final class StringEventReducer implements EventReducer<StringViewState> {
         value, mutation, StringViewState.Observation.none(), patternStart, false);
   }
 
-  private static Integer index(ObservationEvent.Reference reference, String source) {
-    if (reference instanceof ObservationEvent.IndexRef indexRef
+  private static Integer index(AlgorithmEvent.Reference reference, String source) {
+    if (reference instanceof AlgorithmEvent.IndexRef indexRef
         && source.equals(indexRef.source())) {
       return indexRef.index();
     }

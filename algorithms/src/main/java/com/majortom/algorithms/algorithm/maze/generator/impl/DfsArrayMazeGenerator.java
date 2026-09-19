@@ -7,7 +7,7 @@ import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
@@ -38,7 +38,7 @@ public final class DfsArrayMazeGenerator {
         continue;
       }
       GridPoint next = new GridPoint(nextRow, nextColumn);
-      Observations.examined(current.row(), current.column(), nextRow, nextColumn);
+      AlgorithmEvents.examined(current.row(), current.column(), nextRow, nextColumn);
       if (open[ArrayMazeSupport.index(dimensions.columns(), next)]) {
         continue;
       }
@@ -47,7 +47,7 @@ public final class DfsArrayMazeGenerator {
       ArrayMazeSupport.open(dimensions, open, corridor);
       ArrayMazeSupport.open(dimensions, open, next);
       carve(dimensions, open, next, random);
-      Observations.backtracked(current.row(), current.column());
+      AlgorithmEvents.backtracked(current.row(), current.column());
     }
   }
 }

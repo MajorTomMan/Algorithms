@@ -35,7 +35,7 @@ import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.snapshot.SnapshotLifecycleEvent;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -43,11 +43,6 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import com.majortom.algorithms.visualization.runtime.algorithm.AlgorithmObservationCallout;
-import com.majortom.algorithms.visualization.runtime.algorithm.AlgorithmObservationModel;
-import com.majortom.algorithms.visualization.runtime.algorithm.AlgorithmObservationTimeline;
-import com.majortom.algorithms.visualization.render.presentation.algorithm.FxAlgorithmObservationRenderer;
-import com.majortom.algorithms.visualization.render.presentation.algorithm.FxAlgorithmObservationCalloutRenderer;
 import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
 import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
@@ -133,10 +128,6 @@ public class MainController implements Initializable {
             RenderSessionId.of("workbench:memory:structure");
     private static final RenderSessionId ALGORITHM_MEMORY_SURFACE_ID =
             RenderSessionId.of("workbench:memory:algorithm");
-    private static final RenderSessionId ALGORITHM_OBSERVATION_SURFACE_ID =
-            RenderSessionId.of("workbench:algorithm-observation");
-    private static final RenderSessionId ALGORITHM_OBSERVATION_CALLOUT_SURFACE_ID =
-            RenderSessionId.of("workbench:algorithm-observation-callout");
 
     @FXML
     private BorderPane rootPane;
@@ -330,8 +321,6 @@ public class MainController implements Initializable {
     private Label currentStepDetailLabel;
     @FXML
     private VBox currentStepOverlay;
-    @FXML
-    private VBox algorithmObservationCallout;
     @FXML
     private VBox algorithmSelectionOverlay;
     @FXML
@@ -564,10 +553,6 @@ public class MainController implements Initializable {
     private StructureFootprint structureFootprint;
     private boolean structureFootprintBusy;
     private long memoryContextGeneration;
-    private final AlgorithmObservationTimeline algorithmObservationTimeline = new AlgorithmObservationTimeline();
-    private MutablePresentationModelSource<AlgorithmObservationModel> algorithmObservationSource;
-    private FxAlgorithmObservationRenderer algorithmObservationRenderer;
-    private MutablePresentationModelSource<AlgorithmObservationCallout> algorithmObservationCalloutSource;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -576,6 +561,15 @@ public class MainController implements Initializable {
         }
 
         setupI18n();
+        // Algorithm events are replay/animation inputs, not an additional event inspector UI.
+        // Keep the existing FXML controls constructed for legacy controller compatibility.
+        algorithmInspectorTabs.getTabs().remove(eventTab);
+        algorithmInspectorTabs.getSelectionModel().selectedItemProperty().addListener(
+                (observable, before, selected) -> {
+                    if (currentSubController == null) return;
+                    if (selected == statisticsTab) publishRuntimeOverview(currentSubController.runtimeOverview());
+                    else if (selected == memoryTab) publishMemoryPresentations();
+                });
         setupSnapshotPreviewPresentation();
         setupFontSettings();
         setupValueTypeSelectors();
@@ -587,7 +581,6 @@ public class MainController implements Initializable {
         setupTimelinePresentation();
         setupStatisticsPresentationSurface();
         setupMemoryPresentationSurfaces();
-        setupAlgorithmObservationSurface();
         setupGlobalEffects();
         setupLayoutClips();
         setStructureHistoryExpanded(false);
@@ -754,85 +747,6 @@ public class MainController implements Initializable {
                             + failure);
                     return null;
                 });
-    }
-
-    private void setupAlgorithmObservationSurface() {
-        if (eventDetailsLabel == null || !(eventDetailsLabel.getParent() instanceof VBox eventCard)
-                || !(eventCard.getParent() instanceof VBox inspectorContent)) return;
-        VBox observationCard = new VBox(8.0d);
-        observationCard.getStyleClass().add("event-card");
-        inspectorContent.getChildren().add(inspectorContent.getChildren().indexOf(eventCard) + 1, observationCard);
-        algorithmObservationSource = new MutablePresentationModelSource<>(AlgorithmObservationModel.empty());
-        algorithmObservationRenderer = new FxAlgorithmObservationRenderer(observationCard);
-        presentationSurfacePort.registerPresentationSurface(PresentationSurface.standalone(
-                ALGORITHM_OBSERVATION_SURFACE_ID, algorithmObservationSource, algorithmObservationRenderer))
-                .thenCompose(ignored -> presentationSurfacePort.activatePresentationSurface(
-                        ALGORITHM_OBSERVATION_SURFACE_ID))
-                .exceptionally(failure -> {
-                    System.err.println("Failed to initialize algorithm observation presentation: " + failure);
-                    return null;
-                });
-        if (algorithmObservationCallout != null) {
-            algorithmObservationCalloutSource =
-                    new MutablePresentationModelSource<>(AlgorithmObservationCallout.empty());
-            presentationSurfacePort.registerPresentationSurface(PresentationSurface.standalone(
-                    ALGORITHM_OBSERVATION_CALLOUT_SURFACE_ID, algorithmObservationCalloutSource,
-                    new FxAlgorithmObservationCalloutRenderer(algorithmObservationCallout)))
-                    .thenCompose(ignored -> presentationSurfacePort.activatePresentationSurface(
-                            ALGORITHM_OBSERVATION_CALLOUT_SURFACE_ID))
-                    .exceptionally(failure -> {
-                        System.err.println("Failed to initialize observation callout: " + failure);
-                        return null;
-                    });
-            // The selection card already owns the top-right corner when an item is inspected.
-            // Place the observation card below it instead of changing the camera/structure layout.
-            algorithmSelectionOverlay.visibleProperty().addListener((value, oldValue, newValue) ->
-                    positionObservationCallout());
-            algorithmSelectionOverlay.heightProperty().addListener((value, oldValue, newValue) ->
-                    positionObservationCallout());
-            positionObservationCallout();
-        }
-    }
-
-    private void positionObservationCallout() {
-        if (algorithmObservationCallout == null || algorithmSelectionOverlay == null) return;
-        double top = algorithmSelectionOverlay.isVisible()
-                ? algorithmSelectionOverlay.getHeight() + 28.0d : 0.0d;
-        StackPane.setMargin(algorithmObservationCallout,
-                new javafx.geometry.Insets(top, 18.0d, 0.0d, 0.0d));
-    }
-
-    private void publishAlgorithmObservation(EventEnvelope current) {
-        if (algorithmObservationSource == null) return;
-        AlgorithmObservationModel model = AlgorithmObservationModel.empty();
-        int displayedIndex = -1;
-        if (currentSubController != null && current != null) {
-            List<EventEnvelope> events = currentSubController.executionEvents();
-            int index = currentSubController.presentationEventIndex();
-            if (index < 0 || index >= events.size() || !events.get(index).equals(current)) {
-                index = -1;
-                for (int offset = events.size() - 1; offset >= 0; offset--) {
-                    EventEnvelope candidate = events.get(offset);
-                    if (candidate.runId().equals(current.runId())
-                            && candidate.sequence() == current.sequence()) {
-                        index = offset;
-                        break;
-                    }
-                }
-            }
-            if (index >= 0) {
-                model = algorithmObservationTimeline.at(events, index);
-                displayedIndex = index;
-            }
-        }
-        algorithmObservationSource.publish(model);
-        presentationSurfacePort.invalidatePresentationSurface(ALGORITHM_OBSERVATION_SURFACE_ID);
-        if (algorithmObservationCalloutSource != null) {
-            algorithmObservationCalloutSource.publish(
-                    AlgorithmObservationCallout.at(current, model, displayedIndex));
-            presentationSurfacePort.invalidatePresentationSurface(
-                    ALGORITHM_OBSERVATION_CALLOUT_SURFACE_ID);
-        }
     }
 
     private void setupMemoryPresentationSurfaces() {
@@ -2238,7 +2152,6 @@ public class MainController implements Initializable {
                 this::refreshRunSummary));
 
         currentSubController = newController;
-        algorithmObservationTimeline.clear();
         memoryContextGeneration++;
         structureFootprint = null;
         structureFootprintBusy = false;
@@ -2307,8 +2220,6 @@ public class MainController implements Initializable {
         }
         currentSubController.dispatchVisualizerDetached();
         currentSubController = null;
-        algorithmObservationTimeline.clear();
-        publishAlgorithmObservation(null);
     }
 
     /**
@@ -3244,7 +3155,7 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
-        publishMemoryPresentations();
+        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) publishMemoryPresentations();
         StructureSnapshot<?> previewSnapshot = null;
         StructureSnapshotSupport<?> snapshotSupport = null;
         if (structureSnapshotPreviewActive && activeDefinition != null) {
@@ -3566,7 +3477,6 @@ public class MainController implements Initializable {
 
     private void refreshExecutionPresentation() {
         if (currentSubController == null) {
-            publishAlgorithmObservation(null);
             refreshPlaybackShellControls();
             return;
         }
@@ -3577,35 +3487,32 @@ public class MainController implements Initializable {
                 currentStepOverlay.setVisible(false);
             }
             updateVisualizationObstruction(false);
-            if (eventKindLabel != null) eventKindLabel.setText(I18N.text("label.workspace.event.none"));
-            if (eventDetailsLabel != null) eventDetailsLabel.setText(I18N.text("label.workspace.event.prompt"));
-            if (eventKindDot != null) setEventDotClass("event-dot-idle");
             if (timelineCursorLabel != null) {
                 timelineCursorLabel.setText("");
                 timelineCursorLabel.setVisible(false);
             }
         } else {
+            boolean showStep = !(current.event() instanceof AlgorithmEvent);
             if (currentStepOverlay != null) {
-                currentStepOverlay.setManaged(true);
-                currentStepOverlay.setVisible(true);
+                currentStepOverlay.setManaged(showStep);
+                currentStepOverlay.setVisible(showStep);
             }
-            updateVisualizationObstruction(true);
-            String kind = eventDisplayName(current);
-            if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
-            if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
-            if (currentStepDetailLabel != null) currentStepDetailLabel.setText(describeCurrentStep(current));
-            if (eventKindLabel != null) eventKindLabel.setText(kind);
-            if (eventDetailsLabel != null) eventDetailsLabel.setText(describeEventEnvelope(current));
-            if (eventKindDot != null) setEventDotClass(eventDotClass(current));
-            updateTimelineCursorCallout(current);
+            updateVisualizationObstruction(showStep);
+            if (showStep) {
+                String kind = eventDisplayName(current);
+                if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
+                if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
+                if (currentStepDetailLabel != null) currentStepDetailLabel.setText(describeCurrentStep(current));
+            }
+            if (timelineCursorLabel != null) timelineCursorLabel.setVisible(false);
         }
-        publishAlgorithmObservation(current);
         String result = currentSubController.latestResultText();
         if (resultLabel != null) resultLabel.setText(result);
         if (resultPreviewLabel != null) resultPreviewLabel.setText(result);
-        refreshRunSummary();
+        // The hidden event tab and inactive metric surfaces need no per-step JavaFX commits.
+        if (statisticsTab.isSelected() || memoryTab.isSelected()) refreshRunSummary();
         rebuildTimelineMarkers();
-        refreshStructureSummary();
+        if (current == null || !(current.event() instanceof AlgorithmEvent)) refreshStructureSummary();
         refreshPlaybackShellControls();
     }
 
@@ -3636,25 +3543,25 @@ public class MainController implements Initializable {
 
     private String describeCurrentStep(EventEnvelope envelope) {
         Object event = envelope.event();
-        if (event instanceof ObservationEvent.Visited visited) {
+        if (event instanceof AlgorithmEvent.Visited visited) {
             return "TARGET  " + formatReference(visited.ref());
         }
-        if (event instanceof ObservationEvent.Examined examined) {
+        if (event instanceof AlgorithmEvent.Examined examined) {
             return "FROM    " + formatReference(examined.fromRef()) + "\nTO      " + formatReference(examined.toRef());
         }
-        if (event instanceof ObservationEvent.Compared compared) {
+        if (event instanceof AlgorithmEvent.Compared compared) {
             return "LEFT    " + formatReference(compared.leftRef()) + "\nRIGHT   " + formatReference(compared.rightRef());
         }
-        if (event instanceof ObservationEvent.Matched matched) {
+        if (event instanceof AlgorithmEvent.Matched matched) {
             return "INDEX   " + matched.index() + "\nLENGTH  " + matched.length();
         }
-        if (event instanceof ObservationEvent.Fallback fallback) {
+        if (event instanceof AlgorithmEvent.Fallback fallback) {
             return "PATTERN " + fallback.fromIndex() + " → " + fallback.toIndex();
         }
-        if (event instanceof ObservationEvent.Backtracked backtracked) {
+        if (event instanceof AlgorithmEvent.Backtracked backtracked) {
             return "TARGET  " + formatReference(backtracked.ref());
         }
-        if (event instanceof ObservationEvent.PathTraced pathTraced) {
+        if (event instanceof AlgorithmEvent.PathTraced pathTraced) {
             return "TARGET  " + formatReference(pathTraced.ref());
         }
         if (event instanceof TreeStructureEvent.NodeInserted inserted) {
@@ -3696,13 +3603,13 @@ public class MainController implements Initializable {
     private String eventCategory(EventEnvelope envelope) {
         Object event = envelope.event();
         if (event instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "Structure Event";
-        if (event instanceof ObservationEvent) return "Observation Event";
+        if (event instanceof AlgorithmEvent) return "Algorithm Event";
         if (event instanceof ExecutionLifecycleEvent) return "Runtime Event";
         return "Execution Event";
     }
 
     private String eventDotClass(EventEnvelope envelope) {
-        if (envelope.event() instanceof ObservationEvent) return "event-dot-observation";
+        if (envelope.event() instanceof AlgorithmEvent) return "event-dot-observation";
         if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "event-dot-structure";
         if (envelope.event() instanceof ExecutionLifecycleEvent) return "event-dot-runtime";
         return "event-dot-idle";
@@ -3713,11 +3620,11 @@ public class MainController implements Initializable {
         eventKindDot.getStyleClass().add(styleClass);
     }
 
-    private String formatReference(ObservationEvent.Reference reference) {
-        if (reference instanceof ObservationEvent.EntityRef entity) return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
-        if (reference instanceof ObservationEvent.IndexRef index) return index.source() + "[" + index.index() + "]";
-        if (reference instanceof ObservationEvent.CoordinateRef cell) return "(" + cell.row() + ", " + cell.column() + ")";
-        if (reference instanceof ObservationEvent.ValueRef value) return String.valueOf(value.value());
+    private String formatReference(AlgorithmEvent.Reference reference) {
+        if (reference instanceof AlgorithmEvent.EntityRef entity) return entity.domain().toUpperCase(Locale.ROOT) + " #" + entity.id();
+        if (reference instanceof AlgorithmEvent.IndexRef index) return index.source() + "[" + index.index() + "]";
+        if (reference instanceof AlgorithmEvent.CoordinateRef cell) return "(" + cell.row() + ", " + cell.column() + ")";
+        if (reference instanceof AlgorithmEvent.ValueRef value) return String.valueOf(value.value());
         return String.valueOf(reference);
     }
 
@@ -3739,8 +3646,8 @@ public class MainController implements Initializable {
 
     private void refreshRunSummary() {
         if (currentSubController == null) return;
-        publishMemoryPresentations();
-        publishRuntimeOverview(currentSubController.runtimeOverview());
+        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) publishMemoryPresentations();
+        if (statisticsTab.isSelected()) publishRuntimeOverview(currentSubController.runtimeOverview());
     }
 
     private void publishRuntimeOverview(RuntimeOverviewModel overview) {
@@ -4030,7 +3937,7 @@ public class MainController implements Initializable {
         if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) {
             return timelineStructureVisible;
         }
-        if (envelope.event() instanceof ObservationEvent) {
+        if (envelope.event() instanceof AlgorithmEvent) {
             return timelineObservationVisible;
         }
         return false;
@@ -4065,7 +3972,7 @@ public class MainController implements Initializable {
     private String eventMarkerClass(EventEnvelope envelope) {
         if (envelope.event() instanceof ExecutionLifecycleEvent) return "timeline-runtime";
         if (envelope.event() instanceof com.majortom.algorithms.core.event.structure.StructureEvent) return "timeline-structure";
-        if (envelope.event() instanceof ObservationEvent) return "timeline-observation";
+        if (envelope.event() instanceof AlgorithmEvent) return "timeline-observation";
         return "timeline-other";
     }
 

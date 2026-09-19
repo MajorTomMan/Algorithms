@@ -3,7 +3,8 @@ package com.majortom.algorithms.algorithm.graph.impl;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
+import com.majortom.algorithms.core.event.algorithm.GraphAlgorithmEvent;
 import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
@@ -51,12 +52,18 @@ public final class KruskalMinimumSpanning {
         WeightedGraph.fromSnapshot(new WeightedGraphSnapshot<>(false, vertices, List.of()));
 
     for (Edge<Integer> edge : edges) {
-      Observations.examined(GraphObservationDomains.VERTEX, edge.from().id(), edge.to().id());
+      AlgorithmEvents.emit(new GraphAlgorithmEvent.EdgeConsidered(
+          edge.id(), edge.from().id(), edge.to().id()));
+      AlgorithmEvents.examined(GraphObservationDomains.VERTEX, edge.from().id(), edge.to().id());
       long fromRoot = find(parent, edge.from().id());
       long toRoot = find(parent, edge.to().id());
       if (fromRoot == toRoot) {
+        AlgorithmEvents.emit(new GraphAlgorithmEvent.EdgeRejected(
+            edge.id(), edge.from().id(), edge.to().id()));
         continue;
       }
+      AlgorithmEvents.emit(new GraphAlgorithmEvent.EdgeAccepted(
+          edge.id(), edge.from().id(), edge.to().id()));
       union(parent, rank, fromRoot, toRoot);
       Vertex<Integer> from = result.vertex(edge.from().value());
       Vertex<Integer> to = result.vertex(edge.to().value());

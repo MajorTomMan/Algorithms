@@ -2,10 +2,10 @@ package com.majortom.algorithms.algorithm.graph.impl;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.event.observation.ObservationEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
-import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.GraphStructure;
@@ -38,10 +38,10 @@ public final class GraphDfs {
 
   private static void dfs(GraphStructure<Integer> graph, Vertex<Integer> vertex) {
     if (!isVisited.containsKey(vertex.value())) {
-      Observations.visited(GraphObservationDomains.VERTEX, vertex.id());
+      AlgorithmEvents.visited(GraphObservationDomains.VERTEX, vertex.id());
       isVisited.put(vertex.value(), true);
       for (Vertex<Integer> neighbor : graph.neighbors(vertex)) {
-        Observations.examined(GraphObservationDomains.VERTEX, vertex.id(), neighbor.id());
+        AlgorithmEvents.examined(GraphObservationDomains.VERTEX, vertex.id(), neighbor.id());
         dfs(graph, neighbor);
       }
     } else {
