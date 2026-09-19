@@ -4,9 +4,8 @@ import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
-@Structure(
-    id = StructureIds.QUEUE, name = "Queue", module = StructureModule.QUEUE, implementation = LinkedList.class)
-public interface QueueStructure<T> extends Iterable<T> {
+@Structure(id = StructureIds.QUEUE, name = "Queue", module = StructureModule.QUEUE, implementation = LinkedList.class)
+public interface QueueStructure<T> extends LinkedStructure<T> {
   int size();
 
   default boolean isEmpty() {
@@ -14,7 +13,10 @@ public interface QueueStructure<T> extends Iterable<T> {
   }
 
   void enqueue(T value);
+
   T dequeue();
+
   T front();
+
   T rear();
 }

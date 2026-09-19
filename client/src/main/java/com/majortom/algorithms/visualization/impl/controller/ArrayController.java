@@ -119,13 +119,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private List<Object> randomValues() {
         List<Object> values = new ArrayList<>(currentSize);
         for (int index = 0; index < currentSize; index++) {
-            if (runtimeValueType == Integer.class) {
-                values.add(random.nextInt(100) + 1);
-            } else if (runtimeValueType == String.class) {
-                values.add("V" + (random.nextInt(100) + 1));
-            } else {
-                throw new IllegalStateException("No random generator for " + runtimeValueType.getName());
-            }
+            values.add(ValueAdapters.randomValue(runtimeValueType, random));
         }
         return List.copyOf(values);
     }

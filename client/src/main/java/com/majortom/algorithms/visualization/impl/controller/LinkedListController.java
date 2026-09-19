@@ -277,7 +277,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (runtimeValueType == String.class) {
             return List.of("alpha", "beta", "gamma");
         }
-        throw new IllegalStateException("Unsupported LinkedList value type: " + runtimeValueType.getName());
+        return List.of(ValueAdapters.distinctValue(runtimeValueType, 0),
+                ValueAdapters.distinctValue(runtimeValueType, 1));
     }
 
     @Override
@@ -299,11 +300,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         java.util.Random random = new java.util.Random();
         List<Object> values = new ArrayList<>();
         for (int index = 0; index < 8; index++) {
-            if (runtimeValueType == Integer.class) {
-                values.add(random.nextInt(100) + 1);
-            } else {
-                values.add("V" + (random.nextInt(100) + 1));
-            }
+            values.add(ValueAdapters.randomValue(runtimeValueType, random));
         }
         replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
     }

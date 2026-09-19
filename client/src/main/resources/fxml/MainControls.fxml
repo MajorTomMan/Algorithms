@@ -353,6 +353,10 @@
                         </VBox>
                         <Separator />
                         <VBox spacing="8" styleClass="input-source-block">
+                            <VBox fx:id="algorithmValueTypeBox" spacing="8" styleClass="input-type-section">
+                                <Label fx:id="algorithmValueTypeLabel" styleClass="panel-section-title" />
+                                <ComboBox fx:id="algorithmValueTypeSelector" maxWidth="Infinity" />
+                            </VBox>
                             <Label fx:id="algorithmInputTitleLabel" text="INPUT SOURCE"
                                 styleClass="panel-section-title" />
                             <HBox spacing="6" styleClass="input-source-toggle-row">

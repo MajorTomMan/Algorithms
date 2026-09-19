@@ -142,6 +142,12 @@ public class MainController implements Initializable {
     @FXML
     private VBox valueTypeBox;
     @FXML
+    private Label algorithmValueTypeLabel;
+    @FXML
+    private VBox algorithmValueTypeBox;
+    @FXML
+    private ComboBox<ValueTypeOption> algorithmValueTypeSelector;
+    @FXML
     private VBox structureKindHost;
     @FXML
     private Label valueTypeLabel;
@@ -583,6 +589,7 @@ public class MainController implements Initializable {
     private void setupI18n() {
         menuTitleLabel.textProperty().bind(I18N.createStringBinding("label.menu.title"));
         valueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type"));
+        algorithmValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.element"));
         hashValueTypeLabel.textProperty().bind(I18N.createStringBinding("label.value_type.value"));
         if (fontSettingsBtn != null) {
             fontSettingsBtn.accessibleTextProperty().bind(I18N.createStringBinding("settings.text.open"));
@@ -1109,43 +1116,43 @@ public class MainController implements Initializable {
 
     private void setupValueTypeSelectors() {
         configureValueTypeSelector(valueTypeSelector);
+        configureValueTypeSelector(algorithmValueTypeSelector);
         configureValueTypeSelector(hashValueTypeSelector);
 
-        valueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
-                return;
-            }
-            if (!newValue.available()) {
-                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
+        valueTypeSelector.valueProperty().addListener((obs, old, value) -> changeValueType(value));
+        algorithmValueTypeSelector.valueProperty().addListener((obs, old, value) -> changeValueType(value));
+        hashValueTypeSelector.valueProperty().addListener((obs, old, value) -> {
+            if (updatingValueTypeSelectors || activeDefinition == null || value == null) return;
+            if (!value.available()) {
+                appendSystemLog(I18N.text("message.value_type.unavailable", value.type()));
                 refreshValueTypeSelectors();
                 return;
             }
-            if (newValue.type().equals(selectedValueType(activeDefinition.id()))) return;
-            if (!isStructurePageVisible() || currentSubController.isRunning()
-                    || structureSnapshotPreviewActive || !confirmValueTypeChange(newValue.type())) {
-                refreshValueTypeSelectors();
-                return;
-            }
-            if ("hash-table".equals(activeDefinition.id())) {
-                selectedHashKeyType = newValue.type();
-            } else {
-                selectedValueTypes.put(activeDefinition.id(), newValue.type());
-            }
+            selectedHashValueType = value.type();
             refreshAfterValueTypeChange();
         });
+    }
 
-        hashValueTypeSelector.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (updatingValueTypeSelectors || activeDefinition == null || newValue == null) {
-                return;
-            }
-            if (!newValue.available()) {
-                appendSystemLog(I18N.text("message.value_type.unavailable", newValue.type()));
-                refreshValueTypeSelectors();
-                return;
-            }
-            selectedHashValueType = newValue.type();
-            refreshAfterValueTypeChange();
-        });
+    /** Both pages commit the same module-scoped element type; execution always uses the committed value. */
+    private void changeValueType(ValueTypeOption selected) {
+        if (updatingValueTypeSelectors || activeDefinition == null || selected == null) return;
+        if (!selected.available()) {
+            appendSystemLog(I18N.text("message.value_type.unavailable", selected.type()));
+            refreshValueTypeSelectors();
+            return;
+        }
+        if (selected.type().equals(selectedValueType(activeDefinition.id()))) return;
+        if (isPracticePageVisible() || currentSubController.isRunning()
+                || structureSnapshotPreviewActive || !confirmValueTypeChange(selected.type())) {
+            refreshValueTypeSelectors();
+            return;
+        }
+        if ("hash-table".equals(activeDefinition.id())) {
+            selectedHashKeyType = selected.type();
+        } else {
+            selectedValueTypes.put(activeDefinition.id(), selected.type());
+        }
+        refreshAfterValueTypeChange();
     }
 
     private void configureValueTypeSelector(ComboBox<ValueTypeOption> selector) {
@@ -1184,6 +1191,7 @@ public class MainController implements Initializable {
         String moduleId = activeDefinition.id();
         boolean maze = StructureIds.MAZE.equals(moduleId);
         setControlVisibility(valueTypeBox, !maze);
+        setControlVisibility(algorithmValueTypeBox, !maze);
         if (maze) {
             return;
         }
@@ -1224,6 +1232,11 @@ public class MainController implements Initializable {
             }
             valueTypeSelector.getItems().setAll(valueTypeOptions(available));
             selectValueType(valueTypeSelector, selected);
+            List<String> algorithmTypes = algorithmAvailableValueTypes(moduleId);
+            algorithmValueTypeSelector.getItems().setAll(valueTypeOptions(algorithmTypes));
+            selectValueType(algorithmValueTypeSelector, selected);
+            algorithmValueTypeSelector.setDisable(StructureIds.STRING.equals(moduleId)
+                    || currentSubController != null && currentSubController.isRunning());
         } finally {
             updatingValueTypeSelectors = false;
         }
@@ -1231,6 +1244,19 @@ public class MainController implements Initializable {
 
     private String valueTypeDisplayName(String type) {
         return I18N.text("label.value_type." + type);
+    }
+
+    private boolean hasAlgorithmForAnySupportedType(String moduleId) {
+        return !algorithmAvailableValueTypes(moduleId).isEmpty();
+    }
+
+    private List<String> algorithmAvailableValueTypes(String moduleId) {
+        return COMPONENTS.algorithms().stream()
+                .filter(descriptor -> descriptor.module() == StructureModule.fromId(moduleId))
+                .map(descriptor -> descriptor.valueType())
+                .filter(ValueAdapters::supports)
+                .map(Class::getSimpleName)
+                .distinct().toList();
     }
 
     private boolean confirmValueTypeChange(String nextType) {
@@ -1337,7 +1363,11 @@ public class MainController implements Initializable {
             return;
         }
         List<AlgorithmNavigationItem> navigationItems = algorithmNavigationItems(definition.id());
+        // Navigation remains available for a family whose algorithms declare a different
+        // element type. switchToModule selects the registered type before constructing it.
         if (navigationItems.isEmpty()) {
+            if (!hasAlgorithmForAnySupportedType(definition.id())) return;
+            switchToModule(definition, WorkspaceMode.ALGORITHM, null);
             return;
         }
         String preferred = activeDefinition != null
@@ -1462,6 +1492,16 @@ public class MainController implements Initializable {
             return;
         }
         List<AlgorithmNavigationItem> available = algorithmNavigationItems(activeDefinition.id());
+        if (available.isEmpty()) {
+            String candidate = algorithmAvailableValueTypes(activeDefinition.id()).stream().findFirst().orElse(null);
+            if (candidate != null && !candidate.equals(selectedValueType(activeDefinition.id()))
+                    && !currentSubController.isRunning() && !structureSnapshotPreviewActive
+                    && confirmValueTypeChange(candidate)) {
+                selectedValueTypes.put(activeDefinition.id(), candidate);
+                refreshAfterValueTypeChange();
+                available = algorithmNavigationItems(activeDefinition.id());
+            }
+        }
         if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
             return;
         }
@@ -1802,6 +1842,16 @@ public class MainController implements Initializable {
         BaseController<?> nextController = null;
         HBox preparedControls = new HBox();
         try {
+            if (requestedMode == WorkspaceMode.ALGORITHM) {
+                String currentType = selectedValueType(definition.id());
+                boolean matching = currentType != null && !AlgorithmCatalog.forWorkbenchModule(
+                        definition.id(), ValueAdapters.requireType(currentType)).isEmpty();
+                if (!matching) {
+                    String targetType = algorithmAvailableValueTypes(definition.id()).stream()
+                            .findFirst().orElse(null);
+                    if (targetType != null) selectedValueTypes.put(definition.id(), targetType);
+                }
+            }
             nextController = definition.controllerFactory().get();
             configureRuntimeValueType(definition.id(), nextController);
             nextController.setupCustomControls(preparedControls);
@@ -1875,7 +1925,8 @@ public class MainController implements Initializable {
         boolean algorithmMode = workspaceMode == WorkspaceMode.ALGORITHM;
         for (WorkbenchModuleDefinition definition : moduleDefinitions) {
             boolean unavailableInAlgorithm = algorithmMode
-                    && algorithmNavigationItems(definition.id()).isEmpty();
+                    && algorithmNavigationItems(definition.id()).isEmpty()
+                    && !hasAlgorithmForAnySupportedType(definition.id());
             familyNavigator.setFamilyDisabled(definition.id(), running || unavailableInAlgorithm);
         }
     }
@@ -1883,7 +1934,8 @@ public class MainController implements Initializable {
     private void updateWorkspaceInteractionState() {
         boolean running = currentSubController != null && currentSubController.isRunning();
         boolean algorithmAvailable = activeDefinition != null
-                && !algorithmNavigationItems(activeDefinition.id()).isEmpty();
+                && (hasAlgorithmForAnySupportedType(activeDefinition.id())
+                    || !algorithmNavigationItems(activeDefinition.id()).isEmpty());
         structureWorkspaceBtn.setDisable(running);
         algorithmWorkspaceBtn.setDisable(running || !algorithmAvailable);
         practiceWorkspaceBtn.setDisable(running);

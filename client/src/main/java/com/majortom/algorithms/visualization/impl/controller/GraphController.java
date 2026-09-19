@@ -745,13 +745,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private List<Object> defaultGraphValues(int nodeCount) {
         List<Object> values = new ArrayList<>(nodeCount);
         for (int index = 0; index < nodeCount; index++) {
-            if (runtimeValueType == Integer.class) {
-                values.add(index);
-            } else if (runtimeValueType == String.class) {
-                values.add("N" + index);
-            } else {
-                throw new IllegalStateException("Unsupported Graph value type: " + runtimeValueType.getName());
-            }
+            values.add(ValueAdapters.distinctValue(runtimeValueType, index));
         }
         return List.copyOf(values);
     }
@@ -777,7 +771,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     protected void randomizeData() {
-        replaceGraphData(randomGraphBatch(10, 16), "randomize", "message.data.randomized");
+        int vertices = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
+        int edges = Math.min(16, vertices * (vertices - 1)
+                / (activeVariant == GraphVariant.DIRECTED ? 1 : 2));
+        replaceGraphData(randomGraphBatch(vertices, edges), "randomize", "message.data.randomized");
     }
 
     private GraphBatch parseGraphBatch(String input) {

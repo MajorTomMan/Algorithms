@@ -10,36 +10,40 @@ public class ReversePolishNotation {
   private String expression = "3 4 + 5 *";
 
   @AlgorithmEntry
-  public void evaluateRPN(StackStructure<String> stack) {
+  public String evaluateRPN(StackStructure<String> stack) {
+    String result = "";
     Log.d("stack size:" + stack.size());
-    if (stack.isEmpty()) {
-      for (char c : expression.toCharArray()) {
-        if (c == ' ') {
-          continue;
-        }
-        if (Character.isDigit(c)) {
-          stack.push(c + "");
-        } else {
+    if (!stack.isEmpty()) {
+      stack.clear();
+    }
 
-          String b = stack.pop();
-          String a = stack.pop();
-          String result = calcate(a, b, String.valueOf(c));
-          if (result != "") {
-            stack.push(result);
-          }
+    for (char c : expression.toCharArray()) {
+      if (c == ' ') {
+        continue;
+      }
+      if (Character.isDigit(c)) {
+        stack.push(c + "");
+      } else {
+        String b = stack.pop();
+        String a = stack.pop();
+        result = calcate(a, b, String.valueOf(c));
+        if (result != "") {
+          stack.push(result);
         }
       }
     }
+    Log.d("result:"+result);
+    return result;
   }
 
   private String calcate(String a, String b, String operator) {
-    if (operator == "+") {
+    if (operator.equals("+")) {
       return Integer.parseInt(a) + Integer.parseInt(b) + "";
-    } else if (operator == "-") {
+    } else if (operator.equals("-")) {
       return Integer.parseInt(a) - Integer.parseInt(b) + "";
-    } else if (operator == "*") {
+    } else if (operator.equals("*")) {
       return Integer.parseInt(a) * Integer.parseInt(b) + "";
-    } else if (operator == "/") {
+    } else if (operator.equals("/")) {
       return Integer.parseInt(a) / Integer.parseInt(b) + "";
     }
     return "";

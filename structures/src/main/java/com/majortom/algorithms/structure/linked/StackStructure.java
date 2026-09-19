@@ -6,7 +6,7 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 
 @Structure(
     id = StructureIds.STACK, name = "Stack", module = StructureModule.STACK, implementation = LinkedList.class)
-public interface StackStructure<T> extends Iterable<T> {
+public interface StackStructure<T> extends LinkedStructure<T> {
   int size();
 
   default boolean isEmpty() {
@@ -16,4 +16,5 @@ public interface StackStructure<T> extends Iterable<T> {
   void push(T value);
   T pop();
   T peek();
+  
 }

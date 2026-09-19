@@ -57,6 +57,7 @@ public final class WorkbenchFormLayout {
     for (Node parent = node == null ? null : node.getParent();
         parent != null; parent = parent.getParent()) {
       if (parent.getStyleClass().contains("control-section")
+          || parent.getStyleClass().contains("input-type-section")
           || parent.getStyleClass().contains("module-control-panel")) {
         return true;
       }

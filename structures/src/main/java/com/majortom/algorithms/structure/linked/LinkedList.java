@@ -117,7 +117,6 @@ public final class LinkedList<T>
     return tail;
   }
 
-
   @Override
   public void setHead(ListNode<T> node) {
     this.head = node;
@@ -125,8 +124,9 @@ public final class LinkedList<T>
 
   @Override
   public void setTail(ListNode<T> node) {
-      this.tail = node;
+    this.tail = node;
   }
+
   @Override
   public void push(T value) {
     insert(0, value);
@@ -135,7 +135,7 @@ public final class LinkedList<T>
   @Override
   public T pop() {
     if (isEmpty()) {
-      throw new NoSuchElementException("stack is empty");
+      return null;
     }
     return remove(0);
   }
@@ -143,7 +143,7 @@ public final class LinkedList<T>
   @Override
   public T peek() {
     if (head == null) {
-      throw new NoSuchElementException("stack is empty");
+      return null;
     }
     return head.getValue();
   }
@@ -225,5 +225,11 @@ public final class LinkedList<T>
     if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException("index=" + index + ", size=" + size);
     }
+  }
+
+  @Override
+  public void clear() {
+    head = null;
+    tail = null;
   }
 }

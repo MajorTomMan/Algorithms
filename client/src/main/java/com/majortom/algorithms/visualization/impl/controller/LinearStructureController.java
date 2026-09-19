@@ -265,7 +265,10 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (runtimeValueType == Integer.class) {
             return List.of(36, 24, 12);
         }
-        return List.of("gamma", "beta", "alpha");
+        if (runtimeValueType == String.class) return List.of("gamma", "beta", "alpha");
+        if (runtimeValueType == Boolean.class) return List.of(true, false, true);
+        return List.of(ValueAdapters.distinctValue(runtimeValueType, 2),
+                ValueAdapters.distinctValue(runtimeValueType, 1), ValueAdapters.distinctValue(runtimeValueType, 0));
     }
 
     @Override
@@ -287,11 +290,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         java.util.Random random = new java.util.Random();
         List<Object> values = new ArrayList<>();
         for (int index = 0; index < 8; index++) {
-            if (runtimeValueType == Integer.class) {
-                values.add(random.nextInt(100) + 1);
-            } else {
-                values.add("value-" + (random.nextInt(90) + 10));
-            }
+            values.add(ValueAdapters.randomValue(runtimeValueType, random));
         }
         replaceValues(List.copyOf(values), "randomize", "message.data.randomized");
     }

@@ -414,7 +414,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @FXML
     private void handleRandom() {
-        valueField.setText(valueAdapter.format(randomValue(new Random())));
+        valueField.setText(valueAdapter.format(ValueAdapters.randomValue(runtimeValueType, new Random())));
     }
 
     @Override
@@ -445,8 +445,13 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     protected void randomizeData() {
         Random random = new Random();
         java.util.LinkedHashSet<Object> unique = new java.util.LinkedHashSet<>();
-        while (unique.size() < 10) {
-            unique.add(randomValue(random));
+        int count = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
+        int attempts = 0;
+        while (unique.size() < count && attempts++ < 1000) {
+            unique.add(ValueAdapters.randomValue(runtimeValueType, random));
+        }
+        for (int index = 0; unique.size() < count; index++) {
+            unique.add(ValueAdapters.distinctValue(runtimeValueType, index));
         }
         replaceTreeValues(new ArrayList<>(unique), "randomize", "message.data.randomized");
     }
@@ -746,21 +751,25 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (runtimeValueType == String.class) {
             return List.of("root", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta");
         }
-        return List.of(50, 30, 70, 90, 10, 40, 60, 80);
+        if (runtimeValueType == Integer.class) return List.of(50, 30, 70, 90, 10, 40, 60, 80);
+        return sampleTypedValues(8);
     }
 
     private List<Object> sampleAvlValues() {
         if (runtimeValueType == String.class) {
             return List.of("alpha", "beta", "delta", "epsilon", "gamma", "theta", "zeta");
         }
-        return List.of(10, 30, 40, 50, 60, 70, 90);
+        if (runtimeValueType == Integer.class) return List.of(10, 30, 40, 50, 60, 70, 90);
+        return sampleTypedValues(7);
     }
 
-    private Object randomValue(Random random) {
-        if (runtimeValueType == String.class) {
-            return "V" + (random.nextInt(900) + 100);
+    private List<Object> sampleTypedValues(int requested) {
+        int count = Math.min(requested, ValueAdapters.maxDistinctSamples(runtimeValueType));
+        List<Object> result = new ArrayList<>(count);
+        for (int index = 0; index < count; index++) {
+            result.add(ValueAdapters.distinctValue(runtimeValueType, index));
         }
-        return random.nextInt(100) + 1;
+        return List.copyOf(result);
     }
 
     private void activateVariant(TreeVariant variant) {
