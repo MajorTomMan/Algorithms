@@ -216,3 +216,9 @@
 .root-pane .memory-analysis-value {
     -fx-font-size: 0.64em;
 }
+
+.root-pane .observation-callout-eyebrow { -fx-font-size: 0.62em; -fx-font-weight: 800; }
+.root-pane .observation-callout-sequence { -fx-font-size: 0.58em; }
+.root-pane .observation-callout-title { -fx-font-size: 0.94em; -fx-font-weight: bold; }
+.root-pane .observation-callout-subject { -fx-font-size: 0.74em; }
+.root-pane .observation-callout-detail { -fx-font-size: 0.64em; }

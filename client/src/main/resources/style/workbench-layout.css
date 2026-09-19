@@ -815,3 +815,9 @@
 .memory-analysis-name {
     -fx-max-width: 16em;
 }
+
+/* Geometry of the observation cue lives in the shell; never affects the visualizer's fit. */
+.root-pane .observation-callout {
+    -fx-padding: 0.74em 0.86em 0.74em 1.00em;
+    -fx-spacing: 0.24em;
+}

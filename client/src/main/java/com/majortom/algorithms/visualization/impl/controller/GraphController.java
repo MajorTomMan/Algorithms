@@ -114,6 +114,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     @FXML
     public void handleAlgorithmStart() {
+        if (!ensureReplayableValue(runtimeValueType)) return;
         if (isRunning()) {
             return;
         }
@@ -770,6 +771,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     @Override
+    protected boolean canGenerateRandomData() {
+        return ValueAdapters.canGenerate(runtimeValueType)
+                && ValueAdapters.canGenerateDistinct(runtimeValueType, 1);
+    }
+
+    @Override
     protected void randomizeData() {
         int vertices = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
         int edges = Math.min(16, vertices * (vertices - 1)
@@ -921,13 +928,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
         WeightedGraph<Object> graph = currentWeightedGraph();
-        clearVisualSelection();
         if (!executeStructureOperation(operationId, () -> {
             graph.initializeWeighted(weightedAdjacency(batch, graph.isDirected()));
             return null;
         })) {
             return;
         }
+        clearVisualSelection();
         renderGraph();
         refreshStatsDisplay();
         if (!batch.nodes().isEmpty()) {
@@ -1338,8 +1345,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (runtimeValueType.equals(valueType)) {
             return;
         }
+        ValueAdapter<Object> nextAdapter = ValueAdapters.requireObjectAdapter(valueType);
         runtimeValueType = valueType;
-        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        valueAdapter = nextAdapter;
+        refreshRandomDataButton();
         algorithmInputSnapshot = null;
         clearVisualSelection();
         undirectedGraph = new WeightedGraph<>(false);

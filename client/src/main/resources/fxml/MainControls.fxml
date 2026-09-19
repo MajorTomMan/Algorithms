@@ -402,6 +402,11 @@
                             <Label fx:id="viewportHintLabel" managed="false" visible="false" />
                         </VBox>
                         <OverlayPane mouseTransparent="true">
+                            <VBox fx:id="algorithmObservationCallout" mouseTransparent="true"
+                                managed="false" visible="false" prefWidth="270" maxWidth="290"
+                                StackPane.alignment="TOP_RIGHT" styleClass="observation-callout" />
+                        </OverlayPane>
+                        <OverlayPane mouseTransparent="true">
                         <VBox fx:id="algorithmSelectionOverlay" mouseTransparent="true"
                             managed="false" visible="false"
                             StackPane.alignment="TOP_RIGHT" styleClass="selection-overlay">

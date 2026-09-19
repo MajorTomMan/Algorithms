@@ -26,7 +26,6 @@ public final class ComponentRegistry {
     Objects.requireNonNull(algorithms, "algorithms");
     RegistrationValidator.validateUniqueStructureIds(structures);
     RegistrationValidator.validateUniqueAlgorithmKeys(algorithms);
-    validateValueTypeNamesByModule(algorithms);
     this.structuresById = indexStructures(structures);
     this.algorithmsByKey = indexAlgorithms(algorithms);
   }
@@ -69,31 +68,32 @@ public final class ComponentRegistry {
         .toList();
   }
 
+  /** Use fully qualified names only when the same module contains colliding simple names. */
   public List<String> algorithmValueTypes(StructureModule module) {
     Objects.requireNonNull(module, "module");
-    return algorithmsByKey.values()
-        .stream()
+    List<Class<?>> types = algorithmsByKey.values().stream()
         .filter(descriptor -> descriptor.module() == module)
-        .map(descriptor -> descriptor.valueType().getSimpleName())
-        .distinct()
-        .sorted()
-        .toList();
+        .map(AlgorithmDescriptor::valueType).distinct().toList();
+    return types.stream().map(type -> types.stream()
+        .filter(other -> other.getSimpleName().equals(type.getSimpleName())).count() > 1
+            ? type.getName() : type.getSimpleName()).sorted().toList();
   }
 
+  /** Deprecated name-based access remains for old UI callers but never mixes colliding classes. */
   public List<String> algorithmIds(StructureModule module, String valueTypeName) {
     Objects.requireNonNull(module, "module");
     Objects.requireNonNull(valueTypeName, "valueTypeName");
-    if (valueTypeName.isBlank()) {
-      throw new IllegalArgumentException("valueTypeName must not be blank");
-    }
-    return algorithmsByKey.values()
-        .stream()
+    if (valueTypeName.isBlank()) throw new IllegalArgumentException("valueTypeName must not be blank");
+    List<Class<?>> matches = algorithmsByKey.values().stream()
         .filter(descriptor -> descriptor.module() == module)
-        .filter(descriptor -> descriptor.valueType().getSimpleName().equals(valueTypeName))
-        .map(AlgorithmDescriptor::id)
-        .distinct()
-        .sorted()
-        .toList();
+        .map(AlgorithmDescriptor::valueType).distinct()
+        .filter(type -> type.getName().equals(valueTypeName)
+            || type.getSimpleName().equals(valueTypeName)).toList();
+    if (matches.size() > 1) throw new IllegalArgumentException(
+        "Ambiguous algorithm value type: " + valueTypeName);
+    if (matches.isEmpty()) return List.of();
+    return algorithms(module, matches.getFirst()).stream().map(AlgorithmDescriptor::id)
+        .distinct().sorted().toList();
   }
 
   public boolean hasStructure(String id) {
@@ -193,20 +193,6 @@ public final class ComponentRegistry {
         .sorted(ALGORITHM_ORDER)
         .forEach(descriptor -> indexed.put(descriptor.key(), descriptor));
     return Collections.unmodifiableMap(indexed);
-  }
-
-  private static void validateValueTypeNamesByModule(List<AlgorithmDescriptor> descriptors) {
-    Map<String, Class<?>> names = new LinkedHashMap<>();
-    for (AlgorithmDescriptor descriptor : descriptors) {
-      String simpleName = descriptor.valueType().getSimpleName();
-      String lookupKey = descriptor.module().id() + "\0" + simpleName;
-      Class<?> previous = names.putIfAbsent(lookupKey, descriptor.valueType());
-      if (previous != null && !previous.equals(descriptor.valueType())) {
-        throw new RegistrationException("Ambiguous algorithm value type name '" + simpleName
-            + "' in module " + descriptor.module().id() + ": " + previous.getName() + " vs "
-            + descriptor.valueType().getName());
-      }
-    }
   }
 
   private static String describe(AlgorithmKey key) {

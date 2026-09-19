@@ -15,25 +15,31 @@ public class InorderTraversalAvlTree {
   public void execute(AvlTreeStructure<Integer> tree) {
     Log.d("tree root:" + tree.root());
     AVLTreeNode<Integer> root = tree.root();
-    dfs(root);
+    dfs(root, null);
   }
 
-  private void dfs(BinaryTreeNode<Integer> root) {
+  private void dfs(BinaryTreeNode<Integer> root, String parentCallId) {
     if (root == null) {
       return;
     }
 
-    if (root.getLeft() != null) {
-      Observations.examined(TreeObservationDomains.NODE, root.getId(), root.getLeft().getId());
-      dfs(root.getLeft());
-    }
+    String callId = "tree-node-" + root.getId();
+    Observations.callEntered(callId, parentCallId, "inorder(" + root.getValue() + ")");
+    try {
+      if (root.getLeft() != null) {
+        Observations.examined(TreeObservationDomains.NODE, root.getId(), root.getLeft().getId());
+        dfs(root.getLeft(), callId);
+      }
 
-    Observations.visited(TreeObservationDomains.NODE, root.getId());
-    Log.d("root value:" + root.getValue());
+      Observations.visited(TreeObservationDomains.NODE, root.getId());
+      Log.d("root value:" + root.getValue());
 
-    if (root.getRight() != null) {
-      Observations.examined(TreeObservationDomains.NODE, root.getId(), root.getRight().getId());
-      dfs(root.getRight());
+      if (root.getRight() != null) {
+        Observations.examined(TreeObservationDomains.NODE, root.getId(), root.getRight().getId());
+        dfs(root.getRight(), callId);
+      }
+    } finally {
+      Observations.callReturned(callId, "visited");
     }
   }
 }

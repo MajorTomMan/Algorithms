@@ -137,6 +137,29 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     protected void randomizeData() {
     }
 
+    private Button randomDataButton;
+
+    /** Input parsing and random generation are distinct capabilities. */
+    protected boolean canGenerateRandomData() {
+        return !(this instanceof com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport typed)
+                || com.majortom.algorithms.visualization.runtime.value.ValueAdapters.canGenerate(typed.runtimeValueType());
+    }
+
+    /** No mutable values may enter a history-backed algorithm without a freezing contract. */
+    protected final boolean ensureReplayableValue(Class<?> type) {
+        if (com.majortom.algorithms.visualization.runtime.value.ValueAdapters.canReplay(type)) return true;
+        algorithmLogI18n("message.value_type.replay_unsupported", type.getName());
+        return false;
+    }
+
+    protected final void refreshRandomDataButton() {
+        if (randomDataButton != null) {
+            boolean available = canGenerateRandomData();
+            randomDataButton.setDisable(!available);
+            randomDataButton.setTooltip(available ? null : new javafx.scene.control.Tooltip("该元素类型未注册随机生成能力"));
+        }
+    }
+
     protected final java.util.List<Integer> parseIntegerBatchInput(String input) {
         return parseBatchInput(input, new ValueAdapter<>() {
             @Override
@@ -157,28 +180,13 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
     }
 
     protected final <T> java.util.List<T> parseBatchInput(String input, ValueAdapter<T> adapter) {
-        if (input == null || input.isBlank()) {
-            logI18n("message.error.bulk_input_empty");
-            return null;
-        }
-        java.util.Objects.requireNonNull(adapter, "adapter");
-        String[] tokens = input.trim().split("[,;\\s]+");
-        java.util.List<T> values = new java.util.ArrayList<>(tokens.length);
         try {
-            for (String token : tokens) {
-                if (!token.isBlank()) {
-                    values.add(adapter.parse(token));
-                }
-            }
+            return com.majortom.algorithms.visualization.runtime.value.BatchInputParser.parse(input, adapter);
         } catch (RuntimeException exception) {
-            logI18n("message.error.bulk_input_invalid");
+            logI18n(input == null || input.isBlank()
+                    ? "message.error.bulk_input_empty" : "message.error.bulk_input_invalid");
             return null;
         }
-        if (values.isEmpty()) {
-            logI18n("message.error.bulk_input_empty");
-            return null;
-        }
-        return java.util.List.copyOf(values);
     }
 
     private void installDataTools() {
@@ -223,10 +231,12 @@ public abstract class BaseModuleController<S> extends BaseController<S> {
         actions.getChildren().add(applyButton);
         if (showRandomDataTool()) {
             Button randomButton = new Button();
+            randomDataButton = randomButton;
+            refreshRandomDataButton();
             randomButton.setMaxWidth(Double.MAX_VALUE);
             randomButton.textProperty().bind(I18N.createStringBinding("action.data.random"));
             randomButton.getStyleClass().addAll("btn-ran-gold", "operation-button");
-            randomButton.setOnAction(event -> randomizeData());
+            randomButton.setOnAction(event -> { if (canGenerateRandomData()) randomizeData(); });
             HBox.setHgrow(randomButton, javafx.scene.layout.Priority.ALWAYS);
             actions.getChildren().add(randomButton);
         }

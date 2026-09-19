@@ -267,6 +267,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
         if (runtimeValueType == String.class) return List.of("gamma", "beta", "alpha");
         if (runtimeValueType == Boolean.class) return List.of(true, false, true);
+        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 3)) return List.of();
         return List.of(ValueAdapters.distinctValue(runtimeValueType, 2),
                 ValueAdapters.distinctValue(runtimeValueType, 1), ValueAdapters.distinctValue(runtimeValueType, 0));
     }
@@ -296,13 +297,13 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void replaceValues(List<Object> values, String operationId, String messageKey) {
-        clearVisualSelection();
         if (!executeStructureOperation(operationId, () -> {
             linkedList.initialize(values);
             return null;
         })) {
             return;
         }
+        clearVisualSelection();
         renderStructureState(currentState());
         if (values.isEmpty()) {
             valueField.clear();
@@ -361,6 +362,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public void handleAlgorithmStart() {
+        if (!ensureReplayableValue(runtimeValueType)) return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             algorithmLogI18n("message.linear.no_algorithm");
@@ -568,8 +570,10 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (runtimeValueType.equals(valueType)) {
             return;
         }
+        ValueAdapter<Object> nextAdapter = ValueAdapters.requireObjectAdapter(valueType);
         runtimeValueType = valueType;
-        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        valueAdapter = nextAdapter;
+        refreshRandomDataButton();
         clearVisualSelection();
         clearWithoutRuntime();
         invalidateExecutionForStructureChange();

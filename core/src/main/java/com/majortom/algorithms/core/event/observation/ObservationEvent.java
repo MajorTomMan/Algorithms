@@ -15,7 +15,7 @@ public sealed interface ObservationEvent
     extends ExecutionEvent, StatisticsContribution permits ObservationEvent.Compared,
             ObservationEvent.Visited, ObservationEvent.Examined, ObservationEvent.Matched,
             ObservationEvent.Fallback, ObservationEvent.Backtracked, ObservationEvent.PathTraced,
-            ObservationEvent.PathFound {
+            ObservationEvent.PathFound, AlgorithmObservationEvent {
   /** Marker for stable references carried by observation facts. */
   sealed interface Reference permits EntityRef, IndexRef, CoordinateRef, ValueRef {}
 

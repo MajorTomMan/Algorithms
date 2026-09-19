@@ -1975,3 +1975,23 @@
     -fx-border-color: #f51b23;
     -fx-text-fill: #d61b22;
 }
+
+/* Algorithm observations: a presentation-only overlay, not part of the graph canvas. */
+.observation-callout {
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-border-color: #d2d2d2 #d2d2d2 #d2d2d2 #286dd0;
+    -fx-border-width: 1px 1px 1px 4px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 12, 0.12, 0, 2);
+}
+.observation-callout-pruned { -fx-border-color: #d2d2d2 #d2d2d2 #d2d2d2 #df8c12; }
+.observation-callout-cache { -fx-border-color: #d2d2d2 #d2d2d2 #d2d2d2 #249065; }
+.observation-callout-call { -fx-border-color: #d2d2d2 #d2d2d2 #d2d2d2 #8757bd; }
+.observation-callout-eyebrow { -fx-text-fill: #286dd0; }
+.observation-callout-pruned .observation-callout-eyebrow { -fx-text-fill: #ab6000; }
+.observation-callout-cache .observation-callout-eyebrow { -fx-text-fill: #16704b; }
+.observation-callout-call .observation-callout-eyebrow { -fx-text-fill: #7643a9; }
+.observation-callout-title { -fx-text-fill: #202020; }
+.observation-callout-subject { -fx-text-fill: #393939; }
+.observation-callout-detail, .observation-callout-sequence { -fx-text-fill: #606060; }

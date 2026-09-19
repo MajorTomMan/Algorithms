@@ -9,7 +9,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CLIENT_POM = ROOT / "client" / "pom.xml"
-SERVER_POM = ROOT / "server" / "pom.xml"
 
 
 def find_maven() -> str:
@@ -74,34 +73,11 @@ def run_client(mvn: str) -> None:
     )
 
 
-def run_server(mvn: str, mode: str) -> None:
-    env = os.environ.copy()
-    env["APP_MODE"] = mode
-
-    run(
-        [
-            mvn,
-            "-f",
-            str(SERVER_POM),
-            "spring-boot:run",
-        ],
-        env=env,
-    )
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Algorithms development launcher")
 
     target = parser.add_mutually_exclusive_group()
-    target.add_argument("--server", action="store_true", help="启动 Server")
     target.add_argument("--build", action="store_true", help="执行完整 clean test")
-
-    parser.add_argument(
-        "--mode",
-        choices=("mock", "live"),
-        default="mock",
-        help="Server APP_MODE，默认 mock",
-    )
 
     return parser.parse_args()
 
@@ -112,10 +88,6 @@ def main() -> None:
 
     if args.build:
         build(mvn)
-        return
-
-    if args.server:
-        run_server(mvn, args.mode)
         return
 
     run_client(mvn)

@@ -98,18 +98,20 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         sizeValueLabel.setText(String.valueOf(currentSize));
         EffectUtils.applyDynamicEffect(
                 generateBtn, sortBtn, addElementBtn, deleteElementBtn, updateElementBtn);
+        generateBtn.setDisable(!ValueAdapters.canGenerate(runtimeValueType));
         arrayVisualizer().setOnIndexSelected(this::handleArraySelection);
         renderSource();
     }
 
     @FXML
     private void handleGenerate() {
-        clearArraySelection();
+        if (!ValueAdapters.canGenerate(runtimeValueType)) return;
         List<Object> values = randomValues();
         if (executeStructureOperation("generate", () -> {
             replaceArrayContents(values);
             return null;
         })) {
+            clearArraySelection();
             renderSource();
             refreshStatsDisplay();
             logI18n("message.sort.generated", currentSize);
@@ -117,6 +119,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private List<Object> randomValues() {
+        if (!ValueAdapters.canGenerate(runtimeValueType)) return List.of();
         List<Object> values = new ArrayList<>(currentSize);
         for (int index = 0; index < currentSize; index++) {
             values.add(ValueAdapters.randomValue(runtimeValueType, random));
@@ -140,13 +143,13 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (values == null) {
             return;
         }
-        clearArraySelection();
         if (!executeStructureOperation("bulk-replace", () -> {
             replaceArrayContents(values);
             return null;
         })) {
             return;
         }
+        clearArraySelection();
         renderSource();
         refreshStatsDisplay();
         if (!values.isEmpty()) {
@@ -488,6 +491,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public void handleAlgorithmStart() {
+        if (!ensureReplayableValue(runtimeValueType)) return;
         if (isRunning()) return;
         StructureSnapshot<SequenceSnapshot<Object>> inputSnapshot;
         if (algorithmInputSnapshot == null) {
@@ -684,8 +688,11 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (runtimeValueType.equals(valueType)) {
             return;
         }
+        ValueAdapter<Object> nextAdapter = ValueAdapters.requireObjectAdapter(valueType);
         runtimeValueType = valueType;
-        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        valueAdapter = nextAdapter;
+        refreshRandomDataButton();
+        if (generateBtn != null) generateBtn.setDisable(!ValueAdapters.canGenerate(valueType));
         valueTypeRevision.set(valueTypeRevision.get() + 1L);
         algorithmInputSnapshot = null;
         clearArraySelection();

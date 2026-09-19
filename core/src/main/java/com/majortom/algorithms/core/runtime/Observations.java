@@ -1,5 +1,6 @@
 package com.majortom.algorithms.core.runtime;
 
+import com.majortom.algorithms.core.event.observation.AlgorithmObservationEvent;
 import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import java.util.List;
 import java.util.function.ToIntFunction;
@@ -7,6 +8,67 @@ import java.util.function.ToIntFunction;
 /** Thin construction/publishing helpers for explicit factual algorithm observations. */
 public final class Observations {
   private Observations() {}
+
+  /** Publish a custom read-only algorithm event through the existing ordered observation path. */
+  public static void algorithm(AlgorithmObservationEvent event) {
+    ExecutionEvents.observe(event);
+  }
+
+  public static void searchStarted(String searchId, ObservationEvent.Reference target) {
+    algorithm(new AlgorithmObservationEvent.SearchStarted(searchId, target));
+  }
+
+  public static void searchProbed(String searchId, ObservationEvent.Reference candidate) {
+    algorithm(new AlgorithmObservationEvent.SearchProbed(searchId, candidate));
+  }
+
+  public static void searchFound(String searchId, ObservationEvent.Reference result) {
+    algorithm(new AlgorithmObservationEvent.SearchFound(searchId, result));
+  }
+
+  public static void searchCompleted(String searchId, long resultCount) {
+    algorithm(new AlgorithmObservationEvent.SearchCompleted(searchId, resultCount));
+  }
+
+  public static void cacheHit(String cacheId, String key) {
+    algorithm(new AlgorithmObservationEvent.CacheHit(cacheId, key));
+  }
+
+  public static void cacheMiss(String cacheId, String key) {
+    algorithm(new AlgorithmObservationEvent.CacheMiss(cacheId, key));
+  }
+
+  public static void cacheStored(String cacheId, String key) {
+    algorithm(new AlgorithmObservationEvent.CacheStored(cacheId, key));
+  }
+
+  public static void cacheEvicted(String cacheId, String key) {
+    algorithm(new AlgorithmObservationEvent.CacheEvicted(cacheId, key));
+  }
+
+  public static void candidateAdded(String frontierId, String candidateId, ObservationEvent.Reference ref) {
+    algorithm(new AlgorithmObservationEvent.CandidateAdded(frontierId, candidateId, ref));
+  }
+
+  public static void candidateSelected(String frontierId, String candidateId) {
+    algorithm(new AlgorithmObservationEvent.CandidateSelected(frontierId, candidateId));
+  }
+
+  public static void candidateRejected(String frontierId, String candidateId) {
+    algorithm(new AlgorithmObservationEvent.CandidateRejected(frontierId, candidateId));
+  }
+
+  public static void candidatePruned(String frontierId, String candidateId) {
+    algorithm(new AlgorithmObservationEvent.CandidatePruned(frontierId, candidateId));
+  }
+
+  public static void callEntered(String callId, String parentCallId, String label) {
+    algorithm(new AlgorithmObservationEvent.CallEntered(callId, parentCallId, label));
+  }
+
+  public static void callReturned(String callId, String resultSummary) {
+    algorithm(new AlgorithmObservationEvent.CallReturned(callId, resultSummary));
+  }
 
   public static void compared(
       String leftSource, int leftIndex, String rightSource, int rightIndex) {

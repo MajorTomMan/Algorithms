@@ -277,6 +277,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (runtimeValueType == String.class) {
             return List.of("alpha", "beta", "gamma");
         }
+        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 2)) return List.of();
         return List.of(ValueAdapters.distinctValue(runtimeValueType, 0),
                 ValueAdapters.distinctValue(runtimeValueType, 1));
     }
@@ -306,13 +307,13 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void replaceValues(List<Object> values, String operationId, String messageKey) {
-        clearVisualSelection();
         if (!executeStructureOperation(operationId, () -> {
             linkedList.initialize(values);
             return null;
         })) {
             return;
         }
+        clearVisualSelection();
         renderStructureState(currentState());
         if (values.isEmpty()) {
             valueField.clear();
@@ -363,6 +364,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public void handleAlgorithmStart() {
+        if (!ensureReplayableValue(runtimeValueType)) return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             algorithmLogI18n("message.linear.no_algorithm");
@@ -576,8 +578,10 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (runtimeValueType.equals(valueType)) {
             return;
         }
+        ValueAdapter<Object> nextAdapter = ValueAdapters.requireObjectAdapter(valueType);
         runtimeValueType = valueType;
-        valueAdapter = ValueAdapters.requireObjectAdapter(valueType);
+        valueAdapter = nextAdapter;
+        refreshRandomDataButton();
         clearVisualSelection();
         clearWithoutRuntime();
         invalidateExecutionForStructureChange();

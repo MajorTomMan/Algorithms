@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.Observations;
+import com.majortom.algorithms.core.event.observation.ObservationEvent;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.GraphStructure;
@@ -32,14 +33,21 @@ public final class GraphBfs {
     List<Integer> order = new ArrayList<>();
     queue.add(startVertex);
     discovered.add(startVertex);
+    Observations.candidateAdded("graph-bfs", "vertex-" + startVertex.id(),
+        new ObservationEvent.EntityRef(
+            GraphObservationDomains.VERTEX, startVertex.id()));
     while (!queue.isEmpty()) {
       Vertex<Integer> node = queue.removeFirst();
+      Observations.candidateSelected("graph-bfs", "vertex-" + node.id());
       Observations.visited(GraphObservationDomains.VERTEX, node.id());
       order.add(node.value());
       for (Vertex<Integer> neighbor : graph.neighbors(node)) {
         Observations.examined(GraphObservationDomains.VERTEX, node.id(), neighbor.id());
         if (discovered.add(neighbor)) {
           queue.addLast(neighbor);
+          Observations.candidateAdded("graph-bfs", "vertex-" + neighbor.id(),
+              new ObservationEvent.EntityRef(
+                  GraphObservationDomains.VERTEX, neighbor.id()));
         }
       }
     }

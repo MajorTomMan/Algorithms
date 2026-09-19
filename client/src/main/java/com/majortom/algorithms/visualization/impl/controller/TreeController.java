@@ -97,6 +97,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         bindSelectors();
         EffectUtils.applyDynamicEffect(addRootBtn, addChildBtn, addParentBtn, deleteBtn, updateBtn, randomBtn);
         refreshVariantControls();
+        if (randomBtn != null) randomBtn.setDisable(!ValueAdapters.canGenerate(runtimeValueType));
     }
 
     public record NodeSelection(long id, VisualValue value, Long parentId, int childCount, int depth) {
@@ -414,6 +415,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @FXML
     private void handleRandom() {
+        if (!ValueAdapters.canGenerate(runtimeValueType)) return;
         valueField.setText(valueAdapter.format(ValueAdapters.randomValue(runtimeValueType, new Random())));
     }
 
@@ -442,6 +444,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @Override
+    protected boolean canGenerateRandomData() {
+        return ValueAdapters.canGenerate(runtimeValueType)
+                && ValueAdapters.canGenerateDistinct(runtimeValueType, 1);
+    }
+
+    @Override
     protected void randomizeData() {
         Random random = new Random();
         java.util.LinkedHashSet<Object> unique = new java.util.LinkedHashSet<>();
@@ -457,7 +465,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void replaceTreeValues(List<Object> values, String operationId, String messageKey) {
-        clearNodeSelection();
         if (!executeStructureOperation(operationId, () -> {
             if (activeVariant == TreeVariant.GENERAL) {
                 replaceGeneralTreeValues(values);
@@ -468,6 +475,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         })) {
             return;
         }
+        clearNodeSelection();
         refreshStructureView();
         int count;
         if (activeVariant == TreeVariant.GENERAL) {
@@ -525,6 +533,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public void handleAlgorithmStart() {
+        if (!ensureReplayableValue(runtimeValueType)) return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             algorithmLogI18n("message.tree.no_algorithm");
@@ -1303,7 +1312,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
+        return ValueAdapters.supportedTypes().stream()
+                .filter(type -> Comparable.class.isAssignableFrom(type)).toList();
     }
 
     @Override
@@ -1318,8 +1328,10 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (!Comparable.class.isAssignableFrom(resolved)) {
             throw new IllegalArgumentException("tree runtime value type must implement Comparable: " + resolved.getName());
         }
+        ValueAdapter<Object> nextAdapter = ValueAdapters.requireObjectAdapter(resolved);
         runtimeValueType = resolved;
-        valueAdapter = ValueAdapters.requireObjectAdapter(resolved);
+        valueAdapter = nextAdapter;
+        if (randomBtn != null) randomBtn.setDisable(!ValueAdapters.canGenerate(resolved));
         algorithmInputSnapshot = null;
         clearNodeSelection();
         generalTree = new Tree<>();
