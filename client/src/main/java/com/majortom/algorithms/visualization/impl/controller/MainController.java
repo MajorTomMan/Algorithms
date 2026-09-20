@@ -2267,16 +2267,15 @@ public class MainController implements Initializable {
             return;
         }
         BaseVisualizer<?> visualizer = currentSubController.getVisualizer();
-        visualizer.prefWidthProperty().unbind();
-        visualizer.prefHeightProperty().unbind();
-        visualizationContainer.getChildren().remove(visualizer);
-        structurePreviewViewport.getChildren().remove(visualizer);
-
-        StackPane target = visualizationContainer;
-        if (structurePage) {
-            target = structurePreviewViewport;
-        }
-        if (!target.getChildren().contains(visualizer)) {
+        StackPane target = structurePage ? structurePreviewViewport : visualizationContainer;
+        boolean changedHost = visualizer.getParent() != target;
+        if (changedHost) {
+            // Reparent only when the active workspace actually changes. Re-inserting
+            // into the same host detaches Scene and invalidates CSS for no reason.
+            visualizer.prefWidthProperty().unbind();
+            visualizer.prefHeightProperty().unbind();
+            visualizationContainer.getChildren().remove(visualizer);
+            structurePreviewViewport.getChildren().remove(visualizer);
             target.getChildren().add(0, visualizer);
         }
         // Parent allocates the viewport; content must not feed its previous size back into HBox.
@@ -2287,8 +2286,8 @@ public class MainController implements Initializable {
             structurePreviewEmpty.setVisible(!structurePage);
             structurePreviewEmpty.setManaged(!structurePage);
         }
-        // Reparenting is a UI request, not permission to run an out-of-band CSS pass.
-        if (uiRenderCoordinator != null) {
+        // A stable host does not need another CSS/mount transaction.
+        if (changedHost && uiRenderCoordinator != null) {
             visualizerPreparation = uiRenderCoordinator.requestMountedContent();
         }
     }
