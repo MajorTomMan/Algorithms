@@ -27,6 +27,7 @@ import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
 import com.majortom.algorithms.visualization.memory.MemoryProfileView;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchHeader;
+import com.majortom.algorithms.visualization.layout.WorkbenchFormLayout;
 import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
 import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
@@ -54,13 +55,16 @@ import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPr
 import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationSource;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
+import com.majortom.algorithms.visualization.render.runtime.UiRenderCoordinator;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import javafx.css.PseudoClass;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -101,6 +105,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 单 Workbench JavaFX 外壳。
@@ -536,6 +542,9 @@ public class MainController implements Initializable {
     private WorkspaceMode workspaceMode = WorkspaceMode.STRUCTURE;
     private boolean moduleTransitionInProgress;
     private WorkbenchUiFramework uiFramework;
+    private UiRenderCoordinator uiRenderCoordinator;
+    private CompletionStage<Void> visualizerPreparation = CompletableFuture.completedFuture(null);
+    private long workspaceRenderRevision;
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
@@ -820,11 +829,11 @@ public class MainController implements Initializable {
         publishContentStyle(appliedFontSettings);
     }
 
-    private void publishContentStyle(FontSettings settings) {
+    private CompletionStage<Void> publishContentStyle(FontSettings settings) {
         if (settings == null) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
-        RenderRuntime.shared().updateContentStyle(new ContentStyleSnapshot(
+        return RenderRuntime.shared().updateContentStyle(new ContentStyleSnapshot(
                 settings.size(), settings.chineseFamily(), settings.englishFamily()));
     }
 
@@ -1056,29 +1065,21 @@ public class MainController implements Initializable {
             Locale selectedLocale = draftLocale[0];
             boolean languageChanged = selectedLocale != null
                     && !I18N.getLocale().getLanguage().equals(selectedLocale.getLanguage());
-            FONT_SETTINGS_SERVICE.apply(rootPane, normalized);
             FONT_SETTINGS_SERVICE.save(normalized);
             appliedFontSettings = normalized;
-            publishContentStyle(normalized);
             if (languageChanged) {
                 I18N.setLocale(selectedLocale);
                 appendSystemLog(I18N.text(
                         "message.system.language_switched",
                         selectedLocale.getDisplayLanguage(selectedLocale)));
             }
-            rootPane.applyCss();
-            rootPane.layout();
-            refreshUiFramework();
             boolean timelineExpanded = timelineDetailPanel != null && timelineDetailPanel.isVisible();
             setTimelineExpanded(timelineExpanded);
-            rootPane.requestLayout();
-            FxDispatch.defer(() -> {
-                if (rootPane == null) {
-                    return;
+            // One request owns CSS preparation, Workbench layout and structure invalidation.
+            uiRenderCoordinator.requestFont(normalized).whenComplete((ignored, failure) -> {
+                if (failure != null) {
+                    FxDispatch.execute(() -> appendSystemLog("Font update failed: " + failure));
                 }
-                rootPane.applyCss();
-                rootPane.layout();
-                refreshUiFramework();
             });
             popup.hide();
         });
@@ -1598,6 +1599,7 @@ public class MainController implements Initializable {
 
     private void setWorkspaceMode(WorkspaceMode mode) {
         workspaceMode = mode;
+        ++workspaceRenderRevision;
         boolean structure = mode == WorkspaceMode.STRUCTURE;
         boolean algorithm = mode == WorkspaceMode.ALGORITHM;
         boolean practice = mode == WorkspaceMode.PRACTICE;
@@ -1646,11 +1648,11 @@ public class MainController implements Initializable {
                 selectedSnapshotIds.remove(activeDefinition.id());
             }
             clearStructureSelection();
-            currentSubController.showStructureState();
+            showWorkspaceStateWhenReady(WorkspaceMode.STRUCTURE);
         }
         if (algorithm && currentSubController != null) {
             syncSnapshotSelectionFromAlgorithmInput();
-            currentSubController.showAlgorithmState();
+            showWorkspaceStateWhenReady(WorkspaceMode.ALGORITHM);
         }
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
@@ -1865,18 +1867,39 @@ public class MainController implements Initializable {
                 playbackToolbar,
                 structureHistoryDock,
                 structureHistoryDetails);
+        uiRenderCoordinator = new UiRenderCoordinator(
+                FxDispatch.executor(), new UiRenderCoordinator.Participant() {
+                    @Override public void applyFont(FontSettings settings) {
+                        FONT_SETTINGS_SERVICE.apply(rootPane, settings);
+                    }
+
+                    @Override public void prepareStyles(boolean newlyMounted) {
+                        if (newlyMounted && appliedFontSettings != null) {
+                            FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
+                        }
+                        if (rootPane.getScene() != null) rootPane.applyCss();
+                    }
+
+                    @Override public void refreshWorkbench() {
+                        applyWorkbenchLayout();
+                    }
+
+                    @Override public CompletionStage<Void> refreshContentGeometry(FontSettings settings) {
+                        return publishContentStyle(settings);
+                    }
+                });
+        uiFramework.setRefreshRequester(this::refreshUiFramework);
         uiFramework.setStructureHistoryExpanded(structureHistoryExpanded);
         uiFramework.install();
         refreshUiFramework();
     }
 
     private void refreshUiFramework() {
-        if (rootPane != null && appliedFontSettings != null) {
-            FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
-        }
-        if (uiFramework == null) {
-            return;
-        }
+        if (uiRenderCoordinator != null) uiRenderCoordinator.requestWorkbench();
+    }
+
+    private void applyWorkbenchLayout() {
+        if (uiFramework == null) return;
         WorkbenchUiFramework.LayoutState state = uiFramework.refresh();
         compactLayout = state.compact();
         narrowLayout = state.narrow();
@@ -1967,7 +1990,19 @@ public class MainController implements Initializable {
             updateAlgorithmWorkspaceAvailability(definition.id());
             refreshWorkspaceContext();
             setWorkspaceMode(finalMode);
-            currentSubController.dispatchVisualizerAttached();
+            BaseController<?> mountedController = currentSubController;
+            awaitVisualizerReady().thenCompose(ignored -> {
+                // An earlier module may have been detached while its Scene/barrier was pending.
+                if (currentSubController != mountedController) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                return mountedController.dispatchVisualizerAttached();
+            }).whenComplete((ignored, failure) -> {
+                if (failure != null) {
+                    FxDispatch.execute(() -> appendSystemLog(
+                            "Visualizer attachment failed: " + failure));
+                }
+            });
             refreshPauseText();
             refreshTopContext();
             refreshExecutionPresentation();
@@ -2177,6 +2212,7 @@ public class MainController implements Initializable {
         preparedControls.getChildren().clear();
         customControlBox.getChildren().setAll(preparedNodes);
         distributeModuleControls();
+        WorkbenchFormLayout.bindRefreshRequester(rootPane, this::refreshUiFramework);
         wireAlgorithmSelection();
         wireStructureSelection();
         structureRevisionListener = (observable, oldValue, newValue) -> {
@@ -2235,16 +2271,15 @@ public class MainController implements Initializable {
             return;
         }
         BaseVisualizer<?> visualizer = currentSubController.getVisualizer();
-        visualizer.prefWidthProperty().unbind();
-        visualizer.prefHeightProperty().unbind();
-        visualizationContainer.getChildren().remove(visualizer);
-        structurePreviewViewport.getChildren().remove(visualizer);
-
-        StackPane target = visualizationContainer;
-        if (structurePage) {
-            target = structurePreviewViewport;
-        }
-        if (!target.getChildren().contains(visualizer)) {
+        StackPane target = structurePage ? structurePreviewViewport : visualizationContainer;
+        boolean changedHost = visualizer.getParent() != target;
+        if (changedHost) {
+            // Reparent only when the active workspace actually changes. Re-inserting
+            // into the same host detaches Scene and invalidates CSS for no reason.
+            visualizer.prefWidthProperty().unbind();
+            visualizer.prefHeightProperty().unbind();
+            visualizationContainer.getChildren().remove(visualizer);
+            structurePreviewViewport.getChildren().remove(visualizer);
             target.getChildren().add(0, visualizer);
         }
         // Parent allocates the viewport; content must not feed its previous size back into HBox.
@@ -2255,6 +2290,59 @@ public class MainController implements Initializable {
             structurePreviewEmpty.setVisible(!structurePage);
             structurePreviewEmpty.setManaged(!structurePage);
         }
+        // A stable host does not need another CSS/mount transaction.
+        if (changedHost && uiRenderCoordinator != null) {
+            visualizerPreparation = uiRenderCoordinator.requestMountedContent();
+        }
+    }
+
+    /**
+     * JavaFX may call initialize() before App installs the root into a Scene.
+     * No first structural render is released until a real Scene exists and the
+     * corresponding Workbench/style-preparation turn has completed.
+     */
+    private CompletionStage<Void> awaitVisualizerReady() {
+        if (rootPane.getScene() != null) {
+            return visualizerPreparation.thenCompose(ignored -> FxDispatch.executor().awaitPulse());
+        }
+        CompletableFuture<Void> sceneReady = new CompletableFuture<>();
+        ChangeListener<Scene> listener = new ChangeListener<>() {
+            @Override public void changed(
+                    javafx.beans.value.ObservableValue<? extends Scene> source,
+                    Scene previous, Scene next) {
+                if (next == null) return;
+                rootPane.sceneProperty().removeListener(this);
+                sceneReady.complete(null);
+            }
+        };
+        rootPane.sceneProperty().addListener(listener);
+        if (rootPane.getScene() != null) {
+            rootPane.sceneProperty().removeListener(listener);
+            sceneReady.complete(null);
+        }
+        return sceneReady.thenCompose(ignored ->
+                uiRenderCoordinator == null
+                    ? CompletableFuture.completedFuture(null)
+                    : uiRenderCoordinator.requestMountedContent())
+                .thenCompose(ignored -> FxDispatch.executor().awaitPulse());
+    }
+
+    /** Ignore stale page transitions; only the latest mounted workspace may publish a frame. */
+    private void showWorkspaceStateWhenReady(WorkspaceMode targetMode) {
+        BaseController<?> requestedController = currentSubController;
+        long requestedRevision = workspaceRenderRevision;
+        if (requestedController == null) return;
+        awaitVisualizerReady().whenComplete((ignored, failure) -> FxDispatch.execute(() -> {
+            if (failure != null) {
+                appendSystemLog("Workspace preparation failed: " + failure);
+                return;
+            }
+            if (workspaceRenderRevision != requestedRevision
+                    || currentSubController != requestedController
+                    || workspaceMode != targetMode) return;
+            if (targetMode == WorkspaceMode.STRUCTURE) requestedController.showStructureState();
+            else if (targetMode == WorkspaceMode.ALGORITHM) requestedController.showAlgorithmState();
+        }));
     }
 
     private boolean isStructurePageVisible() {
