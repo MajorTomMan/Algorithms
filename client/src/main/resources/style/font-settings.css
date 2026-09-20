@@ -52,6 +52,17 @@
     -fx-shape: "M 0 10 L 10 0 L 20 10 Z";
 }
 
+.font-settings-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+}
+
+.font-settings-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
 .font-settings-popover {
     -fx-min-width: 0;
     -fx-max-width: Infinity;
