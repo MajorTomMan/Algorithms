@@ -35,6 +35,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 
+import static com.majortom.algorithms.visualization.impl.controller.MazeSnapshotMapper.*;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -385,53 +386,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         return Long.toString(openCells);
     }
 
-    private MazeSnapshot snapshot(GridMaze maze) {
-        return new MazeSnapshot(
-                maze.rows(),
-                maze.columns(),
-                maze.openCells(),
-                cell(maze.entrance()),
-                cell(maze.exit()),
-                List.of(),
-                false);
-    }
-
-    private MazeSnapshot snapshot(int rows, int columns, GraphSnapshot<Integer> graph) {
-        java.util.Map<Long, Integer> valuesById = graph.vertices().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        com.majortom.algorithms.core.snapshot.GraphSnapshot.Vertex::id,
-                        com.majortom.algorithms.core.snapshot.GraphSnapshot.Vertex::value));
-        List<MazeSnapshot.Edge> edges = graph.edges().stream()
-                .map(edge -> new MazeSnapshot.Edge(valuesById.get(edge.fromId()), valuesById.get(edge.toId())))
-                .toList();
-        return new MazeSnapshot(
-                rows,
-                columns,
-                java.util.Collections.nCopies(rows * columns, true),
-                null,
-                null,
-                edges,
-                true);
-    }
-
-    private MazeViewState completedViewState(MazeSnapshot snapshot, java.util.Set<com.majortom.algorithms.structure.maze.GridPoint> path) {
-        MazeViewState state = MazeViewState.source(snapshot);
-        return new MazeViewState(
-                state.rows(),
-                state.columns(),
-                state.openCells(),
-                path,
-                state.visited(),
-                state.active(),
-                state.observed(),
-                state.backtracked(),
-                state.entrance(),
-                state.exit(),
-                state.graphEdges(),
-                state.graphBased(),
-                true);
-    }
-
     private MazeSnapshot mazeSnapshot() {
         if (generatedMaze != null) {
             return new MazeSnapshot(generatedMaze.rows(), generatedMaze.columns(), generatedMaze.openCells(),
@@ -444,12 +398,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
                 .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), latest.graphBased());
     }
 
-    private MazeSnapshot snapshotFromView(MazeViewState state) {
-        return new MazeSnapshot(state.rows(), state.columns(), state.openCells(),
-                cell(state.entrance()), cell(state.exit()), state.graphEdges().stream()
-                .map(edge -> new MazeSnapshot.Edge(edge.from(), edge.to())).toList(), state.graphBased());
-    }
-
     private MazeSnapshot selectedAlgorithmSnapshot() {
         if (algorithmResultSnapshot != null) {
             return algorithmResultSnapshot;
@@ -459,14 +407,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         } else {
             return algorithmInputSnapshot.state();
         }
-    }
-
-    private GridMaze gridMaze(MazeSnapshot state) {
-        if (state == null || state.graphBased() || state.entrance() == null || state.exit() == null) {
-            return null;
-        }
-        return new GridMaze(state.rows(), state.columns(), state.openCells(),
-                point(state.entrance()), point(state.exit()));
     }
 
     private void applyStructureState(MazeSnapshot state, boolean render) {
@@ -503,26 +443,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             storeStructureState(view);
         }
         updateControlState();
-    }
-
-    private MazeViewState viewState(MazeSnapshot state) {
-        return MazeViewState.source(state);
-    }
-
-    private MazeSnapshot.Cell cell(com.majortom.algorithms.structure.maze.GridPoint point) {
-        if (point == null) {
-            return null;
-        } else {
-            return new MazeSnapshot.Cell(point.row(), point.column());
-        }
-    }
-
-    private com.majortom.algorithms.structure.maze.GridPoint point(MazeSnapshot.Cell cell) {
-        if (cell == null) {
-            return null;
-        } else {
-            return new com.majortom.algorithms.structure.maze.GridPoint(cell.row(), cell.column());
-        }
     }
 
     public void setSelectionListener(Consumer<CellSelection> listener) {

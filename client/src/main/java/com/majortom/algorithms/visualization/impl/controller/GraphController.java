@@ -29,7 +29,6 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -41,14 +40,10 @@ import javafx.scene.control.TextField;
 import static com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.*;
 import com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.SnapshotEdge;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
-import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatchEdge;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public final class GraphController extends BaseModuleController<GraphViewState>
@@ -94,8 +89,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     public GraphController(RenderContext renderContext) {
         super(new GraphVisualizer(), new GraphPresenter(), "/fxml/GraphControls.fxml", renderContext);
-        undirectedGraph = randomWeightedGraph(10, 16, false);
-        directedGraph = randomWeightedGraph(10, 16, true);
+        undirectedGraph = GraphDataFactory.randomWeightedGraph(runtimeValueType, 10, 16, false);
+        directedGraph = GraphDataFactory.randomWeightedGraph(runtimeValueType, 10, 16, true);
         graphVisualizer().setNodeSelectionListener(this::handleVisualNodeSelection);
         graphVisualizer().setEdgeSelectionListener(this::handleVisualEdgeSelection);
         refreshAlgorithmIds();
@@ -740,21 +735,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         node.setVisible(visible);
     }
 
-    private WeightedGraph<Object> randomWeightedGraph(int nodeCount, int edgeCount, boolean directed) {
-        WeightedGraph<Object> result = new WeightedGraph<>(directed);
-        GraphBatch batch = randomGraphBatch(nodeCount, edgeCount, directed, new Random(0x5EEDL));
-        result.initializeWeighted(weightedAdjacency(batch, directed));
-        return result;
-    }
-
-    private List<Object> defaultGraphValues(int nodeCount) {
-        List<Object> values = new ArrayList<>(nodeCount);
-        for (int index = 0; index < nodeCount; index++) {
-            values.add(ValueAdapters.distinctValue(runtimeValueType, index));
-        }
-        return List.copyOf(values);
-    }
-
     @Override
     protected boolean supportsDataTools() {
         return true;
@@ -786,63 +766,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         int vertices = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
         int edges = Math.min(16, vertices * (vertices - 1)
                 / (activeVariant == GraphVariant.DIRECTED ? 1 : 2));
-        replaceGraphData(randomGraphBatch(vertices, edges), "randomize", "message.data.randomized");
-    }
-
-    private GraphBatch randomGraphBatch(int nodeCount, int edgeCount) {
-        return randomGraphBatch(nodeCount, edgeCount, activeVariant == GraphVariant.DIRECTED, new Random());
-    }
-
-    private GraphBatch randomGraphBatch(int nodeCount, int edgeCount, boolean directed, Random random) {
-        List<Object> nodes = defaultGraphValues(nodeCount);
-        Set<String> edges = new LinkedHashSet<>();
-        for (int node = 1; node < nodeCount; node++) {
-            edges.add((node - 1) + ":" + node);
-        }
-        while (edges.size() < edgeCount) {
-            int from = random.nextInt(nodeCount);
-            int to = random.nextInt(nodeCount);
-            if (from == to) {
-                continue;
-            }
-            String key;
-            if (directed || from < to) {
-                key = from + ":" + to;
-            } else {
-                key = to + ":" + from;
-            }
-            edges.add(key);
-        }
-        List<GraphBatchEdge> batchEdges = new ArrayList<>();
-        for (String edge : edges) {
-            String[] parts = edge.split(":", 2);
-            batchEdges.add(new GraphBatchEdge(
-                    nodes.get(Integer.parseInt(parts[0])),
-                    nodes.get(Integer.parseInt(parts[1])),
-                    1.0d + random.nextInt(20)));
-        }
-        return new GraphBatch(List.copyOf(nodes), List.copyOf(batchEdges));
-    }
-
-    private java.util.Map<Object, java.util.Map<Object, Double>> weightedAdjacency(
-            GraphBatch batch, boolean directed) {
-        java.util.LinkedHashMap<Object, java.util.Map<Object, Double>> adjacency = new java.util.LinkedHashMap<>();
-        for (Object node : batch.nodes()) {
-            adjacency.put(node, new java.util.LinkedHashMap<>());
-        }
-        for (GraphBatchEdge edge : batch.edges()) {
-            adjacency.get(edge.from()).put(edge.to(), edge.weight());
-            if (!directed) {
-                adjacency.get(edge.to()).put(edge.from(), edge.weight());
-            }
-        }
-        return adjacency;
+        replaceGraphData(GraphDataFactory.randomGraphBatch(runtimeValueType, vertices, edges,
+                activeVariant == GraphVariant.DIRECTED, new Random()), "randomize", "message.data.randomized");
     }
 
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
         WeightedGraph<Object> graph = currentWeightedGraph();
         if (!executeStructureOperation(operationId, () -> {
-            graph.initializeWeighted(weightedAdjacency(batch, graph.isDirected()));
+            graph.initializeWeighted(GraphDataFactory.weightedAdjacency(batch, graph.isDirected()));
             return null;
         })) {
             return;

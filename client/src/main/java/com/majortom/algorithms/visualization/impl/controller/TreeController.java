@@ -41,6 +41,7 @@ import javafx.scene.control.TextField;
 
 import static com.majortom.algorithms.visualization.impl.controller.TreeSnapshotMapper.*;
 import static com.majortom.algorithms.visualization.impl.controller.TreeNodeQueries.*;
+import static com.majortom.algorithms.visualization.impl.controller.TreeInputFactory.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -453,17 +454,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     protected void randomizeData() {
-        Random random = new Random();
-        java.util.LinkedHashSet<Object> unique = new java.util.LinkedHashSet<>();
-        int count = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
-        int attempts = 0;
-        while (unique.size() < count && attempts++ < 1000) {
-            unique.add(ValueAdapters.randomValue(runtimeValueType, random));
-        }
-        for (int index = 0; unique.size() < count; index++) {
-            unique.add(ValueAdapters.distinctValue(runtimeValueType, index));
-        }
-        replaceTreeValues(new ArrayList<>(unique), "randomize", "message.data.randomized");
+        replaceTreeValues(TreeInputFactory.randomValues(runtimeValueType, new Random()),
+                "randomize", "message.data.randomized");
     }
 
     private void replaceTreeValues(List<Object> values, String operationId, String messageKey) {
@@ -499,38 +491,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         generalTree.initialize(generalInput(values, 0));
     }
 
-    private GeneralTreeStructure.NodeInput<Object> generalInput(List<Object> values, int index) {
-        if (index >= values.size()) {
-            return null;
-        }
-        List<GeneralTreeStructure.NodeInput<Object>> children = new ArrayList<>(3);
-        for (int offset = 1; offset <= 3; offset++) {
-            GeneralTreeStructure.NodeInput<Object> child = generalInput(values, index * 3 + offset);
-            if (child != null) {
-                children.add(child);
-            }
-        }
-        return new GeneralTreeStructure.NodeInput<>(values.get(index), children);
-    }
-
     private void replaceAvlTreeValues(List<Object> values) {
         avlInitializeSorted(sortedComparableValues(values));
-    }
-
-    private List<Object> sortedComparableValues(List<Object> values) {
-        List<Object> sorted = new ArrayList<>(values);
-        sorted.sort(this::compareComparableValues);
-        for (int index = 1; index < sorted.size(); index++) {
-            if (compareComparableValues(sorted.get(index - 1), sorted.get(index)) == 0) {
-                throw new IllegalArgumentException("AVL bulk values must be unique");
-            }
-        }
-        return List.copyOf(sorted);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private int compareComparableValues(Object left, Object right) {
-        return requireComparable(left).compareTo(right);
     }
 
     @Override
@@ -751,36 +713,11 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void initializeSampleGeneralTree() {
-        replaceGeneralTreeValues(sampleGeneralValues());
+        replaceGeneralTreeValues(sampleGeneralValues(runtimeValueType));
     }
 
     private void initializeSampleAvlTree() {
-        replaceAvlTreeValues(sampleAvlValues());
-    }
-
-    private List<Object> sampleGeneralValues() {
-        if (runtimeValueType == String.class) {
-            return List.of("root", "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta");
-        }
-        if (runtimeValueType == Integer.class) return List.of(50, 30, 70, 90, 10, 40, 60, 80);
-        return sampleTypedValues(8);
-    }
-
-    private List<Object> sampleAvlValues() {
-        if (runtimeValueType == String.class) {
-            return List.of("alpha", "beta", "delta", "epsilon", "gamma", "theta", "zeta");
-        }
-        if (runtimeValueType == Integer.class) return List.of(10, 30, 40, 50, 60, 70, 90);
-        return sampleTypedValues(7);
-    }
-
-    private List<Object> sampleTypedValues(int requested) {
-        int count = Math.min(requested, ValueAdapters.maxDistinctSamples(runtimeValueType));
-        List<Object> result = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            result.add(ValueAdapters.distinctValue(runtimeValueType, index));
-        }
-        return List.copyOf(result);
+        replaceAvlTreeValues(sampleAvlValues(runtimeValueType));
     }
 
     private void activateVariant(TreeVariant variant) {
@@ -858,14 +795,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void avlInitializeSorted(List<Object> values) {
         avlTree.initializeSorted((List) values);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private Comparable requireComparable(Object value) {
-        if (!(value instanceof Comparable<?> comparable)) {
-            throw new IllegalArgumentException("AVL value type must implement Comparable: " + value.getClass().getName());
-        }
-        return (Comparable) comparable;
     }
 
     private Object parseValue(TextField field) {
