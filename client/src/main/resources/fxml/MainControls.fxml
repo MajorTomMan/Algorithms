@@ -367,8 +367,6 @@
                                     onAction="#useLatestSnapshotInput" HBox.hgrow="ALWAYS"
                                     maxWidth="Infinity" styleClass="input-source-toggle" />
                             </HBox>
-                            <Label fx:id="algorithmInputSourceLabel" text="Current Structure"
-                                wrapText="true" styleClass="algorithm-input-source-card" />
                         </VBox>
                         <ScrollPane fx:id="algorithmControlsScroll" fitToWidth="true"
                             hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"

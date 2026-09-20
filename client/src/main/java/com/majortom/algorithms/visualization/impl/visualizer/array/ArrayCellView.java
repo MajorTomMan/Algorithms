@@ -10,7 +10,6 @@ import javafx.scene.Cursor;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
 /** Presentation-only cell of the Array logical memory strip. */
@@ -47,11 +46,10 @@ public final class ArrayCellView extends StackPane {
     body.setPadding(new Insets(8.0d, 10.0d, 8.0d, 10.0d));
     body.getChildren().setAll(valueText, selectionOutline);
 
-    VBox content = new VBox(5.0d, indexText, body);
-    content.setAlignment(Pos.BOTTOM_CENTER);
-    content.setMaxHeight(Region.USE_PREF_SIZE);
-    StackPane.setAlignment(content, Pos.BOTTOM_CENTER);
-    getChildren().setAll(content);
+    // Keep every cell body anchored to the same bottom edge; index glyph layout is independent.
+    StackPane.setAlignment(indexText, Pos.TOP_CENTER);
+    StackPane.setAlignment(body, Pos.BOTTOM_CENTER);
+    getChildren().setAll(indexText, body);
     setCursor(Cursor.HAND);
     setPickOnBounds(true);
     setOnMouseClicked(event -> {
@@ -129,8 +127,8 @@ public final class ArrayCellView extends StackPane {
       }
       case COMPACT -> {
         getStyleClass().add("array-cell-compact");
-        // Compact cells still have room for two-digit indices; don't silently hide odd indices.
-        indexText.setVisible(true);
+        boolean showIndex = importantIndex || index % 2 == 0;
+        indexText.setVisible(showIndex);
         indexText.setManaged(true);
       }
       case DENSE -> {
