@@ -195,7 +195,7 @@ final class SelectionInspectorPanel {
         if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
         if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
         if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
-        updateObstruction.run()
+        updateObstruction.run();
     }
 
     void showAlgorithmSelectionOverlay(String title, String id, String value) {
@@ -213,7 +213,7 @@ final class SelectionInspectorPanel {
         }
         if (algorithmSelectedNodeIdLabel != null) algorithmSelectedNodeIdLabel.setText(id);
         if (algorithmSelectedNodeValueLabel != null) algorithmSelectedNodeValueLabel.setText(value);
-        updateObstruction.run()
+        updateObstruction.run();
     }
 
     void clear() {
@@ -229,7 +229,7 @@ final class SelectionInspectorPanel {
         if (structureInspectorBody != null) {
             structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
         }
-        updateObstruction.run()
+        updateObstruction.run();
     }
 
 }
