@@ -10,9 +10,6 @@ import com.majortom.algorithms.visualization.render.runtime.StructureRenderDrive
 import com.majortom.algorithms.visualization.render.api.PresentationCursor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.majortom.algorithms.core.domain.execution.RunCancelledEvent;
-import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
-import com.majortom.algorithms.core.domain.execution.RunFailedEvent;
 import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
 import com.majortom.algorithms.telemetry.memory.api.MemoryCapabilities;
 import com.majortom.algorithms.telemetry.memory.api.MemoryFacts;
@@ -22,8 +19,6 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.EventSink;
 import com.majortom.algorithms.core.runtime.ExecutionAnchorRecorder;
 import com.majortom.algorithms.core.runtime.ExecutionAnchorTimeline;
-import com.majortom.algorithms.core.runtime.ExecutionRecording;
-import com.majortom.algorithms.core.runtime.ExecutionRecordingState;
 import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.event.ExecutionEvent;
 import com.majortom.algorithms.core.logging.LogEvent;
@@ -46,7 +41,6 @@ import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ExecutionSummary;
 import com.majortom.algorithms.core.runtime.ExecutionTiming;
 import com.majortom.algorithms.core.runtime.RunControl;
-import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.timeline.Timeline;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.execution.ClientExecutionRecord;
@@ -81,13 +75,11 @@ import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 
-import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -135,9 +127,7 @@ public abstract class BaseController<S> implements Initializable {
     protected Button compareBtn;
 
     private final ClientExecutionService execution;
-    private final RunHistoryService executionHistory;
-    private final InputFingerprint inputFingerprintService;
-    private final ExecutionExporter executionExporter;
+    private final ControllerExecutionArchive executionArchive;
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     private final BooleanProperty paused = new SimpleBooleanProperty(false);
     private final LongProperty structureRevision = new SimpleLongProperty();
@@ -203,9 +193,8 @@ public abstract class BaseController<S> implements Initializable {
                 ? cursorPort
                 : null;
         this.execution = Objects.requireNonNull(execution, "execution");
-        this.executionHistory = Objects.requireNonNull(executionHistory, "executionHistory");
-        this.inputFingerprintService = Objects.requireNonNull(inputFingerprint, "inputFingerprint");
-        this.executionExporter = Objects.requireNonNull(executionExporter, "executionExporter");
+        this.executionArchive = new ControllerExecutionArchive(executionHistory, inputFingerprint,
+                executionExporter, this::appendLog, this::handleAlgorithmError);
     }
 
     @Override
@@ -537,33 +526,11 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     public final void exportExecution() {
-        if (!hasExecutionRecord()) {
-            appendLog("Nothing to export.");
-            return;
-        }
-        try {
-            java.nio.file.Path file = executionExporter.export(lastExecution, executionSummary());
-            appendLog("Exported: " + file);
-        } catch (IOException exception) {
-            handleAlgorithmError(exception);
-        }
+        executionArchive.export(lastExecution, executionSummary());
     }
 
     public final void compareExecutions() {
-        if (!hasExecutionRecord()) {
-            appendLog("No execution data available for comparison.");
-            return;
-        }
-        List<ClientExecutionRecord> candidates = executionHistory.comparableWith(lastExecution);
-        if (candidates.isEmpty()) {
-            appendLog("No comparable executions found for the same input.");
-            return;
-        }
-        appendLog("Comparison for input " + lastExecution.inputFingerprint() + ":");
-        appendLog(describeRecord(lastExecution));
-        for (ClientExecutionRecord record : candidates) {
-            appendLog(describeRecord(record));
-        }
+        executionArchive.compare(lastExecution);
     }
 
     private void finishExecution(
@@ -590,12 +557,12 @@ public abstract class BaseController<S> implements Initializable {
         Duration eventSpan = stats.eventSpan();
         ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
                 ExecutionTiming.of(eventSpan, session.totalDuration()));
-        lastExecution = createExecutionRecord(
-                algorithmId, input, result, error, summary, events, lastExecutionAnchors, timeline.size());
+        lastExecution = executionArchive.createRecord(
+                moduleId(), algorithmId, input, result, error, summary, events, lastExecutionAnchors, timeline.size());
         lastTimeline = timeline;
         replacePlaybackController(reducer, events);
         if (lastExecution != null) {
-            executionHistory.add(lastExecution);
+            executionArchive.retain(lastExecution);
         }
         prepareTimelineControls();
         if (!timeline.isEmpty()) {
@@ -876,24 +843,6 @@ public abstract class BaseController<S> implements Initializable {
         presentationEvent.set(null);
         clearPresentationCursor();
         replayControls.clearTimeline();
-    }
-
-    private String describeRecord(ClientExecutionRecord record) {
-        ExecutionSummary summary = record.recording().summary();
-        ExecutionTiming timing = summary.timing();
-        return String.format(
-                "%s | event-span=%dms | total=%s | cpu=%s | memory=%s | events=%d | frames=%d | compares=%d",
-                record.operationId(), timing.eventSpan().toMillis(),
-                formatDuration(timing.totalDuration()),
-                formatNanos(summary.resources().cpuTimeNanos()),
-                formatBytes(summary.resources().peakMemoryBytes()),
-                record.recording().statistics().totalEventCount(),
-                record.visualFrameCount(),
-                record.recording().statistics().metric(MetricKeys.COMPARISONS));
-    }
-
-    private String inputFingerprint(Object input) {
-        return inputFingerprintService.fingerprint(input);
     }
 
     protected final void appendLog(String message) {
@@ -1391,121 +1340,17 @@ public abstract class BaseController<S> implements Initializable {
         return replayController != null && replayController.isPlaying();
     }
 
-    private ClientExecutionRecord createExecutionRecord(
-            String operationId,
-            Object input,
-            ExecutionResult result,
-            Throwable error,
-            ExecutionSummary summary,
-            List<EventEnvelope> events,
-            ExecutionAnchorTimeline executionAnchors,
-            long visualFrameCount) {
-        if (events.isEmpty()) {
-            return null;
-        }
-        if (executionAnchors == null) {
-            return null;
-        }
-        if (!hasTerminalLifecycleEvent(events)) {
-            // An external Error may interrupt a run before its terminal lifecycle event.
-            // Keep the visual timeline available, but do not publish an invalid history record.
-            return null;
-        }
-        ExecutionRecordingState state = recordingState(result, error);
-        EventEnvelope firstEvent = events.getFirst();
-        ExecutionStatistics authoritativeStatistics = summary.statistics();
-        ExecutionSummary recordingSummary = ExecutionSummary.from(
-                authoritativeStatistics, summary.resources()).withTiming(
-                ExecutionTiming.of(
-                        authoritativeStatistics.eventSpan(),
-                        summary.timing().totalDuration()));
-        ExecutionRecording recording = new ExecutionRecording(
-                firstEvent.runId(), operationId, state, authoritativeStatistics, recordingSummary, events);
-        ExecutionResult effectiveResult = result;
-        if (effectiveResult == null) {
-            String message = "Execution failed";
-            String exceptionType = RuntimeException.class.getName();
-            if (error != null) {
-                if (error.getMessage() != null && !error.getMessage().isBlank()) {
-                    message = error.getMessage();
-                }
-                exceptionType = error.getClass().getName();
-            }
-            effectiveResult = ExecutionResult.failed(
-                    new com.majortom.algorithms.core.runtime.ExecutionFailure(
-                            "client.execution.failed",
-                            message,
-                            exceptionType));
-        }
-        return new ClientExecutionRecord(
-                moduleId(), operationId, inputFingerprint(input), effectiveResult, recording,
-                executionAnchors, visualFrameCount);
-    }
-
-    private boolean hasTerminalLifecycleEvent(List<EventEnvelope> events) {
-        for (EventEnvelope event : events) {
-            if (event.event() instanceof RunCompletedEvent
-                    || event.event() instanceof RunCancelledEvent
-                    || event.event() instanceof RunFailedEvent) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private ExecutionRecordingState recordingState(ExecutionResult result, Throwable error) {
-        if (error != null) {
-            return ExecutionRecordingState.FAILED;
-        }
-        if (result == null) {
-            return ExecutionRecordingState.FAILED;
-        }
-        return switch (result.status()) {
-            case COMPLETED -> ExecutionRecordingState.COMPLETED;
-            case CANCELLED -> ExecutionRecordingState.CANCELLED;
-            case FAILED -> ExecutionRecordingState.FAILED;
-        };
-    }
-
     private String formatSummaryMessage(ExecutionSummary summary) {
         ExecutionTiming timing = summary.timing();
         ResourceUsage resources = summary.resources();
         return String.format(
                 "%s | %s | %s | %s | %s",
                 I18N.text("stats.event.span", timing.eventSpan().toMillis()),
-                I18N.text("stats.total.time", formatDuration(timing.totalDuration())),
-                I18N.text("stats.playback.time", formatDuration(currentPlaybackDuration())),
-                I18N.text("stats.cpu.time", formatNanos(resources.cpuTimeNanos())),
-                I18N.text("stats.memory.peak", formatBytes(resources.peakMemoryBytes())));
+                I18N.text("stats.total.time", ControllerExecutionArchive.formatDuration(timing.totalDuration())),
+                I18N.text("stats.playback.time", ControllerExecutionArchive.formatDuration(currentPlaybackDuration())),
+                I18N.text("stats.cpu.time", ControllerExecutionArchive.formatNanos(resources.cpuTimeNanos())),
+                I18N.text("stats.memory.peak", ControllerExecutionArchive.formatBytes(resources.peakMemoryBytes())));
     }
 
-    private String formatDuration(Optional<Duration> duration) {
-        if (duration.isEmpty()) {
-            return I18N.text("stats.unavailable");
-        }
-        return duration.orElseThrow().toMillis() + "ms";
-    }
-
-    private String formatNanos(OptionalLong nanos) {
-        if (nanos.isEmpty()) {
-            return I18N.text("stats.unavailable");
-        }
-        return Duration.ofNanos(nanos.orElseThrow()).toMillis() + "ms";
-    }
-
-    private String formatBytes(OptionalLong bytes) {
-        if (bytes.isEmpty()) {
-            return I18N.text("stats.unavailable");
-        }
-        long value = bytes.orElseThrow();
-        if (value < 1024L) {
-            return value + "B";
-        }
-        long kilobytes = value / 1024L;
-        if (kilobytes < 1024L) {
-            return kilobytes + "KB";
-        }
-        return String.format("%.1fMB", kilobytes / 1024.0d);
-    }
 
 }
