@@ -56,18 +56,12 @@ public final class UiRenderCoordinator {
   }
 
   /**
-   * A new visualizer is attached synchronously before its controller can publish its first
-   * structural intent. Prepare its CSS here, rather than waiting for an unrelated page switch.
+   * Enqueue preparation after mounting a visualizer. Its first structural render should
+   * wait for this stage so a pending font change cannot be overtaken by the new model frame.
+   * The owner must additionally wait for its JavaFX Scene to be attached.
    */
-  public void prepareMountedContent() {
-    if (!fx.isFxThread()) {
-      throw new IllegalStateException("Visualizer mounting must occur on the FX thread");
-    }
-    if (!running && pendingFont != null) {
-      flush();
-    }
-    participant.prepareStyles(false);
-    requestWorkbench();
+  public CompletionStage<Void> requestMountedContent() {
+    return enqueue(null);
   }
 
   private CompletionStage<Void> enqueue(FontSettings font) {

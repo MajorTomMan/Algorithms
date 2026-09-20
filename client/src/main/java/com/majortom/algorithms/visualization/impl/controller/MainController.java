@@ -59,10 +59,12 @@ import com.majortom.algorithms.visualization.render.runtime.UiRenderCoordinator;
 import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import javafx.css.PseudoClass;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -541,6 +543,7 @@ public class MainController implements Initializable {
     private boolean moduleTransitionInProgress;
     private WorkbenchUiFramework uiFramework;
     private UiRenderCoordinator uiRenderCoordinator;
+    private CompletionStage<Void> visualizerPreparation = CompletableFuture.completedFuture(null);
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
@@ -1981,7 +1984,19 @@ public class MainController implements Initializable {
             updateAlgorithmWorkspaceAvailability(definition.id());
             refreshWorkspaceContext();
             setWorkspaceMode(finalMode);
-            currentSubController.dispatchVisualizerAttached();
+            BaseController<?> mountedController = currentSubController;
+            awaitVisualizerReady().thenCompose(ignored -> {
+                // An earlier module may have been detached while its Scene/barrier was pending.
+                if (currentSubController != mountedController) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                return mountedController.dispatchVisualizerAttached();
+            }).whenComplete((ignored, failure) -> {
+                if (failure != null) {
+                    FxDispatch.execute(() -> appendSystemLog(
+                            "Visualizer attachment failed: " + failure));
+                }
+            });
             refreshPauseText();
             refreshTopContext();
             refreshExecutionPresentation();
@@ -2270,8 +2285,38 @@ public class MainController implements Initializable {
             structurePreviewEmpty.setVisible(!structurePage);
             structurePreviewEmpty.setManaged(!structurePage);
         }
-        // CSS for the just-mounted visualizer must be prepared before its first model intent.
-        if (uiRenderCoordinator != null) uiRenderCoordinator.prepareMountedContent();
+        // Reparenting is a UI request, not permission to run an out-of-band CSS pass.
+        if (uiRenderCoordinator != null) {
+            visualizerPreparation = uiRenderCoordinator.requestMountedContent();
+        }
+    }
+
+    /**
+     * JavaFX may call initialize() before App installs the root into a Scene.
+     * No first structural render is released until a real Scene exists and the
+     * corresponding Workbench/style-preparation turn has completed.
+     */
+    private CompletionStage<Void> awaitVisualizerReady() {
+        if (rootPane.getScene() != null) return visualizerPreparation;
+        CompletableFuture<Void> sceneReady = new CompletableFuture<>();
+        ChangeListener<Scene> listener = new ChangeListener<>() {
+            @Override public void changed(
+                    javafx.beans.value.ObservableValue<? extends Scene> source,
+                    Scene previous, Scene next) {
+                if (next == null) return;
+                rootPane.sceneProperty().removeListener(this);
+                sceneReady.complete(null);
+            }
+        };
+        rootPane.sceneProperty().addListener(listener);
+        if (rootPane.getScene() != null) {
+            rootPane.sceneProperty().removeListener(listener);
+            sceneReady.complete(null);
+        }
+        return sceneReady.thenCompose(ignored ->
+                uiRenderCoordinator == null
+                    ? CompletableFuture.completedFuture(null)
+                    : uiRenderCoordinator.requestMountedContent());
     }
 
     private boolean isStructurePageVisible() {

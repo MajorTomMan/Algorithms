@@ -55,14 +55,36 @@ class UiRenderCoordinatorTest {
   }
 
   @Test
-  void preparesMountedNodesBeforeRequestingTheirFirstRender() {
+  void preparesMountedNodesBeforeCompletingTheirRenderBarrier() {
     FakeFx fx = new FakeFx();
     Participant participant = new Participant();
     UiRenderCoordinator coordinator = new UiRenderCoordinator(fx, participant);
-    coordinator.prepareMountedContent();
-    assertEquals(List.of("css:false"), participant.events);
+    CompletionStage<Void> ready = coordinator.requestMountedContent();
+    assertFalse(ready.toCompletableFuture().isDone());
+    assertTrue(participant.events.isEmpty());
     fx.runNext();
-    assertEquals(List.of("css:false", "css:false", "workbench"), participant.events);
+    assertEquals(List.of("css:false", "workbench"), participant.events);
+    assertTrue(ready.toCompletableFuture().isDone());
+  }
+
+  @Test
+  void aMountCannotOvertakeAnInFlightFontChange() {
+    FakeFx fx = new FakeFx();
+    Participant participant = new Participant();
+    participant.geometry = new CompletableFuture<>();
+    UiRenderCoordinator coordinator = new UiRenderCoordinator(fx, participant);
+    CompletionStage<Void> font = coordinator.requestFont(font(24));
+    fx.runNext();
+    CompletionStage<Void> mounted = coordinator.requestMountedContent();
+    assertFalse(mounted.toCompletableFuture().isDone());
+    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24"),
+        participant.events);
+    participant.geometry.complete(null);
+    fx.runNext();
+    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24",
+        "css:false", "workbench"), participant.events);
+    assertTrue(font.toCompletableFuture().isDone());
+    assertTrue(mounted.toCompletableFuture().isDone());
   }
 
   private static FontSettings font(double size) {
