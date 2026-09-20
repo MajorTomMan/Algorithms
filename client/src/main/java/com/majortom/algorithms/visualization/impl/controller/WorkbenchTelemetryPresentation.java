@@ -173,6 +173,7 @@ final class WorkbenchTelemetryPresentation {
     }
 
     private void setDeepMemoryAnalysisEnabled(boolean enabled) {
+        BaseController<?> currentSubController = controller.get();
         if (currentSubController == null) return;
         currentSubController.setDeepMemoryAnalysisEnabled(enabled);
         publishMemoryPresentations();

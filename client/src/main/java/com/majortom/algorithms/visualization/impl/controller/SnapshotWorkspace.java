@@ -211,7 +211,7 @@ final class SnapshotWorkspace {
         if (selected == null) {
             detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotIdText(snapshotId);
         } else {
-            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotIdText(snapshotId) + "\n" + formatSnapshotTime(selected);
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotIdText(snapshotId) + "\n" + formatTime.apply(selected);
         }
         algorithmInputSourceLabel.setText(detail + "\n" + valueTypeText);
     }
