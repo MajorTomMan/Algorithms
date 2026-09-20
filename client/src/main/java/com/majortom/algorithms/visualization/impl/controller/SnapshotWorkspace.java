@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javafx.scene.Node;
+import javafx.css.PseudoClass;
+import java.util.Locale;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -31,6 +33,9 @@ final class SnapshotWorkspace {
     private final VBox snapshotCards;
     private final VBox inspectorSnapshotCards;
     private final Label snapshotCountLabel;
+    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+    private Label algorithmInputSourceLabel;
+    private Button currentInputBtn, savedInputBtn;
     private final HBox structureHistoryCards;
     private final Label structureHistoryCountLabel;
     private final Runnable selectCurrent;
@@ -146,6 +151,77 @@ final class SnapshotWorkspace {
         alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
         OperationDialogTheme.apply(alert);
         return alert.showAndWait().filter(restore::equals).isPresent();
+    }
+
+    void bindInputControls(Label source, Button current, Button saved) {
+        this.algorithmInputSourceLabel = source;
+        this.currentInputBtn = current;
+        this.savedInputBtn = saved;
+    }
+
+    void syncSelectedInput(String moduleId, String snapshotId) {
+        if (snapshotId == null) selectedSnapshotIds.remove(moduleId);
+        else selectedSnapshotIds.put(moduleId, snapshotId);
+    }
+
+    private static String shortSnapshotIdText(String id) {
+        if (id == null || id.isBlank()) return "-";
+        return id.length() <= 8 ? id : id.substring(0, 8);
+    }
+
+    void renderInputSource(String moduleId, String valueTypeText) {
+        if (algorithmInputSourceLabel == null) {
+            return;
+        }
+        SnapshotAlgorithmInputSupport<?> support = inputSupport.get();
+        boolean hasSaved = moduleId != null && !structureSnapshotStore.snapshots(moduleId).isEmpty();
+        if (savedInputBtn != null) savedInputBtn.setDisable(!hasSaved || support == null);
+        if (currentInputBtn != null) currentInputBtn.setDisable(support == null);
+        if (support == null) {
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.parameters"));
+            if (currentInputBtn != null) { currentInputBtn.pseudoClassStateChanged(SELECTED, false); currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false)); }
+            if (savedInputBtn != null) { savedInputBtn.pseudoClassStateChanged(SELECTED, false); savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false)); }
+            return;
+        }
+        String snapshotId = support.algorithmInputSnapshotId();
+        boolean current = snapshotId == null;
+        if (currentInputBtn != null) {
+            currentInputBtn.pseudoClassStateChanged(SELECTED, current);
+            if (current) {
+                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", true));
+            } else {
+                currentInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.current_button", false));
+            }
+        }
+        if (savedInputBtn != null) {
+            savedInputBtn.pseudoClassStateChanged(SELECTED, !current);
+            if (current) {
+                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", false));
+            } else {
+                savedInputBtn.setText(inputSourceButtonText("label.workspace.algorithm.input.saved_button", true));
+            }
+        }
+        if (current) {
+            algorithmInputSourceLabel.setText(I18N.text("label.workspace.algorithm.input.current_snapshot") + "\n" + valueTypeText);
+            return;
+        }
+        StructureSnapshot<?> selected = structureSnapshotStore.snapshots(moduleId).stream()
+                .filter(snapshot -> snapshot.id().equals(snapshotId)).findFirst().orElse(null);
+        String detail;
+        if (selected == null) {
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotIdText(snapshotId);
+        } else {
+            detail = I18N.text("label.workspace.algorithm.input.saved_snapshot") + " / " + shortSnapshotIdText(snapshotId) + "\n" + formatSnapshotTime(selected);
+        }
+        algorithmInputSourceLabel.setText(detail + "\n" + valueTypeText);
+    }
+
+    private static String inputSourceButtonText(String key, boolean selected) {
+        String prefix = "○ ";
+        if (selected) {
+            prefix = "● ";
+        }
+        return prefix + I18N.text(key).toUpperCase(Locale.ROOT);
     }
 
     void renderHistory(List<EventEnvelope> events) {
