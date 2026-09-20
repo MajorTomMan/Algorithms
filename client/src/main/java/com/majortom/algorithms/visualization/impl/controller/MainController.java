@@ -544,6 +544,7 @@ public class MainController implements Initializable {
     private WorkbenchUiFramework uiFramework;
     private UiRenderCoordinator uiRenderCoordinator;
     private CompletionStage<Void> visualizerPreparation = CompletableFuture.completedFuture(null);
+    private long workspaceRenderRevision;
     private boolean compactLayout;
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
@@ -1594,6 +1595,7 @@ public class MainController implements Initializable {
 
     private void setWorkspaceMode(WorkspaceMode mode) {
         workspaceMode = mode;
+        ++workspaceRenderRevision;
         boolean structure = mode == WorkspaceMode.STRUCTURE;
         boolean algorithm = mode == WorkspaceMode.ALGORITHM;
         boolean practice = mode == WorkspaceMode.PRACTICE;
@@ -1642,11 +1644,11 @@ public class MainController implements Initializable {
                 selectedSnapshotIds.remove(activeDefinition.id());
             }
             clearStructureSelection();
-            currentSubController.showStructureState();
+            showWorkspaceStateWhenReady(WorkspaceMode.STRUCTURE);
         }
         if (algorithm && currentSubController != null) {
             syncSnapshotSelectionFromAlgorithmInput();
-            currentSubController.showAlgorithmState();
+            showWorkspaceStateWhenReady(WorkspaceMode.ALGORITHM);
         }
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
@@ -2297,7 +2299,9 @@ public class MainController implements Initializable {
      * corresponding Workbench/style-preparation turn has completed.
      */
     private CompletionStage<Void> awaitVisualizerReady() {
-        if (rootPane.getScene() != null) return visualizerPreparation;
+        if (rootPane.getScene() != null) {
+            return visualizerPreparation.thenCompose(ignored -> FxDispatch.executor().awaitPulse());
+        }
         CompletableFuture<Void> sceneReady = new CompletableFuture<>();
         ChangeListener<Scene> listener = new ChangeListener<>() {
             @Override public void changed(
@@ -2316,7 +2320,26 @@ public class MainController implements Initializable {
         return sceneReady.thenCompose(ignored ->
                 uiRenderCoordinator == null
                     ? CompletableFuture.completedFuture(null)
-                    : uiRenderCoordinator.requestMountedContent());
+                    : uiRenderCoordinator.requestMountedContent())
+                .thenCompose(ignored -> FxDispatch.executor().awaitPulse());
+    }
+
+    /** Ignore stale page transitions; only the latest mounted workspace may publish a frame. */
+    private void showWorkspaceStateWhenReady(WorkspaceMode targetMode) {
+        BaseController<?> requestedController = currentSubController;
+        long requestedRevision = workspaceRenderRevision;
+        if (requestedController == null) return;
+        awaitVisualizerReady().whenComplete((ignored, failure) -> FxDispatch.execute(() -> {
+            if (failure != null) {
+                appendSystemLog("Workspace preparation failed: " + failure);
+                return;
+            }
+            if (workspaceRenderRevision != requestedRevision
+                    || currentSubController != requestedController
+                    || workspaceMode != targetMode) return;
+            if (targetMode == WorkspaceMode.STRUCTURE) requestedController.showStructureState();
+            else if (targetMode == WorkspaceMode.ALGORITHM) requestedController.showAlgorithmState();
+        }));
     }
 
     private boolean isStructurePageVisible() {
