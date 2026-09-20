@@ -29,6 +29,8 @@ final class ScriptFontSupport {
   private static final String INSTALLED_KEY = ScriptFontSupport.class.getName() + ".installed";
   private static final String SETTINGS_KEY = ScriptFontSupport.class.getName() + ".settings";
   private static final String FLOW_KEY = ScriptFontSupport.class.getName() + ".flow";
+  private static final String FLOW_SIGNATURE_KEY =
+      ScriptFontSupport.class.getName() + ".flowSignature";
   private static final String ORIGINAL_GRAPHIC_KEY =
       ScriptFontSupport.class.getName() + ".originalGraphic";
   private static final String ORIGINAL_CONTENT_DISPLAY_KEY =
@@ -114,8 +116,14 @@ final class ScriptFontSupport {
 
     clearFamilyStyle(labeled);
     TextFlow flow = textFlow(labeled);
-    flow.getChildren().clear();
     Font base = labeled.getFont() == null ? Font.getDefault() : labeled.getFont();
+    FlowSignature signature = new FlowSignature(labeled.getText(), base, settings);
+    if (labeled.getGraphic() == flow
+        && labeled.getContentDisplay() == ContentDisplay.GRAPHIC_ONLY
+        && signature.equals(labeled.getProperties().get(FLOW_SIGNATURE_KEY))) {
+      return;
+    }
+    flow.getChildren().clear();
     for (Run run : runs) {
       Text text = new Text(run.text());
       text.setFont(fontWithFamily(base, family(settings, run.script())));
@@ -126,6 +134,7 @@ final class ScriptFontSupport {
     if (labeled.getGraphic() != flow) {
       labeled.setGraphic(flow);
     }
+    labeled.getProperties().put(FLOW_SIGNATURE_KEY, signature);
   }
 
   private static void update(TextInputControl input) {
@@ -315,11 +324,12 @@ final class ScriptFontSupport {
     if (family != null && !family.isBlank()) {
       style += "-fx-font-family: \"" + escapeCssString(family) + "\";";
     }
-    node.setStyle(style);
+    if (!style.equals(node.getStyle())) node.setStyle(style);
   }
 
   private static void clearFamilyStyle(Node node) {
-    node.setStyle(withoutFamilyDeclaration(node.getStyle()));
+    String style = withoutFamilyDeclaration(node.getStyle());
+    if (!style.equals(node.getStyle())) node.setStyle(style);
   }
 
   private static String withoutFamilyDeclaration(String existing) {
@@ -349,6 +359,8 @@ final class ScriptFontSupport {
   private enum Script { CHINESE, ENGLISH, NEUTRAL }
 
   private record ResolvedSettings(String chineseFamily, String englishFamily) {}
+
+  private record FlowSignature(String value, Font base, ResolvedSettings settings) {}
 
   private record Run(String text, Script script) {}
 
