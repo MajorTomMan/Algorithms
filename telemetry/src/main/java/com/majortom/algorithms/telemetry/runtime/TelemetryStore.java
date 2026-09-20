@@ -3,6 +3,7 @@ package com.majortom.algorithms.telemetry.runtime;
 import com.majortom.algorithms.telemetry.api.TelemetryDomain;
 import com.majortom.algorithms.telemetry.api.TelemetryProfile;
 import com.majortom.algorithms.telemetry.api.TelemetryScopeId;
+import com.majortom.algorithms.telemetry.api.TelemetrySessionId;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /** Bounded session history keyed only by stable TelemetryScopeId, never by controllers or views. */
 public final class TelemetryStore {
@@ -99,6 +101,17 @@ public final class TelemetryStore {
       }
     }
     return List.copyOf(result);
+  }
+
+  /** Current retained scopes; analysis data may exist only for these scopes. */
+  public synchronized Set<TelemetryScopeId> retainedScopes() {
+    return Set.copyOf(history.keySet());
+  }
+
+  /** Prevents asynchronous analysis results from reviving a superseded execution. */
+  public synchronized boolean isLatestSession(TelemetrySessionId id) {
+    ArrayDeque<TelemetryProfile> values = history.get(Objects.requireNonNull(id, "id").scope());
+    return values != null && !values.isEmpty() && values.getLast().sessionId().equals(id);
   }
 
   public synchronized void clear() {

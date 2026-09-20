@@ -30,7 +30,8 @@ public final class MemoryTelemetryService implements AutoCloseable {
 
   private final DefaultTelemetryFramework framework;
   private final TelemetryStore store = new TelemetryStore(32, TelemetryStore.DEFAULT_MAXIMUM_PROFILES);
-  private final TelemetryAnalysisStore analysisStore = new TelemetryAnalysisStore();
+  private final TelemetryAnalysisStore analysisStore =
+      new TelemetryAnalysisStore(TelemetryStore.DEFAULT_MAXIMUM_PROFILES);
   private final JfrAllocationTelemetryAnalyzer jfrAnalyzer = new JfrAllocationTelemetryAnalyzer();
   private final JolStructureFootprintAnalyzer footprintAnalyzer = new JolStructureFootprintAnalyzer();
   private final MemoryCapabilities capabilities;
@@ -97,12 +98,15 @@ public final class MemoryTelemetryService implements AutoCloseable {
     return footprintAnalyzer.analyze(root);
   }
 
-  void record(TelemetryProfile profile) {
+  synchronized void record(TelemetryProfile profile) {
     store.record(profile);
+    analysisStore.discardScope(profile.sessionId().scope());
+    analysisStore.retainScopes(store.retainedScopes());
   }
 
-  void recordAnalysis(MemoryAllocationAnalysis analysis) {
-    analysisStore.record(analysis);
+  synchronized void recordAnalysis(MemoryAllocationAnalysis analysis) {
+    // An older asynchronous completion must not revive a superseded or evicted run.
+    if (store.isLatestSession(analysis.sessionId())) analysisStore.record(analysis);
   }
 
   @Override

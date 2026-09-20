@@ -259,7 +259,9 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
   private void completeDrainedIfIdle() {
     if (!dispatchInFlight && pendingEvents.isEmpty() && !drained.isDone()) {
-      drained.complete(null);
+      if (dispatcherFailure != null) drained.completeExceptionally(dispatcherFailure);
+      else if (observerFailure != null) drained.completeExceptionally(observerFailure);
+      else drained.complete(null);
     }
   }
 }

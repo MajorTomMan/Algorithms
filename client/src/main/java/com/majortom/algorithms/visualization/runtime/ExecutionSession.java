@@ -171,10 +171,12 @@ public final class ExecutionSession implements AutoCloseable {
     }
     runtimeCompletion.complete(result);
     observerSink.drained().whenComplete((ignored, playbackFailure) -> {
-      if (playbackFailure != null)
-        presentationCompletion.completeExceptionally(playbackFailure);
-      else
-        presentationCompletion.complete(result);
+      // A presentation/dispatcher error must not change the authoritative runtime result.
+      Throwable presentationFailure = playbackFailure != null ? playbackFailure
+          : observerSink.dispatcherFailure().<Throwable>map(error -> error)
+              .orElseGet(() -> observerSink.observerFailure().orElse(null));
+      if (presentationFailure != null) presentationCompletion.completeExceptionally(presentationFailure);
+      else presentationCompletion.complete(result);
     });
   }
 

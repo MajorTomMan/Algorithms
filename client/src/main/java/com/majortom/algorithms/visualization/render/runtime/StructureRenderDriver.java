@@ -4,11 +4,14 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderPort;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
+import com.majortom.algorithms.visualization.render.api.RenderStatus;
+import java.util.logging.Logger;
 import com.majortom.algorithms.visualization.render.api.StructurePresenter;
 import java.util.Objects;
 
 /** Owns structure render submission state and keeps FX renderers passive. */
 public final class StructureRenderDriver<S> {
+    private static final Logger LOG = Logger.getLogger(StructureRenderDriver.class.getName());
     private final RenderSessionId sessionId;
     private final RenderPort renderPort;
     private final StructurePresenter<S> presenter;
@@ -39,13 +42,23 @@ public final class StructureRenderDriver<S> {
         RenderIntent intent = Objects.requireNonNull(
                 presenter.present(sessionId, lastSubmittedState, current), "presenter result");
         lastSubmittedState = current;
-        renderPort.submit(intent);
+        submit(intent);
     }
 
     /** Requests a presentation-only commit for renderer-local UI state such as selection. */
     public synchronized void requestPresentation() {
         if (disposed || !attached || lastData == null) return;
-        renderPort.submit(new PresentationRenderIntent<>(sessionId, lastData));
+        submit(new PresentationRenderIntent<>(sessionId, lastData, true));
+    }
+
+    private void submit(RenderIntent intent) {
+        renderPort.submit(intent).whenComplete((result, failure) -> {
+            if (failure != null) {
+                LOG.warning("Render submission failed for " + sessionId + ": " + failure);
+            } else if (result != null && result.status() == RenderStatus.FAILED) {
+                LOG.warning("Render request failed for " + sessionId + ": " + result.error());
+            }
+        });
     }
 
     public synchronized void attach() {

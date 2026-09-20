@@ -4,6 +4,8 @@ import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent
 import com.majortom.algorithms.visualization.render.api.PresentationSurfaceRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderResult;
+import com.majortom.algorithms.visualization.render.api.RenderStatus;
+import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.StructuralChange;
 import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.api.ViewportRenderIntent;
@@ -17,7 +19,17 @@ final class RenderMailbox {
   Submission pendingGeometry;
   Submission pendingViewport;
   Submission pendingSurfacePresentation;
+  Submission pendingRefresh;
+  private static final int DEFAULT_MAX_ORDERED_PRESENTATIONS = 4_096;
+  private final int maxOrderedPresentations;
   final Deque<Submission> presentationQueue = new ArrayDeque<>();
+
+  RenderMailbox() { this(DEFAULT_MAX_ORDERED_PRESENTATIONS); }
+
+  RenderMailbox(int maxOrderedPresentations) {
+    if (maxOrderedPresentations < 1) throw new IllegalArgumentException("maxOrderedPresentations must be positive");
+    this.maxOrderedPresentations = maxOrderedPresentations;
+  }
   boolean inFlight;
 
   void enqueue(Submission submission) {
@@ -39,8 +51,20 @@ final class RenderMailbox {
     } else if (intent instanceof PresentationSurfaceRenderIntent) {
       supersede(pendingSurfacePresentation, intent);
       pendingSurfacePresentation = submission;
-    } else if (intent instanceof PresentationRenderIntent<?>) {
-      presentationQueue.addLast(submission);
+    } else if (intent instanceof PresentationRenderIntent<?> presentation) {
+      if (presentation.coalescible()) {
+        supersede(pendingRefresh, intent);
+        pendingRefresh = submission;
+      } else if (presentationQueue.size() < maxOrderedPresentations) {
+        presentationQueue.addLast(submission);
+      } else {
+        // Ordered animation frames cannot be merged without changing playback semantics.
+        // Report overload instead of retaining an unbounded number of snapshots.
+        submission.future().complete(new RenderResult(RenderStatus.FAILED, intent.sessionId(),
+            submission.modelRevision(), false, BoundsSnapshot.empty(),
+            new IllegalStateException("Ordered presentation queue capacity exceeded: "
+                + maxOrderedPresentations)));
+      }
     } else {
       throw new IllegalArgumentException("Unsupported render intent: " + intent);
     }
@@ -57,16 +81,21 @@ final class RenderMailbox {
       pendingGeometry = null;
       return next;
     }
-    if (!presentationQueue.isEmpty())
-      return presentationQueue.removeFirst();
-    if (pendingSurfacePresentation != null) {
-      Submission next = pendingSurfacePresentation;
-      pendingSurfacePresentation = null;
-      return next;
-    }
+    // Viewport commands remain responsive while ordered animations are playing.
     if (pendingViewport != null) {
       Submission next = pendingViewport;
       pendingViewport = null;
+      return next;
+    }
+    if (!presentationQueue.isEmpty()) return presentationQueue.removeFirst();
+    if (pendingRefresh != null) {
+      Submission next = pendingRefresh;
+      pendingRefresh = null;
+      return next;
+    }
+    if (pendingSurfacePresentation != null) {
+      Submission next = pendingSurfacePresentation;
+      pendingSurfacePresentation = null;
       return next;
     }
     return null;
@@ -77,10 +106,12 @@ final class RenderMailbox {
     cancel(pendingGeometry);
     cancel(pendingViewport);
     cancel(pendingSurfacePresentation);
+    cancel(pendingRefresh);
     pendingModel = null;
     pendingGeometry = null;
     pendingViewport = null;
     pendingSurfacePresentation = null;
+    pendingRefresh = null;
     while (!presentationQueue.isEmpty()) cancel(presentationQueue.removeFirst());
   }
 

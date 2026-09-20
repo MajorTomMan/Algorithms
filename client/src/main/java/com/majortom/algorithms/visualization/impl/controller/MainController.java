@@ -57,6 +57,7 @@ import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.render.runtime.UiRenderCoordinator;
 import com.majortom.algorithms.visualization.settings.FontSettings;
+import com.majortom.algorithms.visualization.settings.FontSettingsPopupPlacement;
 import com.majortom.algorithms.visualization.settings.FontSettingsService;
 import javafx.css.PseudoClass;
 import javafx.beans.value.ChangeListener;
@@ -851,45 +852,11 @@ public class MainController implements Initializable {
         if (anchor == null || window == null) return;
 
         Popup popup = createFontSettingsPopup();
-        VBox shell = (VBox) popup.getContent().getFirst();
-        HBox arrowRow = (HBox) shell.getChildren().getFirst();
-        ScrollPane scroll = (ScrollPane) shell.getChildren().get(1);
-        VBox form = (VBox) scroll.getContent();
-        shell.applyCss();
-
-        // Popup autoFix is screen-relative, not Workbench-relative. Constrain the
-        // popup to the actual owner content bounds and scroll oversized forms.
-        double margin = 12.0d;
-        double maxWidth = Math.max(1.0d, window.getWidth() - 2.0d * margin);
-        double popupWidth = Math.min(shell.prefWidth(-1.0d), maxWidth);
-        shell.setMinWidth(0.0d);
-        shell.setPrefWidth(popupWidth);
-        shell.setMaxWidth(maxWidth);
-        double maxHeight = Math.max(1.0d, window.getHeight() - 2.0d * margin);
-        double arrowHeight = arrowRow.prefHeight(-1.0d);
-        double formHeight = form.prefHeight(popupWidth);
-        scroll.setMinHeight(0.0d);
-        scroll.setPrefHeight(Math.min(Math.max(1.0d, maxHeight - arrowHeight), formHeight + 2.0d));
-        double popupHeight = arrowHeight + scroll.getPrefHeight();
-        double x = Math.max(window.getMinX() + margin + popupWidth,
-                Math.min(anchor.getMaxX(), window.getMaxX() - margin));
-        double y = Math.max(window.getMinY() + margin,
-                Math.min(anchor.getMaxY(), window.getMaxY() - margin - popupHeight));
-        if (y < anchor.getMaxY() - arrowHeight - 1.0d) {
-            // When the popup must move above its trigger, a detached arrow would
-            // misleadingly point at empty space.
-            arrowRow.setManaged(false);
-            arrowRow.setVisible(false);
-            scroll.setPrefHeight(Math.min(maxHeight, formHeight + 2.0d));
-            popupHeight = scroll.getPrefHeight();
-            y = Math.max(window.getMinY() + margin,
-                    Math.min(anchor.getMaxY(), window.getMaxY() - margin - popupHeight));
-        }
         fontSettingsPopup = popup;
         popup.setOnHidden(event -> {
             if (fontSettingsPopup == popup) fontSettingsPopup = null;
         });
-        popup.show(fontSettingsBtn, x, y);
+        FontSettingsPopupPlacement.show(popup, fontSettingsBtn, anchor, window);
     }
 
     private Popup createFontSettingsPopup() {
