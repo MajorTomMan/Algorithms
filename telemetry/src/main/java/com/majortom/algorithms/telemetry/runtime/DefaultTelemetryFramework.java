@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class DefaultTelemetryFramework implements TelemetryFramework, AutoCloseable {
   public static final long DEFAULT_SAMPLE_INTERVAL_MILLIS = 100L;
+  public static final int DEFAULT_MAXIMUM_SAMPLES = 4_096;
 
   private final List<TelemetryProbe> probes;
   private final Map<String, TelemetryMetricDescriptor> descriptors;
@@ -38,12 +39,22 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
   private final ScheduledExecutorService sampler;
   private final AtomicLong sequence = new AtomicLong();
   private final long sampleIntervalMillis;
+  private final int maximumSamples;
 
   public DefaultTelemetryFramework(List<? extends TelemetryProbe> probes) {
     this(probes, DEFAULT_SAMPLE_INTERVAL_MILLIS);
   }
 
   public DefaultTelemetryFramework(List<? extends TelemetryProbe> probes, long sampleIntervalMillis) {
+    this(probes, sampleIntervalMillis, DEFAULT_MAXIMUM_SAMPLES);
+  }
+
+  public DefaultTelemetryFramework(List<? extends TelemetryProbe> probes, long sampleIntervalMillis,
+      int maximumSamples) {
+    if (maximumSamples < 2) {
+      throw new IllegalArgumentException("maximumSamples must be at least 2");
+    }
+    this.maximumSamples = maximumSamples;
     if (sampleIntervalMillis < 1L) {
       throw new IllegalArgumentException("sampleIntervalMillis must be positive");
     }
@@ -282,7 +293,22 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
           return;
         }
       }
+      if (samples.size() >= maximumSamples) compactSamplesLocked();
       samples.add(next);
+    }
+
+    /** Bounded temporal decimation: keep the first and most recent readings.
+     * Terminal summary metrics remain independent from the sampled curve. */
+    private void compactSamplesLocked() {
+      List<TelemetrySample> reduced = new ArrayList<>((samples.size() + 2) / 2 + 1);
+      for (int index = 0; index < samples.size(); index += 2) {
+        reduced.add(samples.get(index));
+      }
+      TelemetrySample last = samples.getLast();
+      if (reduced.getLast() != last) reduced.add(last);
+      if (reduced.size() >= maximumSamples) reduced.remove(1);
+      samples.clear();
+      samples.addAll(reduced);
     }
 
     private long elapsedNanos() {

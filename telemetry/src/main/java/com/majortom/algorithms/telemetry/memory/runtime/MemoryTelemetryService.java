@@ -29,7 +29,7 @@ public final class MemoryTelemetryService implements AutoCloseable {
   private static final MemoryTelemetryService SHARED = new MemoryTelemetryService();
 
   private final DefaultTelemetryFramework framework;
-  private final TelemetryStore store = new TelemetryStore(32);
+  private final TelemetryStore store = new TelemetryStore(32, TelemetryStore.DEFAULT_MAXIMUM_PROFILES);
   private final TelemetryAnalysisStore analysisStore = new TelemetryAnalysisStore();
   private final JfrAllocationTelemetryAnalyzer jfrAnalyzer = new JfrAllocationTelemetryAnalyzer();
   private final JolStructureFootprintAnalyzer footprintAnalyzer = new JolStructureFootprintAnalyzer();
