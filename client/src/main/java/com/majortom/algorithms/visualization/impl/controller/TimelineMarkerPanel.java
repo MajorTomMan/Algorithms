@@ -102,7 +102,7 @@ final class TimelineMarkerPanel {
         }
     }
 
-    private void rebuild() {
+    void rebuild() {
         if (timelineMarkers == null || currentController() == null) {
             return;
         }
