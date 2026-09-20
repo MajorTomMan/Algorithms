@@ -1869,8 +1869,8 @@ public class MainController implements Initializable {
                         FONT_SETTINGS_SERVICE.apply(rootPane, settings);
                     }
 
-                    @Override public void prepareStyles(boolean fontChanged) {
-                        if (!fontChanged && appliedFontSettings != null) {
+                    @Override public void prepareStyles(boolean newlyMounted) {
+                        if (newlyMounted && appliedFontSettings != null) {
                             FONT_SETTINGS_SERVICE.refreshScriptFonts(rootPane, appliedFontSettings);
                         }
                         if (rootPane.getScene() != null) rootPane.applyCss();

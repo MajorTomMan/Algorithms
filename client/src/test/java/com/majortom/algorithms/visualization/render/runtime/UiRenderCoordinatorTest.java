@@ -25,7 +25,7 @@ class UiRenderCoordinatorTest {
     CompletionStage<Void> second = coordinator.requestFont(font(22));
     CompletionStage<Void> shell = coordinator.requestWorkbench();
     fx.runNext();
-    assertEquals(List.of("font:22", "css:true", "workbench", "geometry:22"),
+    assertEquals(List.of("font:22", "css:false", "workbench", "geometry:22"),
         participant.events);
     assertTrue(first.toCompletableFuture().isDone());
     assertTrue(second.toCompletableFuture().isDone());
@@ -42,16 +42,27 @@ class UiRenderCoordinatorTest {
     CompletionStage<Void> font = coordinator.requestFont(font(24));
     fx.runNext();
     CompletionStage<Void> shell = coordinator.requestWorkbench();
-    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24"),
+    assertEquals(List.of("font:24", "css:false", "workbench", "geometry:24"),
         participant.events);
     assertFalse(font.toCompletableFuture().isDone());
     assertFalse(shell.toCompletableFuture().isDone());
     participant.geometry.complete(null);
     fx.runNext();
-    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24",
-        "css:false", "workbench"), participant.events);
+    assertEquals(List.of("font:24", "css:false", "workbench", "geometry:24",
+        "workbench"), participant.events);
     assertTrue(font.toCompletableFuture().isDone());
     assertTrue(shell.toCompletableFuture().isDone());
+  }
+
+  @Test
+  void aShellRefreshDoesNotReapplyGlobalFonts() {
+    FakeFx fx = new FakeFx();
+    Participant participant = new Participant();
+    UiRenderCoordinator coordinator = new UiRenderCoordinator(fx, participant);
+    CompletionStage<Void> stage = coordinator.requestWorkbench();
+    fx.runNext();
+    assertEquals(List.of("workbench"), participant.events);
+    assertTrue(stage.toCompletableFuture().isDone());
   }
 
   @Test
@@ -63,7 +74,7 @@ class UiRenderCoordinatorTest {
     assertFalse(ready.toCompletableFuture().isDone());
     assertTrue(participant.events.isEmpty());
     fx.runNext();
-    assertEquals(List.of("css:false", "workbench"), participant.events);
+    assertEquals(List.of("css:true", "workbench"), participant.events);
     assertTrue(ready.toCompletableFuture().isDone());
   }
 
@@ -77,12 +88,12 @@ class UiRenderCoordinatorTest {
     fx.runNext();
     CompletionStage<Void> mounted = coordinator.requestMountedContent();
     assertFalse(mounted.toCompletableFuture().isDone());
-    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24"),
+    assertEquals(List.of("font:24", "css:false", "workbench", "geometry:24"),
         participant.events);
     participant.geometry.complete(null);
     fx.runNext();
-    assertEquals(List.of("font:24", "css:true", "workbench", "geometry:24",
-        "css:false", "workbench"), participant.events);
+    assertEquals(List.of("font:24", "css:false", "workbench", "geometry:24",
+        "css:true", "workbench"), participant.events);
     assertTrue(font.toCompletableFuture().isDone());
     assertTrue(mounted.toCompletableFuture().isDone());
   }

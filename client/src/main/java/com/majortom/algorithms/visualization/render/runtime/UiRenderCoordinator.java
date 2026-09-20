@@ -22,7 +22,7 @@ public final class UiRenderCoordinator {
     void applyFont(FontSettings settings);
 
     /** Prepare current (including newly attached) nodes for CSS measurement. FX thread only. */
-    void prepareStyles(boolean fontChanged);
+    void prepareStyles(boolean newlyMounted);
 
     /** Existing Workbench layout module applies its own layout. FX thread only. */
     void refreshWorkbench();
@@ -35,6 +35,7 @@ public final class UiRenderCoordinator {
   private final Participant participant;
   private final List<CompletableFuture<Void>> pending = new ArrayList<>();
   private FontSettings pendingFont;
+  private boolean pendingMount;
   private boolean pendingWorkbench;
   private boolean scheduled;
   private boolean running;
@@ -47,12 +48,12 @@ public final class UiRenderCoordinator {
   /** A font change also invalidates the Workbench and the active structure layout. */
   public CompletionStage<Void> requestFont(FontSettings settings) {
     Objects.requireNonNull(settings, "settings");
-    return enqueue(settings);
+    return enqueue(settings, false);
   }
 
   /** Shell/locale/viewport requests are coalesced without invalidating structure geometry. */
   public CompletionStage<Void> requestWorkbench() {
-    return enqueue(null);
+    return enqueue(null, false);
   }
 
   /**
@@ -61,13 +62,14 @@ public final class UiRenderCoordinator {
    * The owner must additionally wait for its JavaFX Scene to be attached.
    */
   public CompletionStage<Void> requestMountedContent() {
-    return enqueue(null);
+    return enqueue(null, true);
   }
 
-  private CompletionStage<Void> enqueue(FontSettings font) {
+  private CompletionStage<Void> enqueue(FontSettings font, boolean mounted) {
     CompletableFuture<Void> result = new CompletableFuture<>();
     fx.execute(() -> {
       if (font != null) pendingFont = font;
+      if (mounted) pendingMount = true;
       pendingWorkbench = true;
       pending.add(result);
       schedule();
@@ -90,8 +92,10 @@ public final class UiRenderCoordinator {
     scheduled = false;
     running = true;
     FontSettings font = pendingFont;
+    boolean mounted = pendingMount;
     boolean workbench = pendingWorkbench;
     pendingFont = null;
+    pendingMount = false;
     pendingWorkbench = false;
     List<CompletableFuture<Void>> batch = new ArrayList<>(pending);
     pending.clear();
@@ -99,7 +103,9 @@ public final class UiRenderCoordinator {
     CompletionStage<Void> completion;
     try {
       if (font != null) participant.applyFont(font);
-      participant.prepareStyles(font != null);
+      // A normal shell refresh never re-scans every text node. The font
+      // service already scans when applying a new font; a mount scans new nodes.
+      if (font != null || mounted) participant.prepareStyles(mounted && font == null);
       if (workbench) participant.refreshWorkbench();
       completion = font == null
           ? CompletableFuture.completedFuture(null)
@@ -125,6 +131,7 @@ public final class UiRenderCoordinator {
   private void failPending(Throwable failure) {
     scheduled = false;
     pendingFont = null;
+    pendingMount = false;
     pendingWorkbench = false;
     List<CompletableFuture<Void>> batch = new ArrayList<>(pending);
     pending.clear();
