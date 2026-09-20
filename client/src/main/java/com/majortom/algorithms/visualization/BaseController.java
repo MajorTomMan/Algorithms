@@ -134,9 +134,7 @@ public abstract class BaseController<S> implements Initializable {
     private Runnable statisticsRefresh = () -> {};
     protected LogView logView;
     protected LogView structureLogView;
-    private LogChannelStore logChannelStore;
-    private String structureLogScopeId;
-    private String activeAlgorithmLogId;
+    private final ControllerLogChannels logChannels = new ControllerLogChannels();
     protected Slider delaySlider;
     protected Slider timelineSlider;
     protected HBox customControlBox;
@@ -332,7 +330,7 @@ public abstract class BaseController<S> implements Initializable {
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureEventSink, RunControl.unrestricted(), profiledOperation);
         lastStructureExecutionAnchors = executionAnchorRecorder.snapshot().orElse(null);
-        appendStructureEventsSince(eventStart);
+        logChannels.appendStructureEventsSince(structureTimeline.events(), eventStart);
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
         }
@@ -351,7 +349,7 @@ public abstract class BaseController<S> implements Initializable {
                     ExecutionEvents.emit(event);
                     return null;
                 });
-        appendStructureEventsSince(eventStart);
+        logChannels.appendStructureEventsSince(structureTimeline.events(), eventStart);
         return result.status() == ExecutionStatus.COMPLETED;
     }
 
@@ -390,44 +388,6 @@ public abstract class BaseController<S> implements Initializable {
                 });
             }
         };
-    }
-
-    private void appendStructureEventsSince(int eventStart) {
-        LogChannel target = structureLogChannel();
-        if (target == null) {
-            return;
-        }
-        List<EventEnvelope> events = structureTimeline.events();
-        int start = Math.max(0, Math.min(eventStart, events.size()));
-        for (int index = start; index < events.size(); index++) {
-            EventEnvelope envelope = events.get(index);
-            if (envelope.event() instanceof ExecutionLifecycleEvent) {
-                continue;
-            }
-            if (envelope.event() instanceof LogEvent logEvent) {
-                Runnable task = () -> target.append(logEvent, envelope.timestamp());
-                if (FxDispatch.isFxThread()) {
-                    task.run();
-                } else {
-                    FxDispatch.defer(task);
-                }
-                continue;
-            }
-            String operation = envelope.operationId();
-            int lastDot = operation.lastIndexOf('.');
-            if (lastDot >= 0 && lastDot + 1 < operation.length()) {
-                operation = operation.substring(lastDot + 1);
-            }
-            String tag = operation.isBlank() ? "STRUCTURE" : operation;
-            String message = envelope.event().toString();
-            Runnable task = () -> target.append(
-                    envelope.timestamp(), LogLevel.INFO, tag, message);
-            if (FxDispatch.isFxThread()) {
-                task.run();
-            } else {
-                FxDispatch.defer(task);
-            }
-        }
     }
 
     /** Returns the complete structure-operation history retained by this controller. */
@@ -761,8 +721,7 @@ public abstract class BaseController<S> implements Initializable {
                 presentationEvent.set(envelope);
             }
             if (envelope.event() instanceof LogEvent logEvent) {
-                LogChannel target = algorithmLogChannel();
-                if (target != null) target.append(logEvent, envelope.timestamp());
+                logChannels.appendAlgorithmEvent(logEvent, envelope.timestamp());
             }
             publishPresentationCursor(PresentationCursor.completedEvent(
                     envelope.runId(), envelope.sequence(), PresentationCursor.Mode.LIVE));
@@ -1059,12 +1018,12 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     protected final void appendLog(String message) {
-        appendToLog(algorithmLogChannel(), message);
+        logChannels.appendAlgorithm(message);
     }
 
     /** Writes a structure-workspace message into this structure's independent log channel. */
     protected final void appendStructureLog(String message) {
-        appendToLog(structureLogChannel(), message);
+        logChannels.appendStructure(message);
     }
 
     /** Main-workbench bridge for system messages that belong to the selected algorithm. */
@@ -1077,26 +1036,18 @@ public abstract class BaseController<S> implements Initializable {
         appendStructureLog(message);
     }
 
-    /** Selects which algorithm log is visible/writable without merging it with another algorithm. */
+    /** Selects the algorithm's independent log without merging channels. */
     public final void activateAlgorithmLog(String algorithmId) {
-        activeAlgorithmLogId = normalizeLogOwnerId(algorithmId);
-        bindAlgorithmLogView();
+        logChannels.activateAlgorithm(algorithmId);
     }
 
-    /**
-     * Allows a controller with multiple real structure variants to switch log ownership explicitly.
-     * Ordinary controllers inherit their stable {@link #moduleId()} automatically.
-     */
+    /** Changes the owning structure variant for logging and telemetry. */
     protected final void setStructureLogScopeId(String structureId) {
-        String normalized = Objects.requireNonNull(normalizeLogOwnerId(structureId), "structureId");
-        if (Objects.equals(structureLogScopeId, normalized)) return;
-        structureLogScopeId = normalized;
-        bindStructureLogView();
-        bindAlgorithmLogView();
+        logChannels.setStructureScopeId(structureId);
     }
 
     public final String structureLogScopeId() {
-        return structureLogScopeId == null ? moduleId() : structureLogScopeId;
+        return logChannels.structureScope(moduleId());
     }
 
     /** Runtime capability snapshot for the cross-platform execution memory profiler. */
@@ -1162,43 +1113,6 @@ public abstract class BaseController<S> implements Initializable {
     /** Concrete modules override this when their true editable structure root differs from the view state. */
     protected Object structureMemoryRoot() {
         return latestStructureState != null ? latestStructureState : latestViewState;
-    }
-
-    private LogChannel structureLogChannel() {
-        if (logChannelStore == null) return null;
-        return logChannelStore.channel(LogChannelId.structure(structureLogScopeId()));
-    }
-
-    private LogChannel algorithmLogChannel() {
-        if (logChannelStore == null || activeAlgorithmLogId == null) return null;
-        return logChannelStore.channel(
-                LogChannelId.algorithm(structureLogScopeId(), activeAlgorithmLogId));
-    }
-
-    private void bindStructureLogView() {
-        if (structureLogView != null) structureLogView.showChannel(structureLogChannel());
-    }
-
-    private void bindAlgorithmLogView() {
-        if (logView != null) logView.showChannel(algorithmLogChannel());
-    }
-
-    private static String normalizeLogOwnerId(String value) {
-        if (value == null) return null;
-        String normalized = value.trim();
-        return normalized.isEmpty() ? null : normalized;
-    }
-
-    private void appendToLog(LogChannel target, String message) {
-        if (target == null) {
-            return;
-        }
-        Runnable task = () -> target.appendSystem(message);
-        if (FxDispatch.isFxThread()) {
-            task.run();
-        } else {
-            FxDispatch.defer(task);
-        }
     }
 
     public final void dispatchVisualizerReset() {
@@ -1377,10 +1291,7 @@ public abstract class BaseController<S> implements Initializable {
         this.statisticsRefresh = controls.statisticsRefresh();
         this.logView = controls.logView();
         this.structureLogView = controls.structureLogView();
-        this.logChannelStore = Objects.requireNonNull(controls.logChannelStore(), "logChannelStore");
-        if (this.structureLogScopeId == null) this.structureLogScopeId = moduleId();
-        bindStructureLogView();
-        bindAlgorithmLogView();
+        logChannels.bind(controls.logChannelStore(), logView, structureLogView, moduleId());
         this.delaySlider = controls.delaySlider();
         this.timelineSlider = controls.timelineSlider();
         this.customControlBox = controls.customControlBox();
