@@ -4,6 +4,7 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
+import com.majortom.algorithms.visualization.render.viewport.CameraScale;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
 import com.majortom.algorithms.visualization.render.viewport.ViewportInsets;
 import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
@@ -40,11 +41,7 @@ import java.util.function.Consumer;
  * safe-area-aware fit/center and the viewport toolbar. It never interprets Structure/Event data.</p>
  */
 public final class VisualizationSurface extends StackPane implements FxSurfaceAdapter {
-    private static final double MIN_ZOOM = 0.10d;
-    private static final double MAX_ZOOM = 8.00d;
-    private static final double DEFAULT_ZOOM = 1.00d;
-    private static final double TOOLBAR_ZOOM_FACTOR = 1.15d;
-    private static final Insets DEFAULT_SAFE_INSETS = new Insets(16.0d, 16.0d, 62.0d, 16.0d);
+    private static final Insets DEFAULT_SAFE_INSETS = new Insets(16.0d);
 
     private final Group edgeLayer = layer("visualization-edge-layer");
     private final Group nodeLayer = layer("visualization-node-layer");
@@ -59,7 +56,7 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
     private final GesturePane gesturePane = new GesturePane(worldTarget);
     private final HBox viewportToolbar = new HBox(0.0d);
     private final Label zoomLabel = new Label();
-    private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(DEFAULT_ZOOM);
+    private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(CameraScale.DEFAULT);
 
     private Bounds factualWorldBounds;
     private Insets safeInsets = DEFAULT_SAFE_INSETS;
@@ -80,6 +77,7 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
         getChildren().setAll(gesturePane, viewportToolbar);
         StackPane.setAlignment(viewportToolbar, Pos.BOTTOM_RIGHT);
         viewportToolbar.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        viewportToolbar.heightProperty().addListener((observable, oldValue, newValue) -> notifyViewportChanged());
         widthProperty().addListener((observable, oldValue, newValue) -> notifyViewportChanged());
         heightProperty().addListener((observable, oldValue, newValue) -> notifyViewportChanged());
     }
@@ -235,13 +233,13 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
 
     public void zoomIn() {
         userViewportChanged = true;
-        setZoomAroundViewportCentre(zoom() * TOOLBAR_ZOOM_FACTOR);
+        setZoomAroundViewportCentre(zoom() * CameraScale.TOOLBAR_FACTOR);
         notifyViewportChanged();
     }
 
     public void zoomOut() {
         userViewportChanged = true;
-        setZoomAroundViewportCentre(zoom() / TOOLBAR_ZOOM_FACTOR);
+        setZoomAroundViewportCentre(zoom() / CameraScale.TOOLBAR_FACTOR);
         notifyViewportChanged();
     }
 
@@ -275,8 +273,8 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
 
     private void configureGesturePane() {
         gesturePane.getStyleClass().add("visualization-gesture-pane");
-        gesturePane.setMinScale(MIN_ZOOM);
-        gesturePane.setMaxScale(MAX_ZOOM);
+        gesturePane.setMinScale(CameraScale.MIN);
+        gesturePane.setMaxScale(CameraScale.MAX_MANUAL);
         gesturePane.setBindScale(true);
         gesturePane.setFitWidth(false);
         gesturePane.setFitHeight(false);
@@ -384,10 +382,16 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
     }
 
     private Insets effectiveSafeInsets() {
+        // An overlay toolbar does not occupy parent layout space. Reserve its measured
+        // height plus the normal margin, retaining larger per-structure bottom insets.
+        double toolbarHeight = viewportToolbar.getHeight() > 0.0d
+                ? viewportToolbar.getHeight() : viewportToolbar.prefHeight(-1.0d);
+        double bottom = Math.max(safeInsets.getBottom(),
+                Math.max(0.0d, toolbarHeight) + DEFAULT_SAFE_INSETS.getBottom());
         return new Insets(
                 Math.max(safeInsets.getTop(), obstructionInsets.getTop()),
                 Math.max(safeInsets.getRight(), obstructionInsets.getRight()),
-                Math.max(safeInsets.getBottom(), obstructionInsets.getBottom()),
+                Math.max(bottom, obstructionInsets.getBottom()),
                 Math.max(safeInsets.getLeft(), obstructionInsets.getLeft()));
     }
 
@@ -399,6 +403,6 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
     }
 
     private static double clamp(double value) {
-        return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+        return Math.max(CameraScale.MIN, Math.min(CameraScale.MAX_MANUAL, value));
     }
 }

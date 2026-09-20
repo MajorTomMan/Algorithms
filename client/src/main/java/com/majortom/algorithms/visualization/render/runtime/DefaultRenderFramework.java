@@ -30,9 +30,11 @@ import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
 import com.majortom.algorithms.visualization.render.viewport.CameraManager;
+import com.majortom.algorithms.visualization.render.viewport.CameraScale;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
 import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
+import com.majortom.algorithms.visualization.settings.FontSettings;
 import com.majortom.algorithms.visualization.render.api.PresentationCursor;
 import com.majortom.algorithms.visualization.render.api.PresentationProgressSink;
 import com.majortom.algorithms.visualization.render.api.PresentationSnapshotContext;
@@ -48,8 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * Single-control-plane render runtime. No stage blocks another thread; every boundary is a CompletionStage continuation.
  */
 public final class DefaultRenderFramework implements RenderPort, PresentationCursorPort, PresentationSurfacePort, RenderSurfaceLifecyclePort, AutoCloseable {
-    private static final double MIN_CAMERA_SCALE = 0.10d;
-    private static final double MAX_AUTO_FIT_SCALE = 1.35d;
 
     private final RenderScheduler scheduler;
     private final LayoutExecutor layoutExecutor;
@@ -65,7 +65,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
     private final Map<RenderSessionId, RenderMailbox> mailboxes = new HashMap<>();
     private final AtomicLong transactionSequence = new AtomicLong();
     private final AtomicLong requestSequence = new AtomicLong();
-    private ContentStyleSnapshot contentStyle = new ContentStyleSnapshot(16.0d, "", "");
+    private ContentStyleSnapshot contentStyle = new ContentStyleSnapshot(FontSettings.DEFAULT_SIZE, "", "");
 
     public DefaultRenderFramework(
             RenderScheduler scheduler,
@@ -231,6 +231,11 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             long geometryRevision = session.geometryRevision;
             if (intent instanceof StructuralRenderIntent<?> structural) {
                 if (structural.change() == StructuralChange.MODEL) {
+                    session.geometryCameraPolicy = switch (structural.cameraPolicy()) {
+                        case FIT_IF_READABLE, RESTORE_OR_FIT_IF_READABLE,
+                                ENSURE_VISIBLE_IF_READABLE -> CameraPolicy.ENSURE_VISIBLE_IF_READABLE;
+                        default -> CameraPolicy.ENSURE_VISIBLE;
+                    };
                     // MODEL owns factual authority. A new model invalidates every older
                     // structural transaction and becomes the source for later geometry work.
                     session.latestStructuralSnapshot = structural.snapshot();
@@ -261,7 +266,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             for (RenderSession session : sessions.values()) {
                 if (!session.active() || session.latestStructuralSnapshot == null) continue;
                 refreshes.add(submit(new StructuralRenderIntent<>(
-                        session.id, session.latestStructuralSnapshot, CameraPolicy.ENSURE_VISIBLE, false, StructuralChange.GEOMETRY)));
+                        session.id, session.latestStructuralSnapshot, session.geometryCameraPolicy, false, StructuralChange.GEOMETRY)));
             }
             if (refreshes.isEmpty()) {
                 future.complete(null);
@@ -439,13 +444,18 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             // changes have already produced a new layout; applying the old camera to that new
             // geometry creates a stable but visibly off-centre frame.
             CameraPolicy effectivePolicy = intent.cameraPolicy();
-            if ((session.layout == null && effectivePolicy != CameraPolicy.KEEP)
+            if (effectivePolicy == CameraPolicy.RESTORE_OR_FIT_IF_READABLE
+                    && (session.layout == null || layoutChanged)) {
+                effectivePolicy = CameraPolicy.FIT_IF_READABLE;
+            } else if ((session.layout == null && effectivePolicy != CameraPolicy.KEEP
+                    && effectivePolicy != CameraPolicy.FIT_IF_READABLE
+                    && effectivePolicy != CameraPolicy.ENSURE_VISIBLE_IF_READABLE)
                     || (effectivePolicy == CameraPolicy.RESTORE && layoutChanged)) {
                 effectivePolicy = CameraPolicy.FIT_CONTENT;
             }
             CameraState resolved = cameraManager.resolve(
                     effectivePolicy, layoutResult.bounds(), viewport, current, session.camera,
-                    target.userControlledCamera(), MIN_CAMERA_SCALE, MAX_AUTO_FIT_SCALE);
+                    target.userControlledCamera(), CameraScale.MIN, CameraScale.MAX_AUTO_FIT);
             if (!cameraClose(resolved, current)) target.applyCameraState(resolved);
             // Reveal only after an authoritative structural transaction has completed
             // layout, FX apply, pulse and camera. This is intentionally not restricted
@@ -596,7 +606,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             FxSurfaceAdapter target = surfaces.<Object>require(session.id).fxSurface();
             CameraState current = target.cameraState();
             CameraState resolved = cameraManager.resolve(intent.cameraPolicy(), session.layout.bounds(), intent.viewport(),
-                    current, session.camera, target.userControlledCamera(), MIN_CAMERA_SCALE, MAX_AUTO_FIT_SCALE);
+                    current, session.camera, target.userControlledCamera(), CameraScale.MIN, CameraScale.MAX_AUTO_FIT);
             if (!resolved.equals(current)) target.applyCameraState(resolved);
             return resolved;
         }).thenCompose(camera -> onScheduler(() -> {
