@@ -166,40 +166,10 @@ public abstract class BaseController<S> implements Initializable {
     private ExecutionAnchorTimeline lastStructureExecutionAnchors;
     private ReducedEventTimeline<S> lastTimeline;
     private PlaybackController<S> replayController;
-    private boolean updatingTimelineSlider;
+    private final ControllerReplayControls<S> replayControls;
     private long lastLiveStatsRefreshNanos;
-    private final AtomicLong livePlaybackDelayMillis = new AtomicLong(50L);
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
     private final ControllerMemoryProfile memoryProfile = new ControllerMemoryProfile(this::refreshStatsDisplay);
-    private final ChangeListener<Number> delaySliderListener = (observable, oldValue, newValue) -> {
-        livePlaybackDelayMillis.set(Math.max(0L, newValue.longValue()));
-        updatePlaybackSpeed(newValue.doubleValue());
-    };
-    private final ChangeListener<Number> timelineSliderListener =
-            (observable, oldValue, newValue) -> {
-                if (!updatingTimelineSlider && !running.get()
-                        && timelineSlider != null && timelineSlider.isValueChanging()) {
-                    seekTimelineDuringDrag(newValue.doubleValue());
-                }
-            };
-    private boolean timelineDragScrubbing;
-    private long scrubGeneration;
-    private final ChangeListener<Boolean> timelineSliderChangingListener =
-            (observable, oldValue, newValue) -> {
-                if (updatingTimelineSlider || running.get() || timelineSlider == null) {
-                    return;
-                }
-                if (Boolean.TRUE.equals(newValue)) {
-                    timelineDragScrubbing = true;
-                    beginScrubbing();
-                    return;
-                }
-                if (timelineDragScrubbing) {
-                    timelineDragScrubbing = false;
-                    seekTimelineDuringDrag(timelineSlider.getValue());
-                    releaseScrubbingAfterQueuedRender(scrubGeneration);
-                }
-            };
     private boolean disposed;
 
     protected BaseController(
@@ -228,6 +198,8 @@ public abstract class BaseController<S> implements Initializable {
             InputFingerprint inputFingerprint,
             ExecutionExporter executionExporter) {
         this.visualizer = visualizer;
+        this.replayControls = new ControllerReplayControls<>(visualizer, running::get,
+                this::hasExecutionData, this::updatePlaybackSpeed, this::seekTimelineDuringDrag);
         this.renderSurfaceHost = Objects.requireNonNull(renderSurfaceHost, "renderSurfaceHost");
         if (visualizer == null) {
             this.renderSurface = null;
@@ -290,7 +262,7 @@ public abstract class BaseController<S> implements Initializable {
                 this::consumeLiveEvent,
                 this::renderLiveState,
                 this::updateLiveStatistics,
-                livePlaybackDelayMillis::get);
+                replayControls::liveDelayMillis);
         ExecutionHandle session = currentSession;
         session.presentationCompletion().whenComplete((result, error) -> FxDispatch.defer(
                 () -> finishExecution(session, algorithmId, input, reducerFactory, result, error)));
@@ -477,7 +449,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         stopReplay();
         beginScrubbing();
-        long generation = scrubGeneration;
+        long generation = replayControls.scrubGeneration();
         boolean moved = seekReplayFrame(0);
         releaseScrubbingAfterQueuedRender(generation);
         paused.set(true);
@@ -495,7 +467,7 @@ public abstract class BaseController<S> implements Initializable {
         }
         stopReplay();
         beginScrubbing();
-        long generation = scrubGeneration;
+        long generation = replayControls.scrubGeneration();
         int last = Math.max(0, replayController.frameCount() - 1);
         boolean moved = seekReplayFrame(last);
         releaseScrubbingAfterQueuedRender(generation);
@@ -531,13 +503,13 @@ public abstract class BaseController<S> implements Initializable {
         if (!hasExecutionData()) {
             return;
         }
-        boolean dragActive = timelineSlider != null && timelineSlider.isValueChanging();
+        boolean dragActive = replayControls.isSliderChanging();
         if (!dragActive) {
             beginScrubbing();
         }
         seekTimelineDuringDrag(progress);
         if (!dragActive) {
-            releaseScrubbingAfterQueuedRender(scrubGeneration);
+            releaseScrubbingAfterQueuedRender(replayControls.scrubGeneration());
         }
     }
 
@@ -556,28 +528,10 @@ public abstract class BaseController<S> implements Initializable {
         syncTimelineSlider(index, size);
     }
 
-    private void beginScrubbing() {
-        scrubGeneration++;
-        if (visualizer != null) {
-            visualizer.setScrubbing(true);
-        }
-    }
+    private void beginScrubbing() { replayControls.beginScrubbing(); }
 
-    /**
-     * Visualizers render through FxDispatch.defer. A generation token prevents a stale seek from
-     * ending a newer scrub session while the slider is being dragged quickly.
-     */
     private void releaseScrubbingAfterQueuedRender(long generation) {
-        BaseVisualizer<S> scrubVisualizer = visualizer;
-        if (scrubVisualizer == null) {
-            return;
-        }
-        FxDispatch.defer(() -> {
-            if (generation != scrubGeneration || timelineDragScrubbing) {
-                return;
-            }
-            scrubVisualizer.setScrubbing(false);
-        });
+        replayControls.releaseScrubbingAfterQueuedRender(generation);
     }
 
     public final boolean hasExecutionData() {
@@ -914,33 +868,9 @@ public abstract class BaseController<S> implements Initializable {
         }
     }
 
-    private void prepareTimelineControls() {
-        if (timelineSlider == null) {
-            return;
-        }
-        timelineSlider.setDisable(!hasExecutionData());
-        updatingTimelineSlider = true;
-        if (hasExecutionData()) {
-            timelineSlider.setValue(1.0d);
-        } else {
-            timelineSlider.setValue(0.0d);
-        }
-        updatingTimelineSlider = false;
-    }
+    private void prepareTimelineControls() { replayControls.prepareTimelineControls(); }
 
-    private void syncTimelineSlider(int index, int size) {
-        if (timelineSlider == null) {
-            return;
-        }
-        updatingTimelineSlider = true;
-        double value = 0.0d;
-        if (size > 1) {
-            value = (double) index / (double) (size - 1);
-        }
-        timelineSlider.setValue(value);
-        timelineSlider.setDisable(running.get() || !hasExecutionData());
-        updatingTimelineSlider = false;
-    }
+    private void syncTimelineSlider(int index, int size) { replayControls.syncTimelineSlider(index, size); }
 
     private void clearExecutionState() {
         if (replayController != null) {
@@ -957,12 +887,7 @@ public abstract class BaseController<S> implements Initializable {
         liveEventIndex = -1;
         presentationEvent.set(null);
         clearPresentationCursor();
-        if (timelineSlider != null) {
-            timelineSlider.setDisable(true);
-            updatingTimelineSlider = true;
-            timelineSlider.setValue(0.0d);
-            updatingTimelineSlider = false;
-        }
+        replayControls.clearTimeline();
     }
 
     private String describeRecord(ClientExecutionRecord record) {
@@ -1096,13 +1021,7 @@ public abstract class BaseController<S> implements Initializable {
             replayController = null;
         }
         execution.close();
-        if (delaySlider != null) {
-            delaySlider.valueProperty().removeListener(delaySliderListener);
-        }
-        if (timelineSlider != null) {
-            timelineSlider.valueProperty().removeListener(timelineSliderListener);
-            timelineSlider.valueChangingProperty().removeListener(timelineSliderChangingListener);
-        }
+        replayControls.dispose();
         if (delayMs.isBound()) {
             delayMs.unbind();
         }
@@ -1248,16 +1167,8 @@ public abstract class BaseController<S> implements Initializable {
         if (this.startBtn != null) {
             this.startBtn.setDisable(false);
         }
-        if (this.delaySlider != null) {
-            delayMs.bind(delaySlider.valueProperty());
-            livePlaybackDelayMillis.set(Math.max(0L, Math.round(delaySlider.getValue())));
-            delaySlider.valueProperty().addListener(delaySliderListener);
-        }
-        if (this.timelineSlider != null) {
-            timelineSlider.setDisable(true);
-            timelineSlider.valueProperty().addListener(timelineSliderListener);
-            timelineSlider.valueChangingProperty().addListener(timelineSliderChangingListener);
-        }
+        if (this.delaySlider != null) delayMs.bind(delaySlider.valueProperty());
+        replayControls.bind(delaySlider, timelineSlider);
         setupGlobalButtonActions();
         refreshStatsDisplay();
     }
@@ -1335,7 +1246,7 @@ public abstract class BaseController<S> implements Initializable {
         int frameIndex = lastTimeline.frameIndexAtOrBeforeEvent(exactEventIndex);
         stopReplay();
         beginScrubbing();
-        long generation = scrubGeneration;
+        long generation = replayControls.scrubGeneration();
         try {
             if (frameIndex >= 0) {
                 if (!seekReplayFrame(frameIndex)) {
