@@ -40,6 +40,8 @@ import javafx.scene.control.TextField;
 
 import static com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.*;
 import com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.SnapshotEdge;
+import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
+import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatchEdge;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -765,7 +767,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     protected void applyBulkData(String input) {
-        GraphBatch batch = parseGraphBatch(input);
+        GraphBatch batch = GraphBatchParser.parse(input, valueAdapter, runtimeValueType,
+                text -> parseBatchInput(text, valueAdapter), this::logI18n);
         if (batch == null) {
             return;
         }
@@ -784,98 +787,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         int edges = Math.min(16, vertices * (vertices - 1)
                 / (activeVariant == GraphVariant.DIRECTED ? 1 : 2));
         replaceGraphData(randomGraphBatch(vertices, edges), "randomize", "message.data.randomized");
-    }
-
-    private GraphBatch parseGraphBatch(String input) {
-        if (input == null || input.isBlank()) {
-            logI18n("message.error.bulk_input_empty");
-            return null;
-        }
-        String[] sections = input.split("\\|", -1);
-        if (sections.length > 2) {
-            logI18n("message.error.bulk_input_invalid");
-            return null;
-        }
-        List<Object> nodes = parseBatchInput(sections[0], valueAdapter);
-        if (nodes == null) {
-            return null;
-        }
-        Set<Object> nodeSet = new LinkedHashSet<>(nodes);
-        if (nodeSet.size() != nodes.size()) {
-            logI18n("message.error.bulk_duplicates");
-            return null;
-        }
-        List<GraphBatchEdge> edges = new ArrayList<>();
-        if (sections.length == 2 && !sections[1].isBlank()) {
-            String[] edgeTokens = sections[1].trim().split("[,;\\s]+");
-            for (String token : edgeTokens) {
-                if (token.isBlank()) {
-                    continue;
-                }
-                GraphBatchEdge edge = parseGraphEdge(token);
-                if (edge == null) {
-                    return null;
-                }
-                if (!nodeSet.contains(edge.from()) || !nodeSet.contains(edge.to())) {
-                    logI18n("message.error.graph_bulk_endpoint", token);
-                    return null;
-                }
-                edges.add(edge);
-            }
-        }
-        return new GraphBatch(List.copyOf(nodes), List.copyOf(edges));
-    }
-
-    private GraphBatchEdge parseGraphEdge(String token) {
-        String relation = token;
-        double weight = 1.0d;
-        int weightSeparator = token.lastIndexOf(':');
-        if (weightSeparator >= 0) {
-            relation = token.substring(0, weightSeparator);
-            try {
-                weight = Double.parseDouble(token.substring(weightSeparator + 1));
-            } catch (RuntimeException exception) {
-                logI18n("message.error.bulk_input_invalid");
-                return null;
-            }
-        }
-        if (!Double.isFinite(weight)) {
-            logI18n("message.error.invalid_graph_weight");
-            return null;
-        }
-
-        String left;
-        String right;
-        int separator = relation.indexOf("->");
-        int separatorLength = 2;
-        if (separator < 0) {
-            separator = relation.indexOf('>');
-            separatorLength = 1;
-        }
-        if (separator >= 0) {
-            left = relation.substring(0, separator);
-            right = relation.substring(separator + separatorLength);
-        } else if (runtimeValueType == Integer.class) {
-            java.util.regex.Matcher matcher = java.util.regex.Pattern
-                    .compile("^(-?\\d+)\\s*-\\s*(-?\\d+)$")
-                    .matcher(relation);
-            if (!matcher.matches()) {
-                logI18n("message.error.bulk_input_invalid");
-                return null;
-            }
-            left = matcher.group(1);
-            right = matcher.group(2);
-        } else {
-            logI18n("message.error.bulk_input_invalid");
-            return null;
-        }
-
-        try {
-            return new GraphBatchEdge(valueAdapter.parse(left), valueAdapter.parse(right), weight);
-        } catch (RuntimeException exception) {
-            logI18n("message.error.bulk_input_invalid");
-            return null;
-        }
     }
 
     private GraphBatch randomGraphBatch(int nodeCount, int edgeCount) {
@@ -946,12 +857,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         }
         logI18n(messageKey, batch.nodes().size());
-    }
-
-    private record GraphBatch(List<Object> nodes, List<GraphBatchEdge> edges) {
-    }
-
-    private record GraphBatchEdge(Object from, Object to, double weight) {
     }
 
     public void setSelectionListener(Consumer<Selection> listener) {
