@@ -145,7 +145,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             ElementGeometry target = patch.elements().get(id(entry.getKey()));
             if (target == null) continue;
             StringCellView cell = entry.getValue();
-            cell.setLayoutWidth(target.width());
+            cell.setLayoutSize(target.width(), target.height());
             cell.relocate(target.x(), target.y());
         }
         updateDecorations(state);

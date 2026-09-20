@@ -116,7 +116,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             ElementGeometry target = patch.elements().get(id(entry.getKey()));
             if (target == null) continue;
             ArrayCellView cell = entry.getValue();
-            cell.setLayoutWidth(target.width());
+            cell.setLayoutSize(target.width(), target.height());
             cell.relocate(target.x(), target.y());
         }
         updateEmptyLabel(state.values().isEmpty());
