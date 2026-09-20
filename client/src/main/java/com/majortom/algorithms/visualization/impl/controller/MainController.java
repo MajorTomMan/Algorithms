@@ -550,6 +550,7 @@ public class MainController implements Initializable {
     private boolean narrowLayout;
     private boolean structureHistoryExpanded;
     private TimelineMarkerPanel timelinePanel;
+    private SelectionInspectorPanel selectionInspector;
     /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
     private final PresentationSurfacePort presentationSurfacePort = RenderRuntime.presentationSurfaces();
@@ -568,6 +569,13 @@ public class MainController implements Initializable {
             I18N.setLocale(resources.getLocale());
         }
 
+        selectionInspector = new SelectionInspectorPanel(
+                structureSelectionOverlay, algorithmSelectionOverlay,
+                selectedEntityTitleLabel, selectedEntityHintLabel, selectedNodeIdLabel, selectedNodeValueLabel,
+                algorithmSelectedEntityTitleLabel, algorithmSelectedEntityHintLabel,
+                algorithmSelectedNodeIdLabel, algorithmSelectedNodeValueLabel, structureInspectorBody,
+                this::isStructurePageVisible,
+                () -> updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible()));
         setupI18n();
         // Algorithm events are replay/animation inputs, not an additional event inspector UI.
         // Keep the existing FXML controls constructed for legacy controller compatibility.
@@ -715,8 +723,8 @@ public class MainController implements Initializable {
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
                 selectionVisible = true;
             }
-            if (selectionVisible && selectionPresentation != null) {
-                selectionPresentation.run();
+            if (selectionVisible && selectionInspector.hasPresentation()) {
+                selectionInspector.refresh();
             } else if (!selectionVisible) {
                 clearStructureSelection();
             }
@@ -858,7 +866,6 @@ public class MainController implements Initializable {
         });
     }
 
-    private Runnable selectionPresentation;
     private javafx.beans.value.ChangeListener<Locale> localeListener;
 
     private void setupValueTypeSelectors() {
@@ -3045,211 +3052,37 @@ public class MainController implements Initializable {
 
     private void wireStructureSelection() {
         if (currentSubController instanceof TreeController treeController) {
-            treeController.setSelectionListener(this::showTreeSelection);
+            treeController.setSelectionListener(selectionInspector::showTreeSelection);
             treeController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof ArrayController arrayController) {
-            arrayController.setSelectionListener(this::showArraySelection);
+            arrayController.setSelectionListener(selectionInspector::showArraySelection);
             arrayController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof StringController stringController) {
-            stringController.setSelectionListener(this::showStringSelection);
+            stringController.setSelectionListener(selectionInspector::showStringSelection);
             stringController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof GraphController graphController) {
-            graphController.setSelectionListener(this::showGraphSelection);
+            graphController.setSelectionListener(selectionInspector::showGraphSelection);
             graphController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof MazeController mazeController) {
-            mazeController.setSelectionListener(this::showMazeSelection);
+            mazeController.setSelectionListener(selectionInspector::showMazeSelection);
             mazeController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof LinkedListController linkedController) {
-            linkedController.setSelectionListener(this::showLinkedSelection);
+            linkedController.setSelectionListener(selectionInspector::showLinkedSelection);
             linkedController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof LinearStructureController linearController) {
-            linearController.setSelectionListener(this::showLinearSelection);
+            linearController.setSelectionListener(selectionInspector::showLinearSelection);
             linearController.setStructureSelectionEnabled(isStructurePageVisible());
         }
     }
 
-    private void showTreeSelection(TreeController.NodeSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentValueSelection(
-                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
-                selection.value().text(), I18N.text("label.workspace.selection.node.hint"),
-                I18N.text("label.workspace.selection.tree.detail", selection.id(), selection.value().text(), nodeIdText(selection.parentId()), selection.childCount(), selection.depth()), selection.value());
-        selectionPresentation.run();
-    }
-
-    private void showArraySelection(ArrayController.IndexSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentValueSelection(
-                I18N.text("label.workspace.selection.cell"), "[" + selection.index() + "]",
-                selection.value().text(), I18N.text("label.workspace.selection.array.hint"),
-                I18N.text("label.workspace.selection.array.detail", selection.index(), selection.value().text(), selection.size()), selection.value());
-        selectionPresentation.run();
-    }
-
-    private void showStringSelection(StringController.IndexSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.character"), "[" + selection.index() + "]",
-                Character.toString(selection.value()), I18N.text("label.workspace.selection.string.hint"),
-                I18N.text("label.workspace.selection.string.detail", selection.index(), Character.toString(selection.value()), selection.length()));
-        selectionPresentation.run();
-    }
-
-    private void showLinkedSelection(LinkedListController.NodeSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentValueSelection(
-                I18N.text("label.workspace.selection.node"), "#" + selection.id(),
-                selection.value().text(), I18N.text("label.workspace.selection.linked.hint"),
-                I18N.text("label.workspace.selection.linked.detail", selection.id(), selection.value().text(), selection.index(), nodeIdText(selection.previousId()), nodeIdText(selection.nextId()), selection.size()), selection.value());
-        selectionPresentation.run();
-    }
-
-    private void showLinearSelection(LinearStructureController.ItemSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentValueSelection(
-                I18N.text("label.workspace.selection.item"), "[" + selection.index() + "]",
-                selection.value().text(), linearRoleText(selection.role()),
-                I18N.text("label.workspace.selection.linear.detail", selection.index(), selection.value().text(), linearRoleText(selection.role()), selection.size()), selection.value());
-        selectionPresentation.run();
-    }
-
-    private void showMazeSelection(MazeController.CellSelection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.cell"), "[" + selection.row() + "," + selection.column() + "]",
-                mazeCellStateText(selection.state()), I18N.text("label.workspace.selection.maze.hint"),
-                I18N.text("label.workspace.selection.maze.detail", selection.row(), selection.column(), mazeCellStateText(selection.state())));
-        selectionPresentation.run();
-    }
-
-    private void showGraphSelection(GraphController.Selection selection) {
-        if (selection == null) { clearStructureSelection(); return; }
-        selectionPresentation = () -> {
-            if (selection instanceof GraphController.NodeSelection node) {
-                presentValueSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
-                        node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
-                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(), node.degree()), node.value());
-            } else if (selection instanceof GraphController.EdgeSelection edge) {
-                presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
-                        edge.fromValue().text() + (edge.directed() ? " → " : " — ") + edge.toValue().text(),
-                        I18N.text("label.workspace.selection.graph.edge.hint"),
-                        I18N.text("label.workspace.selection.graph.edge.detail", edge.id(),
-                                edge.fromValue().text(), edge.toValue().text(),
-                                I18N.text(edge.directed() ? "label.workspace.selection.yes" : "label.workspace.selection.no"))
-                                + "\n\n" + edge.fromValue().projection().details()
-                                + "\n\n" + edge.toValue().projection().details());
-            }
-        };
-        selectionPresentation.run();
-    }
-
-    private String nodeIdText(Long id) {
-        return id == null ? I18N.text("label.workspace.selection.none") : "#" + id;
-    }
-
-    /** Structure identity remains in the existing detail; declared element fields follow it. */
-    private void presentValueSelection(String title, String id, String summary, String hint,
-                                       String structureDetail, com.majortom.algorithms.visualization.runtime.VisualValue value) {
-        String fields = value.projection().details();
-        presentSelection(title, id, summary, hint, structureDetail + "\n\n" + fields);
-    }
-
-    /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */
-    private void presentSelection(String title, String id, String value, String hint, String detail) {
-        showStructureSelectionOverlay(title, id, value, hint);
-        if (structureInspectorBody != null) structureInspectorBody.setText(detail);
-    }
-
-    private String linearRoleText(String role) {
-        if ("TOP".equals(role)) {
-            return I18N.text("label.workspace.selection.role.top");
-        }
-        if ("FRONT / REAR".equals(role)) {
-            return I18N.text("label.workspace.selection.role.front_rear");
-        }
-        if ("FRONT".equals(role)) {
-            return I18N.text("label.workspace.selection.role.front");
-        }
-        if ("REAR".equals(role)) {
-            return I18N.text("label.workspace.selection.role.rear");
-        }
-        return I18N.text("label.workspace.selection.role.item");
-    }
-
-    private String mazeCellStateText(String state) {
-        if ("ENTRANCE".equals(state)) {
-            return I18N.text("label.workspace.selection.maze.entrance");
-        }
-        if ("EXIT".equals(state)) {
-            return I18N.text("label.workspace.selection.maze.exit");
-        }
-        if ("OPEN".equals(state)) {
-            return I18N.text("label.workspace.selection.maze.open");
-        }
-        if ("WALL".equals(state)) {
-            return I18N.text("label.workspace.selection.maze.wall");
-        }
-        return state;
-    }
-
-    private void showStructureSelectionOverlay(String title, String id, String value, String hint) {
-        if (!isStructurePageVisible()) {
-            showAlgorithmSelectionOverlay(title, id, value);
-            return;
-        }
-        if (structureSelectionOverlay != null) {
-            structureSelectionOverlay.setManaged(true);
-            structureSelectionOverlay.setVisible(true);
-        }
-        if (algorithmSelectionOverlay != null) {
-            algorithmSelectionOverlay.setManaged(false);
-            algorithmSelectionOverlay.setVisible(false);
-        }
-        if (selectedEntityTitleLabel != null) selectedEntityTitleLabel.setText(title);
-        if (selectedEntityHintLabel != null) selectedEntityHintLabel.setText(hint);
-        if (selectedNodeIdLabel != null) selectedNodeIdLabel.setText(id);
-        if (selectedNodeValueLabel != null) selectedNodeValueLabel.setText(value);
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
-    }
-
-    private void showAlgorithmSelectionOverlay(String title, String id, String value) {
-        if (algorithmSelectionOverlay != null) {
-            algorithmSelectionOverlay.setManaged(true);
-            algorithmSelectionOverlay.setVisible(true);
-        }
-        if (structureSelectionOverlay != null) {
-            structureSelectionOverlay.setManaged(false);
-            structureSelectionOverlay.setVisible(false);
-        }
-        if (algorithmSelectedEntityTitleLabel != null) algorithmSelectedEntityTitleLabel.setText(title);
-        if (algorithmSelectedEntityHintLabel != null) {
-            algorithmSelectedEntityHintLabel.setText(I18N.text("label.workspace.selection.algorithm.hint"));
-        }
-        if (algorithmSelectedNodeIdLabel != null) algorithmSelectedNodeIdLabel.setText(id);
-        if (algorithmSelectedNodeValueLabel != null) algorithmSelectedNodeValueLabel.setText(value);
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
-    }
-
     private void clearStructureSelection() {
-        selectionPresentation = null;
-        if (structureSelectionOverlay != null) {
-            structureSelectionOverlay.setManaged(false);
-            structureSelectionOverlay.setVisible(false);
-        }
-        if (algorithmSelectionOverlay != null) {
-            algorithmSelectionOverlay.setManaged(false);
-            algorithmSelectionOverlay.setVisible(false);
-        }
-        if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
-        }
-        updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible());
+        if (selectionInspector != null) selectionInspector.clear();
     }
 
     private void refreshExecutionPresentation() {
