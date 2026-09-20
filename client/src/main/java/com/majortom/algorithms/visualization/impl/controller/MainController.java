@@ -846,18 +846,50 @@ public class MainController implements Initializable {
             fontSettingsPopup.hide();
             return;
         }
-        Popup popup = createFontSettingsPopup();
         Bounds anchor = fontSettingsBtn.localToScreen(fontSettingsBtn.getBoundsInLocal());
-        if (anchor == null) {
-            return;
+        Bounds window = rootPane.localToScreen(rootPane.getBoundsInLocal());
+        if (anchor == null || window == null) return;
+
+        Popup popup = createFontSettingsPopup();
+        VBox shell = (VBox) popup.getContent().getFirst();
+        HBox arrowRow = (HBox) shell.getChildren().getFirst();
+        ScrollPane scroll = (ScrollPane) shell.getChildren().get(1);
+        VBox form = (VBox) scroll.getContent();
+        shell.applyCss();
+
+        // Popup autoFix is screen-relative, not Workbench-relative. Constrain the
+        // popup to the actual owner content bounds and scroll oversized forms.
+        double margin = 12.0d;
+        double maxWidth = Math.max(1.0d, window.getWidth() - 2.0d * margin);
+        double popupWidth = Math.min(shell.prefWidth(-1.0d), maxWidth);
+        shell.setMinWidth(0.0d);
+        shell.setPrefWidth(popupWidth);
+        shell.setMaxWidth(maxWidth);
+        double maxHeight = Math.max(1.0d, window.getHeight() - 2.0d * margin);
+        double arrowHeight = arrowRow.prefHeight(-1.0d);
+        double formHeight = form.prefHeight(popupWidth);
+        scroll.setMinHeight(0.0d);
+        scroll.setPrefHeight(Math.min(Math.max(1.0d, maxHeight - arrowHeight), formHeight + 2.0d));
+        double popupHeight = arrowHeight + scroll.getPrefHeight();
+        double x = Math.max(window.getMinX() + margin + popupWidth,
+                Math.min(anchor.getMaxX(), window.getMaxX() - margin));
+        double y = Math.max(window.getMinY() + margin,
+                Math.min(anchor.getMaxY(), window.getMaxY() - margin - popupHeight));
+        if (y < anchor.getMaxY() - arrowHeight - 1.0d) {
+            // When the popup must move above its trigger, a detached arrow would
+            // misleadingly point at empty space.
+            arrowRow.setManaged(false);
+            arrowRow.setVisible(false);
+            scroll.setPrefHeight(Math.min(maxHeight, formHeight + 2.0d));
+            popupHeight = scroll.getPrefHeight();
+            y = Math.max(window.getMinY() + margin,
+                    Math.min(anchor.getMaxY(), window.getMaxY() - margin - popupHeight));
         }
         fontSettingsPopup = popup;
         popup.setOnHidden(event -> {
-            if (fontSettingsPopup == popup) {
-                fontSettingsPopup = null;
-            }
+            if (fontSettingsPopup == popup) fontSettingsPopup = null;
         });
-        popup.show(fontSettingsBtn, anchor.getMaxX(), anchor.getMaxY());
+        popup.show(fontSettingsBtn, x, y);
     }
 
     private Popup createFontSettingsPopup() {
@@ -1096,7 +1128,13 @@ public class MainController implements Initializable {
                 preview,
                 new Separator(),
                 footer);
-        popupShell.getChildren().setAll(arrowRow, content);
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.getStyleClass().add("font-settings-scroll");
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        popupShell.getChildren().setAll(arrowRow, scroll);
         FONT_SETTINGS_SERVICE.apply(popupShell, initial);
         FONT_SETTINGS_SERVICE.applyPreview(preview, initial);
         WorkbenchTheme.apply(popupShell);

@@ -48,7 +48,9 @@ public final class ArrayCellView extends StackPane {
     body.getChildren().setAll(valueText, selectionOutline);
 
     VBox content = new VBox(5.0d, indexText, body);
-    content.setAlignment(Pos.CENTER);
+    content.setAlignment(Pos.BOTTOM_CENTER);
+    content.setMaxHeight(Region.USE_PREF_SIZE);
+    StackPane.setAlignment(content, Pos.BOTTOM_CENTER);
     getChildren().setAll(content);
     setCursor(Cursor.HAND);
     setPickOnBounds(true);
@@ -140,9 +142,13 @@ public final class ArrayCellView extends StackPane {
     }
   }
 
-  /** Authoritative width from detached capture/layout metrics. */
-  public void setLayoutWidth(double width) {
+  /** Authoritative cell geometry from detached capture/layout metrics. */
+  public void setLayoutSize(double width, double height) {
     configureWidth(Math.max(1.0d, width));
+    double layoutHeight = Math.max(1.0d, height);
+    setMinHeight(layoutHeight);
+    setPrefHeight(layoutHeight);
+    setMaxHeight(layoutHeight);
   }
 
   public VisualDensity density() {

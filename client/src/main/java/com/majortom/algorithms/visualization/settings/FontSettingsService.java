@@ -14,7 +14,7 @@ public final class FontSettingsService {
   public static final double MIN_SIZE = 10.0d;
   public static final double MAX_SIZE = 24.0d;
 
-  private static final double PROJECT_DEFAULT_SIZE = 16.25d;
+  private static final double PROJECT_DEFAULT_SIZE = FontSettings.DEFAULT_SIZE;
   private static final String PROJECT_DEFAULT_PREVIEW_COLOR = "#F2F3F4";
   private static final String KEY_CHINESE_FAMILY = "ui.font.family.zh";
   private static final String KEY_ENGLISH_FAMILY = "ui.font.family.en";

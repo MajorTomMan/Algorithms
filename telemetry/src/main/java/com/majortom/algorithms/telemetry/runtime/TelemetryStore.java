@@ -14,8 +14,11 @@ import java.util.Optional;
 /** Bounded session history keyed only by stable TelemetryScopeId, never by controllers or views. */
 public final class TelemetryStore {
   public static final int DEFAULT_HISTORY_PER_SCOPE = 10;
+  public static final int DEFAULT_MAXIMUM_PROFILES = 256;
 
   private final int historyPerScope;
+  private final int maximumProfiles;
+  private final ArrayDeque<StoredProfile> insertionOrder = new ArrayDeque<>();
   private final Map<TelemetryScopeId, ArrayDeque<TelemetryProfile>> history = new LinkedHashMap<>();
 
   public TelemetryStore() {
@@ -23,6 +26,14 @@ public final class TelemetryStore {
   }
 
   public TelemetryStore(int historyPerScope) {
+    this(historyPerScope, Math.max(DEFAULT_MAXIMUM_PROFILES, historyPerScope));
+  }
+
+  public TelemetryStore(int historyPerScope, int maximumProfiles) {
+    if (maximumProfiles < 1) {
+      throw new IllegalArgumentException("maximumProfiles must be positive");
+    }
+    this.maximumProfiles = maximumProfiles;
     if (historyPerScope < 1) {
       throw new IllegalArgumentException("historyPerScope must be positive");
     }
@@ -37,8 +48,16 @@ public final class TelemetryStore {
     TelemetryScopeId scope = profile.sessionId().scope();
     ArrayDeque<TelemetryProfile> values = history.computeIfAbsent(scope, ignored -> new ArrayDeque<>());
     values.addLast(profile);
+    insertionOrder.addLast(new StoredProfile(scope, profile));
     while (values.size() > historyPerScope) {
-      values.removeFirst();
+      TelemetryProfile removed = values.removeFirst();
+      insertionOrder.removeIf(entry -> entry.profile == removed);
+    }
+    while (insertionOrder.size() > maximumProfiles) {
+      StoredProfile oldest = insertionOrder.removeFirst();
+      ArrayDeque<TelemetryProfile> scopeHistory = history.get(oldest.scope);
+      scopeHistory.removeFirst();
+      if (scopeHistory.isEmpty()) history.remove(oldest.scope);
     }
   }
 
@@ -84,5 +103,16 @@ public final class TelemetryStore {
 
   public synchronized void clear() {
     history.clear();
+    insertionOrder.clear();
+  }
+
+  private static final class StoredProfile {
+    final TelemetryScopeId scope;
+    final TelemetryProfile profile;
+
+    StoredProfile(TelemetryScopeId scope, TelemetryProfile profile) {
+      this.scope = scope;
+      this.profile = profile;
+    }
   }
 }

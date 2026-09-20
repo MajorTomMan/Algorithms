@@ -20,6 +20,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.util.Duration;
+import com.majortom.algorithms.visualization.runtime.PlaybackTiming;
 
 /** Single JavaFX animation execution point for structure-transition plans. */
 public final class FxAnimationPlayer implements AnimationControl {
@@ -321,7 +322,7 @@ public final class FxAnimationPlayer implements AnimationControl {
     @Override
     public void setSpeed(double speed) {
         if (!Double.isFinite(speed) || speed <= 0.0d) return;
-        this.speed = Math.max(0.05d, Math.min(32.0d, speed));
+        this.speed = PlaybackTiming.clampSpeed(speed);
         if (timeline != null) timeline.setRate(this.speed);
     }
 

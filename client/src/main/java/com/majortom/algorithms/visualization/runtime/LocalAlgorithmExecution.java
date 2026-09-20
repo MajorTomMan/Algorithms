@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 /** Local Runtime execution with an independent ordered JavaFX playback queue. */
 public final class LocalAlgorithmExecution implements AutoCloseable {
-  public static final int DEFAULT_MAXIMUM_EVENT_COUNT = 200_000;
+  public static final int DEFAULT_MAXIMUM_EVENT_COUNT = ExecutionLimits.DEFAULT_MAXIMUM_EVENT_COUNT;
 
   private final ExecutionRuntime runtime;
   private final Consumer<Runnable> dispatcher;

@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.StringStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.common.VisualDensityPolicy;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
@@ -145,7 +146,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             ElementGeometry target = patch.elements().get(id(entry.getKey()));
             if (target == null) continue;
             StringCellView cell = entry.getValue();
-            cell.setLayoutWidth(target.width());
+            cell.setLayoutSize(target.width(), target.height());
             cell.relocate(target.x(), target.y());
         }
         updateDecorations(state);
@@ -242,7 +243,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private void applyPresentation(StringViewState state) {
-        VisualDensity density = densityFor(state.value().length());
+        VisualDensity density = VisualDensityPolicy.string(state.value().length());
         for (int index = 0; index < state.value().length(); index++) {
             StringCellView cell = cells.get(index);
             if (cell == null) continue;
@@ -339,7 +340,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             return;
         }
         ensurePatternOverlayAttached();
-        VisualDensity density = densityFor(state.value().length());
+        VisualDensity density = VisualDensityPolicy.string(state.value().length());
         for (int index = 0; index < patternCells.size(); index++) {
             KmpPatternCellView cell = patternCells.get(index);
             cell.setDensity(density);
@@ -579,11 +580,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                 && !current.value().equals(previousValue);
     }
 
-    private static VisualDensity densityFor(int size) {
-        if (size <= 24) return VisualDensity.DETAIL;
-        if (size <= 48) return VisualDensity.COMPACT;
-        return VisualDensity.DENSE;
-    }
 
     @Override
     protected AnimationControl animationControl() {

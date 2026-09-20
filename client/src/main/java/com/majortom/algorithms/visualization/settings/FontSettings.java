@@ -7,6 +7,7 @@ package com.majortom.algorithms.visualization.settings;
  * same size and color policy. Empty family/color means project default.</p>
  */
 public record FontSettings(String chineseFamily, String englishFamily, double size, String color) {
+  public static final double DEFAULT_SIZE = 16.25d;
   public FontSettings {
     if (chineseFamily == null) {
       chineseFamily = "";

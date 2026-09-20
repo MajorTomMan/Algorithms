@@ -5,6 +5,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.PresentationCursor;
 import com.majortom.algorithms.visualization.render.viewport.CameraState;
+import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.render.viewport.ViewportSnapshot;
 
 final class RenderSession {
@@ -22,6 +23,7 @@ final class RenderSession {
   LayoutResult layout;
   ViewportSnapshot viewport;
   CameraState camera;
+  CameraPolicy geometryCameraPolicy = CameraPolicy.ENSURE_VISIBLE;
   Object latestStructuralSnapshot;
   PresentationCursor presentationCursor;
 

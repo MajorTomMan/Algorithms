@@ -4,6 +4,7 @@ import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
 import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.common.VisualDensityPolicy;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
@@ -21,7 +22,7 @@ public final class StringStructureVisualization implements StructureVisualizatio
     @Override
     public LayoutRequest captureLayout(StringViewState state, RenderCaptureContext context) {
         int size = state.value().length();
-        VisualDensity density = densityFor(size);
+        VisualDensity density = VisualDensityPolicy.string(size);
         double baseWidth = switch (density) {
             case DETAIL -> 52.0d;
             case COMPACT -> 40.0d;
@@ -43,9 +44,4 @@ public final class StringStructureVisualization implements StructureVisualizatio
 
     public static String elementId(int index) { return StringVisualIds.node(index); }
 
-    private static VisualDensity densityFor(int size) {
-        if (size <= 24) return VisualDensity.DETAIL;
-        if (size <= 48) return VisualDensity.COMPACT;
-        return VisualDensity.DENSE;
-    }
 }

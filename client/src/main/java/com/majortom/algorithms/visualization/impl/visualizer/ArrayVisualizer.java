@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.animation.runtime.StructureAnimationRuntime;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.ArrayStructureVisualization;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.common.VisualDensityPolicy;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayVisualIds;
@@ -116,7 +117,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
             ElementGeometry target = patch.elements().get(id(entry.getKey()));
             if (target == null) continue;
             ArrayCellView cell = entry.getValue();
-            cell.setLayoutWidth(target.width());
+            cell.setLayoutSize(target.width(), target.height());
             cell.relocate(target.x(), target.y());
         }
         updateEmptyLabel(state.values().isEmpty());
@@ -203,7 +204,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
     }
 
     private void applyPresentation(ArrayViewState state) {
-        VisualDensity density = densityFor(state.values().size());
+        VisualDensity density = VisualDensityPolicy.array(state.values().size());
         for (int index = 0; index < state.values().size(); index++) {
             ArrayCellView cell = cells.get(index);
             if (cell == null) continue;
@@ -466,11 +467,6 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
         };
     }
 
-    private static VisualDensity densityFor(int size) {
-        if (size <= 16) return VisualDensity.DETAIL;
-        if (size <= 40) return VisualDensity.COMPACT;
-        return VisualDensity.DENSE;
-    }
 
     private static String id(int index) {
         return ArrayVisualIds.node(index);

@@ -20,7 +20,7 @@ import java.util.function.LongSupplier;
  * RenderClock.
  */
 public final class JavaFxEventSink implements EventSink, AutoCloseable {
-  static final int DEFAULT_CAPACITY = 200_000;
+  static final int DEFAULT_CAPACITY = ExecutionLimits.DEFAULT_LIVE_QUEUE_CAPACITY;
 
   private final Consumer<Runnable> dispatcher;
   private final Consumer<EventEnvelope> consumer;

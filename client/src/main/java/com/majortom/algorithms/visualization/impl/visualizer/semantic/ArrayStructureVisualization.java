@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.common.VisualDensityPolicy;
 import com.majortom.algorithms.visualization.impl.visualizer.array.ArrayVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
@@ -20,7 +21,7 @@ public final class ArrayStructureVisualization implements StructureVisualization
     @Override
     public LayoutRequest captureLayout(ArrayViewState state, RenderCaptureContext context) {
         int size = state.values().size();
-        VisualDensity density = densityFor(size);
+        VisualDensity density = VisualDensityPolicy.array(size);
         List<LayoutElement> elements = new ArrayList<>(size);
         double baseWidth = switch (density) {
             case DETAIL -> 64.0d;
@@ -39,9 +40,4 @@ public final class ArrayStructureVisualization implements StructureVisualization
 
     public static String elementId(int index) { return ArrayVisualIds.node(index); }
 
-    private static VisualDensity densityFor(int size) {
-        if (size <= 16) return VisualDensity.DETAIL;
-        if (size <= 40) return VisualDensity.COMPACT;
-        return VisualDensity.DENSE;
-    }
 }

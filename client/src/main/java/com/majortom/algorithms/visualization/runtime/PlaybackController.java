@@ -31,7 +31,7 @@ public final class PlaybackController<S> implements AutoCloseable {
   private long playbackStartedAtNanos;
 
   public PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer) {
-    this(reducer, stateConsumer, FxDispatch::defer, Duration.ofMillis(100L));
+    this(reducer, stateConsumer, FxDispatch::defer, Duration.ofMillis(PlaybackTiming.DEFAULT_FRAME_DELAY_MILLIS));
   }
 
   PlaybackController(EventReducer<S> reducer, Consumer<S> stateConsumer,
@@ -164,7 +164,7 @@ public final class PlaybackController<S> implements AutoCloseable {
     }
     synchronized (lock) {
       requireOpen();
-      speed = multiplier;
+      speed = PlaybackTiming.clampSpeed(multiplier);
       if (playing) {
         generation++;
         scheduleFrame(generation, frameDelayMillis());
