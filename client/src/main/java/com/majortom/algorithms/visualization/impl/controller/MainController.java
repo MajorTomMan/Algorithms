@@ -27,6 +27,7 @@ import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
 import com.majortom.algorithms.visualization.memory.MemoryProfileView;
 import com.majortom.algorithms.visualization.layout.PlaybackToolbar;
 import com.majortom.algorithms.visualization.layout.WorkbenchHeader;
+import com.majortom.algorithms.visualization.layout.WorkbenchFormLayout;
 import com.majortom.algorithms.visualization.layout.WorkbenchUiFramework;
 import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
@@ -2190,6 +2191,7 @@ public class MainController implements Initializable {
         preparedControls.getChildren().clear();
         customControlBox.getChildren().setAll(preparedNodes);
         distributeModuleControls();
+        WorkbenchFormLayout.bindRefreshRequester(rootPane, this::refreshUiFramework);
         wireAlgorithmSelection();
         wireStructureSelection();
         structureRevisionListener = (observable, oldValue, newValue) -> {

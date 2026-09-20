@@ -175,6 +175,7 @@ public final class WorkbenchUiFramework {
     }
     // Single-line form selectors must not inherit the popup skin's preferred
     // height. Apply this only after theme/typography and density CSS settle.
+    WorkbenchFormLayout.refreshMetrics(root);
     WorkbenchFormLayout.synchronizeChoiceHeights(root, shellFont());
     layoutFamilyRail(familyNavigator, familyWidth);
     layoutStructureHistory(compact, narrow);

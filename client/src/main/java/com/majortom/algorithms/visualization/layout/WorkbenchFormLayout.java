@@ -1,8 +1,8 @@
 package com.majortom.algorithms.visualization.layout;
 
-import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -29,8 +29,8 @@ public final class WorkbenchFormLayout {
       WorkbenchFormLayout.class.getName() + ".installed";
   private static final String SECTION_METRICS_PROPERTY =
       WorkbenchFormLayout.class.getName() + ".sectionMetrics";
-  private static final String REFRESH_SCHEDULED_PROPERTY =
-      WorkbenchFormLayout.class.getName() + ".refreshScheduled";
+  private static final String REFRESH_REQUESTER_PROPERTY =
+      WorkbenchFormLayout.class.getName() + ".refreshRequester";
   private static final double SECTION_SPACING = 8.0d;
   private static final double ROW_GAP = 6.0d;
   private static final double MIN_OPERATION_HEIGHT = 31.0d;
@@ -49,6 +49,36 @@ public final class WorkbenchFormLayout {
     composeLooseOperationControls(root);
     normalize(root);
     installSectionMetrics(root);
+  }
+
+  /**
+   * A moved operation section notifies its Workbench owner; it never schedules its
+   * own FX refresh. Bind after placing module controls into their final hosts.
+   */
+  public static void bindRefreshRequester(Node root, Runnable requester) {
+    if (root == null) return;
+    Objects.requireNonNull(requester, "requester");
+    if (root instanceof VBox section && isOperationSection(section)) {
+      section.getProperties().put(REFRESH_REQUESTER_PROPERTY, requester);
+    }
+    if (root instanceof Parent parent) {
+      for (Node child : parent.getChildrenUnmodifiable()) bindRefreshRequester(child, requester);
+    }
+  }
+
+  /**
+   * Called only by WorkbenchUiFramework after CSS has settled for its layout turn.
+   * This replaces the operation sections' independent deferred height mutations.
+   */
+  public static void refreshMetrics(Node root) {
+    if (root == null) return;
+    if (root instanceof VBox section && isOperationSection(section)
+        && section.getScene() != null) {
+      refreshOperationMetrics(section);
+    }
+    if (root instanceof Parent parent) {
+      for (Node child : parent.getChildrenUnmodifiable()) refreshMetrics(child);
+    }
   }
 
   /** The module form owns single-line control heights, even after MainController
@@ -302,19 +332,9 @@ public final class WorkbenchFormLayout {
   }
 
   private static void scheduleMetricRefresh(VBox section) {
-    if (Boolean.TRUE.equals(
-            section.getProperties().putIfAbsent(REFRESH_SCHEDULED_PROPERTY, Boolean.TRUE))) {
-      return;
-    }
-    FxDispatch.defer(() -> {
-      section.getProperties().remove(REFRESH_SCHEDULED_PROPERTY);
-      if (section.getScene() == null) {
-        return;
-      }
-      section.applyCss();
-      refreshOperationMetrics(section);
-      section.requestLayout();
-    });
+    if (section.getScene() == null) return;
+    Object requester = section.getProperties().get(REFRESH_REQUESTER_PROPERTY);
+    if (requester instanceof Runnable run) run.run();
   }
 
   private static void refreshOperationMetrics(VBox section) {
