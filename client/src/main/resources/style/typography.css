@@ -56,7 +56,6 @@
 .root-pane .summary-number,
 .root-pane .summary-number-red,
 .root-pane .summary-number-blue { -fx-font-size: 1.35em; }
-.root-pane .algorithm-input-source-card { -fx-font-size: 0.68em; }
 .root-pane .input-source-toggle,
 .root-pane .algorithm-control-panel .input-source-toggle { -fx-font-size: 0.62em; }
 .root-pane .operation-slider .axis { -fx-tick-label-font-size: 0.62em; }

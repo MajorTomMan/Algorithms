@@ -375,7 +375,6 @@
 .root-pane .structure-identity-block { -fx-padding: 0.86em 0.12em 0.74em 0.12em; }
 .root-pane .live-row { -fx-padding: 0.55em 0 0 0; }
 .root-pane .input-source-block { -fx-padding: 0.74em 0; }
-.root-pane .algorithm-input-source-card { -fx-padding: 0.68em 0.74em; }
 .root-pane .structure-control-panel .control-section,
 .root-pane .structure-control-panel .control-card,
 .root-pane .algorithm-control-panel .control-section,
@@ -664,7 +663,6 @@
 .root-pane:narrow-layout .panel-topline { -fx-min-height: 2.25em; -fx-pref-height: 2.25em; }
 .root-pane:narrow-layout .structure-identity-block { -fx-padding: 0.44em 0.06em 0.38em 0.06em; }
 .root-pane:narrow-layout .input-source-block { -fx-padding: 0.38em 0; -fx-spacing: 0.32em; }
-.root-pane:narrow-layout .algorithm-input-source-card { -fx-padding: 0.44em 0.50em; }
 .root-pane:narrow-layout .structure-control-panel .control-section,
 .root-pane:narrow-layout .structure-control-panel .control-card,
 .root-pane:narrow-layout .algorithm-control-panel .control-section,

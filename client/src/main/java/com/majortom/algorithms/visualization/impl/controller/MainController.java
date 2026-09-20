@@ -409,8 +409,6 @@ public class MainController implements Initializable {
     @FXML
     private Label algorithmInputTitleLabel;
     @FXML
-    private Label algorithmInputSourceLabel;
-    @FXML
     private Button currentInputBtn;
     @FXML
     private Button savedInputBtn;
@@ -561,7 +559,7 @@ public class MainController implements Initializable {
                 this::shortSnapshotId, this::formatSnapshotTime);
         telemetryPresentation = new WorkbenchTelemetryPresentation(RenderRuntime.presentationSurfaces(),
                 () -> currentSubController);
-        snapshotWorkspace.bindInputControls(algorithmInputSourceLabel, currentInputBtn, savedInputBtn);
+        snapshotWorkspace.bindInputControls(currentInputBtn, savedInputBtn);
         setupI18n();
         // Algorithm events are replay/animation inputs, not an additional event inspector UI.
         // Keep the existing FXML controls constructed for legacy controller compatibility.
@@ -1953,26 +1951,7 @@ public class MainController implements Initializable {
 
     private void refreshAlgorithmInputSource() {
         if (snapshotWorkspace == null) return;
-        snapshotWorkspace.renderInputSource(activeDefinition == null ? null : activeDefinition.id(),
-                inputValueTypeText());
-    }
-
-    private String inputValueTypeText() {
-        if (currentSubController instanceof RuntimeValueTypeSupport support) {
-            return I18N.text("label.value_type.input", valueTypeDisplayName(support.runtimeValueType().getSimpleName()));
-        }
-        return "";
-    }
-
-    private String shortSnapshotId(String snapshotId) {
-        if (snapshotId == null || snapshotId.isBlank()) {
-            return "-";
-        }
-        if (snapshotId.length() <= 8) {
-            return snapshotId;
-        } else {
-            return snapshotId.substring(0, 8);
-        }
+        snapshotWorkspace.renderInputSource(activeDefinition == null ? null : activeDefinition.id());
     }
 
     private StructureSnapshotSupport<?> currentSnapshotSupport() {
