@@ -33,7 +33,6 @@ import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.structure.InMemoryStructureSnapshotStore;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
-import com.majortom.algorithms.core.logging.LogEvent;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
@@ -541,6 +540,7 @@ public class MainController implements Initializable {
     private boolean structureHistoryExpanded;
     private TimelineMarkerPanel timelinePanel;
     private SelectionInspectorPanel selectionInspector;
+    private SnapshotWorkspace snapshotWorkspace;
     /** True only while Structure mode is showing a saved snapshot as a read-only preview. */
     private boolean structureSnapshotPreviewActive;
     private final PresentationSurfacePort presentationSurfacePort = RenderRuntime.presentationSurfaces();
@@ -566,6 +566,14 @@ public class MainController implements Initializable {
                 algorithmSelectedNodeIdLabel, algorithmSelectedNodeValueLabel, structureInspectorBody,
                 this::isStructurePageVisible,
                 () -> updateVisualizationObstruction(currentStepOverlay != null && currentStepOverlay.isVisible()));
+        snapshotWorkspace = new SnapshotWorkspace(structureSnapshotStore, selectedSnapshotIds,
+                snapshotCards, inspectorSnapshotCards, snapshotCountLabel,
+                structureHistoryCards, structureHistoryCountLabel,
+                this::selectCurrentSnapshotCard, this::selectSavedSnapshotCard,
+                this::restoreSnapshot, () -> applyCurrentStructureAlgorithmInput(true),
+                snapshot -> applySavedSnapshotAlgorithmInput(snapshot, true),
+                this::currentAlgorithmInputSupport, this::describeSnapshot,
+                this::shortSnapshotId, this::formatSnapshotTime);
         setupI18n();
         // Algorithm events are replay/animation inputs, not an additional event inspector UI.
         // Keep the existing FXML controls constructed for legacy controller compatibility.
@@ -2104,97 +2112,16 @@ public class MainController implements Initializable {
     }
 
     private void refreshSnapshotCards() {
-        if (activeDefinition == null || snapshotCards == null) {
-            return;
-        }
-        String moduleName = familyName(activeDefinition.id());
-        StructureSnapshotSupport<?> support = currentSnapshotSupport();
-        if (support == null) {
-            snapshotCards.getChildren().clear();
-            if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
-            selectedSnapshotIds.remove(activeDefinition.id());
-            snapshotCountLabel.setText(I18N.text(
-                    "label.workspace.snapshot.count", 0,
-                    structureSnapshotStore.maxSnapshotsPerModule()));
-            updateSnapshotActionState();
-            refreshStructureHistory();
-            return;
-        }
-
-        snapshotCards.getChildren().clear();
-        if (inspectorSnapshotCards != null) inspectorSnapshotCards.getChildren().clear();
-        List<StructureSnapshot<?>> saved = structureSnapshotStore.snapshots(activeDefinition.id());
-        String selectedSnapshotId = validSelectedSnapshotId(saved);
-
-        StructureSnapshot<?> current = support.captureStructureSnapshot();
-        snapshotCards.getChildren().add(createSnapshotCard(
-                moduleName, I18N.text("label.workspace.snapshot.current"), current, support, true,
-                selectedSnapshotId == null));
-
-        if (inspectorSnapshotCards != null) {
-            inspectorSnapshotCards.getChildren().add(createInspectorCurrentSnapshotCard(
-                    current, support, selectedSnapshotId == null));
-        }
-        for (StructureSnapshot<?> snapshot : saved) {
-            boolean selected = snapshot.id().equals(selectedSnapshotId);
-            snapshotCards.getChildren().add(createSnapshotCard(
-                    moduleName, I18N.text("label.workspace.snapshot.saved"), snapshot,
-                    support, false, selected));
-            if (inspectorSnapshotCards != null) {
-                inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
-                        snapshot, support, selected));
-            }
-        }
-        if (saved.isEmpty()) {
-            Label empty = new Label(I18N.text("label.workspace.snapshot.none"));
-            empty.getStyleClass().add("snapshot-empty");
-            empty.setWrapText(true);
-            snapshotCards.getChildren().add(empty);
-        }
-        snapshotCountLabel.setText(I18N.text(
-                "label.workspace.snapshot.count", saved.size(),
-                structureSnapshotStore.maxSnapshotsPerModule()));
+        if (activeDefinition == null || snapshotCards == null || snapshotWorkspace == null) return;
+        snapshotWorkspace.refresh(activeDefinition.id(), familyName(activeDefinition.id()),
+                currentSnapshotSupport(),
+                currentSubController == null ? null : currentSubController.structureEvents());
         updateSnapshotActionState();
-        refreshStructureHistory();
-    }
-
-    private String validSelectedSnapshotId(List<StructureSnapshot<?>> snapshots) {
-        if (activeDefinition == null) {
-            return null;
-        }
-        String moduleId = activeDefinition.id();
-        String selectedId = selectedSnapshotIds.get(moduleId);
-        if (selectedId == null) {
-            return null;
-        }
-        for (StructureSnapshot<?> snapshot : snapshots) {
-            if (snapshot.id().equals(selectedId)) {
-                return selectedId;
-            }
-        }
-        selectedSnapshotIds.remove(moduleId);
-        return null;
     }
 
     private StructureSnapshot<?> selectedSavedSnapshot(boolean fallbackToNewest) {
-        if (activeDefinition == null) {
-            return null;
-        }
-        List<StructureSnapshot<?>> snapshots = structureSnapshotStore.snapshots(activeDefinition.id());
-        String selectedId = validSelectedSnapshotId(snapshots);
-        if (selectedId != null) {
-            for (StructureSnapshot<?> snapshot : snapshots) {
-                if (snapshot.id().equals(selectedId)) {
-                    return snapshot;
-                }
-            }
-        }
-        if (!fallbackToNewest || snapshots.isEmpty()) {
-            return null;
-        }
-        StructureSnapshot<?> newest = snapshots.getFirst();
-        selectedSnapshotIds.put(activeDefinition.id(), newest.id());
-        return newest;
+        return activeDefinition == null || snapshotWorkspace == null ? null
+                : snapshotWorkspace.selectedSavedSnapshot(activeDefinition.id(), fallbackToNewest);
     }
 
     private void selectCurrentSnapshotCard() {
@@ -2233,200 +2160,6 @@ public class MainController implements Initializable {
         }
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
-    }
-
-    private void refreshStructureHistory() {
-        if (structureHistoryCards == null || structureHistoryCountLabel == null) {
-            return;
-        }
-        structureHistoryCards.getChildren().clear();
-        if (currentSubController == null) {
-            structureHistoryCountLabel.setText("0");
-            return;
-        }
-        List<EventEnvelope> domainEvents = currentSubController.structureEvents().stream()
-                .filter(event -> !(event.event() instanceof ExecutionLifecycleEvent))
-                .filter(event -> !(event.event() instanceof LogEvent))
-                .toList();
-        structureHistoryCountLabel.setText(String.valueOf(domainEvents.size()));
-        if (domainEvents.isEmpty()) {
-            Label empty = new Label(I18N.text("label.workspace.structure.history.none"));
-            empty.getStyleClass().add("snapshot-empty");
-            empty.setWrapText(true);
-            structureHistoryCards.getChildren().add(empty);
-            return;
-        }
-        int start = Math.max(0, domainEvents.size() - 12);
-        for (int index = domainEvents.size() - 1; index >= start; index--) {
-            structureHistoryCards.getChildren().add(createStructureHistoryCard(domainEvents.get(index)));
-        }
-    }
-
-    private Node createStructureHistoryCard(EventEnvelope envelope) {
-        VBox card = new VBox(3);
-        card.getStyleClass().add("snapshot-card");
-        card.setMaxWidth(Double.MAX_VALUE);
-        Label eventName = new Label(envelope.event().getClass().getSimpleName());
-        eventName.getStyleClass().add("snapshot-card-title");
-        Label operation = new Label(shortOperationId(envelope.operationId()));
-        operation.getStyleClass().add("snapshot-card-state");
-        Label sequence = new Label("#" + envelope.sequence());
-        sequence.getStyleClass().add("snapshot-card-time");
-        card.getChildren().addAll(eventName, operation, sequence);
-        return card;
-    }
-
-    private String shortOperationId(String operationId) {
-        int lastDot = operationId.lastIndexOf('.');
-        if (lastDot < 0 || lastDot + 1 >= operationId.length()) {
-            return operationId;
-        }
-        return operationId.substring(lastDot + 1);
-    }
-
-    private Node createInspectorCurrentSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean selected) {
-        VBox card = new VBox(5);
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add("snapshot-card-current");
-        if (selected) {
-            card.getStyleClass().add("snapshot-card-selected");
-        }
-        card.setOnMouseClicked(event -> selectCurrentSnapshotCard());
-        HBox header = new HBox(8);
-        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label(I18N.text("label.workspace.snapshot.current"));
-        title.getStyleClass().add("snapshot-card-title");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label state = new Label(I18N.text("label.workspace.snapshot.current_state"));
-        state.getStyleClass().add("snapshot-card-state");
-        header.getChildren().addAll(title, spacer, state);
-        Label detail = new Label(describeSnapshot(support, snapshot));
-        detail.setWrapText(true);
-        detail.getStyleClass().add("snapshot-card-detail");
-        card.getChildren().addAll(header, detail);
-        return card;
-    }
-
-    private Node createInspectorSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean selected) {
-        VBox card = new VBox(5);
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add("snapshot-card-saved");
-        if (selected) card.getStyleClass().add("snapshot-card-selected");
-        card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
-        HBox header = new HBox(8);
-        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label(I18N.text("label.workspace.snapshot.card", shortSnapshotId(snapshot)));
-        title.getStyleClass().add("snapshot-card-title");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label time = new Label(formatSnapshotTime(snapshot));
-        time.getStyleClass().add("snapshot-card-detail");
-        header.getChildren().addAll(title, spacer, time);
-        Label detail = new Label(describeSnapshot(support, snapshot));
-        detail.setWrapText(true);
-        detail.getStyleClass().add("snapshot-card-detail");
-        card.getChildren().addAll(header, detail);
-        return card;
-    }
-
-    private Node createSnapshotCard(
-            String moduleName,
-            String status,
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean current,
-            boolean selected) {
-        VBox card = new VBox(6);
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().add("snapshot-card");
-        if (current) {
-            card.getStyleClass().add("snapshot-card-current");
-            card.setOnMouseClicked(event -> selectCurrentSnapshotCard());
-        } else {
-            card.getStyleClass().add("snapshot-card-saved");
-            card.setOnMouseClicked(event -> selectSavedSnapshotCard(snapshot));
-        }
-        if (selected) {
-            card.getStyleClass().add("snapshot-card-selected");
-        }
-
-        Label title;
-        if (current) {
-            title = new Label(moduleName);
-        } else {
-            title = new Label(moduleName + " · " + shortSnapshotId(snapshot));
-        }
-        title.getStyleClass().add("snapshot-card-title");
-        Label state = new Label(status);
-        state.getStyleClass().add("snapshot-card-state");
-        Label detail = new Label(describeSnapshot(support, snapshot));
-        detail.getStyleClass().add("snapshot-card-detail");
-        card.getChildren().addAll(title, state, detail);
-
-        if (!current) {
-            Label createdAt = new Label(I18N.text("label.workspace.snapshot.time", formatSnapshotTime(snapshot)));
-            createdAt.getStyleClass().add("snapshot-card-detail");
-            card.getChildren().add(createdAt);
-        }
-
-        SnapshotAlgorithmInputSupport<?> algorithmInputSupport = currentAlgorithmInputSupport();
-        if (algorithmInputSupport != null) {
-            String inputSnapshotId = algorithmInputSupport.algorithmInputSnapshotId();
-            boolean algorithmInput;
-            if (current) {
-                algorithmInput = inputSnapshotId == null;
-            } else {
-                algorithmInput = snapshot.id().equals(inputSnapshotId);
-            }
-            if (algorithmInput) {
-                card.getStyleClass().add("snapshot-card-algorithm-input");
-                Label inputState = new Label(I18N.text("label.workspace.snapshot.algorithm_input"));
-                inputState.getStyleClass().add("snapshot-card-input-state");
-                card.getChildren().add(inputState);
-            }
-        }
-
-        HBox actions = new HBox(6);
-        if (!current) {
-            Button restore = new Button(I18N.text("action.workspace.restore_snapshot"));
-            restore.getStyleClass().add("snapshot-card-action");
-            WorkbenchTheme.applyControl(restore);
-            restore.setOnAction(event -> restoreSnapshot(snapshot));
-            actions.getChildren().add(restore);
-        }
-        if (algorithmInputSupport != null) {
-            Button useInput;
-            if (current) {
-                useInput = new Button(I18N.text("action.workspace.use_current_input"));
-            } else {
-                useInput = new Button(I18N.text("action.workspace.use_snapshot_input"));
-            }
-            useInput.getStyleClass().add("snapshot-card-action");
-            WorkbenchTheme.applyControl(useInput);
-            useInput.setOnAction(event -> {
-                if (current) {
-                    applyCurrentStructureAlgorithmInput(true);
-                } else {
-                    selectedSnapshotIds.put(snapshot.moduleId(), snapshot.id());
-                    applySavedSnapshotAlgorithmInput(snapshot, true);
-                }
-            });
-            actions.getChildren().add(useInput);
-        }
-        if (!actions.getChildren().isEmpty()) {
-            actions.setOnMouseClicked(event -> event.consume());
-            card.getChildren().add(actions);
-        }
-        return card;
     }
 
     private void previewSavedStructureSnapshot(StructureSnapshot<?> snapshot) {
@@ -2671,7 +2404,7 @@ public class MainController implements Initializable {
                 || !activeDefinition.id().equals(snapshot.moduleId())) {
             return;
         }
-        if (!confirmSnapshotRestore(snapshot)) {
+        if (!snapshotWorkspace.confirmRestore(snapshot)) {
             return;
         }
         try {
@@ -2694,17 +2427,6 @@ public class MainController implements Initializable {
         updateWorkspaceInteractionState();
         refreshTopContext();
         appendStructureSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
-    }
-
-    private boolean confirmSnapshotRestore(StructureSnapshot<?> snapshot) {
-        ButtonType cancel = new ButtonType(I18N.text("action.common.cancel"));
-        ButtonType restore = new ButtonType(I18N.text("action.workspace.restore_snapshot"));
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "", cancel, restore);
-        alert.setTitle(I18N.text("confirm.snapshot.restore.title"));
-        alert.setHeaderText(I18N.text("confirm.snapshot.restore.header", shortSnapshotId(snapshot)));
-        alert.setContentText(I18N.text("confirm.snapshot.restore.content"));
-        OperationDialogTheme.apply(alert);
-        return alert.showAndWait().filter(restore::equals).isPresent();
     }
 
     @SuppressWarnings("unchecked")
