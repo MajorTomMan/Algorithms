@@ -1225,9 +1225,9 @@
     -fx-background-color: transparent;
 }
 .array-cell-index {
-    -fx-fill: #8a8a8a;
+    -fx-fill: #555555;
     -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
 }
 .array-cell-body {
