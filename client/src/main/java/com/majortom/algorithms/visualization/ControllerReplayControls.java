@@ -21,29 +21,9 @@ final class ControllerReplayControls<S> {
     private boolean dragging;
     private long scrubGeneration;
 
-    private final ChangeListener<Number> delayListener = (observable, before, value) -> {
-        livePlaybackDelayMillis.set(Math.max(0L, value.longValue()));
-        onDelayChanged.accept(value.doubleValue());
-    };
-    private final ChangeListener<Number> timelineListener = (observable, before, value) -> {
-        if (!updatingTimelineSlider && !running.getAsBoolean()
-                && timelineSlider != null && timelineSlider.isValueChanging()) {
-            onDragSeek.accept(value.doubleValue());
-        }
-    };
-    private final ChangeListener<Boolean> changingListener = (observable, before, changing) -> {
-        if (updatingTimelineSlider || running.getAsBoolean() || timelineSlider == null) return;
-        if (Boolean.TRUE.equals(changing)) {
-            dragging = true;
-            beginScrubbing();
-            return;
-        }
-        if (dragging) {
-            dragging = false;
-            onDragSeek.accept(timelineSlider.getValue());
-            releaseScrubbingAfterQueuedRender(scrubGeneration);
-        }
-    };
+    private final ChangeListener<Number> delayListener;
+    private final ChangeListener<Number> timelineListener;
+    private final ChangeListener<Boolean> changingListener;
 
     ControllerReplayControls(BaseVisualizer<S> visualizer, BooleanSupplier running,
             BooleanSupplier hasPlaybackData, DoubleConsumer onDelayChanged, DoubleConsumer onDragSeek) {
@@ -52,6 +32,29 @@ final class ControllerReplayControls<S> {
         this.hasPlaybackData = hasPlaybackData;
         this.onDelayChanged = onDelayChanged;
         this.onDragSeek = onDragSeek;
+        this.delayListener = (observable, before, value) -> {
+            livePlaybackDelayMillis.set(Math.max(0L, value.longValue()));
+            onDelayChanged.accept(value.doubleValue());
+        };
+        this.timelineListener = (observable, before, value) -> {
+            if (!updatingTimelineSlider && !running.getAsBoolean()
+                    && timelineSlider != null && timelineSlider.isValueChanging()) {
+                onDragSeek.accept(value.doubleValue());
+            }
+        };
+        this.changingListener = (observable, before, changing) -> {
+            if (updatingTimelineSlider || running.getAsBoolean() || timelineSlider == null) return;
+            if (Boolean.TRUE.equals(changing)) {
+                dragging = true;
+                beginScrubbing();
+                return;
+            }
+            if (dragging) {
+                dragging = false;
+                onDragSeek.accept(timelineSlider.getValue());
+                releaseScrubbingAfterQueuedRender(scrubGeneration);
+            }
+        };
     }
 
     void bind(Slider delay, Slider timeline) {
