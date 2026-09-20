@@ -55,6 +55,38 @@ class UiRenderCoordinatorTest {
   }
 
   @Test
+  void anInterruptedFontRefreshDoesNotBlockTheFollowingShellRefresh() {
+    FakeFx fx = new FakeFx();
+    Participant participant = new Participant();
+    participant.geometry = new CompletableFuture<>();
+    UiRenderCoordinator coordinator = new UiRenderCoordinator(fx, participant);
+    CompletionStage<Void> font = coordinator.requestFont(font(22));
+    fx.runNext();
+    CompletionStage<Void> shell = coordinator.requestWorkbench();
+    participant.geometry.completeExceptionally(new IllegalStateException("test failure"));
+    fx.runNext();
+    assertTrue(font.toCompletableFuture().isCompletedExceptionally());
+    assertTrue(shell.toCompletableFuture().isDone());
+    assertFalse(shell.toCompletableFuture().isCompletedExceptionally());
+    assertEquals(List.of("font:22", "css:false", "workbench", "geometry:22",
+        "workbench"), participant.events);
+  }
+
+  @Test
+  void aMountAndFontRequestShareOneStylePreparation() {
+    FakeFx fx = new FakeFx();
+    Participant participant = new Participant();
+    UiRenderCoordinator coordinator = new UiRenderCoordinator(fx, participant);
+    CompletionStage<Void> mount = coordinator.requestMountedContent();
+    CompletionStage<Void> font = coordinator.requestFont(font(24));
+    fx.runNext();
+    assertEquals(List.of("font:24", "css:false", "workbench", "geometry:24"),
+        participant.events);
+    assertTrue(mount.toCompletableFuture().isDone());
+    assertTrue(font.toCompletableFuture().isDone());
+  }
+
+  @Test
   void aShellRefreshDoesNotReapplyGlobalFonts() {
     FakeFx fx = new FakeFx();
     Participant participant = new Participant();

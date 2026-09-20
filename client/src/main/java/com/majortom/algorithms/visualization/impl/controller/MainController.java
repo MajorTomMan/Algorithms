@@ -1076,7 +1076,11 @@ public class MainController implements Initializable {
             boolean timelineExpanded = timelineDetailPanel != null && timelineDetailPanel.isVisible();
             setTimelineExpanded(timelineExpanded);
             // One request owns CSS preparation, Workbench layout and structure invalidation.
-            uiRenderCoordinator.requestFont(normalized);
+            uiRenderCoordinator.requestFont(normalized).whenComplete((ignored, failure) -> {
+                if (failure != null) {
+                    FxDispatch.execute(() -> appendSystemLog("Font update failed: " + failure));
+                }
+            });
             popup.hide();
         });
 
