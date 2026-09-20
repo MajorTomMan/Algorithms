@@ -129,8 +129,8 @@ public final class ArrayCellView extends StackPane {
       }
       case COMPACT -> {
         getStyleClass().add("array-cell-compact");
-        boolean showIndex = importantIndex || index % 2 == 0;
-        indexText.setVisible(showIndex);
+        // Compact cells still have room for two-digit indices; don't silently hide odd indices.
+        indexText.setVisible(true);
         indexText.setManaged(true);
       }
       case DENSE -> {
