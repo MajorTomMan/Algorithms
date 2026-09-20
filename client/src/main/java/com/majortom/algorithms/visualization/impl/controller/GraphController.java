@@ -38,6 +38,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
+import static com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.*;
+import com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.SnapshotEdge;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -1134,9 +1136,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public record EdgeSelection(long id, VisualValue fromValue, VisualValue toValue, boolean directed) implements Selection {
     }
 
-    private record SnapshotEdge(long id, long fromId, long toId, Double weight) {
-    }
-
     private GraphStructure<Object> currentGraph() {
         return currentWeightedGraph();
     }
@@ -1175,145 +1174,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
         snapshot.requireValueType(runtimeValueType);
-    }
-
-    private GraphStructure<Object> graphFromSnapshot(GraphSnapshotState<Object> snapshot) {
-        return WeightedGraph.fromSnapshot(asWeightedSnapshot(snapshot));
-    }
-
-    private WeightedGraphSnapshot<Object> asWeightedSnapshot(GraphSnapshotState<Object> snapshot) {
-        if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            @SuppressWarnings("unchecked")
-            WeightedGraphSnapshot<Object> typed = (WeightedGraphSnapshot<Object>) weighted;
-            return typed;
-        }
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            @SuppressWarnings("unchecked")
-            GraphSnapshot<Object> typed = (GraphSnapshot<Object>) basic;
-            List<WeightedGraphSnapshot.Vertex<Object>> vertices = typed.vertices().stream()
-                    .map(vertex -> new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()))
-                    .toList();
-            List<WeightedGraphSnapshot.Edge> edges = typed.edges().stream()
-                    .map(edge -> new WeightedGraphSnapshot.Edge(
-                            edge.id(), edge.fromId(), edge.toId(), 1.0d))
-                    .toList();
-            return new WeightedGraphSnapshot<>(typed.directed(), vertices, edges);
-        }
-        throw new IllegalArgumentException("unsupported graph snapshot type: " + snapshot.getClass().getName());
-    }
-
-    private List<Long> snapshotVertexIds(GraphSnapshotState<Object> snapshot) {
-        List<Long> ids = new ArrayList<>();
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Vertex<?> vertex : basic.vertices()) {
-                ids.add(vertex.id());
-            }
-        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Vertex<?> vertex : weighted.vertices()) {
-                ids.add(vertex.id());
-            }
-        }
-        return List.copyOf(ids);
-    }
-
-    private List<Long> snapshotEdgeIds(GraphSnapshotState<Object> snapshot) {
-        List<Long> ids = new ArrayList<>();
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Edge edge : basic.edges()) {
-                ids.add(edge.id());
-            }
-        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
-                ids.add(edge.id());
-            }
-        }
-        return List.copyOf(ids);
-    }
-
-    private Long snapshotEdgeIdBetween(GraphSnapshotState<Object> snapshot, long fromId, long toId) {
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Edge edge : basic.edges()) {
-                if (edgeConnects(snapshot.directed(), edge.fromId(), edge.toId(), fromId, toId)) {
-                    return edge.id();
-                }
-            }
-        } else if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
-                if (edgeConnects(snapshot.directed(), edge.fromId(), edge.toId(), fromId, toId)) {
-                    return edge.id();
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean edgeConnects(boolean directed, long edgeFrom, long edgeTo, long fromId, long toId) {
-        if (edgeFrom == fromId && edgeTo == toId) {
-            return true;
-        }
-        if (!directed && edgeFrom == toId && edgeTo == fromId) {
-            return true;
-        }
-        return false;
-    }
-
-    private Object snapshotVertexValue(GraphSnapshotState<Object> snapshot, long nodeId) {
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Vertex<?> vertex : basic.vertices()) {
-                if (vertex.id() == nodeId) {
-                    return vertex.value();
-                }
-            }
-            return null;
-        }
-        if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Vertex<?> vertex : weighted.vertices()) {
-                if (vertex.id() == nodeId) {
-                    return vertex.value();
-                }
-            }
-            return null;
-        }
-        return null;
-    }
-
-    private int snapshotDegree(GraphSnapshotState<Object> snapshot, long nodeId) {
-        int degree = 0;
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Edge edge : basic.edges()) {
-                if (edge.fromId() == nodeId || edge.toId() == nodeId) {
-                    degree++;
-                }
-            }
-            return degree;
-        }
-        if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
-                if (edge.fromId() == nodeId || edge.toId() == nodeId) {
-                    degree++;
-                }
-            }
-        }
-        return degree;
-    }
-
-    private SnapshotEdge snapshotEdge(GraphSnapshotState<Object> snapshot, long edgeId) {
-        if (snapshot instanceof GraphSnapshot<?> basic) {
-            for (GraphSnapshot.Edge edge : basic.edges()) {
-                if (edge.id() == edgeId) {
-                    return new SnapshotEdge(edge.id(), edge.fromId(), edge.toId(), null);
-                }
-            }
-            return null;
-        }
-        if (snapshot instanceof WeightedGraphSnapshot<?> weighted) {
-            for (WeightedGraphSnapshot.Edge edge : weighted.edges()) {
-                if (edge.id() == edgeId) {
-                    return new SnapshotEdge(edge.id(), edge.fromId(), edge.toId(), edge.weight());
-                }
-            }
-        }
-        return null;
     }
 
     private Object firstVertexValue(GraphStructure<Object> source) {

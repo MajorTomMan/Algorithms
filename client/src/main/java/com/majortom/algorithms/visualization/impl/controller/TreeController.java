@@ -39,6 +39,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
+import static com.majortom.algorithms.visualization.impl.controller.TreeSnapshotMapper.*;
+import static com.majortom.algorithms.visualization.impl.controller.TreeNodeQueries.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -829,45 +831,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         return new GeneralTreeSnapshot<>(snapshotGeneralNode(generalTree.root()), generalTree.size());
     }
 
-    private GeneralTreeSnapshot.Node<Object> snapshotGeneralNode(GeneralTreeNode<Object> node) {
-        if (node == null) {
-            return null;
-        }
-        List<GeneralTreeSnapshot.Node<Object>> children = node.getChildren().stream()
-                .map(this::snapshotGeneralNode)
-                .toList();
-        return new GeneralTreeSnapshot.Node<>(node.getId(), node.getValue(), children);
-    }
-
     private BinaryTreeSnapshot<Object> currentAvlSnapshot() {
         return new BinaryTreeSnapshot<>(snapshotBinaryNode(avlRoot()), avlTree.size());
-    }
-
-    private BinaryTreeSnapshot.Node<Object> snapshotBinaryNode(AVLTreeNode<Object> node) {
-        if (node == null) {
-            return null;
-        }
-        return new BinaryTreeSnapshot.Node<>(
-                node.getId(),
-                node.getValue(),
-                snapshotBinaryNode(left(node)),
-                snapshotBinaryNode(right(node)));
-    }
-
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private AVLTree avlFromSnapshot(BinaryTreeSnapshot<Object> snapshot) {
-        return AVLTree.fromRestoredRoot((AVLTreeNode) restoreAvlNode(snapshot.root()));
-    }
-
-    private AVLTreeNode<Object> restoreAvlNode(BinaryTreeSnapshot.Node<Object> node) {
-        if (node == null) {
-            return null;
-        }
-        AVLTreeNode<Object> left = restoreAvlNode(node.left());
-        AVLTreeNode<Object> right = restoreAvlNode(node.right());
-        int height = Math.max(avlHeight(left), avlHeight(right)) + 1;
-        return new AVLTreeNode<>(node.id(), node.value(), height, left, right);
     }
 
     @SuppressWarnings("unchecked")
@@ -901,29 +866,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             throw new IllegalArgumentException("AVL value type must implement Comparable: " + value.getClass().getName());
         }
         return (Comparable) comparable;
-    }
-
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Object> left(AVLTreeNode<Object> node) {
-        if (node == null || node.getLeft() == null) {
-            return null;
-        }
-        return (AVLTreeNode<Object>) node.getLeft();
-    }
-
-    @SuppressWarnings("unchecked")
-    private AVLTreeNode<Object> right(AVLTreeNode<Object> node) {
-        if (node == null || node.getRight() == null) {
-            return null;
-        }
-        return (AVLTreeNode<Object>) node.getRight();
-    }
-
-    private int avlHeight(AVLTreeNode<Object> node) {
-        if (node == null) {
-            return 0;
-        }
-        return node.getHeight();
     }
 
     private Object parseValue(TextField field) {
@@ -962,138 +904,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
             return null;
         }
         return node;
-    }
-
-    private AVLTreeNode<Object> avlNodeById(AVLTreeNode<Object> node, long id) {
-        if (node == null) {
-            return null;
-        }
-        if (node.getId() == id) {
-            return node;
-        }
-        AVLTreeNode<Object> found = avlNodeById(left(node), id);
-        if (found != null) {
-            return found;
-        }
-        return avlNodeById(right(node), id);
-    }
-
-    private GeneralTreeNode<Object> generalParentOf(
-            GeneralTreeNode<Object> root,
-            GeneralTreeNode<Object> target) {
-        if (root == null) {
-            return null;
-        }
-        for (GeneralTreeNode<Object> child : root.getChildren()) {
-            if (child == target) {
-                return root;
-            }
-            GeneralTreeNode<Object> found = generalParentOf(child, target);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
-    }
-
-    private AVLTreeNode<Object> avlParentOf(AVLTreeNode<Object> root, AVLTreeNode<Object> target) {
-        if (root == null) {
-            return null;
-        }
-        if (left(root) == target || right(root) == target) {
-            return root;
-        }
-        AVLTreeNode<Object> found = avlParentOf(left(root), target);
-        if (found != null) {
-            return found;
-        }
-        return avlParentOf(right(root), target);
-    }
-
-    private int generalDepthOf(GeneralTreeNode<Object> root, GeneralTreeNode<Object> target, int depth) {
-        if (root == null) {
-            return -1;
-        }
-        if (root == target) {
-            return depth;
-        }
-        for (GeneralTreeNode<Object> child : root.getChildren()) {
-            int found = generalDepthOf(child, target, depth + 1);
-            if (found >= 0) {
-                return found;
-            }
-        }
-        return -1;
-    }
-
-    private int avlDepthOf(AVLTreeNode<Object> root, AVLTreeNode<Object> target, int depth) {
-        if (root == null) {
-            return -1;
-        }
-        if (root == target) {
-            return depth;
-        }
-        int leftDepth = avlDepthOf(left(root), target, depth + 1);
-        if (leftDepth >= 0) {
-            return leftDepth;
-        }
-        return avlDepthOf(right(root), target, depth + 1);
-    }
-
-    private Long presentationParentId(TreeViewState state, long nodeId) {
-        for (TreeViewState.Node candidate : state.nodes().values()) {
-            if (state.childrenOf(candidate).contains(nodeId)) {
-                return candidate.id();
-            }
-        }
-        return null;
-    }
-
-    private int presentationDepth(TreeViewState state, long nodeId) {
-        return presentationDepth(state, state.rootId(), nodeId, 0, new java.util.HashSet<>());
-    }
-
-    private int presentationDepth(
-            TreeViewState state,
-            Long currentId,
-            long targetId,
-            int depth,
-            java.util.Set<Long> visited) {
-        if (currentId == null || !visited.add(currentId)) {
-            return -1;
-        }
-        if (currentId == targetId) {
-            return depth;
-        }
-        TreeViewState.Node current = state.nodes().get(currentId);
-        if (current == null) {
-            return -1;
-        }
-        for (Long childId : state.childrenOf(current)) {
-            int found = presentationDepth(state, childId, targetId, depth + 1, visited);
-            if (found >= 0) {
-                return found;
-            }
-        }
-        return -1;
-    }
-
-    private int generalHeight(GeneralTreeSnapshot.Node<Object> node) {
-        if (node == null) {
-            return 0;
-        }
-        int maxChildHeight = 0;
-        for (GeneralTreeSnapshot.Node<Object> child : node.children()) {
-            maxChildHeight = Math.max(maxChildHeight, generalHeight(child));
-        }
-        return maxChildHeight + 1;
-    }
-
-    private int binaryHeight(BinaryTreeSnapshot.Node<Object> node) {
-        if (node == null) {
-            return 0;
-        }
-        return Math.max(binaryHeight(node.left()), binaryHeight(node.right())) + 1;
     }
 
     private void clearNodeSelection() {
