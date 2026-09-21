@@ -84,7 +84,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @SuppressWarnings("unchecked")
     public LinkedListController(RenderContext renderContext) {
-        super(new LinkedListVisualizer(), new LinkedListPresenter(), "/fxml/LinearStructureControls.fxml", renderContext);
+        super(new LinkedListVisualizer(), new LinkedListPresenter(), "/fxml/LinearStructureControls.fxml",
+                renderContext);
         linkedList = (LinkedStructure<Object>) structure(StructureIds.LINKED_LIST, LinkedList.class);
         seed();
         renderStructureState(currentState());
@@ -277,7 +278,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         if (runtimeValueType == String.class) {
             return List.of("alpha", "beta", "gamma");
         }
-        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 2)) return List.of();
+        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 2))
+            return List.of();
         return List.of(ValueAdapters.distinctValue(runtimeValueType, 0),
                 ValueAdapters.distinctValue(runtimeValueType, 1));
     }
@@ -364,7 +366,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public void handleAlgorithmStart() {
-        if (!ensureReplayableValue(runtimeValueType)) return;
+        if (!ensureReplayableValue(runtimeValueType))
+            return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             algorithmLogI18n("message.linear.no_algorithm");
@@ -593,7 +596,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public List<String> algorithmIds() {
-        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.LinkedStructure.class, runtimeValueType);
+        return AlgorithmCatalog.forWorkbenchModule(
+                StructureIds.LINKED_LIST, runtimeValueType);
     }
 
     @Override

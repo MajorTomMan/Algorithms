@@ -265,9 +265,12 @@ public final class LinearStructureController extends BaseModuleController<Linear
         if (runtimeValueType == Integer.class) {
             return List.of(36, 24, 12);
         }
-        if (runtimeValueType == String.class) return List.of("gamma", "beta", "alpha");
-        if (runtimeValueType == Boolean.class) return List.of(true, false, true);
-        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 3)) return List.of();
+        if (runtimeValueType == String.class)
+            return List.of("gamma", "beta", "alpha");
+        if (runtimeValueType == Boolean.class)
+            return List.of(true, false, true);
+        if (!ValueAdapters.canGenerateDistinct(runtimeValueType, 3))
+            return List.of();
         return List.of(ValueAdapters.distinctValue(runtimeValueType, 2),
                 ValueAdapters.distinctValue(runtimeValueType, 1), ValueAdapters.distinctValue(runtimeValueType, 0));
     }
@@ -362,7 +365,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public void handleAlgorithmStart() {
-        if (!ensureReplayableValue(runtimeValueType)) return;
+        if (!ensureReplayableValue(runtimeValueType))
+            return;
         String algorithmId = selectedAlgorithmId();
         if (algorithmId == null) {
             algorithmLogI18n("message.linear.no_algorithm");
@@ -373,9 +377,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
                 : algorithmInputSnapshot.state().values();
         LinkedList<Object> input = new LinkedList<>();
         input.initialize(inputValues);
-        Class<?> structureContract = kind == Kind.STACK ? StackStructure.class : QueueStructure.class;
-        var descriptor = AlgorithmCatalog.compatibleDescriptor(
-                structureContract, runtimeValueType, algorithmId);
+        var descriptor = AlgorithmCatalog.descriptor(
+                moduleId, runtimeValueType, algorithmId);
         Object algorithmInput = kind == Kind.STACK ? (StackStructure<Object>) input : (QueueStructure<Object>) input;
         startAlgorithm(algorithmId, inputValues, () -> {
             descriptor.invoke(algorithmInput);
@@ -596,9 +599,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public List<String> algorithmIds() {
-        return kind == Kind.STACK
-                ? AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.StackStructure.class, runtimeValueType)
-                : AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.linked.QueueStructure.class, runtimeValueType);
+        return AlgorithmCatalog.forWorkbenchModule(
+                moduleId, runtimeValueType);
     }
 
     @Override
