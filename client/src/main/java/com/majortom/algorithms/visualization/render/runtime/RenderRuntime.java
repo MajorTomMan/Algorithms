@@ -21,16 +21,19 @@ public final class RenderRuntime {
     private static final RenderClock CLOCK = new RenderClock();
     private static final DefaultRenderFramework SHARED = new DefaultRenderFramework(
             new RenderScheduler(),
-            new LayoutExecutor(Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
+            new LayoutCoordinator(
+                    new LayoutExecutor(Math.max(
+                            2,
+                            Math.min(4, Runtime.getRuntime().availableProcessors() / 2))),
+                    new LayoutEngineRegistry()
+                            .register(new LinearLayoutEngine())
+                            .register(new FixedLayoutEngine())
+                            .register(new GraphElkLayout())
+                            .register(new TreeElkLayout())
+                            .register(new LinkedListLayout())),
             FX,
             new RenderSurfaceRegistry(),
             new FxPresentationSurfaceRegistry(),
-            new LayoutEngineRegistry()
-                    .register(new LinearLayoutEngine())
-                    .register(new FixedLayoutEngine())
-                    .register(new GraphElkLayout())
-                    .register(new TreeElkLayout())
-                    .register(new LinkedListLayout()),
             new CameraManager(),
             TRACE);
     private static final RenderSurfaceHost SURFACE_HOST = new RenderSurfaceHost(SHARED);
