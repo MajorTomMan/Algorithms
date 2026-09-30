@@ -5,14 +5,22 @@ import java.util.Map;
 import java.util.Objects;
 
 public record LayoutPatch(long modelRevision, Map<String, ElementGeometry> elements,
-    List<EdgeGeometry> edges, BoundsSnapshot primaryContentBounds) {
+    List<EdgeGeometry> edges, BoundsSnapshot primaryContentBounds,
+    DecorationLayoutResult decorations) {
   public LayoutPatch {
     elements = Map.copyOf(Objects.requireNonNull(elements, "elements"));
     edges = List.copyOf(Objects.requireNonNull(edges, "edges"));
     Objects.requireNonNull(primaryContentBounds, "primaryContentBounds");
+    Objects.requireNonNull(decorations, "decorations");
   }
+
+  public LayoutPatch(long modelRevision, Map<String, ElementGeometry> elements,
+      List<EdgeGeometry> edges, BoundsSnapshot primaryContentBounds) {
+    this(modelRevision, elements, edges, primaryContentBounds, DecorationLayoutResult.empty());
+  }
+
   public static LayoutPatch from(LayoutResult result) {
-    return new LayoutPatch(
-        result.modelRevision(), result.elements(), result.edges(), result.bounds());
+    return new LayoutPatch(result.modelRevision(), result.elements(), result.edges(),
+        result.bounds(), result.decorations());
   }
 }

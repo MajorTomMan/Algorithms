@@ -7,7 +7,7 @@ import com.majortom.algorithms.core.event.algorithm.LinkedAlgorithmEvent;
 import com.majortom.algorithms.structure.linked.LinkedStructure;
 import com.majortom.algorithms.structure.linked.ListNode;
 
-@Algorithm(id = "reverse-linked-list", name = "反转链表", type = Integer.class, structure = LinkedStructure.class)
+@Algorithm(id = "reverse-linked-list", name = "反转链表", types = {Integer.class}, structure = LinkedStructure.class)
 public class ReverseLinkedList {
   @AlgorithmEntry
   public void reverse(LinkedStructure<Integer> list) {

@@ -32,7 +32,7 @@ public final class RegistrationValidator {
   public static AlgorithmDescriptor validate(AlgorithmDescriptor descriptor) {
     Objects.requireNonNull(descriptor, "descriptor");
     validateId(descriptor.id(), "Algorithm");
-    validateValueType(descriptor.valueType());
+    validateTypeSignature(descriptor.typeSignature());
     validateContract(descriptor.structureContract(), "Algorithm structure");
     if (descriptor.structureContract().getAnnotation(Structure.class) == null) {
       throw new RegistrationException(
@@ -64,7 +64,7 @@ public final class RegistrationValidator {
       if (!keys.add(key)) {
         throw new RegistrationException(
             "Duplicate Algorithm registration: structure=" + key.structureContract().getName()
-            + ", type=" + key.valueType().getName() + ", id=" + key.algorithmId());
+            + ", types=" + key.typeSignature() + ", id=" + key.algorithmId());
       }
     }
   }
@@ -106,10 +106,14 @@ public final class RegistrationValidator {
     }
   }
 
-  private static void validateValueType(Class<?> valueType) {
-    if (valueType.isPrimitive() || valueType == Void.class || valueType == void.class) {
-      throw new RegistrationException(
-          "Algorithm value type must be a non-primitive runtime type: " + valueType.getTypeName());
+  private static void validateTypeSignature(AlgorithmTypeSignature signature) {
+    Objects.requireNonNull(signature, "signature");
+    for (Class<?> type : signature.types()) {
+      if (type.isPrimitive() || type == Void.class || type == void.class) {
+        throw new RegistrationException(
+            "Algorithm signature types must be non-primitive runtime types: "
+                + type.getTypeName());
+      }
     }
   }
 

@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.LinearNodeSupport;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import java.util.ArrayList;
@@ -18,19 +19,20 @@ import java.util.Objects;
 import java.util.Optional;
 import javafx.geometry.Point2D;
 
-/** Shared FX scene adapter for Stack/Queue while keeping their item maps renderer-owned. */
+/** Shared FX scene adapter for Stack/Queue backed by the common linear-node support. */
 public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter {
     private final String kind;
     private final VisualizationSurface surface;
-    private final Map<Integer, NodeView> items;
+    private final LinearNodeSupport nodes;
     private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
     private final Map<String, NodeView> exitingItems = new LinkedHashMap<>();
     private LayoutPatch targetPatch;
 
-    public LinearAnimationSceneAdapter(String kind, VisualizationSurface surface, Map<Integer, NodeView> items) {
+    public LinearAnimationSceneAdapter(
+            String kind, VisualizationSurface surface, LinearNodeSupport nodes) {
         this.kind = Objects.requireNonNull(kind, "kind");
         this.surface = Objects.requireNonNull(surface, "surface");
-        this.items = Objects.requireNonNull(items, "items");
+        this.nodes = Objects.requireNonNull(nodes, "nodes");
     }
 
     public void prepare(AnimationPlan plan, LinearStructureViewState state, LayoutPatch patch) {
@@ -38,19 +40,22 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
         targetPatch = Objects.requireNonNull(patch, "patch");
         captureCenters(state.mutation(), state.values().size());
         for (var timed : plan.steps()) {
-            if (timed.step() instanceof AnimationStep.NodeExit exit) detachExit(exit.targetId());
+            if (timed.step() instanceof AnimationStep.NodeExit exit) {
+                detachExit(exit.targetId());
+            }
         }
     }
 
     private void captureCenters(LinearStructureViewState.Mutation mutation, int newSize) {
-        for (Map.Entry<Integer, NodeView> entry : items.entrySet()) {
+        for (Map.Entry<Integer, NodeView> entry : nodes.items().entrySet()) {
             int source = entry.getKey();
             String logicalId = logicalIdForSource(source, mutation, newSize);
             capturedCenters.put(logicalId, entry.getValue().visualCenter());
         }
     }
 
-    private String logicalIdForSource(int source, LinearStructureViewState.Mutation mutation, int newSize) {
+    private String logicalIdForSource(
+            int source, LinearStructureViewState.Mutation mutation, int newSize) {
         return switch (mutation.type()) {
             case PUSH -> StructureIds.STACK.equals(kind)
                     ? LinearAnimationIds.node(kind, source + 1)
@@ -80,9 +85,13 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
 
     private void detachExit(String logicalId) {
         int previousIndex = LinearAnimationIds.exitIndex(kind, logicalId);
-        if (previousIndex < 0) return;
-        NodeView item = items.remove(previousIndex);
-        if (item != null) exitingItems.put(logicalId, item);
+        if (previousIndex < 0) {
+            return;
+        }
+        NodeView item = nodes.detach(previousIndex);
+        if (item != null) {
+            exitingItems.put(logicalId, item);
+        }
     }
 
     public boolean exitDetached(int previousIndex) {
@@ -99,13 +108,18 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
                     ? Optional.empty()
                     : Optional.of(new NodeTarget(logicalId, exiting, center, List.of()));
         }
+
         int index = LinearAnimationIds.activeIndex(kind, logicalId);
-        if (index < 0) return Optional.empty();
-        NodeView item = items.get(index);
+        if (index < 0) {
+            return Optional.empty();
+        }
+        NodeView item = nodes.get(index);
         ElementGeometry geometry = targetPatch == null
                 ? null
                 : targetPatch.elements().get(LinearAnimationIds.node(kind, index));
-        if (item == null || geometry == null) return Optional.empty();
+        if (item == null || geometry == null) {
+            return Optional.empty();
+        }
         return Optional.of(new NodeTarget(logicalId, item, center(geometry), List.of()));
     }
 
@@ -126,14 +140,17 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
 
     @Override
     public Collection<NodeTarget> activeNodes() {
-        List<NodeTarget> result = new ArrayList<>(items.size());
-        for (Map.Entry<Integer, NodeView> entry : items.entrySet()) {
+        List<NodeTarget> result = new ArrayList<>(nodes.size());
+        for (Map.Entry<Integer, NodeView> entry : nodes.items().entrySet()) {
             ElementGeometry geometry = targetPatch == null
                     ? null
                     : targetPatch.elements().get(LinearAnimationIds.node(kind, entry.getKey()));
             if (geometry != null) {
                 result.add(new NodeTarget(
-                        LinearAnimationIds.node(kind, entry.getKey()), entry.getValue(), center(geometry), List.of()));
+                        LinearAnimationIds.node(kind, entry.getKey()),
+                        entry.getValue(),
+                        center(geometry),
+                        List.of()));
             }
         }
         return result;

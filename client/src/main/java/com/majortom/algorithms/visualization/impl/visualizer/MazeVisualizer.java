@@ -46,10 +46,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private VisualDensity density = VisualDensity.DETAIL;
 
     public MazeVisualizer() {
-        getChildren().setAll(surface);
-        surface.prefWidthProperty().bind(widthProperty());
-        surface.prefHeightProperty().bind(heightProperty());
-        surface.setFrameworkManagedCamera(true);
+        installSurface(surface);
         canvas.widthProperty().unbind();
         canvas.heightProperty().unbind();
         surface.nodeLayer().getChildren().add(canvas);
@@ -338,11 +335,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
-@Override
-    public void setViewportObstructionInsets(Insets insets) {
-        surface.setObstructionInsets(insets);
-    }
-
     @Override
     public void onVisualizationReset() {
         super.onVisualizationReset();
@@ -351,14 +343,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         fillBackground();
         surface.reset();
         surface.markViewportPristine();
-    }
-
-    @Override
-    public void dispose() {
-        canvas.setOnMouseClicked(null);
-        surface.prefWidthProperty().unbind();
-        surface.prefHeightProperty().unbind();
-        super.dispose();
     }
 
     private VisualDensity densityFor(double cellSize) {

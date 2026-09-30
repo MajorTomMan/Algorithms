@@ -3,17 +3,21 @@ package com.majortom.algorithms.core.registry;
 import java.util.Objects;
 
 /** Stable runtime identity of an Algorithm registration. */
-public record AlgorithmKey(Class<?> structureContract, Class<?> valueType, String algorithmId) {
+public record AlgorithmKey(
+    Class<?> structureContract,
+    AlgorithmTypeSignature typeSignature,
+    String algorithmId) {
+
   public AlgorithmKey {
     structureContract = Objects.requireNonNull(structureContract, "structureContract");
-    valueType = Objects.requireNonNull(valueType, "valueType");
+    typeSignature = Objects.requireNonNull(typeSignature, "typeSignature");
     algorithmId = requireText(algorithmId, "algorithmId");
   }
 
   public static AlgorithmKey of(AlgorithmDescriptor descriptor) {
     Objects.requireNonNull(descriptor, "descriptor");
     return new AlgorithmKey(
-        descriptor.structureContract(), descriptor.valueType(), descriptor.id());
+        descriptor.structureContract(), descriptor.typeSignature(), descriptor.id());
   }
 
   private static String requireText(String value, String name) {

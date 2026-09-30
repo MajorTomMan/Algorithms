@@ -53,7 +53,7 @@ final class ValueTypeSelectionPanel {
         if (maze) return;
         updating = true;
         try {
-            boolean hashTable = "hash-table".equals(moduleId);
+            boolean hashTable = StructureIds.HASH.equals(moduleId);
             setVisibleManaged(hashValueTypeLabel, hashTable);
             setVisibleManaged(hashValueTypeSelector, hashTable);
             valueTypeLabel.textProperty().unbind();
@@ -75,6 +75,29 @@ final class ValueTypeSelectionPanel {
             algorithmValueTypeSelector.getItems().setAll(algorithmTypes);
             selectValueType(algorithmValueTypeSelector, selected);
             algorithmValueTypeSelector.setDisable(StructureIds.STRING.equals(moduleId) || running);
+        } finally {
+            updating = false;
+        }
+    }
+
+    void renderHash(boolean structureMode, boolean previewActive, boolean running,
+            String selectedKey, List<ValueTypeOption> keyTypes,
+            String selectedValue, List<ValueTypeOption> valueTypes) {
+        setVisibleManaged(valueTypeBox, true);
+        setVisibleManaged(algorithmValueTypeBox, false);
+        updating = true;
+        try {
+            setVisibleManaged(hashValueTypeLabel, true);
+            setVisibleManaged(hashValueTypeSelector, true);
+            valueTypeLabel.textProperty().unbind();
+            valueTypeLabel.setText(I18N.text("label.value_type.key"));
+            valueTypeSelector.getItems().setAll(keyTypes);
+            hashValueTypeSelector.getItems().setAll(valueTypes);
+            selectValueType(valueTypeSelector, selectedKey);
+            selectValueType(hashValueTypeSelector, selectedValue);
+            boolean disable = !structureMode || previewActive || running;
+            valueTypeSelector.setDisable(disable);
+            hashValueTypeSelector.setDisable(disable);
         } finally {
             updating = false;
         }

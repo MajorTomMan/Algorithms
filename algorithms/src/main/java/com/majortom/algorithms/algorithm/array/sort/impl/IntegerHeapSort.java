@@ -7,7 +7,7 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Max-heap sort over an ArrayStructure<Integer>. */
 @Algorithm(
-    id = "heap-sort", name = "堆排序", type = Integer.class, structure = ArrayStructure.class)
+    id = "heap-sort", name = "堆排序", types = {Integer.class}, structure = ArrayStructure.class)
 public final class IntegerHeapSort extends AbstractIntegerSort {
   @Override
   public int compare(Integer left, Integer right) {

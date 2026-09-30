@@ -19,8 +19,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 /** A* pathfinder using Manhattan distance on the maze grid. */
-@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", type = Boolean.class,
-    structure = MazeStructure.class)
+@Algorithm(id = "maze-pathfinder-astar", name = "A* Search", types = {Boolean.class}, structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class AStarArrayMazePathfinder {
   @AlgorithmEntry

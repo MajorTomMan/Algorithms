@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -512,7 +513,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 ? GeneralTreeStructure.class
                 : AvlTreeStructure.class;
         AlgorithmDescriptor descriptor = AlgorithmCatalog.compatibleDescriptor(
-                activeStructure, runtimeValueType, algorithmId);
+                activeStructure, AlgorithmTypeSignature.of(runtimeValueType), algorithmId);
         Object input = algorithmTree(inputState);
 
         startAlgorithm(algorithmId, inputState, () -> {
@@ -559,10 +560,10 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private TreeVariant variantForAlgorithm(String algorithmId) {
-        if (AlgorithmCatalog.compatibleAlgorithms(GeneralTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(GeneralTreeStructure.class, AlgorithmTypeSignature.of(runtimeValueType)).contains(algorithmId)) {
             return TreeVariant.GENERAL;
         }
-        if (AlgorithmCatalog.compatibleAlgorithms(AvlTreeStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(AvlTreeStructure.class, AlgorithmTypeSignature.of(runtimeValueType)).contains(algorithmId)) {
             return TreeVariant.AVL;
         }
         return null;
@@ -854,9 +855,9 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     private void refreshAlgorithmIds() {
         if (activeVariant == TreeVariant.GENERAL) {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.GeneralTreeStructure.class, runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.GeneralTreeStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
         } else {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.AvlTreeStructure.class, runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.tree.AvlTreeStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
         }
     }
 

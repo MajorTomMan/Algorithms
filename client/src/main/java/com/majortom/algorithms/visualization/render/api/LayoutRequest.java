@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public record LayoutRequest(LayoutRequestId requestId, RenderSessionId sessionId,
     long modelRevision, long geometryRevision, String engineId, List<LayoutElement> elements,
-    List<LayoutLink> links, Map<String, String> metadata) {
+    List<LayoutLink> links, Map<String, String> metadata, List<DecorationInput> decorations) {
   public LayoutRequest {
     Objects.requireNonNull(requestId, "requestId");
     Objects.requireNonNull(sessionId, "sessionId");
@@ -14,6 +14,14 @@ public record LayoutRequest(LayoutRequestId requestId, RenderSessionId sessionId
     elements = List.copyOf(Objects.requireNonNull(elements, "elements"));
     links = List.copyOf(Objects.requireNonNull(links, "links"));
     metadata = Map.copyOf(Objects.requireNonNull(metadata, "metadata"));
+    decorations = List.copyOf(Objects.requireNonNull(decorations, "decorations"));
+  }
+
+  public LayoutRequest(LayoutRequestId requestId, RenderSessionId sessionId, long modelRevision,
+      long geometryRevision, String engineId, List<LayoutElement> elements,
+      List<LayoutLink> links, Map<String, String> metadata) {
+    this(requestId, sessionId, modelRevision, geometryRevision, engineId, elements, links,
+        metadata, List.of());
   }
 
   /** Compatibility constructor for layouts without explicit topology links. */
@@ -21,6 +29,6 @@ public record LayoutRequest(LayoutRequestId requestId, RenderSessionId sessionId
       long geometryRevision, String engineId, List<LayoutElement> elements,
       Map<String, String> metadata) {
     this(requestId, sessionId, modelRevision, geometryRevision, engineId, elements, List.of(),
-        metadata);
+        metadata, List.of());
   }
 }

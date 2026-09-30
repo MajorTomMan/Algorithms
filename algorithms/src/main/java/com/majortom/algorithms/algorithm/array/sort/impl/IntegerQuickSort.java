@@ -10,7 +10,7 @@ import java.util.ArrayDeque;
 
 /** In-place three-way quicksort with deterministic pivot selection. */
 @Algorithm(
-    id = "quick-sort", name = "Quick Sort", type = Integer.class, structure = ArrayStructure.class)
+    id = "quick-sort", name = "Quick Sort", types = {Integer.class}, structure = ArrayStructure.class)
 public final class IntegerQuickSort extends AbstractIntegerSort {
   @Override
   public int compare(Integer left, Integer right) {

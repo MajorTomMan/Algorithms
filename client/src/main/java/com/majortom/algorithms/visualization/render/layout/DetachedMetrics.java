@@ -32,6 +32,11 @@ public final class DetachedMetrics {
     return Math.ceil(Math.max(1.0d, units * style.fontSize()));
   }
 
+  public static double textHeight(ContentStyleSnapshot style) {
+    Objects.requireNonNull(style, "style");
+    return Math.ceil(Math.max(1.0d, style.fontSize() * 1.35d));
+  }
+
   public static double boxWidth(
       String text, ContentStyleSnapshot style, double minimum, double horizontalPadding) {
     return Math.max(minimum, Math.ceil(textWidth(text, style) + horizontalPadding));

@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /** Sliding-window longest substring without repeated characters. */
 @Algorithm(id = "longest-unique-substring", name = "Longest Unique Substring",
-    type = java.lang.String.class, structure = StringStructure.class)
+    types = {java.lang.String.class}, structure = StringStructure.class)
 public final class LongestUniqueSubstring {
   @AlgorithmEntry
   public SubstringRange find(StringStructure source) {

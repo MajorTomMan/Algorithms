@@ -20,7 +20,8 @@ public final class StructureMetricsRegistry {
         new TreeMetricsProvider(),
         new GraphMetricsProvider(),
         new StringMetricsProvider(),
-        new MazeMetricsProvider()));
+        new MazeMetricsProvider(),
+        new HashMetricsProvider()));
   }
 
   public List<MetricItem> metrics(String structureId, Object state, List<com.majortom.algorithms.core.runtime.EventEnvelope> events) {

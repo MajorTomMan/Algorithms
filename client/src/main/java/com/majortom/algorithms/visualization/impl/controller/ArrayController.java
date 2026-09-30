@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -505,7 +506,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmId == null) {
             return;
         }
-        var descriptor = algorithm(algorithmId, runtimeValueType);
+        var descriptor = algorithm(algorithmId, AlgorithmTypeSignature.of(runtimeValueType));
         Array<Object> runtimeArray = new Array<>(values);
         startAlgorithm(algorithmId, values, () -> {
             descriptor.invoke(runtimeArray);
@@ -529,7 +530,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public List<String> algorithmIds() {
-        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.array.ArrayStructure.class, runtimeValueType);
+        return AlgorithmCatalog.compatibleAlgorithms(com.majortom.algorithms.structure.array.ArrayStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
     }
 
     @Override

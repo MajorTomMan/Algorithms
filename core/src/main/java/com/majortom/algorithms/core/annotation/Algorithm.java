@@ -17,7 +17,8 @@ public @interface Algorithm {
 
   String name() default "";
 
-  Class<?> type();
+  /** Ordered runtime type signature. Generic Structure algorithms must match parameter order. */
+  Class<?>[] types();
 
   /** Structure capability that determines compatibility and workbench module. */
   Class<?> structure();

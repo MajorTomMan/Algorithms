@@ -10,7 +10,7 @@ import com.majortom.algorithms.structure.tree.AVLTreeNode;
 import com.majortom.algorithms.structure.tree.AvlTreeStructure;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 
-@Algorithm(id = "avl-tree-dfs", name = "二叉树中序遍历", type = Integer.class, structure = AvlTreeStructure.class)
+@Algorithm(id = "avl-tree-dfs", name = "二叉树中序遍历", types = {Integer.class}, structure = AvlTreeStructure.class)
 public class InorderTraversalAvlTree {
   @AlgorithmEntry
   public void execute(AvlTreeStructure<Integer> tree) {

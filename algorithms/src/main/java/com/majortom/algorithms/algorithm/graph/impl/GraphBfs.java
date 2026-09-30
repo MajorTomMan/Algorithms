@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 @Algorithm(
-    id = "graph-bfs", name = "广度优先遍历", type = Integer.class, structure = GraphStructure.class)
+    id = "graph-bfs", name = "广度优先遍历", types = {Integer.class}, structure = GraphStructure.class)
 public final class GraphBfs {
 
   @AlgorithmEntry

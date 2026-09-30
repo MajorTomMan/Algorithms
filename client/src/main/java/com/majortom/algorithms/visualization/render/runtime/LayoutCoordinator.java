@@ -48,7 +48,8 @@ public final class LayoutCoordinator implements AutoCloseable {
                 && previous.geometryRevision() == current.geometryRevision()
                 && previous.elements().equals(current.elements())
                 && previous.links().equals(current.links())
-                && previous.metadata().equals(current.metadata());
+                && previous.metadata().equals(current.metadata())
+                && previous.decorations().equals(current.decorations());
     }
 
     @Override

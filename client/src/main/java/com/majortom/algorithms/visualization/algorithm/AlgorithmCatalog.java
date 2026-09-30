@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.algorithm;
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import java.util.List;
 
@@ -13,65 +14,53 @@ public final class AlgorithmCatalog {
   private AlgorithmCatalog() {}
 
   public static String name(String algorithmId) {
-    List<AlgorithmDescriptor> matches =
-        REGISTRY.algorithms()
-            .stream()
-            .filter(descriptor -> descriptor.id().equals(algorithmId))
-            .toList();
+    List<AlgorithmDescriptor> matches = REGISTRY.algorithms().stream()
+        .filter(descriptor -> descriptor.id().equals(algorithmId))
+        .toList();
     if (matches.isEmpty()) {
       throw new IllegalArgumentException("No Algorithm registered for id: " + algorithmId);
     }
     List<String> names = matches.stream().map(AlgorithmDescriptor::name).distinct().toList();
     if (names.size() != 1) {
       throw new IllegalArgumentException(
-          "Algorithm id has multiple display names across registrations: " + algorithmId + " -> "
-          + names);
+          "Algorithm id has multiple display names across registrations: "
+              + algorithmId + " -> " + names);
     }
     return names.getFirst();
   }
 
   public static AlgorithmDescriptor descriptor(
-      String moduleId, Class<?> valueType, String algorithmId) {
-    return REGISTRY.requireAlgorithm(StructureModule.fromId(moduleId), valueType, algorithmId);
-  }
-
-  public static AlgorithmDescriptor descriptor(String moduleId, String algorithmId) {
-    StructureModule module = StructureModule.fromId(moduleId);
-    List<AlgorithmDescriptor> matches =
-        REGISTRY.algorithms()
-            .stream()
-            .filter(
-                descriptor -> descriptor.module() == module && descriptor.id().equals(algorithmId))
-            .toList();
-    if (matches.size() != 1) {
-      throw new IllegalArgumentException("Expected exactly one Algorithm for module=" + module.id()
-          + ", id=" + algorithmId + ", found=" + matches.size());
-    }
-    return matches.getFirst();
+      String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
+    return REGISTRY.requireAlgorithm(
+        StructureModule.fromId(moduleId), typeSignature, algorithmId);
   }
 
   public static AlgorithmDescriptor compatibleDescriptor(
-      Class<?> activeStructure, Class<?> valueType, String algorithmId) {
+      Class<?> activeStructure,
+      AlgorithmTypeSignature typeSignature,
+      String algorithmId) {
     List<AlgorithmDescriptor> matches =
-        REGISTRY.compatibleAlgorithms(activeStructure, valueType)
-            .stream()
+        REGISTRY.compatibleAlgorithms(activeStructure, typeSignature).stream()
             .filter(descriptor -> descriptor.id().equals(algorithmId))
             .toList();
     if (matches.size() != 1) {
-      throw new IllegalArgumentException("Expected exactly one compatible Algorithm for structure="
-          + activeStructure.getName() + ", type=" + valueType.getName() + ", id=" + algorithmId
-          + ", found=" + matches.size());
+      throw new IllegalArgumentException(
+          "Expected exactly one compatible Algorithm for structure="
+              + activeStructure.getName()
+              + ", types=" + typeSignature
+              + ", id=" + algorithmId
+              + ", found=" + matches.size());
     }
     return matches.getFirst();
   }
 
-  public static String name(String moduleId, Class<?> valueType, String algorithmId) {
-    return descriptor(moduleId, valueType, algorithmId).name();
+  public static String name(
+      String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
+    return descriptor(moduleId, typeSignature, algorithmId).name();
   }
 
   public static List<String> forWorkbenchModule(String moduleId) {
-    return descriptorsForWorkbenchModule(moduleId)
-        .stream()
+    return descriptorsForWorkbenchModule(moduleId).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()
         .toList();
@@ -79,23 +68,22 @@ public final class AlgorithmCatalog {
 
   static List<AlgorithmDescriptor> descriptorsForWorkbenchModule(String moduleId) {
     StructureModule module = StructureModule.fromId(moduleId);
-    return REGISTRY.algorithms()
-        .stream()
+    return REGISTRY.algorithms().stream()
         .filter(descriptor -> descriptor.module() == module)
         .toList();
   }
 
-  public static List<String> forWorkbenchModule(String moduleId, Class<?> valueType) {
-    return REGISTRY.algorithms(StructureModule.fromId(moduleId), valueType)
-        .stream()
+  public static List<String> forWorkbenchModule(
+      String moduleId, AlgorithmTypeSignature typeSignature) {
+    return REGISTRY.algorithms(StructureModule.fromId(moduleId), typeSignature).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()
         .toList();
   }
 
-  public static List<String> compatibleAlgorithms(Class<?> activeStructure, Class<?> valueType) {
-    return REGISTRY.compatibleAlgorithms(activeStructure, valueType)
-        .stream()
+  public static List<String> compatibleAlgorithms(
+      Class<?> activeStructure, AlgorithmTypeSignature typeSignature) {
+    return REGISTRY.compatibleAlgorithms(activeStructure, typeSignature).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()
         .toList();

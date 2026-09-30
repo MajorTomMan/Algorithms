@@ -1586,6 +1586,38 @@
     -fx-font-weight: 700;
 }
 
+
+/* ---------- Hash table bucket / entry grammar ---------- */
+.hash-bucket .visual-node-shape {
+    -fx-fill: #08090a;
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 2px;
+}
+.hash-bucket .visual-node-label {
+    -fx-fill: #ffffff;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 0.92em;
+    -fx-font-weight: 800;
+}
+.hash-entry .visual-node-shape {
+    -fx-fill: #ffffff;
+    -fx-stroke: #1769d3;
+    -fx-stroke-width: 2px;
+}
+.hash-entry .visual-node-label {
+    -fx-fill: #08090a;
+    -fx-font-size: 0.96em;
+    -fx-font-weight: 800;
+}
+.hash-link .visual-edge-path {
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 1.8px;
+}
+.hash-link .visual-edge-arrow {
+    -fx-stroke: #08090a;
+    -fx-fill: #08090a;
+}
+
 /* ---------- V5 graph structure grammar ---------- */
 .graph-node-id-label {
     -fx-text-fill: #444444;

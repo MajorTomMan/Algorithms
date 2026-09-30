@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -126,7 +127,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (inputGraph.isEmpty()) {
             return;
         }
-        AlgorithmDescriptor descriptor = algorithm(algorithmId, runtimeValueType);
+        AlgorithmDescriptor descriptor = algorithm(algorithmId, AlgorithmTypeSignature.of(runtimeValueType));
         // A minimum spanning tree is built in a separate graph. Present the original
         // vertices without the source edges, so each emitted EdgeAdded builds the
         // result instead of overlaying it on the input graph.
@@ -167,10 +168,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private GraphVariant variantForAlgorithm(String algorithmId) {
-        if (AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, AlgorithmTypeSignature.of(runtimeValueType)).contains(algorithmId)) {
             return GraphVariant.UNDIRECTED;
         }
-        if (AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType).contains(algorithmId)) {
+        if (AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, AlgorithmTypeSignature.of(runtimeValueType)).contains(algorithmId)) {
             return GraphVariant.DIRECTED;
         }
         return null;
@@ -665,9 +666,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     private void refreshAlgorithmIds() {
         if (activeVariant == GraphVariant.UNDIRECTED) {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(WeightedGraphStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
         } else {
-            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, runtimeValueType);
+            algorithmIds = AlgorithmCatalog.compatibleAlgorithms(GraphStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
         }
     }
 

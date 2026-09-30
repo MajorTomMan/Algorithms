@@ -5,21 +5,15 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationException;
 import com.majortom.algorithms.core.registry.RegistrationValidator;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public final class AlgorithmDiscovery {
   public static final String ROOT_PACKAGE = "com.majortom.algorithms.algorithm";
@@ -42,82 +36,50 @@ public final class AlgorithmDiscovery {
       if (annotation == null) {
         continue;
       }
+
       Class<?> structureContract = annotation.structure();
       if (structureContract.getAnnotation(Structure.class) == null) {
         throw new RegistrationException(
             "Algorithm structure contract is missing @Structure metadata: "
-            + structureContract.getName());
+                + structureContract.getName());
       }
+
       Method entryPoint = findEntryPoint(implementation);
-      AlgorithmDescriptor descriptor = new AlgorithmDescriptor(annotation.id(),
-          ComponentNames.resolve(annotation.name(), implementation), annotation.type(),
-          structureContract, implementation, entryPoint);
+      AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
+          annotation.id(),
+          ComponentNames.resolve(annotation.name(), implementation),
+          AlgorithmTypeSignature.of(annotation.types()),
+          structureContract,
+          implementation,
+          entryPoint);
       RegistrationValidator.validate(descriptor);
-      validateValueType(descriptor);
+      validateTypeSignature(descriptor);
       descriptors.add(descriptor);
     }
+
     descriptors.sort(
         Comparator.comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
             .thenComparing(descriptor -> descriptor.structureContract().getName())
-            .thenComparing(descriptor -> descriptor.valueType().getName())
+            .thenComparing(descriptor -> descriptor.typeSignature().stableName())
             .thenComparing(AlgorithmDescriptor::id));
     RegistrationValidator.validateUniqueAlgorithmKeys(descriptors);
     return List.copyOf(descriptors);
   }
 
-  private void validateValueType(AlgorithmDescriptor descriptor) {
-    Type structureParameter = descriptor.entryPoint().getGenericParameterTypes()[0];
-    Set<Class<?>> structureTypes = new HashSet<>();
-    collectConcreteTypeArguments(structureParameter, new HashMap<>(), structureTypes);
-    if (!structureTypes.isEmpty() && !structureTypes.contains(descriptor.valueType())) {
-      throw new RegistrationException("Algorithm annotation type "
-          + descriptor.valueType().getName() + " does not match entry Structure parameter of "
-          + descriptor.implementation().getName() + ": "
-          + structureTypes.stream().map(Class::getName).sorted().toList());
+  void validateTypeSignature(AlgorithmDescriptor descriptor) {
+    if (descriptor.structureContract().getTypeParameters().length == 0) {
+      return;
     }
-  }
 
-  private void collectConcreteTypeArguments(
-      Type current, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
-    if (current instanceof ParameterizedType parameterizedType) {
-      Class<?> rawType = (Class<?>) parameterizedType.getRawType();
-      Map<TypeVariable<?>, Type> nested = new HashMap<>(bindings);
-      TypeVariable<?>[] variables = rawType.getTypeParameters();
-      Type[] arguments = parameterizedType.getActualTypeArguments();
-      for (int index = 0; index < variables.length; index++) {
-        Type resolved = resolve(arguments[index], bindings);
-        nested.put(variables[index], resolved);
-        if (resolved instanceof Class<?> type && isValueCandidate(type)) {
-          result.add(type);
-        }
-      }
-      collectHierarchy(rawType, nested, result);
-    } else if (current instanceof Class<?> type) {
-      collectHierarchy(type, bindings, result);
+    List<Class<?>> entryTypes = StructureTypeSignatureResolver.resolve(
+        descriptor.entryPoint().getGenericParameterTypes()[0],
+        descriptor.structureContract());
+    if (!entryTypes.equals(descriptor.typeSignature().types())) {
+      throw new RegistrationException(
+          "Algorithm annotation types " + descriptor.typeSignature().types()
+              + " do not match ordered entry Structure types " + entryTypes
+              + " for " + descriptor.implementation().getName());
     }
-  }
-
-  private void collectHierarchy(
-      Class<?> type, Map<TypeVariable<?>, Type> bindings, Set<Class<?>> result) {
-    for (Type interfaceType : type.getGenericInterfaces()) {
-      collectConcreteTypeArguments(interfaceType, bindings, result);
-    }
-    Type superclass = type.getGenericSuperclass();
-    if (superclass != null && !Object.class.equals(superclass)) {
-      collectConcreteTypeArguments(superclass, bindings, result);
-    }
-  }
-
-  private Type resolve(Type type, Map<TypeVariable<?>, Type> bindings) {
-    Type resolved = type;
-    while (resolved instanceof TypeVariable<?> variable && bindings.containsKey(variable)) {
-      resolved = bindings.get(variable);
-    }
-    return resolved;
-  }
-
-  private boolean isValueCandidate(Class<?> type) {
-    return type != Object.class && !type.isInterface() && !type.isArray();
   }
 
   private Method findEntryPoint(Class<?> implementation) {

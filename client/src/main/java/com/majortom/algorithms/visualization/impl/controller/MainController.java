@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.practice.runtime.PracticeProblemRegistry;
 import com.majortom.algorithms.practice.runtime.model.ProblemDescriptor;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -42,6 +43,7 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
 import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
+import com.majortom.algorithms.visualization.structure.HashRuntimeTypeSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
 import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
@@ -577,8 +579,8 @@ public class MainController implements Initializable {
                 hashValueTypeSelector, this::valueTypeDisplayName);
         valueTypePanel.install(this::changeValueType, this::changeValueType,
                 this::changeHashValueType);
-        moduleNavigation = new WorkbenchModuleNavigation(COMPONENTS, moduleDefinitions,
-                familyNavigator, this::selectFamily, this::selectedValueType);
+        moduleNavigation = new WorkbenchModuleNavigation(moduleDefinitions,
+                familyNavigator, this::selectFamily, this::selectedAlgorithmTypeSignature);
         setupModuleMenu();
         setupPracticeWorkspace();
         setupWorkspaceMode();
@@ -786,19 +788,67 @@ public class MainController implements Initializable {
     private javafx.beans.value.ChangeListener<Locale> localeListener;
 
     private void changeHashValueType(ValueTypeOption value) {
-        if (valueTypePanel.isUpdating() || activeDefinition == null || value == null) return;
-        if (!value.available()) {
-            appendSystemLog(I18N.text("message.value_type.unavailable", value.type()));
+        changeHashType(value, false);
+    }
+
+    private void changeHashType(ValueTypeOption option, boolean keyType) {
+        if (valueTypePanel.isUpdating() || activeDefinition == null || option == null) return;
+        if (!StructureIds.HASH.equals(activeDefinition.id())
+                || !(currentSubController instanceof HashRuntimeTypeSupport support)) {
             refreshValueTypeSelectors();
             return;
         }
-        selectedHashValueType = value.type();
-        refreshAfterValueTypeChange();
+        if (!option.available()) {
+            appendSystemLog(I18N.text("message.value_type.unavailable", option.type()));
+            refreshValueTypeSelectors();
+            return;
+        }
+        if (isPracticePageVisible() || currentSubController.isRunning()
+                || structureSnapshotPreviewActive) {
+            refreshValueTypeSelectors();
+            return;
+        }
+
+        String currentKey = selectedHashKeyType != null
+                ? selectedHashKeyType : ValueAdapters.typeName(support.runtimeKeyType());
+        String currentValue = selectedHashValueType != null
+                ? selectedHashValueType : ValueAdapters.typeName(support.runtimeHashValueType());
+        String nextKey = keyType ? option.type() : currentKey;
+        String nextValue = keyType ? currentValue : option.type();
+        if (nextKey.equals(currentKey) && nextValue.equals(currentValue)) {
+            return;
+        }
+        if (support.hasValues() && !confirmValueTypeChange(option.type())) {
+            refreshValueTypeSelectors();
+            return;
+        }
+
+        try {
+            Class<?> keyClass = ValueAdapters.requireType(nextKey);
+            Class<?> valueClass = ValueAdapters.requireType(nextValue);
+            if (!support.supportedKeyTypes().contains(keyClass)
+                    || !support.supportedHashValueTypes().contains(valueClass)) {
+                refreshValueTypeSelectors();
+                return;
+            }
+            support.setRuntimeTypes(keyClass, valueClass);
+            selectedHashKeyType = nextKey;
+            selectedHashValueType = nextValue;
+            discardSnapshotsForChangedValueType(StructureIds.HASH);
+            refreshAfterValueTypeChange();
+        } catch (RuntimeException failure) {
+            appendSystemLog(failure.getMessage());
+            refreshValueTypeSelectors();
+        }
     }
 
     /** Both pages commit the same module-scoped element type; execution always uses the committed value. */
     private void changeValueType(ValueTypeOption selected) {
         if (valueTypePanel.isUpdating() || activeDefinition == null || selected == null) return;
+        if (StructureIds.HASH.equals(activeDefinition.id())) {
+            changeHashType(selected, true);
+            return;
+        }
         if (!selected.available()) {
             appendSystemLog(I18N.text("message.value_type.unavailable", selected.type()));
             refreshValueTypeSelectors();
@@ -810,14 +860,12 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             return;
         }
-        if (!"hash-table".equals(activeDefinition.id())
-                && currentSubController instanceof RuntimeValueTypeSupport support) {
+        if (currentSubController instanceof RuntimeValueTypeSupport support) {
             Class<?> candidate = ValueAdapters.requireType(selected.type());
             if (!support.supportedValueTypes().contains(candidate)) {
                 refreshValueTypeSelectors();
                 return;
             }
-            // Verify controller-specific requirements before changing the UI type.
             if (StructureIds.TREE.equals(activeDefinition.id())
                     && !Comparable.class.isAssignableFrom(candidate)) {
                 refreshValueTypeSelectors();
@@ -831,11 +879,8 @@ public class MainController implements Initializable {
                 return;
             }
         }
-        if ("hash-table".equals(activeDefinition.id())) selectedHashKeyType = selected.type();
-        else {
-            selectedValueTypes.put(activeDefinition.id(), selected.type());
-            discardSnapshotsForChangedValueType(activeDefinition.id());
-        }
+        selectedValueTypes.put(activeDefinition.id(), selected.type());
+        discardSnapshotsForChangedValueType(activeDefinition.id());
         refreshAfterValueTypeChange();
     }
 
@@ -846,11 +891,22 @@ public class MainController implements Initializable {
             valueTypePanel.render(moduleId, false, false, false, null, List.of(), List.of());
             return;
         }
-        if ("hash-table".equals(moduleId)) {
-            selectedHashKeyType = null;
-            selectedHashValueType = null;
-            valueTypePanel.render(moduleId, isStructurePageVisible(), structureSnapshotPreviewActive,
-                    currentSubController != null && currentSubController.isRunning(), null, List.of(), List.of());
+        if (StructureIds.HASH.equals(moduleId)
+                && currentSubController instanceof HashRuntimeTypeSupport support) {
+            if (selectedHashKeyType == null) {
+                selectedHashKeyType = ValueAdapters.typeName(support.runtimeKeyType());
+            }
+            if (selectedHashValueType == null) {
+                selectedHashValueType = ValueAdapters.typeName(support.runtimeHashValueType());
+            }
+            valueTypePanel.renderHash(
+                    isStructurePageVisible(),
+                    structureSnapshotPreviewActive,
+                    currentSubController.isRunning(),
+                    selectedHashKeyType,
+                    hashValueTypeOptions(support.supportedKeyTypes()),
+                    selectedHashValueType,
+                    hashValueTypeOptions(support.supportedHashValueTypes()));
             return;
         }
         List<String> available = availableValueTypes(moduleId);
@@ -864,6 +920,12 @@ public class MainController implements Initializable {
                 valueTypeOptions(available), valueTypeOptions(algorithmAvailableValueTypes(moduleId)));
     }
 
+    private List<ValueTypeOption> hashValueTypeOptions(List<Class<?>> types) {
+        return types.stream()
+                .map(type -> new ValueTypeOption(ValueAdapters.typeName(type), true))
+                .toList();
+    }
+
     private String valueTypeDisplayName(String type) { return valueTypeCatalog.displayName(type); }
     private boolean hasAlgorithmForAnySupportedType(String id) { return valueTypeCatalog.hasAlgorithmForAnySupportedType(id); }
     private List<String> algorithmAvailableValueTypes(String id) { return valueTypeCatalog.algorithmAvailableValueTypes(id); }
@@ -871,12 +933,66 @@ public class MainController implements Initializable {
     private List<ValueTypeOption> valueTypeOptions(List<String> available) { return valueTypeCatalog.valueTypeOptions(available); }
     private String selectedValueType(String id) { return valueTypeCatalog.selectedValueType(id); }
 
-    private boolean confirmValueTypeChange(String nextType) {
-        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues()) return true;
+    private AlgorithmTypeSignature selectedAlgorithmTypeSignature(String moduleId) {
+        if (StructureIds.HASH.equals(moduleId)) {
+            if (selectedHashKeyType == null || selectedHashValueType == null) {
+                if (currentSubController instanceof HashRuntimeTypeSupport hash) {
+                    selectedHashKeyType = ValueAdapters.typeName(hash.runtimeKeyType());
+                    selectedHashValueType = ValueAdapters.typeName(hash.runtimeHashValueType());
+                } else {
+                    return null;
+                }
+            }
+            return AlgorithmTypeSignature.of(
+                    ValueAdapters.requireType(selectedHashKeyType),
+                    ValueAdapters.requireType(selectedHashValueType));
+        }
+        String selected = selectedValueType(moduleId);
+        return selected == null
+                ? null
+                : AlgorithmTypeSignature.of(ValueAdapters.requireType(selected));
+    }
+
+    private AlgorithmTypeSignature firstAvailableAlgorithmSignature(String moduleId) {
+        return COMPONENTS.algorithmTypeSignatures(StructureModule.fromId(moduleId)).stream()
+                .filter(signature -> StructureIds.HASH.equals(moduleId)
+                        ? signature.arity() == 2
+                        : signature.arity() == 1)
+                .filter(signature -> signature.types().stream()
+                        .allMatch(type -> ValueAdapters.supports(type) && ValueAdapters.canReplay(type)))
+                .filter(signature -> !StructureIds.TREE.equals(moduleId)
+                        || Comparable.class.isAssignableFrom(signature.primaryType()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void commitSelectedAlgorithmTypeSignature(
+            String moduleId, AlgorithmTypeSignature signature) {
+        if (StructureIds.HASH.equals(moduleId)) {
+            if (signature.arity() != 2) {
+                throw new IllegalArgumentException(
+                        "Hash algorithms require exactly two runtime types: " + signature);
+            }
+            selectedHashKeyType = ValueAdapters.typeName(signature.type(0));
+            selectedHashValueType = ValueAdapters.typeName(signature.type(1));
+            return;
+        }
+        if (signature.arity() != 1) {
+            throw new IllegalArgumentException(
+                    "Module " + moduleId + " requires a single runtime type: " + signature);
+        }
+        selectedValueTypes.put(moduleId, ValueAdapters.typeName(signature.primaryType()));
+    }
+
+    private boolean confirmTypeSignatureChange(AlgorithmTypeSignature signature) {
+        String display = signature.types().stream()
+                .map(ValueAdapters::typeName)
+                .map(this::valueTypeDisplayName)
+                .collect(java.util.stream.Collectors.joining(" → "));
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         if (rootPane.getScene() != null) alert.initOwner(rootPane.getScene().getWindow());
         alert.setTitle(I18N.text("dialog.value_type.title"));
-        alert.setHeaderText(I18N.text("dialog.value_type.header", valueTypeDisplayName(nextType)));
+        alert.setHeaderText(I18N.text("dialog.value_type.header", display));
         alert.setContentText(I18N.text("dialog.value_type.body"));
         ButtonType change = new ButtonType(I18N.text("dialog.value_type.confirm"),
                 javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
@@ -884,6 +1000,13 @@ public class MainController implements Initializable {
                 javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(change, cancel);
         return alert.showAndWait().orElse(cancel) == change;
+    }
+
+    private boolean confirmValueTypeChange(String nextType) {
+        if (currentSubController instanceof HashRuntimeTypeSupport hash && !hash.hasValues()) return true;
+        if (currentSubController instanceof RuntimeValueTypeSupport support && !support.hasValues()) return true;
+        return confirmTypeSignatureChange(
+                AlgorithmTypeSignature.of(ValueAdapters.requireType(nextType)));
     }
 
     /** Saved snapshots for the previous Class<?> must not be selectable after a type change. */
@@ -996,35 +1119,61 @@ public class MainController implements Initializable {
         if (activeDefinition == null || currentSubController == null) {
             return;
         }
-        if (currentSubController instanceof RuntimeValueTypeSupport typed
-                && !ValueAdapters.canReplay(typed.runtimeValueType())) {
-            appendSystemLog(I18N.text("message.value_type.replay_unsupported",
-                    typed.runtimeValueType().getName()));
+
+        AlgorithmTypeSignature currentSignature =
+                selectedAlgorithmTypeSignature(activeDefinition.id());
+        if (currentSignature != null
+                && currentSignature.types().stream().anyMatch(type -> !ValueAdapters.canReplay(type))) {
+            Class<?> unsupported = currentSignature.types().stream()
+                    .filter(type -> !ValueAdapters.canReplay(type))
+                    .findFirst()
+                    .orElse(currentSignature.primaryType());
+            appendSystemLog(I18N.text(
+                    "message.value_type.replay_unsupported", unsupported.getName()));
             return;
         }
-        List<AlgorithmNavigationItem> available = algorithmNavigationItems(activeDefinition.id());
+
+        List<AlgorithmNavigationItem> available =
+                algorithmNavigationItems(activeDefinition.id());
         if (available.isEmpty()) {
-            String candidate = algorithmAvailableValueTypes(activeDefinition.id()).stream().findFirst().orElse(null);
-            if (candidate != null && !candidate.equals(selectedValueType(activeDefinition.id()))
-                    && !currentSubController.isRunning() && !structureSnapshotPreviewActive
-                    && confirmValueTypeChange(candidate)) {
-                Class<?> requestedType = ValueAdapters.requireType(candidate);
-                if (currentSubController instanceof RuntimeValueTypeSupport typed
-                        && typed.supportedValueTypes().contains(requestedType)) {
-                    try {
-                        typed.setRuntimeValueType(requestedType);
-                        selectedValueTypes.put(activeDefinition.id(), candidate);
-                        discardSnapshotsForChangedValueType(activeDefinition.id());
-                        refreshAfterValueTypeChange();
-                        available = algorithmNavigationItems(activeDefinition.id());
-                    } catch (RuntimeException failure) {
-                        appendSystemLog(failure.getMessage());
-                        refreshValueTypeSelectors();
+            AlgorithmTypeSignature candidate =
+                    firstAvailableAlgorithmSignature(activeDefinition.id());
+            if (candidate != null
+                    && !candidate.equals(currentSignature)
+                    && !currentSubController.isRunning()
+                    && !structureSnapshotPreviewActive
+                    && confirmTypeSignatureChange(candidate)) {
+                try {
+                    if (currentSubController instanceof HashRuntimeTypeSupport hash) {
+                        if (candidate.arity() != 2
+                                || !hash.supportedKeyTypes().contains(candidate.type(0))
+                                || !hash.supportedHashValueTypes().contains(candidate.type(1))) {
+                            return;
+                        }
+                        hash.setRuntimeTypes(candidate.type(0), candidate.type(1));
+                    } else if (currentSubController instanceof RuntimeValueTypeSupport typed) {
+                        if (candidate.arity() != 1
+                                || !typed.supportedValueTypes().contains(candidate.primaryType())) {
+                            return;
+                        }
+                        typed.setRuntimeValueType(candidate.primaryType());
+                    } else {
+                        return;
                     }
+                    commitSelectedAlgorithmTypeSignature(
+                            activeDefinition.id(), candidate);
+                    discardSnapshotsForChangedValueType(activeDefinition.id());
+                    refreshAfterValueTypeChange();
+                    available = algorithmNavigationItems(activeDefinition.id());
+                } catch (RuntimeException failure) {
+                    appendSystemLog(failure.getMessage());
+                    refreshValueTypeSelectors();
                 }
             }
         }
-        if (available.isEmpty() || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
+
+        if (available.isEmpty()
+                || !(currentSubController instanceof AlgorithmSelectionSupport support)) {
             return;
         }
         String targetAlgorithm = available.stream()
@@ -1094,6 +1243,9 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof LinearStructureController linearController) {
             linearController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof HashTableController hashController) {
+            hashController.setStructureSelectionEnabled(structure);
         }
         if (structure && currentSubController != null) {
             if (activeDefinition != null) {
@@ -1338,15 +1490,22 @@ public class MainController implements Initializable {
         BaseController<?> nextController = null;
         HBox preparedControls = new HBox();
         String previousTypeSelection = selectedValueTypes.get(definition.id());
+        String previousHashKeyType = selectedHashKeyType;
+        String previousHashValueType = selectedHashValueType;
         try {
             if (requestedMode == WorkspaceMode.ALGORITHM) {
-                String currentType = selectedValueType(definition.id());
-                boolean matching = currentType != null && !AlgorithmCatalog.forWorkbenchModule(
-                        definition.id(), ValueAdapters.requireType(currentType)).isEmpty();
+                AlgorithmTypeSignature currentSignature =
+                        selectedAlgorithmTypeSignature(definition.id());
+                boolean matching = currentSignature != null
+                        && !AlgorithmCatalog.forWorkbenchModule(
+                                definition.id(), currentSignature).isEmpty();
                 if (!matching) {
-                    String targetType = algorithmAvailableValueTypes(definition.id()).stream()
-                            .findFirst().orElse(null);
-                    if (targetType != null) selectedValueTypes.put(definition.id(), targetType);
+                    AlgorithmTypeSignature targetSignature =
+                            firstAvailableAlgorithmSignature(definition.id());
+                    if (targetSignature != null) {
+                        commitSelectedAlgorithmTypeSignature(
+                                definition.id(), targetSignature);
+                    }
                 }
             }
             nextController = definition.controllerFactory().get();
@@ -1355,6 +1514,8 @@ public class MainController implements Initializable {
         } catch (RuntimeException failure) {
             if (previousTypeSelection == null) selectedValueTypes.remove(definition.id());
             else selectedValueTypes.put(definition.id(), previousTypeSelection);
+            selectedHashKeyType = previousHashKeyType;
+            selectedHashValueType = previousHashValueType;
             if (nextController != null) nextController.dispatchVisualizerDetached();
             Throwable cause = failure;
             while (cause.getCause() != null) cause = cause.getCause();
@@ -1542,6 +1703,27 @@ public class MainController implements Initializable {
     }
 
     private void configureRuntimeValueType(String moduleId, BaseController<?> controller) {
+        if (controller instanceof HashRuntimeTypeSupport hash) {
+            if (!StructureIds.HASH.equals(moduleId)) {
+                throw new IllegalArgumentException("Hash runtime types used outside Hash module: " + moduleId);
+            }
+            if (selectedHashKeyType == null) {
+                selectedHashKeyType = ValueAdapters.typeName(hash.runtimeKeyType());
+            }
+            if (selectedHashValueType == null) {
+                selectedHashValueType = ValueAdapters.typeName(hash.runtimeHashValueType());
+            }
+            Class<?> keyType = ValueAdapters.requireType(selectedHashKeyType);
+            Class<?> valueType = ValueAdapters.requireType(selectedHashValueType);
+            if (!hash.supportedKeyTypes().contains(keyType)
+                    || !hash.supportedHashValueTypes().contains(valueType)) {
+                throw new IllegalArgumentException(
+                        "Controller for Hash does not support runtime types "
+                                + keyType.getName() + " -> " + valueType.getName());
+            }
+            hash.setRuntimeTypes(keyType, valueType);
+            return;
+        }
         if (!(controller instanceof RuntimeValueTypeSupport support)) {
             return;
         }
@@ -1998,6 +2180,18 @@ public class MainController implements Initializable {
         if (support == null || activeDefinition == null) {
             return;
         }
+        if (currentSubController instanceof HashRuntimeTypeSupport hash) {
+            Class<?> unsupported = !ValueAdapters.canReplay(hash.runtimeKeyType())
+                    ? hash.runtimeKeyType()
+                    : !ValueAdapters.canReplay(hash.runtimeHashValueType())
+                            ? hash.runtimeHashValueType()
+                            : null;
+            if (unsupported != null) {
+                appendStructureSystemLog(I18N.text(
+                        "message.value_type.replay_unsupported", unsupported.getName()));
+                return;
+            }
+        }
         if (currentSubController instanceof RuntimeValueTypeSupport typed
                 && !ValueAdapters.canReplay(typed.runtimeValueType())) {
             appendStructureSystemLog(I18N.text("message.value_type.replay_unsupported",
@@ -2132,7 +2326,7 @@ public class MainController implements Initializable {
             case StructureIds.QUEUE, StructureIds.GRAPH -> "btn-ran-white";
             case StructureIds.MAZE -> "btn-ran-red";
             case StructureIds.STRING -> "btn-ran-gold";
-            case "hash-table" -> "btn-ran-red";
+            case StructureIds.HASH -> "btn-ran-red";
             default -> "btn-ran-blue";
         };
     }
@@ -2298,6 +2492,10 @@ public class MainController implements Initializable {
         if (currentSubController instanceof LinearStructureController linearController) {
             linearController.setSelectionListener(selectionInspector::showLinearSelection);
             linearController.setStructureSelectionEnabled(isStructurePageVisible());
+        }
+        if (currentSubController instanceof HashTableController hashController) {
+            hashController.setSelectionListener(selectionInspector::showHashSelection);
+            hashController.setStructureSelectionEnabled(isStructurePageVisible());
         }
     }
 

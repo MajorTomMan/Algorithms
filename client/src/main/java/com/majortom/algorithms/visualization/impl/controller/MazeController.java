@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -178,7 +179,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         algorithmResultSnapshot = null;
         String id = selectedId(generatorSelector, allGenerators);
         Maze input = new Maze(new MazeDimensions(size, size));
-        var descriptor = AlgorithmCatalog.descriptor(moduleId(), id);
+        var descriptor = AlgorithmCatalog.descriptor(moduleId(), AlgorithmTypeSignature.of(Boolean.class), id);
         boolean graphBased = graphGenerators.contains(id);
         startAlgorithm(id, selectedAlgorithmSnapshot(), () -> descriptor.invoke(input),
                 () -> new MazeEventReducer(size, size, graphBased));
@@ -195,7 +196,7 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         selectedOperation = Operation.SOLVE;
         String id = selectedId(pathfinderSelector, arrayPathfinders);
         Maze input = new Maze(inputMaze);
-        var descriptor = AlgorithmCatalog.descriptor(moduleId(), id);
+        var descriptor = AlgorithmCatalog.descriptor(moduleId(), AlgorithmTypeSignature.of(Boolean.class), id);
         startAlgorithm(id, selectedSnapshot, () -> descriptor.invoke(input),
                 () -> new MazeEventReducer(selectedSnapshot));
     }

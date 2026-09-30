@@ -12,6 +12,7 @@ import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import com.majortom.algorithms.visualization.render.timing.RenderClock;
 import com.majortom.algorithms.visualization.render.viewport.CameraManager;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.hash.HashTableLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
 
@@ -30,7 +31,8 @@ public final class RenderRuntime {
                             .register(new FixedLayoutEngine())
                             .register(new GraphElkLayout())
                             .register(new TreeElkLayout())
-                            .register(new LinkedListLayout())),
+                            .register(new LinkedListLayout())
+                            .register(new HashTableLayout())),
             FX,
             new RenderSurfaceRegistry(),
             new FxPresentationSurfaceRegistry(),

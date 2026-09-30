@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-public record AlgorithmDescriptor(String id, String name, Class<?> valueType,
+public record AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature typeSignature,
     Class<?> structureContract, Class<?> implementation, Method entryPoint) {
   public AlgorithmDescriptor {
     Objects.requireNonNull(id, "id");
@@ -14,7 +14,7 @@ public record AlgorithmDescriptor(String id, String name, Class<?> valueType,
     if (name.isBlank()) {
       throw new IllegalArgumentException("name must not be blank");
     }
-    Objects.requireNonNull(valueType, "valueType");
+    Objects.requireNonNull(typeSignature, "typeSignature");
     Objects.requireNonNull(structureContract, "structureContract");
     Objects.requireNonNull(implementation, "implementation");
     Objects.requireNonNull(entryPoint, "entryPoint");
@@ -49,10 +49,8 @@ public record AlgorithmDescriptor(String id, String name, Class<?> valueType,
           exception);
     } catch (InvocationTargetException exception) {
       Throwable cause = exception.getCause();
-      if (cause instanceof RuntimeException runtime)
-        throw runtime;
-      if (cause instanceof Error error)
-        throw error;
+      if (cause instanceof RuntimeException runtime) throw runtime;
+      if (cause instanceof Error error) throw error;
       throw new RegistrationException(
           "Algorithm entry failed: " + implementation.getName() + "#" + entryPoint.getName(),
           cause);
