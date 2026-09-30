@@ -27,8 +27,6 @@ import com.majortom.algorithms.visualization.render.fx.RenderSurface;
 import com.majortom.algorithms.visualization.render.fx.PulseBarrier;
 import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
-import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
-import com.majortom.algorithms.visualization.render.layout.LayoutEngineRegistry;
 import com.majortom.algorithms.visualization.render.viewport.CameraManager;
 import com.majortom.algorithms.visualization.render.viewport.CameraScale;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
@@ -52,13 +50,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class DefaultRenderFramework implements RenderPort, PresentationCursorPort, PresentationSurfacePort, RenderSurfaceLifecyclePort, AutoCloseable {
 
     private final RenderScheduler scheduler;
-    private final LayoutExecutor layoutExecutor;
+    private final LayoutCoordinator layoutCoordinator;
     private final FxExecutor fxExecutor;
     private final PulseBarrier pulseBarrier;
     private final RenderSurfaceRegistry surfaces;
     private final FxPresentationSurfaceRegistry presentationSurfaces;
     private final PresentationSourceRegistry presentationSources = new PresentationSourceRegistry();
-    private final LayoutEngineRegistry layoutEngines;
     private final CameraManager cameraManager;
     private final RenderTrace trace;
     private final RenderSessionRegistry sessions = new RenderSessionRegistry();
@@ -69,20 +66,18 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
 
     public DefaultRenderFramework(
             RenderScheduler scheduler,
-            LayoutExecutor layoutExecutor,
+            LayoutCoordinator layoutCoordinator,
             FxExecutor fxExecutor,
             RenderSurfaceRegistry surfaces,
             FxPresentationSurfaceRegistry presentationSurfaces,
-            LayoutEngineRegistry layoutEngines,
             CameraManager cameraManager,
             RenderTrace trace) {
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
-        this.layoutExecutor = Objects.requireNonNull(layoutExecutor, "layoutExecutor");
+        this.layoutCoordinator = Objects.requireNonNull(layoutCoordinator, "layoutCoordinator");
         this.fxExecutor = Objects.requireNonNull(fxExecutor, "fxExecutor");
         this.pulseBarrier = new PulseBarrier(fxExecutor);
         this.surfaces = Objects.requireNonNull(surfaces, "surfaces");
         this.presentationSurfaces = Objects.requireNonNull(presentationSurfaces, "presentationSurfaces");
-        this.layoutEngines = Objects.requireNonNull(layoutEngines, "layoutEngines");
         this.cameraManager = Objects.requireNonNull(cameraManager, "cameraManager");
         this.trace = Objects.requireNonNull(trace, "trace");
     }
@@ -368,20 +363,24 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         if (!authoritative(session, transaction, intent.change())) return completedCancelled(session);
         trace(transaction, RenderPipeline.DESCRIBE);
 
-        boolean layoutRequired = session.layout == null || session.lastLayoutRequest == null
-                || !sameGeometryInput(session.lastLayoutRequest, request);
-        CompletionStage<LayoutResult> layoutStage;
-        if (layoutRequired) {
-            LayoutEngine engine = layoutEngines.require(request.engineId());
+        LayoutCoordinator.LayoutSubmission layout = layoutCoordinator.submit(
+                request,
+                session.lastLayoutRequest,
+                session.layout,
+                transaction.modelRevision());
+        if (layout.layoutRequired()) {
             trace.layoutInvoked(session.id);
             trace(transaction, RenderPipeline.WAIT_LAYOUT);
-            layoutStage = layoutExecutor.submit(engine, request);
-        } else {
-            layoutStage = CompletableFuture.completedFuture(session.layout.withModelRevision(transaction.modelRevision()));
         }
 
-        return layoutStage.thenCompose(layoutResult -> onScheduler(() ->
-                continueStructuralAfterLayout(session, transaction, intent, request, layoutResult, layoutRequired)))
+        return layout.result().thenCompose(layoutResult -> onScheduler(() ->
+                continueStructuralAfterLayout(
+                        session,
+                        transaction,
+                        intent,
+                        request,
+                        layoutResult,
+                        layout.layoutRequired())))
                 .thenCompose(stage -> stage);
     }
 
@@ -674,14 +673,6 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         if (session.active()) drain(surfaceId);
     }
 
-    private static boolean sameGeometryInput(LayoutRequest previous, LayoutRequest current) {
-        return previous.engineId().equals(current.engineId())
-                && previous.geometryRevision() == current.geometryRevision()
-                && previous.elements().equals(current.elements())
-                && previous.links().equals(current.links())
-                && previous.metadata().equals(current.metadata());
-    }
-
     private CompletionStage<RenderResult> completedCancelled(RenderSession session) {
         return CompletableFuture.completedFuture(RenderResult.cancelled(session.id));
     }
@@ -701,7 +692,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
 
     @Override
     public void close() {
-        layoutExecutor.close();
+        layoutCoordinator.close();
         scheduler.close();
     }
 }
