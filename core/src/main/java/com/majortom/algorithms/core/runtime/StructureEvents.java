@@ -2,6 +2,9 @@ package com.majortom.algorithms.core.runtime;
 
 import com.majortom.algorithms.core.event.structure.ArrayStructureEvent;
 import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
+import com.majortom.algorithms.core.event.structure.HashStructureEvent;
+import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
+import java.util.List;
 import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.core.event.structure.StringStructureEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
@@ -51,6 +54,33 @@ public final class StructureEvents {
 
   public static void graphEdgeWeightChanged(long edgeId, Double previousWeight, double weight) {
     ExecutionEvents.structure(new GraphStructureEvent.EdgeWeightChanged(edgeId, previousWeight, weight));
+  }
+
+  public static void hashInserted(int bucketIndex, Object key, Object value) {
+    ExecutionEvents.structure(new HashStructureEvent.EntryInserted(bucketIndex, key, value));
+  }
+
+  public static void hashUpdated(
+      int bucketIndex, Object key, Object previousValue, Object value) {
+    ExecutionEvents.structure(
+        new HashStructureEvent.EntryUpdated(bucketIndex, key, previousValue, value));
+  }
+
+  public static void hashRemoved(int bucketIndex, Object key, Object value) {
+    ExecutionEvents.structure(new HashStructureEvent.EntryRemoved(bucketIndex, key, value));
+  }
+
+  public static void hashRehashed(
+      int previousCapacity, int capacity, List<HashStructureEvent.EntryPlacement> entries) {
+    ExecutionEvents.structure(new HashStructureEvent.Rehashed(previousCapacity, capacity, entries));
+  }
+
+  public static void hashRehashed(int previousCapacity, HashTableSnapshot<?, ?> snapshot) {
+    List<HashStructureEvent.EntryPlacement> entries = snapshot.entries().stream()
+        .map(entry -> new HashStructureEvent.EntryPlacement(
+            entry.bucketIndex(), entry.key(), entry.value()))
+        .toList();
+    hashRehashed(previousCapacity, snapshot.capacity(), entries);
   }
 
   public static void linkedNodeInserted(long nodeId, Object value) {

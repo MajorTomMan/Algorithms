@@ -14,7 +14,7 @@ public final class ComponentRegistry {
   private static final Comparator<AlgorithmDescriptor> ALGORITHM_ORDER =
       Comparator.comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())
           .thenComparing(descriptor -> descriptor.structureContract().getName())
-          .thenComparing(descriptor -> descriptor.valueType().getName())
+          .thenComparing(descriptor -> descriptor.typeSignature().stableName())
           .thenComparing(AlgorithmDescriptor::id);
 
   private final Map<String, StructureDescriptor> structuresById;
@@ -38,62 +38,51 @@ public final class ComponentRegistry {
     return List.copyOf(algorithmsByKey.values());
   }
 
-  public List<AlgorithmDescriptor> algorithms(StructureModule module, Class<?> valueType) {
+  public List<AlgorithmDescriptor> algorithms(
+      StructureModule module, AlgorithmTypeSignature typeSignature) {
     Objects.requireNonNull(module, "module");
-    Objects.requireNonNull(valueType, "valueType");
-    return algorithmsByKey.values()
-        .stream()
+    Objects.requireNonNull(typeSignature, "typeSignature");
+    return algorithmsByKey.values().stream()
         .filter(descriptor -> descriptor.module() == module)
-        .filter(descriptor -> descriptor.valueType().equals(valueType))
+        .filter(descriptor -> descriptor.typeSignature().equals(typeSignature))
         .toList();
   }
 
   public List<AlgorithmDescriptor> compatibleAlgorithms(
-      Class<?> activeStructure, Class<?> valueType) {
+      Class<?> activeStructure, AlgorithmTypeSignature typeSignature) {
     Objects.requireNonNull(activeStructure, "activeStructure");
-    Objects.requireNonNull(valueType, "valueType");
-    return algorithmsByKey.values()
-        .stream()
-        .filter(descriptor -> descriptor.valueType().equals(valueType))
+    Objects.requireNonNull(typeSignature, "typeSignature");
+    return algorithmsByKey.values().stream()
+        .filter(descriptor -> descriptor.typeSignature().equals(typeSignature))
         .filter(descriptor -> descriptor.structureContract().isAssignableFrom(activeStructure))
         .toList();
   }
 
-  public List<Class<?>> valueTypes() {
-    return algorithmsByKey.values()
-        .stream()
-        .map(AlgorithmDescriptor::valueType)
+  public List<AlgorithmTypeSignature> typeSignatures() {
+    return algorithmsByKey.values().stream()
+        .map(AlgorithmDescriptor::typeSignature)
         .distinct()
-        .sorted(Comparator.comparing(Class::getName))
+        .sorted(Comparator.comparing(AlgorithmTypeSignature::stableName))
         .toList();
   }
 
-  /** Use fully qualified names only when the same module contains colliding simple names. */
-  public List<String> algorithmValueTypes(StructureModule module) {
+  public List<AlgorithmTypeSignature> algorithmTypeSignatures(StructureModule module) {
     Objects.requireNonNull(module, "module");
-    List<Class<?>> types = algorithmsByKey.values().stream()
+    return algorithmsByKey.values().stream()
         .filter(descriptor -> descriptor.module() == module)
-        .map(AlgorithmDescriptor::valueType).distinct().toList();
-    return types.stream().map(type -> types.stream()
-        .filter(other -> other.getSimpleName().equals(type.getSimpleName())).count() > 1
-            ? type.getName() : type.getSimpleName()).sorted().toList();
+        .map(AlgorithmDescriptor::typeSignature)
+        .distinct()
+        .sorted(Comparator.comparing(AlgorithmTypeSignature::stableName))
+        .toList();
   }
 
-  /** Deprecated name-based access remains for old UI callers but never mixes colliding classes. */
-  public List<String> algorithmIds(StructureModule module, String valueTypeName) {
-    Objects.requireNonNull(module, "module");
-    Objects.requireNonNull(valueTypeName, "valueTypeName");
-    if (valueTypeName.isBlank()) throw new IllegalArgumentException("valueTypeName must not be blank");
-    List<Class<?>> matches = algorithmsByKey.values().stream()
-        .filter(descriptor -> descriptor.module() == module)
-        .map(AlgorithmDescriptor::valueType).distinct()
-        .filter(type -> type.getName().equals(valueTypeName)
-            || type.getSimpleName().equals(valueTypeName)).toList();
-    if (matches.size() > 1) throw new IllegalArgumentException(
-        "Ambiguous algorithm value type: " + valueTypeName);
-    if (matches.isEmpty()) return List.of();
-    return algorithms(module, matches.getFirst()).stream().map(AlgorithmDescriptor::id)
-        .distinct().sorted().toList();
+  public List<String> algorithmIds(
+      StructureModule module, AlgorithmTypeSignature typeSignature) {
+    return algorithms(module, typeSignature).stream()
+        .map(AlgorithmDescriptor::id)
+        .distinct()
+        .sorted()
+        .toList();
   }
 
   public boolean hasStructure(String id) {
@@ -136,21 +125,20 @@ public final class ComponentRegistry {
   }
 
   public AlgorithmDescriptor requireAlgorithm(
-      StructureModule module, Class<?> valueType, String algorithmId) {
+      StructureModule module, AlgorithmTypeSignature typeSignature, String algorithmId) {
     Objects.requireNonNull(module, "module");
-    Objects.requireNonNull(valueType, "valueType");
+    Objects.requireNonNull(typeSignature, "typeSignature");
     String id = requireId(algorithmId);
-    List<AlgorithmDescriptor> matches = algorithms(module, valueType)
-                                            .stream()
-                                            .filter(descriptor -> descriptor.id().equals(id))
-                                            .toList();
+    List<AlgorithmDescriptor> matches = algorithms(module, typeSignature).stream()
+        .filter(descriptor -> descriptor.id().equals(id))
+        .toList();
     if (matches.size() != 1) {
       if (matches.isEmpty()) {
         throw new IllegalArgumentException("No Algorithm registered for module=" + module.id()
-            + ", type=" + valueType.getName() + ", id=" + id);
+            + ", types=" + typeSignature + ", id=" + id);
       }
       throw new IllegalArgumentException("Algorithm registration is ambiguous for module="
-          + module.id() + ", type=" + valueType.getName() + ", id=" + id + ": "
+          + module.id() + ", types=" + typeSignature + ", id=" + id + ": "
           + matches.stream().map(value -> value.structureContract().getName()).toList());
     }
     return matches.getFirst();
@@ -196,7 +184,8 @@ public final class ComponentRegistry {
   }
 
   private static String describe(AlgorithmKey key) {
-    return "structure=" + key.structureContract().getName() + ", type=" + key.valueType().getName()
+    return "structure=" + key.structureContract().getName()
+        + ", types=" + key.typeSignature()
         + ", id=" + key.algorithmId();
   }
 

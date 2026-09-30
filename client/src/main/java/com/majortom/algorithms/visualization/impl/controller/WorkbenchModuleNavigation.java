@@ -1,15 +1,13 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.core.metadata.StructureModule;
-import com.majortom.algorithms.core.registry.ComponentRegistry;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -17,25 +15,26 @@ import java.util.function.Function;
 
 /** Owns family navigation and available algorithm lists; module transitions stay in the Workbench. */
 final class WorkbenchModuleNavigation {
-    private final ComponentRegistry components;
     private final List<WorkbenchModuleDefinition> moduleDefinitions;
     private final FamilyNavigator familyNavigator;
     private final Consumer<WorkbenchModuleDefinition> onSelectFamily;
-    private final Function<String, String> selectedValueType;
+    private final Function<String, AlgorithmTypeSignature> selectedTypeSignature;
 
-    WorkbenchModuleNavigation(ComponentRegistry components, List<WorkbenchModuleDefinition> definitions,
-            FamilyNavigator navigator, Consumer<WorkbenchModuleDefinition> onSelectFamily,
-            Function<String, String> selectedValueType) {
-        this.components = components;
+    WorkbenchModuleNavigation(
+            List<WorkbenchModuleDefinition> definitions,
+            FamilyNavigator navigator,
+            Consumer<WorkbenchModuleDefinition> onSelectFamily,
+            Function<String, AlgorithmTypeSignature> selectedTypeSignature) {
         this.moduleDefinitions = definitions;
         this.familyNavigator = navigator;
         this.onSelectFamily = onSelectFamily;
-        this.selectedValueType = selectedValueType;
+        this.selectedTypeSignature = selectedTypeSignature;
     }
 
     void install() {
         familyNavigator.setEntries(moduleDefinitions.stream()
-                .map(definition -> familyEntry(definition, false, () -> onSelectFamily.accept(definition)))
+                .map(definition -> familyEntry(
+                        definition, false, () -> onSelectFamily.accept(definition)))
                 .toList());
     }
 
@@ -70,45 +69,27 @@ final class WorkbenchModuleNavigation {
         return "--";
     }
 
-    /**
-     * Algorithms exposed by a family in the workspace rail.
-     *
-     * <p>This deliberately describes the whole family, not only the currently active
-     * structure variant.  A family such as Tree can start on General Tree while its
-     * algorithms live on the AVL variant.  Using the active controller's list here
-     * made the rail change availability during a module transition and could bounce
-     * the workspace back to Structure before the target variant was selected.</p>
-     */
     List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
-        List<String> algorithmIds = new ArrayList<>();
         if (StructureIds.MAZE.equals(moduleId)) {
-            algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId));
-        } else {
-            String selected = selectedValueType.apply(moduleId);
-            if (selected == null) {
-                return List.of();
-            }
-            Class<?> valueType = ValueAdapters.requireType(selected);
-            if (!ValueAdapters.canReplay(valueType)) return List.of();
-            algorithmIds.addAll(AlgorithmCatalog.forWorkbenchModule(moduleId, valueType));
-            List<String> registered = components.algorithms(StructureModule.fromId(moduleId), valueType)
-                    .stream().map(com.majortom.algorithms.core.registry.AlgorithmDescriptor::id).toList();
-            algorithmIds.removeIf(id -> !registered.contains(id));
+            return AlgorithmCatalog.forWorkbenchModule(moduleId).stream()
+                    .distinct()
+                    .map(AlgorithmNavigationItem::new)
+                    .toList();
         }
-        return algorithmIds.stream().distinct().map(AlgorithmNavigationItem::new).toList();
+
+        AlgorithmTypeSignature signature = selectedTypeSignature.apply(moduleId);
+        if (signature == null || signature.types().stream().anyMatch(type -> !ValueAdapters.canReplay(type))) {
+            return List.of();
+        }
+        return AlgorithmCatalog.forWorkbenchModule(moduleId, signature).stream()
+                .distinct()
+                .map(AlgorithmNavigationItem::new)
+                .toList();
     }
 
-    private void addAlgorithmsForAllTypes(List<String> target, String family, String excludedPrefix) {
-        for (String valueType : components.algorithmValueTypes(StructureModule.fromId(family))) {
-            for (String algorithmId : components.algorithmIds(StructureModule.fromId(family), valueType)) {
-                if (excludedPrefix == null || !algorithmId.startsWith(excludedPrefix)) {
-                    target.add(algorithmId);
-                }
-            }
-        }
-    }
-
-    void updateAvailability(boolean algorithmMode, boolean running,
+    void updateAvailability(
+            boolean algorithmMode,
+            boolean running,
             java.util.function.Predicate<String> hasAlgorithmForAnySupportedType) {
         if (familyNavigator == null) {
             return;
@@ -117,8 +98,8 @@ final class WorkbenchModuleNavigation {
             boolean unavailableInAlgorithm = algorithmMode
                     && algorithmNavigationItems(definition.id()).isEmpty()
                     && !hasAlgorithmForAnySupportedType.test(definition.id());
-            familyNavigator.setFamilyDisabled(definition.id(), running || unavailableInAlgorithm);
+            familyNavigator.setFamilyDisabled(
+                    definition.id(), running || unavailableInAlgorithm);
         }
     }
-
 }

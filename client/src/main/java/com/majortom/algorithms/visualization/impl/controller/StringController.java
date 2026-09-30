@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -36,7 +37,7 @@ import java.util.function.Consumer;
 public final class StringController extends BaseModuleController<StringViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<StringSnapshot>, SnapshotAlgorithmInputSupport<StringSnapshot> {
 
-    private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, java.lang.String.class);
+    private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(StringStructure.class, AlgorithmTypeSignature.of(java.lang.String.class));
     private final StringStructure source;
     private StructureSnapshot<StringSnapshot> algorithmInputSnapshot;
     private boolean structureSelectionEnabled = true;
@@ -224,7 +225,7 @@ public final class StringController extends BaseModuleController<StringViewState
                 : algorithmInputSnapshot;
         String target = inputSnapshot.state().value();
         StringStructure input = new com.majortom.algorithms.structure.string.String(target);
-        var descriptor = algorithm(algorithmId, java.lang.String.class);
+        var descriptor = algorithm(algorithmId, AlgorithmTypeSignature.of(java.lang.String.class));
         stringVisualizer().clearAlgorithmPattern();
         requestPresentationRender();
         startAlgorithm(

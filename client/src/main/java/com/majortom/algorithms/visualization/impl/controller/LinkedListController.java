@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
@@ -380,7 +381,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         input.initialize(inputValues);
         LinkedListViewState initialState = LinkedListViewState.source(input.getHead());
         var descriptor = AlgorithmCatalog.compatibleDescriptor(
-                LinkedStructure.class, runtimeValueType, algorithmId);
+                LinkedStructure.class, AlgorithmTypeSignature.of(runtimeValueType), algorithmId);
         startAlgorithm(algorithmId, inputValues, () -> {
             descriptor.invoke(input);
             return null;
@@ -597,7 +598,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     public List<String> algorithmIds() {
         return AlgorithmCatalog.forWorkbenchModule(
-                StructureIds.LINKED_LIST, runtimeValueType);
+                StructureIds.LINKED_LIST, AlgorithmTypeSignature.of(runtimeValueType));
     }
 
     @Override

@@ -13,6 +13,9 @@ import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphLayoutMetrics;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphDecorationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphVisualText;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.animation.GraphAnimationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.animation.GraphAnimationPlanner;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
@@ -23,8 +26,6 @@ import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
-import javafx.geometry.BoundingBox;
-import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -43,12 +44,6 @@ import java.util.function.LongConsumer;
 
 /** Graph renderer using measured JavaFX nodes, transient ELK Layered routes and GestureFX viewport. */
 public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
-    private static final double MIN_RADIUS = 28.0d;
-    private static final double LABEL_PADDING = 24.0d;
-    private static final double EDGE_LABEL_OFFSET = 20.0d;
-    private static final double EDGE_LABEL_OFFSET_STEP = 12.0d;
-    private static final double EDGE_LABEL_COLLISION_PADDING = 4.0d;
-
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("GRAPH");
     private static final StructureVisualization<GraphViewState> STRUCTURE_VISUALIZATION = new GraphStructureVisualization();
     private final VisualizationSurface surface = new VisualizationSurface();
@@ -58,7 +53,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private final StructureAnimationRuntime<GraphViewState> animationRuntime =
             new StructureAnimationRuntime<>(new GraphAnimationPlanner());
     private final GraphAnimationSceneAdapter animationScene = new GraphAnimationSceneAdapter();
-    private LayoutPatch lastPatch;
     private Long selectedNodeId;
     private Long selectedEdgeId;
     private Long pendingSelectedNodeId;
@@ -68,14 +62,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private VisualDensity density = VisualDensity.DETAIL;
 
     public GraphVisualizer() {
-        getChildren().setAll(surface);
-        surface.prefWidthProperty().bind(widthProperty());
-        surface.prefHeightProperty().bind(heightProperty());
         // Graph nodes carry ids/edge labels around the factual node geometry. Keep a larger
         // top breathing room so FIT_CONTENT never pins the highest node against the workspace
         // chrome while preserving the common right/bottom toolbar reserves.
-        surface.setSafeInsets(new javafx.geometry.Insets(56.0d, 16.0d, 62.0d, 16.0d));
-        surface.setFrameworkManagedCamera(true);
+        installSurface(surface, new javafx.geometry.Insets(56.0d, 16.0d, 62.0d, 16.0d));
     }
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
@@ -98,12 +88,10 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             ElementGeometry bounds = patch.elements().get(GraphElkLayout.nodeId(entry.getKey()));
             if (bounds == null) continue;
             NodeView view = entry.getValue();
-            view.setGeometry(new CircleGeometry(Math.max(MIN_RADIUS, bounds.width() / 2.0d)));
+            view.setGeometry(new CircleGeometry(Math.max(GraphLayoutMetrics.MIN_NODE_RADIUS, bounds.width() / 2.0d)));
             view.setCenter(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
         }
         applyRoutes(patch);
-        lastPatch = patch;
-        resolveEdgeLabelCollisions();
         animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
@@ -115,7 +103,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         reconcileEdges(state);
         applyPendingSelection(state);
         applyPresentation(state);
-        resolveEdgeLabelCollisions();
         return CompletableFuture.completedFuture(null);
     }
 
@@ -132,7 +119,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         }
         for (GraphViewState.Node node : state.nodes()) {
             if (nodeViews.containsKey(node.id())) continue;
-            NodeView view = new NodeView(new CircleGeometry(MIN_RADIUS), node.value().text());
+            NodeView view = new NodeView(new CircleGeometry(GraphLayoutMetrics.MIN_NODE_RADIUS), node.value().text());
             long nodeId = node.id();
             view.setOnMouseClicked(event -> {
                 selectNode(nodeId);
@@ -196,8 +183,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView view = edgeViews.get(edge.id());
             if (view == null) continue;
             view.setDirected(state.directed());
-            view.setLabelText(weightText(edge.weight()));
-            view.setLabelNormalOffset(edgeLabelOffset(edge.id()));
+            view.setLabelText(GraphVisualText.weight(edge.weight()));
             view.setHighlighted(isObservedEdge(state, edge));
         }
         syncSelectionState();
@@ -214,7 +200,17 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 entry.getValue().setRoute(route.points().stream().map(point -> new Point2D(point.x(), point.y())).toList());
             }
         }
-        resolveEdgeLabelCollisions();
+        applyLabelLayout(patch);
+    }
+
+    private void applyLabelLayout(LayoutPatch patch) {
+        for (Map.Entry<Long, EdgeView> entry : edgeViews.entrySet()) {
+            String edgeId = GraphElkLayout.edgeId(entry.getKey());
+            var geometry = patch.decorations().edges().get(GraphDecorationIds.edgeLabel(edgeId));
+            if (geometry != null) {
+                entry.getValue().setLabelNormalOffset(geometry.normalOffset());
+            }
+        }
     }
 
     private void applyPendingSelection(GraphViewState state) {
@@ -308,7 +304,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         label.layoutXProperty().bind(view.centerXProperty().add(view.translateXProperty())
                 .subtract(label.widthProperty().divide(2.0d)));
         label.layoutYProperty().bind(view.centerYProperty().add(view.translateYProperty())
-                .add(MIN_RADIUS + 6.0d));
+                .add(view.heightProperty().divide(2.0d))
+                .add(GraphLayoutMetrics.NODE_ID_GAP));
         nodeIdLabels.put(nodeId, label);
         surface.decorationLayer().getChildren().add(label);
     }
@@ -350,11 +347,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
-@Override
-    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
-        surface.setObstructionInsets(insets);
-    }
-
     @Override
     public void onVisualizationReset() {
         super.onVisualizationReset();
@@ -369,7 +361,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         selectedEdgeId = null;
         pendingSelectedNodeId = null;
         pendingSelectedEdgeId = null;
-        lastPatch = null;
         surface.reset();
         surface.markViewportPristine();
     }
@@ -379,8 +370,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         if (isDisposed()) return;
         super.dispose();
         edgeViews.values().forEach(EdgeView::dispose);
-        surface.prefWidthProperty().unbind();
-        surface.prefHeightProperty().unbind();
     }
 
 
@@ -525,7 +514,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             }
             discardExitedVisuals();
             if (targetPatch != null) applyRoutes(targetPatch);
-            resolveEdgeLabelCollisions();
             capturedCenters.clear();
             capturedRoutes.clear();
         }
@@ -538,107 +526,6 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                     || (observation.secondNodeId() != null && observation.secondNodeId() == nodeId);
             case NONE -> false;
         };
-    }
-
-    private double edgeLabelOffset(long edgeId) {
-        if ((edgeId & 1L) == 0L) {
-            return EDGE_LABEL_OFFSET;
-        }
-        return -EDGE_LABEL_OFFSET;
-    }
-
-    /**
-     * Keeps weighted-edge labels readable without changing graph topology or route ownership.
-     * Labels first keep the deterministic side chosen by edge id, then move farther from the
-     * edge only when that position intersects a node, node-id label, or an already placed weight.
-     */
-    private void resolveEdgeLabelCollisions() {
-        List<Bounds> occupied = new ArrayList<>();
-        for (NodeView node : nodeViews.values()) {
-            occupied.add(expanded(node.getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
-        }
-        for (Label nodeIdLabel : nodeIdLabels.values()) {
-            if (nodeIdLabel.isVisible()) {
-                occupied.add(expanded(nodeIdLabel.getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
-            }
-        }
-
-        List<Map.Entry<Long, EdgeView>> ordered = new ArrayList<>(edgeViews.entrySet());
-        ordered.sort(Map.Entry.comparingByKey());
-        for (Map.Entry<Long, EdgeView> entry : ordered) {
-            EdgeView edge = entry.getValue();
-            if (edge.labelText() == null) {
-                continue;
-            }
-            double[] candidates = edgeLabelOffsetCandidates(entry.getKey());
-            double bestOffset = candidates[0];
-            double bestScore = Double.POSITIVE_INFINITY;
-            for (double candidate : candidates) {
-                edge.setLabelNormalOffset(candidate);
-                Bounds candidateBounds = expanded(edge.labelNode().getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING);
-                double score = overlapScore(candidateBounds, occupied);
-                if (score < bestScore) {
-                    bestScore = score;
-                    bestOffset = candidate;
-                }
-                if (score == 0.0d) {
-                    break;
-                }
-            }
-            edge.setLabelNormalOffset(bestOffset);
-            occupied.add(expanded(edge.labelNode().getBoundsInParent(), EDGE_LABEL_COLLISION_PADDING));
-        }
-    }
-
-    private double[] edgeLabelOffsetCandidates(long edgeId) {
-        double first = edgeLabelOffset(edgeId);
-        double opposite = -first;
-        double secondMagnitude = EDGE_LABEL_OFFSET + EDGE_LABEL_OFFSET_STEP;
-        double thirdMagnitude = secondMagnitude + EDGE_LABEL_OFFSET_STEP;
-        double sign = 1.0d;
-        if (first < 0.0d) {
-            sign = -1.0d;
-        }
-        return new double[] {
-                first,
-                opposite,
-                sign * secondMagnitude,
-                -sign * secondMagnitude,
-                sign * thirdMagnitude,
-                -sign * thirdMagnitude
-        };
-    }
-
-    private Bounds expanded(Bounds bounds, double padding) {
-        return new BoundingBox(
-                bounds.getMinX() - padding,
-                bounds.getMinY() - padding,
-                bounds.getWidth() + padding * 2.0d,
-                bounds.getHeight() + padding * 2.0d);
-    }
-
-    private double overlapScore(Bounds candidate, List<Bounds> occupied) {
-        double score = 0.0d;
-        for (Bounds other : occupied) {
-            double width = Math.min(candidate.getMaxX(), other.getMaxX())
-                    - Math.max(candidate.getMinX(), other.getMinX());
-            double height = Math.min(candidate.getMaxY(), other.getMaxY())
-                    - Math.max(candidate.getMinY(), other.getMinY());
-            if (width > 0.0d && height > 0.0d) {
-                score += width * height;
-            }
-        }
-        return score;
-    }
-
-    private static String weightText(Double weight) {
-        if (weight == null) {
-            return null;
-        }
-        if (Math.rint(weight) == weight) {
-            return Long.toString(weight.longValue());
-        }
-        return String.format(java.util.Locale.ROOT, "%.2f", weight);
     }
 
     private static boolean isObservedEdge(GraphViewState state, GraphViewState.Edge edge) {

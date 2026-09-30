@@ -1,35 +1,25 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
-import com.majortom.algorithms.visualization.render.api.LinearLayoutDirection;
-import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.impl.visualizer.linear.LinearStructureLayoutSpec;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
+import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
-import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.RenderCaptureContext;
+import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.layout.DetachedMetrics;
 import com.majortom.algorithms.visualization.render.layout.LinearLayoutEngine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** JavaFX-neutral deterministic layout semantics for stack/queue families. */
 public final class LinearStructureVisualization implements StructureVisualization<LinearStructureViewState> {
-    private final String structure;
-    private final LinearLayoutDirection direction;
-    private final double minWidth;
-    private final double height;
-    private final double horizontalPadding;
-    private final double layoutPadding;
+    private final LinearStructureLayoutSpec spec;
 
-    public LinearStructureVisualization(String structure, LinearLayoutDirection direction, double minWidth,
-            double height, double horizontalPadding, double layoutPadding) {
-        this.structure = structure;
-        this.direction = direction;
-        this.minWidth = minWidth;
-        this.height = height;
-        this.horizontalPadding = horizontalPadding;
-        this.layoutPadding = layoutPadding;
+    public LinearStructureVisualization(LinearStructureLayoutSpec spec) {
+        this.spec = Objects.requireNonNull(spec, "spec");
     }
 
     @Override
@@ -38,18 +28,20 @@ public final class LinearStructureVisualization implements StructureVisualizatio
         for (int index = 0; index < state.values().size(); index++) {
             String text = state.values().get(index).text();
             double width = DetachedMetrics.boxWidth(
-                    text, context.contentStyle(), minWidth, horizontalPadding);
-            elements.add(new LayoutElement(elementId(structure, index), width, height));
+                    text, context.contentStyle(), spec.minWidth(), spec.horizontalPadding());
+            elements.add(new LayoutElement(elementId(spec.structure(), index), width, spec.height()));
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), LinearLayoutEngine.ID, elements,
-                Map.of(LayoutMetadataKeys.STRUCTURE, structure,
-                        LayoutMetadataKeys.DIRECTION, direction.name(),
-                        LayoutMetadataKeys.PADDING, number(layoutPadding),
+                Map.of(LayoutMetadataKeys.STRUCTURE, spec.structure(),
+                        LayoutMetadataKeys.DIRECTION, spec.direction().name(),
+                        LayoutMetadataKeys.PADDING, number(spec.layoutPadding()),
                         LayoutMetadataKeys.SPACING, "0"));
     }
 
-    public static String elementId(String structure, int index) { return structure + ":" + index; }
+    public static String elementId(String structure, int index) {
+        return structure + ":" + index;
+    }
 
     private static String number(double value) {
         long integral = (long) value;

@@ -12,11 +12,17 @@ import com.majortom.algorithms.visualization.common.VisualDensityPolicy;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.impl.visualizer.string.KmpPatternCellView;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringCellView;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringDecorationIds;
+import com.majortom.algorithms.visualization.impl.visualizer.string.StringDecorationLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.string.StringVisualIds;
 import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.string.animation.StringAnimationPlanner;
+import com.majortom.algorithms.visualization.impl.visualizer.indexed.IndexedStripAnimationSupport;
+import com.majortom.algorithms.visualization.impl.visualizer.indexed.IndexedStripSupport;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
+import com.majortom.algorithms.visualization.render.api.DecorationGeometry;
+import com.majortom.algorithms.visualization.render.api.DecorationSize;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
@@ -24,7 +30,6 @@ import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 
-import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -48,7 +53,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private static final double EMPTY_Y = 64.0d;
 
     private final VisualizationSurface surface = new VisualizationSurface();
-    private final Map<Integer, StringCellView> cells = new LinkedHashMap<>();
+    private final IndexedStripSupport<StringCellView> strip = new IndexedStripSupport<>(surface);
     private final StructureAnimationRuntime<StringViewState> animationRuntime =
             new StructureAnimationRuntime<>(new StringAnimationPlanner());
     private final StringAnimationSceneAdapter animationScene = new StringAnimationSceneAdapter();
@@ -57,17 +62,13 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private final Label patternCaption = new Label();
     private final HBox patternTrack = new HBox(0.0d);
     private final List<KmpPatternCellView> patternCells = new ArrayList<>();
+    private final StringDecorationLayout decorationLayout = new StringDecorationLayout();
+    private LayoutPatch lastPatch;
     private String lastRenderedValue = "";
-    private int selectedIndex = -1;
-    private int pendingSelectedIndex = -1;
     private String algorithmPattern = "";
-    private IntConsumer onIndexSelected = ignored -> {};
 
     public StringVisualizer() {
-        getChildren().setAll(surface);
-        surface.prefWidthProperty().bind(widthProperty());
-        surface.prefHeightProperty().bind(heightProperty());
-        surface.setFrameworkManagedCamera(true);
+        installSurface(surface);
 
         emptyLabel.getStyleClass().add("visual-empty-label");
         emptyLabel.textProperty().bind(I18N.createStringBinding("label.visual.string.empty"));
@@ -85,7 +86,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
 
     public void setOnIndexSelected(IntConsumer onIndexSelected) {
-        this.onIndexSelected = onIndexSelected == null ? ignored -> {} : onIndexSelected;
+        strip.setSelectionListener(onIndexSelected);
     }
 
     /** Algorithm-only KMP overlay input. The logical String track remains unchanged. */
@@ -101,32 +102,27 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     public void clearSelection() {
-        selectedIndex = -1;
-        pendingSelectedIndex = -1;
+        strip.clearSelection();
     }
 
     public int selectedIndex() {
-        return selectedIndex;
+        return strip.selectedIndex();
     }
 
     public void selectIndex(int index) {
-        if (!showSelection(index)) return;
-        onIndexSelected.accept(index);
+        strip.selectIndex(index);
     }
 
     /** Keeps a presentation selection on the same character index without re-firing the click callback. */
     public boolean showSelection(int index) {
-        if (index < 0) return false;
-        selectedIndex = index;
-        pendingSelectedIndex = cells.containsKey(index) ? -1 : index;
-        return true;
+        return strip.showSelection(index);
     }
 
 
     @Override
     public CompletionStage<Void> commitLayout(
             StringViewState state, LayoutPatch patch, RenderCommitContext context) {
-        int previousCellCount = cells.size();
+        int previousCellCount = strip.size();
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch, previousCellCount);
@@ -139,17 +135,12 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             }
         }
         reconcileCells(state);
-        applyPendingSelection(state.value().length());
+        strip.applyPendingSelection(state.value().length());
         applyPresentation(state);
 
-        for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
-            ElementGeometry target = patch.elements().get(id(entry.getKey()));
-            if (target == null) continue;
-            StringCellView cell = entry.getValue();
-            cell.setLayoutSize(target.width(), target.height());
-            cell.relocate(target.x(), target.y());
-        }
-        updateDecorations(state);
+        strip.applyLayout(patch, StringVisualizer::id);
+        lastPatch = patch;
+        updateDecorations(state, patch);
         lastRenderedValue = state.value();
         animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
@@ -159,9 +150,9 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     public CompletionStage<Void> commitPresentation(
             StringViewState state, RenderCommitContext context) {
         reconcileCells(state);
-        applyPendingSelection(state.value().length());
+        strip.applyPendingSelection(state.value().length());
         applyPresentation(state);
-        updateDecorations(state);
+        updateDecorations(state, lastPatch);
         lastRenderedValue = state.value();
         return CompletableFuture.completedFuture(null);
     }
@@ -173,14 +164,14 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         switch (mutation.type()) {
             case INSERTED -> {
                 if (length > 0 && newSize == oldSize + length && index >= 0 && index <= oldSize) {
-                    shiftIndexes(index, oldSize - 1, length);
+                    strip.shiftIndexes(index, oldSize - 1, length);
                 }
             }
             case REMOVED -> {
                 if (length > 0 && newSize + length == oldSize && index >= 0 && index < oldSize) {
                     // Exit visuals may already be detached by the animation adapter.
-                    removeRange(index, Math.min(oldSize, index + length));
-                    shiftIndexes(index + length, oldSize - 1, -length);
+                    strip.removeRange(index, Math.min(oldSize, index + length));
+                    strip.shiftIndexes(index + length, oldSize - 1, -length);
                 }
             }
             case REPLACED -> {
@@ -189,10 +180,10 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                 if (oldLength >= 0 && index >= 0 && index + oldLength <= oldSize) {
                     int common = Math.min(oldLength, length);
                     if (oldLength > common) {
-                        removeRange(index + common, index + oldLength);
+                        strip.removeRange(index + common, index + oldLength);
                     }
                     if (delta != 0) {
-                        shiftIndexes(index + oldLength, oldSize - 1, delta);
+                        strip.shiftIndexes(index + oldLength, oldSize - 1, delta);
                     }
                     // Common replacement cells retain identity and pulse their value change.
                 }
@@ -203,49 +194,16 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
     }
 
-    private void shiftIndexes(int fromInclusive, int toInclusive, int delta) {
-        if (delta == 0 || fromInclusive > toInclusive) return;
-        if (delta > 0) {
-            for (int oldIndex = toInclusive; oldIndex >= fromInclusive; oldIndex--) {
-                StringCellView cell = cells.remove(oldIndex);
-                if (cell != null) cells.put(oldIndex + delta, cell);
-            }
-        } else {
-            for (int oldIndex = fromInclusive; oldIndex <= toInclusive; oldIndex++) {
-                StringCellView cell = cells.remove(oldIndex);
-                if (cell != null) cells.put(oldIndex + delta, cell);
-            }
-        }
-    }
-
-    private void removeRange(int fromInclusive, int toExclusive) {
-        for (int index = fromInclusive; index < toExclusive; index++) {
-            StringCellView removed = cells.remove(index);
-            if (removed != null) surface.nodeLayer().getChildren().remove(removed);
-        }
-    }
-
     private void reconcileCells(StringViewState state) {
-        int size = state.value().length();
-        List<Integer> stale = cells.keySet().stream().filter(index -> index < 0 || index >= size).toList();
-        for (Integer index : stale) {
-            StringCellView removed = cells.remove(index);
-            if (removed != null) surface.nodeLayer().getChildren().remove(removed);
-        }
-        for (int index = 0; index < size; index++) {
-            if (cells.containsKey(index)) continue;
-            StringCellView cell = new StringCellView(index, state.value().charAt(index));
-            cell.setSelectionHandler(this::selectIndex);
-            cells.put(index, cell);
-            surface.nodeLayer().getChildren().add(cell);
-        }
-        normalizeCellOrder();
+        strip.reconcile(state.value().length(),
+                index -> new StringCellView(index, state.value().charAt(index)));
+        strip.normalizeOrder(animationScene.exitingCells());
     }
 
     private void applyPresentation(StringViewState state) {
         VisualDensity density = VisualDensityPolicy.string(state.value().length());
         for (int index = 0; index < state.value().length(); index++) {
-            StringCellView cell = cells.get(index);
+            StringCellView cell = strip.get(index);
             if (cell == null) continue;
             cell.setIndex(index);
             cell.setValue(state.value().charAt(index));
@@ -254,37 +212,17 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             boolean observationIndex = isObservationIndex(state.observation(), index);
             cell.setObserved((mutationIndex || observationIndex) && !state.completed());
             cell.setCompleted(state.completed());
-            cell.setSelected(index == selectedIndex);
-            cell.setDensity(density, mutationIndex || observationIndex || index == selectedIndex);
+            cell.setSelected(strip.isSelected(index));
+            cell.setDensity(density, mutationIndex || observationIndex || strip.isSelected(index));
         }
-        normalizeCellOrder();
+        strip.normalizeOrder(animationScene.exitingCells());
     }
 
-    private void applyPendingSelection(int size) {
-        if (selectedIndex >= size) selectedIndex = -1;
-        if (pendingSelectedIndex < 0) return;
-        if (pendingSelectedIndex < size) {
-            selectedIndex = pendingSelectedIndex;
-            onIndexSelected.accept(selectedIndex);
-        }
-        pendingSelectedIndex = -1;
-    }
-
-    private void normalizeCellOrder() {
-        List<javafx.scene.Node> ordered = new ArrayList<>(cells.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .map(javafx.scene.Node.class::cast)
-                .toList());
-        ordered.addAll(animationScene.exitingCells());
-        surface.nodeLayer().getChildren().setAll(ordered);
-    }
-
-    private void updateDecorations(StringViewState state) {
+    private void updateDecorations(StringViewState state, LayoutPatch patch) {
         updateEmptyLabel(state.value().isEmpty());
         updateObservationLabel(state.observation());
         syncPatternCells();
-        updatePatternOverlay(state);
+        updatePatternOverlay(state, patch);
     }
 
     private void updateEmptyLabel(boolean empty) {
@@ -316,14 +254,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
     private void syncPatternCells() {
         if (algorithmPattern.length() == patternCells.size()) {
-            boolean same = true;
             for (int index = 0; index < patternCells.size(); index++) {
-                // Reusing cells is safe only when the text still matches.
-                // KmpPatternCellView has no getter, so setValue below is cheap and deterministic.
                 patternCells.get(index).setIndex(index);
                 patternCells.get(index).setValue(algorithmPattern.charAt(index));
             }
-            if (same) return;
+            return;
         }
         patternCells.clear();
         patternTrack.getChildren().clear();
@@ -334,11 +269,13 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
     }
 
-    private void updatePatternOverlay(StringViewState state) {
-        if (state == null || state.completed() || algorithmPattern.isEmpty() || cells.isEmpty()) {
+    private void updatePatternOverlay(StringViewState state, LayoutPatch patch) {
+        if (state == null || patch == null || state.completed()
+                || algorithmPattern.isEmpty() || strip.size() == 0) {
             detachPatternOverlay();
             return;
         }
+
         ensurePatternOverlayAttached();
         VisualDensity density = VisualDensityPolicy.string(state.value().length());
         for (int index = 0; index < patternCells.size(); index++) {
@@ -351,23 +288,45 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
             };
             cell.setObserved(observed && !state.completed());
         }
+
         patternTrack.applyCss();
         patternTrack.autosize();
-
-        StringCellView first = cells.get(0);
-        if (first == null) return;
-        double targetX = first.getLayoutX();
-        StringCellView aligned = cells.get(state.patternStart());
-        if (aligned != null) targetX = aligned.getLayoutX();
-        double targetY = first.getLayoutY() + Math.max(1.0d, first.getHeight()) + 24.0d;
         patternCaption.applyCss();
         patternCaption.autosize();
-        patternCaption.relocate(first.getLayoutX() + 32.0d, targetY - 14.0d);
-        patternTrack.relocate(targetX, targetY);
+        observationLabel.applyCss();
 
-        if (!observationLabel.getText().isEmpty()) {
-            observationLabel.relocate(
-                    first.getLayoutX(), targetY + Math.max(1.0d, patternTrack.getHeight()) + 10.0d);
+        ElementGeometry first = patch.elements().get(id(0));
+        ElementGeometry aligned = patch.elements().get(id(state.patternStart()));
+        if (first == null) {
+            detachPatternOverlay();
+            return;
+        }
+
+        var decorations = decorationLayout.layout(new StringDecorationLayout.Input(
+                first,
+                aligned,
+                new DecorationSize(
+                        Math.max(0.0d, patternTrack.getWidth()),
+                        Math.max(0.0d, patternTrack.getHeight())),
+                new DecorationSize(
+                        Math.max(0.0d, patternCaption.getWidth()),
+                        Math.max(0.0d, patternCaption.getHeight())),
+                new DecorationSize(
+                        Math.max(0.0d, observationLabel.getLayoutBounds().getWidth()),
+                        Math.max(0.0d, observationLabel.getLayoutBounds().getHeight())),
+                !observationLabel.getText().isEmpty()));
+
+        applyDecoration(patternTrack,
+                decorations.elements().get(StringDecorationIds.PATTERN));
+        applyDecoration(patternCaption,
+                decorations.elements().get(StringDecorationIds.PATTERN_CAPTION));
+        applyDecoration(observationLabel,
+                decorations.elements().get(StringDecorationIds.OBSERVATION));
+    }
+
+    private static void applyDecoration(javafx.scene.Node node, DecorationGeometry geometry) {
+        if (geometry != null) {
+            node.relocate(geometry.x(), geometry.y());
         }
     }
 
@@ -385,8 +344,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private void clearCells() {
-        cells.clear();
-        surface.nodeLayer().getChildren().clear();
+        strip.clearCells();
     }
 
     private boolean isMutationIndex(StringViewState.Mutation mutation, int index) {
@@ -410,26 +368,33 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     }
 
     private final class StringAnimationSceneAdapter implements AnimationSceneAdapter {
-        private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
-        private final Map<String, StringCellView> exitingCells = new LinkedHashMap<>();
-        private LayoutPatch targetPatch;
+        private final IndexedStripAnimationSupport<StringCellView> support =
+                new IndexedStripAnimationSupport<>(
+                        strip,
+                        surface,
+                        StringAnimationIds::node,
+                        StringVisualizer::id,
+                        StringVisualIds::nodeIndex,
+                        StringAnimationIds::exitIndex);
 
         void prepare(AnimationPlan plan, StringViewState state, LayoutPatch patch, int oldSize) {
-            capturedCenters.clear();
-            targetPatch = patch;
+            support.begin(patch);
             captureCentersForMutation(state.mutation(), oldSize, state.value().length());
             for (var timed : plan.steps()) {
-                if (timed.step() instanceof AnimationStep.NodeExit exit) detachExit(exit.targetId());
+                if (timed.step() instanceof AnimationStep.NodeExit exit) {
+                    support.detachExit(exit.targetId());
+                }
             }
         }
 
         private void captureCentersForMutation(
                 StringViewState.Mutation mutation, int oldSize, int newSize) {
             if (mutation == null) {
-                cells.forEach((index, cell) -> capturedCenters.put(
-                        StringAnimationIds.node(index), visualCenter(cell)));
+                strip.cells().forEach((index, cell) ->
+                        support.capture(StringAnimationIds.node(index), cell));
                 return;
             }
+
             int index = mutation.index();
             int length = Math.max(0, mutation.length());
             int delta = newSize - oldSize;
@@ -438,13 +403,15 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                     : 0;
             int commonReplacement = Math.min(Math.max(0, oldReplacementLength), length);
 
-            for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
+            for (Map.Entry<Integer, StringCellView> entry : strip.cells().entrySet()) {
                 int source = entry.getKey();
                 String logicalId = switch (mutation.type()) {
-                    case INSERTED -> StringAnimationIds.node(source >= index ? source + length : source);
+                    case INSERTED -> StringAnimationIds.node(
+                            source >= index ? source + length : source);
                     case REMOVED -> source >= index && source < index + length
                             ? StringAnimationIds.exit(source)
-                            : StringAnimationIds.node(source >= index + length ? source - length : source);
+                            : StringAnimationIds.node(
+                                    source >= index + length ? source - length : source);
                     case REPLACED -> {
                         if (source >= index + commonReplacement
                                 && source < index + oldReplacementLength) {
@@ -460,37 +427,17 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                             ? StringAnimationIds.node(source)
                             : StringAnimationIds.exit(source);
                 };
-                capturedCenters.put(logicalId, visualCenter(entry.getValue()));
+                support.capture(logicalId, entry.getValue());
             }
         }
 
-        private void detachExit(String logicalId) {
-            int previousIndex = StringAnimationIds.exitIndex(logicalId);
-            if (previousIndex < 0) return;
-            StringCellView cell = cells.remove(previousIndex);
-            if (cell != null) exitingCells.put(logicalId, cell);
-        }
-
         Collection<javafx.scene.Node> exitingCells() {
-            return List.copyOf(exitingCells.values());
+            return support.exitingNodes();
         }
 
         @Override
         public Optional<NodeTarget> node(String logicalId) {
-            int exitIndex = StringAnimationIds.exitIndex(logicalId);
-            if (exitIndex >= 0) {
-                StringCellView exiting = exitingCells.get(logicalId);
-                Point2D center = capturedCenters.get(logicalId);
-                return exiting == null || center == null
-                        ? Optional.empty()
-                        : Optional.of(new NodeTarget(logicalId, exiting, center, List.of()));
-            }
-            Integer index = activeIndex(logicalId);
-            if (index == null) return Optional.empty();
-            StringCellView cell = cells.get(index);
-            ElementGeometry geometry = targetPatch == null ? null : targetPatch.elements().get(id(index));
-            if (cell == null || geometry == null) return Optional.empty();
-            return Optional.of(new NodeTarget(logicalId, cell, center(geometry), List.of()));
+            return support.node(logicalId);
         }
 
         @Override
@@ -500,7 +447,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
         @Override
         public Optional<Point2D> capturedNodeCenter(String logicalId) {
-            return Optional.ofNullable(capturedCenters.get(logicalId));
+            return support.capturedNodeCenter(logicalId);
         }
 
         @Override
@@ -510,15 +457,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
         @Override
         public Collection<NodeTarget> activeNodes() {
-            List<NodeTarget> result = new ArrayList<>(cells.size());
-            for (Map.Entry<Integer, StringCellView> entry : cells.entrySet()) {
-                ElementGeometry geometry = targetPatch == null ? null : targetPatch.elements().get(id(entry.getKey()));
-                if (geometry != null) {
-                    result.add(new NodeTarget(StringAnimationIds.node(entry.getKey()), entry.getValue(),
-                            center(geometry), List.of()));
-                }
-            }
-            return result;
+            return support.activeNodes();
         }
 
         @Override
@@ -528,43 +467,14 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
         @Override
         public void discardExitedVisuals() {
-            exitingCells.values().forEach(cell -> surface.nodeLayer().getChildren().remove(cell));
-            exitingCells.clear();
+            support.discardExitedVisuals();
         }
 
         @Override
         public void stabilize(AnimationPlan plan) {
-            for (NodeTarget target : activeNodes()) {
-                javafx.scene.Node node = target.node();
-                node.setTranslateX(0.0d);
-                node.setTranslateY(0.0d);
-                node.setOpacity(1.0d);
-                node.setScaleX(1.0d);
-                node.setScaleY(1.0d);
-            }
-            discardExitedVisuals();
-            capturedCenters.clear();
-        }
-
-        private Integer activeIndex(String logicalId) {
-            int index = StringVisualIds.nodeIndex(logicalId);
-            return index < 0 ? null : index;
+            support.stabilize();
         }
     }
-
-    private static Point2D visualCenter(javafx.scene.Node node) {
-        Bounds bounds = node.getBoundsInParent();
-        return new Point2D(
-                bounds.getMinX() + bounds.getWidth() / 2.0d,
-                bounds.getMinY() + bounds.getHeight() / 2.0d);
-    }
-
-    private static Point2D center(ElementGeometry geometry) {
-        return new Point2D(
-                geometry.x() + geometry.width() / 2.0d,
-                geometry.y() + geometry.height() / 2.0d);
-    }
-
 
     private static boolean sourceReplacement(StringViewState previous, StringViewState current) {
         return previous != null
@@ -595,7 +505,6 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
-    @Override public void setViewportObstructionInsets(javafx.geometry.Insets insets) { surface.setObstructionInsets(insets); }
 @Override
     public void onVisualizationReset() {
         super.onVisualizationReset();
@@ -605,18 +514,11 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         patternCells.clear();
         patternTrack.getChildren().clear();
         observationLabel.setText("");
-        selectedIndex = -1;
-        pendingSelectedIndex = -1;
+        strip.resetSelection();
+        lastPatch = null;
         lastRenderedValue = "";
         surface.reset();
         surface.markViewportPristine();
-    }
-
-    @Override
-    public void dispose() {
-        surface.prefWidthProperty().unbind();
-        surface.prefHeightProperty().unbind();
-        super.dispose();
     }
 
     private static String id(int index) {

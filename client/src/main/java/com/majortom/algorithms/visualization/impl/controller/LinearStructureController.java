@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -378,7 +379,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         LinkedList<Object> input = new LinkedList<>();
         input.initialize(inputValues);
         var descriptor = AlgorithmCatalog.descriptor(
-                moduleId, runtimeValueType, algorithmId);
+                moduleId, AlgorithmTypeSignature.of(runtimeValueType), algorithmId);
         Object algorithmInput = kind == Kind.STACK ? (StackStructure<Object>) input : (QueueStructure<Object>) input;
         startAlgorithm(algorithmId, inputValues, () -> {
             descriptor.invoke(algorithmInput);
@@ -600,7 +601,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     @Override
     public List<String> algorithmIds() {
         return AlgorithmCatalog.forWorkbenchModule(
-                moduleId, runtimeValueType);
+                moduleId, AlgorithmTypeSignature.of(runtimeValueType));
     }
 
     @Override

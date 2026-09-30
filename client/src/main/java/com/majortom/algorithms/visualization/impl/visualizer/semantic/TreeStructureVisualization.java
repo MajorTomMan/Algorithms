@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.core.domain.relation.TreeRelationTypes;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeLayoutMetrics;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
@@ -20,8 +21,6 @@ import java.util.Set;
 
 /** JavaFX-neutral tree layout semantics. */
 public final class TreeStructureVisualization implements StructureVisualization<TreeViewState> {
-    private static final double MIN_RADIUS = 24.0d;
-    private static final double LABEL_PADDING = 18.0d;
 
     @Override
     public LayoutRequest captureLayout(TreeViewState state, RenderCaptureContext context) {
@@ -30,9 +29,9 @@ public final class TreeStructureVisualization implements StructureVisualization<
         for (Long id : order) {
             TreeViewState.Node node = state.nodes().get(id);
             if (node == null) continue;
-            double diameter = Math.max(MIN_RADIUS * 2.0d,
+            double diameter = Math.max(TreeLayoutMetrics.MIN_NODE_RADIUS * 2.0d,
                     DetachedMetrics.boxWidth(node.value().text(), context.contentStyle(),
-                            MIN_RADIUS * 2.0d, LABEL_PADDING));
+                            TreeLayoutMetrics.MIN_NODE_RADIUS * 2.0d, TreeLayoutMetrics.NODE_LABEL_PADDING));
             nodes.add(new LayoutElement(TreeElkLayout.nodeId(id), quantize(diameter), quantize(diameter)));
         }
 

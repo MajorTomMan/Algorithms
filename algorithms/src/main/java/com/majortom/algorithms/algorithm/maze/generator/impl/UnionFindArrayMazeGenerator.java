@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.Random;
 
 /** Randomized Kruskal/union-find perfect-maze generator. */
-@Algorithm(id = "maze-generator-union-find", name = "并查集生成", type = Boolean.class,
-    structure = MazeStructure.class)
+@Algorithm(id = "maze-generator-union-find", name = "并查集生成", types = {Boolean.class}, structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.ARRAY)
 public final class UnionFindArrayMazeGenerator {
   @AlgorithmEntry

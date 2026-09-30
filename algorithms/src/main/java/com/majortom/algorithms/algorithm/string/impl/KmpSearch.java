@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Algorithm(id = "kmp", name = "KMP Search", type = String.class, structure = StringStructure.class)
+@Algorithm(id = "kmp", name = "KMP Search", types = {String.class}, structure = StringStructure.class)
 public final class KmpSearch {
   private static final String DEFAULT_PATTERN = "ABABCABAB";
 

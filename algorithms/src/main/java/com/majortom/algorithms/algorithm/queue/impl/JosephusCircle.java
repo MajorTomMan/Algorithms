@@ -8,7 +8,7 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.linked.QueueStructure;
 
-@Algorithm(id = "josephus-circle", name = "约瑟夫环", type = Integer.class, structure = QueueStructure.class)
+@Algorithm(id = "josephus-circle", name = "约瑟夫环", types = {Integer.class}, structure = QueueStructure.class)
 public class JosephusCircle {
   private int k = 3;
 

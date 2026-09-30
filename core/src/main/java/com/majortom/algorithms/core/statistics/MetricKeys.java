@@ -20,6 +20,7 @@ public final class MetricKeys {
   public static final String CACHE_MISSES = "cacheMisses";
   public static final String CACHE_STORES = "cacheStores";
   public static final String CACHE_EVICTIONS = "cacheEvictions";
+  public static final String HASH_REHASHES = "hashRehashes";
 
   public static final String FRONTIER_ADDITIONS = "frontierAdditions";
   public static final String FRONTIER_SELECTIONS = "frontierSelections";

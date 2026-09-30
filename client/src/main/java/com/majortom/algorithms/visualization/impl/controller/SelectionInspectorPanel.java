@@ -99,6 +99,20 @@ final class SelectionInspectorPanel {
         selectionPresentation.run();
     }
 
+    void showHashSelection(HashTableController.EntrySelection selection) {
+        if (selection == null) { clear(); return; }
+        selectionPresentation = () -> presentSelection(
+                I18N.text("label.workspace.selection.entry"), "#" + selection.id(),
+                selection.key().text() + " → " + selection.value().text(),
+                I18N.text("label.workspace.selection.hash.hint"),
+                I18N.text("label.workspace.selection.hash.detail",
+                        selection.bucketIndex(), selection.key().text(), selection.value().text(),
+                        selection.size(), selection.capacity())
+                        + "\n\n" + selection.key().projection().details()
+                        + "\n\n" + selection.value().projection().details());
+        selectionPresentation.run();
+    }
+
     void showMazeSelection(MazeController.CellSelection selection) {
         if (selection == null) { clear(); return; }
         selectionPresentation = () -> presentSelection(

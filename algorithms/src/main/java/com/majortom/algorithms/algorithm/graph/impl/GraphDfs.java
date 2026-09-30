@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Algorithm(id = "graph-dfs", name = "深度优先遍历", type = Integer.class, structure = GraphStructure.class)
+@Algorithm(id = "graph-dfs", name = "深度优先遍历", types = {Integer.class}, structure = GraphStructure.class)
 public final class GraphDfs {
   private static Map<Integer, Boolean> isVisited = new HashMap<>();
 

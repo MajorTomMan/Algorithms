@@ -5,7 +5,7 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.linked.StackStructure;
 
-@Algorithm(id = "reverse-polish-expression", name = "逆波兰式", type = String.class, structure = StackStructure.class)
+@Algorithm(id = "reverse-polish-expression", name = "逆波兰式", types = {String.class}, structure = StackStructure.class)
 public class ReversePolishNotation {
   private String expression = "((8 + 2) * (9 - 3) / (4 + 2) + 7 * (6 - 2)) * (5 + 3) - (9 * 4 - 6) / 3";
 

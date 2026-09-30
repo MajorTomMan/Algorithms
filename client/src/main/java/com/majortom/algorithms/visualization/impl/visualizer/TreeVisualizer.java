@@ -12,6 +12,7 @@ import com.majortom.algorithms.visualization.common.geometry.CircleGeometry;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeElkLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.tree.TreeLayoutMetrics;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.animation.TreeAnimationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.tree.animation.TreeAnimationPlanner;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
@@ -28,13 +29,10 @@ import javafx.scene.Node;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -42,8 +40,6 @@ import java.util.function.LongConsumer;
 
 /** General/binary/AVL tree renderer using measured JavaFX nodes, transient ELK layout and GestureFX viewport. */
 public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
-    private static final double MIN_RADIUS = 24.0d;
-    private static final double LABEL_PADDING = 18.0d;
 
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("TREE");
     private static final StructureVisualization<TreeViewState> STRUCTURE_VISUALIZATION = new TreeStructureVisualization();
@@ -53,16 +49,12 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     private final StructureAnimationRuntime<TreeViewState> animationRuntime =
             new StructureAnimationRuntime<>(new TreeAnimationPlanner());
     private final TreeAnimationSceneAdapter animationScene = new TreeAnimationSceneAdapter();
-    private LayoutPatch lastPatch;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> { };
 
     public TreeVisualizer() {
-        getChildren().setAll(surface);
-        surface.prefWidthProperty().bind(widthProperty());
-        surface.prefHeightProperty().bind(heightProperty());
-        surface.setFrameworkManagedCamera(true);
+        installSurface(surface);
     }
     @Override
     public RenderSessionId sessionId() { return SESSION_ID; }
@@ -86,11 +78,10 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
             ElementGeometry bounds = patch.elements().get(TreeElkLayout.nodeId(entry.getKey()));
             if (bounds == null) continue;
             NodeView view = entry.getValue();
-            view.setGeometry(new CircleGeometry(Math.max(MIN_RADIUS, bounds.width() / 2.0d)));
+            view.setGeometry(new CircleGeometry(Math.max(TreeLayoutMetrics.MIN_NODE_RADIUS, bounds.width() / 2.0d)));
             view.setCenter(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
         }
         applyRoutes(patch);
-        lastPatch = patch;
         animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
         return CompletableFuture.completedFuture(null);
     }
@@ -116,7 +107,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         }
         for (TreeViewState.Node node : state.nodes().values()) {
             if (nodeViews.containsKey(node.id())) continue;
-            NodeView view = new NodeView(new CircleGeometry(MIN_RADIUS), node.value().text());
+            NodeView view = new NodeView(new CircleGeometry(TreeLayoutMetrics.MIN_NODE_RADIUS), node.value().text());
             long nodeId = node.id();
             view.setOnMouseClicked(event -> {
                 selectNode(nodeId);
@@ -206,40 +197,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         expected.put(key, new EdgeSpec(sourceId, targetId));
     }
 
-    private List<Long> orderedNodeIds(TreeViewState state) {
-        List<Long> order = new ArrayList<>();
-        Set<Long> visited = new HashSet<>();
-        if (state.rootId() != null) {
-            visit(state.rootId(), state, visited, order);
-        }
-        state.nodes().keySet().stream().sorted(Comparator.naturalOrder())
-                .forEach(id -> visit(id, state, visited, order));
-        return order;
-    }
-
-    private void visit(long id, TreeViewState state, Set<Long> visited, List<Long> order) {
-        if (!state.nodes().containsKey(id) || !visited.add(id)) {
-            return;
-        }
-        order.add(id);
-        TreeViewState.Node node = state.nodes().get(id);
-        if (state.kind() == TreeViewState.Kind.GENERAL) {
-            for (Long childId : node.childIds()) {
-                if (childId != null) {
-                    visit(childId, state, visited, order);
-                }
-            }
-        } else {
-            if (node.leftId() != null) {
-                visit(node.leftId(), state, visited, order);
-            }
-            if (node.rightId() != null) {
-                visit(node.rightId(), state, visited, order);
-            }
-        }
-    }
-
-
     public void setSelectionListener(LongConsumer listener) {
         if (listener == null) {
             selectionListener = ignored -> { };
@@ -290,11 +247,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     public FxSurfaceAdapter fxSurfaceAdapter() {
         return surface;
     }
-@Override
-    public void setViewportObstructionInsets(javafx.geometry.Insets insets) {
-        surface.setObstructionInsets(insets);
-    }
-
     @Override
     public void onVisualizationReset() {
         super.onVisualizationReset();
@@ -306,7 +258,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         surface.decorationLayer().getChildren().clear();
         selectedNodeId = null;
         pendingSelectedNodeId = null;
-        lastPatch = null;
         surface.reset();
         surface.markViewportPristine();
     }
@@ -316,8 +267,6 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         if (isDisposed()) return;
         super.dispose();
         edgeViews.values().forEach(EdgeView::dispose);
-        surface.prefWidthProperty().unbind();
-        surface.prefHeightProperty().unbind();
     }
 
 

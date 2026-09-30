@@ -5,6 +5,7 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.impl.controller.ArrayController;
 import com.majortom.algorithms.visualization.impl.controller.GraphController;
+import com.majortom.algorithms.visualization.impl.controller.HashTableController;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureController;
 import com.majortom.algorithms.visualization.impl.controller.LinkedListController;
 import com.majortom.algorithms.visualization.impl.controller.MazeController;
@@ -38,6 +39,8 @@ public final class WorkbenchModules {
                 new WorkbenchModuleDefinition(StructureIds.STRING, moduleName(registry, StructureIds.STRING, "String"), new FamilyNavigationMetadata(70, "Aa"), () -> new StringController(renderContext)));
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition(StructureIds.MAZE, moduleName(registry, StructureIds.MAZE, "Maze"), new FamilyNavigationMetadata(80, "▧"), () -> new MazeController(renderContext)));
+        addIfAvailable(modules, registry,
+                new WorkbenchModuleDefinition(StructureIds.HASH, moduleName(registry, StructureIds.HASH, "Hash Table"), new FamilyNavigationMetadata(90, "#"), () -> new HashTableController(renderContext)));
         modules.sort(java.util.Comparator.comparingInt(module -> module.navigation().order()));
         return List.copyOf(modules);
     }

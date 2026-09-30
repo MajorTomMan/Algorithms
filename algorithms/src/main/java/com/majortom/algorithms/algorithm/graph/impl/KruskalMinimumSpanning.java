@@ -18,8 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Kruskal minimum-spanning-tree/forest implementation over the weighted graph contract. */
-@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", type = Integer.class,
-    structure = WeightedGraphStructure.class)
+@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", types = {Integer.class}, structure = WeightedGraphStructure.class)
 public final class KruskalMinimumSpanning {
   @AlgorithmEntry
   public WeightedGraphSnapshot<Integer> build(WeightedGraphStructure<Integer> graph) {

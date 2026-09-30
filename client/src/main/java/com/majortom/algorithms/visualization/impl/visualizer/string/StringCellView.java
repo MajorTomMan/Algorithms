@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer.string;
 
 import com.majortom.algorithms.visualization.common.VisualDensity;
+import com.majortom.algorithms.visualization.impl.visualizer.indexed.IndexedStripCell;
 import java.util.Objects;
 import java.util.function.IntConsumer;
 import javafx.css.PseudoClass;
@@ -14,7 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
 /** Presentation-only character slot for the String logical track. */
-public final class StringCellView extends StackPane {
+public final class StringCellView extends StackPane implements IndexedStripCell {
   private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
   private static final PseudoClass CURRENT = PseudoClass.getPseudoClass("current");
   private static final PseudoClass OBSERVED = PseudoClass.getPseudoClass("observed");

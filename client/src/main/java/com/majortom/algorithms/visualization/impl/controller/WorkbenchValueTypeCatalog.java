@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
@@ -31,28 +32,38 @@ final class WorkbenchValueTypeCatalog {
     }
 
     boolean hasAlgorithmForAnySupportedType(String moduleId) {
-        return !algorithmAvailableValueTypes(moduleId).isEmpty();
+        StructureModule module = StructureModule.fromId(moduleId);
+        return components.algorithmTypeSignatures(module).stream()
+                .anyMatch(signature -> supportsAlgorithmSignature(moduleId, signature));
     }
 
     List<String> algorithmAvailableValueTypes(String moduleId) {
-        return components.algorithms().stream()
-                .filter(descriptor -> descriptor.module() == StructureModule.fromId(moduleId))
-                .map(descriptor -> descriptor.valueType())
-                .filter(ValueAdapters::supports)
-                .filter(ValueAdapters::canReplay)
-                .filter(type -> !StructureIds.TREE.equals(moduleId) || Comparable.class.isAssignableFrom(type))
+        StructureModule module = StructureModule.fromId(moduleId);
+        return components.algorithmTypeSignatures(module).stream()
+                .filter(signature -> signature.arity() == 1)
+                .filter(signature -> supportsAlgorithmSignature(moduleId, signature))
+                .map(AlgorithmTypeSignature::primaryType)
                 .map(ValueAdapters::typeName)
-                .distinct().toList();
+                .distinct()
+                .toList();
     }
 
     List<String> availableValueTypes(String moduleId) {
         return switch (moduleId) {
-            case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK, StructureIds.QUEUE, StructureIds.GRAPH -> ValueAdapters.supportedTypeNames();
+            case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK,
+                    StructureIds.QUEUE, StructureIds.GRAPH -> ValueAdapters.supportedTypeNames();
             case StructureIds.TREE -> ValueAdapters.supportedTypes().stream()
                     .filter(type -> Comparable.class.isAssignableFrom(type))
-                    .map(ValueAdapters::typeName).toList();
+                    .map(ValueAdapters::typeName)
+                    .toList();
             case StructureIds.STRING -> List.of(String.class.getSimpleName());
-            default -> components.algorithmValueTypes(StructureModule.fromId(moduleId));
+            default -> components.algorithmTypeSignatures(StructureModule.fromId(moduleId)).stream()
+                    .filter(signature -> signature.arity() == 1)
+                    .map(AlgorithmTypeSignature::primaryType)
+                    .filter(ValueAdapters::supports)
+                    .map(ValueAdapters::typeName)
+                    .distinct()
+                    .toList();
         };
     }
 
@@ -78,4 +89,20 @@ final class WorkbenchValueTypeCatalog {
         return selected;
     }
 
+    private boolean supportsAlgorithmSignature(
+            String moduleId, AlgorithmTypeSignature signature) {
+        if (StructureIds.HASH.equals(moduleId) && signature.arity() != 2) {
+            return false;
+        }
+        if (!StructureIds.HASH.equals(moduleId) && signature.arity() != 1) {
+            return false;
+        }
+        for (Class<?> type : signature.types()) {
+            if (!ValueAdapters.supports(type) || !ValueAdapters.canReplay(type)) {
+                return false;
+            }
+        }
+        return !StructureIds.TREE.equals(moduleId)
+                || Comparable.class.isAssignableFrom(signature.primaryType());
+    }
 }

@@ -18,8 +18,7 @@ import java.util.Random;
 import java.util.Set;
 
 /** Randomized BFS spanning-tree generator retaining the stable graph-generator-bfs ID. */
-@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", type = Integer.class,
-    structure = MazeStructure.class)
+@Algorithm(id = "graph-generator-bfs", name = "图迷宫生成", types = {Integer.class}, structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.GENERATOR, model = MazeModel.GRAPH)
 public final class GraphMazeBfsGenerator {
   private static final int[][] DIRECTIONS = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};

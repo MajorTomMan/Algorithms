@@ -7,7 +7,7 @@ import com.majortom.algorithms.core.logging.Log;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 @Algorithm(
-    id = "bubble-sort", name = "冒泡排序", type = Integer.class, structure = ArrayStructure.class)
+    id = "bubble-sort", name = "冒泡排序", types = {Integer.class}, structure = ArrayStructure.class)
 public class IntegerBubbleSort extends AbstractIntegerSort {
   @Override
   public int compare(Integer left, Integer right) {

@@ -1,6 +1,8 @@
 package com.majortom.algorithms.visualization.impl.visualizer.linked;
 
 import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
+import com.majortom.algorithms.visualization.render.api.DecorationGeometry;
+import com.majortom.algorithms.visualization.render.api.DecorationLayoutResult;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
@@ -28,7 +30,7 @@ public final class LinkedListLayout implements LayoutEngine {
   public LayoutResult layout(LayoutRequest request) {
     if (request.elements().isEmpty()) {
       return new LayoutResult(request.requestId(), request.modelRevision(), Map.of(), List.of(),
-          BoundsSnapshot.empty());
+          BoundsSnapshot.empty(), emptyRoleDecorations());
     }
 
     Map<String, ElementGeometry> elements = new LinkedHashMap<>();
@@ -57,7 +59,47 @@ public final class LinkedListLayout implements LayoutEngine {
 
     BoundsSnapshot bounds = new BoundsSnapshot(PADDING, PADDING,
         Math.max(0.0d, maxX - PADDING), Math.max(0.0d, maxY - PADDING));
-    return new LayoutResult(request.requestId(), request.modelRevision(), elements, edges, bounds);
+    return new LayoutResult(request.requestId(), request.modelRevision(), elements, edges, bounds,
+        roleDecorations(request, elements));
+  }
+
+  private static DecorationLayoutResult roleDecorations(
+      LayoutRequest request, Map<String, ElementGeometry> elements) {
+    ElementGeometry head = elements.get(request.elements().getFirst().id());
+    ElementGeometry tail = elements.get(request.elements().getLast().id());
+    if (head == null || tail == null) {
+      return emptyRoleDecorations();
+    }
+
+    return DecorationLayoutResult.ofElements(List.of(
+        new DecorationGeometry(
+            LinkedListDecorationIds.HEAD,
+            head.x() + LinkedListLayoutMetrics.ROLE_HEAD_OFFSET_X,
+            Math.max(2.0d, head.y() + LinkedListLayoutMetrics.ROLE_HEAD_OFFSET_Y),
+            0.0d,
+            0.0d),
+        new DecorationGeometry(
+            LinkedListDecorationIds.TAIL,
+            tail.x() + tail.width() + LinkedListLayoutMetrics.ROLE_TAIL_OFFSET_X,
+            tail.y() + tail.height() + LinkedListLayoutMetrics.ROLE_TAIL_OFFSET_Y,
+            0.0d,
+            0.0d)));
+  }
+
+  private static DecorationLayoutResult emptyRoleDecorations() {
+    return DecorationLayoutResult.ofElements(List.of(
+        new DecorationGeometry(
+            LinkedListDecorationIds.HEAD,
+            LinkedListLayoutMetrics.EMPTY_HEAD_X,
+            LinkedListLayoutMetrics.EMPTY_HEAD_Y,
+            0.0d,
+            0.0d),
+        new DecorationGeometry(
+            LinkedListDecorationIds.TAIL,
+            LinkedListLayoutMetrics.EMPTY_TAIL_X,
+            LinkedListLayoutMetrics.EMPTY_TAIL_Y,
+            0.0d,
+            0.0d)));
   }
 
   public static String nodeId(long id) {

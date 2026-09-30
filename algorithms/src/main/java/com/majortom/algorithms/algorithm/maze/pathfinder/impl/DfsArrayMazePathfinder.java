@@ -17,8 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Recursive depth-first pathfinder with factual visit/examine/backtrack observations. */
-@Algorithm(id = "maze-pathfinder-dfs", name = "深度优先搜索", type = Boolean.class,
-    structure = MazeStructure.class)
+@Algorithm(id = "maze-pathfinder-dfs", name = "深度优先搜索", types = {Boolean.class}, structure = MazeStructure.class)
 @MazeAlgorithm(role = MazeRole.PATHFINDER, model = MazeModel.ARRAY)
 public final class DfsArrayMazePathfinder {
   @AlgorithmEntry

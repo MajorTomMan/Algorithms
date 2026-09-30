@@ -4,6 +4,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.domain.relation.LinkedRelationTypes;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayout;
+import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayoutMetrics;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListVisualIds;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
@@ -21,9 +22,6 @@ import java.util.Set;
 
 /** JavaFX-neutral linked-list layout semantics. */
 public final class LinkedListStructureVisualization implements StructureVisualization<LinkedListViewState> {
-    private static final double MIN_NODE_WIDTH = 112.0d;
-    private static final double MIN_NODE_HEIGHT = 72.0d;
-    private static final double LABEL_HORIZONTAL_PADDING = 40.0d;
 
     @Override
     public LayoutRequest captureLayout(LinkedListViewState state, RenderCaptureContext context) {
@@ -33,9 +31,9 @@ public final class LinkedListStructureVisualization implements StructureVisualiz
             LinkedListViewState.Node node = state.nodes().get(id);
             if (node == null) continue;
             double width = DetachedMetrics.boxWidth(node.value().text(), context.contentStyle(),
-                    MIN_NODE_WIDTH, LABEL_HORIZONTAL_PADDING);
+                    LinkedListLayoutMetrics.MIN_NODE_WIDTH, LinkedListLayoutMetrics.NODE_LABEL_HORIZONTAL_PADDING);
             elements.add(new LayoutElement(LinkedListLayout.nodeId(id), width,
-                    Math.max(MIN_NODE_HEIGHT, 54.0d + context.contentStyle().fontSize())));
+                    Math.max(LinkedListLayoutMetrics.MIN_NODE_HEIGHT, 54.0d + context.contentStyle().fontSize())));
         }
 
         List<LayoutLink> links = new ArrayList<>();

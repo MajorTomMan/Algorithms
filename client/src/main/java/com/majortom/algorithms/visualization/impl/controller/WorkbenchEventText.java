@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.domain.execution.ExecutionLifecycleEvent;
 import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
+import com.majortom.algorithms.core.event.structure.HashStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -65,6 +66,25 @@ final class WorkbenchEventText {
         }
         if (event instanceof TreeStructureEvent.ChildRemoved removed) {
             return "PARENT  #" + removed.parentId() + "\nCHILD   #" + removed.childId() + "  @" + removed.index();
+        }
+        if (event instanceof HashStructureEvent.EntryInserted inserted) {
+            return "BUCKET  #" + inserted.bucketIndex()
+                    + "\nKEY     " + inserted.key()
+                    + "\nVALUE   " + inserted.value();
+        }
+        if (event instanceof HashStructureEvent.EntryUpdated updated) {
+            return "BUCKET  #" + updated.bucketIndex()
+                    + "\nKEY     " + updated.key()
+                    + "\nVALUE   " + updated.previousValue() + " → " + updated.value();
+        }
+        if (event instanceof HashStructureEvent.EntryRemoved removed) {
+            return "BUCKET  #" + removed.bucketIndex()
+                    + "\nKEY     " + removed.key()
+                    + "\nVALUE   " + removed.value();
+        }
+        if (event instanceof HashStructureEvent.Rehashed rehashed) {
+            return "CAPACITY " + rehashed.previousCapacity() + " → " + rehashed.capacity()
+                    + "\nENTRIES  " + rehashed.entries().size();
         }
         String text = envelope.event().toString();
         if (text.length() > 120) text = text.substring(0, 117) + "...";
