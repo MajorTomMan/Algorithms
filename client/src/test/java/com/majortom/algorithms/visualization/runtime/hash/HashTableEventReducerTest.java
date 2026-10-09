@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.majortom.algorithms.core.event.ExecutionEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.HashStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import java.time.Instant;
@@ -76,6 +77,46 @@ class HashTableEventReducerTest {
     assertEquals(1, state.size());
     assertEquals("beta", state.buckets().get(0).entries().getFirst().key().value());
     assertEquals(HashTableViewState.Type.REMOVED, state.mutation().type());
+  }
+
+  @Test
+  void genericSearchObservationsDoNotChangeTheTable() {
+    HashTableEventReducer reducer = new HashTableEventReducer(4);
+    HashTableViewState state = reducer.initialState();
+    state = reduce(reducer, state, 1, new HashStructureEvent.EntryInserted(2, "alpha", 10));
+    HashTableViewState.Bucket originalBucket = state.buckets().get(2);
+
+    AlgorithmEvent.ValueRef foundKey = new AlgorithmEvent.ValueRef("alpha");
+    state = reduce(reducer, state, 2, new AlgorithmEvent.SearchStarted("search-1", foundKey));
+    assertEquals(HashTableViewState.ObservationType.NONE, state.observation().type());
+
+    state = reduce(reducer, state, 3, new AlgorithmEvent.SearchProbed("search-1", foundKey));
+    assertEquals(HashTableViewState.ObservationType.PROBED, state.observation().type());
+    assertEquals(foundKey, state.observation().reference());
+    assertEquals(originalBucket, state.buckets().get(2));
+
+    state = reduce(reducer, state, 4, new AlgorithmEvent.SearchFound("search-1", foundKey));
+    assertEquals(HashTableViewState.ObservationType.FOUND, state.observation().type());
+
+    state = reduce(reducer, state, 5, new AlgorithmEvent.SearchCompleted("search-1", 1));
+    assertEquals(HashTableViewState.ObservationType.NONE, state.observation().type());
+    assertEquals(1, state.size());
+    assertEquals(originalBucket, state.buckets().get(2));
+  }
+
+  @Test
+  void missingLookupCanBeReportedWithoutFakeStructuralEvents() {
+    HashTableEventReducer reducer = new HashTableEventReducer(4);
+    HashTableViewState state = reducer.initialState();
+    AlgorithmEvent.ValueRef missing = new AlgorithmEvent.ValueRef("missing");
+
+    state = reduce(reducer, state, 1, new AlgorithmEvent.SearchProbed("search-2", missing));
+    assertEquals(HashTableViewState.ObservationType.PROBED, state.observation().type());
+    assertEquals(0, state.size());
+
+    state = reduce(reducer, state, 2, new AlgorithmEvent.SearchCompleted("search-2", 0));
+    assertEquals(HashTableViewState.ObservationType.NONE, state.observation().type());
+    assertEquals(0, state.size());
   }
 
   private static HashTableViewState reduce(
