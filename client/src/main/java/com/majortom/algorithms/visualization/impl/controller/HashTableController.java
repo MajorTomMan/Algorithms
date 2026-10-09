@@ -54,7 +54,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
   private Class<?> runtimeHashValueType = Integer.class;
   private ValueAdapter<Object> keyAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
   private ValueAdapter<Object> hashValueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
-  private Consumer<EntrySelection> selectionListener = ignored -> {};
+  private Consumer<Selection> selectionListener = ignored -> {};
   private Consumer<String> algorithmSelectionListener = ignored -> {};
   private StructureSnapshot<HashTableStateSnapshot<Object, Object>> algorithmInputSnapshot;
   private String selectedAlgorithmId;
@@ -89,6 +89,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
   public void initialize(URL location, ResourceBundle resources) {
     super.initialize(location, resources);
     hashVisualizer().setSelectionListener(this::handleVisualSelection);
+    hashVisualizer().setBucketSelectionListener(this::handleBucketSelection);
   }
 
   @FXML
@@ -200,7 +201,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     }
   }
 
-  public void setSelectionListener(Consumer<EntrySelection> listener) {
+  public void setSelectionListener(Consumer<Selection> listener) {
     selectionListener = listener == null ? ignored -> {} : listener;
   }
 
@@ -209,6 +210,18 @@ public final class HashTableController extends BaseModuleController<HashTableVie
       clearVisualSelection();
     }
     structureSelectionEnabled = enabled;
+  }
+
+  private void handleBucketSelection(int bucketIndex) {
+    requestPresentationRender();
+    HashTableViewState state = latestStructureState();
+    if (state == null || bucketIndex < 0 || bucketIndex >= state.capacity()) {
+      clearVisualSelection();
+      return;
+    }
+    HashTableViewState.Bucket bucket = state.buckets().get(bucketIndex);
+    selectionListener.accept(new BucketSelection(
+        bucket.index(), bucket.entries().size(), state.size(), state.capacity()));
   }
 
   private void handleVisualSelection(long entryId) {
@@ -678,11 +691,19 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     return (HashTableVisualizer) visualizer;
   }
 
+  public sealed interface Selection permits EntrySelection, BucketSelection {}
+
   public record EntrySelection(
       long id,
       int bucketIndex,
       VisualValue key,
       VisualValue value,
       int size,
-      int capacity) {}
+      int capacity) implements Selection {}
+
+  public record BucketSelection(
+      int bucketIndex,
+      int entryCount,
+      int size,
+      int capacity) implements Selection {}
 }
