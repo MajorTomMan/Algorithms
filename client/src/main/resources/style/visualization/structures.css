@@ -153,26 +153,48 @@
 
 
 /* ---------- Hash table bucket / entry grammar ---------- */
-.hash-bucket .visual-node-shape {
-    -fx-fill: #08090a;
-    -fx-stroke: #08090a;
-    -fx-stroke-width: 2px;
+/* Follow the shared structure palette: white fill, blue outline, red selection. */
+.hash-bucket,
+.hash-entry {
+    -fx-cursor: hand;
 }
-.hash-bucket .visual-node-label {
-    -fx-fill: #ffffff;
-    -fx-font-family: "Consolas", "Segoe UI";
-    -fx-font-size: 0.92em;
-    -fx-font-weight: 800;
-}
+.hash-bucket .visual-node-shape,
 .hash-entry .visual-node-shape {
     -fx-fill: #ffffff;
     -fx-stroke: #1769d3;
     -fx-stroke-width: 2px;
 }
+.hash-bucket .visual-node-label {
+    -fx-fill: #1769d3;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 0.92em;
+    -fx-font-weight: 800;
+}
 .hash-entry .visual-node-label {
     -fx-fill: #08090a;
     -fx-font-size: 0.96em;
     -fx-font-weight: 800;
+}
+.hash-bucket .visual-node-selection-ring,
+.hash-entry .visual-node-selection-ring {
+    -fx-fill: transparent;
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 2px;
+}
+.hash-bucket:selected .visual-node-shape,
+.hash-entry:selected .visual-node-shape {
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 4px;
+}
+.hash-bucket:highlighted .visual-node-shape,
+.hash-entry:highlighted .visual-node-shape {
+    -fx-stroke: #f5b400;
+    -fx-stroke-width: 3px;
+}
+.hash-bucket:selected:highlighted .visual-node-shape,
+.hash-entry:selected:highlighted .visual-node-shape {
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 4px;
 }
 .hash-link .visual-edge-path {
     -fx-stroke: #08090a;
