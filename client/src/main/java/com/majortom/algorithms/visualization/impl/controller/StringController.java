@@ -44,6 +44,7 @@ public final class StringController extends BaseModuleController<StringViewState
     private int algorithmSelectedIndex = -1;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private AlgorithmSelectorBinder algorithmBinder;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -241,9 +242,7 @@ public final class StringController extends BaseModuleController<StringViewState
         if (index < 0) {
             return false;
         }
-        if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().select(index);
-        }
+        if (algorithmBinder != null) algorithmBinder.select(algorithmId);
         notifyAlgorithmSelection();
         return true;
     }
@@ -394,37 +393,21 @@ public final class StringController extends BaseModuleController<StringViewState
 
     @Override
     public String selectedAlgorithmId() {
-        int index;
-        if (algorithmSelector == null) {
-            index = 0;
-        } else {
-            index = algorithmSelector.getSelectionModel().getSelectedIndex();
-        }
-        if (index < 0) {
-            index = 0;
-        }
-        if (algorithmIds.isEmpty()) {
-            return null;
-        } else {
-            return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
-        }
+        if (algorithmBinder != null) return algorithmBinder.selectedId();
+        return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
     }
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(StructureIds.STRING));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
-        javafx.collections.ObservableList<String> algorithmLabels = FXCollections.observableArrayList();
-        for (String id : algorithmIds) {
-            algorithmLabels.add(AlgorithmCatalog.name(id));
-        }
-        algorithmSelector.setItems(algorithmLabels);
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            refreshAlgorithmControls();
-            notifyAlgorithmSelection();
-        });
+        algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds,
+                ignored -> {
+                    refreshAlgorithmControls();
+                    notifyAlgorithmSelection();
+                });
+        algorithmBinder.refresh();
         FxDispatch.defer(() -> {
             structureSelector.getSelectionModel().selectFirst();
-            algorithmSelector.getSelectionModel().selectFirst();
             refreshAlgorithmControls();
             notifyAlgorithmSelection();
         });

@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -56,11 +57,14 @@ public final class HashTableController extends BaseModuleController<HashTableVie
   private ValueAdapter<Object> hashValueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
   private Consumer<Selection> selectionListener = ignored -> {};
   private Consumer<String> algorithmSelectionListener = ignored -> {};
+  private AlgorithmSelectorBinder algorithmBinder;
   private StructureSnapshot<HashTableStateSnapshot<Object, Object>> algorithmInputSnapshot;
   private String selectedAlgorithmId;
   private boolean structureSelectionEnabled = true;
 
   @FXML private Label typeLabel;
+  @FXML private Label algorithmLabel;
+  @FXML private ComboBox<String> algorithmSelector;
   @FXML private Label operationsLabel;
   @FXML private TextField keyField;
   @FXML private TextField valueField;
@@ -90,6 +94,9 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     super.initialize(location, resources);
     hashVisualizer().setSelectionListener(this::handleVisualSelection);
     hashVisualizer().setBucketSelectionListener(this::handleBucketSelection);
+    algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds,
+        ignored -> algorithmSelectionListener.accept(selectedAlgorithmId()));
+    algorithmBinder.refresh();
   }
 
   @FXML
@@ -263,6 +270,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
   protected void setupI18n() {
     if (typeLabel == null) return;
     typeLabel.textProperty().bind(I18N.createStringBinding("label.hash.title"));
+    algorithmLabel.textProperty().bind(I18N.createStringBinding("label.common.algorithm"));
     operationsLabel.textProperty().bind(I18N.createStringBinding("label.hash.operations"));
     keyField.promptTextProperty().bind(I18N.createStringBinding("prompt.hash.key"));
     valueField.promptTextProperty().bind(I18N.createStringBinding("prompt.hash.value"));
@@ -337,7 +345,8 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     if (algorithmId == null || !algorithmIds().contains(algorithmId)) {
       return false;
     }
-    selectedAlgorithmId = algorithmId;
+    if (algorithmBinder != null) algorithmBinder.select(algorithmId);
+    else selectedAlgorithmId = algorithmId;
     algorithmSelectionListener.accept(algorithmId);
     return true;
   }
@@ -355,6 +364,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
       selectedAlgorithmId = null;
       return null;
     }
+    if (algorithmBinder != null) return algorithmBinder.selectedId();
     if (selectedAlgorithmId == null || !ids.contains(selectedAlgorithmId)) {
       selectedAlgorithmId = ids.getFirst();
     }
@@ -679,6 +689,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     hashValueAdapter = ValueAdapters.requireObjectAdapter(valueType);
     algorithmInputSnapshot = null;
     selectedAlgorithmId = null;
+    if (algorithmBinder != null) algorithmBinder.refresh();
     algorithmSelectionListener.accept(selectedAlgorithmId());
     refreshRandomDataButton();
     clearVisualSelection();

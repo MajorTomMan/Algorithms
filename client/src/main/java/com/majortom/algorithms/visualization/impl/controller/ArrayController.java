@@ -59,6 +59,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private int algorithmSelectedIndex = -1;
     private Consumer<IndexSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private AlgorithmSelectorBinder algorithmBinder;
 
     @FXML private Label structureLabel;
     @FXML private Label algorithmLabel;
@@ -521,8 +522,8 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (index < 0) {
             return false;
         }
-        if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().select(index);
+        if (algorithmBinder != null) {
+            algorithmBinder.select(algorithmId);
         }
         notifyAlgorithmSelection();
         return true;
@@ -625,32 +626,15 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public String selectedAlgorithmId() {
-        int index = 0;
-        if (algorithmSelector != null && algorithmSelector.getSelectionModel().getSelectedIndex() >= 0) {
-            index = algorithmSelector.getSelectionModel().getSelectedIndex();
-        }
-        List<String> algorithmIds = algorithmIds();
-        if (algorithmIds.isEmpty()) {
-            return null;
-        } else {
-            return algorithmIds.get(Math.min(index, algorithmIds.size() - 1));
-        }
+        if (algorithmBinder != null) return algorithmBinder.selectedId();
+        List<String> ids = algorithmIds();
+        return ids.isEmpty() ? null : ids.getFirst();
     }
 
     private void bindAlgorithmSelector() {
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds()) {
-                labels.add(AlgorithmCatalog.name(id));
-            }
-            return labels;
-        }, valueTypeRevision));
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, previous, current) -> notifyAlgorithmSelection());
-        FxDispatch.defer(() -> {
-            algorithmSelector.getSelectionModel().selectFirst();
-            notifyAlgorithmSelection();
-        });
+        algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds,
+                ignored -> notifyAlgorithmSelection());
+        algorithmBinder.refresh();
     }
 
     private void notifyAlgorithmSelection() {
@@ -694,16 +678,12 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         valueAdapter = nextAdapter;
         refreshRandomDataButton();
         if (generateBtn != null) generateBtn.setDisable(!ValueAdapters.canGenerate(valueType));
-        valueTypeRevision.set(valueTypeRevision.get() + 1L);
+        if (algorithmBinder != null) algorithmBinder.refresh();
         algorithmInputSnapshot = null;
         clearArraySelection();
         sourceArray.initialize(List.of());
         invalidateExecutionForStructureChange();
-        if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().clearSelection();
-            algorithmSelector.getSelectionModel().selectFirst();
-            notifyAlgorithmSelection();
-        }
+        notifyAlgorithmSelection();
         if (controlPanel != null) {
             renderSource();
             refreshStatsDisplay();

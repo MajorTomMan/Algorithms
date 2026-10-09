@@ -62,6 +62,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     private StructureSnapshot<TreeSnapshotState<Object>> algorithmInputSnapshot;
     private Consumer<NodeSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private AlgorithmSelectorBinder algorithmBinder;
     private boolean structureSelectionEnabled = true;
     private Long selectedNodeId;
     private Long algorithmSelectedNodeId;
@@ -552,9 +553,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         if (index < 0) {
             return false;
         }
-        if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().select(index);
-        }
+        if (algorithmBinder != null) algorithmBinder.select(algorithmId);
         notifyAlgorithmSelection();
         return true;
     }
@@ -862,19 +861,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void refreshAlgorithmSelector() {
-        if (algorithmSelector == null) {
-            return;
-        }
-        javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-        for (String id : algorithmIds) {
-            labels.add(id);
-        }
-        algorithmSelector.setItems(labels);
-        if (algorithmIds.isEmpty()) {
-            algorithmSelector.getSelectionModel().clearSelection();
-        } else {
-            algorithmSelector.getSelectionModel().selectFirst();
-        }
+        if (algorithmBinder != null) algorithmBinder.refresh();
         notifyAlgorithmSelection();
     }
 
@@ -1113,24 +1100,16 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public String selectedAlgorithmId() {
-        if (algorithmIds.isEmpty()) {
-            return null;
-        }
-        int index = 0;
-        if (algorithmSelector != null) {
-            index = algorithmSelector.getSelectionModel().getSelectedIndex();
-        }
-        if (index < 0 || index >= algorithmIds.size()) {
-            index = 0;
-        }
-        return algorithmIds.get(index);
+        if (algorithmBinder != null) return algorithmBinder.selectedId();
+        return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
     }
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
                 StructureIds.TREE, StructureIds.AVL_TREE));
         localizeChoiceCells(structureSelector, StructureCatalog::name);
-        localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
+        algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds,
+                ignored -> notifyAlgorithmSelection());
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             if (current == null || current.intValue() < 0) {
                 return;
@@ -1141,8 +1120,6 @@ public final class TreeController extends BaseModuleController<TreeViewState>
                 activateVariant(TreeVariant.AVL);
             }
         });
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, previous, current) -> notifyAlgorithmSelection());
         I18N.localeProperty().addListener((observable, previous, current) -> {
             refreshOperationLabels();
             FxDispatch.defer(this::syncStructureSelectorSelection);

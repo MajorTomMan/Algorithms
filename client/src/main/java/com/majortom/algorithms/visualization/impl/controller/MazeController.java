@@ -69,6 +69,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private GridPoint algorithmSelectedCell;
     private Consumer<CellSelection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private AlgorithmSelectorBinder generatorBinder;
+    private AlgorithmSelectorBinder pathfinderBinder;
 
     @FXML private ComboBox<String> structureSelector;
     @FXML private ComboBox<String> generatorSelector;
@@ -554,10 +556,18 @@ public final class MazeController extends BaseModuleController<MazeViewState>
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
                 StructureCatalog.name(StructureIds.ARRAY), StructureCatalog.name(StructureIds.GRAPH)));
-        generatorSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(allGenerators), I18N.localeProperty()));
-        pathfinderSelector.itemsProperty().bind(Bindings.createObjectBinding(
-                () -> labels(arrayPathfinders), I18N.localeProperty()));
+        generatorBinder = new AlgorithmSelectorBinder(generatorSelector, () -> allGenerators, id -> {
+            if (id == null || isRunning()) return;
+            selectedOperation = Operation.GENERATE;
+            updateControlState();
+            notifyAlgorithmSelection();
+        });
+        pathfinderBinder = new AlgorithmSelectorBinder(pathfinderSelector, () -> arrayPathfinders, id -> {
+            if (id == null || isRunning()) return;
+            selectedOperation = Operation.SOLVE;
+            updateControlState();
+            notifyAlgorithmSelection();
+        });
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.intValue() < 0 || isRunning() || applyingStructureState) {
                 return;
@@ -574,22 +584,6 @@ public final class MazeController extends BaseModuleController<MazeViewState>
             renderEmpty();
             updateControlState();
         });
-        generatorSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, oldValue, newValue) -> {
-                    if (newValue.intValue() >= 0 && !isRunning()) {
-                        selectedOperation = Operation.GENERATE;
-                        updateControlState();
-                        notifyAlgorithmSelection();
-                    }
-                });
-        pathfinderSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (observable, oldValue, newValue) -> {
-                    if (newValue.intValue() >= 0 && !isRunning()) {
-                        selectedOperation = Operation.SOLVE;
-                        updateControlState();
-                        notifyAlgorithmSelection();
-                    }
-                });
         generatorSelector.showingProperty().addListener((observable, oldValue, showing) -> {
             if (showing && !isRunning()) {
                 selectedOperation = Operation.GENERATE;
@@ -610,17 +604,9 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         });
     }
 
-    private javafx.collections.ObservableList<String> labels(List<String> ids) {
-        javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-        for (String id : ids) {
-            labels.add(AlgorithmCatalog.name(id));
-        }
-        return labels;
-    }
-
     private void selectFirstAlgorithms() {
-        if (!generatorSelector.getItems().isEmpty()) generatorSelector.getSelectionModel().selectFirst();
-        if (!pathfinderSelector.getItems().isEmpty()) pathfinderSelector.getSelectionModel().selectFirst();
+        generatorBinder.refresh();
+        pathfinderBinder.refresh();
         selectedOperation = Operation.GENERATE;
         notifyAlgorithmSelection();
     }
@@ -636,20 +622,15 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         if (comboBox == null) {
             return ids.getFirst();
         }
-        int index = comboBox.getSelectionModel().getSelectedIndex();
-        if (index < 0 || index >= ids.size()) index = 0;
-        return ids.get(index);
+        String selected = comboBox.getSelectionModel().getSelectedItem();
+        return ids.contains(selected) ? selected : ids.getFirst();
     }
 
     private boolean selectAlgorithm(ComboBox<String> comboBox, List<String> ids, String algorithmId) {
-        int index = ids.indexOf(algorithmId);
-        if (index < 0) {
-            return false;
-        }
-        if (comboBox != null) {
-            comboBox.getSelectionModel().select(index);
-        }
-        return true;
+        if (!ids.contains(algorithmId)) return false;
+        if (comboBox == generatorSelector) return generatorBinder.select(algorithmId);
+        if (comboBox == pathfinderSelector) return pathfinderBinder.select(algorithmId);
+        return false;
     }
 
     private void updateControlState() {

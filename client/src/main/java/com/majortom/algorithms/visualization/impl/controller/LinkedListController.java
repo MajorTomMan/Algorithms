@@ -81,6 +81,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     private ComboBox<String> algorithmSelector;
     private String selectedAlgorithmId;
     private Consumer<String> algorithmSelectionListener;
+    private AlgorithmSelectorBinder algorithmBinder;
     private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
 
     @SuppressWarnings("unchecked")
@@ -102,23 +103,11 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void bindAlgorithmSelector() {
-        algorithmSelector.itemsProperty().bind(Bindings.createObjectBinding(() -> {
-            ObservableList<String> labels = FXCollections.observableArrayList();
-            for (String id : algorithmIds()) {
-                labels.add(AlgorithmCatalog.name(id));
-            }
-            return labels;
-        }, valueTypeRevision));
-
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener(
-                (obs, oldIdx, newIdx) -> {
-                    List<String> ids = algorithmIds();
-                    selectedAlgorithmId = (newIdx.intValue() >= 0 && newIdx.intValue() < ids.size())
-                            ? ids.get(newIdx.intValue())
-                            : null;
-                    if (algorithmSelectionListener != null && selectedAlgorithmId != null)
-                        algorithmSelectionListener.accept(selectedAlgorithmId);
-                });
+        algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds, id -> {
+            selectedAlgorithmId = id;
+            if (algorithmSelectionListener != null) algorithmSelectionListener.accept(id);
+        });
+        algorithmBinder.refresh();
     }
 
     @FXML
@@ -589,6 +578,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         clearVisualSelection();
         clearWithoutRuntime();
         invalidateExecutionForStructureChange();
+        if (algorithmBinder != null) algorithmBinder.refresh();
         if (controlPanel != null) {
             renderStructureState(currentState());
             refreshStatsDisplay();
@@ -607,7 +597,8 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         int index = ids.indexOf(algorithmId);
         if (index < 0)
             return false;
-        algorithmSelector.getSelectionModel().select(index);
+        if (algorithmBinder != null) algorithmBinder.select(algorithmId);
+        else selectedAlgorithmId = algorithmId;
         return true;
     }
 
@@ -619,6 +610,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     @Override
     public void setAlgorithmSelectionListener(Consumer<String> listener) {
         this.algorithmSelectionListener = listener;
+        if (listener != null) listener.accept(selectedAlgorithmId());
     }
 
     @Override

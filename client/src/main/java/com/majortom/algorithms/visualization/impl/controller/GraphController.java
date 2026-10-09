@@ -63,6 +63,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private Long algorithmSelectedEdgeId;
     private Consumer<Selection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
+    private AlgorithmSelectorBinder algorithmBinder;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -160,9 +161,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (index < 0) {
             return false;
         }
-        if (algorithmSelector != null) {
-            algorithmSelector.getSelectionModel().select(index);
-        }
+        if (algorithmBinder != null) algorithmBinder.select(algorithmId);
         notifyAlgorithmSelection();
         return true;
     }
@@ -617,27 +616,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     public String selectedAlgorithmId() {
-        if (algorithmIds.isEmpty()) {
-            return null;
-        }
-        int index = 0;
-        if (algorithmSelector != null) {
-            int selectedIndex = algorithmSelector.getSelectionModel().getSelectedIndex();
-            if (selectedIndex >= 0) {
-                index = selectedIndex;
-            }
-        }
-        if (index >= algorithmIds.size()) {
-            index = 0;
-        }
-        return algorithmIds.get(index);
+        if (algorithmBinder != null) return algorithmBinder.selectedId();
+        return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
     }
 
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
                 "label.graph.structure.undirected", "label.graph.structure.directed"));
         localizeChoiceCells(structureSelector, I18N::text);
-        localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
+        algorithmBinder = new AlgorithmSelectorBinder(algorithmSelector, this::algorithmIds,
+                ignored -> notifyAlgorithmSelection());
         structureSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
             if (current == null || current.intValue() < 0) {
                 return;
@@ -647,9 +635,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             } else {
                 activateVariant(GraphVariant.DIRECTED);
             }
-        });
-        algorithmSelector.getSelectionModel().selectedIndexProperty().addListener((observable, previous, current) -> {
-            notifyAlgorithmSelection();
         });
         FxDispatch.defer(() -> {
             syncStructureSelectorSelection();
@@ -673,24 +658,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void refreshAlgorithmSelector() {
-        if (algorithmSelector == null) {
-            return;
-        }
-        String previousId = selectedAlgorithmId();
-        javafx.collections.ObservableList<String> labels = FXCollections.observableArrayList();
-        for (String id : algorithmIds) {
-            labels.add(id);
-        }
-        algorithmSelector.setItems(labels);
-        int index = previousId == null ? -1 : algorithmIds.indexOf(previousId);
-        if (index < 0 && !algorithmIds.isEmpty()) {
-            index = 0;
-        }
-        if (index >= 0) {
-            algorithmSelector.getSelectionModel().select(index);
-        } else {
-            algorithmSelector.getSelectionModel().clearSelection();
-        }
+        if (algorithmBinder != null) algorithmBinder.refresh();
         notifyAlgorithmSelection();
     }
 
