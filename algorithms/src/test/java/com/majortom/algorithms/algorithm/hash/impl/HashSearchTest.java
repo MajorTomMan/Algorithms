@@ -12,7 +12,7 @@ class HashSearchTest {
     ChainedHashTable<Integer, Integer> table = new ChainedHashTable<>();
     table.put(7, 70);
     table.put(15, 150);
-    assertEquals(70, new HashSearch().search(table));
+    assertEquals(Integer.valueOf(70), new HashSearch().search(table));
     assertEquals(2, table.size());
   }
 
