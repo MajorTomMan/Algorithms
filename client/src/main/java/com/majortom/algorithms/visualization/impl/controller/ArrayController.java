@@ -25,10 +25,7 @@ import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.StructureCatalog;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleLongProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -53,7 +50,6 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
     private Class<?> runtimeValueType = Integer.class;
     private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
-    private final LongProperty valueTypeRevision = new SimpleLongProperty();
     private int currentSize = 20;
     private boolean structureSelectionEnabled = true;
     private int algorithmSelectedIndex = -1;

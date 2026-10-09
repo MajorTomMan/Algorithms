@@ -23,11 +23,6 @@ import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleLongProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -87,7 +82,6 @@ public final class LinearStructureController extends BaseModuleController<Linear
     private String selectedAlgorithmId;
     private Consumer<String> algorithmSelectionListener;
     private AlgorithmSelectorBinder algorithmBinder;
-    private final LongProperty valueTypeRevision = new SimpleLongProperty();
     private StructureSnapshot<SequenceSnapshot<Object>> algorithmInputSnapshot;
 
     @SuppressWarnings("unchecked")

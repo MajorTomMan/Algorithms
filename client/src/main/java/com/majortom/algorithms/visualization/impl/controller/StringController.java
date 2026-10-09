@@ -20,7 +20,6 @@ import com.majortom.algorithms.visualization.runtime.string.StringEventReducer;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import com.majortom.algorithms.visualization.structure.SnapshotAlgorithmInputSupport;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
