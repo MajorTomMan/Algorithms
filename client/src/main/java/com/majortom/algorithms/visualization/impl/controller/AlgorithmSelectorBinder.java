@@ -67,7 +67,7 @@ final class AlgorithmSelectorBinder {
     }
 
     static String preferredId(List<String> ids, String previous) {
-        if (ids.contains(previous)) return previous;
+        if (previous != null && ids.contains(previous)) return previous;
         if (ids.isEmpty()) return null;
         return ids.getFirst();
     }

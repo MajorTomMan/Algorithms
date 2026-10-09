@@ -29,5 +29,12 @@ class AlgorithmSelectorBinderTest {
     void usesFirstIdForInitialSelection() {
         assertEquals("hash-search", AlgorithmSelectorBinder.preferredId(
                 List.of("hash-search"), null));
+        assertNull(AlgorithmSelectorBinder.preferredId(List.of(), null));
+    }
+
+    @Test
+    void nullPreviousSelectionIsSafeWithCopiedImmutableChoices() {
+        List<String> ids = List.copyOf(List.of("hash-search", "hash-insert"));
+        assertEquals("hash-search", AlgorithmSelectorBinder.preferredId(ids, null));
     }
 }
