@@ -1,0 +1,137 @@
+/* ---------- execution toolbar ---------- */
+.root-pane .timeline-compact-row {
+    -fx-padding: 0.45em 1.10em;
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+    -fx-max-height: Infinity;
+    -fx-background-color: #ffffff;
+}
+.root-pane .playback-leading-area {
+    -fx-padding: 0 1.05em 0 0;
+    -fx-border-color: transparent #e6e6e6 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.root-pane .playback-timeline-area {
+    -fx-min-width: 16em;
+    -fx-pref-width: 34em;
+    -fx-max-width: Infinity;
+    -fx-padding: 0 1.05em;
+}
+.root-pane .playback-speed-area {
+    -fx-padding: 0 0 0 1.05em;
+    -fx-border-color: transparent transparent transparent #e6e6e6;
+    -fx-border-width: 0 0 0 1px;
+}
+.root-pane .timeline-title-row,
+.root-pane .timeline-current-row {
+    -fx-min-height: 1.00em;
+    -fx-pref-height: 1.00em;
+    -fx-max-height: 1.00em;
+}
+.root-pane .timeline-title-accent {
+    -fx-min-width: 0.28em;
+    -fx-pref-width: 0.28em;
+    -fx-max-width: 0.28em;
+    -fx-min-height: 1.00em;
+    -fx-pref-height: 1.00em;
+    -fx-max-height: 1.00em;
+}
+.root-pane .timeline-status-dot {
+    -fx-min-width: 0.52em;
+    -fx-pref-width: 0.52em;
+    -fx-max-width: 0.52em;
+    -fx-min-height: 0.52em;
+    -fx-pref-height: 0.52em;
+    -fx-max-height: 0.52em;
+}
+.playback-button {
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+    -fx-padding: 0;
+    -fx-background-radius: 0.34em;
+    -fx-border-radius: 0.34em;
+}
+.playback-icon-button {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+}
+.playback-text-button {
+    -fx-min-width: 3.55em;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+    -fx-padding: 0 0.72em;
+}
+.playback-primary {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+    -fx-padding: 0;
+    -fx-background-color: rgba(245, 27, 35, 0.08);
+    -fx-border-color: rgba(245, 27, 35, 0.34);
+    -fx-text-fill: #f51b23;
+}
+.playback-end-button,
+.playback-close-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-text-fill: #08090a;
+}
+.root-pane .timeline-compact-track {
+    -fx-min-width: 10em;
+    -fx-pref-width: 28em;
+    -fx-max-width: Infinity;
+    -fx-min-height: 1.95em;
+    -fx-pref-height: 1.95em;
+    -fx-max-height: 1.95em;
+    -fx-padding: 0 0.45em;
+}
+.root-pane .timeline-markers-compact {
+    -fx-min-height: 1.95em;
+    -fx-pref-height: 1.95em;
+    -fx-max-height: 1.95em;
+}
+.root-pane .timeline-current-summary {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-padding: 0;
+}
+.speed-button {
+    -fx-min-width: 2.35em;
+    -fx-pref-width: 2.35em;
+    -fx-max-width: 2.35em;
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+    -fx-padding: 0;
+}
+.timeline-header-toggle {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+    -fx-min-height: 2.25em;
+    -fx-pref-height: 2.25em;
+    -fx-max-height: 2.25em;
+}
+
+/* Large text keeps controls readable without letting the timeline consume the
+ * viewport. These are density factors inside the unified typography system. */
+.root-pane.font-size-large .timeline-compact-row .playback-icon-button { -fx-font-size: 0.82em; }
+.root-pane.font-size-large .timeline-compact-row .playback-primary { -fx-font-size: 0.84em; }
+.root-pane.font-size-large .timeline-compact-row .playback-text-button { -fx-font-size: 0.82em; }
+.root-pane.font-size-large .timeline-compact-row .speed-button { -fx-font-size: 0.78em; }
+.root-pane.font-size-large .timeline-header-toggle { -fx-font-size: 0.82em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-icon-button { -fx-font-size: 0.76em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-primary { -fx-font-size: 0.78em; }
+.root-pane.font-size-xlarge .timeline-compact-row .playback-text-button { -fx-font-size: 0.76em; }
+.root-pane.font-size-xlarge .timeline-compact-row .speed-button { -fx-font-size: 0.72em; }
+.root-pane.font-size-xlarge .timeline-header-toggle { -fx-font-size: 0.76em; }
+
+.root-pane .timeline-detail-panel {
+    -fx-padding: 0.55em 1.10em 0.62em 1.10em;
+    -fx-background-color: #fafafa;
+    -fx-border-color: #e6e6e6 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.root-pane .timeline-detail-panel .timeline-legend { -fx-padding: 0; }

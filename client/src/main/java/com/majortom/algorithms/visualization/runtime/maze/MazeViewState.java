@@ -5,6 +5,7 @@ import com.majortom.algorithms.structure.maze.GridPoint;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /** Immutable maze facts plus factual pathfinding observations. */
@@ -25,13 +26,23 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   }
 
   public static MazeViewState generation(int rows, int columns, boolean graphBased) {
+    if (graphBased) {
+      return empty(rows, columns, true);
+    }
+    return generation(rows, columns, false, new GridPoint(1, 1),
+        new GridPoint(rows - 2, columns - 2));
+  }
+
+  public static MazeViewState generation(int rows, int columns, boolean graphBased,
+      GridPoint entrance, GridPoint exit) {
     MazeViewState empty = empty(rows, columns, graphBased);
     if (graphBased) {
       return empty;
     }
+    entrance = Objects.requireNonNull(entrance, "entrance");
+    exit = Objects.requireNonNull(exit, "exit");
     return new MazeViewState(rows, columns, empty.openCells(), empty.path(), empty.visited(), null,
-        null, null, new GridPoint(1, 1), new GridPoint(rows - 2, columns - 2), empty.graphEdges(),
-        false, false);
+        null, null, entrance, exit, empty.graphEdges(), false, false);
   }
 
   public static MazeViewState source(MazeSnapshot snapshot) {

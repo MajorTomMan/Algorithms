@@ -1,0 +1,326 @@
+/* ---------- centralized content geometry ---------- */
+/* All values are relative to the active UI font. Primary shell widths are
+ * still owned by WorkbenchUiFramework; explicit policies below take precedence. */
+.operation-dialog-pane {
+    -fx-padding: 1em;
+}
+
+.operation-dialog-content {
+    -fx-min-width: 31.25em;
+    -fx-padding: 0.625em;
+}
+
+.dialog-form-section {
+    -fx-padding: 0.75em;
+}
+
+.dialog-input {
+    -fx-min-width: 11.25em;
+    -fx-pref-height: 2.25em;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.dialog-action-row {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.workspace-catalog {
+    -fx-padding: 0.125em 0 0.25em 0;
+}
+
+.sidebar-catalog-button,
+.sidebar-algorithm-button {
+    -fx-max-width: Infinity;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.sidebar-catalog-button {
+    -fx-min-height: 2.375em;
+    -fx-pref-height: 2.625em;
+    -fx-padding: 0.5em 0.625em;
+}
+
+.sidebar-catalog-group {
+    -fx-padding: 0.375em 0 0.562em 0;
+}
+
+.sidebar-group-title {
+    -fx-padding: 0.188em 0.5em 0.312em 0.5em;
+}
+
+.sidebar-algorithm-button {
+    -fx-min-height: 1.875em;
+    -fx-pref-height: 2.125em;
+    -fx-padding: 0.375em 0.625em 0.375em 0.875em;
+}
+
+.snapshot-card-action {
+    -fx-padding: 0.25em 0.375em;
+}
+
+.algorithm-input-source {
+    -fx-padding: 0.0625em 0 0 0;
+}
+
+.value-type-box,
+.font-scale-box {
+    -fx-alignment: center-right;
+}
+
+.log-view {
+    -fx-padding: 0.25em;
+}
+
+.log-view .list-cell {
+    -fx-padding: 0.25em 0.375em;
+}
+
+.log-row {
+    -fx-alignment: top-left;
+}
+
+.log-bullet {
+    -fx-min-width: 0.438em;
+    -fx-pref-width: 0.438em;
+    -fx-max-width: 0.438em;
+    -fx-min-height: 0.438em;
+    -fx-pref-height: 0.438em;
+    -fx-max-height: 0.438em;
+    -fx-translate-y: 0.312em;
+}
+
+.lab-mode-switch {
+    -fx-padding: 0;
+}
+
+.workspace-layer,
+.lab-workspace,
+.lab-workspace-body {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.family-navigator {
+    -fx-padding: 0;
+}
+
+.family-item {
+    -fx-cursor: hand;
+}
+
+.snapshot-quick-block {
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.practice-problem-list {
+    -fx-padding: 0.25em 0 0 0;
+}
+
+.practice-problem-list .list-cell {
+    -fx-padding: 0.688em 0.625em;
+}
+
+.practice-detail-pane {
+    -fx-padding: 2.25em 3em;
+}
+
+.practice-problem-entry {
+    -fx-padding: 0.875em 1em;
+}
+
+.visualization-gesture-pane {
+    -fx-padding: 0;
+}
+
+.viewport-toolbar {
+    -fx-padding: 0;
+    -fx-translate-x: -1.5em;
+    -fx-translate-y: -1.375em;
+}
+
+.snapshot-card {
+    -fx-padding: 0.625em;
+}
+
+.result-value {
+    -fx-padding: 0.875em;
+}
+
+.snapshot-preview-badge {
+    -fx-padding: 0.5em 0.75em;
+    -fx-translate-x: 1.125em;
+    -fx-translate-y: 1.125em;
+}
+
+.snapshot-preview-notice {
+    -fx-padding: 0.75em;
+}
+
+.history-toggle {
+    -fx-padding: 0.125em 0.375em;
+}
+
+.history-scroll,
+.history-scroll > .viewport {
+    -fx-padding: 0;
+}
+
+.input-source-toggle-row {
+    -fx-padding: 0;
+}
+
+.input-source-toggle {
+    -fx-padding: 0.438em 0.438em;
+}
+
+.timeline-legend {
+    -fx-padding: 0 0 0 1.625em;
+}
+
+.inspector-snapshot-section .snapshot-card {
+    -fx-padding: 0.562em 0.625em;
+}
+
+#algorithmInspectorTabs .tab {
+    -fx-padding: 0 0.5em;
+}
+
+.event-card {
+    -fx-padding: 0.75em;
+}
+
+.run-summary-grid {
+    -fx-min-height: 7.25em;
+    -fx-pref-height: 7.25em;
+}
+
+.metric-tile {
+    -fx-padding: 0.5em 0.25em;
+}
+
+.result-preview-value {
+    -fx-padding: 0.625em 0.75em;
+}
+
+.timeline-cursor-callout {
+    -fx-padding: 0.312em 0.625em;
+    -fx-translate-y: -0.25em;
+}
+
+.current-step-sequence {
+    -fx-min-width: 3.375em;
+    -fx-pref-width: 3.375em;
+    -fx-max-width: 3.375em;
+}
+
+.structure-overview-grid {
+    -fx-min-height: 4.75em;
+    -fx-pref-height: 4.75em;
+}
+
+.overview-tile {
+    -fx-padding: 0.5em 0.188em;
+}
+
+.array-cell {
+    -fx-padding: 0;
+}
+
+.viewport-toolbar {
+    -fx-spacing: 0;
+}
+
+.playback-control-group {
+    -fx-alignment: center-left;
+}
+
+.speed-control-group {
+    -fx-alignment: center-right;
+}
+
+.speed-button-group {
+    -fx-alignment: center;
+    -fx-spacing: 0;
+}
+
+.timeline-compact-track .slider .track {
+    -fx-pref-height: 0.125em;
+}
+
+.timeline-compact-track .slider .thumb {
+    -fx-pref-width: 0.625em;
+    -fx-pref-height: 0.625em;
+}
+
+.timeline-position-compact {
+    -fx-min-width: 5.5em;
+    -fx-pref-width: 5.5em;
+    -fx-max-width: 5.5em;
+    -fx-alignment: center;
+}
+
+.timeline-toggle-button {
+    -fx-min-width: 2.25em;
+    -fx-pref-width: 2.25em;
+    -fx-max-width: 2.25em;
+    -fx-padding: 0;
+}
+
+.timeline-details .timeline-header {
+    -fx-padding: 0.5em 1.25em 0.125em 1.25em;
+}
+
+.timeline-details .timeline-legend {
+    -fx-padding: 0 0 0 1.375em;
+}
+
+.timeline-current-summary {
+    -fx-padding: 0;
+}
+
+.timeline-marker-node {
+    -fx-alignment: top-center;
+    -fx-padding: 0.062em 0 0 0;
+}
+
+.timeline-marker-symbol {
+    -fx-min-width: 0.438em;
+    -fx-pref-width: 0.438em;
+    -fx-max-width: 0.438em;
+    -fx-min-height: 0.438em;
+    -fx-pref-height: 0.438em;
+    -fx-max-height: 0.438em;
+}
+
+.timeline-marker-sequence {
+    -fx-padding: 0.125em 0 0 0;
+}
+
+.timeline-current-row {
+    -fx-alignment: center-left;
+}
+
+.string-cell {
+    -fx-padding: 0;
+}
+
+.linked-node .visual-node-label {
+    -fx-translate-y: -0.812em;
+}
+
+.kmp-pattern-caption {
+    -fx-padding: 0;
+}
+
+.kmp-pattern-track {
+    -fx-spacing: 0;
+}
+
+.kmp-pattern-cell {
+    -fx-padding: 0;
+}
+
+.visual-edge-label {
+    -fx-padding: 0.125em 0.312em;
+}

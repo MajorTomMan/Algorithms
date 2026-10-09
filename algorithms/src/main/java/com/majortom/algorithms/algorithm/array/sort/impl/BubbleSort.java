@@ -1,6 +1,6 @@
 package com.majortom.algorithms.algorithm.array.sort.impl;
 
-import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
+import com.majortom.algorithms.algorithm.array.sort.BaseSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.logging.Log;
@@ -8,7 +8,7 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 
 @Algorithm(
     id = "bubble-sort", name = "冒泡排序", types = {Integer.class}, structure = ArrayStructure.class)
-public class IntegerBubbleSort extends AbstractIntegerSort {
+public class BubbleSort extends BaseSort<Integer> {
   @Override
   public int compare(Integer left, Integer right) {
     // TODO Auto-generated method stubb

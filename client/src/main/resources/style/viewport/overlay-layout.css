@@ -1,0 +1,7 @@
+/* ---------- shell overlays ---------- */
+.root-pane .selection-overlay,
+.root-pane .current-step-overlay {
+    -fx-padding: 0.86em 0.86em 0.86em 1.00em;
+    -fx-spacing: 0.44em;
+}
+.root-pane .current-step-overlay { -fx-padding: 0.86em 0.74em 0.74em 1.15em; }

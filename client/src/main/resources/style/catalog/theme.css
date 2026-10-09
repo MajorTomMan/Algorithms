@@ -1,0 +1,104 @@
+/* ---------- structure and algorithm catalog inside each workbench rail ---------- */
+
+.workspace-catalog {
+    -fx-background-color: transparent;
+}
+
+.workspace-catalog-divider {
+    -fx-background-color: #293640;
+    -fx-opacity: 0.9;
+}
+
+.sidebar-catalog-button,
+.sidebar-algorithm-button {
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 3px;
+    -fx-text-fill: #9ca8b0;
+}
+
+.sidebar-catalog-button {
+    -fx-font-size: 1em;
+    -fx-font-weight: bold;
+}
+
+.sidebar-catalog-button:hover,
+.sidebar-algorithm-button:hover {
+    -fx-background-color: #17232d;
+    -fx-text-fill: #edf2f5;
+}
+
+.sidebar-catalog-button:selected {
+    -fx-background-color: #1b3657;
+    -fx-border-color: transparent transparent transparent #4a96ff;
+    -fx-text-fill: #f1f6ff;
+}
+
+.sidebar-catalog-button.sidebar-unavailable {
+    -fx-background-color: #111820;
+    -fx-border-color: transparent;
+    -fx-text-fill: #5d6871;
+    -fx-opacity: 0.8;
+}
+
+.sidebar-catalog-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent transparent #e84e58;
+}
+
+.sidebar-catalog-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent transparent #f0c52d;
+}
+
+.sidebar-catalog-button.btn-ran-white:selected {
+    -fx-border-color: transparent transparent transparent #e5e9ed;
+}
+
+.sidebar-catalog-group {
+    -fx-border-color: transparent transparent #293640 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.sidebar-group-title {
+    -fx-text-fill: #e2e8ec;
+    -fx-font-size: 0.92em;
+    -fx-font-weight: bold;
+}
+
+.sidebar-algorithm-button {
+    -fx-font-size: 0.92em;
+}
+
+.sidebar-algorithm-button:selected {
+    -fx-background-color: #253b52;
+    -fx-border-color: transparent transparent transparent #4a96ff;
+    -fx-text-fill: #f1f6ff;
+}
+
+.sidebar-algorithm-button.btn-ran-red:selected {
+    -fx-border-color: transparent transparent transparent #e84e58;
+}
+
+.sidebar-algorithm-button.btn-ran-gold:selected {
+    -fx-border-color: transparent transparent transparent #f0c52d;
+}
+
+.sidebar-algorithm-button.btn-ran-white:selected {
+    -fx-border-color: transparent transparent transparent #e5e9ed;
+}
+
+.snapshot-card-algorithm-input {
+    -fx-border-color: #d8ad3d;
+}
+
+.snapshot-card-input-state {
+    -fx-text-fill: #e7c45d;
+    -fx-font-size: 0.77em;
+    -fx-font-weight: bold;
+}
+
+.algorithm-input-source {
+    -fx-font-size: 0.77em;
+    -fx-text-fill: #8e99a8;
+}

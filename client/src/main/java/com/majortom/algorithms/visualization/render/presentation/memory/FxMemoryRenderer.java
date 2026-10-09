@@ -19,11 +19,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.Line;
@@ -34,8 +34,8 @@ import javafx.scene.shape.Rectangle;
 
 /** RenderFramework-owned JavaFX commit for execution-scoped Memory presentation. */
 public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresentationModel> {
-  private static final double LEFT_INSET = 10.0d;
-  private static final double RIGHT_INSET = 10.0d;
+  private static final double LEFT_INSET = 8.0d;
+  private static final double RIGHT_INSET = 8.0d;
   private static final double TOP_INSET = 10.0d;
   private static final double BOTTOM_INSET = 10.0d;
 
@@ -45,6 +45,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private final Line bottomGrid = gridLine();
   private final Path area = new Path();
   private final Path curve = new Path();
+  private final Path futureCurve = new Path();
   private final Line cursorGuide = new Line();
   private final Circle cursorMarker = new Circle(4.0d);
   private final Rectangle clip = new Rectangle();
@@ -56,6 +57,9 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     area.setMouseTransparent(true);
     curve.getStyleClass().add("memory-allocation-curve");
     curve.setMouseTransparent(true);
+    futureCurve.getStyleClass().add("memory-allocation-future");
+    futureCurve.setMouseTransparent(true);
+    futureCurve.setVisible(false);
     cursorGuide.getStyleClass().add("memory-allocation-cursor-guide");
     cursorGuide.setMouseTransparent(true);
     cursorGuide.setVisible(false);
@@ -69,6 +73,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     Objects.requireNonNull(context, "context");
     ensureChartInstalled();
     renderProfile(model);
+    renderFootprint(model);
     renderDeepAnalysis(model);
     renderChart(model);
     return CompletableFuture.completedFuture(null);
@@ -77,7 +82,11 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private void renderProfile(MemoryPresentationModel model) {
     MemoryFacts profile = model.facts().orElse(null);
     boolean hasProfile = profile != null;
-    visible(view.metricsSection(), hasProfile);
+    boolean structureDomain = model.expectedDomain() == TelemetryDomain.STRUCTURE;
+    view.headerTitle().setText(domainTitle(model.expectedDomain()));
+    visible(view.allocationHero(), hasProfile && !structureDomain);
+    visible(view.operationSummary(), hasProfile && structureDomain);
+    visible(view.rateGrid(), hasProfile && !structureDomain);
     visible(view.detailsSection(), hasProfile);
     visible(view.emptyState(), !hasProfile);
 
@@ -89,7 +98,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     if (!hasProfile) {
       view.scopeLabel().setText(domainText(model.expectedDomain()));
       view.statusLabel().setText(I18N.text("label.workspace.memory.waiting"));
-      setStatusStyle(false);
+      setStatusStyle("memory-status-waiting");
       visible(view.chartSection(), false);
       visible(view.timingNotice(), false);
       resetMetricValues();
@@ -99,15 +108,20 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     TelemetryDomain actualDomain = profile.sessionId().scope().domain();
     view.scopeLabel().setText(
         domainText(actualDomain) + " · " + displayScope(profile.sessionId().scope().stableId()));
+    boolean live = !profile.complete();
     view.statusLabel().setText(I18N.text(
-        profile.complete() ? "label.workspace.memory.complete" : "label.panel.live"));
-    setStatusStyle(!profile.complete());
+        live ? "label.panel.live" : "label.workspace.memory.complete"));
+    setStatusStyle(live ? "memory-status-live" : "memory-status-complete");
 
-    OptionalLong displayedAllocation = model.cursorProjected()
+    OptionalLong totalAllocation = profile.allocatedBytesValue();
+    OptionalLong currentAllocation = model.cursorProjected() && model.currentAllocatedBytes().isPresent()
         ? model.currentAllocatedBytes()
-        : profile.allocatedBytesValue();
-    view.allocatedValue().setText(displayedAllocation.isPresent()
-        ? formatBytes(displayedAllocation.getAsLong())
+        : totalAllocation;
+    view.allocatedValue().setText(currentAllocation.isPresent()
+        ? formatBytes(currentAllocation.getAsLong())
+        : I18N.text("label.workspace.memory.unavailable"));
+    view.allocatedTotalValue().setText(totalAllocation.isPresent()
+        ? formatBytes(totalAllocation.getAsLong())
         : I18N.text("label.workspace.memory.unavailable"));
     view.averageRateValue().setText(profile.averageAllocationRateBytesPerSecondValue().isPresent()
         ? formatRate(profile.averageAllocationRateBytesPerSecondValue().getAsLong())
@@ -115,24 +129,33 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     view.peakRateValue().setText(profile.peakAllocationRateBytesPerSecondValue().isPresent()
         ? formatRate(profile.peakAllocationRateBytesPerSecondValue().getAsLong())
         : "—");
-    view.gcValue().setText(profile.gcCollectionCountValue().isPresent()
-        ? Long.toString(profile.gcCollectionCountValue().getAsLong())
-        : "—");
 
     boolean showTimeline = profile.timingRepresentative() && model.timelineSamples().size() >= 2;
     visible(view.chartSection(), showTimeline);
     OptionalLong chartMaximum = chartMaximum(profile, model.timelineSamples());
-    view.chartMaxLabel().setText(chartMaximum.isPresent()
-        ? I18N.text("label.workspace.memory.chart_max") + " " + formatBytes(chartMaximum.getAsLong())
+    String maximumText = chartMaximum.isPresent() ? formatBytes(chartMaximum.getAsLong()) : "—";
+    view.chartMaxLabel().setText(maximumText);
+    view.chartYMaxLabel().setText(maximumText);
+    view.chartYMidLabel().setText(chartMaximum.isPresent()
+        ? formatBytes(chartMaximum.getAsLong() / 2L)
         : "—");
+    view.chartYMinLabel().setText("0 B");
     view.chartStartLabel().setText("0 ms");
+    view.chartMiddleLabel().setText(formatDuration(profile.durationNanos() / 2L));
     view.chartEndLabel().setText(formatDuration(profile.durationNanos()));
 
-    long displayedDuration = model.cursorProjected()
-        ? model.visibleElapsedNanos()
-        : profile.durationNanos();
-    view.durationValue().setText(profile.timingRepresentative()
-        ? formatDuration(displayedDuration)
+    String durationText = profile.timingRepresentative()
+        ? formatDuration(profile.durationNanos())
+        : "—";
+    view.durationValue().setText(durationText);
+    view.operationDurationValue().setText(durationText);
+    view.operationAllocationValue().setText(totalAllocation.isPresent()
+        ? formatBytes(totalAllocation.getAsLong())
+        : I18N.text("label.workspace.memory.unavailable"));
+    view.operationAverageValue().setText(view.averageRateValue().getText());
+    view.operationPeakValue().setText(view.peakRateValue().getText());
+    view.gcValue().setText(profile.gcCollectionCountValue().isPresent()
+        ? Long.toString(profile.gcCollectionCountValue().getAsLong())
         : "—");
     view.gcTimeValue().setText(profile.gcCollectionTimeMillisValue().isPresent()
         ? profile.gcCollectionTimeMillisValue().getAsLong() + " ms"
@@ -140,27 +163,75 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     view.heapDeltaValue().setText(profile.heapDeltaBytesValue().isPresent()
         ? formatSignedBytes(profile.heapDeltaBytesValue().getAsLong())
         : "—");
-    view.samplesValue().setText(Integer.toString(
-        model.cursorProjected()
-            ? visibleSampleCount(model.timelineSamples(), model.visibleElapsedNanos())
-            : model.timelineSamples().size()));
+    int sampleCount = model.cursorProjected()
+        ? visibleSampleCount(model.timelineSamples(), model.visibleElapsedNanos())
+        : model.timelineSamples().size();
+    view.samplesValue().setText(model.cursorProjected()
+        ? sampleCount + " / " + model.timelineSamples().size()
+        : Integer.toString(sampleCount));
+
+    boolean showCurrentReadout = showTimeline && currentAllocation.isPresent();
+    visible(view.chartCursorLabel(), showCurrentReadout);
+    view.chartCursorLabel().setText(showCurrentReadout
+        ? I18N.text("label.workspace.memory.current_reading")
+            + " · " + formatDuration(model.visibleElapsedNanos())
+            + " · " + formatBytes(currentAllocation.getAsLong())
+        : "—");
 
     boolean timingSuppressed = !profile.timingRepresentative();
     visible(view.timingNotice(), timingSuppressed);
     view.timingNotice().setText(I18N.text("label.workspace.memory.timing_suppressed"));
   }
 
-  private void renderDeepAnalysis(MemoryPresentationModel model) {
+  private void renderFootprint(MemoryPresentationModel model) {
     boolean structureDomain = model.expectedDomain() == TelemetryDomain.STRUCTURE;
-    visible(view.deepSection(), true);
+    visible(view.footprintSection(), structureDomain);
+    if (!structureDomain) {
+      resetFootprintValues();
+      return;
+    }
 
+    StructureFootprint footprint = model.footprint().orElse(null);
+    view.footprintButton().setDisable(!model.footprintSupported() || model.footprintBusy());
+    visible(view.footprintBox(), true);
+    visible(view.footprintNotice(), false);
+
+    if (model.footprintBusy()) {
+      resetFootprintValues();
+      showFootprintNotice(I18N.text("label.workspace.memory.footprint_measuring"));
+      return;
+    }
+    if (!model.footprintSupported()) {
+      resetFootprintValues();
+      showFootprintNotice(I18N.text("label.workspace.memory.footprint_unavailable"));
+      return;
+    }
+    if (footprint == null) {
+      resetFootprintValues();
+      view.footprintProviderValue().setText("JOL");
+      showFootprintNotice(I18N.text("label.workspace.memory.footprint_unmeasured"));
+      return;
+    }
+    view.footprintProviderValue().setText(
+        footprint.provider().isBlank() ? "JOL" : footprint.provider());
+    if (!footprint.available()) {
+      resetFootprintValues();
+      view.footprintProviderValue().setText(
+          footprint.provider().isBlank() ? "JOL" : footprint.provider());
+      showFootprintNotice(footprint.detail());
+      return;
+    }
+    view.footprintBytesValue().setText(formatBytes(footprint.totalBytes()));
+    view.footprintObjectsValue().setText(Long.toString(footprint.objectCount()));
+  }
+
+  private void renderDeepAnalysis(MemoryPresentationModel model) {
+    visible(view.deepSection(), true);
     boolean deepSupported = model.capabilities().jfrAvailable();
     visible(view.deepAnalysisToggle(), deepSupported);
     view.deepAnalysisToggle().setDisable(!deepSupported);
     view.deepAnalysisToggle().setSelected(model.deepAnalysisEnabled());
-
-    visible(view.footprintButton(), structureDomain);
-    view.footprintButton().setDisable(!model.footprintSupported() || model.footprintBusy());
+    visible(view.deepNotice(), false);
 
     view.allocationTypes().getChildren().clear();
     view.allocationSites().getChildren().clear();
@@ -170,46 +241,22 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
       view.allocationTypes().getChildren().add(sectionHeading("label.workspace.memory.top_allocation_types"));
       for (MemoryAllocationTypeStat stat : deep.topTypes()) {
         view.allocationTypes().getChildren().add(
-            analysisRow(shortClassName(stat.className()), stat.estimatedBytes()));
+            analysisRow(shortClassName(stat.className()), stat.className(), stat.estimatedBytes()));
       }
       view.allocationSites().getChildren().add(sectionHeading("label.workspace.memory.top_allocation_sites"));
       for (MemoryAllocationSiteStat stat : deep.topSites()) {
-        view.allocationSites().getChildren().add(analysisRow(stat.site(), stat.estimatedBytes()));
+        view.allocationSites().getChildren().add(
+            analysisRow(stat.site(), stat.site(), stat.estimatedBytes()));
       }
     }
     visible(view.allocationTypes(), hasDeepSamples);
     visible(view.allocationSites(), hasDeepSamples);
 
-    StructureFootprint footprint = model.footprint().orElse(null);
-    boolean hasFootprint = structureDomain && footprint != null && footprint.available();
-    visible(view.footprintBox(), hasFootprint);
-    if (hasFootprint) {
-      view.footprintBytesValue().setText(formatBytes(footprint.totalBytes()));
-      view.footprintObjectsValue().setText(Long.toString(footprint.objectCount()));
-      view.footprintProviderValue().setText(footprint.provider());
-    }
-
-    if (model.footprintBusy() && structureDomain) {
-      showDeepNotice(I18N.text("label.workspace.memory.footprint_measuring"));
-      return;
-    }
-    if (!deepSupported && !structureDomain) {
+    if (!deepSupported) {
       showDeepNotice(I18N.text("label.workspace.memory.deep_unavailable"));
-      return;
-    }
-    if (model.deepAnalysisEnabled() && deep != null && !deep.hasSamples()) {
+    } else if (model.deepAnalysisEnabled() && deep != null && !deep.hasSamples()) {
       showDeepNotice(I18N.text("label.workspace.memory.deep_no_samples"));
-      return;
     }
-    if (structureDomain && !model.footprintSupported()) {
-      showDeepNotice(I18N.text("label.workspace.memory.footprint_unavailable"));
-      return;
-    }
-    if (structureDomain && footprint != null && !footprint.available()) {
-      showDeepNotice(footprint.detail());
-      return;
-    }
-    visible(view.deepNotice(), false);
   }
 
   private void renderChart(MemoryPresentationModel model) {
@@ -230,6 +277,8 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
     area.getElements().clear();
     curve.getElements().clear();
+    futureCurve.getElements().clear();
+    futureCurve.setVisible(false);
     cursorGuide.setVisible(false);
     cursorMarker.setVisible(false);
     List<MemoryAllocationSample> samples = model.timelineSamples();
@@ -242,10 +291,19 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
       maxAllocated = Math.max(maxAllocated, sample.allocatedBytes());
     }
     maxAllocated = Math.max(1L, maxAllocated);
-
     long visibleElapsed = model.cursorProjected()
         ? Math.min(maxElapsed, model.visibleElapsedNanos())
         : maxElapsed;
+
+    if (model.cursorProjected()) {
+      futureCurve.getElements().add(new MoveTo(x0, y1));
+      for (MemoryAllocationSample sample : samples) {
+        futureCurve.getElements().add(new LineTo(
+            chartX(sample.elapsedNanos(), maxElapsed, x0, x1),
+            chartY(sample.allocatedBytes(), maxAllocated, y0, y1)));
+      }
+      futureCurve.setVisible(true);
+    }
 
     curve.getElements().add(new MoveTo(x0, y1));
     area.getElements().add(new MoveTo(x0, y1));
@@ -291,22 +349,39 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private void ensureChartInstalled() {
     if (chartInstalled) return;
     view.chartHost().getChildren().setAll(
-        topGrid, middleGrid, bottomGrid, area, curve, cursorGuide, cursorMarker);
+        topGrid, middleGrid, bottomGrid, futureCurve, area, curve, cursorGuide, cursorMarker);
     view.chartHost().setClip(clip);
     chartInstalled = true;
   }
 
   private void resetMetricValues() {
     view.allocatedValue().setText("—");
+    view.allocatedTotalValue().setText("—");
     view.averageRateValue().setText("—");
     view.peakRateValue().setText("—");
+    view.durationValue().setText("—");
+    view.operationAllocationValue().setText("—");
+    view.operationDurationValue().setText("—");
+    view.operationAverageValue().setText("—");
+    view.operationPeakValue().setText("—");
     view.gcValue().setText("—");
     view.chartMaxLabel().setText("—");
+    view.chartYMaxLabel().setText("—");
+    view.chartYMidLabel().setText("—");
+    view.chartYMinLabel().setText("0 B");
+    view.chartCursorLabel().setText("—");
+    visible(view.chartCursorLabel(), false);
+    view.chartMiddleLabel().setText("—");
     view.chartEndLabel().setText("—");
-    view.durationValue().setText("—");
     view.gcTimeValue().setText("—");
     view.heapDeltaValue().setText("—");
     view.samplesValue().setText("0");
+  }
+
+  private void resetFootprintValues() {
+    view.footprintBytesValue().setText("—");
+    view.footprintObjectsValue().setText("—");
+    view.footprintProviderValue().setText("—");
   }
 
   private void showDeepNotice(String text) {
@@ -314,16 +389,21 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     visible(view.deepNotice(), true);
   }
 
-  private void setStatusStyle(boolean live) {
-    view.statusPill().getStyleClass().removeAll("memory-status-live", "memory-status-complete");
-    view.statusPill().getStyleClass().add(live ? "memory-status-live" : "memory-status-complete");
+  private void showFootprintNotice(String text) {
+    view.footprintNotice().setText(text == null || text.isBlank() ? "—" : text);
+    visible(view.footprintNotice(), true);
+  }
+
+  private void setStatusStyle(String style) {
+    view.statusPill().getStyleClass().removeAll(
+        "memory-status-live", "memory-status-complete", "memory-status-waiting");
+    view.statusPill().getStyleClass().add(style);
   }
 
   private static void visible(javafx.scene.Node node, boolean visible) {
     node.setManaged(visible);
     node.setVisible(visible);
   }
-
 
   private static OptionalLong chartMaximum(MemoryFacts profile, List<MemoryAllocationSample> samples) {
     long maximum = 0L;
@@ -381,10 +461,14 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     line.setEndY(y);
   }
 
-  private static HBox analysisRow(String name, long bytes) {
+  private static HBox analysisRow(String name, String fullName, long bytes) {
     Label nameLabel = new Label(name);
     nameLabel.setWrapText(true);
     nameLabel.getStyleClass().add("memory-analysis-name");
+    if (fullName != null && !fullName.isBlank() && !fullName.equals(name)) {
+      nameLabel.setTooltip(new Tooltip(fullName));
+    }
+    HBox.setHgrow(nameLabel, Priority.ALWAYS);
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
     Label value = new Label(formatBytes(bytes));
@@ -423,6 +507,14 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     });
   }
 
+  private static String domainTitle(TelemetryDomain domain) {
+    return I18N.text(switch (domain) {
+      case STRUCTURE -> "label.workspace.memory.structure_title";
+      case ALGORITHM -> "label.workspace.memory.algorithm_title";
+      case PRACTICE -> "label.workspace.memory.practice_title";
+    });
+  }
+
   private static String displayScope(String scopeId) {
     if (scopeId == null || scopeId.isBlank()) return "—";
     int slash = scopeId.lastIndexOf('/');
@@ -441,7 +533,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
   private static String formatBytes(long bytes) {
     double value = Math.max(0L, bytes);
-    String[] units = {"B", "KB", "MB", "GB", "TB"};
+    String[] units = {"B", "KiB", "MiB", "GiB", "TiB", "PiB"};
     int unit = 0;
     while (value >= 1024.0d && unit < units.length - 1) {
       value /= 1024.0d;

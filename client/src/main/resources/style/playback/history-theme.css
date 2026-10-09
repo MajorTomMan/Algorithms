@@ -1,0 +1,81 @@
+/* ---------- Structure history / Algorithm timeline ---------- */
+.history-dock,
+.algorithm-dock {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.history-toggle {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #444444;
+    -fx-cursor: hand;
+}
+.history-toggle:hover {
+    -fx-background-color: #f4f4f4;
+}
+.history-scroll,
+.history-scroll > .viewport {
+    -fx-background-color: #ffffff;
+}
+.timeline-visual .slider .track {
+    -fx-background-color: #444444;
+}
+.timeline-visual .slider .thumb {
+    -fx-background-color: #f51b23;
+}
+.timeline-marker {
+    -fx-font-weight: 800;
+}
+.timeline-runtime {
+    -fx-text-fill: #f51b23;
+}
+.timeline-structure {
+    -fx-text-fill: #1769d3;
+}
+.timeline-observation {
+    -fx-text-fill: #f5b400;
+}
+.timeline-other {
+    -fx-text-fill: #8a8a8a;
+}
+.timeline-marker-current {
+    -fx-underline: true;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.22), 4, 0.1, 0, 0);
+}
+.playback-toolbar-light {
+    -fx-border-color: #e6e6e6 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.playback-button,
+.playback-primary,
+.speed-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+}
+.playback-primary {
+    -fx-background-color: #f51b23;
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #ffffff;
+}
+.cancel-button {
+    -fx-font-size: 17px;
+}
+.speed-label {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 800;
+}
+.speed-button {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.speed-button:selected {
+    -fx-background-color: #f51b23;
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #ffffff;
+}

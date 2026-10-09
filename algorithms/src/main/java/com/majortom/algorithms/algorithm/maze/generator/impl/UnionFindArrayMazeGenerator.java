@@ -24,7 +24,7 @@ public final class UnionFindArrayMazeGenerator {
   public GridMaze generate(MazeStructure maze) {
     MazeDimensions dimensions = maze.dimensions();
     Random random = new Random();
-    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
+    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(maze);
     List<GridPoint> cells = logicalCells(dimensions);
     for (GridPoint cell : cells) ArrayMazeSupport.open(dimensions, state.open(), cell);
     List<CellEdge> edges = new ArrayList<>();

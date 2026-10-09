@@ -1,0 +1,25 @@
+/* ---------- shell regions owned by WorkbenchUiFramework ---------- */
+/* Do not declare min/pref/max width or height for the major shell regions here.
+ * JavaFX CSS is reapplied after layout changes and would otherwise overwrite
+ * the USER-origin values installed by WorkbenchUiFramework. */
+.root-pane .brand-zone { -fx-spacing: 0.80em; }
+.root-pane .lab-mode-switch .workspace-mode-button {
+    -fx-min-width: 0;
+    -fx-min-height: 3.05em;
+    -fx-pref-height: 3.05em;
+    -fx-max-height: 3.05em;
+    -fx-padding: 0 1.60em;
+}
+.root-pane .run-state-badge { -fx-padding: 0.55em 1.10em; }
+.root-pane .font-settings-button {
+    -fx-min-width: 2.20em;
+    -fx-pref-width: 2.20em;
+    -fx-max-width: 2.20em;
+    -fx-min-height: 2.20em;
+    -fx-pref-height: 2.20em;
+    -fx-max-height: 2.20em;
+    -fx-padding: 0;
+}
+
+/* ---------- family navigator ---------- */
+.root-pane .family-navigator { -fx-padding: 0; }

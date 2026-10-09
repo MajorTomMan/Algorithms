@@ -1,0 +1,120 @@
+/* ========================================================================== */
+/* Algorithm Visualization Grammar A0 — factual runtime overlay precedence.    */
+/* Selection/Current > Observation > Visited > Base. Lifecycle is not a color. */
+/* ========================================================================== */
+.visual-node:visited .visual-node-shape {
+    -fx-fill: #1769d3;
+    -fx-stroke: #1769d3;
+}
+.visual-node:visited .visual-node-label {
+    -fx-fill: #ffffff;
+}
+.visual-node:visited:highlighted .visual-node-shape,
+.visual-node:highlighted .visual-node-shape {
+    -fx-stroke: #f5b400;
+    -fx-stroke-width: 3px;
+}
+.visual-node:current .visual-node-shape {
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 3.5px;
+}
+.visual-node:selected .visual-node-shape {
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 4px;
+}
+.visual-edge:selected .visual-edge-path {
+    -fx-stroke: #f51b23;
+    -fx-fill: transparent;
+    -fx-stroke-width: 3px;
+}
+.visual-edge:selected .visual-edge-arrow {
+    -fx-stroke: #f51b23;
+    -fx-fill: #f51b23;
+}
+
+/* RunCompleted is lifecycle only; it must not impersonate Visited. */
+.array-cell:completed .array-cell-body {
+    -fx-background-color: #ffffff;
+}
+.array-cell:completed .array-cell-value {
+    -fx-fill: #08090a;
+}
+.string-cell:completed .string-cell-body {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #d2d2d2 #1769d3 transparent;
+}
+.string-cell-first:completed .string-cell-body {
+    -fx-border-color: transparent #d2d2d2 #1769d3 #1769d3;
+}
+.string-cell-last:completed .string-cell-body {
+    -fx-border-color: transparent #1769d3 #1769d3 transparent;
+}
+.string-cell-only:completed .string-cell-body {
+    -fx-border-color: transparent #1769d3 #1769d3 #1769d3;
+}
+.string-cell:completed .string-cell-value {
+    -fx-fill: #08090a;
+}
+
+/* ========================================================================== */
+/* Algorithm Visualization Grammar A2 — KMP pattern rail overlay.              */
+/* ========================================================================== */
+.kmp-pattern-caption {
+    -fx-text-fill: #444444;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 800;
+    -fx-background-color: transparent;
+}
+.kmp-pattern-cell {
+    -fx-background-color: transparent;
+}
+.kmp-pattern-index {
+    -fx-fill: #8a8a8a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 8px;
+    -fx-font-weight: 700;
+}
+.kmp-pattern-body {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px 1px 2px 1px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.kmp-pattern-value {
+    -fx-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 1em;
+    -fx-font-weight: 800;
+}
+.kmp-pattern-cell:observed .kmp-pattern-body {
+    -fx-background-color: #f5b400;
+    -fx-border-color: #f5b400;
+}
+.kmp-pattern-compact .kmp-pattern-value {
+    -fx-font-size: 0.86em;
+}
+.kmp-pattern-dense .kmp-pattern-value {
+    -fx-font-size: 0.75em;
+}
+
+/* Edge metadata slot reserved for future weighted-graph labels. */
+.visual-edge-label {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-text-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.visual-edge:highlighted .visual-edge-label {
+    -fx-border-color: #f5b400;
+}
+.visual-edge:selected .visual-edge-label {
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #f51b23;
+}

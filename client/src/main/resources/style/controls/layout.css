@@ -1,0 +1,34 @@
+/* ---------- control rails ---------- */
+.root-pane .structure-control-panel,
+.root-pane .algorithm-control-panel,
+.root-pane .practice-control-panel {
+    -fx-padding: 0 1.00em 0.85em 1.10em;
+}
+.root-pane .panel-topline {
+    -fx-min-height: 2.80em;
+    -fx-pref-height: 2.80em;
+}
+.root-pane .structure-identity-block { -fx-padding: 0.86em 0.12em 0.74em 0.12em; }
+.root-pane .live-row { -fx-padding: 0.55em 0 0 0; }
+.root-pane .input-source-block { -fx-padding: 0.74em 0; }
+.root-pane .structure-control-panel .control-section,
+.root-pane .structure-control-panel .control-card,
+.root-pane .algorithm-control-panel .control-section,
+.root-pane .algorithm-control-panel .control-card,
+.root-pane .structure-control-panel .structure-section,
+.root-pane .algorithm-control-panel .algorithm-section,
+.root-pane .algorithm-control-panel .execution-section {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-padding: 0.62em 0 0.74em 0;
+}
+.root-pane .structure-control-panel .button,
+.root-pane .algorithm-control-panel .button {
+    -fx-min-height: -1;
+    -fx-pref-height: -1;
+}
+.root-pane .primary-red-button {
+    -fx-min-height: 2.45em;
+    -fx-pref-height: 2.45em;
+}
+.root-pane .summary-strip { -fx-padding: 0.62em 0.25em; }

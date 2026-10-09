@@ -1,0 +1,92 @@
+/* ========================================================================== */
+/* Visualization Grammar V0/V1 — shared Structure grammar + Array memory strip */
+/* ========================================================================== */
+.visual-entity {
+    -fx-opacity: 1;
+}
+
+/* Shared semantic state grammar. Family geometry remains family-specific. */
+.visual-entity:current {
+    -fx-effect: dropshadow(gaussian, rgba(245,27,35,0.18), 7, 0.10, 0, 0);
+}
+.visual-entity:observed {
+    -fx-effect: dropshadow(gaussian, rgba(245,180,0,0.14), 6, 0.08, 0, 0);
+}
+.visual-entity:visited,
+.visual-entity:completed {
+    -fx-effect: none;
+}
+
+/* Array = one continuous logical memory strip, not a row of independent buttons. */
+.array-cell {
+    -fx-background-color: transparent;
+}
+.array-cell-index {
+    -fx-fill: #8a8a8a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+.array-cell-body {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #1769d3;
+    -fx-border-width: 2px 0 2px 1px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.array-cell-first .array-cell-body {
+    -fx-border-width: 2px 0 2px 2px;
+}
+.array-cell-last .array-cell-body {
+    -fx-border-width: 2px 2px 2px 1px;
+}
+.array-cell-only .array-cell-body {
+    -fx-border-width: 2px;
+}
+/* Primary visualization values follow the user base font size. Auxiliary
+ * indices, ports and metadata remain fixed because they are geometry cues. */
+.array-cell-value {
+    -fx-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 1.05em;
+    -fx-font-weight: 800;
+}
+.array-cell-selection-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
+    -fx-border-insets: -3px;
+}
+.array-cell:selected .array-cell-selection-outline {
+    -fx-border-color: #f51b23;
+}
+.array-cell:current .array-cell-selection-outline {
+    -fx-border-color: #f51b23;
+}
+.array-cell:observed .array-cell-body {
+    -fx-background-color: #f5b400;
+}
+.array-cell:visited .array-cell-body,
+.array-cell:completed .array-cell-body {
+    -fx-background-color: #1769d3;
+    -fx-border-color: #1769d3;
+}
+.array-cell:visited .array-cell-value,
+.array-cell:completed .array-cell-value {
+    -fx-fill: #ffffff;
+}
+.array-cell:observed .array-cell-value {
+    -fx-fill: #08090a;
+}
+.array-cell-compact .array-cell-value {
+    -fx-font-size: 0.92em;
+}
+.array-cell-dense .array-cell-value {
+    -fx-font-size: 0.75em;
+}
+.array-cell-dense .array-cell-index {
+    -fx-font-size: 8px;
+}
+.viewport-toolbar-last {
+    -fx-border-width: 0;
+}

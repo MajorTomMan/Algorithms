@@ -10,6 +10,8 @@ import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.Maze;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeEndpointPolicy;
+import com.majortom.algorithms.structure.maze.MazeEndpoints;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.utils.EffectUtils;
@@ -178,11 +180,12 @@ public final class MazeController extends BaseModuleController<MazeViewState>
         selectedOperation = Operation.GENERATE;
         algorithmResultSnapshot = null;
         String id = selectedId(generatorSelector, allGenerators);
-        Maze input = new Maze(new MazeDimensions(size, size));
-        var descriptor = AlgorithmCatalog.descriptor(moduleId(), AlgorithmTypeSignature.of(Boolean.class), id);
         boolean graphBased = graphGenerators.contains(id);
+        Maze input = new Maze(new MazeDimensions(size, size), MazeEndpointPolicy.random());
+        var descriptor = AlgorithmCatalog.descriptor(moduleId(), AlgorithmTypeSignature.of(Boolean.class), id);
+        MazeEndpoints endpoints = graphBased ? null : input.generationEndpoints();
         startAlgorithm(id, selectedAlgorithmSnapshot(), () -> descriptor.invoke(input),
-                () -> new MazeEventReducer(size, size, graphBased));
+                () -> new MazeEventReducer(size, size, graphBased, endpoints));
     }
 
     @FXML

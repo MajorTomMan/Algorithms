@@ -1,0 +1,10 @@
+/* ---------- canvas UI chrome (not visualization entities) ---------- */
+.root-pane .viewport-toolbar-button { -fx-font-size: 0.62em; }
+.root-pane .viewport-zoom-label { -fx-font-size: 0.62em; }
+.root-pane .overlay-eyebrow,
+.root-pane .overlay-caption,
+.root-pane .overlay-hint,
+.root-pane .current-step-detail,
+.root-pane .current-step-sequence { -fx-font-size: 0.68em; }
+.root-pane .current-step-kind { -fx-font-size: 0.71em; }
+.root-pane .overlay-value { -fx-font-size: 1.60em; }

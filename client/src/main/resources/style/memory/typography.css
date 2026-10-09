@@ -1,0 +1,65 @@
+/* ---------- memory profiler ---------- */
+.root-pane .memory-status-label {
+    -fx-font-size: 0.70em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-hero-title {
+    -fx-font-size: 0.70em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-hero-value {
+    -fx-font-size: 1.48em;
+    -fx-font-weight: 800;
+}
+.root-pane .memory-hero-subline-title,
+.root-pane .memory-inline-label {
+    -fx-font-size: 0.64em;
+    -fx-font-weight: 600;
+}
+.root-pane .memory-hero-subline-value,
+.root-pane .memory-inline-value,
+.root-pane .memory-chart-samples {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-mini-metric-title {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 600;
+}
+.root-pane .memory-mini-metric-value {
+    -fx-font-size: 0.86em;
+    -fx-font-weight: 800;
+}
+.root-pane .memory-chart-summary {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-chart-readout {
+    -fx-font-size: 0.68em;
+    -fx-font-weight: 600;
+}
+.root-pane .memory-chart-axis-label,
+.root-pane .memory-detail-label,
+.root-pane .memory-notice,
+.root-pane .memory-empty-state {
+    -fx-font-size: 0.66em;
+}
+.root-pane .memory-reference-note {
+    -fx-font-size: 0.64em;
+}
+.root-pane .memory-detail-value {
+    -fx-font-size: 0.78em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-disclosure > .title {
+    -fx-font-size: 1.00em;
+    -fx-font-weight: 700;
+}
+.root-pane .memory-disclosure {
+    -fx-font-size: 0.78em;
+}
+.root-pane .memory-analysis-button { -fx-font-size: 0.74em; }
+.root-pane .memory-analysis-name,
+.root-pane .memory-analysis-value {
+    -fx-font-size: 0.68em;
+}

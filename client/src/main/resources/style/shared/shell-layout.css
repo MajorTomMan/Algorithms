@@ -1,0 +1,50 @@
+/* ---------- semantic FXML geometry moved out of FXML / legacy theme ---------- */
+.root-pane .brand-mark {
+    -fx-min-width: 3.25em;
+    -fx-pref-width: 3.25em;
+    -fx-min-height: 3.25em;
+    -fx-pref-height: 3.25em;
+}
+.root-pane .font-settings-divider {
+    -fx-min-height: 1.625em;
+    -fx-pref-height: 1.625em;
+    -fx-max-height: 1.625em;
+}
+.root-pane .live-dot {
+    -fx-min-width: 0.50em;
+    -fx-pref-width: 0.50em;
+    -fx-max-width: 0.50em;
+    -fx-min-height: 0.50em;
+    -fx-pref-height: 0.50em;
+    -fx-max-height: 0.50em;
+}
+.root-pane .module-control-host,
+.root-pane .module-control-panel {
+    -fx-min-width: 0;
+    -fx-max-width: Infinity;
+    -fx-padding: 0;
+}
+.root-pane .module-control-host { -fx-spacing: 0; }
+.root-pane .operation-section { -fx-padding: 0.68em 0.12em 0.74em 0.12em; }
+.root-pane .operation-caption-row { -fx-padding: 0 0.06em; }
+.root-pane .operation-hint { -fx-padding: 0 0.06em 0.12em 0.06em; }
+.root-pane .operation-input,
+.root-pane .operation-button {
+    -fx-min-width: 0;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+    -fx-padding: 0.34em 0.44em;
+}
+.root-pane .operation-slider { -fx-padding: 0.18em 0.18em 0 0.18em; }
+.root-pane .structure-preview-empty { -fx-padding: 1.25em; }
+.root-pane .structure-preview-hint { -fx-max-width: 20em; }
+.root-pane .event-kind-dot {
+    -fx-min-width: 1.125em;
+    -fx-pref-width: 1.125em;
+    -fx-max-width: 1.125em;
+    -fx-min-height: 1.125em;
+    -fx-pref-height: 1.125em;
+    -fx-max-height: 1.125em;
+}
+.root-pane .practice-detail-separator { -fx-max-width: 32.5em; }
+.root-pane .practice-problem-entry { -fx-min-width: 0; -fx-max-width: Infinity; }

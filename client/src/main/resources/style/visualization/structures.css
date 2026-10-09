@@ -1,0 +1,206 @@
+/* ========================================================================== */
+/* Visualization Grammar V2 — String logical character track                  */
+/* ========================================================================== */
+.string-cell {
+    -fx-background-color: transparent;
+}
+.string-cell-index {
+    -fx-fill: #8a8a8a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.string-cell-body {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #d2d2d2 #1769d3 transparent;
+    -fx-border-width: 0 1px 2px 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.string-cell-first .string-cell-body,
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent #d2d2d2 #1769d3 #1769d3;
+    -fx-border-width: 0 1px 2px 1px;
+}
+.string-cell-last .string-cell-body,
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent #1769d3 #1769d3 transparent;
+    -fx-border-width: 0 1px 2px 0;
+}
+.string-cell-only .string-cell-body {
+    -fx-border-color: transparent #1769d3 #1769d3 #1769d3;
+    -fx-border-width: 0 1px 2px 1px;
+}
+.string-cell-value {
+    -fx-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 1.35em;
+    -fx-font-weight: 800;
+}
+.string-cell-selection-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
+    -fx-border-insets: -3px;
+}
+.string-cell:selected .string-cell-selection-outline,
+.string-cell:current .string-cell-selection-outline {
+    -fx-border-color: #f51b23;
+}
+.string-cell:observed .string-cell-body {
+    -fx-background-color: #f5b400;
+}
+.string-cell:observed .string-cell-value {
+    -fx-fill: #08090a;
+}
+.string-cell:visited .string-cell-body,
+.string-cell:completed .string-cell-body {
+    -fx-background-color: #1769d3;
+    -fx-border-color: transparent #ffffff #1769d3 transparent;
+}
+.string-cell:visited .string-cell-value,
+.string-cell:completed .string-cell-value {
+    -fx-fill: #ffffff;
+}
+.string-cell-compact .string-cell-value {
+    -fx-font-size: 1.17em;
+}
+.string-cell-dense .string-cell-value {
+    -fx-font-size: 0.92em;
+}
+.string-cell-dense .string-cell-index {
+    -fx-font-size: 8px;
+}
+.string-observation-label {
+    -fx-fill: #444444;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+/* ---------- V3 logical linear structure grammar ---------- */
+.linked-node .visual-node-label {
+    -fx-font-size: 1.05em;
+}
+.linked-node-divider,
+.linked-node-port-divider {
+    -fx-stroke: #d2d2d2;
+    -fx-stroke-width: 1px;
+}
+.linked-port-label {
+    -fx-fill: #444444;
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.linked-port-dot {
+    -fx-fill: #08090a;
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 1px;
+}
+.linked-port-dot.linked-port-empty {
+    -fx-fill: #ffffff;
+    -fx-stroke: #d2d2d2;
+}
+.linked-head-label,
+.linked-tail-label,
+.stack-top-label,
+.queue-front-label,
+.queue-rear-label {
+    -fx-fill: #08090a;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+.linked-next-edge .visual-edge-path,
+.linked-previous-edge .visual-edge-path {
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 2px;
+}
+.linked-next-edge .visual-edge-arrow,
+.linked-previous-edge .visual-edge-arrow {
+    -fx-stroke: #08090a;
+    -fx-fill: #08090a;
+}
+.stack-item .visual-node-shape,
+.queue-item .visual-node-shape {
+    -fx-fill: #ffffff;
+    -fx-stroke: #1769d3;
+    -fx-stroke-width: 2px;
+}
+.stack-item .visual-node-shape {
+    -fx-arc-width: 0;
+    -fx-arc-height: 0;
+}
+.queue-item .visual-node-shape {
+    -fx-arc-width: 0;
+    -fx-arc-height: 0;
+}
+.stack-item .visual-node-label,
+.queue-item .visual-node-label {
+    -fx-fill: #08090a;
+    -fx-font-size: 1.05em;
+    -fx-font-weight: 800;
+}
+.stack-item:highlighted .visual-node-shape,
+.queue-item:highlighted .visual-node-shape {
+    -fx-stroke: #f5b400;
+    -fx-stroke-width: 3px;
+}
+.linear-flow-label {
+    -fx-fill: #444444;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+
+/* ---------- Hash table bucket / entry grammar ---------- */
+.hash-bucket .visual-node-shape {
+    -fx-fill: #08090a;
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 2px;
+}
+.hash-bucket .visual-node-label {
+    -fx-fill: #ffffff;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 0.92em;
+    -fx-font-weight: 800;
+}
+.hash-entry .visual-node-shape {
+    -fx-fill: #ffffff;
+    -fx-stroke: #1769d3;
+    -fx-stroke-width: 2px;
+}
+.hash-entry .visual-node-label {
+    -fx-fill: #08090a;
+    -fx-font-size: 0.96em;
+    -fx-font-weight: 800;
+}
+.hash-link .visual-edge-path {
+    -fx-stroke: #08090a;
+    -fx-stroke-width: 1.8px;
+}
+.hash-link .visual-edge-arrow {
+    -fx-stroke: #08090a;
+    -fx-fill: #08090a;
+}
+
+/* ---------- V5 graph structure grammar ---------- */
+.graph-node-id-label {
+    -fx-text-fill: #444444;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.visual-edge-hit-path {
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 12px;
+}
+.visual-edge:selected .visual-edge-path {
+    -fx-stroke: #f51b23;
+    -fx-fill: transparent;
+    -fx-stroke-width: 3px;
+}
+.visual-edge:selected .visual-edge-arrow {
+    -fx-stroke: #f51b23;
+    -fx-fill: #f51b23;
+}

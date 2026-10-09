@@ -1,0 +1,44 @@
+/* ---------- Virtualized log view ---------- */
+.log-view {
+    -fx-background-color: #0c1319;
+    -fx-control-inner-background: #0c1319;
+    -fx-border-color: #2a3740;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.log-view .virtual-flow,
+.log-view .list-cell {
+    -fx-background-color: transparent;
+}
+
+.log-bullet {
+    -fx-background-radius: 999px;
+}
+
+.log-bullet-debug {
+    -fx-background-color: #7a838b;
+}
+
+.log-bullet-info {
+    -fx-background-color: #5aa7ff;
+}
+
+.log-bullet-warn {
+    -fx-background-color: #e7c75d;
+}
+
+.log-bullet-error {
+    -fx-background-color: #ef6b68;
+}
+
+.log-time {
+    -fx-fill: #7f8991;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+}
+
+.log-message {
+    -fx-fill: #d8dde1;
+    -fx-font-family: "Consolas", "Segoe UI", "Microsoft YaHei";
+}

@@ -1,0 +1,144 @@
+/* ========================================================================== */
+/* Restrained execution timeline — exact semantics, low visual dominance.      */
+/* ========================================================================== */
+.algorithm-dock.timeline-collapsed,
+.algorithm-dock.timeline-expanded {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.timeline-compact-row {
+    -fx-background-color: #ffffff;
+}
+.timeline-compact-track .slider .track {
+    -fx-background-color: #d2d2d2;
+}
+.timeline-compact-track .slider .thumb {
+    -fx-background-color: #f51b23;
+}
+.timeline-position-compact {
+    -fx-text-fill: #444444;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-font-size: 9px;
+    -fx-font-weight: 700;
+}
+.timeline-toggle-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.timeline-details {
+    -fx-background-color: #fafafa;
+    -fx-border-color: #e6e6e6 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.timeline-details .timeline-legend .label {
+    -fx-font-weight: 700;
+    -fx-opacity: 0.78;
+}
+.timeline-current-summary {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 700;
+}
+.timeline-markers {
+    -fx-background-color: transparent;
+}
+.timeline-marker-track {
+    -fx-background-color: #d2d2d2;
+}
+.timeline-markers-compact {
+    -fx-background-color: transparent;
+}
+.timeline-marker-node {
+    -fx-cursor: hand;
+}
+.timeline-marker-node:focused .timeline-marker-symbol {
+    -fx-effect: dropshadow(gaussian, rgba(23,105,211,0.42), 5, 0.2, 0, 0);
+}
+.timeline-marker-aggregate .timeline-marker-symbol {
+    -fx-scale-x: 1.14;
+    -fx-scale-y: 1.14;
+}
+.timeline-marker-cursor {
+    -fx-background-color: #f51b23;
+    -fx-background-radius: 99px;
+    -fx-opacity: 0.62;
+}
+.timeline-legend-toggle {
+    -fx-cursor: hand;
+}
+.timeline-legend-toggle:focused {
+    -fx-underline: true;
+}
+.timeline-legend-muted {
+    -fx-opacity: 0.34;
+}
+.timeline-marker-symbol {
+    -fx-background-color: #8a8a8a;
+}
+.timeline-marker-symbol.timeline-runtime {
+    -fx-background-color: #f51b23;
+    -fx-shape: "M 4 0 L 8 4 L 4 8 L 0 4 Z";
+}
+.timeline-marker-symbol.timeline-structure {
+    -fx-background-color: #1769d3;
+    -fx-background-radius: 0;
+}
+.timeline-marker-symbol.timeline-observation {
+    -fx-background-color: #f5b400;
+    -fx-background-radius: 99px;
+}
+.timeline-marker-symbol.timeline-other {
+    -fx-background-color: #8a8a8a;
+    -fx-background-radius: 99px;
+    -fx-opacity: 0.55;
+}
+.timeline-marker-symbol.timeline-marker-current {
+    -fx-effect: dropshadow(gaussian, rgba(245,27,35,0.55), 9, 0.28, 0, 0);
+    -fx-scale-x: 1.38;
+    -fx-scale-y: 1.38;
+}
+.timeline-marker-sequence {
+    -fx-text-fill: #8a8a8a;
+    -fx-font-family: "Consolas", "Segoe UI";
+}
+.timeline-marker-sequence-current {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+
+
+.timeline-title-accent {
+    -fx-background-color: #f51b23;
+    -fx-background-radius: 99px;
+}
+.timeline-toolbar-title {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.timeline-status-dot {
+    -fx-background-color: #8a8a8a;
+    -fx-background-radius: 99px;
+}
+.timeline-status-dot.timeline-status-running,
+.timeline-status-dot.timeline-status-playing {
+    -fx-background-color: #f51b23;
+}
+.timeline-status-dot.timeline-status-paused {
+    -fx-background-color: #f5b400;
+}
+.timeline-status-dot.timeline-status-completed {
+    -fx-background-color: #1769d3;
+}
+.timeline-status-dot.timeline-status-ready {
+    -fx-background-color: #8a8a8a;
+}
+.timeline-status-label {
+    -fx-text-fill: #8a8a8a;
+    -fx-font-weight: 600;
+}
+.timeline-detail-panel {
+    -fx-background-color: #fafafa;
+}
