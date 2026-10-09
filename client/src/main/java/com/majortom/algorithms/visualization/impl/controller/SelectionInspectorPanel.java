@@ -99,18 +99,27 @@ final class SelectionInspectorPanel {
         selectionPresentation.run();
     }
 
-    void showHashSelection(HashTableController.EntrySelection selection) {
+    void showHashSelection(HashTableController.Selection selection) {
         if (selection == null) { clear(); return; }
-        selectionPresentation = () -> presentSelection(
-                I18N.text("label.workspace.selection.entry"), "#" + selection.id(),
-                selection.key().text() + " → " + selection.value().text(),
-                I18N.text("label.workspace.selection.hash.hint"),
-                I18N.text("label.workspace.selection.hash.detail",
-                        selection.bucketIndex(), selection.key().text(), selection.value().text(),
-                        selection.size(), selection.capacity())
-                        + "\n\n" + selection.key().projection().details()
-                        + "\n\n" + selection.value().projection().details());
-        selectionPresentation.run();
+        if (selection instanceof HashTableController.BucketSelection bucket) {
+            selectionPresentation = () -> presentSelection(
+                    I18N.text("label.workspace.selection.hash.bucket"), "[" + bucket.bucketIndex() + "]",
+                    I18N.text("label.workspace.selection.hash.bucket.value", bucket.entryCount()),
+                    I18N.text("label.workspace.selection.hash.bucket.hint"),
+                    I18N.text("label.workspace.selection.hash.bucket.detail",
+                            bucket.bucketIndex(), bucket.entryCount(), bucket.size(), bucket.capacity()));
+        } else if (selection instanceof HashTableController.EntrySelection entry) {
+            selectionPresentation = () -> presentSelection(
+                    I18N.text("label.workspace.selection.entry"), "#" + entry.id(),
+                    entry.key().text() + " → " + entry.value().text(),
+                    I18N.text("label.workspace.selection.hash.hint"),
+                    I18N.text("label.workspace.selection.hash.detail",
+                            entry.bucketIndex(), entry.key().text(), entry.value().text(),
+                            entry.size(), entry.capacity())
+                            + "\n\n" + entry.key().projection().details()
+                            + "\n\n" + entry.value().projection().details());
+        }
+        if (selectionPresentation != null) selectionPresentation.run();
     }
 
     void showMazeSelection(MazeController.CellSelection selection) {
