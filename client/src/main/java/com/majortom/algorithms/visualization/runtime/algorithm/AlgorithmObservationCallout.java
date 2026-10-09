@@ -39,7 +39,10 @@ public record AlgorithmObservationCallout(String runId, int cursorIndex, long se
     String subject = "";
     String detail = "";
     String name = event.getClass().getSimpleName();
-    if (event instanceof AlgorithmEvent.SearchStarted e) {
+    if (event instanceof AlgorithmEvent.Computed e) {
+      category = "generic"; subject = reference(e.input()) + " → " + reference(e.result());
+      detail = e.operation();
+    } else if (event instanceof AlgorithmEvent.SearchStarted e) {
       category = "search"; subject = reference(e.target()); detail = e.searchId();
     } else if (event instanceof AlgorithmEvent.SearchProbed e) {
       category = "search"; subject = reference(e.candidate()); detail = e.searchId();

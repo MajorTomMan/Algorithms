@@ -56,6 +56,15 @@ public interface AlgorithmEvent extends ExecutionEvent, StatisticsContribution {
     }
   }
 
+  /** A computed value, independent of the algorithm or the Structure implementation. */
+  record Computed(String operation, Reference input, Reference result) implements AlgorithmEvent {
+    public Computed {
+      operation = requireName(operation, "operation");
+      Objects.requireNonNull(input, "input");
+      Objects.requireNonNull(result, "result");
+    }
+  }
+
   record Compared(Reference leftRef, Reference rightRef) implements AlgorithmEvent {
     public Compared {
       Objects.requireNonNull(leftRef, "leftRef");

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.runtime.hash;
 
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.ArrayList;
@@ -12,7 +13,13 @@ public record HashTableViewState(
     int capacity,
     List<Bucket> buckets,
     Mutation mutation,
-    boolean completed) {
+    boolean completed,
+    Observation observation) {
+
+  public HashTableViewState(int capacity, List<Bucket> buckets, Mutation mutation,
+      boolean completed) {
+    this(capacity, buckets, mutation, completed, Observation.none());
+  }
 
   public HashTableViewState {
     if (capacity < 1) {
@@ -20,6 +27,7 @@ public record HashTableViewState(
     }
     buckets = normalizeBuckets(capacity, buckets);
     mutation = Objects.requireNonNull(mutation, "mutation");
+    observation = Objects.requireNonNull(observation, "observation");
   }
 
   public static HashTableViewState empty(int capacity) {
@@ -99,6 +107,30 @@ public record HashTableViewState(
     public static Mutation rehashed() {
       return new Mutation(Type.REHASHED, -1L, -1, -1);
     }
+  }
+
+  /** Transient, algorithm-neutral search facts. No structural mutation is implied. */
+  public record Observation(ObservationType type, AlgorithmEvent.Reference reference) {
+    public Observation {
+      Objects.requireNonNull(type, "type");
+      if (type != ObservationType.NONE) Objects.requireNonNull(reference, "reference");
+    }
+
+    public static Observation none() {
+      return new Observation(ObservationType.NONE, null);
+    }
+
+    public static Observation probed(AlgorithmEvent.Reference reference) {
+      return new Observation(ObservationType.PROBED, reference);
+    }
+
+    public static Observation found(AlgorithmEvent.Reference reference) {
+      return new Observation(ObservationType.FOUND, reference);
+    }
+  }
+
+  public enum ObservationType {
+    NONE, PROBED, FOUND
   }
 
   public enum Type {

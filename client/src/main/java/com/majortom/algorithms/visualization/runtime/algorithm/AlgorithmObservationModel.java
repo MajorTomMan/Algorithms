@@ -57,7 +57,10 @@ public record AlgorithmObservationModel(String runId, long sequence,
     String currentFrontier = state.currentFrontierId();
     List<CallFrame> callStack = state.callStack();
     Pulse pulse = Pulse.none();
-    if (fact instanceof AlgorithmEvent.SearchStarted start) {
+    if (fact instanceof AlgorithmEvent.Computed computed) {
+      pulse = new Pulse(Kind.COMPUTED, computed.operation(),
+          referenceText(computed.input()) + " → " + referenceText(computed.result()));
+    } else if (fact instanceof AlgorithmEvent.SearchStarted start) {
       searches = copyWith(searches, start.searchId(),
           new Search(start.searchId(), referenceText(start.target()), "", "", 0, 0, false));
       currentSearch = start.searchId();
@@ -213,7 +216,7 @@ public record AlgorithmObservationModel(String runId, long sequence,
   }
 
   public enum Kind {
-    NONE, SEARCH_STARTED, SEARCH_PROBED, SEARCH_FOUND, SEARCH_COMPLETED,
+    NONE, COMPUTED, SEARCH_STARTED, SEARCH_PROBED, SEARCH_FOUND, SEARCH_COMPLETED,
     CACHE_HIT, CACHE_MISS, CACHE_STORED, CACHE_EVICTED,
     CANDIDATE_ADDED, CANDIDATE_SELECTED, CANDIDATE_REJECTED, CANDIDATE_PRUNED,
     CALL_ENTERED, CALL_RETURNED, CALL_INVALID

@@ -13,6 +13,12 @@ public final class AlgorithmEvents {
     ExecutionEvents.algorithm(event);
   }
 
+  /** Record a computation without implying any Structure mutation or algorithm-specific policy. */
+  public static void computed(String operation, AlgorithmEvent.Reference input,
+      AlgorithmEvent.Reference result) {
+    emit(new AlgorithmEvent.Computed(operation, input, result));
+  }
+
   public static void searchStarted(String searchId, AlgorithmEvent.Reference target) {
     emit(new AlgorithmEvent.SearchStarted(searchId, target));
   }

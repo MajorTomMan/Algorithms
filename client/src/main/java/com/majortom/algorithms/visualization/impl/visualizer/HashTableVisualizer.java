@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.visualization.BaseVisualizer;
 import com.majortom.algorithms.visualization.animation.api.AnimationControl;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
@@ -208,18 +209,36 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
 
   private void applyPresentation(HashTableViewState state) {
     long mutatedId = state.mutation().entryId();
+    HashTableViewState.Observation observation = state.observation();
+    Object observedKey = observation.reference() instanceof AlgorithmEvent.ValueRef value
+        ? value.value() : null;
+    Integer observedBucket = observation.reference() instanceof AlgorithmEvent.IndexRef index
+        && "hash.bucket".equals(index.source()) ? index.index() : null;
     for (HashTableViewState.Bucket bucket : state.buckets()) {
       NodeView bucketView = nodes.get(HashVisualIds.bucket(bucket.index()));
       if (bucketView != null) {
-        bucketView.setHighlighted(
-            state.mutation().bucketIndex() == bucket.index()
-                && state.mutation().type() != HashTableViewState.Type.NONE);
+        boolean observedHere = observedBucket != null && observedBucket == bucket.index();
+        if (observedKey != null) {
+          for (HashTableViewState.Entry entry : bucket.entries()) {
+            if (java.util.Objects.equals(entry.key().value(), observedKey)) {
+              observedHere = true;
+              break;
+            }
+          }
+        }
+        bucketView.setHighlighted(observedHere
+            || (state.mutation().bucketIndex() == bucket.index()
+                && state.mutation().type() != HashTableViewState.Type.NONE));
         bucketView.setSelected(selectedBucketIndex != null && selectedBucketIndex == bucket.index());
       }
       for (HashTableViewState.Entry entry : bucket.entries()) {
         NodeView entryView = nodes.get(HashVisualIds.entry(entry.id()));
         if (entryView == null) continue;
-        entryView.setHighlighted(entry.id() == mutatedId);
+        boolean probedKey = observedKey != null
+            && java.util.Objects.equals(entry.key().value(), observedKey);
+        entryView.setHighlighted(entry.id() == mutatedId
+            || (probedKey && observation.type() == HashTableViewState.ObservationType.PROBED));
+        entryView.setCurrent(probedKey && observation.type() == HashTableViewState.ObservationType.FOUND);
         entryView.setSelected(selectedEntryId != null && selectedEntryId == entry.id());
       }
     }

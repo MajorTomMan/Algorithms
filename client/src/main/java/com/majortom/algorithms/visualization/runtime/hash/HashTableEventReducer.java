@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.runtime.hash;
 
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.HashStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
@@ -37,6 +38,17 @@ public final class HashTableEventReducer implements EventReducer<HashTableViewSt
   public Reduction<HashTableViewState> reduce(
       HashTableViewState previous, EventEnvelope envelope) {
     Object event = envelope.event();
+
+    if (event instanceof AlgorithmEvent.SearchStarted
+        || event instanceof AlgorithmEvent.SearchCompleted) {
+      return observed(previous, HashTableViewState.Observation.none());
+    }
+    if (event instanceof AlgorithmEvent.SearchProbed probed) {
+      return observed(previous, HashTableViewState.Observation.probed(probed.candidate()));
+    }
+    if (event instanceof AlgorithmEvent.SearchFound found) {
+      return observed(previous, HashTableViewState.Observation.found(found.result()));
+    }
 
     if (event instanceof HashStructureEvent.EntryInserted inserted) {
       Located existing = find(previous, inserted.key());
@@ -163,6 +175,13 @@ public final class HashTableEventReducer implements EventReducer<HashTableViewSt
 
   private static long nextId(HashTableViewState state) {
     return state.entries().stream().mapToLong(HashTableViewState.Entry::id).max().orElse(0L) + 1L;
+  }
+
+  private static Reduction<HashTableViewState> observed(
+      HashTableViewState previous, HashTableViewState.Observation observation) {
+    return Reduction.changed(new HashTableViewState(previous.capacity(), previous.buckets(),
+        HashTableViewState.Mutation.none(), false, observation),
+        EventImportance.TRANSIENT, true);
   }
 
   private static Reduction<HashTableViewState> changed(HashTableViewState state) {
