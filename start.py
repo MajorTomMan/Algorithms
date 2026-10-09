@@ -374,7 +374,18 @@ def run_client(mvn: str) -> None:
     }
 
     try:
-        state["maven"] = process_identity(psutil.Process(process.pid))
+        # Maven 启动失败可能瞬间退出，此时进程 PID 已经不存在。
+        try:
+            if process.poll() is None:
+                state["maven"] = process_identity(psutil.Process(process.pid))
+        except psutil.NoSuchProcess:
+            pass
+        if state["maven"] is None:
+            code = process.wait()
+            if code != 0:
+                raise SystemExit(code)
+            return
+
         save_pid_file(state)
         print(f"已记录启动进程：Maven PID={process.pid}，PID 文件={PID_FILE}")
 
