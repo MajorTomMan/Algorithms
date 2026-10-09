@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 import javafx.geometry.Point2D;
 
@@ -44,7 +45,10 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
   private final HashTableAnimationSceneAdapter animationScene =
       new HashTableAnimationSceneAdapter(surface, nodes, edges);
   private Long selectedEntryId;
+  private Integer selectedBucketIndex;
+  private Long pendingEntryId;
   private LongConsumer selectionListener = ignored -> {};
+  private IntConsumer bucketSelectionListener = ignored -> {};
 
   public HashTableVisualizer() {
     installSurface(surface, new javafx.geometry.Insets(28.0d, 16.0d, 62.0d, 16.0d));
@@ -85,22 +89,38 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
     selectionListener = listener == null ? ignored -> {} : listener;
   }
 
+  public void setBucketSelectionListener(IntConsumer listener) {
+    bucketSelectionListener = listener == null ? ignored -> {} : listener;
+  }
+
   public void clearSelection() {
     selectedEntryId = null;
+    selectedBucketIndex = null;
+    pendingEntryId = null;
   }
 
   public boolean showSelection(long entryId) {
-    if (entryId <= 0L || nodes.get(HashVisualIds.entry(entryId)) == null) {
-      return false;
-    }
+    if (entryId <= 0L) return false;
     selectedEntryId = entryId;
+    selectedBucketIndex = null;
+    pendingEntryId = nodes.containsKey(HashVisualIds.entry(entryId)) ? null : entryId;
     return true;
   }
 
+  public boolean showBucketSelection(int index) {
+    if (index < 0 || !nodes.containsKey(HashVisualIds.bucket(index))) return false;
+    selectedBucketIndex = index;
+    selectedEntryId = null;
+    pendingEntryId = null;
+    return true;
+  }
+
+  public void selectBucket(int index) {
+    if (showBucketSelection(index)) bucketSelectionListener.accept(index);
+  }
+
   public void selectEntry(long entryId) {
-    if (showSelection(entryId)) {
-      selectionListener.accept(entryId);
-    }
+    if (showSelection(entryId)) selectionListener.accept(entryId);
   }
 
   private void reconcileNodes(HashTableViewState state) {
@@ -111,6 +131,10 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
       nodes.computeIfAbsent(bucketId, ignored -> {
         NodeView view = new NodeView(new RectangleGeometry(1.0d, 1.0d), "#" + bucket.index());
         view.getStyleClass().add("hash-bucket");
+        view.setOnMouseClicked(event -> {
+          selectBucket(bucket.index());
+          event.consume();
+        });
         surface.nodeLayer().getChildren().add(view);
         return view;
       }).setText("#" + bucket.index());
@@ -140,6 +164,16 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
       if (removed != null) {
         surface.nodeLayer().getChildren().remove(removed);
       }
+    }
+    if (pendingEntryId != null && nodes.containsKey(HashVisualIds.entry(pendingEntryId))) {
+      pendingEntryId = null;
+    }
+    if (selectedEntryId != null && pendingEntryId == null
+        && !nodes.containsKey(HashVisualIds.entry(selectedEntryId))) {
+      selectedEntryId = null;
+    }
+    if (selectedBucketIndex != null && !nodes.containsKey(HashVisualIds.bucket(selectedBucketIndex))) {
+      selectedBucketIndex = null;
     }
   }
 
@@ -180,7 +214,7 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
         bucketView.setHighlighted(
             state.mutation().bucketIndex() == bucket.index()
                 && state.mutation().type() != HashTableViewState.Type.NONE);
-        bucketView.setSelected(false);
+        bucketView.setSelected(selectedBucketIndex != null && selectedBucketIndex == bucket.index());
       }
       for (HashTableViewState.Entry entry : bucket.entries()) {
         NodeView entryView = nodes.get(HashVisualIds.entry(entry.id()));
@@ -261,6 +295,8 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
     edges.clear();
     nodes.clear();
     selectedEntryId = null;
+    selectedBucketIndex = null;
+    pendingEntryId = null;
     surface.nodeLayer().getChildren().clear();
     surface.edgeLayer().getChildren().clear();
     surface.decorationLayer().getChildren().clear();
