@@ -40,7 +40,7 @@ public final class WorkbenchModules {
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition(StructureIds.MAZE, moduleName(registry, StructureIds.MAZE, "Maze"), new FamilyNavigationMetadata(80, "▧"), () -> new MazeController(renderContext)));
         addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition(StructureIds.HASH, moduleName(registry, StructureIds.HASH, "Hash Table"), new FamilyNavigationMetadata(90, "#"), () -> new HashTableController(renderContext)));
+                new WorkbenchModuleDefinition(StructureIds.HASH, moduleName(registry, StructureIds.HASH, "Hash Table"), new FamilyNavigationMetadata(90, "⌗"), () -> new HashTableController(renderContext)));
         modules.sort(java.util.Comparator.comparingInt(module -> module.navigation().order()));
         return List.copyOf(modules);
     }
