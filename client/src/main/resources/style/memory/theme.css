@@ -1,0 +1,216 @@
+/* ---------- memory profiler ---------- */
+.memory-profile-header {
+    -fx-border-color: transparent transparent #eceef1 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.memory-status-pill {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+}
+.memory-status-live {
+    -fx-background-color: #fff5f5;
+    -fx-border-color: #ffe1e3;
+}
+.memory-status-live .memory-status-dot {
+    -fx-background-color: #f51b23;
+}
+.memory-status-live .memory-status-label {
+    -fx-text-fill: #d61b22;
+}
+.memory-status-complete {
+    -fx-background-color: #f5f7f8;
+    -fx-border-color: #e2e6e9;
+}
+.memory-status-complete .memory-status-dot {
+    -fx-background-color: #7b838c;
+}
+.memory-status-complete .memory-status-label {
+    -fx-text-fill: #606870;
+}
+.memory-status-waiting {
+    -fx-background-color: #fffaf0;
+    -fx-border-color: #f0e4c4;
+}
+.memory-status-waiting .memory-status-dot {
+    -fx-background-color: #d2a338;
+}
+.memory-status-waiting .memory-status-label {
+    -fx-text-fill: #8a6a1f;
+}
+.memory-status-dot {
+    -fx-background-radius: 999px;
+}
+.memory-footprint-section,
+.memory-hero-card {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent #dfe4e8 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-radius: 0;
+}
+.memory-hero-card {
+    -fx-border-color: transparent;
+}
+.memory-hero-title,
+.memory-mini-metric-title {
+    -fx-text-fill: #777e86;
+}
+.memory-hero-value {
+    -fx-text-fill: #111418;
+}
+.memory-mini-metric-card,
+.memory-detail-tile {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent #e3e7ea transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-radius: 0;
+}
+.memory-mini-metric-value {
+    -fx-text-fill: #24282d;
+}
+.memory-panel-card,
+.memory-reference-card {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 0;
+}
+.memory-allocation-chart {
+    -fx-background-color: #fbfcfe;
+    -fx-background-radius: 4px;
+    -fx-border-color: #e3eaf2;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+}
+.memory-chart-grid-line {
+    -fx-stroke: #e8edf3;
+    -fx-stroke-width: 1px;
+}
+.memory-allocation-area {
+    -fx-fill: rgba(40, 109, 208, 0.10);
+    -fx-stroke: transparent;
+}
+.memory-allocation-curve {
+    -fx-fill: transparent;
+    -fx-stroke: #286dd0;
+    -fx-stroke-width: 2px;
+}
+.memory-allocation-future {
+    -fx-fill: transparent;
+    -fx-stroke: rgba(40, 109, 208, 0.36);
+    -fx-stroke-width: 1.5px;
+    -fx-stroke-dash-array: 3 3;
+}
+.memory-allocation-cursor-guide {
+    -fx-stroke: rgba(40, 109, 208, 0.50);
+    -fx-stroke-width: 1px;
+    -fx-stroke-dash-array: 3 3;
+}
+.memory-allocation-cursor {
+    -fx-fill: #286dd0;
+    -fx-stroke: #ffffff;
+    -fx-stroke-width: 1.5px;
+}
+.memory-chart-summary {
+    -fx-text-fill: #286dd0;
+}
+.memory-chart-readout {
+    -fx-text-fill: #3e5f8e;
+    -fx-background-color: #f1f6fd;
+    -fx-background-radius: 4px;
+    -fx-border-color: #d7e4f5;
+    -fx-border-radius: 4px;
+}
+.memory-inline-label,
+.memory-hero-subline-title {
+    -fx-text-fill: #858b92;
+}
+.memory-inline-value,
+.memory-hero-subline-value,
+.memory-chart-samples {
+    -fx-text-fill: #24282d;
+}
+.memory-meta-divider {
+    -fx-background-color: #dfe4e8;
+}
+.memory-chart-axis-label,
+.memory-detail-label {
+    -fx-text-fill: #858b92;
+}
+.memory-detail-value {
+    -fx-text-fill: #24282d;
+}
+.memory-reference-note {
+    -fx-text-fill: #858b92;
+}
+.memory-notice {
+    -fx-text-fill: #725d29;
+    -fx-background-color: #fffaf0;
+    -fx-background-radius: 7px;
+    -fx-border-color: #f0e4c4;
+    -fx-border-radius: 7px;
+}
+.memory-empty-state {
+    -fx-text-fill: #737a82;
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 5px;
+    -fx-border-color: #dfe3e7;
+    -fx-border-style: segments(3, 3);
+    -fx-border-radius: 5px;
+}
+.memory-disclosure {
+    -fx-background-color: transparent;
+    -fx-text-fill: #24282d;
+}
+.memory-disclosure > .title {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 0;
+    -fx-border-color: #dfe4e8;
+    -fx-border-width: 1px;
+    -fx-border-radius: 0;
+}
+.memory-disclosure:expanded > .title {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.memory-disclosure > .content {
+    -fx-background-color: #fbfcfd;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent #dfe4e8 #dfe4e8 #dfe4e8;
+    -fx-border-width: 0 1px 1px 1px;
+    -fx-border-radius: 0;
+}
+.memory-analysis-row {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #e8ebee transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.memory-analysis-name {
+    -fx-text-fill: #737a82;
+}
+.memory-analysis-value {
+    -fx-text-fill: #24282d;
+    -fx-font-weight: 700;
+}
+.memory-footprint-box {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-radius: 0;
+}
+.memory-analysis-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d6dbe0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 7px;
+    -fx-background-radius: 7px;
+    -fx-text-fill: #262a2f;
+}
+.memory-analysis-button:hover {
+    -fx-border-color: #286dd0;
+    -fx-text-fill: #286dd0;
+}

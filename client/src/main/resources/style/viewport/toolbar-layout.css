@@ -1,0 +1,10 @@
+/* ---------- viewport chrome (not visualization geometry) ---------- */
+.root-pane .viewport-toolbar-button {
+    -fx-min-width: 2.10em;
+    -fx-min-height: 2.00em;
+    -fx-padding: 0 0.42em;
+}
+.root-pane .viewport-zoom-label {
+    -fx-min-width: 2.80em;
+    -fx-padding: 0 0.35em;
+}

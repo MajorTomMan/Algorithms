@@ -1,0 +1,32 @@
+/* ---------- left workbench controls ---------- */
+.root-pane .panel-eyebrow,
+.root-pane .panel-section-title,
+.root-pane .inspector-heading,
+.root-pane .history-title { -fx-font-size: 0.74em; }
+.root-pane .panel-gear { -fx-font-size: 1.11em; }
+.root-pane .structure-identity-title { -fx-font-size: 1.17em; }
+.root-pane .structure-identity-meta,
+.root-pane .live-label { -fx-font-size: 0.68em; }
+.root-pane .structure-control-panel .control-label,
+.root-pane .algorithm-control-panel .control-label,
+.root-pane .structure-control-panel .control-section-title,
+.root-pane .algorithm-control-panel .control-section-title { -fx-font-size: 0.92em; }
+.root-pane .structure-control-panel .operation-label,
+.root-pane .algorithm-control-panel .operation-label,
+.root-pane .structure-control-panel .operation-hint,
+.root-pane .algorithm-control-panel .operation-hint { -fx-font-size: 0.85em; }
+.root-pane .structure-control-panel .button,
+.root-pane .algorithm-control-panel .button,
+.root-pane .structure-control-panel .text-field,
+.root-pane .algorithm-control-panel .text-field,
+.root-pane .structure-control-panel .combo-box,
+.root-pane .algorithm-control-panel .combo-box { -fx-font-size: 1em; }
+.root-pane .primary-red-button,
+.root-pane .algorithm-control-panel .primary-red-button { -fx-font-size: 0.80em; }
+.root-pane .summary-caption { -fx-font-size: 0.62em; }
+.root-pane .summary-number,
+.root-pane .summary-number-red,
+.root-pane .summary-number-blue { -fx-font-size: 1.35em; }
+.root-pane .input-source-toggle,
+.root-pane .algorithm-control-panel .input-source-toggle { -fx-font-size: 0.62em; }
+.root-pane .operation-slider .axis { -fx-tick-label-font-size: 0.62em; }

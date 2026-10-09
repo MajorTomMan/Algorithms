@@ -1,0 +1,54 @@
+/* ---------- responsive density: geometry only, never typography ---------- */
+.root-pane:compact-layout .brand-zone { -fx-spacing: 0.56em; }
+.root-pane:compact-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.88em; }
+.root-pane:compact-layout .run-state-badge { -fx-padding: 0.38em 0.62em; }
+.root-pane:compact-layout .structure-control-panel,
+.root-pane:compact-layout .algorithm-control-panel,
+.root-pane:compact-layout .practice-control-panel { -fx-padding: 0 0.62em 0.55em 0.74em; }
+.root-pane:compact-layout .panel-topline { -fx-min-height: 2.45em; -fx-pref-height: 2.45em; }
+.root-pane:compact-layout .structure-identity-block { -fx-padding: 0.55em 0.12em 0.50em 0.12em; }
+.root-pane:compact-layout .input-source-block { -fx-padding: 0.50em 0; }
+.root-pane:compact-layout .structure-control-panel .control-section,
+.root-pane:compact-layout .structure-control-panel .control-card,
+.root-pane:compact-layout .algorithm-control-panel .control-section,
+.root-pane:compact-layout .algorithm-control-panel .control-card,
+.root-pane:compact-layout .structure-control-panel .structure-section,
+.root-pane:compact-layout .algorithm-control-panel .algorithm-section,
+.root-pane:compact-layout .algorithm-control-panel .execution-section { -fx-padding: 0.44em 0 0.50em 0; }
+.root-pane:compact-layout .primary-red-button { -fx-min-height: 2.20em; -fx-pref-height: 2.20em; }
+.root-pane:compact-layout .summary-strip { -fx-padding: 0.38em 0.12em; }
+.root-pane:compact-layout .inspector-content,
+.root-pane:compact-layout .snapshot-tab-content { -fx-padding: 0.62em 0.56em; }
+.root-pane:compact-layout .inspector-section { -fx-padding: 0 0 0.74em 0; }
+.root-pane:compact-layout .history-header { -fx-padding: 0.44em 1.00em 0.32em 1.00em; }
+.root-pane:compact-layout .history-cards { -fx-padding: 0.32em 1.20em 0.50em 1.20em; -fx-spacing: 0.90em; }
+.root-pane:compact-layout .timeline-compact-row { -fx-padding: 0.42em 0.82em; }
+.root-pane:compact-layout .playback-leading-area { -fx-padding: 0 0.82em 0 0; }
+.root-pane:compact-layout .playback-timeline-area { -fx-min-width: 14em; -fx-padding: 0 0.82em; }
+.root-pane:compact-layout .playback-speed-area { -fx-padding: 0 0 0 0.82em; }
+
+.root-pane:narrow-layout .brand-zone { -fx-spacing: 0.40em; }
+.root-pane:narrow-layout .lab-mode-switch .workspace-mode-button { -fx-padding: 0 0.52em; }
+.root-pane:narrow-layout .run-state-badge { -fx-padding: 0.32em 0.50em; }
+.root-pane:narrow-layout .structure-control-panel,
+.root-pane:narrow-layout .algorithm-control-panel,
+.root-pane:narrow-layout .practice-control-panel { -fx-padding: 0 0.50em 0.44em 0.56em; }
+.root-pane:narrow-layout .panel-topline { -fx-min-height: 2.25em; -fx-pref-height: 2.25em; }
+.root-pane:narrow-layout .structure-identity-block { -fx-padding: 0.44em 0.06em 0.38em 0.06em; }
+.root-pane:narrow-layout .input-source-block { -fx-padding: 0.38em 0; -fx-spacing: 0.32em; }
+.root-pane:narrow-layout .structure-control-panel .control-section,
+.root-pane:narrow-layout .structure-control-panel .control-card,
+.root-pane:narrow-layout .algorithm-control-panel .control-section,
+.root-pane:narrow-layout .algorithm-control-panel .control-card,
+.root-pane:narrow-layout .structure-control-panel .structure-section,
+.root-pane:narrow-layout .algorithm-control-panel .algorithm-section,
+.root-pane:narrow-layout .algorithm-control-panel .execution-section { -fx-padding: 0.38em 0 0.44em 0; }
+.root-pane:narrow-layout .primary-red-button { -fx-min-height: 2.05em; -fx-pref-height: 2.05em; }
+.root-pane:narrow-layout .summary-strip { -fx-padding: 0.32em 0.06em; }
+.root-pane:narrow-layout .inspector-content,
+.root-pane:narrow-layout .snapshot-tab-content { -fx-padding: 0.50em 0.38em; }
+.root-pane:narrow-layout .viewport-toolbar { -fx-translate-x: -0.30em; -fx-translate-y: -0.30em; }
+.root-pane:narrow-layout .timeline-compact-row { -fx-padding: 0.38em 0.62em; }
+.root-pane:narrow-layout .playback-leading-area { -fx-padding: 0 0.62em 0 0; }
+.root-pane:narrow-layout .playback-timeline-area { -fx-min-width: 11.5em; -fx-padding: 0 0.62em; }
+.root-pane:narrow-layout .playback-speed-area { -fx-padding: 0 0 0 0.62em; }

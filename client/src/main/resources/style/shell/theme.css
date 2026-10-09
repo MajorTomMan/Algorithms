@@ -1,0 +1,117 @@
+/* ========================================================================== */
+/* 2026-09-05 Algorithms / Lab — shared Structure + Algorithm workbench shell */
+/* Palette is intentionally limited to red / blue / yellow / black / white / gray. */
+/* ========================================================================== */
+
+.root-pane {
+    -fx-background-color: #ffffff;
+    -fx-font-family: "Segoe UI", "Microsoft YaHei", "Arial";
+    -fx-font-size: 12.5px;
+}
+.top-shell {
+    -fx-background-color: #08090a;
+}
+
+.brand-mark {
+    -fx-background-color: transparent;
+}
+
+.brand-mark-red {
+    -fx-fill: #f51b23;
+}
+.brand-mark-white {
+    -fx-fill: #ffffff;
+}
+
+.brand-title-main {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 800;
+}
+
+.brand-subtitle {
+    -fx-text-fill: #bfbfbf;
+    -fx-font-weight: 600;
+}
+
+.lab-mode-switch {
+    -fx-background-color: #191919;
+    -fx-border-color: #3b3b3b;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.lab-mode-switch .workspace-mode-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-text-fill: #d3d3d3;
+    -fx-font-weight: 700;
+}
+
+.lab-mode-switch .workspace-mode-button:hover {
+    -fx-background-color: #252525;
+    -fx-text-fill: #ffffff;
+}
+
+.lab-mode-switch .workspace-mode-button:selected {
+    -fx-background-color: #f51b23;
+    -fx-text-fill: #ffffff;
+}
+
+/* Three-way workspace segmented control. Keep the existing switch visual language. */
+.lab-mode-switch .workspace-mode-first {
+    -fx-background-radius: 4px 0 0 4px;
+    -fx-border-radius: 4px 0 0 4px;
+}
+.lab-mode-switch .workspace-mode-middle {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.lab-mode-switch .workspace-mode-last {
+    -fx-background-radius: 0 4px 4px 0;
+    -fx-border-radius: 0 4px 4px 0;
+}
+.top-context-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 700;
+}
+.run-state-badge {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #171717;
+    -fx-border-color: #f51b23;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-weight: 700;
+}
+.run-state-badge.state-running {
+    -fx-background-color: #f51b23;
+    -fx-border-color: #f51b23;
+}
+.run-state-badge.state-paused {
+    -fx-background-color: #171717;
+    -fx-border-color: #f5b400;
+    -fx-text-fill: #f5b400;
+}
+.run-state-badge.state-completed {
+    -fx-background-color: #171717;
+    -fx-border-color: #1769d3;
+    -fx-text-fill: #1769d3;
+}
+.run-state-badge.state-failed {
+    -fx-background-color: #f51b23;
+    -fx-border-color: #08090a;
+    -fx-text-fill: #ffffff;
+}
+.run-id-label {
+    -fx-text-fill: #d0d0d0;
+    -fx-font-weight: 700;
+}
+
+.workspace-layer,
+.lab-workspace,
+.lab-workspace-body {
+    -fx-background-color: #ffffff;
+}

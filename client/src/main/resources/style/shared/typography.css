@@ -1,0 +1,18 @@
+/* Responsive layout never shrinks typography. FontSettingsService owns the
+ * base size and the semantic roles above stay stable in every viewport tier. */
+
+/* ---------- font-aware text fitting closure ---------- */
+.root-pane .top-context-title,
+.root-pane .input-source-toggle,
+.root-pane .current-step-kind,
+.root-pane .inspector-tabs .tab .tab-label,
+.root-pane #algorithmInspectorTabs .tab .tab-label {
+    -fx-text-overrun: ellipsis;
+    -fx-ellipsis-string: "…";
+}
+
+/* Overlay height is computed from content by MainController; keep wrapping semantic text. */
+.root-pane .selection-overlay .overlay-hint,
+.root-pane .current-step-overlay .current-step-detail {
+    -fx-wrap-text: true;
+}

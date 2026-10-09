@@ -1,6 +1,6 @@
 package com.majortom.algorithms.algorithm.array.sort.impl;
 
-import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
+import com.majortom.algorithms.algorithm.array.sort.BaseSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
@@ -8,7 +8,7 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 /** Max-heap sort over an ArrayStructure<Integer>. */
 @Algorithm(
     id = "heap-sort", name = "堆排序", types = {Integer.class}, structure = ArrayStructure.class)
-public final class IntegerHeapSort extends AbstractIntegerSort {
+public final class HeapSort extends BaseSort<Integer> {
   @Override
   public int compare(Integer left, Integer right) {
     return Integer.compare(left, right);

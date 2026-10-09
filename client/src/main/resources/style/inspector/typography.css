@@ -1,0 +1,31 @@
+/* ---------- inspector / snapshot / diagnostics ---------- */
+.root-pane .inspector-tabs .tab .tab-label,
+.root-pane #algorithmInspectorTabs .tab .tab-label {
+    -fx-font-size: 0.68em;
+    -fx-text-overrun: ellipsis;
+    -fx-ellipsis-string: "…";
+}
+.root-pane .inspector-body { -fx-font-size: 0.74em; }
+.root-pane .snapshot-count,
+.root-pane .history-count { -fx-font-size: 0.62em; }
+.root-pane .snapshot-card-title { -fx-font-size: 0.85em; }
+.root-pane .snapshot-card-state,
+.root-pane .snapshot-card-detail,
+.root-pane .snapshot-empty { -fx-font-size: 0.77em; }
+.root-pane .snapshot-card-action { -fx-font-size: 0.69em; }
+.root-pane .stats-text,
+.root-pane .stats-text-light { -fx-font-size: 0.85em; }
+.root-pane .status-mini { -fx-font-size: 0.68em; }
+.root-pane .event-detail-body { -fx-font-size: 0.68em; }
+.root-pane .event-kind { -fx-font-size: 1.11em; }
+.root-pane .metric-title { -fx-font-size: 0.58em; }
+.root-pane .metric-value,
+.root-pane .overview-value,
+.root-pane .overview-value-blue,
+.root-pane .overview-value-yellow { -fx-font-size: 1.11em; }
+.root-pane .result-preview-value { -fx-font-size: 0.74em; }
+.root-pane .snapshot-preview-badge-title,
+.root-pane .snapshot-preview-notice-title { -fx-font-size: 0.68em; }
+.root-pane .snapshot-preview-badge-id,
+.root-pane .snapshot-preview-notice-id { -fx-font-size: 0.62em; }
+.root-pane .snapshot-preview-notice-hint { -fx-font-size: 0.68em; }

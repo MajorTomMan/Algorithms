@@ -1,0 +1,134 @@
+/* ---------- right inspector ---------- */
+.inspector-panel {
+    -fx-background-color: #ffffff;
+}
+.inspector-tabs {
+    -fx-background-color: #ffffff;
+}
+.inspector-tabs .tab-header-background {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #d2d2d2 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.inspector-tabs .tab {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent;
+}
+.inspector-tabs .tab .tab-label {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 700;
+}
+.inspector-tabs .tab:selected {
+    -fx-border-color: transparent transparent #f51b23 transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+.inspector-tabs .tab:selected .tab-label {
+    -fx-text-fill: #08090a;
+}
+.inspector-tabs .tab-content-area {
+    -fx-background-color: #ffffff;
+}
+/* The native TabPane overflow control remains accessible at narrow widths.
+   Its arrow gets the inspector-overflow-arrow class from WorkbenchUiFramework:
+   a direct selector is needed for this particular skin-owned Region. */
+.inspector-overflow-arrow {
+    -fx-background-color: #444444;
+}
+.inspector-content,
+.snapshot-tab-content {
+    -fx-background-color: #ffffff;
+}
+.inspector-section {
+    -fx-border-color: transparent transparent #e6e6e6 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.inspector-body {
+    -fx-text-fill: #444444;
+    -fx-line-spacing: 6px;
+}
+.mono-body {
+    -fx-font-family: "Consolas", "Segoe UI";
+}
+.snapshot-count,
+.history-count {
+    -fx-text-fill: #8a8a8a;
+}
+.snapshot-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-background-radius: 2px;
+    -fx-border-radius: 2px;
+}
+.snapshot-card-current {
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+.snapshot-card-saved {
+    -fx-cursor: hand;
+}
+.snapshot-card-selected {
+    -fx-border-color: #f51b23;
+    -fx-border-width: 2px;
+}
+.snapshot-card-selected:hover {
+    -fx-border-color: #f51b23;
+}
+.snapshot-card-selected.snapshot-card-algorithm-input {
+    -fx-border-color: #f51b23;
+}
+.snapshot-card:hover {
+    -fx-background-color: #fafafa;
+    -fx-border-color: #8a8a8a;
+}
+.snapshot-card-title {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.snapshot-card-state {
+    -fx-text-fill: #1769d3;
+}
+.snapshot-card-detail {
+    -fx-text-fill: #8a8a8a;
+}
+.snapshot-card-action {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d2d2d2;
+    -fx-text-fill: #08090a;
+}
+.status-mini {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 800;
+}
+.stats-text-light {
+    -fx-text-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+    -fx-line-spacing: 7px;
+}
+.event-kind {
+    -fx-text-fill: #f5b400;
+    -fx-font-weight: 800;
+}
+.result-value {
+    -fx-background-color: #fafafa;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-text-fill: #08090a;
+    -fx-font-family: "Consolas", "Segoe UI";
+}
+.log-view-light,
+.log-view-light .virtual-flow,
+.log-view-light .list-cell {
+    -fx-background-color: #ffffff;
+}
+.log-view-light {
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+}
+.log-view-light .log-time {
+    -fx-fill: #8a8a8a;
+}
+.log-view-light .log-message {
+    -fx-fill: #08090a;
+}

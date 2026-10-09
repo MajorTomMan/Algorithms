@@ -1,0 +1,123 @@
+/* ---------- central visualization canvas ---------- */
+.lab-canvas,
+.visualization-container,
+.visualization-surface,
+.visualization-gesture-pane {
+    -fx-background-color: #ffffff;
+}
+.lab-canvas {
+    -fx-border-color: transparent #d2d2d2 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.visualization-surface {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.viewport-toolbar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #bcbcbc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+.viewport-toolbar-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #d2d2d2 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+}
+.viewport-zoom-label {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+}
+
+.visual-node-shape {
+    -fx-fill: #ffffff;
+    -fx-stroke: #1769d3;
+    -fx-stroke-width: 2.5px;
+}
+.visual-node-label {
+    -fx-fill: #08090a;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+.visual-node:selected .visual-node-shape {
+    -fx-stroke: #f51b23;
+    -fx-stroke-width: 4px;
+}
+.visual-node:highlighted .visual-node-shape {
+    -fx-stroke: #f5b400;
+    -fx-stroke-width: 3px;
+}
+.visual-edge-path,
+.tree-left-edge .visual-edge-path,
+.tree-right-edge .visual-edge-path,
+.tree-child-edge .visual-edge-path,
+.linked-next-edge .visual-edge-path,
+.linked-previous-edge .visual-edge-path,
+.queue-order-edge .visual-edge-path {
+    -fx-stroke: #08090a;
+    -fx-fill: transparent;
+    -fx-stroke-width: 1.8px;
+}
+.visual-edge-arrow,
+.linked-next-edge .visual-edge-arrow,
+.linked-previous-edge .visual-edge-arrow,
+.queue-order-edge .visual-edge-arrow {
+    -fx-stroke: #08090a;
+    -fx-fill: #08090a;
+}
+.visual-edge:highlighted .visual-edge-path {
+    -fx-stroke: #f5b400;
+    -fx-fill: transparent;
+}
+.visual-edge:highlighted .visual-edge-arrow {
+    -fx-stroke: #f5b400;
+    -fx-fill: #f5b400;
+}
+
+.selection-overlay,
+.current-step-overlay {
+    -fx-background-color: rgba(255,255,255,0.97);
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px 1px 1px 4px;
+    -fx-border-insets: 18px 18px 0 0;
+    -fx-background-insets: 18px 18px 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 12, 0.12, 0, 2);
+}
+.selection-overlay {
+    -fx-border-color: transparent transparent transparent #f51b23;
+}
+.current-step-overlay {
+    -fx-border-color: #d2d2d2 #d2d2d2 #d2d2d2 #f51b23;
+    -fx-border-insets: 18px 0 0 18px;
+    -fx-background-insets: 18px 0 0 18px;
+}
+.overlay-eyebrow {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 800;
+}
+.overlay-id {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 800;
+}
+.overlay-caption {
+    -fx-text-fill: #444444;
+}
+.overlay-value {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 800;
+}
+.overlay-hint,
+.current-step-detail {
+    -fx-text-fill: #444444;
+}
+.current-step-sequence {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.current-step-kind {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 800;
+}

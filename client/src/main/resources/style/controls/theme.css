@@ -1,0 +1,156 @@
+/* ---------- left operation panels ---------- */
+.structure-control-panel,
+.algorithm-control-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #d2d2d2 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.panel-topline {
+    -fx-border-color: transparent transparent #d2d2d2 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.panel-eyebrow,
+.panel-section-title,
+.inspector-heading,
+.history-title {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.panel-gear {
+    -fx-text-fill: #08090a;
+}
+.structure-identity-title {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 800;
+}
+.structure-identity-meta {
+    -fx-text-fill: #8a8a8a;
+    -fx-font-weight: 700;
+}
+.live-dot {
+    -fx-background-color: #444444;
+    -fx-background-radius: 999px;
+}
+.live-label {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 700;
+}
+
+.light-scroll-pane,
+.light-scroll-pane > .viewport,
+.structure-control-panel .panel-scroll-pane,
+.structure-control-panel .panel-scroll-pane > .viewport,
+.algorithm-control-panel .panel-scroll-pane,
+.algorithm-control-panel .panel-scroll-pane > .viewport {
+    -fx-background-color: #ffffff;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+}
+
+.structure-control-panel .control-section,
+.structure-control-panel .control-card,
+.algorithm-control-panel .control-section,
+.algorithm-control-panel .control-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #e6e6e6 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.structure-control-panel .structure-section,
+.algorithm-control-panel .algorithm-section,
+.algorithm-control-panel .execution-section {
+    -fx-border-color: transparent transparent #e6e6e6 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.structure-control-panel .control-label,
+.algorithm-control-panel .control-label,
+.structure-control-panel .control-section-title,
+.algorithm-control-panel .control-section-title {
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+}
+.structure-control-panel .section-chevron,
+.algorithm-control-panel .section-chevron,
+.structure-control-panel .operation-label,
+.algorithm-control-panel .operation-label,
+.structure-control-panel .operation-hint,
+.algorithm-control-panel .operation-hint {
+    -fx-text-fill: #8a8a8a;
+}
+.structure-control-panel .dark-textfield,
+.algorithm-control-panel .dark-textfield,
+.structure-control-panel .text-field,
+.algorithm-control-panel .text-field,
+.structure-control-panel .combo-box,
+.algorithm-control-panel .combo-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #bcbcbc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 2px;
+    -fx-background-radius: 2px;
+    -fx-text-fill: #08090a;
+    -fx-prompt-text-fill: #8c8c8c;
+}
+.structure-control-panel .combo-box .list-cell,
+.algorithm-control-panel .combo-box .list-cell {
+    -fx-text-fill: #08090a;
+    -fx-background-color: #ffffff;
+}
+.structure-control-panel .button,
+.algorithm-control-panel .button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #b6b6b6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 2px;
+    -fx-background-radius: 2px;
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+}
+.structure-control-panel .button:hover,
+.algorithm-control-panel .button:hover {
+    -fx-background-color: #f4f4f4;
+}
+.structure-control-panel .btn-ran-red,
+.algorithm-control-panel .btn-ran-red {
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #f51b23;
+}
+.structure-control-panel .btn-ran-blue,
+.algorithm-control-panel .btn-ran-blue {
+    -fx-border-color: #1769d3;
+    -fx-text-fill: #1769d3;
+}
+.structure-control-panel .btn-ran-gold,
+.algorithm-control-panel .btn-ran-gold {
+    -fx-border-color: #f5b400;
+    -fx-text-fill: #8e6800;
+}
+
+.primary-red-button {
+    -fx-background-color: #f51b23;
+    -fx-border-color: #f51b23;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 800;
+}
+.primary-red-button:hover {
+    -fx-background-color: #d90008;
+}
+.summary-strip {
+    -fx-background-color: #fafafa;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+}
+.summary-caption {
+    -fx-text-fill: #444444;
+}
+.summary-number,
+.summary-number-red,
+.summary-number-blue {
+    -fx-font-weight: 800;
+    -fx-text-fill: #08090a;
+}
+.summary-number-red {
+    -fx-text-fill: #f51b23;
+}
+.summary-number-blue {
+    -fx-text-fill: #1769d3;
+}

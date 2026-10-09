@@ -4,6 +4,8 @@ import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
+import com.majortom.algorithms.structure.maze.MazeEndpoints;
+import com.majortom.algorithms.structure.maze.MazeStructure;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,9 +21,21 @@ public final class ArrayMazeSupport {
 
   public static GenerationState initialize(MazeDimensions dimensions) {
     requireArrayDimensions(dimensions);
-    GridPoint entrance = new GridPoint(1, 1);
-    GridPoint exit = new GridPoint(dimensions.rows() - 2, dimensions.columns() - 2);
-    return new GenerationState(new boolean[dimensions.cellCount()], entrance, exit);
+    return initialize(dimensions, new MazeEndpoints(
+        new GridPoint(1, 1), new GridPoint(dimensions.rows() - 2, dimensions.columns() - 2)));
+  }
+
+  public static GenerationState initialize(MazeStructure maze) {
+    java.util.Objects.requireNonNull(maze, "maze");
+    MazeDimensions dimensions = maze.dimensions();
+    requireArrayDimensions(dimensions);
+    return initialize(dimensions, maze.generationEndpoints());
+  }
+
+  private static GenerationState initialize(MazeDimensions dimensions, MazeEndpoints endpoints) {
+    java.util.Objects.requireNonNull(endpoints, "endpoints");
+    return new GenerationState(
+        new boolean[dimensions.cellCount()], endpoints.entrance(), endpoints.exit());
   }
 
   public static void open(MazeDimensions dimensions, boolean[] open, GridPoint point) {

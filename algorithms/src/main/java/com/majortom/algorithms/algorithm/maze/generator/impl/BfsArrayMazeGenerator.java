@@ -22,9 +22,9 @@ public final class BfsArrayMazeGenerator {
   public GridMaze generate(MazeStructure maze) {
     MazeDimensions dimensions = maze.dimensions();
     Random random = new Random();
-    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
+    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(maze);
     ArrayDeque<GridPoint> frontier = new ArrayDeque<>();
-    GridPoint start = new GridPoint(1, 1);
+    GridPoint start = state.entrance();
     ArrayMazeSupport.open(dimensions, state.open(), start);
     frontier.add(start);
     while (!frontier.isEmpty()) {

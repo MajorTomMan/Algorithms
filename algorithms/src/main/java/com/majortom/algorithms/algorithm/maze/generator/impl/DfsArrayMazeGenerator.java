@@ -22,8 +22,8 @@ public final class DfsArrayMazeGenerator {
   public GridMaze generate(MazeStructure maze) {
     MazeDimensions dimensions = maze.dimensions();
     Random random = new Random();
-    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(dimensions);
-    GridPoint start = new GridPoint(1, 1);
+    ArrayMazeSupport.GenerationState state = ArrayMazeSupport.initialize(maze);
+    GridPoint start = state.entrance();
     ArrayMazeSupport.open(dimensions, state.open(), start);
     carve(dimensions, state.open(), start, random);
     return ArrayMazeSupport.complete(dimensions, state);

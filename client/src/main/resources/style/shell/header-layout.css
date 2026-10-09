@@ -1,0 +1,35 @@
+/* ---------- WorkbenchHeader: brand / mode / global actions only ---------- */
+.workbench-header {
+    -fx-background-color: #08090a;
+    -fx-border-color: transparent transparent #2b2b2b transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.workbench-header .brand-zone,
+.workbench-header .lab-mode-switch,
+.workbench-header .header-actions {
+    -fx-alignment: center-left;
+}
+.workbench-header .header-actions { -fx-alignment: center-right; }
+.workbench-header .lab-mode-switch {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+.workbench-header .workspace-mode-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 3px 0;
+    -fx-border-radius: 0;
+    -fx-padding: 0 1.25em;
+    -fx-text-overrun: clip;
+}
+.workbench-header .workspace-mode-button:hover {
+    -fx-background-color: #151515;
+}
+.workbench-header .workspace-mode-button:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #f51b23 transparent;
+    -fx-text-fill: #ffffff;
+}
+.workbench-header .header-actions { -fx-spacing: 0.65em; }

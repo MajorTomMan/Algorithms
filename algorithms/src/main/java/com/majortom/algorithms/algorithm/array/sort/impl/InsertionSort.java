@@ -1,13 +1,13 @@
 package com.majortom.algorithms.algorithm.array.sort.impl;
 
-import com.majortom.algorithms.algorithm.array.sort.AbstractIntegerSort;
+import com.majortom.algorithms.algorithm.array.sort.BaseSort;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.structure.array.ArrayStructure;
 
 /** Insertion sort over an ArrayStructure<Integer>. */
 @Algorithm(id = "insertion-sort", name = "Insertion Sort", types = {Integer.class}, structure = ArrayStructure.class)
-public final class IntegerInsertionSort extends AbstractIntegerSort {
+public final class InsertionSort extends BaseSort<Integer> {
   @Override
   public int compare(Integer left, Integer right) {
     return Integer.compare(left, right);

@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.structure.maze.GridPoint;
+import com.majortom.algorithms.structure.maze.MazeEndpoints;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;
@@ -14,7 +15,15 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
   private final boolean generation;
 
   public MazeEventReducer(int rows, int columns, boolean graphBased) {
-    this.initialState = MazeViewState.generation(rows, columns, graphBased);
+    this(rows, columns, graphBased, graphBased ? null
+        : new MazeEndpoints(new GridPoint(1, 1), new GridPoint(rows - 2, columns - 2)));
+  }
+
+  public MazeEventReducer(int rows, int columns, boolean graphBased,
+      MazeEndpoints endpoints) {
+    this.initialState = MazeViewState.generation(rows, columns, graphBased,
+        endpoints == null ? null : endpoints.entrance(),
+        endpoints == null ? null : endpoints.exit());
     this.generation = true;
   }
 

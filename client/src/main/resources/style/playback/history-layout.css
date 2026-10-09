@@ -1,0 +1,11 @@
+/* ---------- structure history ---------- */
+.root-pane .history-header { -fx-padding: 0.62em 1.45em 0.50em 1.45em; }
+.root-pane .history-collapsed .history-header { -fx-padding: 0.62em 1.45em; }
+.root-pane .history-cards {
+    -fx-padding: 0.50em 1.85em 0.74em 1.85em;
+    -fx-spacing: 1.10em;
+}
+.root-pane .history-cards .snapshot-card {
+    -fx-min-width: 13em;
+    -fx-pref-width: 13em;
+}

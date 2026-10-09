@@ -1,0 +1,39 @@
+/* ---------- read-only Snapshot preview ---------- */
+.snapshot-preview-badge {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #f51b23;
+    -fx-border-width: 0 0 0 4px;
+}
+.snapshot-preview-badge-title {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 900;
+}
+.snapshot-preview-badge-id {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 700;
+}
+.snapshot-preview-notice {
+    -fx-background-color: #fafafa;
+    -fx-border-color: transparent transparent #d2d2d2 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.snapshot-preview-notice-title {
+    -fx-text-fill: #f51b23;
+    -fx-font-weight: 900;
+}
+.snapshot-preview-notice-id {
+    -fx-text-fill: #444444;
+    -fx-font-weight: 700;
+}
+.snapshot-preview-notice-hint {
+    -fx-text-fill: #444444;
+}
+.snapshot-preview-restore-button {
+    -fx-background-color: #f51b23;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 800;
+    -fx-cursor: hand;
+}
+.snapshot-preview-restore-button:hover {
+    -fx-opacity: 0.90;
+}

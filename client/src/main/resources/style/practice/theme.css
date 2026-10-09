@@ -1,0 +1,48 @@
+/* ---------- practice workspace ---------- */
+.practice-control-panel {
+    -fx-background-color: #ffffff;
+}
+.practice-problem-list {
+    -fx-background-color: #ffffff;
+    -fx-control-inner-background: #ffffff;
+    -fx-background-insets: 0;
+    -fx-border-color: #d2d2d2 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+.practice-problem-list .virtual-flow,
+.practice-problem-list .clipped-container,
+.practice-problem-list .sheet {
+    -fx-background-color: #ffffff;
+}
+.practice-problem-list .list-cell {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #08090a;
+    -fx-font-weight: 700;
+    -fx-border-color: transparent transparent #e6e6e6 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.practice-problem-list .list-cell:filled:hover {
+    -fx-background-color: #f4f4f4;
+}
+.practice-problem-list .list-cell:filled:selected,
+.practice-problem-list .list-cell:filled:selected:focused {
+    -fx-background-color: #f51b23;
+    -fx-text-fill: #ffffff;
+}
+.practice-problem-name {
+    -fx-text-fill: #08090a;
+}
+.practice-problem-meta {
+    -fx-text-fill: #444444;
+}
+.practice-problem-entry {
+    -fx-text-fill: #08090a;
+    -fx-background-color: #fafafa;
+    -fx-border-color: #d2d2d2;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+.practice-empty-state {
+    -fx-text-fill: #8a8a8a;
+}
