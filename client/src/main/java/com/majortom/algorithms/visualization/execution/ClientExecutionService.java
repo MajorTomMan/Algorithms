@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -26,6 +27,16 @@ public interface ClientExecutionService extends AutoCloseable {
       EventReducer<S> reducer, Consumer<S> liveStateConsumer, LongSupplier delayMillisSupplier) {
     return start(operationId, operation, reducer,
         ignored -> {}, liveStateConsumer, ignored -> {}, delayMillisSupplier);
+  }
+
+  /** Optional fast-path: all events remain authoritative, only UI notifications are batched. */
+  default <S> ExecutionHandle startBatched(String operationId, ExecutionOperation<?> operation,
+      EventReducer<S> reducer, Consumer<List<EventEnvelope>> liveEventsConsumer,
+      Consumer<S> liveStateConsumer, Consumer<ExecutionStatistics> liveStatisticsConsumer,
+      LongSupplier delayMillisSupplier) {
+    Objects.requireNonNull(liveEventsConsumer, "liveEventsConsumer");
+    return start(operationId, operation, reducer, event -> liveEventsConsumer.accept(List.of(event)),
+        liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
   }
 
   @Override void close();

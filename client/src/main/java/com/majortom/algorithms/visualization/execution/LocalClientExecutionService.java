@@ -42,6 +42,19 @@ public final class LocalClientExecutionService implements ClientExecutionService
   }
 
   @Override
+  public <S> ExecutionHandle startBatched(String operationId, ExecutionOperation<?> operation,
+      EventReducer<S> reducer, Consumer<List<EventEnvelope>> liveEventsConsumer,
+      Consumer<S> liveStateConsumer, Consumer<ExecutionStatistics> liveStatisticsConsumer,
+      LongSupplier delayMillisSupplier) {
+    ClientExecutionService.requireStartArguments(operationId, operation, reducer, ignored -> {},
+        liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
+    Objects.requireNonNull(liveEventsConsumer, "liveEventsConsumer");
+    ExecutionSession session = delegate.startBatched(operationId, operation, reducer,
+        liveEventsConsumer, liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
+    return new LocalExecutionHandle(session);
+  }
+
+  @Override
   public void close() {
     delegate.close();
   }

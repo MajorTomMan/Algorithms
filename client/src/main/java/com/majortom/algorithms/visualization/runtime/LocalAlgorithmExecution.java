@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.runtime;
 
 import com.majortom.algorithms.core.runtime.DefaultExecutionControl;
 import com.majortom.algorithms.core.runtime.EventSink;
+import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionFailure;
 import com.majortom.algorithms.core.runtime.ExecutionAnchorRecorder;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
@@ -11,9 +12,11 @@ import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
 import com.majortom.algorithms.core.runtime.ResourceSampler;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;
 import com.majortom.algorithms.visualization.runtime.ReductionCursor;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -75,16 +78,33 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
   }
 
   public <S> ExecutionSession start(String operationId, ExecutionOperation<?> operation,
-      EventReducer<S> reducer,
-      Consumer<com.majortom.algorithms.core.runtime.EventEnvelope> liveEventConsumer,
+      EventReducer<S> reducer, Consumer<EventEnvelope> liveEventConsumer,
       Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,
       LongSupplier delayMillisSupplier) {
+    Objects.requireNonNull(liveEventConsumer, "liveEventConsumer");
+    return startInternal(operationId, operation, reducer,
+        events -> events.forEach(liveEventConsumer), viewStateConsumer,
+        statisticsConsumer, delayMillisSupplier, 1);
+  }
+
+  public <S> ExecutionSession startBatched(String operationId, ExecutionOperation<?> operation,
+      EventReducer<S> reducer, Consumer<List<EventEnvelope>> liveEventsConsumer,
+      Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,
+      LongSupplier delayMillisSupplier) {
+    return startInternal(operationId, operation, reducer, liveEventsConsumer,
+        viewStateConsumer, statisticsConsumer, delayMillisSupplier, 64);
+  }
+
+  private <S> ExecutionSession startInternal(String operationId, ExecutionOperation<?> operation,
+      EventReducer<S> reducer, Consumer<List<EventEnvelope>> liveEventsConsumer,
+      Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,
+      LongSupplier delayMillisSupplier, int maxBatchSize) {
     Objects.requireNonNull(operationId, "operationId");
     if (operationId.isBlank())
       throw new IllegalArgumentException("operationId must not be blank");
     Objects.requireNonNull(operation, "operation");
     Objects.requireNonNull(reducer, "reducer");
-    Objects.requireNonNull(liveEventConsumer, "liveEventConsumer");
+    Objects.requireNonNull(liveEventsConsumer, "liveEventsConsumer");
     Objects.requireNonNull(viewStateConsumer, "viewStateConsumer");
     Objects.requireNonNull(statisticsConsumer, "statisticsConsumer");
     Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
@@ -102,19 +122,27 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
           new BoundedExecutionEventStore(maximumEventCount);
       ExecutionAnchorRecorder executionAnchorRecorder = new ExecutionAnchorRecorder();
       ReductionCursor<S> reductionCursor = new ReductionCursor<>(reducer);
-      JavaFxEventSink observerSink = new JavaFxEventSink(dispatcher, event -> {
+      JavaFxEventSink observerSink = new JavaFxEventSink(dispatcher, events -> {
         if (generation.get() != runGeneration)
           return;
         synchronized (lifecycleLock) {
           if (closed || generation.get() != runGeneration)
             return;
         }
-        Reduction<S> reduction = reductionCursor.accept(event);
-        if (reduction.visualFrame())
-          viewStateConsumer.accept(reduction.state());
+        S newestVisibleState = null;
+        boolean hasVisualFrame = false;
+        for (EventEnvelope event : events) {
+          Reduction<S> reduction = reductionCursor.accept(event);
+          if (reduction.visualFrame()) {
+            newestVisibleState = reduction.state();
+            hasVisualFrame = true;
+          }
+        }
+        if (hasVisualFrame)
+          viewStateConsumer.accept(newestVisibleState);
         statisticsConsumer.accept(reductionCursor.statistics());
-        liveEventConsumer.accept(event);
-      }, maximumEventCount, delayMillisSupplier);
+        liveEventsConsumer.accept(events);
+      }, maximumEventCount, delayMillisSupplier, RenderRuntime.clock(), maxBatchSize);
       EventSink eventSink = event -> {
         authoritativeEvents.accept(event);
         executionAnchorRecorder.accept(event);

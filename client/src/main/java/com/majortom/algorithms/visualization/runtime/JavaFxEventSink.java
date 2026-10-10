@@ -8,7 +8,9 @@ import com.majortom.algorithms.visualization.render.runtime.RenderRuntime;
 import com.majortom.algorithms.visualization.render.timing.RenderTimer;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +25,8 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
   static final int DEFAULT_CAPACITY = ExecutionLimits.DEFAULT_LIVE_QUEUE_CAPACITY;
 
   private final Consumer<Runnable> dispatcher;
-  private final Consumer<EventEnvelope> consumer;
+  private final Consumer<List<EventEnvelope>> batchConsumer;
+  private final int maxBatchSize;
   private final LongSupplier delayMillisSupplier;
   private final int capacity;
   private final RenderTimer timer;
@@ -59,14 +62,20 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
   JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity,
       LongSupplier delayMillisSupplier, RenderTimer timer) {
+    this(dispatcher, events -> events.forEach(consumer), capacity, delayMillisSupplier, timer, 1);
+  }
+
+  /** Opt-in batching is active only when playback is unpaused and has no delay. */
+  JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<List<EventEnvelope>> batchConsumer,
+      int capacity, LongSupplier delayMillisSupplier, RenderTimer timer, int maxBatchSize) {
     this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
-    this.consumer = Objects.requireNonNull(consumer, "consumer");
+    this.batchConsumer = Objects.requireNonNull(batchConsumer, "batchConsumer");
     this.delayMillisSupplier = Objects.requireNonNull(delayMillisSupplier, "delayMillisSupplier");
     this.timer = Objects.requireNonNull(timer, "timer");
-    if (capacity <= 0) {
-      throw new IllegalArgumentException("capacity must be positive");
-    }
+    if (capacity <= 0 || maxBatchSize <= 0)
+      throw new IllegalArgumentException("capacity and maxBatchSize must be positive");
     this.capacity = capacity;
+    this.maxBatchSize = maxBatchSize;
   }
 
   @Override
@@ -190,7 +199,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
   }
 
   private void dispatchNext() {
-    EventEnvelope event;
+    List<EventEnvelope> batch;
     synchronized (lock) {
       if (closed || dispatcherFailure != null || observerFailure != null) {
         dispatchInFlight = false;
@@ -201,18 +210,22 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
         dispatchInFlight = false;
         return;
       }
-      event = pendingEvents.pollFirst();
-      if (paused && stepPermits > 0) {
-        stepPermits--;
-      }
-      if (event == null) {
+      int count = !paused && maxBatchSize > 1 && delayMillisSupplier.getAsLong() == 0L
+          ? Math.min(maxBatchSize, pendingEvents.size()) : Math.min(1, pendingEvents.size());
+      if (count == 0) {
         dispatchInFlight = false;
         completeDrainedIfIdle();
         return;
       }
+      List<EventEnvelope> selected = new ArrayList<>(count);
+      for (int i = 0; i < count; i++)
+        selected.add(pendingEvents.removeFirst());
+      batch = List.copyOf(selected);
+      if (paused && stepPermits > 0)
+        stepPermits--;
     }
     try {
-      dispatcher.accept(() -> consumeAndContinue(event));
+      dispatcher.accept(() -> consumeAndContinue(batch));
     } catch (RuntimeException exception) {
       synchronized (lock) {
         dispatcherFailure = exception;
@@ -223,7 +236,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
     }
   }
 
-  private void consumeAndContinue(EventEnvelope event) {
+  private void consumeAndContinue(List<EventEnvelope> batch) {
     synchronized (lock) {
       if (closed) {
         dispatchInFlight = false;
@@ -232,7 +245,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
       }
     }
     try {
-      consumer.accept(event);
+      batchConsumer.accept(batch);
     } catch (RuntimeException exception) {
       synchronized (lock) {
         observerFailure = exception;
@@ -246,12 +259,9 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
           completeDrainedIfIdle();
           return;
         }
-        long delay;
-        if (event.event() instanceof ExecutionLifecycleEvent) {
-          delay = 0L;
-        } else {
-          delay = Math.max(0L, delayMillisSupplier.getAsLong());
-        }
+        EventEnvelope last = batch.getLast();
+        long delay = last.event() instanceof ExecutionLifecycleEvent
+            ? 0L : Math.max(0L, delayMillisSupplier.getAsLong());
         scheduleNextLocked(delay);
       }
     }

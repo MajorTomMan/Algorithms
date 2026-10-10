@@ -233,11 +233,11 @@ public abstract class BaseController<S> implements Initializable {
                 memoryScope,
                 operation,
                 true);
-        currentSession = execution.start(
+        currentSession = execution.startBatched(
                 algorithmId,
                 profiledOperation,
                 liveReducer,
-                this::consumeLiveEvent,
+                this::consumeLiveEvents,
                 this::renderLiveState,
                 this::updateLiveStatistics,
                 replayControls::liveDelayMillis);
@@ -591,18 +591,25 @@ public abstract class BaseController<S> implements Initializable {
         refreshStatsDisplay();
     }
 
-    private void consumeLiveEvent(EventEnvelope envelope) {
+    private void consumeLiveEvents(List<EventEnvelope> envelopes) {
         Runnable task = () -> {
-            int eventIndex = ++liveEventIndex;
-            if (!(envelope.event() instanceof LogEvent)) {
-                presentationEventIndex = eventIndex;
-                presentationEvent.set(envelope);
+            EventEnvelope lastVisible = null;
+            EventEnvelope lastEvent = null;
+            for (EventEnvelope envelope : envelopes) {
+                int eventIndex = ++liveEventIndex;
+                if (!(envelope.event() instanceof LogEvent)) {
+                    presentationEventIndex = eventIndex;
+                    lastVisible = envelope;
+                } else if (envelope.event() instanceof LogEvent logEvent) {
+                    logChannels.appendAlgorithmEvent(logEvent, envelope.timestamp());
+                }
+                lastEvent = envelope;
             }
-            if (envelope.event() instanceof LogEvent logEvent) {
-                logChannels.appendAlgorithmEvent(logEvent, envelope.timestamp());
-            }
-            publishPresentationCursor(PresentationCursor.completedEvent(
-                    envelope.runId(), envelope.sequence(), PresentationCursor.Mode.LIVE));
+            if (lastVisible != null)
+                presentationEvent.set(lastVisible);
+            if (lastEvent != null)
+                publishPresentationCursor(PresentationCursor.completedEvent(
+                        lastEvent.runId(), lastEvent.sequence(), PresentationCursor.Mode.LIVE));
         };
         if (FxDispatch.isFxThread()) {
             task.run();
