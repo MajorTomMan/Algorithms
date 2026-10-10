@@ -35,6 +35,10 @@ final class RenderMailbox {
   void enqueue(Submission submission) {
     RenderIntent intent = submission.intent();
     if (intent instanceof StructuralRenderIntent<?> structural) {
+      // A newer structural snapshot must never be overwritten by an older
+      // coalesced presentation after layout commit.
+      supersede(pendingRefresh, intent);
+      pendingRefresh = null;
       if (structural.change() == StructuralChange.MODEL) {
         supersede(pendingModel, intent);
         pendingModel = submission;
@@ -56,6 +60,10 @@ final class RenderMailbox {
         supersede(pendingRefresh, intent);
         pendingRefresh = submission;
       } else if (presentationQueue.size() < maxOrderedPresentations) {
+        // In-order single steps and replay seeks are authoritative: an older
+        // fast-frame or selection refresh cannot run after this newer frame.
+        supersede(pendingRefresh, intent);
+        pendingRefresh = null;
         presentationQueue.addLast(submission);
       } else {
         // Ordered animation frames cannot be merged without changing playback semantics.

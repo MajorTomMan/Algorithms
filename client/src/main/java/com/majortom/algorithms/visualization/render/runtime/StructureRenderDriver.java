@@ -30,18 +30,32 @@ public final class StructureRenderDriver<S> {
 
     /** Stores the latest immutable snapshot and submits it only while the surface is active. */
     public synchronized void render(S data) {
+        render(data, false);
+    }
+
+    /** Only fast live presentations may supersede stale snapshots. */
+    public synchronized void render(S data, boolean coalescible) {
         if (disposed) return;
         lastData = Objects.requireNonNull(data, "data");
-        requestRender();
+        requestRender(coalescible);
     }
 
     /** Replays the latest snapshot through the presenter, typically after surface activation. */
     public synchronized void requestRender() {
+        requestRender(false);
+    }
+
+    private void requestRender(boolean coalescible) {
         if (disposed || !attached || lastData == null) return;
         S current = lastData;
         RenderIntent intent = Objects.requireNonNull(
                 presenter.present(sessionId, lastSubmittedState, current), "presenter result");
         lastSubmittedState = current;
+        // Structural changes always require the normal authoritative model lane.
+        // Only presentation-only frames can safely be coalesced at zero delay.
+        if (coalescible && intent instanceof PresentationRenderIntent<?>) {
+            intent = new PresentationRenderIntent<>(sessionId, current, true);
+        }
         submit(intent);
     }
 

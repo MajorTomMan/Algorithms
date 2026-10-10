@@ -621,7 +621,7 @@ public abstract class BaseController<S> implements Initializable {
     private void renderLiveState(S state) {
         liveVisualFrameCount++;
         runtimeMetricTracker.observe(RUNTIME_OVERVIEW.structures(), structureLogScopeId(), state);
-        renderViewState(state);
+        renderViewState(state, replayControls.liveDelayMillis() == 0L);
     }
 
     private void renderState(S state) {
@@ -659,12 +659,16 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Stores the semantic state separately from the visualizer's drawing cache. */
     protected final void renderViewState(S state) {
+        renderViewState(state, false);
+    }
+
+    private void renderViewState(S state, boolean coalescible) {
         if (state == null) {
             return;
         }
         latestViewState = state;
         if (visualizer != null) {
-            renderDriver.render(state);
+            renderDriver.render(state, coalescible);
         }
         onPresentationStateChanged(state);
     }
