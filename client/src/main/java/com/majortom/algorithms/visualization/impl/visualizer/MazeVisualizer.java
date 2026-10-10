@@ -686,6 +686,16 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         surface.markViewportPristine();
     }
 
+    @Override
+    public void dispose() {
+        if (isDisposed()) return;
+        tileLayer.setOnMouseClicked(null);
+        tileLayer.getChildren().clear();
+        tiles.clear();
+        gridLines.getElements().clear();
+        super.dispose();
+    }
+
     private VisualDensity densityFor(double cellSize) {
         if (cellSize < DENSE_CELL_THRESHOLD) return VisualDensity.DENSE;
         if (cellSize < COMPACT_CELL_THRESHOLD) return VisualDensity.COMPACT;
