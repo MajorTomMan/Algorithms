@@ -62,7 +62,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
   JavaFxEventSink(Consumer<Runnable> dispatcher, Consumer<EventEnvelope> consumer, int capacity,
       LongSupplier delayMillisSupplier, RenderTimer timer) {
-    this(dispatcher, events -> events.forEach(consumer), capacity, delayMillisSupplier, timer, 1);
+    this(dispatcher, singleEventConsumer(consumer), capacity, delayMillisSupplier, timer, 1);
   }
 
   /** Opt-in batching is active only when playback is unpaused and has no delay. */
@@ -76,6 +76,12 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
       throw new IllegalArgumentException("capacity and maxBatchSize must be positive");
     this.capacity = capacity;
     this.maxBatchSize = maxBatchSize;
+  }
+
+  private static Consumer<List<EventEnvelope>> singleEventConsumer(
+      Consumer<EventEnvelope> consumer) {
+    Objects.requireNonNull(consumer, "consumer");
+    return events -> events.forEach(consumer);
   }
 
   @Override
@@ -200,6 +206,7 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
 
   private void dispatchNext() {
     List<EventEnvelope> batch;
+    boolean permittedStep;
     synchronized (lock) {
       if (closed || dispatcherFailure != null || observerFailure != null) {
         dispatchInFlight = false;
@@ -221,11 +228,12 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
       for (int i = 0; i < count; i++)
         selected.add(pendingEvents.removeFirst());
       batch = List.copyOf(selected);
-      if (paused && stepPermits > 0)
+      permittedStep = paused && stepPermits > 0;
+      if (permittedStep)
         stepPermits--;
     }
     try {
-      dispatcher.accept(() -> consumeAndContinue(batch));
+      dispatcher.accept(() -> consumeAndContinue(batch, permittedStep));
     } catch (RuntimeException exception) {
       synchronized (lock) {
         dispatcherFailure = exception;
@@ -236,11 +244,19 @@ public final class JavaFxEventSink implements EventSink, AutoCloseable {
     }
   }
 
-  private void consumeAndContinue(List<EventEnvelope> batch) {
+  private void consumeAndContinue(List<EventEnvelope> batch, boolean permittedStep) {
     synchronized (lock) {
       if (closed) {
         dispatchInFlight = false;
         completeDrainedIfIdle();
+        return;
+      }
+      // A pause can arrive after the timer selected a fast batch but before
+      // JavaFX runs it. Return it to the queue rather than consuming 64 steps.
+      if (paused && !permittedStep) {
+        for (int index = batch.size() - 1; index >= 0; index--)
+          pendingEvents.addFirst(batch.get(index));
+        dispatchInFlight = false;
         return;
       }
     }
