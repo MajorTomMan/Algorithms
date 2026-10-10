@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.array;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -18,6 +19,19 @@ public final class Array<T> implements ArrayStructure<T> {
 
   public Array(Collection<? extends T> values) {
     initialize(values);
+  }
+
+  public static <T> Array<T> fromSnapshot(SequenceSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    return new Array<>(snapshot.values());
+  }
+
+  public SequenceSnapshot<T> snapshot() {
+    java.util.ArrayList<T> values = new java.util.ArrayList<>(size);
+    for (T value : this) {
+      values.add(value);
+    }
+    return new SequenceSnapshot<>(values);
   }
 
   @Override

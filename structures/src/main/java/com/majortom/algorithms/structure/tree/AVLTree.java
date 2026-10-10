@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.tree;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
+import com.majortom.algorithms.core.snapshot.BinaryTreeSnapshot;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -23,6 +24,48 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
     tree.size = validation.count();
     tree.nextNodeId = Math.max(1L, validation.maxId() + 1L);
     return tree;
+  }
+
+  /** Validates and restores the original node IDs and BST/AVL topology. */
+  public static <T extends Comparable<? super T>> AVLTree<T> fromSnapshot(
+      BinaryTreeSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    AVLTree<T> tree = fromRestoredRoot(restoreSnapshotNode(snapshot.root()));
+    if (tree.size() != snapshot.size()) {
+      throw new IllegalArgumentException("AVL snapshot size does not match node count");
+    }
+    return tree;
+  }
+
+  private static <T extends Comparable<? super T>> AVLTreeNode<T> restoreSnapshotNode(
+      BinaryTreeSnapshot.Node<T> node) {
+    if (node == null) {
+      return null;
+    }
+    AVLTreeNode<T> left = restoreSnapshotNode(node.left());
+    AVLTreeNode<T> right = restoreSnapshotNode(node.right());
+    int leftHeight = 0;
+    int rightHeight = 0;
+    if (left != null) {
+      leftHeight = left.getHeight();
+    }
+    if (right != null) {
+      rightHeight = right.getHeight();
+    }
+    int height = Math.max(leftHeight, rightHeight) + 1;
+    return new AVLTreeNode<>(node.id(), node.value(), height, left, right);
+  }
+
+  public BinaryTreeSnapshot<T> snapshot() {
+    return new BinaryTreeSnapshot<>(snapshotNode(root), size);
+  }
+
+  private BinaryTreeSnapshot.Node<T> snapshotNode(AVLTreeNode<T> node) {
+    if (node == null) {
+      return null;
+    }
+    return new BinaryTreeSnapshot.Node<>(
+        node.getId(), node.getValue(), snapshotNode(left(node)), snapshotNode(right(node)));
   }
 
   @Override

@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.maze;
 
 import java.util.Objects;
+import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 
 /** Mutable maze data holder. */
 public final class Maze implements MazeStructure {
@@ -22,6 +23,30 @@ public final class Maze implements MazeStructure {
 
   public Maze(GridMaze grid) {
     initialize(grid);
+  }
+
+  /** A graph-based maze uses a different model and cannot become GridMaze. */
+  public static Maze fromSnapshot(MazeSnapshot snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    if (snapshot.graphBased()) {
+      throw new IllegalArgumentException("graph-based maze cannot be restored as GridMaze");
+    }
+    if (snapshot.entrance() == null && snapshot.exit() == null) {
+      for (Boolean open : snapshot.openCells()) {
+        if (open) {
+          throw new IllegalArgumentException("open maze cells require entrance and exit");
+        }
+      }
+      return new Maze(new MazeDimensions(snapshot.rows(), snapshot.columns()));
+    }
+    if (snapshot.entrance() == null || snapshot.exit() == null) {
+      throw new IllegalArgumentException("maze must have both entrance and exit");
+    }
+    GridPoint entrance = new GridPoint(snapshot.entrance().row(), snapshot.entrance().column());
+    GridPoint exit = new GridPoint(snapshot.exit().row(), snapshot.exit().column());
+    GridMaze grid = new GridMaze(
+        snapshot.rows(), snapshot.columns(), snapshot.openCells(), entrance, exit);
+    return new Maze(grid);
   }
 
   @Override

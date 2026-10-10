@@ -1,20 +1,23 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.GraphDirection;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Graph;
-import com.majortom.algorithms.structure.graph.GraphData;
-import com.majortom.algorithms.structure.graph.GraphInitializer;
-import com.majortom.algorithms.structure.graph.GraphLink;
+import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatchEdge;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-/** Creates example graph data; structure initialization is delegated to GraphInitializer. */
+/** Builds sample graphs and translates manually entered data into the canonical snapshot. */
 final class GraphDataFactory {
     private GraphDataFactory() {}
 
@@ -22,7 +25,7 @@ final class GraphDataFactory {
                                      GraphDirection direction) {
         GraphBatch batch = randomGraphBatch(valueType, nodeCount, edgeCount,
                 direction, new Random(0x5EEDL));
-        return new GraphInitializer<Object>().create(graphData(batch, direction));
+        return Graph.fromSnapshot(snapshot(batch, direction));
     }
 
     private static List<Object> defaultGraphValues(Class<?> valueType, int nodeCount) {
@@ -65,11 +68,32 @@ final class GraphDataFactory {
         return new GraphBatch(List.copyOf(nodes), List.copyOf(edges));
     }
 
-    static GraphData<Object> graphData(GraphBatch batch, GraphDirection direction) {
-        List<GraphLink<Object>> links = new ArrayList<>();
-        for (GraphBatchEdge edge : batch.edges()) {
-            links.add(new GraphLink<>(edge.from(), edge.to(), edge.weight()));
+    static GraphSnapshot<Object> snapshot(GraphBatch batch, GraphDirection direction) {
+        Objects.requireNonNull(batch, "batch");
+        Objects.requireNonNull(direction, "direction");
+
+        Map<Object, Vertex<Object>> verticesByValue = new LinkedHashMap<>();
+        List<GraphSnapshot.Vertex<Object>> vertices = new ArrayList<>();
+        for (Object value : batch.nodes()) {
+            if (verticesByValue.containsKey(value)) {
+                throw new IllegalArgumentException("duplicate graph vertex: " + value);
+            }
+            Vertex<Object> vertex = new Vertex<>(value);
+            verticesByValue.put(value, vertex);
+            vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), value));
         }
-        return new GraphData<>(direction, batch.nodes(), links);
+
+        List<GraphSnapshot.Edge> edges = new ArrayList<>();
+        for (GraphBatchEdge source : batch.edges()) {
+            Vertex<Object> from = verticesByValue.get(source.from());
+            Vertex<Object> to = verticesByValue.get(source.to());
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("edge references an undeclared vertex");
+            }
+            Edge<Object> edge = new Edge<>(from, to, source.weight());
+            edges.add(new GraphSnapshot.Edge(
+                    edge.id(), from.id(), to.id(), edge.weight()));
+        }
+        return new GraphSnapshot<>(direction, vertices, edges);
     }
 }

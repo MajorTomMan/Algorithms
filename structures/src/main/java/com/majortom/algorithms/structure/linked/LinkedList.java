@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -11,6 +12,21 @@ public final class LinkedList<T>
   private ListNode<T> head;
   private ListNode<T> tail;
   private int size;
+
+  public static <T> LinkedList<T> fromSnapshot(SequenceSnapshot<T> snapshot) {
+    java.util.Objects.requireNonNull(snapshot, "snapshot");
+    LinkedList<T> list = new LinkedList<>();
+    list.initialize(snapshot.values());
+    return list;
+  }
+
+  public SequenceSnapshot<T> snapshot() {
+    java.util.ArrayList<T> values = new java.util.ArrayList<>(size);
+    for (T value : this) {
+      values.add(value);
+    }
+    return new SequenceSnapshot<>(values);
+  }
 
   @Override
   public int size() {

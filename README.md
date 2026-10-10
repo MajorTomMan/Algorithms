@@ -27,6 +27,4 @@ python start.py
 
 ## 数据初始化与文件读写
 
-`structures` 模块定义与文件格式无关的 `StructureInitializer<S, D>`，目前提供 `GraphInitializer<T>`、`ArrayInitializer<T>`。图的 `GraphData<T>` 仅包含方向、顶点与带权连接，不保存运行时 ID。
-
-`client` 的 `StructureDataFiles` 把独立 `data-io` 和结构初始化器组合起来，支持图、数组的 JSON 读写。示例和边界说明参见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。
+各结构直接使用已有 Snapshot 作为保存与恢复契约，构造入口优先使用 `fromSnapshot()`，不再为图或数组重复定义独立的数据模型与初始化器。独立的 `data-io` 模块只负责读取/写入数据格式。详细示例见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。

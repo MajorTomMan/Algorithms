@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.string;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
+import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import java.util.Objects;
 
 public final class String implements StringStructure {
@@ -18,6 +19,15 @@ public final class String implements StringStructure {
     characters = new char[Math.max(DEFAULT_CAPACITY, value.length())];
     value.getChars(0, value.length(), characters, 0);
     length = value.length();
+  }
+
+  public static String fromSnapshot(StringSnapshot snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    return new String(snapshot.value());
+  }
+
+  public StringSnapshot snapshot() {
+    return new StringSnapshot(value());
   }
 
   @Override

@@ -7,7 +7,6 @@ import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.structure.array.Array;
-import com.majortom.algorithms.structure.array.ArrayInitializer;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
@@ -158,7 +157,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void replaceArrayContents(List<?> values) {
-        new ArrayInitializer<Object>().initialize(sourceArray, values);
+        sourceArray.initialize(values);
     }
 
     private List<Object> sourceValues() {
@@ -205,7 +204,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId(), runtimeValueType, new SequenceSnapshot<>(sourceValues()));
+        return StructureSnapshot.create(moduleId(), runtimeValueType, sourceArray.snapshot());
     }
 
     @Override

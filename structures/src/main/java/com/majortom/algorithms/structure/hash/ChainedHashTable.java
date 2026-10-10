@@ -2,6 +2,7 @@
 package com.majortom.algorithms.structure.hash;
 
 import com.majortom.algorithms.core.event.structure.HashStructureEvent;
+import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,33 @@ public final class ChainedHashTable<K, V> implements HashTableStructure<K, V>, H
 
     public ChainedHashTable() {
         buckets = newBuckets(DEFAULT_CAPACITY);
+    }
+
+    public static <K, V> ChainedHashTable<K, V> fromSnapshot(HashTableSnapshot<K, V> snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        ChainedHashTable<K, V> table = new ChainedHashTable<>();
+        List<HashTableStructure.Entry<K, V>> entries = new ArrayList<>();
+        for (HashTableSnapshot.Entry<K, V> entry : snapshot.entries()) {
+            int expectedBucket = table.indexFor(entry.key(), snapshot.capacity());
+            if (entry.bucketIndex() != expectedBucket) {
+                throw new IllegalArgumentException("snapshot bucket index does not match key");
+            }
+            entries.add(new HashTableStructure.Entry<>(entry.key(), entry.value()));
+        }
+        table.initialize(snapshot.capacity(), entries);
+        return table;
+    }
+
+    public HashTableSnapshot<K, V> snapshot() {
+        List<HashTableSnapshot.Entry<K, V>> entries = new ArrayList<>();
+        for (int index = 0; index < buckets.length; index++) {
+            Node<K, V> current = buckets[index];
+            while (current != null) {
+                entries.add(new HashTableSnapshot.Entry<>(index, current.key, current.value));
+                current = current.next;
+            }
+        }
+        return new HashTableSnapshot<>(capacity(), entries);
     }
 
     @SuppressWarnings("unchecked")

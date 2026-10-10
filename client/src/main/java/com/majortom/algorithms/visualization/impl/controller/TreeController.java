@@ -765,11 +765,12 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private GeneralTreeSnapshot<Object> currentGeneralSnapshot() {
-        return new GeneralTreeSnapshot<>(snapshotGeneralNode(generalTree.root()), generalTree.size());
+        return generalTree.snapshot();
     }
 
+    @SuppressWarnings("unchecked")
     private BinaryTreeSnapshot<Object> currentAvlSnapshot() {
-        return new BinaryTreeSnapshot<>(snapshotBinaryNode(avlRoot()), avlTree.size());
+        return (BinaryTreeSnapshot<Object>) avlTree.snapshot();
     }
 
     @SuppressWarnings("unchecked")

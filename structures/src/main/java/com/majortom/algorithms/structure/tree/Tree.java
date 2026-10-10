@@ -3,6 +3,8 @@ package com.majortom.algorithms.structure.tree;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -26,6 +28,21 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     tree.root = restoration.node();
     tree.size = restoration.size();
     return tree;
+  }
+
+  public GeneralTreeSnapshot<T> snapshot() {
+    return new GeneralTreeSnapshot<>(snapshotNode(root), size);
+  }
+
+  private GeneralTreeSnapshot.Node<T> snapshotNode(GeneralTreeNode<T> node) {
+    if (node == null) {
+      return null;
+    }
+    List<GeneralTreeSnapshot.Node<T>> children = new ArrayList<>();
+    for (GeneralTreeNode<T> child : node.getChildren()) {
+      children.add(snapshotNode(child));
+    }
+    return new GeneralTreeSnapshot.Node<>(node.getId(), node.getValue(), children);
   }
 
   @Override

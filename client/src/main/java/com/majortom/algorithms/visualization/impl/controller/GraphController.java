@@ -13,8 +13,6 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.structure.graph.Graph;
-import com.majortom.algorithms.structure.graph.GraphData;
-import com.majortom.algorithms.structure.graph.GraphInitializer;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -698,10 +696,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
-        GraphData<Object> data = GraphDataFactory.graphData(batch, activeDirection);
         Graph<Object> replacement;
         try {
-            replacement = new GraphInitializer<Object>().create(data);
+            GraphSnapshot<Object> snapshot = GraphDataFactory.snapshot(batch, activeDirection);
+            replacement = Graph.fromSnapshot(snapshot);
         } catch (IllegalArgumentException exception) {
             logI18n("message.error.bulk_input_invalid");
             return;
