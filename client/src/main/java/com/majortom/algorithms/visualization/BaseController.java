@@ -33,6 +33,7 @@ import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.logging.LogView;
+import com.majortom.algorithms.visualization.metrics.IndexedExecutionEvents;
 import com.majortom.algorithms.visualization.metrics.RuntimeMetricTracker;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewService;
@@ -149,6 +150,8 @@ public abstract class BaseController<S> implements Initializable {
     private long lastLiveStatsRefreshNanos;
     private long completionGeneration;
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
+    // Used only for overview metrics. The authoritative history remains in ExecutionSession.
+    private final IndexedExecutionEvents indexedMetricEvents = new IndexedExecutionEvents();
     private final ControllerMemoryProfile memoryProfile = new ControllerMemoryProfile(this::refreshStatsDisplay);
     private boolean disposed;
 
@@ -590,6 +593,11 @@ public abstract class BaseController<S> implements Initializable {
             EventReducer<S> reducer,
             List<EventEnvelope> events,
             ReducedEventTimeline<S> timeline) {
+        // The observer stream normally contains every event. If a custom
+        // execution adapter omitted callbacks, recover the full authoritative history.
+        if (indexedMetricEvents.size() != events.size()) {
+            indexedMetricEvents.replaceWith(events);
+        }
         stats = timeline.statistics();
         Duration eventSpan = stats.eventSpan();
         ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
@@ -627,6 +635,7 @@ public abstract class BaseController<S> implements Initializable {
 
     private void consumeLiveEvents(List<EventEnvelope> envelopes) {
         Runnable task = () -> {
+            indexedMetricEvents.appendAll(envelopes);
             EventEnvelope lastVisible = null;
             EventEnvelope lastEvent = null;
             for (EventEnvelope envelope : envelopes) {
@@ -876,6 +885,7 @@ public abstract class BaseController<S> implements Initializable {
     private void syncTimelineSlider(int index, int size) { replayControls.syncTimelineSlider(index, size); }
 
     private void clearExecutionState() {
+        indexedMetricEvents.clear();
         if (replayController != null) {
             replayController.close();
             replayController = null;
@@ -1351,7 +1361,7 @@ public abstract class BaseController<S> implements Initializable {
                 state,
                 structureEvents(),
                 stats,
-                executionEvents(),
+                indexedMetricEvents,
                 executionSummary(),
                 currentPlaybackDuration(),
                 runtimeMetricTracker.peaks());

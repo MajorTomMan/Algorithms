@@ -17,6 +17,8 @@ final class MetricsSupport {
 
   static long countEvents(
       List<com.majortom.algorithms.core.runtime.EventEnvelope> events, Class<?> eventType) {
+    if (events instanceof IndexedExecutionEvents indexed)
+      return indexed.count(eventType);
     return events.stream().filter(event -> eventType.isInstance(event.event())).count();
   }
 
