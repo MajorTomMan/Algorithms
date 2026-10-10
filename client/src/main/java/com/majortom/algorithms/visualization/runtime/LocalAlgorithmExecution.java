@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 /** Local Runtime execution with an independent ordered JavaFX playback queue. */
 public final class LocalAlgorithmExecution implements AutoCloseable {
   public static final int DEFAULT_MAXIMUM_EVENT_COUNT = ExecutionLimits.DEFAULT_MAXIMUM_EVENT_COUNT;
+  private static final int RESOURCE_SAMPLE_INTERVAL = 128;
 
   private final ExecutionRuntime runtime;
   private final Consumer<Runnable> dispatcher;
@@ -143,11 +144,18 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
         statisticsConsumer.accept(reductionCursor.statistics());
         liveEventsConsumer.accept(events);
       }, maximumEventCount, delayMillisSupplier, RenderRuntime.clock(), maxBatchSize);
+      // A JVM MXBean query for every observation can cost more than the
+      // algorithm step itself. Periodic best-effort sampling is enough for
+      // peak-memory estimation; ExecutionSession.stop() samples the final state.
+      final int[] eventsSinceSample = {0};
       EventSink eventSink = event -> {
         authoritativeEvents.accept(event);
         executionAnchorRecorder.accept(event);
         observerSink.accept(event);
-        resourceSampler.sample();
+        if (++eventsSinceSample[0] >= RESOURCE_SAMPLE_INTERVAL) {
+          eventsSinceSample[0] = 0;
+          resourceSampler.sample();
+        }
       };
       ExecutionScheduler scheduler =
           ExecutionScheduler.single("algorithm-run-" + runGeneration + "-");
