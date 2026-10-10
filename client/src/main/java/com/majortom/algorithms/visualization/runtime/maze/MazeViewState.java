@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.runtime.maze;
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -68,14 +69,14 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   }
 
   public MazeViewState tracePath(GridPoint point) {
-    java.util.LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(path);
+    LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(path);
     nextPath.add(point);
     return new MazeViewState(rows, columns, openCells, nextPath, visited, point, null, null,
         entrance, exit, false);
   }
 
   public MazeViewState withPath(java.util.Collection<GridPoint> points) {
-    java.util.LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(points);
+    LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(points);
     return new MazeViewState(rows, columns, openCells, nextPath, visited, active, observed,
         backtracked, entrance, exit, false);
   }
