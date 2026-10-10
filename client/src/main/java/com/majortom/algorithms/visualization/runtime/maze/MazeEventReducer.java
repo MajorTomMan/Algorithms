@@ -14,16 +14,9 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
   private final MazeViewState initialState;
   private final boolean generation;
 
-  public MazeEventReducer(int rows, int columns, boolean graphBased) {
-    this(rows, columns, graphBased, graphBased ? null
-        : new MazeEndpoints(new GridPoint(1, 1), new GridPoint(rows - 2, columns - 2)));
-  }
-
-  public MazeEventReducer(int rows, int columns, boolean graphBased,
-      MazeEndpoints endpoints) {
-    this.initialState = MazeViewState.generation(rows, columns, graphBased,
-        endpoints == null ? null : endpoints.entrance(),
-        endpoints == null ? null : endpoints.exit());
+  public MazeEventReducer(int rows, int columns, MazeEndpoints endpoints) {
+    this.initialState = MazeViewState.generation(rows, columns,
+        endpoints.entrance(), endpoints.exit());
     this.generation = true;
   }
 
@@ -44,7 +37,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
       GridPoint point = point(visited.ref());
       if (point != null) {
         MazeViewState next;
-        if (generation && !previous.graphBased()) {
+        if (generation) {
           next = previous.open(point);
         } else {
           next = previous.visit(point);
@@ -56,11 +49,7 @@ public final class MazeEventReducer implements EventReducer<MazeViewState> {
       GridPoint from = point(examined.fromRef());
       GridPoint to = point(examined.toRef());
       if (to != null) {
-        MazeViewState next = previous.examine(from, to);
-        if (generation && previous.graphBased() && from != null) {
-          next = next.connect(from, to);
-        }
-        return observation(next);
+        return observation(previous.examine(from, to));
       }
     }
     if (event instanceof AlgorithmEvent.PathTraced pathTraced) {

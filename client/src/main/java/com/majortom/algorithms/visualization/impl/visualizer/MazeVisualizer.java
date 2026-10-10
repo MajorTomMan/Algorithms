@@ -1,6 +1,5 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
-import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.visualization.CanvasVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.MazeStructureVisualization;
@@ -19,8 +18,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -37,7 +34,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final Color GRID_STROKE = Color.web("#D9DDE2");
     private static final Color GRID_STROKE_COMPACT = GRID_STROKE;
     private static final Color PATH_EDGE = RAN_BLACK.deriveColor(0.0d, 1.0d, 1.0d, 0.46d);
-    private static final Color GRAPH_EDGE_STROKE = RAN_BLACK.deriveColor(0.0d, 1.0d, 1.0d, 0.82d);
     private static final double DENSE_CELL_THRESHOLD = 8.0d;
     private static final double COMPACT_CELL_THRESHOLD = 14.0d;
     private static final Color ROLE_START_FILL = RAN_BLUE;
@@ -112,7 +108,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         density = densityFor(screenCellSize);
         drawBaseGrid(state, cellWidth, cellHeight);
         drawVisited(state, cellWidth, cellHeight);
-        if (state.graphBased()) drawGraphEdges(state, cellWidth, cellHeight);
         drawRoles(state, cellWidth, cellHeight);
         drawObserved(state, cellWidth, cellHeight);
         drawBacktracked(state, cellWidth, cellHeight);
@@ -173,30 +168,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
                 gc.fillRect(x0, y0, Math.max(1.0d, x1 - x0), Math.max(1.0d, y1 - y0));
             }
         }
-    }
-
-    private void drawGraphEdges(MazeViewState state, double cellWidth, double cellHeight) {
-        gc.save();
-        gc.setStroke(GRAPH_EDGE_STROKE);
-        double cellSize = Math.min(cellWidth, cellHeight);
-        gc.setLineWidth(graphEdgeStrokeWidth(cellSize));
-        Set<String> drawn = new HashSet<>();
-        for (MazeSnapshot.Edge edge : state.graphEdges()) {
-            int from = edge.from();
-            int to = edge.to();
-            String key = Math.min(from, to) + ":" + Math.max(from, to);
-            if (!drawn.add(key)) continue;
-            int fromRow = from / state.columns();
-            int fromColumn = from % state.columns();
-            int toRow = to / state.columns();
-            int toColumn = to % state.columns();
-            gc.strokeLine(
-                    (fromColumn + 0.5d) * cellWidth,
-                    (fromRow + 0.5d) * cellHeight,
-                    (toColumn + 0.5d) * cellWidth,
-                    (toRow + 0.5d) * cellHeight);
-        }
-        gc.restore();
     }
 
     private void drawVisited(MazeViewState state, double cellWidth, double cellHeight) {
@@ -476,17 +447,6 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
     private double denseStrokeWidth(double cellSize, double screenPixels) {
         return Math.min(cellSize * 0.50d, worldLengthForScreenPixels(screenPixels));
-    }
-
-    private double graphEdgeStrokeWidth(double cellSize) {
-        if (density == VisualDensity.DENSE) {
-            return denseStrokeWidth(cellSize, 1.25d);
-        }
-        double screenCellSize = cellSize * cameraScale();
-        double maxScreenWidth = screenCellSize * 0.16d;
-        double targetScreenWidth = Math.min(1.75d,
-                Math.max(1.25d, screenCellSize * 0.12d));
-        return worldLengthForScreenPixels(Math.min(maxScreenWidth, targetScreenWidth));
     }
 
     private double visitedStrokeWidth(double cellSize) {
