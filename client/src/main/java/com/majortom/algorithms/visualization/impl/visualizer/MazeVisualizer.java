@@ -188,10 +188,32 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             markDirty(dirty, state, selectedCell);
             // Seeking a long way backward can dirty most of the map.
             if (dirty.cardinality() <= Math.max(128, state.rows() * state.columns() / 4)) {
+                // Many dirty cells in the same tile are cheaper to redraw together
+                // than to issue dozens of save/clip/restore commands.
+                int[] changesPerTile = new int[tiles.size()];
                 for (int index = dirty.nextSetBit(0); index >= 0;
                         index = dirty.nextSetBit(index + 1)) {
-                    paintCell(state, index / state.columns(), index % state.columns(),
-                            cellWidth, cellHeight);
+                    int row = index / state.columns();
+                    int column = index % state.columns();
+                    changesPerTile[tileIndex(row, column)]++;
+                }
+                boolean[] repaintedTiles = new boolean[tiles.size()];
+                for (int index = 0; index < tiles.size(); index++) {
+                    MazeTile tile = tiles.get(index);
+                    int cellCount = (tile.lastRow - tile.firstRow)
+                            * (tile.lastColumn - tile.firstColumn);
+                    int threshold = Math.max(8, Math.min(48, cellCount / 4));
+                    if (changesPerTile[index] >= threshold) {
+                        paintWholeTile(state, tile, cellWidth, cellHeight);
+                        repaintedTiles[index] = true;
+                    }
+                }
+                for (int index = dirty.nextSetBit(0); index >= 0;
+                        index = dirty.nextSetBit(index + 1)) {
+                    int row = index / state.columns();
+                    int column = index % state.columns();
+                    if (!repaintedTiles[tileIndex(row, column)])
+                        paintCell(state, row, column, cellWidth, cellHeight);
                 }
                 rememberPaint(state, width, height);
                 return;
@@ -306,8 +328,12 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         painter.restore();
     }
 
+    private int tileIndex(int row, int column) {
+        return (row / TILE_CELLS) * tileColumns + column / TILE_CELLS;
+    }
+
     private MazeTile tileFor(int row, int column) {
-        return tiles.get((row / TILE_CELLS) * tileColumns + column / TILE_CELLS);
+        return tiles.get(tileIndex(row, column));
     }
 
     private static final class MazeTile {
