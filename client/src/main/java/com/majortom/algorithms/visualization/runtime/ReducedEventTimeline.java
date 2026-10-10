@@ -25,6 +25,7 @@ public final class ReducedEventTimeline<S> {
   private final List<Integer> frameEventIndexes;
   private final List<Checkpoint<S>> checkpoints;
   private final ExecutionStatistics statistics;
+  private final S finalVisibleState;
 
   private int currentIndex = -1;
   private int currentEventIndex = -1;
@@ -44,12 +45,14 @@ public final class ReducedEventTimeline<S> {
 
     ReductionCursor<S> cursor = new ReductionCursor<>(reducer);
     List<Integer> discoveredFrames = new ArrayList<>();
+    S discoveredFinalVisibleState = null;
     List<Checkpoint<S>> discoveredCheckpoints = new ArrayList<>();
     discoveredCheckpoints.add(new Checkpoint<>(-1, cursor.state()));
     for (int eventIndex = 0; eventIndex < this.events.size(); eventIndex++) {
       Reduction<S> reduction = cursor.accept(this.events.get(eventIndex));
       if (reduction.visualFrame()) {
         discoveredFrames.add(eventIndex);
+        discoveredFinalVisibleState = reduction.state();
       }
       if (shouldCheckpoint(eventIndex, reduction, checkpointInterval)) {
         discoveredCheckpoints.add(new Checkpoint<>(eventIndex, reduction.state()));
@@ -58,6 +61,7 @@ public final class ReducedEventTimeline<S> {
     frameEventIndexes = List.copyOf(discoveredFrames);
     checkpoints = List.copyOf(discoveredCheckpoints);
     statistics = cursor.statistics();
+    finalVisibleState = discoveredFinalVisibleState;
     currentState = Objects.requireNonNull(reducer.initialState(), "reducer initial state");
   }
 
@@ -124,6 +128,14 @@ public final class ReducedEventTimeline<S> {
   public S seek(int frameIndex) {
     requireFrameIndex(frameIndex);
     int targetEventIndex = frameEventIndexes.get(frameIndex);
+    // The final visible snapshot was already calculated while indexing the
+    // authoritative event stream. Jumping to the end must not replay every event.
+    if (frameIndex == frameEventIndexes.size() - 1 && targetEventIndex != currentEventIndex) {
+      currentEventIndex = targetEventIndex;
+      currentState = Objects.requireNonNull(finalVisibleState, "final visible state");
+      currentIndex = frameIndex;
+      return currentState;
+    }
     if (targetEventIndex < currentEventIndex) {
       restoreNearestCheckpoint(targetEventIndex);
     }

@@ -53,8 +53,12 @@ public final class PlaybackController<S> implements AutoCloseable {
   }
 
   public void load(List<EventEnvelope> events) {
-    Objects.requireNonNull(events, "events");
-    ReducedEventTimeline<S> loadedTimeline = new ReducedEventTimeline<>(events, reducer);
+    load(new ReducedEventTimeline<>(Objects.requireNonNull(events, "events"), reducer));
+  }
+
+  /** Reuses an indexed timeline instead of reducing the whole event stream again. */
+  public void load(ReducedEventTimeline<S> loadedTimeline) {
+    Objects.requireNonNull(loadedTimeline, "loadedTimeline");
     synchronized (lock) {
       requireOpen();
       timeline = loadedTimeline;

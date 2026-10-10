@@ -563,7 +563,7 @@ public abstract class BaseController<S> implements Initializable {
         lastExecution = executionArchive.createRecord(
                 moduleId(), algorithmId, input, result, error, summary, events, lastExecutionAnchors, timeline.size());
         lastTimeline = timeline;
-        replacePlaybackController(reducer, events);
+        replacePlaybackController(reducer, timeline);
         if (lastExecution != null) {
             executionArchive.retain(lastExecution);
         }
@@ -796,7 +796,7 @@ public abstract class BaseController<S> implements Initializable {
         }
     }
 
-    private void replacePlaybackController(EventReducer<S> reducer, List<EventEnvelope> events) {
+    private void replacePlaybackController(EventReducer<S> reducer, ReducedEventTimeline<S> timeline) {
         if (replayController != null) {
             replayController.close();
         }
@@ -817,7 +817,7 @@ public abstract class BaseController<S> implements Initializable {
                 }
             }
         });
-        replayController.load(events);
+        replayController.load(timeline);
         updatePlaybackSpeed(delayMs.get());
     }
 
