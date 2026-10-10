@@ -61,6 +61,7 @@ public final class PlaybackController<S> implements AutoCloseable {
     Objects.requireNonNull(loadedTimeline, "loadedTimeline");
     synchronized (lock) {
       requireOpen();
+      loadedTimeline.restart();
       timeline = loadedTimeline;
       currentIndex = -1;
       playing = false;
