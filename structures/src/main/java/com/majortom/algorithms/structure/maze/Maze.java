@@ -25,7 +25,7 @@ public final class Maze implements MazeStructure {
     initialize(gridSnapshot(grid));
   }
 
-  /** A graph-based maze uses another model and cannot be restored as GridMaze. */
+  /** Restores a maze from its grid snapshot. */
   public static Maze fromSnapshot(MazeSnapshot snapshot) {
     Maze maze = new Maze();
     maze.initialize(snapshot);
@@ -35,12 +35,6 @@ public final class Maze implements MazeStructure {
   @Override
   public void initialize(MazeSnapshot snapshot) {
     Objects.requireNonNull(snapshot, "snapshot");
-    if (snapshot.graphBased()) {
-      throw new IllegalArgumentException("graph-based maze cannot be restored as GridMaze");
-    }
-    if (!snapshot.graphEdges().isEmpty()) {
-      throw new IllegalArgumentException("grid maze snapshot cannot contain graph edges");
-    }
     MazeDimensions nextDimensions = new MazeDimensions(snapshot.rows(), snapshot.columns());
     GridMaze nextGrid = null;
     if (snapshot.entrance() == null && snapshot.exit() == null) {
@@ -68,15 +62,14 @@ public final class Maze implements MazeStructure {
     return new MazeSnapshot(
         dimensions.rows(), dimensions.columns(),
         java.util.Collections.nCopies(dimensions.cellCount(), false),
-        null, null, java.util.List.of(), false);
+        null, null);
   }
 
   private static MazeSnapshot gridSnapshot(GridMaze grid) {
     Objects.requireNonNull(grid, "grid");
     return new MazeSnapshot(grid.rows(), grid.columns(), grid.openCells(),
         new MazeSnapshot.Cell(grid.entrance().row(), grid.entrance().column()),
-        new MazeSnapshot.Cell(grid.exit().row(), grid.exit().column()),
-        java.util.List.of(), false);
+        new MazeSnapshot.Cell(grid.exit().row(), grid.exit().column()));
   }
 
   public MazeSnapshot snapshot() {
