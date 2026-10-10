@@ -64,7 +64,7 @@ public final class StringController extends BaseModuleController<StringViewState
     public StringController(RenderContext renderContext) {
         super(new StringVisualizer(), new StringPresenter(), "/fxml/StringControls.fxml", renderContext);
         source = structure(StructureIds.STRING, com.majortom.algorithms.structure.string.String.class);
-        source.replace(0, source.length(), "ABABDABACDABABCABAB");
+        source.initialize(new StringSnapshot("ABABDABACDABABCABAB"));
         renderSource();
     }
 
@@ -122,9 +122,10 @@ public final class StringController extends BaseModuleController<StringViewState
     }
 
     private void replaceFromDataTool(String value, String messageKey) {
+        StringSnapshot snapshot = new StringSnapshot(value);
         clearStringSelection();
         if (!executeStructureOperation("bulk-replace", () -> {
-            source.replace(0, source.length(), value);
+            source.initialize(snapshot);
             return null;
         })) {
             return;
@@ -132,7 +133,7 @@ public final class StringController extends BaseModuleController<StringViewState
         if (valueField != null) {
             valueField.setText(value);
         }
-        renderLatestStructureMutation();
+        renderSource();
         if (source.length() > 0) {
             stringVisualizer().selectIndex(0);
         } else {
@@ -272,7 +273,7 @@ public final class StringController extends BaseModuleController<StringViewState
             throw new IllegalArgumentException("snapshot belongs to module " + snapshot.moduleId());
         }
         clearStringSelection();
-        source.replace(0, source.length(), snapshot.state().value());
+        source.initialize(snapshot.state());
         invalidateExecutionForStructureChange();
         if (valueField != null) valueField.setText(source.value());
         renderSource();
@@ -363,7 +364,7 @@ public final class StringController extends BaseModuleController<StringViewState
     @Override
     protected void onResetData() {
         clearStringSelection();
-        source.replace(0, source.length(), "ABABDABACDABABCABAB");
+        source.initialize(new StringSnapshot("ABABDABACDABABCABAB"));
         if (valueField != null) valueField.setText(source.value());
         renderSource();
     }

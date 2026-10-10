@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.structure.tree.GeneralTreeStructure;
+import com.majortom.algorithms.core.snapshot.BinaryTreeSnapshot;
+import com.majortom.algorithms.core.snapshot.GeneralTreeSnapshot;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -11,18 +12,39 @@ import java.util.Random;
 final class TreeInputFactory {
     private TreeInputFactory() {}
 
-    static GeneralTreeStructure.NodeInput<Object> generalInput(List<Object> values, int index) {
+    static GeneralTreeSnapshot<Object> generalSnapshot(List<Object> values) {
+        return new GeneralTreeSnapshot<>(generalNode(values, 0), values.size());
+    }
+
+    private static GeneralTreeSnapshot.Node<Object> generalNode(List<Object> values, int index) {
         if (index >= values.size()) {
             return null;
         }
-        List<GeneralTreeStructure.NodeInput<Object>> children = new ArrayList<>(3);
+        List<GeneralTreeSnapshot.Node<Object>> children = new ArrayList<>(3);
         for (int offset = 1; offset <= 3; offset++) {
-            GeneralTreeStructure.NodeInput<Object> child = generalInput(values, index * 3 + offset);
+            GeneralTreeSnapshot.Node<Object> child = generalNode(values, index * 3 + offset);
             if (child != null) {
                 children.add(child);
             }
         }
-        return new GeneralTreeStructure.NodeInput<>(values.get(index), children);
+        return new GeneralTreeSnapshot.Node<>(index + 1L, values.get(index), children);
+    }
+
+    static BinaryTreeSnapshot<Object> balancedAvlSnapshot(List<Object> sortedValues) {
+        return new BinaryTreeSnapshot<>(
+                balancedAvlNode(sortedValues, 0, sortedValues.size()), sortedValues.size());
+    }
+
+    private static BinaryTreeSnapshot.Node<Object> balancedAvlNode(
+            List<Object> values, int fromInclusive, int toExclusive) {
+        if (fromInclusive >= toExclusive) {
+            return null;
+        }
+        int middle = fromInclusive + (toExclusive - fromInclusive) / 2;
+        return new BinaryTreeSnapshot.Node<>(
+                middle + 1L, values.get(middle),
+                balancedAvlNode(values, fromInclusive, middle),
+                balancedAvlNode(values, middle + 1, toExclusive));
     }
 
     static List<Object> sortedComparableValues(List<Object> values) {

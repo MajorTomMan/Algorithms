@@ -1,6 +1,7 @@
 package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
@@ -22,8 +23,8 @@ public interface GraphStructure<T> {
     return vertexCount() == 0;
   }
 
-  /** Replaces the graph without emitting individual structure events. */
-  void initialize(Map<T, ? extends Map<T, Double>> adjacency);
+  /** Restores a complete graph snapshot without emitting individual structure events. */
+  void initialize(GraphSnapshot<T> snapshot);
 
   Vertex<T> vertex(T value);
   Vertex<T> addVertex(T value);

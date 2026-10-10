@@ -16,17 +16,8 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
   private int size;
 
   public static <T> Tree<T> fromSnapshot(GeneralTreeSnapshot<T> snapshot) {
-    Objects.requireNonNull(snapshot, "snapshot");
-    Set<GeneralTreeSnapshot.Node<T>> identities =
-        Collections.newSetFromMap(new IdentityHashMap<>());
-    Set<Long> nodeIds = new HashSet<>();
-    Restoration<T> restoration = restoreNode(snapshot.root(), identities, nodeIds);
-    if (restoration.size() != snapshot.size()) {
-      throw new IllegalArgumentException("snapshot size does not match tree topology");
-    }
     Tree<T> tree = new Tree<>();
-    tree.root = restoration.node();
-    tree.size = restoration.size();
+    tree.initialize(snapshot);
     return tree;
   }
 
@@ -51,10 +42,17 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
   }
 
   @Override
-  public void initialize(GeneralTreeStructure.NodeInput<T> input) {
-    BulkTree<T> initialized = initializeNode(input);
-    root = initialized.node();
-    size = initialized.size();
+  public void initialize(GeneralTreeSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    Set<GeneralTreeSnapshot.Node<T>> identities =
+        Collections.newSetFromMap(new IdentityHashMap<>());
+    Set<Long> nodeIds = new HashSet<>();
+    Restoration<T> restored = restoreNode(snapshot.root(), identities, nodeIds);
+    if (restored.size() != snapshot.size()) {
+      throw new IllegalArgumentException("snapshot size does not match tree topology");
+    }
+    root = restored.node();
+    size = restored.size();
   }
 
   @Override
@@ -298,21 +296,6 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     return Objects.requireNonNull(node, "node");
   }
 
-  private static <T> BulkTree<T> initializeNode(GeneralTreeStructure.NodeInput<T> input) {
-    if (input == null) {
-      return new BulkTree<>(null, 0);
-    }
-    java.util.List<GeneralTreeNode<T>> children =
-        new java.util.ArrayList<>(input.children().size());
-    int size = 1;
-    for (GeneralTreeStructure.NodeInput<T> child : input.children()) {
-      BulkTree<T> initializedChild = initializeNode(Objects.requireNonNull(child, "child"));
-      children.add(initializedChild.node());
-      size += initializedChild.size();
-    }
-    return new BulkTree<>(new GeneralTreeNode<>(input.value(), children), size);
-  }
-
   private static <T> Restoration<T> restoreNode(GeneralTreeSnapshot.Node<T> node,
       Set<GeneralTreeSnapshot.Node<T>> identities, Set<Long> nodeIds) {
     if (node == null) {
@@ -338,8 +321,6 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
     }
     return new Restoration<>(new GeneralTreeNode<>(node.id(), node.value(), children), size);
   }
-
-  private record BulkTree<T>(GeneralTreeNode<T> node, int size) {}
 
   private record Restoration<T>(GeneralTreeNode<T> node, int size) {}
 }

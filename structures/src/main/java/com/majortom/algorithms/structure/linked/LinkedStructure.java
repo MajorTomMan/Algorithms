@@ -4,7 +4,7 @@ import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
-import java.util.Collection;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 
 @Structure(id = StructureIds.LINKED_LIST, name = "Linked List", module = StructureModule.LINKED_LIST,
     implementation = LinkedList.class)
@@ -16,7 +16,7 @@ public interface LinkedStructure<T> extends Iterable<T> {
   }
 
   /** Replaces the complete linked topology through the trusted bulk-load path. */
-  void initialize(Collection<? extends T> values);
+  void initialize(SequenceSnapshot<T> snapshot);
 
   T get(int index);
   void insert(int index, T value);

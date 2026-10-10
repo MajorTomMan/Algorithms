@@ -252,7 +252,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void seed() {
-        linkedList.initialize(defaultValues());
+        linkedList.initialize(new SequenceSnapshot<>(defaultValues()));
     }
 
     private List<Object> defaultValues() {
@@ -294,7 +294,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     private void replaceValues(List<Object> values, String operationId, String messageKey) {
         if (!executeStructureOperation(operationId, () -> {
-            linkedList.initialize(values);
+            linkedList.initialize(new SequenceSnapshot<>(values));
             return null;
         })) {
             return;
@@ -361,7 +361,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
                 ? values()
                 : algorithmInputSnapshot.state().values();
         LinkedList<Object> input = new LinkedList<>();
-        input.initialize(inputValues);
+        input.initialize(new SequenceSnapshot<>(inputValues));
         LinkedListViewState initialState = LinkedListViewState.source(input.getHead());
         var descriptor = AlgorithmCatalog.compatibleDescriptor(
                 LinkedStructure.class, AlgorithmTypeSignature.of(runtimeValueType), algorithmId);
@@ -396,7 +396,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
         }
         snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
-        linkedList.initialize(snapshot.state().values());
+        linkedList.initialize(snapshot.state());
         renderStructureState(currentState());
     }
 
@@ -529,7 +529,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
     }
 
     private void clearWithoutRuntime() {
-        linkedList.initialize(List.of());
+        linkedList.initialize(new SequenceSnapshot<>(List.of()));
     }
 
     private void configureControls() {

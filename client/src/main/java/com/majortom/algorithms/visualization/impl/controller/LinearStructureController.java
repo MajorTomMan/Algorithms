@@ -242,7 +242,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void seed() {
-        linkedList.initialize(defaultValues());
+        linkedList.initialize(new SequenceSnapshot<>(defaultValues()));
     }
 
     private List<Object> defaultValues() {
@@ -285,7 +285,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     private void replaceValues(List<Object> values, String operationId, String messageKey) {
         if (!executeStructureOperation(operationId, () -> {
-            linkedList.initialize(values);
+            linkedList.initialize(new SequenceSnapshot<>(values));
             return null;
         })) {
             return;
@@ -360,7 +360,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
                 ? values()
                 : algorithmInputSnapshot.state().values();
         LinkedList<Object> input = new LinkedList<>();
-        input.initialize(inputValues);
+        input.initialize(new SequenceSnapshot<>(inputValues));
         var descriptor = AlgorithmCatalog.descriptor(
                 moduleId, AlgorithmTypeSignature.of(runtimeValueType), algorithmId);
         Object algorithmInput = kind == Kind.STACK ? (StackStructure<Object>) input : (QueueStructure<Object>) input;
@@ -384,7 +384,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public StructureSnapshot<SequenceSnapshot<Object>> captureStructureSnapshot() {
-        return StructureSnapshot.create(moduleId, runtimeValueType, new SequenceSnapshot<>(values()));
+        return StructureSnapshot.create(moduleId, runtimeValueType, linkedList.snapshot());
     }
 
     @Override
@@ -394,7 +394,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         }
         snapshot.requireValueType(runtimeValueType);
         clearVisualSelection();
-        linkedList.initialize(snapshot.state().values());
+        linkedList.initialize(snapshot.state());
         renderStructureState(currentState());
     }
 
@@ -531,7 +531,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
     }
 
     private void clearWithoutRuntime() {
-        linkedList.initialize(List.of());
+        linkedList.initialize(new SequenceSnapshot<>(List.of()));
     }
 
     @Override

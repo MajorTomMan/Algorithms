@@ -29,12 +29,21 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
   /** Validates and restores the original node IDs and BST/AVL topology. */
   public static <T extends Comparable<? super T>> AVLTree<T> fromSnapshot(
       BinaryTreeSnapshot<T> snapshot) {
+    AVLTree<T> tree = new AVLTree<>();
+    tree.initialize(snapshot);
+    return tree;
+  }
+
+  @Override
+  public void initialize(BinaryTreeSnapshot<T> snapshot) {
     Objects.requireNonNull(snapshot, "snapshot");
-    AVLTree<T> tree = fromRestoredRoot(restoreSnapshotNode(snapshot.root()));
-    if (tree.size() != snapshot.size()) {
+    AVLTree<T> restored = fromRestoredRoot(restoreSnapshotNode(snapshot.root()));
+    if (restored.size() != snapshot.size()) {
       throw new IllegalArgumentException("AVL snapshot size does not match node count");
     }
-    return tree;
+    root = restored.root;
+    size = restored.size;
+    nextNodeId = restored.nextNodeId;
   }
 
   private static <T extends Comparable<? super T>> AVLTreeNode<T> restoreSnapshotNode(
@@ -76,27 +85,6 @@ public final class AVLTree<T extends Comparable<? super T>> implements AvlTreeSt
   @Override
   public AVLTreeNode<T> root() {
     return root;
-  }
-
-  @Override
-  public void initializeSorted(List<? extends T> sortedUniqueValues) {
-    Objects.requireNonNull(sortedUniqueValues, "sortedUniqueValues");
-    nextNodeId = 1L;
-    root = buildBalanced(sortedUniqueValues, 0, sortedUniqueValues.size());
-    size = sortedUniqueValues.size();
-  }
-
-  private AVLTreeNode<T> buildBalanced(
-      List<? extends T> values, int fromInclusive, int toExclusive) {
-    if (fromInclusive >= toExclusive) {
-      return null;
-    }
-    int middle = fromInclusive + (toExclusive - fromInclusive) / 2;
-    T value = Objects.requireNonNull(values.get(middle), "bulk AVL node value");
-    AVLTreeNode<T> left = buildBalanced(values, fromInclusive, middle);
-    AVLTreeNode<T> right = buildBalanced(values, middle + 1, toExclusive);
-    int height = Math.max(height(left), height(right)) + 1;
-    return new AVLTreeNode<>(nextNodeId++, value, height, left, right);
   }
 
   @Override

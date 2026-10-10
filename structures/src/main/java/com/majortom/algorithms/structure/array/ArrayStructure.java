@@ -3,7 +3,7 @@ package com.majortom.algorithms.structure.array;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
-import java.util.Collection;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 
 @Structure(
     id = StructureIds.ARRAY, name = "Array", module = StructureModule.ARRAY, implementation = Array.class)
@@ -15,7 +15,7 @@ public interface ArrayStructure<T> extends Iterable<T> {
   }
 
   /** Replaces the complete array state through the trusted bulk-load path. */
-  void initialize(Collection<? extends T> values);
+  void initialize(SequenceSnapshot<T> snapshot);
 
   T get(int index);
   T set(int index, T value);

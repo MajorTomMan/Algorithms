@@ -3,7 +3,7 @@ package com.majortom.algorithms.structure.linked;
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Objects;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -16,7 +16,7 @@ public final class LinkedList<T>
   public static <T> LinkedList<T> fromSnapshot(SequenceSnapshot<T> snapshot) {
     java.util.Objects.requireNonNull(snapshot, "snapshot");
     LinkedList<T> list = new LinkedList<>();
-    list.initialize(snapshot.values());
+    list.initialize(snapshot);
     return list;
   }
 
@@ -34,8 +34,9 @@ public final class LinkedList<T>
   }
 
   @Override
-  public void initialize(Collection<? extends T> values) {
-    java.util.Objects.requireNonNull(values, "values");
+  public void initialize(SequenceSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    java.util.List<T> values = snapshot.values();
     ArrayList<ListNode<T>> nodes = new ArrayList<>(values.size());
     for (T value : values) {
       nodes.add(new ListNode<>(value));

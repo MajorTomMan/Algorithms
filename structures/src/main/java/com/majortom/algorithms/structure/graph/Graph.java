@@ -31,6 +31,12 @@ public final class Graph<T> implements GraphStructure<T> {
   public static <T> Graph<T> fromSnapshot(GraphSnapshot<T> snapshot) {
     Objects.requireNonNull(snapshot, "snapshot");
     Graph<T> graph = new Graph<>(snapshot.direction());
+    graph.initialize(snapshot);
+    return graph;
+  }
+
+  private static <T> Graph<T> restore(GraphSnapshot<T> snapshot) {
+    Graph<T> graph = new Graph<>(snapshot.direction());
     Map<Long, Vertex<T>> verticesById = new LinkedHashMap<>();
     Set<T> values = new HashSet<>();
 
@@ -96,55 +102,20 @@ public final class Graph<T> implements GraphStructure<T> {
   }
 
   @Override
-  public void initialize(Map<T, ? extends Map<T, Double>> source) {
-    Objects.requireNonNull(source, "adjacency");
-    LinkedHashMap<T, Vertex<T>> newVertices = new LinkedHashMap<>();
-
-    for (Map.Entry<T, ? extends Map<T, Double>> entry : source.entrySet()) {
-      T fromValue = Objects.requireNonNull(entry.getKey(), "vertex value");
-      newVertices.computeIfAbsent(fromValue, Vertex::new);
-      Map<T, Double> neighbors = Objects.requireNonNull(entry.getValue(), "neighbors");
-      for (Map.Entry<T, Double> neighbor : neighbors.entrySet()) {
-        T toValue = Objects.requireNonNull(neighbor.getKey(), "neighbor value");
-        requireFinite(Objects.requireNonNull(neighbor.getValue(), "edge weight"));
-        newVertices.computeIfAbsent(toValue, Vertex::new);
-      }
+  public void initialize(GraphSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    if (direction != snapshot.direction()) {
+      throw new IllegalArgumentException("snapshot direction must match the graph direction");
     }
 
-    LinkedHashMap<Vertex<T>, LinkedHashMap<Vertex<T>, Edge<T>>> newAdjacency =
-        new LinkedHashMap<>();
-    LinkedHashMap<Long, Edge<T>> newEdges = new LinkedHashMap<>();
-    for (Vertex<T> vertex : newVertices.values()) {
-      newAdjacency.put(vertex, new LinkedHashMap<>());
-    }
-
-    for (Map.Entry<T, ? extends Map<T, Double>> entry : source.entrySet()) {
-      Vertex<T> from = newVertices.get(entry.getKey());
-      for (Map.Entry<T, Double> neighbor : entry.getValue().entrySet()) {
-        Vertex<T> to = newVertices.get(neighbor.getKey());
-        double weight = neighbor.getValue();
-        Edge<T> previous = newAdjacency.get(from).get(to);
-        if (previous != null) {
-          if (Double.compare(previous.weight(), weight) != 0) {
-            throw new IllegalArgumentException("conflicting weights for undirected edge");
-          }
-          continue;
-        }
-        Edge<T> edge = new Edge<>(from, to, weight);
-        newEdges.put(edge.id(), edge);
-        newAdjacency.get(from).put(to, edge);
-        if (!isDirected()) {
-          newAdjacency.get(to).put(from, edge);
-        }
-      }
-    }
-
+    // Validate and reconstruct everything before touching the current graph.
+    Graph<T> restored = restore(snapshot);
     verticesByValue.clear();
-    verticesByValue.putAll(newVertices);
+    verticesByValue.putAll(restored.verticesByValue);
     adjacency.clear();
-    adjacency.putAll(newAdjacency);
+    adjacency.putAll(restored.adjacency);
     edgesById.clear();
-    edgesById.putAll(newEdges);
+    edgesById.putAll(restored.edgesById);
   }
 
   @Override

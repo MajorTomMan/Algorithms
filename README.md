@@ -27,4 +27,4 @@ python start.py
 
 ## 数据初始化与文件读写
 
-各结构直接使用已有 Snapshot 作为保存与恢复契约，构造入口优先使用 `fromSnapshot()`，不再为图或数组重复定义独立的数据模型与初始化器。独立的 `data-io` 模块只负责读取/写入数据格式。详细示例见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。
+各结构统一通过 `initialize(snapshot)` 替换已有结构状态，`fromSnapshot(snapshot)` 负责创建新结构，两者复用同一套验证和重建逻辑。`data-io` 模块只负责读取/写入数据格式。详细示例见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。

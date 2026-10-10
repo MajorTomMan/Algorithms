@@ -2,6 +2,7 @@ package com.majortom.algorithms.structure.array;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
+import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -18,12 +19,13 @@ public final class Array<T> implements ArrayStructure<T> {
   }
 
   public Array(Collection<? extends T> values) {
-    initialize(values);
+    initialize(new SequenceSnapshot<>(java.util.List.copyOf(values)));
   }
 
   public static <T> Array<T> fromSnapshot(SequenceSnapshot<T> snapshot) {
-    Objects.requireNonNull(snapshot, "snapshot");
-    return new Array<>(snapshot.values());
+    Array<T> array = new Array<>();
+    array.initialize(snapshot);
+    return array;
   }
 
   public SequenceSnapshot<T> snapshot() {
@@ -35,8 +37,9 @@ public final class Array<T> implements ArrayStructure<T> {
   }
 
   @Override
-  public void initialize(Collection<? extends T> values) {
-    Objects.requireNonNull(values, "values");
+  public void initialize(SequenceSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    java.util.List<T> values = snapshot.values();
     Object[] initialized = new Object[Math.max(DEFAULT_CAPACITY, values.size())];
     int index = 0;
     for (T value : values) {

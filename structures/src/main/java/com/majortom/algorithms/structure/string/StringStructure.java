@@ -1,12 +1,15 @@
 package com.majortom.algorithms.structure.string;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.snapshot.StringSnapshot;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
 @Structure(
     id = StructureIds.STRING, name = "String", module = StructureModule.STRING, implementation = String.class)
 public interface StringStructure {
+  void initialize(StringSnapshot snapshot);
+
   int length();
 
   default boolean isEmpty() {

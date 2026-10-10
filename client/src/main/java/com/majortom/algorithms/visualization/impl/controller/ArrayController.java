@@ -157,7 +157,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void replaceArrayContents(List<?> values) {
-        sourceArray.initialize(values);
+        sourceArray.initialize(new SequenceSnapshot<>(new ArrayList<Object>(values)));
     }
 
     private List<Object> sourceValues() {
@@ -214,7 +214,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         }
         snapshot.requireValueType(runtimeValueType);
         clearArraySelection();
-        replaceArrayContents(snapshot.state().values());
+        sourceArray.initialize(snapshot.state());
         currentSize = sourceArray.size();
         invalidateExecutionForStructureChange();
         if (sizeSlider != null) {

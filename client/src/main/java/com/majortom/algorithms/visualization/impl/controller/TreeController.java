@@ -490,11 +490,11 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     private void replaceGeneralTreeValues(List<Object> values) {
-        generalTree.initialize(generalInput(values, 0));
+        generalTree.initialize(generalSnapshot(values));
     }
 
     private void replaceAvlTreeValues(List<Object> values) {
-        avlInitializeSorted(sortedComparableValues(values));
+        avlInitializeSnapshot(balancedAvlSnapshot(sortedComparableValues(values)));
     }
 
     @Override
@@ -794,8 +794,8 @@ public final class TreeController extends BaseModuleController<TreeViewState>
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void avlInitializeSorted(List<Object> values) {
-        avlTree.initializeSorted((List) values);
+    private void avlInitializeSnapshot(BinaryTreeSnapshot<Object> snapshot) {
+        avlTree.initialize((BinaryTreeSnapshot) snapshot);
     }
 
     private Object parseValue(TextField field) {

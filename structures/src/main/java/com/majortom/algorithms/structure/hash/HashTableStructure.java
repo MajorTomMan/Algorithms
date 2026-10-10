@@ -1,12 +1,16 @@
 package com.majortom.algorithms.structure.hash;
 
 import com.majortom.algorithms.core.annotation.Structure;
+import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
 
 
 @Structure(id = StructureIds.HASH, name = "Hash Table", module = StructureModule.HASH, implementation = ChainedHashTable.class)
 public interface HashTableStructure<K, V> {
+  /** Replaces the complete table from a validated snapshot. */
+  void initialize(HashTableSnapshot<K, V> snapshot);
+
   int size();
 
   int capacity();

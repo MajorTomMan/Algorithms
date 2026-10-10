@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public final class ChainedHashTable<K, V> implements HashTableStructure<K, V>, HashTableBulkLoadSupport<K, V> {
+public final class ChainedHashTable<K, V> implements HashTableStructure<K, V> {
 
     private static final int DEFAULT_CAPACITY = 8;
     private static final double LOAD_FACTOR = 0.75;
@@ -32,17 +32,8 @@ public final class ChainedHashTable<K, V> implements HashTableStructure<K, V>, H
     }
 
     public static <K, V> ChainedHashTable<K, V> fromSnapshot(HashTableSnapshot<K, V> snapshot) {
-        Objects.requireNonNull(snapshot, "snapshot");
         ChainedHashTable<K, V> table = new ChainedHashTable<>();
-        List<HashTableStructure.Entry<K, V>> entries = new ArrayList<>();
-        for (HashTableSnapshot.Entry<K, V> entry : snapshot.entries()) {
-            int expectedBucket = table.indexFor(entry.key(), snapshot.capacity());
-            if (entry.bucketIndex() != expectedBucket) {
-                throw new IllegalArgumentException("snapshot bucket index does not match key");
-            }
-            entries.add(new HashTableStructure.Entry<>(entry.key(), entry.value()));
-        }
-        table.initialize(snapshot.capacity(), entries);
+        table.initialize(snapshot);
         return table;
     }
 
@@ -222,36 +213,35 @@ public final class ChainedHashTable<K, V> implements HashTableStructure<K, V>, H
     }
 
     @Override
-    public void initialize(int capacity, Iterable<HashTableStructure.Entry<K, V>> entries) {
-        if (capacity < 1) {
-            throw new IllegalArgumentException("capacity must be positive");
-        }
-        Objects.requireNonNull(entries, "entries");
-
-        int previousCapacity = capacity();
-        Node<K, V>[] next = newBuckets(capacity);
+    public void initialize(HashTableSnapshot<K, V> snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        int targetCapacity = snapshot.capacity();
+        Node<K, V>[] replacement = newBuckets(targetCapacity);
         int count = 0;
 
-        for (HashTableStructure.Entry<K, V> entry : entries) {
-            Objects.requireNonNull(entry, "entry");
+        for (HashTableSnapshot.Entry<K, V> entry : snapshot.entries()) {
             K key = Objects.requireNonNull(entry.key(), "key");
             V value = Objects.requireNonNull(entry.value(), "value");
-
-            int index = indexFor(key, capacity);
-            Node<K, V> current = next[index];
+            int index = indexFor(key, targetCapacity);
+            if (entry.bucketIndex() != index) {
+                throw new IllegalArgumentException("snapshot bucket index does not match key");
+            }
+            Node<K, V> current = replacement[index];
             while (current != null) {
                 if (Objects.equals(current.key, key)) {
                     throw new IllegalArgumentException("Duplicate key: " + key);
                 }
                 current = current.next;
             }
-
-            append(next, index, key, value);
+            append(replacement, index, key, value);
             count++;
         }
 
-        buckets = next;
+        // Keep the live table untouched until every entry has passed validation.
+        int previousCapacity = capacity();
+        buckets = replacement;
         size = count;
-        StructureEvents.hashRehashed(previousCapacity, capacity, placements());
+        StructureEvents.hashRehashed(previousCapacity, targetCapacity, placements());
     }
+
 }

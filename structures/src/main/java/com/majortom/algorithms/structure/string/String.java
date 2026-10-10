@@ -22,8 +22,19 @@ public final class String implements StringStructure {
   }
 
   public static String fromSnapshot(StringSnapshot snapshot) {
+    String result = new String();
+    result.initialize(snapshot);
+    return result;
+  }
+
+  @Override
+  public void initialize(StringSnapshot snapshot) {
     Objects.requireNonNull(snapshot, "snapshot");
-    return new String(snapshot.value());
+    java.lang.String value = snapshot.value();
+    char[] initialized = new char[Math.max(DEFAULT_CAPACITY, value.length())];
+    value.getChars(0, value.length(), initialized, 0);
+    characters = initialized;
+    length = value.length();
   }
 
   public StringSnapshot snapshot() {

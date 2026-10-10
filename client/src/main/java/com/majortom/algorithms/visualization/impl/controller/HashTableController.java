@@ -10,7 +10,6 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.HashTableSnapshot;
 import com.majortom.algorithms.core.snapshot.HashTableStateSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.structure.hash.HashTableBulkLoadSupport;
 import com.majortom.algorithms.structure.hash.HashTableStructure;
 import com.majortom.algorithms.visualization.impl.visualizer.HashTableVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.presenter.HashTablePresenter;
@@ -312,27 +311,7 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     HashTableStructure<Object, Object> runtime =
         (HashTableStructure<Object, Object>)
             structure(StructureIds.HASH, HashTableStructure.class);
-    List<HashTableStructure.Entry<Object, Object>> entries = snapshot.entries().stream()
-        .map(entry -> new HashTableStructure.Entry<>(entry.key(), entry.value()))
-        .toList();
-
-    if (runtime instanceof HashTableBulkLoadSupport<?, ?> support) {
-      ((HashTableBulkLoadSupport<Object, Object>) support)
-          .initialize(snapshot.capacity(), entries);
-      return runtime;
-    }
-
-    if (runtime.capacity() != snapshot.capacity()) {
-      throw new IllegalStateException(
-          "Hash algorithm input requires HashTableBulkLoadSupport when capacity differs");
-    }
-    for (HashTableStructure.Entry<Object, Object> entry : entries) {
-      runtime.put(entry.key(), entry.value());
-    }
-    if (runtime.capacity() != snapshot.capacity()) {
-      throw new IllegalStateException(
-          "HashTable resized while cloning algorithm input; implement HashTableBulkLoadSupport");
-    }
+    runtime.initialize(snapshot);
     return runtime;
   }
 
@@ -456,15 +435,16 @@ public final class HashTableController extends BaseModuleController<HashTableVie
       List<HashTableStructure.Entry<Object, Object>> entries,
       String operationId,
       String messageKey) {
-    List<Object> keys = currentKeys();
-    if (!executeAndReduce(operationId, () -> {
-      for (Object key : keys) {
-        table.remove(key);
-      }
-      for (HashTableStructure.Entry<Object, Object> entry : entries) {
-        table.put(entry.key(), entry.value());
-      }
-    })) {
+    List<HashTableSnapshot.Entry<Object, Object>> snapshotEntries = new ArrayList<>();
+    int capacity = table.capacity();
+    for (HashTableStructure.Entry<Object, Object> entry : entries) {
+      int bucketIndex = Math.floorMod(entry.key().hashCode(), capacity);
+      snapshotEntries.add(
+          new HashTableSnapshot.Entry<>(bucketIndex, entry.key(), entry.value()));
+    }
+    HashTableSnapshot<Object, Object> replacement =
+        new HashTableSnapshot<>(capacity, snapshotEntries);
+    if (!executeAndReduce(operationId, () -> table.initialize(replacement))) {
       return;
     }
     clearVisualSelection();
@@ -577,42 +557,12 @@ public final class HashTableController extends BaseModuleController<HashTableVie
     snapshot.state().requireTypes(runtimeKeyType, runtimeHashValueType);
   }
 
-  @SuppressWarnings("unchecked")
   private void replaceWithSnapshot(HashTableSnapshot<Object, Object> snapshot) {
-    List<HashTableStructure.Entry<Object, Object>> entries = snapshot.entries().stream()
-        .map(entry -> new HashTableStructure.Entry<>(entry.key(), entry.value()))
-        .toList();
-
-    if (table instanceof HashTableBulkLoadSupport<?, ?> support) {
-      HashTableBulkLoadSupport<Object, Object> bulk =
-          (HashTableBulkLoadSupport<Object, Object>) support;
-      if (!executeStructureOperation("restore", () -> {
-        bulk.initialize(snapshot.capacity(), entries);
-        return null;
-      })) {
-        throw new IllegalStateException("Hash snapshot restore failed");
-      }
-      return;
-    }
-
-    if (table.capacity() != snapshot.capacity()) {
-      throw new IllegalStateException(
-          "Exact restore across capacities requires HashTableBulkLoadSupport");
-    }
-
-    List<Object> keys = currentKeys();
     if (!executeStructureOperation("restore", () -> {
-      for (Object key : keys) table.remove(key);
-      for (HashTableStructure.Entry<Object, Object> entry : entries) {
-        table.put(entry.key(), entry.value());
-      }
+      table.initialize(snapshot);
       return null;
     })) {
       throw new IllegalStateException("Hash snapshot restore failed");
-    }
-    if (table.capacity() != snapshot.capacity()) {
-      throw new IllegalStateException(
-          "HashTable changed capacity during restore; implement HashTableBulkLoadSupport");
     }
   }
 
