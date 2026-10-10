@@ -3,9 +3,7 @@ package com.majortom.algorithms.visualization.runtime.maze;
 import com.majortom.algorithms.core.snapshot.MazeSnapshot;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /** Immutable maze facts plus factual pathfinding observations. */
@@ -13,9 +11,9 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
     Set<GridPoint> visited, GridPoint active, GridPoint observed, GridPoint backtracked,
     GridPoint entrance, GridPoint exit, boolean completed) {
   public MazeViewState {
-    openCells = List.copyOf(openCells);
+    openCells = MazeCellBits.copyOf(openCells);
     path = Set.copyOf(path);
-    visited = Set.copyOf(visited);
+    visited = MazeVisitedBits.copyOf(rows, columns, visited);
   }
 
   public static MazeViewState empty(int rows, int columns) {
@@ -25,8 +23,8 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
 
   public static MazeViewState generation(int rows, int columns, GridPoint entrance, GridPoint exit) {
     MazeViewState empty = empty(rows, columns);
-    Objects.requireNonNull(entrance, "entrance");
-    Objects.requireNonNull(exit, "exit");
+    java.util.Objects.requireNonNull(entrance, "entrance");
+    java.util.Objects.requireNonNull(exit, "exit");
     return new MazeViewState(rows, columns, empty.openCells(), empty.path(), empty.visited(),
         null, null, null, entrance, exit, false);
   }
@@ -37,8 +35,7 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   }
 
   public MazeViewState visit(GridPoint point) {
-    LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
-    nextVisited.add(point);
+    Set<GridPoint> nextVisited = MazeVisitedBits.withAdded(rows, columns, visited, point);
     return new MazeViewState(rows, columns, openCells, path, nextVisited, point, null, null,
         entrance, exit, false);
   }
@@ -48,10 +45,8 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
     if (index < 0 || index >= openCells.size() || openCells.get(index)) {
       return visit(point);
     }
-    java.util.ArrayList<Boolean> nextOpenCells = new java.util.ArrayList<>(openCells);
-    nextOpenCells.set(index, true);
-    LinkedHashSet<GridPoint> nextVisited = new LinkedHashSet<>(visited);
-    nextVisited.add(point);
+    List<Boolean> nextOpenCells = ((MazeCellBits) openCells).withOpened(index);
+    Set<GridPoint> nextVisited = MazeVisitedBits.withAdded(rows, columns, visited, point);
     return new MazeViewState(rows, columns, nextOpenCells, path, nextVisited, point, null, null,
         entrance, exit, false);
   }
@@ -73,14 +68,14 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   }
 
   public MazeViewState tracePath(GridPoint point) {
-    LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(path);
+    java.util.LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(path);
     nextPath.add(point);
     return new MazeViewState(rows, columns, openCells, nextPath, visited, point, null, null,
         entrance, exit, false);
   }
 
   public MazeViewState withPath(java.util.Collection<GridPoint> points) {
-    LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(points);
+    java.util.LinkedHashSet<GridPoint> nextPath = new LinkedHashSet<>(points);
     return new MazeViewState(rows, columns, openCells, nextPath, visited, active, observed,
         backtracked, entrance, exit, false);
   }
