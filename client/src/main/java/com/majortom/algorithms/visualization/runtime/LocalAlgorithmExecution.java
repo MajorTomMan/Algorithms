@@ -92,7 +92,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
       Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,
       LongSupplier delayMillisSupplier) {
     return startInternal(operationId, operation, reducer, liveEventsConsumer,
-        viewStateConsumer, statisticsConsumer, delayMillisSupplier, 64);
+        viewStateConsumer, statisticsConsumer, delayMillisSupplier, 256);
   }
 
   private <S> ExecutionSession startInternal(String operationId, ExecutionOperation<?> operation,

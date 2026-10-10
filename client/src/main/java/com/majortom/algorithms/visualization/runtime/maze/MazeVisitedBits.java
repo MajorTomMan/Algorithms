@@ -65,14 +65,28 @@ final class MazeVisitedBits extends AbstractSet<GridPoint> {
 
   static void forEachDifference(int rows, int columns, Set<GridPoint> before,
       Set<GridPoint> after, IntConsumer changedIndex) {
-    MazeVisitedBits oldBits = (MazeVisitedBits) copyOf(rows, columns, before);
-    MazeVisitedBits newBits = (MazeVisitedBits) copyOf(rows, columns, after);
-    for (int word = 0; word < oldBits.words.length; word++) {
-      long changed = oldBits.words[word] ^ newBits.words[word];
-      while (changed != 0L) {
-        changedIndex.accept((word << 6) + Long.numberOfTrailingZeros(changed));
-        changed &= changed - 1L;
+    Set<GridPoint> oldValues = copyOf(rows, columns, before);
+    Set<GridPoint> newValues = copyOf(rows, columns, after);
+    if (oldValues instanceof MazeVisitedBits oldBits
+        && newValues instanceof MazeVisitedBits newBits) {
+      for (int word = 0; word < oldBits.words.length; word++) {
+        long changed = oldBits.words[word] ^ newBits.words[word];
+        while (changed != 0L) {
+          changedIndex.accept((word << 6) + Long.numberOfTrailingZeros(changed));
+          changed &= changed - 1L;
+        }
       }
+      return;
+    }
+    // Legacy or malformed observations can contain out-of-grid coordinates.
+    // Skip those when deciding which visible grid cells need repainting.
+    for (GridPoint point : oldValues) {
+      if (inside(rows, columns, point) && !newValues.contains(point))
+        changedIndex.accept(point.row() * columns + point.column());
+    }
+    for (GridPoint point : newValues) {
+      if (inside(rows, columns, point) && !oldValues.contains(point))
+        changedIndex.accept(point.row() * columns + point.column());
     }
   }
 

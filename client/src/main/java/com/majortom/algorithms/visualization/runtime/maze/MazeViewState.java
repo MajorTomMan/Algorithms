@@ -105,12 +105,18 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
       if (!previous.path.contains(point))
         markPathNeighborhood(point, changedIndex);
     }
-    mark(previous.active, changedIndex);
-    mark(active, changedIndex);
-    mark(previous.observed, changedIndex);
-    mark(observed, changedIndex);
-    mark(previous.backtracked, changedIndex);
-    mark(backtracked, changedIndex);
+    if (!java.util.Objects.equals(previous.active, active)) {
+      mark(previous.active, changedIndex);
+      mark(active, changedIndex);
+    }
+    if (!java.util.Objects.equals(previous.observed, observed)) {
+      mark(previous.observed, changedIndex);
+      mark(observed, changedIndex);
+    }
+    if (!java.util.Objects.equals(previous.backtracked, backtracked)) {
+      mark(previous.backtracked, changedIndex);
+      mark(backtracked, changedIndex);
+    }
     if (!java.util.Objects.equals(previous.entrance, entrance)) {
       mark(previous.entrance, changedIndex);
       mark(entrance, changedIndex);
