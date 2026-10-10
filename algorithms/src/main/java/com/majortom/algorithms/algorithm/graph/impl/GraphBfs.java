@@ -62,9 +62,9 @@ public final class GraphBfs {
     }
     List<GraphSnapshot.Edge> edges = new ArrayList<>();
     for (Edge<Integer> edge : graph.edges()) {
-      edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id()));
+      edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id(), graph.weight(edge)));
     }
-    return new GraphSnapshot<>(graph.isDirected(), vertices, edges);
+    return new GraphSnapshot<>(graph.direction(), vertices, edges);
   }
 
   private static Integer firstVertexValue(GraphStructure<Integer> graph) {

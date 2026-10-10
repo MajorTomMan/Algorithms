@@ -6,7 +6,6 @@ import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
-import com.majortom.algorithms.core.snapshot.GraphSnapshotState;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;
@@ -17,13 +16,9 @@ import java.util.Set;
 
 /** Reduces factual Graph mutations, observations and Runtime lifecycle into GraphViewState. */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
-  private final GraphSnapshotState<?> initialGraph;
+  private final GraphSnapshot<?> initialGraph;
 
   public GraphEventReducer(GraphSnapshot<?> graph) {
-    this((GraphSnapshotState<?>) graph);
-  }
-
-  public GraphEventReducer(GraphSnapshotState<?> graph) {
     initialGraph = graph;
   }
 
@@ -58,7 +53,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
     }
     if (event instanceof GraphStructureEvent.EdgeAdded added) {
       List<GraphViewState.Edge> edges = new ArrayList<>(previous.edges());
-      edges.add(new GraphViewState.Edge(added.edgeId(), added.fromId(), added.toId()));
+      edges.add(new GraphViewState.Edge(added.edgeId(), added.fromId(), added.toId(), added.weight()));
       return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
           GraphViewState.Observation.none(), false));
     }
@@ -113,7 +108,7 @@ public final class GraphEventReducer implements EventReducer<GraphViewState> {
   private static GraphViewState state(GraphViewState previous, List<GraphViewState.Node> nodes,
       List<GraphViewState.Edge> edges, Set<Long> visited, GraphViewState.Observation observation,
       boolean completed) {
-    return new GraphViewState(previous.directed(), previous.weighted(), nodes, edges, visited, observation, completed);
+    return new GraphViewState(previous.direction(), nodes, edges, visited, observation, completed);
   }
 
   private static Long graphNodeId(AlgorithmEvent.Reference reference) {

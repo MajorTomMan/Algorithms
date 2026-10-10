@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;
 
@@ -19,20 +18,16 @@ final class GraphMetricsProvider implements StructureMetricsProvider<GraphViewSt
 
   @Override
   public List<MetricItem> metrics(GraphViewState state, StructureMetricsContext context) {
-    boolean weighted = state.weighted();
     List<MetricItem> result = new ArrayList<>();
     result.add(MetricItem.of("vertices", "label.workspace.metric.vertices", state.nodes().size()));
     result.add(MetricItem.of("edges", "label.workspace.metric.edges", state.edges().size()));
-    result.add(MetricItem.localizedValue("graphType", "label.workspace.metric.graph_type",
-        state.directed() ? "label.workspace.metric.directed" : "label.workspace.metric.undirected"));
-    if (weighted) {
-      double total = state.edges().stream().map(GraphViewState.Edge::weight)
-          .filter(Objects::nonNull).mapToDouble(Double::doubleValue).sum();
-      result.add(MetricItem.text("weight", "label.workspace.metric.total_weight", formatDecimal(total)));
-    } else {
-      result.add(MetricItem.localizedValue("weight", "label.workspace.metric.weight",
-          "label.workspace.metric.unweighted"));
+    String directionKey = "label.workspace.metric.undirected";
+    if (state.direction().isDirected()) {
+      directionKey = "label.workspace.metric.directed";
     }
+    result.add(MetricItem.localizedValue("graphType", "label.workspace.metric.graph_type", directionKey));
+    double total = state.edges().stream().mapToDouble(GraphViewState.Edge::weight).sum();
+    result.add(MetricItem.text("weight", "label.workspace.metric.total_weight", formatDecimal(total)));
     result.add(MetricItem.of("components", "label.workspace.metric.components", componentCount(state)));
     result.add(MetricItem.of("operations", "label.workspace.metric.structure_operations", context.operationCount()));
     return List.copyOf(result);

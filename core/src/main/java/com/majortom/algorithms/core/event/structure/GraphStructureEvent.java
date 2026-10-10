@@ -8,21 +8,22 @@ public sealed interface GraphStructureEvent
 
   record VertexRemoved(long vertexId, Object value) implements GraphStructureEvent {}
 
-  record EdgeAdded(long edgeId, long fromId, long toId) implements GraphStructureEvent {}
+  record EdgeAdded(long edgeId, long fromId, long toId, double weight)
+      implements GraphStructureEvent {
+    public EdgeAdded {
+      if (edgeId <= 0 || fromId <= 0 || toId <= 0 || !Double.isFinite(weight)) {
+        throw new IllegalArgumentException("invalid graph edge");
+      }
+    }
+  }
 
   record EdgeRemoved(long edgeId, long fromId, long toId) implements GraphStructureEvent {}
 
-  record EdgeWeightChanged(long edgeId, Double previousWeight, double weight)
+  record EdgeWeightChanged(long edgeId, double previousWeight, double weight)
       implements GraphStructureEvent {
     public EdgeWeightChanged {
-      if (edgeId <= 0) {
-        throw new IllegalArgumentException("edge id must be positive");
-      }
-      if (previousWeight != null && !Double.isFinite(previousWeight)) {
-        throw new IllegalArgumentException("previous edge weight must be finite");
-      }
-      if (!Double.isFinite(weight)) {
-        throw new IllegalArgumentException("edge weight must be finite");
+      if (edgeId <= 0 || !Double.isFinite(previousWeight) || !Double.isFinite(weight)) {
+        throw new IllegalArgumentException("invalid edge weight change");
       }
     }
   }

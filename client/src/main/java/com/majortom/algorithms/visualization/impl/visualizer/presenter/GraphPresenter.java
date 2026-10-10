@@ -20,7 +20,7 @@ public final class GraphPresenter implements StructurePresenter<GraphViewState> 
     }
 
     private static boolean requiresStructuralLayout(GraphViewState previous, GraphViewState current) {
-        if (previous == null || previous.directed() != current.directed() || !previous.nodes().equals(current.nodes())) {
+        if (previous == null || previous.direction() != current.direction() || !previous.nodes().equals(current.nodes())) {
             return true;
         }
         if (previous.edges().size() != current.edges().size()) return true;

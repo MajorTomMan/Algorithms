@@ -5,11 +5,12 @@ import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.core.event.algorithm.GraphAlgorithmEvent;
-import com.majortom.algorithms.core.snapshot.WeightedGraphSnapshot;
+import com.majortom.algorithms.core.metadata.GraphDirection;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
-import com.majortom.algorithms.structure.graph.WeightedGraph;
-import com.majortom.algorithms.structure.graph.WeightedGraphStructure;
+import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -17,11 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Kruskal minimum-spanning-tree/forest implementation over the weighted graph contract. */
-@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", types = {Integer.class}, structure = WeightedGraphStructure.class)
+/** Kruskal minimum-spanning-tree/forest implementation over the unified graph contract. */
+@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", types = {Integer.class}, structure = GraphStructure.class)
 public final class KruskalMinimumSpanning {
   @AlgorithmEntry
-  public WeightedGraphSnapshot<Integer> build(WeightedGraphStructure<Integer> graph) {
+  public GraphSnapshot<Integer> build(GraphStructure<Integer> graph) {
     Objects.requireNonNull(graph, "graph");
     if (graph.isDirected()) {
       throw new IllegalArgumentException("Kruskal requires an undirected weighted graph");
@@ -43,12 +44,12 @@ public final class KruskalMinimumSpanning {
     // Build the result from the input vertices without recording a second set of
     // VertexAdded events. Keeping vertex identities also lets the presentation
     // reducer apply the ordinary EdgeAdded events to its vertex-only initial state.
-    List<WeightedGraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
+    List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
     for (Vertex<Integer> vertex : graph.vertices()) {
-      vertices.add(new WeightedGraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
+      vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
     }
-    WeightedGraph<Integer> result =
-        WeightedGraph.fromSnapshot(new WeightedGraphSnapshot<>(false, vertices, List.of()));
+    Graph<Integer> result =
+        Graph.fromSnapshot(new GraphSnapshot<>(GraphDirection.UNDIRECTED, vertices, List.of()));
 
     for (Edge<Integer> edge : edges) {
       AlgorithmEvents.emit(new GraphAlgorithmEvent.EdgeConsidered(

@@ -1,12 +1,13 @@
 package com.majortom.algorithms.core.snapshot;
 
+import com.majortom.algorithms.core.metadata.GraphDirection;
 import java.util.List;
 import java.util.Objects;
 
-/** UI-neutral immutable graph snapshot with stable vertex/edge identity. */
-public record GraphSnapshot<T>(boolean directed, List<Vertex<T>> vertices, List<Edge> edges)
-    implements GraphSnapshotState<T> {
+/** Immutable weighted graph snapshot with stable vertex and edge identities. */
+public record GraphSnapshot<T>(GraphDirection direction, List<Vertex<T>> vertices, List<Edge> edges) {
   public GraphSnapshot {
+    direction = Objects.requireNonNull(direction, "direction");
     vertices = List.copyOf(Objects.requireNonNull(vertices, "vertices"));
     edges = List.copyOf(Objects.requireNonNull(edges, "edges"));
   }
@@ -20,13 +21,13 @@ public record GraphSnapshot<T>(boolean directed, List<Vertex<T>> vertices, List<
     }
   }
 
-  public record Edge(long id, long fromId, long toId) {
+  public record Edge(long id, long fromId, long toId, double weight) {
     public Edge {
-      if (id <= 0) {
-        throw new IllegalArgumentException("edge id must be positive");
+      if (id <= 0 || fromId <= 0 || toId <= 0) {
+        throw new IllegalArgumentException("vertex and edge ids must be positive");
       }
-      if (fromId <= 0 || toId <= 0) {
-        throw new IllegalArgumentException("edge vertex ids must be positive");
+      if (!Double.isFinite(weight)) {
+        throw new IllegalArgumentException("edge weight must be finite");
       }
     }
   }

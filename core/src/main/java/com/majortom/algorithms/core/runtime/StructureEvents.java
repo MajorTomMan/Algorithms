@@ -44,15 +44,15 @@ public final class StructureEvents {
     ExecutionEvents.structure(new GraphStructureEvent.VertexRemoved(vertexId, value));
   }
 
-  public static void graphEdgeAdded(long edgeId, long fromId, long toId) {
-    ExecutionEvents.structure(new GraphStructureEvent.EdgeAdded(edgeId, fromId, toId));
+  public static void graphEdgeAdded(long edgeId, long fromId, long toId, double weight) {
+    ExecutionEvents.structure(new GraphStructureEvent.EdgeAdded(edgeId, fromId, toId, weight));
   }
 
   public static void graphEdgeRemoved(long edgeId, long fromId, long toId) {
     ExecutionEvents.structure(new GraphStructureEvent.EdgeRemoved(edgeId, fromId, toId));
   }
 
-  public static void graphEdgeWeightChanged(long edgeId, Double previousWeight, double weight) {
+  public static void graphEdgeWeightChanged(long edgeId, double previousWeight, double weight) {
     ExecutionEvents.structure(new GraphStructureEvent.EdgeWeightChanged(edgeId, previousWeight, weight));
   }
 

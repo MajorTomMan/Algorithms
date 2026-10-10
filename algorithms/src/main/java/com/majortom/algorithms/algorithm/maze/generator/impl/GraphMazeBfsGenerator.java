@@ -6,6 +6,7 @@ import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.runtime.AlgorithmEvents;
+import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.MazeStructure;
@@ -44,13 +45,13 @@ public final class GraphMazeBfsGenerator {
         }
         AlgorithmEvents.examined(row(dimensions, current), column(dimensions, current),
             row(dimensions, neighbor), column(dimensions, neighbor));
-        edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L));
-        edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L));
+        edges.add(new GraphSnapshot.Edge(nextEdgeId++, current + 1L, neighbor + 1L, 1.0d));
+        edges.add(new GraphSnapshot.Edge(nextEdgeId++, neighbor + 1L, current + 1L, 1.0d));
         queue.addLast(neighbor);
         AlgorithmEvents.visited(row(dimensions, neighbor), column(dimensions, neighbor));
       }
     }
-    return new GraphSnapshot<>(true, vertices, edges);
+    return new GraphSnapshot<>(GraphDirection.DIRECTED, vertices, edges);
   }
 
   private int row(MazeDimensions dimensions, int node) {

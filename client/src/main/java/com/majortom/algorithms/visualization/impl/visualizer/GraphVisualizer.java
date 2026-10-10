@@ -158,7 +158,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 existing.dispose();
                 surface.edgeLayer().getChildren().remove(existing);
             }
-            EdgeView view = new EdgeView(source, target, state.directed());
+            EdgeView view = new EdgeView(source, target, state.direction().isDirected());
             long edgeId = edge.id();
             view.setOnMouseClicked(event -> {
                 selectEdge(edgeId);
@@ -182,7 +182,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         for (GraphViewState.Edge edge : state.edges()) {
             EdgeView view = edgeViews.get(edge.id());
             if (view == null) continue;
-            view.setDirected(state.directed());
+            view.setDirected(state.direction().isDirected());
             view.setLabelText(GraphVisualText.weight(edge.weight()));
             view.setHighlighted(isObservedEdge(state, edge));
         }
@@ -535,7 +535,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             return false;
         }
         boolean direct = edge.fromId() == observation.firstNodeId() && edge.toId() == observation.secondNodeId();
-        if (state.directed()) {
+        if (state.direction().isDirected()) {
             return direct;
         }
         return direct || (edge.fromId() == observation.secondNodeId() && edge.toId() == observation.firstNodeId());

@@ -78,7 +78,7 @@ public final class GraphStructureVisualization implements StructureVisualization
 
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), GraphElkLayout.ID, nodes, links,
-                Map.of(LayoutMetadataKeys.DIRECTED, Boolean.toString(state.directed())),
+                Map.of(LayoutMetadataKeys.DIRECTED, Boolean.toString(state.direction().isDirected())),
                 decorations);
     }
 

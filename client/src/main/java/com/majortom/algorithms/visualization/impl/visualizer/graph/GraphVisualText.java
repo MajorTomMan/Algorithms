@@ -6,12 +6,9 @@ import java.util.Locale;
 public final class GraphVisualText {
   private GraphVisualText() {}
 
-  public static String weight(Double weight) {
-    if (weight == null) {
-      return null;
-    }
+  public static String weight(double weight) {
     if (Math.rint(weight) == weight) {
-      return Long.toString(weight.longValue());
+      return Long.toString((long) weight);
     }
     return String.format(Locale.ROOT, "%.2f", weight);
   }
