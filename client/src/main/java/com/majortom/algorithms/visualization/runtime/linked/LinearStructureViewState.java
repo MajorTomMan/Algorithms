@@ -1,4 +1,4 @@
-package com.majortom.algorithms.visualization.impl.controller;
+package com.majortom.algorithms.visualization.runtime.linked;
 
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.List;

@@ -6,7 +6,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.view.NodeView;
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureViewState;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.LinearNodeSupport;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;

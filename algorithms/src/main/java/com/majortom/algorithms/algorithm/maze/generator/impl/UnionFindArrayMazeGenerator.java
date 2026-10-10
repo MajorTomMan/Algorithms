@@ -1,7 +1,6 @@
 package com.majortom.algorithms.algorithm.maze.generator.impl;
 
 import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport;
-import com.majortom.algorithms.algorithm.maze.ArrayMazeSupport.GenerationState;
 import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
 import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;

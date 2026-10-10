@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,6 +40,8 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
   private final TelemetryCapabilities capabilities;
   private final ScheduledExecutorService sampler;
   private final AtomicLong sequence = new AtomicLong();
+  private final Set<Session> activeSessions = ConcurrentHashMap.newKeySet();
+  private boolean closed;
   private final long sampleIntervalMillis;
   private final int maximumSamples;
 
@@ -71,15 +75,32 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
   }
 
   @Override
-  public TelemetrySession begin(TelemetryScopeId scope) {
+  public synchronized TelemetrySession begin(TelemetryScopeId scope) {
+    Objects.requireNonNull(scope, "scope");
+    if (closed) {
+      throw new IllegalStateException("Telemetry framework has been closed");
+    }
     TelemetrySessionId id = new TelemetrySessionId(sequence.incrementAndGet(), scope);
     Session session = new Session(id);
-    session.start();
-    return session;
+    activeSessions.add(session);
+    try {
+      session.start();
+      return session;
+    } catch (RuntimeException failure) {
+      session.discard();
+      throw failure;
+    }
   }
 
   @Override
-  public void close() {
+  public synchronized void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    for (Session session : List.copyOf(activeSessions)) {
+      session.cancel();
+    }
     sampler.shutdownNow();
   }
 
@@ -216,6 +237,22 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
       finish(TelemetrySessionState.CANCELLED);
     }
 
+    private void discard() {
+      List<TelemetryProbeSession> toClose;
+      synchronized (lock) {
+        state = TelemetrySessionState.CANCELLED;
+        toClose = List.copyOf(probeSessions);
+      }
+      for (TelemetryProbeSession probe : toClose) {
+        try {
+          probe.close();
+        } catch (RuntimeException ignored) {
+          // A failed probe must not hide the original startup exception.
+        }
+      }
+      activeSessions.remove(this);
+    }
+
     private void finish(TelemetrySessionState terminalState) {
       List<TelemetryProbeSession> toClose;
       synchronized (lock) {
@@ -244,12 +281,16 @@ public final class DefaultTelemetryFramework implements TelemetryFramework, Auto
       if (task != null) {
         task.cancel(false);
       }
-      for (TelemetryProbeSession probe : toClose) {
-        try {
-          probe.close();
-        } catch (RuntimeException ignored) {
-          // Closing diagnostics must not alter execution outcome.
+      try {
+        for (TelemetryProbeSession probe : toClose) {
+          try {
+            probe.close();
+          } catch (RuntimeException ignored) {
+            // Closing diagnostics must not alter execution outcome.
+          }
         }
+      } finally {
+        activeSessions.remove(this);
       }
     }
 

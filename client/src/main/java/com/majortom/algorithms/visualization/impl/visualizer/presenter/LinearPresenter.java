@@ -1,6 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.presenter;
 
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureViewState;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;

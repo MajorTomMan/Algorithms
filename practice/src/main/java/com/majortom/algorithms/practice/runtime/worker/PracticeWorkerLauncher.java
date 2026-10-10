@@ -29,7 +29,9 @@ import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.ExceptionRequest;
 import com.sun.jdi.request.StepRequest;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -40,6 +42,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,6 +53,10 @@ import java.util.concurrent.TimeUnit;
  */
 public final class PracticeWorkerLauncher {
   private static final int TIMEOUT_EXIT_CODE = 124;
+  private static final int TRACE_LIMIT_EXIT_CODE = 125;
+  private static final int MAX_FRAMES = 50_000;
+  private static final int MAX_EXCEPTIONS = 1_000;
+  private static final int MAX_OUTPUT_BYTES = 4_194_304;
 
   public PracticeRecording run(
       ProblemDescriptor descriptor, Duration timeout, Object... arguments) {
@@ -67,9 +76,13 @@ public final class PracticeWorkerLauncher {
   private PracticeRecording launch(WorkerInvocation invocation, Duration timeout) {
     VirtualMachine vm = null;
     Process worker = null;
+    ExecutorService outputReaders = null;
+    Future<OutputCapture> stdoutReader = null;
+    Future<OutputCapture> stderrReader = null;
     List<PracticeFrame> frames = new ArrayList<>();
     List<PracticeExceptionFact> exceptions = new ArrayList<>();
     boolean timedOut = false;
+    boolean traceLimitExceeded = false;
     int exitCode = -1;
     try {
       LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
@@ -82,6 +95,14 @@ public final class PracticeWorkerLauncher {
       connectorArgs.get("suspend").setValue("true");
       vm = connector.launch(connectorArgs);
       worker = vm.process();
+      outputReaders = Executors.newFixedThreadPool(2, task -> {
+        Thread reader = new Thread(task, "practice-worker-output");
+        reader.setDaemon(true);
+        return reader;
+      });
+      Process child = worker;
+      stdoutReader = outputReaders.submit(() -> readLimited(child.getInputStream()));
+      stderrReader = outputReaders.submit(() -> readLimited(child.getErrorStream()));
 
       ClassPrepareRequest prepare = vm.eventRequestManager().createClassPrepareRequest();
       prepare.addClassFilter(invocation.className());
@@ -113,10 +134,20 @@ public final class PracticeWorkerLauncher {
               installStepRequest(vm, prepared.thread(), invocation.className());
             } else if (event instanceof StepEvent step) {
               if (step.location().declaringType().name().equals(invocation.className())) {
+                if (frames.size() >= MAX_FRAMES) {
+                  traceLimitExceeded = true;
+                  done = true;
+                  break;
+                }
                 frames.add(frame(step));
               }
             } else if (event instanceof ExceptionEvent exception) {
               if (exception.location().declaringType().name().equals(invocation.className())) {
+                if (exceptions.size() >= MAX_EXCEPTIONS) {
+                  traceLimitExceeded = true;
+                  done = true;
+                  break;
+                }
                 exceptions.add(
                     new PracticeExceptionFact(exception.exception().referenceType().name(),
                         exceptionMessage(exception.exception()), exception.location().lineNumber(),
@@ -135,32 +166,58 @@ public final class PracticeWorkerLauncher {
         }
       }
 
-      if (worker.isAlive() && System.nanoTime() >= deadline) {
-        timedOut = true;
-        terminate(vm, worker);
+      if (traceLimitExceeded && worker.isAlive()) {
+        terminate(vm, worker, TRACE_LIMIT_EXIT_CODE);
+        exceptions.add(new PracticeExceptionFact("PracticeTraceLimit",
+            "Practice trace exceeded the configured frame/exception limit", -1, false));
       }
-      if (worker.isAlive())
-        worker.waitFor(3, TimeUnit.SECONDS);
-      if (worker.isAlive())
+      if (!traceLimitExceeded && worker.isAlive() && System.nanoTime() >= deadline) {
+        timedOut = true;
+        terminate(vm, worker, TIMEOUT_EXIT_CODE);
+      }
+      if (worker.isAlive() && !worker.waitFor(3, TimeUnit.SECONDS)) {
         worker.destroyForcibly();
-      if (!worker.isAlive())
+        worker.waitFor(3, TimeUnit.SECONDS);
+      }
+      if (!worker.isAlive()) {
         exitCode = worker.exitValue();
-
-      String stdout = read(worker.getInputStream());
-      String stderr = read(worker.getErrorStream());
-      Object result = timedOut ? null : parseResult(stdout);
-      TelemetryProfile memoryProfile = timedOut ? null : parseMemoryProfile(stdout);
+      }
+      OutputCapture out = stdoutReader.get(3, TimeUnit.SECONDS);
+      OutputCapture err = stderrReader.get(3, TimeUnit.SECONDS);
+      if (out.truncated() || err.truncated()) {
+        exceptions.add(new PracticeExceptionFact("PracticeOutputLimit",
+            "Worker output exceeded the capture limit; excess output was discarded", -1, false));
+      }
+      Object result = timedOut || traceLimitExceeded || out.truncated()
+          ? null : parseResult(out.text());
+      TelemetryProfile memoryProfile = timedOut || traceLimitExceeded || out.truncated()
+          ? null : parseMemoryProfile(out.text());
       if (memoryProfile != null) {
         memoryProfile = memoryProfile.withoutRepresentativeTiming();
       }
-      return new PracticeRecording(
-          frames, exceptions, result, timedOut ? TIMEOUT_EXIT_CODE : exitCode, timedOut, stderr,
-          java.util.Optional.ofNullable(memoryProfile));
+      return new PracticeRecording(frames, exceptions, result,
+          traceLimitExceeded ? TRACE_LIMIT_EXIT_CODE : timedOut ? TIMEOUT_EXIT_CODE : exitCode,
+          timedOut, err.text(), java.util.Optional.ofNullable(memoryProfile));
     } catch (Exception exception) {
-      if (worker != null && worker.isAlive())
+      if (worker != null && worker.isAlive()) {
         worker.destroyForcibly();
+      }
+      if (exception instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       throw new IllegalStateException(
           "Practice worker execution failed for " + invocation, exception);
+    } finally {
+      if (outputReaders != null) {
+        outputReaders.shutdownNow();
+      }
+      if (vm != null) {
+        try {
+          vm.dispose();
+        } catch (VMDisconnectedException ignored) {
+          // Normal after the worker exits.
+        }
+      }
     }
   }
 
@@ -259,9 +316,9 @@ public final class PracticeWorkerLauncher {
     return System.getProperty("java.class.path");
   }
 
-  private static void terminate(VirtualMachine vm, Process worker) {
+  private static void terminate(VirtualMachine vm, Process worker, int exitCode) {
     try {
-      vm.exit(TIMEOUT_EXIT_CODE);
+      vm.exit(exitCode);
     } catch (Exception ignored) {
       worker.destroyForcibly();
     }
@@ -274,14 +331,31 @@ public final class PracticeWorkerLauncher {
     }
   }
 
-  private static String read(java.io.InputStream input) throws IOException {
-    return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+  private static OutputCapture readLimited(InputStream input) throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    byte[] chunk = new byte[8192];
+    boolean truncated = false;
+    int count;
+    while ((count = input.read(chunk)) != -1) {
+      int remaining = MAX_OUTPUT_BYTES - output.size();
+      if (remaining > 0) {
+        output.write(chunk, 0, Math.min(count, remaining));
+      }
+      if (count > remaining) {
+        truncated = true;
+      }
+      // Continue draining even after reaching the capture limit, so the child
+      // cannot block on a full stdout/stderr pipe.
+    }
+    return new OutputCapture(output.toString(StandardCharsets.UTF_8), truncated);
   }
+
+  private record OutputCapture(String text, boolean truncated) {}
 
   private static Object parseResult(String stdout) {
     for (String line : stdout.lines().toList()) {
       if (line.startsWith(PracticeWorkerMain.RESULT_PREFIX)) {
-        return WorkerCodec.decode(line.substring(PracticeWorkerMain.RESULT_PREFIX.length()));
+        return WorkerCodec.decodeResult(line.substring(PracticeWorkerMain.RESULT_PREFIX.length()));
       }
     }
     return null;
@@ -290,10 +364,7 @@ public final class PracticeWorkerLauncher {
   private static TelemetryProfile parseMemoryProfile(String stdout) {
     for (String line : stdout.lines().toList()) {
       if (line.startsWith(PracticeWorkerMain.MEMORY_PREFIX)) {
-        Object decoded = WorkerCodec.decode(line.substring(PracticeWorkerMain.MEMORY_PREFIX.length()));
-        if (decoded instanceof TelemetryProfile profile) {
-          return profile;
-        }
+        return WorkerCodec.decodeProfile(line.substring(PracticeWorkerMain.MEMORY_PREFIX.length()));
       }
     }
     return null;

@@ -1,6 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureViewState;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.LinearStructureLayoutSpec;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
 import com.majortom.algorithms.visualization.render.api.LayoutMetadataKeys;

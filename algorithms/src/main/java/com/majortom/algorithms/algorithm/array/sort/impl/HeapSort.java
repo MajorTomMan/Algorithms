@@ -22,8 +22,6 @@ public final class HeapSort extends BaseSort<Integer> {
       swap(array, 0, end);
       siftDown(array, 0, end);
     }
-    if (array.size() > 0) {
-    }
   }
 
   private void siftDown(ArrayStructure<Integer> array, int root, int size) {

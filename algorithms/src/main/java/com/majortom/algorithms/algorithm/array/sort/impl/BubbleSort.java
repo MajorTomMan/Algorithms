@@ -11,7 +11,6 @@ import com.majortom.algorithms.structure.array.ArrayStructure;
 public class BubbleSort extends BaseSort<Integer> {
   @Override
   public int compare(Integer left, Integer right) {
-    // TODO Auto-generated method stubb
     return Integer.compare(left, right);
   }
 

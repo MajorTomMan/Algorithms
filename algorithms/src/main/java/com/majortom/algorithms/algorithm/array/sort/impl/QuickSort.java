@@ -23,8 +23,6 @@ public final class QuickSort extends BaseSort<Integer> {
     while (!pending.isEmpty()) {
       Range range = pending.pop();
       if (range.low() >= range.high()) {
-        if (range.low() >= 0 && range.low() < array.size()) {
-        }
         continue;
       }
       EqualRange equal = partitionThreeWay(array, range.low(), range.high());

@@ -33,7 +33,7 @@ public final class PracticeWorkerMain {
     try {
       Object result = method.invoke(receiver, invocation.arguments());
       memory.complete();
-      System.out.println(RESULT_PREFIX + WorkerCodec.encode(result));
+      System.out.println(RESULT_PREFIX + WorkerCodec.encodeResult(result));
     } catch (InvocationTargetException exception) {
       memory.fail();
       Throwable cause = exception.getCause();
@@ -45,7 +45,7 @@ public final class PracticeWorkerMain {
       throw exception;
     } finally {
       if (!memory.finished()) memory.cancel();
-      System.out.println(MEMORY_PREFIX + WorkerCodec.encode(memory.snapshot()));
+      System.out.println(MEMORY_PREFIX + WorkerCodec.encodeProfile(memory.snapshot()));
     }
   }
 

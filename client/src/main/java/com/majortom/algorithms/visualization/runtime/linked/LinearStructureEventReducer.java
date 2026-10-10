@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.runtime.linked;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;

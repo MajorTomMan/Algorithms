@@ -5,7 +5,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlanner;
 import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureViewState;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.Objects;

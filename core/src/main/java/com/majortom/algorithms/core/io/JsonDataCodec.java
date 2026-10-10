@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -46,6 +48,8 @@ public final class JsonDataCodec<T> implements DataCodec<T> {
 
   private static ObjectMapper newMapper() {
     ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     mapper.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     mapper.getFactory().disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
     mapper.getFactory().disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
