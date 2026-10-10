@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 /** Immutable grid-indexed visited cells, using compact snapshots for replay. */
 final class MazeVisitedBits extends AbstractSet<GridPoint> {
@@ -60,6 +61,19 @@ final class MazeVisitedBits extends AbstractSet<GridPoint> {
     long[] updated = bits.words.clone();
     updated[word] |= mask;
     return new MazeVisitedBits(rows, columns, updated, bits.count + 1);
+  }
+
+  static void forEachDifference(int rows, int columns, Set<GridPoint> before,
+      Set<GridPoint> after, IntConsumer changedIndex) {
+    MazeVisitedBits oldBits = (MazeVisitedBits) copyOf(rows, columns, before);
+    MazeVisitedBits newBits = (MazeVisitedBits) copyOf(rows, columns, after);
+    for (int word = 0; word < oldBits.words.length; word++) {
+      long changed = oldBits.words[word] ^ newBits.words[word];
+      while (changed != 0L) {
+        changedIndex.accept((word << 6) + Long.numberOfTrailingZeros(changed));
+        changed &= changed - 1L;
+      }
+    }
   }
 
   private static boolean inside(int rows, int columns, GridPoint point) {

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 /** Immutable maze facts plus factual pathfinding observations. */
 public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<GridPoint> path,
@@ -84,6 +85,55 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   public MazeViewState completedBase() {
     return new MazeViewState(rows, columns, openCells, path, Set.of(), null, null, null, entrance,
         exit, true);
+  }
+
+  /** Finds changed cells without scanning all 99x99 grid elements for every frame. */
+  public void forEachChangedCell(MazeViewState previous, IntConsumer changedIndex) {
+    java.util.Objects.requireNonNull(previous, "previous");
+    java.util.Objects.requireNonNull(changedIndex, "changedIndex");
+    if (rows != previous.rows || columns != previous.columns)
+      throw new IllegalArgumentException("maze dimensions must match");
+
+    MazeCellBits.forEachDifference(previous.openCells, openCells, changedIndex);
+    MazeVisitedBits.forEachDifference(rows, columns, previous.visited, visited, changedIndex);
+
+    for (GridPoint point : previous.path) {
+      if (!path.contains(point))
+        markPathNeighborhood(point, changedIndex);
+    }
+    for (GridPoint point : path) {
+      if (!previous.path.contains(point))
+        markPathNeighborhood(point, changedIndex);
+    }
+    mark(previous.active, changedIndex);
+    mark(active, changedIndex);
+    mark(previous.observed, changedIndex);
+    mark(observed, changedIndex);
+    mark(previous.backtracked, changedIndex);
+    mark(backtracked, changedIndex);
+    if (!java.util.Objects.equals(previous.entrance, entrance)) {
+      mark(previous.entrance, changedIndex);
+      mark(entrance, changedIndex);
+    }
+    if (!java.util.Objects.equals(previous.exit, exit)) {
+      mark(previous.exit, changedIndex);
+      mark(exit, changedIndex);
+    }
+  }
+
+  private void markPathNeighborhood(GridPoint point, IntConsumer changedIndex) {
+    if (point == null) return;
+    mark(point, changedIndex);
+    mark(new GridPoint(point.row() - 1, point.column()), changedIndex);
+    mark(new GridPoint(point.row() + 1, point.column()), changedIndex);
+    mark(new GridPoint(point.row(), point.column() - 1), changedIndex);
+    mark(new GridPoint(point.row(), point.column() + 1), changedIndex);
+  }
+
+  private void mark(GridPoint point, IntConsumer changedIndex) {
+    if (point != null && point.row() >= 0 && point.row() < rows
+        && point.column() >= 0 && point.column() < columns)
+      changedIndex.accept(point.row() * columns + point.column());
   }
 
   private static GridPoint point(MazeSnapshot.Cell cell) {

@@ -4,6 +4,7 @@ import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
+import java.util.function.IntConsumer;
 
 /** Immutable bit-packed maze cells; updates clone only the compact word array. */
 final class MazeCellBits extends AbstractList<Boolean> implements RandomAccess {
@@ -35,6 +36,22 @@ final class MazeCellBits extends AbstractList<Boolean> implements RandomAccess {
     long[] updated = words.clone();
     updated[word] |= mask;
     return new MazeCellBits(length, updated);
+  }
+
+  static void forEachDifference(List<Boolean> before, List<Boolean> after,
+      IntConsumer changedIndex) {
+    MazeCellBits oldBits = copyOf(before);
+    MazeCellBits newBits = copyOf(after);
+    if (oldBits.length != newBits.length)
+      throw new IllegalArgumentException("maze cell dimensions must match");
+    for (int word = 0; word < oldBits.words.length; word++) {
+      long changed = oldBits.words[word] ^ newBits.words[word];
+      while (changed != 0L) {
+        int index = (word << 6) + Long.numberOfTrailingZeros(changed);
+        changedIndex.accept(index);
+        changed &= changed - 1L;
+      }
+    }
   }
 
   @Override
