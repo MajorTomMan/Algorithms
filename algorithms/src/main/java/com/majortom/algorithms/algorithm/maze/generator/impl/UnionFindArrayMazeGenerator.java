@@ -10,6 +10,7 @@ import com.majortom.algorithms.structure.maze.GridMaze;
 import com.majortom.algorithms.structure.maze.GridPoint;
 import com.majortom.algorithms.structure.maze.MazeDimensions;
 import com.majortom.algorithms.structure.maze.MazeStructure;
+import com.majortom.algorithms.structure.unionfind.UnionFind;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +33,7 @@ public final class UnionFindArrayMazeGenerator {
       addEdgeIfInside(dimensions, edges, cell, 2, 0);
     }
     Collections.shuffle(edges, random);
-    DisjointSet sets = new DisjointSet(dimensions.rows() * dimensions.columns());
+    UnionFind sets = new UnionFind(dimensions.rows() * dimensions.columns());
     for (CellEdge edge : edges) {
       int left = ArrayMazeSupport.index(dimensions.columns(), edge.left());
       int right = ArrayMazeSupport.index(dimensions.columns(), edge.right());
@@ -65,42 +66,4 @@ public final class UnionFindArrayMazeGenerator {
 
   private record CellEdge(GridPoint left, GridPoint right) {}
 
-  private static final class DisjointSet {
-    private final int[] parent;
-    private final byte[] rank;
-
-    private DisjointSet(int size) {
-      parent = new int[size];
-      rank = new byte[size];
-      for (int index = 0; index < size; index++) parent[index] = index;
-    }
-
-    private boolean union(int left, int right) {
-      int leftRoot = find(left);
-      int rightRoot = find(right);
-      if (leftRoot == rightRoot)
-        return false;
-      if (rank[leftRoot] < rank[rightRoot])
-        parent[leftRoot] = rightRoot;
-      else if (rank[leftRoot] > rank[rightRoot])
-        parent[rightRoot] = leftRoot;
-      else {
-        parent[rightRoot] = leftRoot;
-        rank[leftRoot]++;
-      }
-      return true;
-    }
-
-    private int find(int value) {
-      int root = value;
-      while (parent[root] != root) root = parent[root];
-      int current = value;
-      while (parent[current] != current) {
-        int next = parent[current];
-        parent[current] = root;
-        current = next;
-      }
-      return root;
-    }
-  }
 }

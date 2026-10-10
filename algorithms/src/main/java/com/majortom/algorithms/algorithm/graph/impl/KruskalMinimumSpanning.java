@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Kruskal minimum-spanning-tree/forest implementation over the unified graph contract. */
-@Algorithm(id = "kruskal-minimum-spanning", name = "Kruskal最小生成树", types = {Integer.class}, structure = GraphStructure.class)
+@Algorithm(id = "kruskal-minimum-spanning", name = "卡鲁斯卡尔最小生成树", types = {Integer.class}, structure = GraphStructure.class)
 public final class KruskalMinimumSpanning {
   @AlgorithmEntry
   public GraphSnapshot<Integer> build(GraphStructure<Integer> graph) {
