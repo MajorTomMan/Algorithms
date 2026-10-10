@@ -60,7 +60,11 @@ public final class NodeView extends StackPane {
   }
 
   public void setGeometry(NodeGeometry geometry) {
-    this.geometry.set(Objects.requireNonNull(geometry, "geometry"));
+    Objects.requireNonNull(geometry, "geometry");
+    // Equal geometry must not rebuild JavaFX shapes or invalidate attached edges.
+    if (!geometry.equals(this.geometry.get())) {
+      this.geometry.set(geometry);
+    }
   }
 
   public ObjectProperty<NodeGeometry> geometryProperty() {
@@ -72,10 +76,9 @@ public final class NodeView extends StackPane {
   }
 
   public void setText(String text) {
-    if (text == null) {
-      label.setText("");
-    } else {
-      label.setText(text);
+    String value = text == null ? "" : text;
+    if (!value.equals(label.getText())) {
+      label.setText(value);
     }
   }
 
@@ -110,8 +113,12 @@ public final class NodeView extends StackPane {
   }
 
   public void setCenter(double x, double y) {
-    centerX.set(x);
-    centerY.set(y);
+    if (Double.compare(centerX.get(), x) != 0) {
+      centerX.set(x);
+    }
+    if (Double.compare(centerY.get(), y) != 0) {
+      centerY.set(y);
+    }
   }
 
   public Point2D boundaryPointToward(Point2D target) {

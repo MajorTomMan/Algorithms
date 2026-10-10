@@ -99,8 +99,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     @Override
     public CompletionStage<Void> commitPresentation(
             GraphViewState state, RenderCommitContext context) {
-        reconcileNodes(state);
-        reconcileEdges(state);
+        // The presenter routes every topology or label-geometry change through commitLayout.
+        // Observation and selection frames must not rebuild the node/edge index.
         applyPendingSelection(state);
         applyPresentation(state);
         return CompletableFuture.completedFuture(null);

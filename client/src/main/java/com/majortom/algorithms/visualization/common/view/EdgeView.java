@@ -174,19 +174,15 @@ public final class EdgeView extends Group {
 
   /** Optional presentation label reserved for edge metadata such as a future graph weight. */
   public void setLabelText(String text) {
-    String normalized;
-    if (text == null || text.isBlank()) {
-      normalized = null;
-    } else {
-      normalized = text;
+    String normalized = text == null || text.isBlank() ? null : text;
+    boolean visible = normalized != null;
+    String value = visible ? normalized : "";
+    if (label.isVisible() == visible && value.equals(label.getText())) {
+      return;
     }
-    if (normalized == null) {
-      label.setText("");
-    } else {
-      label.setText(normalized);
-    }
-    label.setManaged(normalized != null);
-    label.setVisible(normalized != null);
+    label.setText(value);
+    label.setManaged(visible);
+    label.setVisible(visible);
     updateGeometry();
   }
 
@@ -204,8 +200,10 @@ public final class EdgeView extends Group {
 
   /** Presentation-only label offset used to separate dense graph edge metadata. */
   public void setLabelNormalOffset(double offset) {
-    labelNormalOffset = offset;
-    updateGeometry();
+    if (Double.compare(labelNormalOffset, offset) != 0) {
+      labelNormalOffset = offset;
+      updateGeometry();
+    }
   }
 
   public double labelNormalOffset() {
@@ -214,8 +212,11 @@ public final class EdgeView extends Group {
 
   /** Applies presentation-only route geometry, typically produced by ELK. */
   public void setRoute(List<Point2D> points) {
-    route = List.copyOf(Objects.requireNonNull(points, "points"));
-    updateGeometry();
+    List<Point2D> next = List.copyOf(Objects.requireNonNull(points, "points"));
+    if (!route.equals(next)) {
+      route = next;
+      updateGeometry();
+    }
   }
 
   /** Restores project-owned dynamic source/target attachment while nodes are moving. */

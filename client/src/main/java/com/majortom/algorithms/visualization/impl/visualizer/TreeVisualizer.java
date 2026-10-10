@@ -89,8 +89,8 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
     @Override
     public CompletionStage<Void> commitPresentation(
             TreeViewState state, RenderCommitContext context) {
-        reconcileNodes(state);
-        reconcileEdges(state);
+        // Structural changes are reconciled by commitLayout. Per-step observations
+        // change only styling, not the retained JavaFX node and edge topology.
         applyPendingSelection(state);
         applyPresentation(state);
         return CompletableFuture.completedFuture(null);
