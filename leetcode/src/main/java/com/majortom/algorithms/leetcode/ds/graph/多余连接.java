@@ -13,7 +13,7 @@ public class 多余连接 {
   }
 
   private static Graph<Integer> createGraph(int vertexCount, Integer[][] edges) {
-    Graph<Integer> graph = new Graph<>(false);
+    Graph<Integer> graph = new Graph<>();
     for (int i = 0; i < vertexCount; i++) {
       graph.addVertex(i);
     }
