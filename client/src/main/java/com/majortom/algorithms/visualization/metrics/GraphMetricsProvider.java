@@ -14,6 +14,10 @@ import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;
 
 /** Metrics for the graph structure family. */
 final class GraphMetricsProvider implements StructureMetricsProvider<GraphViewState> {
+  private List<GraphViewState.Node> cachedNodes;
+  private List<GraphViewState.Edge> cachedEdges;
+  private GraphShape cachedShape;
+
   @Override public Class<GraphViewState> stateType() { return GraphViewState.class; }
 
   @Override
@@ -26,9 +30,9 @@ final class GraphMetricsProvider implements StructureMetricsProvider<GraphViewSt
       directionKey = "label.workspace.metric.directed";
     }
     result.add(MetricItem.localizedValue("graphType", "label.workspace.metric.graph_type", directionKey));
-    double total = state.edges().stream().mapToDouble(GraphViewState.Edge::weight).sum();
-    result.add(MetricItem.text("weight", "label.workspace.metric.total_weight", formatDecimal(total)));
-    result.add(MetricItem.of("components", "label.workspace.metric.components", componentCount(state)));
+    GraphShape shape = shape(state);
+    result.add(MetricItem.text("weight", "label.workspace.metric.total_weight", formatDecimal(shape.weight())));
+    result.add(MetricItem.of("components", "label.workspace.metric.components", shape.components()));
     result.add(MetricItem.of("operations", "label.workspace.metric.structure_operations", context.operationCount()));
     return List.copyOf(result);
   }
@@ -52,6 +56,22 @@ final class GraphMetricsProvider implements StructureMetricsProvider<GraphViewSt
         StateMetricKeys.EDGES, (long) state.edges().size(),
         StateMetricKeys.VISITED, (long) state.visitedNodeIds().size());
   }
+
+  /** Only graph topology or edge weights invalidate these expensive derived metrics. */
+  private GraphShape shape(GraphViewState state) {
+    if (cachedShape != null && cachedNodes == state.nodes() && cachedEdges == state.edges())
+      return cachedShape;
+    double weight = 0.0d;
+    for (GraphViewState.Edge edge : state.edges())
+      weight += edge.weight();
+    GraphShape result = new GraphShape(weight, componentCount(state));
+    cachedNodes = state.nodes();
+    cachedEdges = state.edges();
+    cachedShape = result;
+    return result;
+  }
+
+  private record GraphShape(double weight, long components) {}
 
   private static long componentCount(GraphViewState state) {
     Map<Long, Set<Long>> adjacency = new LinkedHashMap<>();

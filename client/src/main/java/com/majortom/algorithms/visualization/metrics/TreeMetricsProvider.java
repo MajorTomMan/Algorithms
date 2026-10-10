@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.event.structure.TreeStructureEvent;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,18 +13,24 @@ import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;
 
 /** Metrics for the tree structure family. */
 final class TreeMetricsProvider implements StructureMetricsProvider<TreeViewState> {
+  private Map<Long, TreeViewState.Node> cachedNodes;
+  private Long cachedRootId;
+  private TreeViewState.Kind cachedKind;
+  private TreeShape cachedShape;
+
   @Override public Class<TreeViewState> stateType() { return TreeViewState.class; }
 
   @Override
   public List<MetricItem> metrics(TreeViewState state, StructureMetricsContext context) {
-    long height = height(state, state.rootId(), new HashSet<>());
-    long leaves = state.nodes().values().stream().filter(node -> state.childrenOf(node).isEmpty()).count();
+    TreeShape shape = shape(state);
+    long height = shape.height();
+    long leaves = shape.leaves();
     List<MetricItem> result = new ArrayList<>();
     result.add(MetricItem.of("nodes", "label.workspace.metric.nodes", state.nodes().size()));
     result.add(MetricItem.of("height", "label.workspace.metric.height", height));
     result.add(MetricItem.of("leaves", "label.workspace.metric.leaves", leaves));
     if (StructureIds.AVL_TREE.equals(context.structureId()) && state.kind() == TreeViewState.Kind.BINARY) {
-      result.add(MetricItem.of("maxBalance", "label.workspace.metric.max_balance", maxBalance(state)));
+      result.add(MetricItem.of("maxBalance", "label.workspace.metric.max_balance", shape.maxBalance()));
     } else {
       long relationChanges = context.count(TreeStructureEvent.LeftChanged.class)
           + context.count(TreeStructureEvent.RightChanged.class)
@@ -55,28 +62,74 @@ final class TreeMetricsProvider implements StructureMetricsProvider<TreeViewStat
   public Map<String, Long> samples(TreeViewState state) {
     return Map.of(
         StateMetricKeys.SIZE, (long) state.nodes().size(),
-        StateMetricKeys.HEIGHT, height(state, state.rootId(), new HashSet<>()),
+        StateMetricKeys.HEIGHT, shape(state).height(),
         StateMetricKeys.VISITED, (long) state.visitedNodeIds().size());
   }
 
-  private static long height(TreeViewState state, Long id, Set<Long> seen) {
-    if (id == null || !seen.add(id)) return 0L;
-    TreeViewState.Node node = state.nodes().get(id);
-    if (node == null) return 0L;
-    long max = 0L;
-    for (Long child : state.childrenOf(node)) {
-      max = Math.max(max, height(state, child, seen));
+  /**
+   * Observations change highlight sets, not tree topology. A shared immutable
+   * node map identifies the same structure across thousands of animation frames.
+   */
+  private TreeShape shape(TreeViewState state) {
+    if (cachedShape != null && cachedNodes == state.nodes()
+        && cachedKind == state.kind()
+        && java.util.Objects.equals(cachedRootId, state.rootId())) {
+      return cachedShape;
     }
-    return 1L + max;
+    HeightScan scan = new HeightScan(state);
+    long height = scan.height(state.rootId());
+    for (Long nodeId : state.nodes().keySet())
+      scan.height(nodeId);
+    long leaves = 0L;
+    for (TreeViewState.Node node : state.nodes().values()) {
+      if (state.childrenOf(node).isEmpty())
+        leaves++;
+    }
+    TreeShape result = new TreeShape(height, leaves, scan.maxBalance);
+    cachedNodes = state.nodes();
+    cachedRootId = state.rootId();
+    cachedKind = state.kind();
+    cachedShape = result;
+    return result;
   }
 
-  private static long maxBalance(TreeViewState state) {
-    long max = 0L;
-    for (TreeViewState.Node node : state.nodes().values()) {
-      long left = height(state, node.leftId(), new HashSet<>());
-      long right = height(state, node.rightId(), new HashSet<>());
-      max = Math.max(max, Math.abs(left - right));
+  private record TreeShape(long height, long leaves, long maxBalance) {}
+
+  private static final class HeightScan {
+    private final TreeViewState state;
+    private final Map<Long, Long> heights = new HashMap<>();
+    private final Set<Long> visiting = new HashSet<>();
+    private long maxBalance;
+
+    private HeightScan(TreeViewState state) {
+      this.state = state;
     }
-    return max;
+
+    private long height(Long nodeId) {
+      if (nodeId == null) return 0L;
+      Long saved = heights.get(nodeId);
+      if (saved != null) return saved;
+      if (!visiting.add(nodeId)) return 0L;
+      TreeViewState.Node node = state.nodes().get(nodeId);
+      if (node == null) {
+        visiting.remove(nodeId);
+        return 0L;
+      }
+      long value;
+      if (state.kind() == TreeViewState.Kind.BINARY) {
+        long left = height(node.leftId());
+        long right = height(node.rightId());
+        value = 1L + Math.max(left, right);
+        maxBalance = Math.max(maxBalance, Math.abs(left - right));
+      } else {
+        long maximum = 0L;
+        for (Long childId : node.childIds())
+          maximum = Math.max(maximum, height(childId));
+        value = 1L + maximum;
+      }
+      visiting.remove(nodeId);
+      heights.put(nodeId, value);
+      return value;
+    }
   }
 }
