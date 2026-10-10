@@ -2,28 +2,27 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.GraphData;
+import com.majortom.algorithms.structure.graph.GraphInitializer;
+import com.majortom.algorithms.structure.graph.GraphLink;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatchEdge;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-/** Creates graph examples and converts immutable batches into weighted adjacency. */
+/** Creates example graph data; structure initialization is delegated to GraphInitializer. */
 final class GraphDataFactory {
     private GraphDataFactory() {}
 
     static Graph<Object> randomGraph(Class<?> valueType, int nodeCount, int edgeCount,
                                      GraphDirection direction) {
-        Graph<Object> result = new Graph<>(direction);
-        GraphBatch batch = randomGraphBatch(valueType, nodeCount, edgeCount, direction,
-                new Random(0x5EEDL));
-        result.initialize(weightedAdjacency(batch, direction));
-        return result;
+        GraphBatch batch = randomGraphBatch(valueType, nodeCount, edgeCount,
+                direction, new Random(0x5EEDL));
+        return new GraphInitializer<Object>().create(graphData(batch, direction));
     }
 
     private static List<Object> defaultGraphValues(Class<?> valueType, int nodeCount) {
@@ -66,18 +65,11 @@ final class GraphDataFactory {
         return new GraphBatch(List.copyOf(nodes), List.copyOf(edges));
     }
 
-    static Map<Object, Map<Object, Double>> weightedAdjacency(
-            GraphBatch batch, GraphDirection direction) {
-        Map<Object, Map<Object, Double>> adjacency = new LinkedHashMap<>();
-        for (Object node : batch.nodes()) {
-            adjacency.put(node, new LinkedHashMap<>());
-        }
+    static GraphData<Object> graphData(GraphBatch batch, GraphDirection direction) {
+        List<GraphLink<Object>> links = new ArrayList<>();
         for (GraphBatchEdge edge : batch.edges()) {
-            adjacency.get(edge.from()).put(edge.to(), edge.weight());
-            if (!direction.isDirected()) {
-                adjacency.get(edge.to()).put(edge.from(), edge.weight());
-            }
+            links.add(new GraphLink<>(edge.from(), edge.to(), edge.weight()));
         }
-        return adjacency;
+        return new GraphData<>(direction, batch.nodes(), links);
     }
 }

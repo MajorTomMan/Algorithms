@@ -34,3 +34,7 @@ List<City> cities = FileDataIO.read(file, codec);
 文件模式的目标文件所在目录须已存在。若读取失败，调用方拿不到新数据；若写入或序列化在替换前失败，原目标文件不会被提前截断。非原子文件系统不保证最后一步的替换是原子的。
 
 解析得到的数据对象由业务层验证并应用。例如 JSON 可以映射为业务自定义的 `GraphData<T>`，但 `data-io` 不负责初始化 `Graph`、记录事件或刷新界面。
+
+## 与算法框架组合
+
+此模块不引用 `Graph`、`Array` 或任何 `StructureInitializer`。结构特定的数据建模、校验、初始化和导出全部留在 `structures`，客户端通过 `StructureDataFiles` 组合两端。参见 [初始化与文件读写示例](../docs/数据初始化与文件读写.md)。

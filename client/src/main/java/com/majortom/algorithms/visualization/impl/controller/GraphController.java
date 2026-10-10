@@ -13,6 +13,8 @@ import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Vertex;
 import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.GraphData;
+import com.majortom.algorithms.structure.graph.GraphInitializer;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
@@ -696,9 +698,22 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
-        Graph<Object> graph = currentGraph();
+        GraphData<Object> data = GraphDataFactory.graphData(batch, activeDirection);
+        Graph<Object> replacement;
+        try {
+            replacement = new GraphInitializer<Object>().create(data);
+        } catch (IllegalArgumentException exception) {
+            logI18n("message.error.bulk_input_invalid");
+            return;
+        }
+
+        // The replacement is fully validated before changing the live structure.
         if (!executeStructureOperation(operationId, () -> {
-            graph.initialize(GraphDataFactory.weightedAdjacency(batch, graph.direction()));
+            if (activeDirection == GraphDirection.DIRECTED) {
+                directedGraph = replacement;
+            } else {
+                undirectedGraph = replacement;
+            }
             return null;
         })) {
             return;
@@ -707,7 +722,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         renderGraph();
         refreshStatsDisplay();
         if (!batch.nodes().isEmpty()) {
-            Vertex<Object> selected = graph.vertex(batch.nodes().getFirst());
+            Vertex<Object> selected = replacement.vertex(batch.nodes().getFirst());
             if (selected != null) {
                 graphVisualizer().selectNode(selected.id());
             }

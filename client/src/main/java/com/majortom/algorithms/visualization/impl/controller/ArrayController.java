@@ -7,6 +7,7 @@ import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
 import com.majortom.algorithms.structure.array.Array;
+import com.majortom.algorithms.structure.array.ArrayInitializer;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.ArrayVisualizer;
@@ -157,7 +158,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
     }
 
     private void replaceArrayContents(List<?> values) {
-        sourceArray.initialize(values);
+        new ArrayInitializer<Object>().initialize(sourceArray, values);
     }
 
     private List<Object> sourceValues() {
@@ -677,7 +678,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (algorithmBinder != null) algorithmBinder.refresh();
         algorithmInputSnapshot = null;
         clearArraySelection();
-        sourceArray.initialize(List.of());
+        replaceArrayContents(List.of());
         invalidateExecutionForStructureChange();
         notifyAlgorithmSelection();
         if (controlPanel != null) {
