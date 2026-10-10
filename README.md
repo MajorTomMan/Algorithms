@@ -23,8 +23,8 @@ python start.py
 
 ## 数据读写
 
-独立 Maven 模块 `data-io` 提供 `DataReader<T>`、`DataWriter<T>` 及 JSON 编解码器，不依赖数据结构、算法或 JavaFX。文件读取和安全写入示例见 [data-io/README.md](data-io/README.md)。
+`core.io` 提供 `DataReader<T>`、`DataWriter<T>`、`FileDataIO` 与 `JsonDataCodec<T>`，只负责文件和数据流转换，不依赖数据结构、算法或 JavaFX。接口说明与安全写入示例见 [数据初始化与文件读写](docs/数据初始化与文件读写.md)。
 
 ## 数据初始化与文件读写
 
-各结构统一通过 `initialize(snapshot)` 替换已有结构状态，`fromSnapshot(snapshot)` 负责创建新结构，两者复用同一套验证和重建逻辑。`data-io` 模块只负责读取/写入数据格式。详细示例见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。
+各结构统一通过 `initialize(snapshot)` 替换已有结构状态，`fromSnapshot(snapshot)` 负责创建新结构，两者复用同一套验证和重建逻辑。`core.io` 负责读取/写入数据格式。详细示例见 [docs/数据初始化与文件读写.md](docs/数据初始化与文件读写.md)。

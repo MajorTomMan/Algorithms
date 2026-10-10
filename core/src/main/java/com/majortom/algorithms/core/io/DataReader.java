@@ -1,4 +1,4 @@
-package com.majortom.algorithms.dataio;
+package com.majortom.algorithms.core.io;
 
 import java.io.IOException;
 import java.io.InputStream;

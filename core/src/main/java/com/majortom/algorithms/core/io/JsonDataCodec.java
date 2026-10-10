@@ -1,4 +1,4 @@
-package com.majortom.algorithms.dataio;
+package com.majortom.algorithms.core.io;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;

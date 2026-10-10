@@ -12,7 +12,6 @@
 
     <modules>
         <module>core</module>
-        <module>data-io</module>
         <module>telemetry</module>
         <module>structures</module>
         <module>algorithms</module>

@@ -1,4 +1,4 @@
-package com.majortom.algorithms.dataio;
+package com.majortom.algorithms.core.io;
 
 /** A format implementation that can read and write the same data type. */
 public interface DataCodec<T> extends DataReader<T>, DataWriter<T> {
