@@ -25,6 +25,9 @@ public final class GraphPresenter implements StructurePresenter<GraphViewState> 
         if (previous == null || previous.direction() != current.direction() || !previous.nodes().equals(current.nodes())) {
             return true;
         }
+        // Observation-only frames retain the immutable edge list. Comparing
+        // every edge and formatting its weight on each frame is unnecessary.
+        if (previous.edges() == current.edges()) return false;
         if (previous.edges().size() != current.edges().size()) return true;
         for (int index = 0; index < previous.edges().size(); index++) {
             GraphViewState.Edge left = previous.edges().get(index);

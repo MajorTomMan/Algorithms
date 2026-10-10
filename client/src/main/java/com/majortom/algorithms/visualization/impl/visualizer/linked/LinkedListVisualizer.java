@@ -54,6 +54,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private final Text headLabel = new Text();
     private final Text tailLabel = new Text();
     private LayoutResult lastPatch;
+    private boolean routesDirty;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> {};
@@ -96,6 +97,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
 
         reconcileEdges(state);
         lastPatch = patch;
+        routesDirty = !plan.isEmpty();
         if (plan.isEmpty()) {
             applyRoutes(patch);
             positionRoleLabels(patch);
@@ -111,13 +113,14 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     @Override
     public CompletionStage<Void> commitPresentation(
             LinkedListViewState state, RenderCommitContext context) {
-        reconcileNodes(state);
+        // The presenter commits structural changes through commitLayout.
+        // A normal frame only needs presentation state, not an edge map rebuild.
         applyPendingSelection(state);
         applyPresentation(state);
-        reconcileEdges(state);
-        if (lastPatch != null && !animationRuntime.isAnimating()) {
+        if (routesDirty && lastPatch != null && !animationRuntime.isAnimating()) {
             applyRoutes(lastPatch);
             positionRoleLabels(lastPatch);
+            routesDirty = false;
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -320,6 +323,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         selectedNodeId = null;
         pendingSelectedNodeId = null;
         lastPatch = null;
+        routesDirty = false;
         surface.reset();
         surface.markViewportPristine();
     }
