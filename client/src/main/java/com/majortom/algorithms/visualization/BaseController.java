@@ -147,6 +147,7 @@ public abstract class BaseController<S> implements Initializable {
     private PlaybackController<S> replayController;
     private final ControllerReplayControls<S> replayControls;
     private long lastLiveStatsRefreshNanos;
+    private long completionGeneration;
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
     private final ControllerMemoryProfile memoryProfile = new ControllerMemoryProfile(this::refreshStatsDisplay);
     private boolean disposed;
@@ -314,6 +315,9 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     public final void stopAlgorithm() {
+        // Invalidate pending timeline-index results when a run is replaced or
+        // its visualizer is disposed before indexing finishes.
+        completionGeneration++;
         stopReplay();
         if (currentSession != null) {
             currentSession.close();
@@ -555,7 +559,37 @@ public abstract class BaseController<S> implements Initializable {
         updatePlaybackButtonState();
         currentSession = null;
         EventReducer<S> reducer = reducerFactory.get();
-        ReducedEventTimeline<S> timeline = new ReducedEventTimeline<>(events, reducer);
+        long expectedCompletionGeneration = ++completionGeneration;
+        // The complete event stream can be large. Its checkpoint/frame index
+        // is pure CPU work and must not block the JavaFX application thread.
+        CompletableFuture.supplyAsync(() -> new ReducedEventTimeline<>(events, reducer))
+                .whenComplete((timeline, indexFailure) -> FxDispatch.defer(() -> {
+                    if (disposed || expectedCompletionGeneration != completionGeneration) {
+                        return;
+                    }
+                    if (indexFailure != null) {
+                        Throwable cause = indexFailure;
+                        if (indexFailure instanceof CompletionException && indexFailure.getCause() != null) {
+                            cause = indexFailure.getCause();
+                        }
+                        handleAlgorithmError(cause);
+                        refreshStatsDisplay();
+                        return;
+                    }
+                    finishIndexedExecution(session, algorithmId, input, result, error, reducer, events, timeline);
+                }));
+    }
+
+    /** All UI changes stay on JavaFX; only authoritative index construction is off-thread. */
+    private void finishIndexedExecution(
+            ExecutionHandle session,
+            String algorithmId,
+            Object input,
+            ExecutionResult result,
+            Throwable error,
+            EventReducer<S> reducer,
+            List<EventEnvelope> events,
+            ReducedEventTimeline<S> timeline) {
         stats = timeline.statistics();
         Duration eventSpan = stats.eventSpan();
         ExecutionSummary summary = ExecutionSummary.from(stats, session.resourceUsage()).withTiming(
