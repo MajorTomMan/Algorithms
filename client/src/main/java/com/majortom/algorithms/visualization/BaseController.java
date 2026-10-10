@@ -843,7 +843,7 @@ public abstract class BaseController<S> implements Initializable {
         }
     }
 
-    private void replacePlaybackController(EventReducer<S> reducer, ReducedEventTimeline<S> timeline) {
+    private void replacePlaybackController(EventReducer<S> reducer, ReducedEventTimeline<S> loadedTimeline) {
         if (replayController != null) {
             replayController.close();
         }
@@ -864,7 +864,7 @@ public abstract class BaseController<S> implements Initializable {
                 }
             }
         });
-        replayController.load(timeline);
+        replayController.load(loadedTimeline);
         updatePlaybackSpeed(delayMs.get());
     }
 
