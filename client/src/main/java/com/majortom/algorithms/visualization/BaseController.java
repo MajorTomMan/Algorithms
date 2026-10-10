@@ -137,6 +137,8 @@ public abstract class BaseController<S> implements Initializable {
     private int presentationEventIndex = -1;
     private int liveEventIndex = -1;
     private final Timeline structureTimeline = new Timeline();
+    private List<EventEnvelope> structureEventSnapshot = List.of();
+    private int structureEventSnapshotSize = -1;
     private S latestViewState;
     private long liveVisualFrameCount;
     private S latestStructureState;
@@ -284,7 +286,7 @@ public abstract class BaseController<S> implements Initializable {
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureEventSink, RunControl.unrestricted(), profiledOperation);
         lastStructureExecutionAnchors = executionAnchorRecorder.snapshot().orElse(null);
-        logChannels.appendStructureEventsSince(structureTimeline.events(), eventStart);
+        logChannels.appendStructureEventsSince(structureEvents(), eventStart);
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
         }
@@ -303,7 +305,7 @@ public abstract class BaseController<S> implements Initializable {
                     ExecutionEvents.emit(event);
                     return null;
                 });
-        logChannels.appendStructureEventsSince(structureTimeline.events(), eventStart);
+        logChannels.appendStructureEventsSince(structureEvents(), eventStart);
         return result.status() == ExecutionStatus.COMPLETED;
     }
 
@@ -312,9 +314,14 @@ public abstract class BaseController<S> implements Initializable {
         return memoryProfile.profileOperation(scope, operation, exposeAsActiveAlgorithm);
     }
 
-    /** Returns the complete structure-operation history retained by this controller. */
+    /** Keeps a stable immutable history between structure operations. */
     public final List<EventEnvelope> structureEvents() {
-        return structureTimeline.events();
+        int size = structureTimeline.size();
+        if (structureEventSnapshotSize != size) {
+            structureEventSnapshot = structureTimeline.events();
+            structureEventSnapshotSize = size;
+        }
+        return structureEventSnapshot;
     }
 
     public final void stopAlgorithm() {
