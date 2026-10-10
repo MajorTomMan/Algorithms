@@ -124,10 +124,14 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
   private void markPathNeighborhood(GridPoint point, IntConsumer changedIndex) {
     if (point == null) return;
     mark(point, changedIndex);
-    mark(new GridPoint(point.row() - 1, point.column()), changedIndex);
-    mark(new GridPoint(point.row() + 1, point.column()), changedIndex);
-    mark(new GridPoint(point.row(), point.column() - 1), changedIndex);
-    mark(new GridPoint(point.row(), point.column() + 1), changedIndex);
+    if (point.row() > 0)
+      mark(new GridPoint(point.row() - 1, point.column()), changedIndex);
+    if (point.row() + 1 < rows)
+      mark(new GridPoint(point.row() + 1, point.column()), changedIndex);
+    if (point.column() > 0)
+      mark(new GridPoint(point.row(), point.column() - 1), changedIndex);
+    if (point.column() + 1 < columns)
+      mark(new GridPoint(point.row(), point.column() + 1), changedIndex);
   }
 
   private void mark(GridPoint point, IntConsumer changedIndex) {
