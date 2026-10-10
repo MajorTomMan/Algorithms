@@ -10,10 +10,12 @@ import java.util.function.IntConsumer;
 final class MazeCellBits extends AbstractList<Boolean> implements RandomAccess {
   private final int length;
   private final long[] words;
+  private final int openCount;
 
-  private MazeCellBits(int length, long[] words) {
+  private MazeCellBits(int length, long[] words, int openCount) {
     this.length = length;
     this.words = words;
+    this.openCount = openCount;
   }
 
   static MazeCellBits copyOf(List<Boolean> source) {
@@ -21,11 +23,14 @@ final class MazeCellBits extends AbstractList<Boolean> implements RandomAccess {
     if (source instanceof MazeCellBits bits) return bits;
     int length = source.size();
     long[] words = new long[(int) (((long) length + 63L) >>> 6)];
+    int openCount = 0;
     for (int index = 0; index < length; index++) {
-      if (Objects.requireNonNull(source.get(index), "maze cell"))
+      if (Objects.requireNonNull(source.get(index), "maze cell")) {
         words[index >>> 6] |= 1L << (index & 63);
+        openCount++;
+      }
     }
-    return new MazeCellBits(length, words);
+    return new MazeCellBits(length, words, openCount);
   }
 
   MazeCellBits withOpened(int index) {
@@ -35,7 +40,11 @@ final class MazeCellBits extends AbstractList<Boolean> implements RandomAccess {
     if ((words[word] & mask) != 0L) return this;
     long[] updated = words.clone();
     updated[word] |= mask;
-    return new MazeCellBits(length, updated);
+    return new MazeCellBits(length, updated, openCount + 1);
+  }
+
+  int openCount() {
+    return openCount;
   }
 
   static void forEachDifference(List<Boolean> before, List<Boolean> after,

@@ -12,7 +12,7 @@ final class MazeMetricsProvider implements StructureMetricsProvider<MazeViewStat
 
   @Override
   public List<MetricItem> metrics(MazeViewState state, StructureMetricsContext context) {
-    long open = state.openCells().stream().filter(Boolean.TRUE::equals).count();
+    long open = state.openCellCount();
     long total = (long) state.rows() * state.columns();
     return List.of(
         MetricItem.text("dimensions", "label.workspace.metric.dimensions", state.rows() + "×" + state.columns()),

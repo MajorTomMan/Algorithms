@@ -36,6 +36,11 @@ public record MazeViewState(int rows, int columns, List<Boolean> openCells, Set<
         Set.of(), null, null, null, point(snapshot.entrance()), point(snapshot.exit()), false);
   }
 
+  /** Constant-time terrain metric, independent of maze dimensions. */
+  public int openCellCount() {
+    return ((MazeCellBits) openCells).openCount();
+  }
+
   public MazeViewState visit(GridPoint point) {
     Set<GridPoint> nextVisited = MazeVisitedBits.withAdded(rows, columns, visited, point);
     return new MazeViewState(rows, columns, openCells, path, nextVisited, point, null, null,
