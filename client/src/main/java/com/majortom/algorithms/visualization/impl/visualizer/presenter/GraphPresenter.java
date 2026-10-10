@@ -1,5 +1,6 @@
 package com.majortom.algorithms.visualization.impl.visualizer.presenter;
 
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphVisualText;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderIntent;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
@@ -7,6 +8,7 @@ import com.majortom.algorithms.visualization.render.api.StructuralRenderIntent;
 import com.majortom.algorithms.visualization.render.api.StructurePresenter;
 import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
+import java.util.Objects;
 
 public final class GraphPresenter implements StructurePresenter<GraphViewState> {
     @Override
@@ -28,6 +30,8 @@ public final class GraphPresenter implements StructurePresenter<GraphViewState> 
             GraphViewState.Edge left = previous.edges().get(index);
             GraphViewState.Edge right = current.edges().get(index);
             if (left.id() != right.id() || left.fromId() != right.fromId() || left.toId() != right.toId()) return true;
+            // Weight labels contribute measured decoration geometry, even when topology is unchanged.
+            if (!Objects.equals(GraphVisualText.weight(left.weight()), GraphVisualText.weight(right.weight()))) return true;
         }
         return false;
     }

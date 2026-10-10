@@ -18,7 +18,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.linked.animation.Li
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -53,7 +53,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
     private final LinkedAnimationSceneAdapter animationScene = new LinkedAnimationSceneAdapter();
     private final Text headLabel = new Text();
     private final Text tailLabel = new Text();
-    private LayoutPatch lastPatch;
+    private LayoutResult lastPatch;
     private Long selectedNodeId;
     private Long pendingSelectedNodeId;
     private LongConsumer selectionListener = ignored -> {};
@@ -74,7 +74,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
 
     @Override
     public CompletionStage<Void> commitLayout(
-            LinkedListViewState state, LayoutPatch patch, RenderCommitContext context) {
+            LinkedListViewState state, LayoutResult patch, RenderCommitContext context) {
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);
@@ -83,7 +83,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         applyPendingSelection(state);
         applyPresentation(state);
 
-        // LayoutPatch remains authoritative. Node movement uses temporary translate only.
+        // LayoutResult remains authoritative. Node movement uses temporary translate only.
         clearCurrentRoutes();
         for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {
             ElementGeometry bounds = patch.elements().get(LinkedListLayout.nodeId(entry.getKey()));
@@ -231,7 +231,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         }
     }
 
-    private void applyRoutes(LayoutPatch patch) {
+    private void applyRoutes(LayoutResult patch) {
         Map<String, EdgeGeometry> routes = new LinkedHashMap<>();
         for (EdgeGeometry route : patch.edges()) routes.put(route.id(), route);
         for (Map.Entry<EdgeKey, EdgeView> entry : edgeViews.entrySet()) {
@@ -251,7 +251,7 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         edgeViews.values().forEach(EdgeView::clearRoute);
     }
 
-    private void positionRoleLabels(LayoutPatch patch) {
+    private void positionRoleLabels(LayoutResult patch) {
         var head = patch.decorations().elements().get(LinkedListDecorationIds.HEAD);
         var tail = patch.decorations().elements().get(LinkedListDecorationIds.TAIL);
         if (head != null) {
@@ -348,9 +348,9 @@ public final class LinkedListVisualizer extends BaseVisualizer<LinkedListViewSta
         private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
         private final Map<Long, LinkedNodeDecoration> exitingDecorations = new LinkedHashMap<>();
         private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
-        private LayoutPatch targetPatch;
+        private LayoutResult targetPatch;
 
-        void prepare(AnimationPlan plan, LinkedListViewState state, LayoutPatch patch) {
+        void prepare(AnimationPlan plan, LinkedListViewState state, LayoutResult patch) {
             capturedCenters.clear();
             capturedRoutes.clear();
             for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {

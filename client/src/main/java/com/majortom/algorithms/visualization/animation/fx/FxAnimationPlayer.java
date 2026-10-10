@@ -74,7 +74,7 @@ public final class FxAnimationPlayer implements AnimationControl {
         Set<String> explicitNodes = new HashSet<>();
         Set<String> explicitEdges = new HashSet<>();
 
-        // Preserve visual continuity after the factual commit moved nodes to final LayoutPatch positions.
+        // Preserve visual continuity after the factual commit moved nodes to final LayoutResult positions.
         for (AnimationSceneAdapter.NodeTarget target : scene.activeNodes()) {
             String logicalId = target.logicalId();
             scene.capturedNodeCenter(logicalId).ifPresent(start -> {

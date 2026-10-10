@@ -2,7 +2,6 @@ package com.majortom.algorithms.visualization.render.runtime;
 
 import com.majortom.algorithms.visualization.render.api.BoundsSnapshot;
 import com.majortom.algorithms.visualization.render.api.ContentStyleSnapshot;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
 import com.majortom.algorithms.visualization.render.api.LayoutRequest;
 import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.PresentationRenderIntent;
@@ -329,7 +328,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         long generation = session.generation;
         long transactionId = transactionSequence.incrementAndGet();
         RenderTransaction transaction = new RenderTransaction(
-                transactionId, session.id, intent.kind(), generation, modelRevision, geometryRevision, System.nanoTime());
+                transactionId, session.id, generation, modelRevision, geometryRevision);
         trace(transaction, RenderPipeline.CAPTURE);
 
         CompletionStage<Void> prepareStage = intent.initialFrame()
@@ -393,7 +392,6 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             boolean layoutChanged) {
         if (!authoritative(session, transaction, intent.change())) return completedCancelled(session);
         trace(transaction, RenderPipeline.RESOLVE_LAYOUT);
-        LayoutPatch patch = LayoutPatch.from(layoutResult);
         long nextLayoutRevision = session.layoutRevision + (layoutChanged ? 1L : 0L);
         RenderCommitContext commitContext = RenderCommitContext.structural(
                 transaction.id(),
@@ -409,8 +407,8 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
 
         return fxExecutor.supply(() -> {
                     RenderSurface<S> target = surfaces.require(session.id);
-                    target.fxSurface().applyPrimaryContentBounds(patch.primaryContentBounds());
-                    return target.renderer().commitLayout(intent.snapshot(), patch, commitContext);
+                    target.fxSurface().applyPrimaryContentBounds(layoutResult.bounds());
+                    return target.renderer().commitLayout(intent.snapshot(), layoutResult, commitContext);
                 })
                 .thenCompose(stage -> stage)
                 .thenCompose(ignored -> pulseBarrier.await())
@@ -506,7 +504,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         long generation = session.generation;
         long modelRevision = session.modelRevision;
         RenderTransaction transaction = new RenderTransaction(
-                transactionId, session.id, intent.kind(), generation, modelRevision, session.geometryRevision, System.nanoTime());
+                transactionId, session.id, generation, modelRevision, session.geometryRevision);
         long presentationRevision = ++session.presentationRevision;
         RenderCommitContext context = RenderCommitContext.presentation(
                 transactionId,
@@ -533,8 +531,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         long generation = session.generation;
         long modelRevision = session.modelRevision;
         RenderTransaction transaction = new RenderTransaction(
-                transactionId, session.id, intent.kind(), generation, modelRevision,
-                session.geometryRevision, System.nanoTime());
+                transactionId, session.id, generation, modelRevision, session.geometryRevision);
         long presentationRevision = ++session.presentationRevision;
 
         PresentationSourceRegistry.Entry<Object> entry = presentationSources.require(session.id);
@@ -587,7 +584,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         long generation = session.generation;
         long transactionId = transactionSequence.incrementAndGet();
         RenderTransaction transaction = new RenderTransaction(
-                transactionId, session.id, intent.kind(), generation, session.modelRevision, session.geometryRevision, System.nanoTime());
+                transactionId, session.id, generation, session.modelRevision, session.geometryRevision);
         if (session.layout == null) {
             return CompletableFuture.completedFuture(new RenderResult(RenderStatus.NO_OP, session.id, session.modelRevision,
                     false, BoundsSnapshot.empty(), null));

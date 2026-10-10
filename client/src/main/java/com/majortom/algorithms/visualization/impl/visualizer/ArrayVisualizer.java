@@ -19,7 +19,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.indexed.IndexedStri
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -86,7 +86,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
 
     @Override
     public CompletionStage<Void> commitLayout(
-            ArrayViewState state, LayoutPatch patch, RenderCommitContext context) {
+            ArrayViewState state, LayoutResult patch, RenderCommitContext context) {
         int previousCellCount = strip.size();
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
@@ -232,7 +232,7 @@ public final class ArrayVisualizer extends BaseVisualizer<ArrayViewState> {
                         ArrayVisualIds::nodeIndex,
                         ArrayAnimationIds::exitIndex);
 
-        void prepare(AnimationPlan plan, ArrayViewState state, LayoutPatch patch) {
+        void prepare(AnimationPlan plan, ArrayViewState state, LayoutResult patch) {
             support.begin(patch);
             captureCentersForMutation(state.mutation(), state.values().size());
             for (var timed : plan.steps()) {

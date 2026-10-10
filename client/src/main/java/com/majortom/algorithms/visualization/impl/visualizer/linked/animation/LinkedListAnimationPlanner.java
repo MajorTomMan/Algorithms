@@ -6,7 +6,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.impl.visualizer.linked.LinkedListLayout;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -17,8 +17,8 @@ public final class LinkedListAnimationPlanner implements AnimationPlanner<Linked
   private static final double MOVE_EPSILON = 0.5d;
 
   @Override
-  public AnimationPlan plan(LinkedListViewState previousState, LayoutPatch previousLayout,
-      LinkedListViewState nextState, LayoutPatch nextLayout) {
+  public AnimationPlan plan(LinkedListViewState previousState, LayoutResult previousLayout,
+      LinkedListViewState nextState, LayoutResult nextLayout) {
     AnimationPlan.Builder plan = AnimationPlan.builder();
     Set<Long> previousIds = previousState.nodes().keySet();
     Set<Long> nextIds = nextState.nodes().keySet();

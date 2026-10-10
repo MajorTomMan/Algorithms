@@ -13,8 +13,4 @@ public record PresentationRenderIntent<S>(RenderSessionId sessionId, S snapshot,
     this(sessionId, snapshot, false);
   }
 
-  @Override
-  public RenderIntentKind kind() {
-    return RenderIntentKind.PRESENTATIONAL;
-  }
 }

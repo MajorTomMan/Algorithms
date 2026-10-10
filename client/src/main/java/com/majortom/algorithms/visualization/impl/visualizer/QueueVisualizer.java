@@ -19,7 +19,7 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.DecorationGeometry;
 import com.majortom.algorithms.visualization.render.api.DecorationSize;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
@@ -72,7 +72,7 @@ public final class QueueVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     @Override
     public CompletionStage<Void> commitLayout(
-            LinearStructureViewState state, LayoutPatch patch, RenderCommitContext context) {
+            LinearStructureViewState state, LayoutResult patch, RenderCommitContext context) {
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);

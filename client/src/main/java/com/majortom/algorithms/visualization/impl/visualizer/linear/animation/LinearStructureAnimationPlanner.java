@@ -7,7 +7,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.Objects;
 
 /** JavaFX-neutral Stack/Queue transition planner built from generic node primitives. */
@@ -26,9 +26,9 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
     @Override
     public AnimationPlan plan(
             LinearStructureViewState previousState,
-            LayoutPatch previousLayout,
+            LayoutResult previousLayout,
             LinearStructureViewState nextState,
-            LayoutPatch nextLayout) {
+            LayoutResult nextLayout) {
         AnimationPlan.Builder plan = AnimationPlan.builder();
         int oldSize = previousState.values().size();
         int newSize = nextState.values().size();
@@ -48,7 +48,7 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
         return plan.build();
     }
 
-    private void planFrontInsertion(AnimationPlan.Builder plan, LayoutPatch before, LayoutPatch after,
+    private void planFrontInsertion(AnimationPlan.Builder plan, LayoutResult before, LayoutResult after,
             int oldSize, int newSize) {
         if (newSize != oldSize + 1) return;
         for (int source = 0; source < oldSize; source++) {
@@ -57,7 +57,7 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
         enter(plan, 0);
     }
 
-    private void planTailInsertion(AnimationPlan.Builder plan, LayoutPatch before, LayoutPatch after,
+    private void planTailInsertion(AnimationPlan.Builder plan, LayoutResult before, LayoutResult after,
             int oldSize, int newSize) {
         if (newSize != oldSize + 1) return;
         for (int source = 0; source < oldSize; source++) {
@@ -66,7 +66,7 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
         enter(plan, newSize - 1);
     }
 
-    private void planFrontRemoval(AnimationPlan.Builder plan, LayoutPatch before, LayoutPatch after,
+    private void planFrontRemoval(AnimationPlan.Builder plan, LayoutResult before, LayoutResult after,
             int oldSize, int newSize) {
         if (newSize + 1 != oldSize || oldSize == 0) return;
         exit(plan, 0);
@@ -76,8 +76,8 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
     }
 
     private void planFallback(AnimationPlan.Builder plan,
-            LinearStructureViewState previousState, LayoutPatch previousLayout,
-            LinearStructureViewState nextState, LayoutPatch nextLayout) {
+            LinearStructureViewState previousState, LayoutResult previousLayout,
+            LinearStructureViewState nextState, LayoutResult nextLayout) {
         int common = Math.min(previousState.values().size(), nextState.values().size());
         for (int index = 0; index < common; index++) {
             moveIfNeeded(plan, previousLayout, index, nextLayout, index);
@@ -89,8 +89,8 @@ public final class LinearStructureAnimationPlanner implements AnimationPlanner<L
         for (int index = common; index < nextState.values().size(); index++) enter(plan, index);
     }
 
-    private void moveIfNeeded(AnimationPlan.Builder plan, LayoutPatch beforePatch, int sourceIndex,
-            LayoutPatch afterPatch, int targetIndex) {
+    private void moveIfNeeded(AnimationPlan.Builder plan, LayoutResult beforePatch, int sourceIndex,
+            LayoutResult afterPatch, int targetIndex) {
         ElementGeometry before = beforePatch.elements().get(LinearAnimationIds.node(kind, sourceIndex));
         ElementGeometry after = afterPatch.elements().get(LinearAnimationIds.node(kind, targetIndex));
         if (before == null || after == null) return;

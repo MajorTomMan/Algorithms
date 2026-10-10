@@ -15,7 +15,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.linear.animation.Li
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinearStructureVisualization;
 import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
@@ -54,7 +54,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
 
     @Override
     public CompletionStage<Void> commitLayout(
-            LinearStructureViewState state, LayoutPatch patch, RenderCommitContext context) {
+            LinearStructureViewState state, LayoutResult patch, RenderCommitContext context) {
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);
@@ -110,7 +110,7 @@ public final class StackVisualizer extends BaseVisualizer<LinearStructureViewSta
         }
     }
 
-    private void positionTopLabel(LayoutPatch patch) {
+    private void positionTopLabel(LayoutResult patch) {
         ElementGeometry top = patch.elements().get(id(0));
         if (top == null) {
             topLabel.relocate(48.0d, 40.0d);

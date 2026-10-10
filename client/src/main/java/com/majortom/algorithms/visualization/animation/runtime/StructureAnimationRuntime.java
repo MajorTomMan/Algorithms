@@ -5,7 +5,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationPlan;
 import com.majortom.algorithms.visualization.animation.api.AnimationPlanner;
 import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter;
 import com.majortom.algorithms.visualization.animation.fx.FxAnimationPlayer;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.Objects;
 import java.util.function.DoubleConsumer;
 
@@ -17,7 +17,7 @@ public final class StructureAnimationRuntime<S> implements AnimationControl {
   private final AnimationPlanner<S> planner;
   private final FxAnimationPlayer player = new FxAnimationPlayer();
   private S previousState;
-  private LayoutPatch previousLayout;
+  private LayoutResult previousLayout;
   private boolean disposed;
 
   public StructureAnimationRuntime(AnimationPlanner<S> planner) {
@@ -28,7 +28,7 @@ public final class StructureAnimationRuntime<S> implements AnimationControl {
    * Starts a new factual transition. The renderer must call this before mutating its active FX maps,
    * so an interrupted animation can capture the currently visible positions first.
    */
-  public AnimationPlan beginTransition(S nextState, LayoutPatch nextLayout, boolean animate) {
+  public AnimationPlan beginTransition(S nextState, LayoutResult nextLayout, boolean animate) {
     Objects.requireNonNull(nextState, "nextState");
     Objects.requireNonNull(nextLayout, "nextLayout");
     if (disposed) return AnimationPlan.empty();

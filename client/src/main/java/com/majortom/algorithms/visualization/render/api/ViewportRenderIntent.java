@@ -11,8 +11,4 @@ public record ViewportRenderIntent(RenderSessionId sessionId, ViewportSnapshot v
     Objects.requireNonNull(viewport, "viewport");
     Objects.requireNonNull(cameraPolicy, "cameraPolicy");
   }
-  @Override
-  public RenderIntentKind kind() {
-    return RenderIntentKind.VIEWPORT;
-  }
 }

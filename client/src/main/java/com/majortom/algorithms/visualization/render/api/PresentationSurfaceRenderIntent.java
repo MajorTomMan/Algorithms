@@ -8,8 +8,4 @@ public record PresentationSurfaceRenderIntent(RenderSessionId sessionId) impleme
     Objects.requireNonNull(sessionId, "sessionId");
   }
 
-  @Override
-  public RenderIntentKind kind() {
-    return RenderIntentKind.PRESENTATIONAL;
-  }
 }

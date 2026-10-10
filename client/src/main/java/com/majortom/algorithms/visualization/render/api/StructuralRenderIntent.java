@@ -18,8 +18,4 @@ public record StructuralRenderIntent<S>(RenderSessionId sessionId, S snapshot,
     Objects.requireNonNull(change, "change");
   }
 
-  @Override
-  public RenderIntentKind kind() {
-    return RenderIntentKind.STRUCTURAL;
-  }
 }

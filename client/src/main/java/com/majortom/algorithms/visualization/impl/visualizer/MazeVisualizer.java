@@ -9,7 +9,7 @@ import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.runtime.maze.MazeViewState;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -80,7 +80,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
 
 
     @Override
-    public CompletionStage<Void> commitLayout(MazeViewState state, LayoutPatch patch, RenderCommitContext context) {
+    public CompletionStage<Void> commitLayout(MazeViewState state, LayoutResult patch, RenderCommitContext context) {
         renderedState = state;
         ElementGeometry grid = patch.elements().get(GRID_ID);
         if (grid == null) {

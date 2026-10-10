@@ -29,10 +29,17 @@ public final class ArrayStructureVisualization implements StructureVisualization
             case DENSE -> 38.0d;
         };
         double height = Math.max(78.0d, 63.0d + context.contentStyle().fontSize());
+        // Every array cell has the same width. A swap only changes which value occupies a
+        // position, so it cannot invalidate geometry or force a relayout of each animation frame.
+        // Use measured text widths to ensure even the widest value fits in any cell.
+        double cellWidth = baseWidth;
         for (int index = 0; index < size; index++) {
             String text = state.values().get(index).text();
-            double width = DetachedMetrics.boxWidth(text, context.contentStyle(), baseWidth, 20.0d);
-            elements.add(new LayoutElement(elementId(index), width, height));
+            cellWidth = Math.max(cellWidth,
+                    DetachedMetrics.boxWidth(text, context.contentStyle(), baseWidth, 20.0d));
+        }
+        for (int index = 0; index < size; index++) {
+            elements.add(new LayoutElement(elementId(index), cellWidth, height));
         }
         return new LayoutRequest(context.requestId(), context.sessionId(), context.modelRevision(),
                 context.geometryRevision(), LinearLayoutEngine.ID, elements, Map.of(LayoutMetadataKeys.STRUCTURE, StructureIds.ARRAY));

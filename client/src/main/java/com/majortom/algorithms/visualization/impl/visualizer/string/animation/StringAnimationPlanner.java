@@ -5,7 +5,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationPlanner;
 import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.string.StringViewState;
 
 /** JavaFX-neutral String transition planner. */
@@ -13,8 +13,8 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
   private static final double MOVE_EPSILON = 0.5d;
 
   @Override
-  public AnimationPlan plan(StringViewState previousState, LayoutPatch previousLayout,
-      StringViewState nextState, LayoutPatch nextLayout) {
+  public AnimationPlan plan(StringViewState previousState, LayoutResult previousLayout,
+      StringViewState nextState, LayoutResult nextLayout) {
     AnimationPlan.Builder plan = AnimationPlan.builder();
     int oldSize = previousState.value().length();
     int newSize = nextState.value().length();
@@ -40,7 +40,7 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
     return plan.build();
   }
 
-  private static void planInsertion(AnimationPlan.Builder plan, LayoutPatch before, LayoutPatch after,
+  private static void planInsertion(AnimationPlan.Builder plan, LayoutResult before, LayoutResult after,
       int index, int length, int oldSize, int newSize) {
     if (length <= 0 || newSize != oldSize + length || index < 0 || index > oldSize) return;
     for (int source = 0; source < oldSize; source++) {
@@ -50,7 +50,7 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
     for (int target = index; target < index + length; target++) enter(plan, target);
   }
 
-  private static void planRemoval(AnimationPlan.Builder plan, LayoutPatch before, LayoutPatch after,
+  private static void planRemoval(AnimationPlan.Builder plan, LayoutResult before, LayoutResult after,
       int index, int length, int oldSize, int newSize) {
     if (length <= 0 || newSize + length != oldSize || index < 0 || index + length > oldSize) return;
     for (int source = index; source < index + length; source++) exit(plan, source);
@@ -62,7 +62,7 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
   }
 
   private static void planReplacement(AnimationPlan.Builder plan, StringViewState previousState,
-      LayoutPatch before, StringViewState nextState, LayoutPatch after, int index, int newLength) {
+      LayoutResult before, StringViewState nextState, LayoutResult after, int index, int newLength) {
     int oldSize = previousState.value().length();
     int newSize = nextState.value().length();
     int delta = newSize - oldSize;
@@ -85,7 +85,7 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
   }
 
   private static void planFallback(AnimationPlan.Builder plan, StringViewState previousState,
-      LayoutPatch before, StringViewState nextState, LayoutPatch after) {
+      LayoutResult before, StringViewState nextState, LayoutResult after) {
     int common = Math.min(previousState.value().length(), nextState.value().length());
     for (int index = 0; index < common; index++) {
       moveIfNeeded(plan, before, index, after, index);
@@ -95,15 +95,15 @@ public final class StringAnimationPlanner implements AnimationPlanner<StringView
     for (int index = common; index < nextState.value().length(); index++) enter(plan, index);
   }
 
-  private static void planIdentityMoves(AnimationPlan.Builder plan, LayoutPatch before,
-      LayoutPatch after, int fromInclusive, int toExclusive) {
+  private static void planIdentityMoves(AnimationPlan.Builder plan, LayoutResult before,
+      LayoutResult after, int fromInclusive, int toExclusive) {
     for (int index = fromInclusive; index < toExclusive; index++) {
       moveIfNeeded(plan, before, index, after, index);
     }
   }
 
-  private static void moveIfNeeded(AnimationPlan.Builder plan, LayoutPatch beforePatch,
-      int sourceIndex, LayoutPatch afterPatch, int targetIndex) {
+  private static void moveIfNeeded(AnimationPlan.Builder plan, LayoutResult beforePatch,
+      int sourceIndex, LayoutResult afterPatch, int targetIndex) {
     ElementGeometry before = beforePatch.elements().get(StringAnimationIds.node(sourceIndex));
     ElementGeometry after = afterPatch.elements().get(StringAnimationIds.node(targetIndex));
     if (!moved(before, after)) return;

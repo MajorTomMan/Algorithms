@@ -5,7 +5,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationPlanner;
 import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.array.ArrayViewState;
 import java.util.Objects;
 
@@ -14,8 +14,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
   private static final double MOVE_EPSILON = 0.5d;
 
   @Override
-  public AnimationPlan plan(ArrayViewState previousState, LayoutPatch previousLayout,
-      ArrayViewState nextState, LayoutPatch nextLayout) {
+  public AnimationPlan plan(ArrayViewState previousState, LayoutResult previousLayout,
+      ArrayViewState nextState, LayoutResult nextLayout) {
     AnimationPlan.Builder plan = AnimationPlan.builder();
     int oldSize = previousState.values().size();
     int newSize = nextState.values().size();
@@ -39,8 +39,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
     return plan.build();
   }
 
-  private static void planInsertion(AnimationPlan.Builder plan, LayoutPatch previousLayout,
-      LayoutPatch nextLayout, int insertedIndex, int oldSize, int newSize) {
+  private static void planInsertion(AnimationPlan.Builder plan, LayoutResult previousLayout,
+      LayoutResult nextLayout, int insertedIndex, int oldSize, int newSize) {
     if (newSize != oldSize + 1 || insertedIndex < 0 || insertedIndex > oldSize) return;
     for (int source = 0; source < oldSize; source++) {
       int target = source >= insertedIndex ? source + 1 : source;
@@ -49,8 +49,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
     enter(plan, insertedIndex);
   }
 
-  private static void planRemoval(AnimationPlan.Builder plan, LayoutPatch previousLayout,
-      LayoutPatch nextLayout, int removedIndex, int oldSize, int newSize) {
+  private static void planRemoval(AnimationPlan.Builder plan, LayoutResult previousLayout,
+      LayoutResult nextLayout, int removedIndex, int oldSize, int newSize) {
     if (newSize + 1 != oldSize || !valid(removedIndex, oldSize)) return;
     exit(plan, removedIndex);
     for (int source = 0; source < oldSize; source++) {
@@ -60,8 +60,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
     }
   }
 
-  private static void planSwap(AnimationPlan.Builder plan, LayoutPatch previousLayout,
-      LayoutPatch nextLayout, int left, int right, int oldSize, int newSize) {
+  private static void planSwap(AnimationPlan.Builder plan, LayoutResult previousLayout,
+      LayoutResult nextLayout, int left, int right, int oldSize, int newSize) {
     if (oldSize != newSize || !valid(left, oldSize) || !valid(right, oldSize) || left == right) return;
     for (int source = 0; source < oldSize; source++) {
       int target = source == left ? right : source == right ? left : source;
@@ -69,8 +69,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
     }
   }
 
-  private static void planStableIndexes(AnimationPlan.Builder plan, LayoutPatch previousLayout,
-      LayoutPatch nextLayout, int oldSize, int newSize) {
+  private static void planStableIndexes(AnimationPlan.Builder plan, LayoutResult previousLayout,
+      LayoutResult nextLayout, int oldSize, int newSize) {
     int common = Math.min(oldSize, newSize);
     for (int index = 0; index < common; index++) {
       moveIfNeeded(plan, previousLayout, index, nextLayout, index);
@@ -78,7 +78,7 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
   }
 
   private static void planFallback(AnimationPlan.Builder plan, ArrayViewState previousState,
-      LayoutPatch previousLayout, ArrayViewState nextState, LayoutPatch nextLayout) {
+      LayoutResult previousLayout, ArrayViewState nextState, LayoutResult nextLayout) {
     int common = Math.min(previousState.values().size(), nextState.values().size());
     for (int index = 0; index < common; index++) {
       moveIfNeeded(plan, previousLayout, index, nextLayout, index);
@@ -90,8 +90,8 @@ public final class ArrayAnimationPlanner implements AnimationPlanner<ArrayViewSt
     for (int index = common; index < nextState.values().size(); index++) enter(plan, index);
   }
 
-  private static void moveIfNeeded(AnimationPlan.Builder plan, LayoutPatch beforePatch,
-      int sourceIndex, LayoutPatch afterPatch, int targetIndex) {
+  private static void moveIfNeeded(AnimationPlan.Builder plan, LayoutResult beforePatch,
+      int sourceIndex, LayoutResult afterPatch, int targetIndex) {
     ElementGeometry before = beforePatch.elements().get(ArrayAnimationIds.node(sourceIndex));
     ElementGeometry after = afterPatch.elements().get(ArrayAnimationIds.node(targetIndex));
     if (!moved(before, after)) return;

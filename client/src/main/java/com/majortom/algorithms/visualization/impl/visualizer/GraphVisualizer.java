@@ -22,7 +22,7 @@ import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -74,7 +74,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     @Override
     public CompletionStage<Void> commitLayout(
-            GraphViewState state, LayoutPatch patch, RenderCommitContext context) {
+            GraphViewState state, LayoutResult patch, RenderCommitContext context) {
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);
@@ -189,7 +189,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         syncSelectionState();
     }
 
-    private void applyRoutes(LayoutPatch patch) {
+    private void applyRoutes(LayoutResult patch) {
         Map<String, EdgeGeometry> routes = new LinkedHashMap<>();
         for (EdgeGeometry route : patch.edges()) routes.put(route.id(), route);
         for (Map.Entry<Long, EdgeView> entry : edgeViews.entrySet()) {
@@ -203,7 +203,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         applyLabelLayout(patch);
     }
 
-    private void applyLabelLayout(LayoutPatch patch) {
+    private void applyLabelLayout(LayoutResult patch) {
         for (Map.Entry<Long, EdgeView> entry : edgeViews.entrySet()) {
             String edgeId = GraphElkLayout.edgeId(entry.getKey());
             var geometry = patch.decorations().edges().get(GraphDecorationIds.edgeLabel(edgeId));
@@ -380,9 +380,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
         private final Map<Long, Label> exitingNodeLabels = new LinkedHashMap<>();
         private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
-        private LayoutPatch targetPatch;
+        private LayoutResult targetPatch;
 
-        void prepare(AnimationPlan plan, GraphViewState state, LayoutPatch patch) {
+        void prepare(AnimationPlan plan, GraphViewState state, LayoutResult patch) {
             capturedCenters.clear();
             capturedRoutes.clear();
             for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {

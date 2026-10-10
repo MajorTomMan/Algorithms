@@ -20,7 +20,7 @@ import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
 import com.majortom.algorithms.visualization.render.api.LayoutLink;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -64,7 +64,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
 
     @Override
     public CompletionStage<Void> commitLayout(
-            TreeViewState state, LayoutPatch patch, RenderCommitContext context) {
+            TreeViewState state, LayoutResult patch, RenderCommitContext context) {
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);
@@ -175,7 +175,7 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         pendingSelectedNodeId = null;
     }
 
-    private void applyRoutes(LayoutPatch patch) {
+    private void applyRoutes(LayoutResult patch) {
         Map<String, EdgeGeometry> routes = new LinkedHashMap<>();
         for (EdgeGeometry route : patch.edges()) routes.put(route.id(), route);
         for (Map.Entry<EdgeKey, EdgeView> entry : edgeViews.entrySet()) {
@@ -286,9 +286,9 @@ public final class TreeVisualizer extends BaseVisualizer<TreeViewState> {
         private final Map<String, List<Point2D>> capturedRoutes = new LinkedHashMap<>();
         private final Map<Long, NodeView> exitingNodes = new LinkedHashMap<>();
         private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
-        private LayoutPatch targetPatch;
+        private LayoutResult targetPatch;
 
-        void prepare(AnimationPlan plan, TreeViewState state, LayoutPatch patch) {
+        void prepare(AnimationPlan plan, TreeViewState state, LayoutResult patch) {
             capturedCenters.clear();
             capturedRoutes.clear();
             for (Map.Entry<Long, NodeView> entry : nodeViews.entrySet()) {

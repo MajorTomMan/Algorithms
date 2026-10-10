@@ -6,7 +6,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationStep;
 import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.tree.TreeViewState;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,8 +18,8 @@ public final class TreeAnimationPlanner implements AnimationPlanner<TreeViewStat
     private static final double ROUTE_EPSILON = 0.5d;
 
     @Override
-    public AnimationPlan plan(TreeViewState previousState, LayoutPatch previousLayout,
-            TreeViewState nextState, LayoutPatch nextLayout) {
+    public AnimationPlan plan(TreeViewState previousState, LayoutResult previousLayout,
+            TreeViewState nextState, LayoutResult nextLayout) {
         AnimationPlan.Builder plan = AnimationPlan.builder();
         Set<Long> previousNodes = previousState.nodes().keySet();
         Set<Long> nextNodes = nextState.nodes().keySet();
@@ -75,7 +75,7 @@ public final class TreeAnimationPlanner implements AnimationPlanner<TreeViewStat
         return Math.hypot(afterX - beforeX, afterY - beforeY) > MOVE_EPSILON;
     }
 
-    private static Map<String, EdgeGeometry> routes(LayoutPatch patch) {
+    private static Map<String, EdgeGeometry> routes(LayoutResult patch) {
         Map<String, EdgeGeometry> result = new LinkedHashMap<>();
         for (EdgeGeometry edge : patch.edges()) result.put(edge.id(), edge);
         return result;

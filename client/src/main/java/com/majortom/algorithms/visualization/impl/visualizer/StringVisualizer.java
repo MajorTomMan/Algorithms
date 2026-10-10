@@ -24,7 +24,7 @@ import com.majortom.algorithms.visualization.render.api.StructureVisualization;
 import com.majortom.algorithms.visualization.render.api.DecorationGeometry;
 import com.majortom.algorithms.visualization.render.api.DecorationSize;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.fx.FxSurfaceAdapter;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
@@ -63,7 +63,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
     private final HBox patternTrack = new HBox(0.0d);
     private final List<KmpPatternCellView> patternCells = new ArrayList<>();
     private final StringDecorationLayout decorationLayout = new StringDecorationLayout();
-    private LayoutPatch lastPatch;
+    private LayoutResult lastPatch;
     private String lastRenderedValue = "";
     private String algorithmPattern = "";
 
@@ -121,7 +121,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
 
     @Override
     public CompletionStage<Void> commitLayout(
-            StringViewState state, LayoutPatch patch, RenderCommitContext context) {
+            StringViewState state, LayoutResult patch, RenderCommitContext context) {
         int previousCellCount = strip.size();
         boolean animate = context.modelChange() && !context.initialFrame();
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
@@ -218,7 +218,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         strip.normalizeOrder(animationScene.exitingCells());
     }
 
-    private void updateDecorations(StringViewState state, LayoutPatch patch) {
+    private void updateDecorations(StringViewState state, LayoutResult patch) {
         updateEmptyLabel(state.value().isEmpty());
         updateObservationLabel(state.observation());
         syncPatternCells();
@@ -269,7 +269,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
         }
     }
 
-    private void updatePatternOverlay(StringViewState state, LayoutPatch patch) {
+    private void updatePatternOverlay(StringViewState state, LayoutResult patch) {
         if (state == null || patch == null || state.completed()
                 || algorithmPattern.isEmpty() || strip.size() == 0) {
             detachPatternOverlay();
@@ -377,7 +377,7 @@ public final class StringVisualizer extends BaseVisualizer<StringViewState> {
                         StringVisualIds::nodeIndex,
                         StringAnimationIds::exitIndex);
 
-        void prepare(AnimationPlan plan, StringViewState state, LayoutPatch patch, int oldSize) {
+        void prepare(AnimationPlan plan, StringViewState state, LayoutResult patch, int oldSize) {
             support.begin(patch);
             captureCentersForMutation(state.mutation(), oldSize, state.value().length());
             for (var timed : plan.steps()) {

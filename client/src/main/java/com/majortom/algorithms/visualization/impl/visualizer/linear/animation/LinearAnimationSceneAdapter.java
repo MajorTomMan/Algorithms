@@ -9,7 +9,7 @@ import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
 import com.majortom.algorithms.visualization.impl.visualizer.linear.LinearNodeSupport;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -26,7 +26,7 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
     private final LinearNodeSupport nodes;
     private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
     private final Map<String, NodeView> exitingItems = new LinkedHashMap<>();
-    private LayoutPatch targetPatch;
+    private LayoutResult targetPatch;
 
     public LinearAnimationSceneAdapter(
             String kind, VisualizationSurface surface, LinearNodeSupport nodes) {
@@ -35,7 +35,7 @@ public final class LinearAnimationSceneAdapter implements AnimationSceneAdapter 
         this.nodes = Objects.requireNonNull(nodes, "nodes");
     }
 
-    public void prepare(AnimationPlan plan, LinearStructureViewState state, LayoutPatch patch) {
+    public void prepare(AnimationPlan plan, LinearStructureViewState state, LayoutResult patch) {
         capturedCenters.clear();
         targetPatch = Objects.requireNonNull(patch, "patch");
         captureCenters(state.mutation(), state.values().size());
