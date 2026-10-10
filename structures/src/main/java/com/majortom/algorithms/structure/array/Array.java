@@ -2,7 +2,6 @@ package com.majortom.algorithms.structure.array;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
-import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;

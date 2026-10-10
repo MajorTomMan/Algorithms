@@ -42,15 +42,6 @@ public record ExecutionSummary(ExecutionStatistics statistics, OptionalLong inpu
     return from(statistics).withResourceUsage(usage);
   }
 
-  /** Returns the logical algorithm counters represented by the summary. */
-  public DomainStatistics domainStatistics() {
-    DomainStatistics logical = statistics.domainStatistics();
-    if (inputSize.isPresent()) {
-      return logical.withInputSize(inputSize.getAsLong());
-    }
-    return logical;
-  }
-
   /** Returns the timestamp span represented by the execution event stream. */
   public Duration eventSpan() {
     return timing.eventSpan();

@@ -35,9 +35,6 @@ public record ExecutionStatistics(long totalEventCount, long domainEventCount,
   public long operationCount(String name) {
     return metric(name);
   }
-  public DomainStatistics domainStatistics() {
-    return DomainStatistics.from(this);
-  }
 
   public static ExecutionStatistics empty() {
     return new ExecutionStatistics(
