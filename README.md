@@ -20,3 +20,7 @@ python start.py
 - **桌面 UI：** JavaFX 21、AtlantaFX、FXML / CSS
 - **可视化：** GestureFX（视口缩放）、Eclipse ELK（图与树布局）
 - **数据与分析：** Jackson、JFR；JOL 为可选内存分析依赖
+
+## 数据读写
+
+独立 Maven 模块 `data-io` 提供 `DataReader<T>`、`DataWriter<T>` 及 JSON 编解码器，不依赖数据结构、算法或 JavaFX。文件读取和安全写入示例见 [data-io/README.md](data-io/README.md)。
