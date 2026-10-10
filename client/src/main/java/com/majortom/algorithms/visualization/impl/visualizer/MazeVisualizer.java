@@ -21,6 +21,9 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
+import javafx.scene.Group;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -34,6 +37,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("MAZE");
     private static final StructureVisualization<MazeViewState> STRUCTURE_VISUALIZATION = new MazeStructureVisualization();
     private static final String GRID_ID = "maze:grid";
+    private static final int TILE_CELLS = 16;
     private static final int[][] PATH_NEIGHBORS = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
     private static final Color WALL_FILL = Color.web("#363B42");
     private static final Color ROAD_FILL = Color.web("#F8F8F6");
@@ -49,6 +53,17 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     private static final Color MARKER_STROKE = RAN_BLACK;
 
     private final VisualizationSurface surface = new VisualizationSurface();
+    private final Group tileLayer = new Group();
+    private final List<MazeTile> tiles = new ArrayList<>();
+    private GraphicsContext painter;
+    private int tileColumns;
+    private int tileRows;
+    private int terrainRows = -1;
+    private int terrainColumns = -1;
+    private double worldWidth;
+    private double worldHeight;
+    private double tiledCellWidth = Double.NaN;
+    private double tiledCellHeight = Double.NaN;
     private final Path gridLines = new Path();
     private int gridRows = -1;
     private int gridColumns = -1;
@@ -67,7 +82,8 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         installSurface(surface);
         canvas.widthProperty().unbind();
         canvas.heightProperty().unbind();
-        surface.nodeLayer().getChildren().add(canvas);
+        // Keeping the inherited Canvas detached avoids allocating a single huge texture.
+        surface.nodeLayer().getChildren().add(tileLayer);
 
         // A single vector path replaces one border stroke for every maze cell.
         // It moves with the same GestureFX world transform as the terrain Canvas.
@@ -85,17 +101,17 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
                 return;
             // The scene graph already scales both terrain and grid. Only a density
             // transition needs a new terrain image, not every scroll tick.
-            double screenCellSize = Math.min(canvas.getWidth() / state.columns(),
-                    canvas.getHeight() / state.rows()) * cameraScale();
+            double screenCellSize = Math.min(worldWidth / state.columns(),
+                    worldHeight / state.rows()) * cameraScale();
             gridLines.setStrokeWidth(Math.min(1.0d, 1.0d / cameraScale()));
             if (densityFor(screenCellSize) != density)
                 paint(state);
         });
-        canvas.setOnMouseClicked(event -> {
+        tileLayer.setOnMouseClicked(event -> {
             MazeViewState state = renderedState;
             if (state == null || state.rows() < 1 || state.columns() < 1) return;
-            double cellWidth = canvas.getWidth() / state.columns();
-            double cellHeight = canvas.getHeight() / state.rows();
+            double cellWidth = worldWidth / state.columns();
+            double cellHeight = worldHeight / state.rows();
             int column = (int) Math.floor(event.getX() / cellWidth);
             int row = (int) Math.floor(event.getY() / cellHeight);
             if (row < 0 || row >= state.rows() || column < 0 || column >= state.columns()) return;
@@ -115,14 +131,17 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         paintedState = null;
         ElementGeometry grid = patch.elements().get(GRID_ID);
         if (grid == null) {
-            canvas.setWidth(1.0d);
-            canvas.setHeight(1.0d);
+            worldWidth = 1.0d;
+            worldHeight = 1.0d;
+            tileLayer.setTranslateX(0.0d);
+            tileLayer.setTranslateY(0.0d);
             gridLines.setTranslateX(0.0d);
             gridLines.setTranslateY(0.0d);
         } else {
-            canvas.setWidth(grid.width());
-            canvas.setHeight(grid.height());
-            canvas.relocate(grid.x(), grid.y());
+            worldWidth = grid.width();
+            worldHeight = grid.height();
+            tileLayer.setTranslateX(grid.x());
+            tileLayer.setTranslateY(grid.y());
             gridLines.setTranslateX(grid.x());
             gridLines.setTranslateY(grid.y());
         }
@@ -141,19 +160,20 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         if (state.rows() < 1 || state.columns() < 1
                 || state.openCells().size() < state.rows() * state.columns()) {
             paintedState = null;
+            tileLayer.getChildren().clear();
+            tiles.clear();
             gridLines.setVisible(false);
-            fillBackground();
             return;
         }
-        double width = canvas.getWidth();
-        double height = canvas.getHeight();
+        double width = worldWidth;
+        double height = worldHeight;
         double cellWidth = width / state.columns();
         double cellHeight = height / state.rows();
         VisualDensity targetDensity = densityFor(
                 Math.min(cellWidth, cellHeight) * cameraScale());
-
+        boolean rebuiltTiles = ensureTiles(state, cellWidth, cellHeight);
         MazeViewState previous = paintedState;
-        boolean sameGeometry = previous != null
+        boolean sameGeometry = !rebuiltTiles && previous != null
                 && previous.rows() == state.rows() && previous.columns() == state.columns()
                 && width == paintedWidth && height == paintedHeight
                 && targetDensity == density;
@@ -166,7 +186,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             state.forEachChangedCell(previous, dirty::set);
             markDirty(dirty, state, paintedSelection);
             markDirty(dirty, state, selectedCell);
-            // Large seeks and snapshot changes are cheaper as a complete paint.
+            // Seeking a long way backward can dirty most of the map.
             if (dirty.cardinality() <= Math.max(128, state.rows() * state.columns() / 4)) {
                 for (int index = dirty.nextSetBit(0); index >= 0;
                         index = dirty.nextSetBit(index + 1)) {
@@ -178,17 +198,144 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             }
         }
 
-        fillBackground();
-        drawBaseGrid(state, cellWidth, cellHeight);
-        drawVisited(state, cellWidth, cellHeight);
-        drawRoles(state, cellWidth, cellHeight);
-        drawObserved(state, cellWidth, cellHeight);
-        drawBacktracked(state, cellWidth, cellHeight);
-        drawPath(state, cellWidth, cellHeight);
-        drawCurrent(state, cellWidth, cellHeight);
-        drawRoleLabels(state, cellWidth, cellHeight);
-        drawSelection(state, cellWidth, cellHeight);
+        for (MazeTile tile : tiles)
+            paintWholeTile(state, tile, cellWidth, cellHeight);
         rememberPaint(state, width, height);
+    }
+
+    /**
+     * The 99x99 maze uses small 16x16-cell Canvas tiles. When a few cells
+     * change, only their owning textures become dirty; GestureFX can cull
+     * off-screen tiles while the user is zoomed in.
+     */
+    private boolean ensureTiles(MazeViewState state, double cellWidth, double cellHeight) {
+        if (terrainRows == state.rows() && terrainColumns == state.columns()
+                && tiledCellWidth == cellWidth && tiledCellHeight == cellHeight
+                && !tiles.isEmpty())
+            return false;
+        tiles.clear();
+        tileLayer.getChildren().clear();
+        tileColumns = (state.columns() + TILE_CELLS - 1) / TILE_CELLS;
+        tileRows = (state.rows() + TILE_CELLS - 1) / TILE_CELLS;
+        for (int tileRow = 0; tileRow < tileRows; tileRow++) {
+            for (int tileColumn = 0; tileColumn < tileColumns; tileColumn++) {
+                int firstRow = tileRow * TILE_CELLS;
+                int firstColumn = tileColumn * TILE_CELLS;
+                int lastRow = Math.min(state.rows(), firstRow + TILE_CELLS);
+                int lastColumn = Math.min(state.columns(), firstColumn + TILE_CELLS);
+                double x = firstColumn * cellWidth;
+                double y = firstRow * cellHeight;
+                Canvas tileCanvas = new Canvas((lastColumn - firstColumn) * cellWidth,
+                        (lastRow - firstRow) * cellHeight);
+                tileCanvas.setLayoutX(x);
+                tileCanvas.setLayoutY(y);
+                GraphicsContext tileGraphics = tileCanvas.getGraphicsContext2D();
+                tileGraphics.setTransform(1.0d, 0.0d, 0.0d, 1.0d, -x, -y);
+                tiles.add(new MazeTile(tileCanvas, tileGraphics, firstRow, lastRow,
+                        firstColumn, lastColumn, x, y));
+                tileLayer.getChildren().add(tileCanvas);
+            }
+        }
+        terrainRows = state.rows();
+        terrainColumns = state.columns();
+        tiledCellWidth = cellWidth;
+        tiledCellHeight = cellHeight;
+        paintedState = null;
+        return true;
+    }
+
+    /** Renders one tile in layered order, preserving the existing maze styling. */
+    private void paintWholeTile(MazeViewState state, MazeTile tile,
+            double cellWidth, double cellHeight) {
+        painter = tile.graphics;
+        painter.save();
+        painter.setEffect(null);
+        painter.setFill(WALL_FILL);
+        painter.fillRect(tile.x, tile.y, tile.canvas.getWidth(), tile.canvas.getHeight());
+
+        // Static terrain first, then all state highlights.
+        for (int row = tile.firstRow; row < tile.lastRow; row++) {
+            for (int column = tile.firstColumn; column < tile.lastColumn; column++) {
+                int index = row * state.columns() + column;
+                boolean open = state.openCells().get(index);
+                if (density == VisualDensity.DENSE) {
+                    if (open) {
+                        painter.setFill(ROAD_FILL);
+                        double x0 = Math.floor(column * cellWidth);
+                        double y0 = Math.floor(row * cellHeight);
+                        double x1 = Math.ceil((column + 1) * cellWidth);
+                        double y1 = Math.ceil((row + 1) * cellHeight);
+                        painter.fillRect(x0, y0, Math.max(1.0d, x1 - x0),
+                                Math.max(1.0d, y1 - y0));
+                    }
+                } else if (open) {
+                    painter.setFill(ROAD_FILL);
+                    painter.fillRect(column * cellWidth, row * cellHeight,
+                            cellWidth, cellHeight);
+                }
+            }
+        }
+
+        for (int row = tile.firstRow; row < tile.lastRow; row++) {
+            for (int column = tile.firstColumn; column < tile.lastColumn; column++) {
+                GridPoint point = new GridPoint(row, column);
+                if (state.visited().contains(point))
+                    drawVisitedCell(point, cellWidth, cellHeight);
+            }
+        }
+        if (tile.contains(state.entrance()))
+            drawRoleBadge(state.entrance(), ROLE_START_FILL, state, cellWidth, cellHeight);
+        if (tile.contains(state.exit()))
+            drawRoleBadge(state.exit(), ROLE_EXIT_FILL, state, cellWidth, cellHeight);
+        if (tile.contains(state.observed()))
+            drawMarker(state, state.observed(), cellWidth, cellHeight, false);
+        if (tile.contains(state.backtracked()))
+            drawMarker(state, state.backtracked(), cellWidth, cellHeight, true);
+        for (GridPoint point : state.path()) {
+            if (tile.contains(point))
+                drawPathCell(state, point, cellWidth, cellHeight);
+        }
+        if (tile.contains(state.active()))
+            drawCurrent(state, cellWidth, cellHeight);
+        if (tile.contains(state.entrance()))
+            drawRoleLabel(state.entrance(), "S", state, cellWidth, cellHeight);
+        if (tile.contains(state.exit()))
+            drawRoleLabel(state.exit(), "E", state, cellWidth, cellHeight);
+        if (tile.contains(selectedCell))
+            drawSelection(state, cellWidth, cellHeight);
+        painter.restore();
+    }
+
+    private MazeTile tileFor(int row, int column) {
+        return tiles.get((row / TILE_CELLS) * tileColumns + column / TILE_CELLS);
+    }
+
+    private static final class MazeTile {
+        final Canvas canvas;
+        final GraphicsContext graphics;
+        final int firstRow;
+        final int lastRow;
+        final int firstColumn;
+        final int lastColumn;
+        final double x;
+        final double y;
+
+        MazeTile(Canvas canvas, GraphicsContext graphics, int firstRow, int lastRow,
+                int firstColumn, int lastColumn, double x, double y) {
+            this.canvas = canvas;
+            this.graphics = graphics;
+            this.firstRow = firstRow;
+            this.lastRow = lastRow;
+            this.firstColumn = firstColumn;
+            this.lastColumn = lastColumn;
+            this.x = x;
+            this.y = y;
+        }
+
+        boolean contains(GridPoint point) {
+            return point != null && point.row() >= firstRow && point.row() < lastRow
+                    && point.column() >= firstColumn && point.column() < lastColumn;
+        }
     }
 
     private void rememberPaint(MazeViewState state, double width, double height) {
@@ -230,24 +377,25 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     /** Repaints only the affected tile. Clip prevents neighboring overlays being erased. */
     private void paintCell(MazeViewState state, int row, int column,
             double cellWidth, double cellHeight) {
+        painter = tileFor(row, column).graphics;
         double x = column * cellWidth;
         double y = row * cellHeight;
         GridPoint point = new GridPoint(row, column);
-        gc.save();
-        gc.beginPath();
-        gc.rect(x, y, cellWidth, cellHeight);
-        gc.clip();
+        painter.save();
+        painter.beginPath();
+        painter.rect(x, y, cellWidth, cellHeight);
+        painter.clip();
 
         if (density == VisualDensity.DENSE) {
-            gc.setFill(state.openCells().get(row * state.columns() + column)
+            painter.setFill(state.openCells().get(row * state.columns() + column)
                     ? ROAD_FILL : WALL_FILL);
             double x0 = Math.floor(x), y0 = Math.floor(y);
             double x1 = Math.ceil(x + cellWidth), y1 = Math.ceil(y + cellHeight);
-            gc.fillRect(x0, y0, Math.max(1.0d, x1 - x0), Math.max(1.0d, y1 - y0));
+            painter.fillRect(x0, y0, Math.max(1.0d, x1 - x0), Math.max(1.0d, y1 - y0));
         } else {
-            gc.setFill(state.openCells().get(row * state.columns() + column)
+            painter.setFill(state.openCells().get(row * state.columns() + column)
                     ? ROAD_FILL : WALL_FILL);
-            gc.fillRect(x, y, cellWidth, cellHeight);
+            painter.fillRect(x, y, cellWidth, cellHeight);
         }
 
         if (state.visited().contains(point))
@@ -272,7 +420,7 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             drawRoleLabel(point, "E", state, cellWidth, cellHeight);
         if (point.equals(selectedCell))
             drawSelection(state, cellWidth, cellHeight);
-        gc.restore();
+        painter.restore();
     }
 
     private void drawVisitedCell(GridPoint point, double cellWidth, double cellHeight) {
@@ -281,21 +429,21 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
                 : Math.max(1.0d, cellSize * 0.12d);
         double x = point.column() * cellWidth;
         double y = point.row() * cellHeight;
-        gc.setFill(VISITED_FILL);
-        gc.fillRect(x + inset, y + inset,
+        painter.setFill(VISITED_FILL);
+        painter.fillRect(x + inset, y + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
-        gc.setFill(VISITED_STROKE);
+        painter.setFill(VISITED_STROKE);
         if (density == VisualDensity.DENSE) {
             double markerSize = Math.min(cellSize * 0.34d, worldLengthForScreenPixels(0.9d));
             double centerX = (point.column() + 0.5d) * cellWidth;
             double centerY = (point.row() + 0.5d) * cellHeight;
-            gc.fillRect(centerX - markerSize / 2.0d, centerY - markerSize / 2.0d,
+            painter.fillRect(centerX - markerSize / 2.0d, centerY - markerSize / 2.0d,
                     markerSize, markerSize);
         } else {
-            gc.setStroke(VISITED_STROKE);
-            gc.setLineWidth(visitedStrokeWidth(cellSize));
-            gc.strokeRect(x + inset, y + inset,
+            painter.setStroke(VISITED_STROKE);
+            painter.setLineWidth(visitedStrokeWidth(cellSize));
+            painter.strokeRect(x + inset, y + inset,
                     Math.max(0.0d, cellWidth - inset * 2.0d),
                     Math.max(0.0d, cellHeight - inset * 2.0d));
         }
@@ -309,18 +457,18 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
                 ? denseStrokeWidth(cellSize, 1.5d) : Math.max(2.0d, cellSize * 0.24d);
         double edgeWidth = density == VisualDensity.DENSE
                 ? denseStrokeWidth(cellSize, 2.8d) : Math.max(lineWidth + 1.5d, cellSize * 0.30d);
-        gc.save();
-        gc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
-        gc.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
-        gc.setStroke(PATH_EDGE);
-        gc.setFill(PATH_EDGE);
-        gc.setLineWidth(edgeWidth);
+        painter.save();
+        painter.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        painter.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
+        painter.setStroke(PATH_EDGE);
+        painter.setFill(PATH_EDGE);
+        painter.setLineWidth(edgeWidth);
         drawPathTileGeometry(state, point, cellWidth, cellHeight, edgeWidth);
-        gc.setStroke(RAN_YELLOW);
-        gc.setFill(RAN_YELLOW);
-        gc.setLineWidth(lineWidth);
+        painter.setStroke(RAN_YELLOW);
+        painter.setFill(RAN_YELLOW);
+        painter.setLineWidth(lineWidth);
         drawPathTileGeometry(state, point, cellWidth, cellHeight, lineWidth);
-        gc.restore();
+        painter.restore();
     }
 
     private void drawPathTileGeometry(MazeViewState state, GridPoint point,
@@ -332,96 +480,10 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
             int column = point.column() + offset[1];
             if (row >= 0 && column >= 0 && row < state.rows() && column < state.columns()
                     && state.path().contains(new GridPoint(row, column))) {
-                gc.strokeLine(x, y, x + offset[1] * cellWidth, y + offset[0] * cellHeight);
+                painter.strokeLine(x, y, x + offset[1] * cellWidth, y + offset[0] * cellHeight);
             }
         }
-        gc.fillOval(x - lineWidth / 2.0d, y - lineWidth / 2.0d, lineWidth, lineWidth);
-    }
-
-    private void fillBackground() {
-        gc.setEffect(null);
-        gc.setFill(ROAD_FILL);
-        gc.fillRect(0.0d, 0.0d, canvas.getWidth(), canvas.getHeight());
-    }
-
-    private void drawBaseGrid(MazeViewState state, double cellWidth, double cellHeight) {
-        if (density == VisualDensity.DENSE) {
-            drawDenseBase(state, cellWidth, cellHeight);
-            return;
-        }
-        // Grid boundaries are drawn once by gridLines, outside this Canvas.
-        // Group fills by terrain color to avoid one stroke per cell.
-        for (int row = 0; row < state.rows(); row++) {
-            for (int column = 0; column < state.columns(); column++) {
-                int index = row * state.columns() + column;
-                gc.setFill(state.openCells().get(index) ? ROAD_FILL : WALL_FILL);
-                gc.fillRect(column * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            }
-        }
-    }
-
-    private void drawDenseBase(MazeViewState state, double cellWidth, double cellHeight) {
-        gc.setFill(WALL_FILL);
-        gc.fillRect(0.0d, 0.0d, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(ROAD_FILL);
-        for (int row = 0; row < state.rows(); row++) {
-            for (int column = 0; column < state.columns(); column++) {
-                int index = row * state.columns() + column;
-                if (!state.openCells().get(index)) continue;
-                double x0 = Math.floor(column * cellWidth);
-                double y0 = Math.floor(row * cellHeight);
-                double x1 = Math.ceil((column + 1) * cellWidth);
-                double y1 = Math.ceil((row + 1) * cellHeight);
-                gc.fillRect(x0, y0, Math.max(1.0d, x1 - x0), Math.max(1.0d, y1 - y0));
-            }
-        }
-    }
-
-    private void drawVisited(MazeViewState state, double cellWidth, double cellHeight) {
-        gc.setFill(VISITED_FILL);
-        double cellSize = Math.min(cellWidth, cellHeight);
-        double inset;
-        if (density == VisualDensity.DENSE) {
-            inset = 0.0d;
-        } else {
-            inset = Math.max(1.0d, Math.min(cellWidth, cellHeight) * 0.12d);
-        }
-        for (GridPoint point : state.visited()) {
-            if (!inside(state, point)) continue;
-            double x = point.column() * cellWidth;
-            double y = point.row() * cellHeight;
-            gc.fillRect(x + inset, y + inset,
-                    Math.max(0.0d, cellWidth - inset * 2.0d),
-                    Math.max(0.0d, cellHeight - inset * 2.0d));
-            if (density != VisualDensity.DENSE) {
-                gc.setStroke(VISITED_STROKE);
-                gc.setLineWidth(visitedStrokeWidth(cellSize));
-                gc.strokeRect(x + inset, y + inset,
-                        Math.max(0.0d, cellWidth - inset * 2.0d),
-                        Math.max(0.0d, cellHeight - inset * 2.0d));
-            }
-        }
-        if (density == VisualDensity.DENSE) {
-            double markerSize = Math.min(cellSize * 0.34d, worldLengthForScreenPixels(0.9d));
-            gc.setFill(VISITED_STROKE);
-            for (GridPoint point : state.visited()) {
-                if (!inside(state, point)) continue;
-                double centerX = (point.column() + 0.5d) * cellWidth;
-                double centerY = (point.row() + 0.5d) * cellHeight;
-                gc.fillRect(centerX - markerSize / 2.0d, centerY - markerSize / 2.0d,
-                        markerSize, markerSize);
-            }
-        }
-    }
-
-    private void drawObserved(MazeViewState state, double cellWidth, double cellHeight) {
-        GridPoint point = state.observed();
-        drawMarker(state, point, cellWidth, cellHeight, false);
-    }
-
-    private void drawBacktracked(MazeViewState state, double cellWidth, double cellHeight) {
-        GridPoint point = state.backtracked();
-        drawMarker(state, point, cellWidth, cellHeight, true);
+        painter.fillOval(x - lineWidth / 2.0d, y - lineWidth / 2.0d, lineWidth, lineWidth);
     }
 
     private void drawMarker(MazeViewState state, GridPoint point, double cellWidth,
@@ -435,65 +497,24 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         double centerY = (point.row() + 0.5d) * cellHeight;
         double half = markerSize / 2.0d;
 
-        gc.save();
-        gc.setFill(RAN_YELLOW);
-        gc.setStroke(MARKER_STROKE);
-        gc.setLineWidth(density == VisualDensity.DENSE
+        painter.save();
+        painter.setFill(RAN_YELLOW);
+        painter.setStroke(MARKER_STROKE);
+        painter.setLineWidth(density == VisualDensity.DENSE
                 ? denseStrokeWidth(cellSize, 1.0d)
                 : Math.max(1.0d, Math.min(2.0d, cellSize * 0.08d)));
         if (diamond) {
             double[] xPoints = {centerX, centerX + half, centerX, centerX - half};
             double[] yPoints = {centerY - half, centerY, centerY + half, centerY};
-            gc.fillPolygon(xPoints, yPoints, 4);
-            if (markerSize >= 3.0d) gc.strokePolygon(xPoints, yPoints, 4);
+            painter.fillPolygon(xPoints, yPoints, 4);
+            if (markerSize >= 3.0d) painter.strokePolygon(xPoints, yPoints, 4);
         } else {
-            gc.fillOval(centerX - half, centerY - half, markerSize, markerSize);
+            painter.fillOval(centerX - half, centerY - half, markerSize, markerSize);
             if (markerSize >= 3.0d) {
-                gc.strokeOval(centerX - half, centerY - half, markerSize, markerSize);
+                painter.strokeOval(centerX - half, centerY - half, markerSize, markerSize);
             }
         }
-        gc.restore();
-    }
-
-    private void drawPath(MazeViewState state, double cellWidth, double cellHeight) {
-        if (state.path().isEmpty()) return;
-        gc.save();
-        double cellSize = Math.min(cellWidth, cellHeight);
-        double lineWidth = density == VisualDensity.DENSE
-                ? denseStrokeWidth(cellSize, 1.5d)
-                : Math.max(2.0d, cellSize * 0.24d);
-        double edgeWidth = density == VisualDensity.DENSE
-                ? denseStrokeWidth(cellSize, 2.8d)
-                : Math.max(lineWidth + 1.5d, cellSize * 0.30d);
-        gc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
-        gc.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
-        gc.setStroke(PATH_EDGE);
-        gc.setFill(PATH_EDGE);
-        gc.setLineWidth(edgeWidth);
-        drawPathGeometry(state, cellWidth, cellHeight, edgeWidth);
-        gc.setStroke(RAN_YELLOW);
-        gc.setFill(RAN_YELLOW);
-        gc.setLineWidth(lineWidth);
-        drawPathGeometry(state, cellWidth, cellHeight, lineWidth);
-        gc.restore();
-    }
-
-    private void drawPathGeometry(MazeViewState state, double cellWidth, double cellHeight,
-            double lineWidth) {
-        for (GridPoint point : state.path()) {
-            if (!inside(state, point)) continue;
-            double x = (point.column() + 0.5d) * cellWidth;
-            double y = (point.row() + 0.5d) * cellHeight;
-            GridPoint right = new GridPoint(point.row(), point.column() + 1);
-            GridPoint down = new GridPoint(point.row() + 1, point.column());
-            if (state.path().contains(right)) {
-                gc.strokeLine(x, y, x + cellWidth, y);
-            }
-            if (state.path().contains(down)) {
-                gc.strokeLine(x, y, x, y + cellHeight);
-            }
-            gc.fillOval(x - lineWidth / 2.0d, y - lineWidth / 2.0d, lineWidth, lineWidth);
-        }
+        painter.restore();
     }
 
     private void drawCurrent(MazeViewState state, double cellWidth, double cellHeight) {
@@ -503,20 +524,15 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         double inset = density == VisualDensity.DENSE
                 ? Math.min(cellSize * 0.36d, worldLengthForScreenPixels(1.2d))
                 : Math.max(1.0d, cellSize * 0.10d);
-        gc.save();
-        gc.setStroke(RAN_RED);
-        gc.setLineWidth(density == VisualDensity.DENSE
+        painter.save();
+        painter.setStroke(RAN_RED);
+        painter.setLineWidth(density == VisualDensity.DENSE
                 ? denseStrokeWidth(cellSize, 1.4d)
                 : Math.max(2.0d, cellSize * 0.16d));
-        gc.strokeRect(point.column() * cellWidth + inset, point.row() * cellHeight + inset,
+        painter.strokeRect(point.column() * cellWidth + inset, point.row() * cellHeight + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
-        gc.restore();
-    }
-
-    private void drawRoles(MazeViewState state, double cellWidth, double cellHeight) {
-        drawRoleBadge(state.entrance(), ROLE_START_FILL, state, cellWidth, cellHeight);
-        drawRoleBadge(state.exit(), ROLE_EXIT_FILL, state, cellWidth, cellHeight);
+        painter.restore();
     }
 
     private void drawRoleBadge(GridPoint point, Color fill, MazeViewState state,
@@ -531,21 +547,16 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         double width = Math.max(0.0d, cellWidth - inset * 2.0d);
         double height = Math.max(0.0d, cellHeight - inset * 2.0d);
 
-        gc.save();
-        gc.setFill(fill);
+        painter.save();
+        painter.setFill(fill);
         double radius = Math.min(8.0d, cellSize * 0.30d);
-        gc.fillRoundRect(x + inset, y + inset, width, height, radius, radius);
+        painter.fillRoundRect(x + inset, y + inset, width, height, radius, radius);
         if (density == VisualDensity.DENSE) {
-            gc.setStroke(RAN_WHITE);
-            gc.setLineWidth(denseStrokeWidth(cellSize, 1.0d));
-            gc.strokeRoundRect(x + inset, y + inset, width, height, radius, radius);
+            painter.setStroke(RAN_WHITE);
+            painter.setLineWidth(denseStrokeWidth(cellSize, 1.0d));
+            painter.strokeRoundRect(x + inset, y + inset, width, height, radius, radius);
         }
-        gc.restore();
-    }
-
-    private void drawRoleLabels(MazeViewState state, double cellWidth, double cellHeight) {
-        drawRoleLabel(state.entrance(), "S", state, cellWidth, cellHeight);
-        drawRoleLabel(state.exit(), "E", state, cellWidth, cellHeight);
+        painter.restore();
     }
 
     private void drawRoleLabel(GridPoint point, String label, MazeViewState state,
@@ -555,14 +566,14 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         if (cellSize < 10.0d) return;
         double x = point.column() * cellWidth;
         double y = point.row() * cellHeight;
-        gc.save();
-        gc.setFill(RAN_WHITE);
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.setTextBaseline(VPos.CENTER);
-        gc.setFont(Font.font("Consolas", FontWeight.BOLD,
+        painter.save();
+        painter.setFill(RAN_WHITE);
+        painter.setTextAlign(TextAlignment.CENTER);
+        painter.setTextBaseline(VPos.CENTER);
+        painter.setFont(Font.font("Consolas", FontWeight.BOLD,
                 Math.min(14.0d, Math.max(7.0d, cellSize * 0.46d))));
-        gc.fillText(label, x + cellWidth / 2.0d, y + cellHeight / 2.0d);
-        gc.restore();
+        painter.fillText(label, x + cellWidth / 2.0d, y + cellHeight / 2.0d);
+        painter.restore();
     }
 
     private void drawSelection(MazeViewState state, double cellWidth, double cellHeight) {
@@ -571,9 +582,9 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         double y = selectedCell.row() * cellHeight;
         double cellSize = Math.min(cellWidth, cellHeight);
         boolean sameAsCurrent = selectedCell.equals(state.active());
-        gc.save();
-        gc.setStroke(RAN_RED);
-        gc.setLineWidth(density == VisualDensity.DENSE
+        painter.save();
+        painter.setStroke(RAN_RED);
+        painter.setLineWidth(density == VisualDensity.DENSE
                 ? denseStrokeWidth(cellSize, 1.0d)
                 : Math.max(2.0d, cellSize * 0.14d));
         double inset = density == VisualDensity.DENSE
@@ -584,11 +595,11 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
         double dash = density == VisualDensity.DENSE
                 ? worldLengthForScreenPixels(1.6d)
                 : Math.max(3.0d, cellSize * 0.24d);
-        gc.setLineDashes(dash, dash * 0.70d);
-        gc.strokeRect(x + inset, y + inset,
+        painter.setLineDashes(dash, dash * 0.70d);
+        painter.strokeRect(x + inset, y + inset,
                 Math.max(0.0d, cellWidth - inset * 2.0d),
                 Math.max(0.0d, cellHeight - inset * 2.0d));
-        gc.restore();
+        painter.restore();
     }
 
     public void setSelectionListener(Consumer<GridPoint> listener) {
@@ -630,16 +641,21 @@ public final class MazeVisualizer extends CanvasVisualizer<MazeViewState> {
     }
     @Override
     public void onVisualizationReset() {
-        super.onVisualizationReset();
+        // No giant detached Canvas is cleared on reset.
         selectedCell = null;
         renderedState = null;
         paintedState = null;
         paintedSelection = null;
+        tiles.clear();
+        tileLayer.getChildren().clear();
+        terrainRows = -1;
+        terrainColumns = -1;
+        tiledCellWidth = Double.NaN;
+        tiledCellHeight = Double.NaN;
         gridRows = -1;
         gridColumns = -1;
         gridLines.getElements().clear();
         gridLines.setVisible(false);
-        fillBackground();
         surface.reset();
         surface.markViewportPristine();
     }
