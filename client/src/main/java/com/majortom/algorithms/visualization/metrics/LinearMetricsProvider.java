@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.metrics;
 
 import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.visualization.impl.controller.LinearStructureViewState;
+import com.majortom.algorithms.visualization.runtime.linked.LinearStructureViewState;
 import java.util.List;
 import java.util.Map;
 import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;

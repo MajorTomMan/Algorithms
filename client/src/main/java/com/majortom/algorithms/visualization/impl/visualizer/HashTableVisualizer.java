@@ -15,7 +15,7 @@ import com.majortom.algorithms.visualization.impl.visualizer.hash.animation.Hash
 import com.majortom.algorithms.visualization.impl.visualizer.hash.animation.HashTableAnimationSceneAdapter;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import com.majortom.algorithms.visualization.render.api.RenderSessionId;
 import com.majortom.algorithms.visualization.render.api.StructureVisualization;
@@ -62,7 +62,7 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
 
   @Override
   public CompletionStage<Void> commitLayout(
-      HashTableViewState state, LayoutPatch patch, RenderCommitContext context) {
+      HashTableViewState state, LayoutResult patch, RenderCommitContext context) {
     boolean animate = context.modelChange() && !context.initialFrame();
     AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
     animationScene.prepare(plan, patch);
@@ -244,7 +244,7 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
     }
   }
 
-  private void applyLayout(LayoutPatch patch) {
+  private void applyLayout(LayoutResult patch) {
     for (Map.Entry<String, NodeView> entry : nodes.entrySet()) {
       ElementGeometry geometry = patch.elements().get(entry.getKey());
       if (geometry == null) continue;
@@ -257,7 +257,7 @@ public final class HashTableVisualizer extends BaseVisualizer<HashTableViewState
     }
   }
 
-  private void applyRoutes(LayoutPatch patch) {
+  private void applyRoutes(LayoutResult patch) {
     Map<String, EdgeGeometry> routes = new LinkedHashMap<>();
     for (EdgeGeometry route : patch.edges()) {
       routes.put(route.id(), route);

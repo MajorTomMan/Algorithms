@@ -2,7 +2,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.indexed;
 
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -82,7 +82,7 @@ public final class IndexedStripSupport<C extends Node & IndexedStripCell> {
     }
   }
 
-  public void applyLayout(LayoutPatch patch, IntFunction<String> layoutId) {
+  public void applyLayout(LayoutResult patch, IntFunction<String> layoutId) {
     Objects.requireNonNull(patch, "patch");
     Objects.requireNonNull(layoutId, "layoutId");
     for (Map.Entry<Integer, C> entry : cells.entrySet()) {

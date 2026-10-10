@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.indexed;
 import com.majortom.algorithms.visualization.animation.fx.AnimationSceneAdapter.NodeTarget;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -32,7 +32,7 @@ public final class IndexedStripAnimationSupport<C extends Node & IndexedStripCel
 
   private final Map<String, Point2D> capturedCenters = new LinkedHashMap<>();
   private final Map<String, C> exitingCells = new LinkedHashMap<>();
-  private LayoutPatch targetPatch;
+  private LayoutResult targetPatch;
 
   public IndexedStripAnimationSupport(
       IndexedStripSupport<C> strip,
@@ -49,7 +49,7 @@ public final class IndexedStripAnimationSupport<C extends Node & IndexedStripCel
     this.exitIndex = Objects.requireNonNull(exitIndex, "exitIndex");
   }
 
-  public void begin(LayoutPatch patch) {
+  public void begin(LayoutResult patch) {
     capturedCenters.clear();
     targetPatch = Objects.requireNonNull(patch, "patch");
   }

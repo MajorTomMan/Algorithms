@@ -7,7 +7,7 @@ import com.majortom.algorithms.visualization.animation.api.AnimationTimings;
 import com.majortom.algorithms.visualization.impl.visualizer.hash.HashVisualIds;
 import com.majortom.algorithms.visualization.render.api.EdgeGeometry;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.hash.HashTableViewState;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,9 +21,9 @@ public final class HashTableAnimationPlanner implements AnimationPlanner<HashTab
   @Override
   public AnimationPlan plan(
       HashTableViewState previousState,
-      LayoutPatch previousLayout,
+      LayoutResult previousLayout,
       HashTableViewState nextState,
-      LayoutPatch nextLayout) {
+      LayoutResult nextLayout) {
     AnimationPlan.Builder plan = AnimationPlan.builder();
     Map<String, String> previousNodes = nodes(previousState);
     Map<String, String> nextNodes = nodes(nextState);
@@ -110,7 +110,7 @@ public final class HashTableAnimationPlanner implements AnimationPlanner<HashTab
     return Set.copyOf(result);
   }
 
-  private static Map<String, EdgeGeometry> routes(LayoutPatch patch) {
+  private static Map<String, EdgeGeometry> routes(LayoutResult patch) {
     Map<String, EdgeGeometry> result = new LinkedHashMap<>();
     for (EdgeGeometry edge : patch.edges()) {
       result.put(edge.id(), edge);

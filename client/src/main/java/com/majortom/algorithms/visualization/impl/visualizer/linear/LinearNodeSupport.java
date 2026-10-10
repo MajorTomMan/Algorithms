@@ -5,7 +5,7 @@ import com.majortom.algorithms.visualization.common.geometry.RectangleGeometry;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.semantic.LinearStructureVisualization;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -90,7 +90,7 @@ public final class LinearNodeSupport {
     }
   }
 
-  public void applyLayout(LayoutPatch patch) {
+  public void applyLayout(LayoutResult patch) {
     Objects.requireNonNull(patch, "patch");
     for (Map.Entry<Integer, NodeView> entry : items.entrySet()) {
       ElementGeometry bounds =

@@ -7,7 +7,7 @@ import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.render.api.ElementGeometry;
-import com.majortom.algorithms.visualization.render.api.LayoutPatch;
+import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -26,7 +26,7 @@ public final class HashTableAnimationSceneAdapter implements AnimationSceneAdapt
   private final Map<String, List<Point2D>> capturedRoutes = new LinkedHashMap<>();
   private final Map<String, NodeView> exitingNodes = new LinkedHashMap<>();
   private final Map<String, EdgeView> exitingEdges = new LinkedHashMap<>();
-  private LayoutPatch targetPatch;
+  private LayoutResult targetPatch;
 
   public HashTableAnimationSceneAdapter(
       VisualizationSurface surface,
@@ -37,7 +37,7 @@ public final class HashTableAnimationSceneAdapter implements AnimationSceneAdapt
     this.edges = Objects.requireNonNull(edges, "edges");
   }
 
-  public void prepare(AnimationPlan plan, LayoutPatch patch) {
+  public void prepare(AnimationPlan plan, LayoutResult patch) {
     capturedCenters.clear();
     capturedRoutes.clear();
     nodes.forEach((id, node) -> capturedCenters.put(id, node.visualCenter()));
