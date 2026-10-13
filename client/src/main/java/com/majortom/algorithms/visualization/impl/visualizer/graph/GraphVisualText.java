@@ -6,6 +6,12 @@ import java.util.Locale;
 public final class GraphVisualText {
   private GraphVisualText() {}
 
+  public static String edgeLabel(com.majortom.algorithms.visualization.runtime.graph.GraphViewState.Edge edge) {
+    String weight = weight(edge.weight());
+    return edge.label() == null || edge.label().isBlank()
+        ? weight : edge.label() + " · " + weight;
+  }
+
   public static String weight(double weight) {
     if (Math.rint(weight) == weight) {
       return Long.toString((long) weight);

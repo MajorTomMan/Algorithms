@@ -63,7 +63,7 @@ public final class GraphStructureVisualization implements StructureVisualization
                     GraphElkLayout.nodeId(edge.fromId()),
                     GraphElkLayout.nodeId(edge.toId())));
 
-            String weight = GraphVisualText.weight(edge.weight());
+            String weight = GraphVisualText.edgeLabel(edge);
             if (weight != null) {
                 decorations.add(new DecorationInput(
                         GraphDecorationIds.edgeLabel(edgeId),

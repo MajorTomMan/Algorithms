@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
+import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -32,6 +33,19 @@ public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Ed
     return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
   }
 
+  /** Convert a multi-graph snapshot without dropping parallel edges or business payload labels. */
+  public static GraphViewState initial(MultiGraphSnapshot<?> graph) {
+    Objects.requireNonNull(graph, "graph");
+    List<Node> nodes = graph.vertices().stream()
+        .map(vertex -> new Node(vertex.id(), VisualValue.of(vertex.value()))).toList();
+    List<Edge> edges = graph.edges().stream()
+        .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight(),
+            edge.value() == null ? null :
+                com.majortom.algorithms.visualization.runtime.value.ValueAdapters
+                    .project(edge.value()).summary())).toList();
+    return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
+  }
+
   public Map<Long, Node> nodesById() {
     Map<Long, Node> result = new LinkedHashMap<>();
     for (Node node : nodes) {
@@ -52,9 +66,13 @@ public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Ed
     }
   }
 
-  public record Edge(long id, long fromId, long toId, double weight) {
+  /** Optional label exists only for graphs with typed edge values. */
+  public record Edge(long id, long fromId, long toId, double weight, String label) {
+    public Edge(long id, long fromId, long toId, double weight) {
+      this(id, fromId, toId, weight, null);
+    }
     public Edge withWeight(double weight) {
-      return new Edge(id, fromId, toId, weight);
+      return new Edge(id, fromId, toId, weight, label);
     }
   }
 

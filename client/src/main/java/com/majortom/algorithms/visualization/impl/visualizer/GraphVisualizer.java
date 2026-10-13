@@ -183,7 +183,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView view = edgeViews.get(edge.id());
             if (view == null) continue;
             view.setDirected(state.direction().isDirected());
-            view.setLabelText(GraphVisualText.weight(edge.weight()));
+            view.setLabelText(GraphVisualText.edgeLabel(edge));
             view.setHighlighted(isObservedEdge(state, edge));
         }
         syncSelectionState();

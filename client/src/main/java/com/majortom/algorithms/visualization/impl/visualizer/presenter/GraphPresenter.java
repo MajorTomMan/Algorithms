@@ -34,7 +34,7 @@ public final class GraphPresenter implements StructurePresenter<GraphViewState> 
             GraphViewState.Edge right = current.edges().get(index);
             if (left.id() != right.id() || left.fromId() != right.fromId() || left.toId() != right.toId()) return true;
             // Weight labels contribute measured decoration geometry, even when topology is unchanged.
-            if (!Objects.equals(GraphVisualText.weight(left.weight()), GraphVisualText.weight(right.weight()))) return true;
+            if (!Objects.equals(GraphVisualText.edgeLabel(left), GraphVisualText.edgeLabel(right))) return true;
         }
         return false;
     }
