@@ -9,6 +9,7 @@ import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import com.majortom.algorithms.structure.graph.MultiGraphStructure;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -20,16 +21,19 @@ final class WorkbenchModuleNavigation {
     private final FamilyNavigator familyNavigator;
     private final Consumer<WorkbenchModuleDefinition> onSelectFamily;
     private final Function<String, AlgorithmTypeSignature> selectedTypeSignature;
+    private final java.util.function.Supplier<GraphImplementation> graphImplementation;
 
     WorkbenchModuleNavigation(
             List<WorkbenchModuleDefinition> definitions,
             FamilyNavigator navigator,
             Consumer<WorkbenchModuleDefinition> onSelectFamily,
-            Function<String, AlgorithmTypeSignature> selectedTypeSignature) {
+            Function<String, AlgorithmTypeSignature> selectedTypeSignature,
+            java.util.function.Supplier<GraphImplementation> graphImplementation) {
         this.moduleDefinitions = definitions;
         this.familyNavigator = navigator;
         this.onSelectFamily = onSelectFamily;
         this.selectedTypeSignature = selectedTypeSignature;
+        this.graphImplementation = graphImplementation;
     }
 
     void install() {
@@ -71,6 +75,11 @@ final class WorkbenchModuleNavigation {
     }
 
     List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
+        if (StructureIds.GRAPH.equals(moduleId)
+                && graphImplementation.get() == GraphImplementation.MULTI)
+            return AlgorithmCatalog.compatibleAlgorithms(
+                    MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).stream()
+                    .map(AlgorithmNavigationItem::new).toList();
         if (StructureIds.MULTI_GRAPH.equals(moduleId))
             return AlgorithmCatalog.compatibleAlgorithms(
                     MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).stream()

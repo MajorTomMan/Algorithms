@@ -18,6 +18,8 @@
             <Region HBox.hgrow="ALWAYS" />
             <Label text="⌃" styleClass="section-chevron" />
         </HBox>
+        <Label text="实现方式 / Implementation" styleClass="control-label" />
+        <ComboBox fx:id="implementationSelector" maxWidth="Infinity" />
         <ComboBox fx:id="structureSelector" maxWidth="Infinity" />
     </VBox>
 

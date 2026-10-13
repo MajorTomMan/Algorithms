@@ -514,6 +514,7 @@ public class MainController implements Initializable {
     private final Map<String, String> selectedSnapshotIds = new LinkedHashMap<>();
     private String selectedHashKeyType;
     private String selectedHashValueType;
+    private GraphImplementation selectedGraphImplementation = GraphImplementation.SIMPLE;
     private FontSettings appliedFontSettings;
     private FontSettingsPanel fontSettingsPanel;
     private BaseController<?> currentSubController;
@@ -580,7 +581,8 @@ public class MainController implements Initializable {
         valueTypePanel.install(this::changeValueType, this::changeValueType,
                 this::changeHashValueType);
         moduleNavigation = new WorkbenchModuleNavigation(moduleDefinitions,
-                familyNavigator, this::selectFamily, this::selectedAlgorithmTypeSignature);
+                familyNavigator, this::selectFamily, this::selectedAlgorithmTypeSignature,
+                () -> selectedGraphImplementation);
         setupModuleMenu();
         setupPracticeWorkspace();
         setupWorkspaceMode();
@@ -888,7 +890,9 @@ public class MainController implements Initializable {
         if (activeDefinition == null || valueTypeBox == null || valueTypePanel == null) return;
         String moduleId = activeDefinition.id();
         if (StructureIds.MAZE.equals(moduleId)
-                || StructureIds.MULTI_GRAPH.equals(moduleId)) {
+                || StructureIds.MULTI_GRAPH.equals(moduleId)
+                || StructureIds.GRAPH.equals(moduleId)
+                    && selectedGraphImplementation == GraphImplementation.MULTI) {
             valueTypePanel.render(moduleId, false, false, false, null, List.of(), List.of());
             return;
         }
@@ -928,14 +932,23 @@ public class MainController implements Initializable {
     }
 
     private String valueTypeDisplayName(String type) { return valueTypeCatalog.displayName(type); }
-    private boolean hasAlgorithmForAnySupportedType(String id) { return valueTypeCatalog.hasAlgorithmForAnySupportedType(id); }
+    private boolean hasAlgorithmForAnySupportedType(String id) {
+        if (StructureIds.GRAPH.equals(id)
+                && selectedGraphImplementation == GraphImplementation.MULTI)
+            return !COMPONENTS.compatibleAlgorithms(
+                    com.majortom.algorithms.structure.graph.MultiGraphStructure.class,
+                    AlgorithmTypeSignature.of(Object.class)).isEmpty();
+        return valueTypeCatalog.hasAlgorithmForAnySupportedType(id);
+    }
     private List<String> algorithmAvailableValueTypes(String id) { return valueTypeCatalog.algorithmAvailableValueTypes(id); }
     private List<String> availableValueTypes(String id) { return valueTypeCatalog.availableValueTypes(id); }
     private List<ValueTypeOption> valueTypeOptions(List<String> available) { return valueTypeCatalog.valueTypeOptions(available); }
     private String selectedValueType(String id) { return valueTypeCatalog.selectedValueType(id); }
 
     private AlgorithmTypeSignature selectedAlgorithmTypeSignature(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId))
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)
+                || StructureIds.GRAPH.equals(moduleId)
+                    && selectedGraphImplementation == GraphImplementation.MULTI)
             return AlgorithmTypeSignature.of(Object.class);
         if (StructureIds.HASH.equals(moduleId)) {
             if (selectedHashKeyType == null || selectedHashValueType == null) {
@@ -957,7 +970,10 @@ public class MainController implements Initializable {
     }
 
     private AlgorithmTypeSignature firstAvailableAlgorithmSignature(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return AlgorithmTypeSignature.of(Object.class);
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)
+                || StructureIds.GRAPH.equals(moduleId)
+                    && selectedGraphImplementation == GraphImplementation.MULTI)
+            return AlgorithmTypeSignature.of(Object.class);
         return COMPONENTS.algorithmTypeSignatures(StructureModule.fromId(moduleId)).stream()
                 .filter(signature -> StructureIds.HASH.equals(moduleId)
                         ? signature.arity() == 2
@@ -972,7 +988,9 @@ public class MainController implements Initializable {
 
     private void commitSelectedAlgorithmTypeSignature(
             String moduleId, AlgorithmTypeSignature signature) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return;
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)
+                || StructureIds.GRAPH.equals(moduleId)
+                    && selectedGraphImplementation == GraphImplementation.MULTI) return;
         if (StructureIds.HASH.equals(moduleId)) {
             if (signature.arity() != 2) {
                 throw new IllegalArgumentException(
@@ -1127,7 +1145,10 @@ public class MainController implements Initializable {
 
         AlgorithmTypeSignature currentSignature =
                 selectedAlgorithmTypeSignature(activeDefinition.id());
-        if (currentSignature != null && !StructureIds.MULTI_GRAPH.equals(activeDefinition.id())
+        if (currentSignature != null
+                && !(StructureIds.GRAPH.equals(activeDefinition.id())
+                        && selectedGraphImplementation == GraphImplementation.MULTI)
+                && !StructureIds.MULTI_GRAPH.equals(activeDefinition.id())
                 && currentSignature.types().stream().anyMatch(type -> !ValueAdapters.canReplay(type))) {
             Class<?> unsupported = currentSignature.types().stream()
                     .filter(type -> !ValueAdapters.canReplay(type))
@@ -1505,8 +1526,13 @@ public class MainController implements Initializable {
                 AlgorithmTypeSignature currentSignature =
                         selectedAlgorithmTypeSignature(definition.id());
                 boolean matching = currentSignature != null
-                        && !AlgorithmCatalog.forWorkbenchModule(
-                                definition.id(), currentSignature).isEmpty();
+                        && !(StructureIds.GRAPH.equals(definition.id())
+                            && selectedGraphImplementation == GraphImplementation.MULTI
+                            ? COMPONENTS.compatibleAlgorithms(
+                                com.majortom.algorithms.structure.graph.MultiGraphStructure.class,
+                                currentSignature).isEmpty()
+                            : AlgorithmCatalog.forWorkbenchModule(
+                                definition.id(), currentSignature).isEmpty());
                 if (!matching) {
                     AlgorithmTypeSignature targetSignature =
                             firstAvailableAlgorithmSignature(definition.id());
@@ -1516,7 +1542,10 @@ public class MainController implements Initializable {
                     }
                 }
             }
-            nextController = definition.controllerFactory().get();
+            nextController = StructureIds.GRAPH.equals(definition.id())
+                    && selectedGraphImplementation == GraphImplementation.MULTI
+                    ? new MultiGraphController(renderContext)
+                    : definition.controllerFactory().get();
             configureRuntimeValueType(definition.id(), nextController);
             nextController.setupCustomControls(preparedControls);
         } catch (RuntimeException failure) {
@@ -1538,8 +1567,8 @@ public class MainController implements Initializable {
             selectedAlgorithmId = null;
             structureSnapshotPreviewActive = false;
             clearStructureSelection();
-            refreshValueTypeSelectors();
             loadSubController(nextController, preparedControls);
+            refreshValueTypeSelectors();
             rebuildAlgorithmMenu();
 
             WorkspaceMode finalMode = requestedMode;
@@ -1745,6 +1774,24 @@ public class MainController implements Initializable {
                     + " does not support runtime value type " + valueType.getName());
         }
         support.setRuntimeValueType(valueType);
+    }
+
+    private void switchGraphImplementation(GraphImplementation implementation) {
+        if (implementation == null || selectedGraphImplementation == implementation
+                || activeDefinition == null
+                || !StructureIds.GRAPH.equals(activeDefinition.id())
+                || currentSubController == null || currentSubController.isRunning()
+                || moduleTransitionInProgress) return;
+        GraphImplementation previous = selectedGraphImplementation;
+        selectedGraphImplementation = implementation;
+        // Old saved snapshots have a different payload type; never cross-restore them.
+        discardSnapshotsForChangedValueType(StructureIds.GRAPH);
+        switchToModule(activeDefinition, WorkspaceMode.STRUCTURE, null);
+        if (!(implementation == GraphImplementation.MULTI
+                ? currentSubController instanceof MultiGraphController
+                : currentSubController instanceof GraphController)) {
+            selectedGraphImplementation = previous;
+        }
     }
 
     private void loadSubController(BaseController<?> newController, HBox preparedControls) {
@@ -2473,6 +2520,9 @@ public class MainController implements Initializable {
     }
 
     private void wireStructureSelection() {
+        if (currentSubController instanceof GraphImplementationSelection support) {
+            support.setImplementationChangeListener(this::switchGraphImplementation);
+        }
         if (currentSubController instanceof TreeController treeController) {
             treeController.setSelectionListener(selectionInspector::showTreeSelection);
             treeController.setStructureSelectionEnabled(isStructurePageVisible());

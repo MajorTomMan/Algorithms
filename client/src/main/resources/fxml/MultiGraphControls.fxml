@@ -6,6 +6,8 @@
       alignment="TOP_LEFT" spacing="12" fillWidth="true"
       styleClass="module-control-panel">
   <VBox spacing="8" styleClass="control-section,control-card,structure-section">
+    <Label text="实现方式 / Implementation" styleClass="control-label"/>
+    <ComboBox fx:id="implementationSelector" maxWidth="Infinity"/>
     <Label text="MultiGraph" styleClass="control-label"/>
     <ComboBox fx:id="directionSelector" maxWidth="Infinity"/>
     <Label text="Algorithms / 算法" styleClass="control-label"/>

@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 
 /** Separate MultiGraph workbench reusing Graph rendering while preserving simple Graph behavior. */
 public final class MultiGraphController extends BaseModuleController<GraphViewState>
-    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>, AlgorithmSelectionSupport {
+    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>, AlgorithmSelectionSupport, GraphImplementationSelection {
   private MultiGraph<Object> graph = new MultiGraph<>(GraphDirection.DIRECTED);
   private Object lastBatch;
   private static final AlgorithmTypeSignature SIGNATURE = AlgorithmTypeSignature.of(Object.class);
@@ -56,6 +56,8 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   private boolean structureSelectionEnabled = true;
   private Consumer<GraphController.Selection> selectionListener = ignored -> {};
   @FXML private ComboBox<GraphDirection> directionSelector;
+  @FXML private ComboBox<GraphImplementation> implementationSelector;
+  private Consumer<GraphImplementation> implementationChangeListener = ignored -> {};
   @FXML private Button sampleButton;
   @FXML private Label selectionInfo;
   @FXML private TextField batchClassField;
@@ -76,6 +78,14 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
   @Override public void initialize(URL location, ResourceBundle resources) {
     super.initialize(location, resources);
+    implementationSelector.setItems(FXCollections.observableArrayList(GraphImplementation.values()));
+    localizeChoiceCells(implementationSelector, choice -> I18N.text(choice.labelKey()));
+    implementationSelector.getSelectionModel().select(GraphImplementation.MULTI);
+    implementationSelector.getSelectionModel().selectedItemProperty().addListener(
+        (observable, previous, selected) -> {
+          if (selected != null && selected != GraphImplementation.MULTI)
+            implementationChangeListener.accept(selected);
+        });
     directionSelector.setItems(FXCollections.observableArrayList(
         GraphDirection.DIRECTED, GraphDirection.UNDIRECTED));
     directionSelector.getSelectionModel().select(graph.direction());
@@ -96,6 +106,10 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     algorithmSelector.getSelectionModel().selectFirst();
     algorithmSelector.getSelectionModel().selectedItemProperty().addListener(
         (observable, before, after) -> algorithmSelectionListener.accept(after));
+  }
+  @Override public void setImplementationChangeListener(
+      Consumer<GraphImplementation> listener) {
+    implementationChangeListener = listener == null ? ignored -> {} : listener;
   }
   private GraphVisualizer graphVisualizer() { return (GraphVisualizer) visualizer; }
 
@@ -261,7 +275,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
   private void renderGraph() { renderStructureState(GraphViewState.initial(graph.snapshot())); }
 
-  @Override protected String moduleId() { return StructureIds.MULTI_GRAPH; }
+  @Override protected String moduleId() { return StructureIds.GRAPH; }
   @Override protected void setupI18n() {
     sampleButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.sample"));
     importJsonButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.import"));

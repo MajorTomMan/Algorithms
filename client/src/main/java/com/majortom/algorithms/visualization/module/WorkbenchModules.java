@@ -5,7 +5,6 @@ import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.impl.controller.ArrayController;
 import com.majortom.algorithms.visualization.impl.controller.GraphController;
-import com.majortom.algorithms.visualization.impl.controller.MultiGraphController;
 import com.majortom.algorithms.visualization.impl.controller.HashTableController;
 import com.majortom.algorithms.visualization.impl.controller.LinearStructureController;
 import com.majortom.algorithms.visualization.impl.controller.LinkedListController;
@@ -36,8 +35,6 @@ public final class WorkbenchModules {
                 new WorkbenchModuleDefinition(StructureIds.TREE, moduleName(registry, StructureIds.TREE, "Tree"), new FamilyNavigationMetadata(50, "⌘"), () -> new TreeController(renderContext)));
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition(StructureIds.GRAPH, moduleName(registry, StructureIds.GRAPH, "Graph"), new FamilyNavigationMetadata(60, "◇"), () -> new GraphController(renderContext)));
-        addIfAvailable(modules, registry,
-                new WorkbenchModuleDefinition(StructureIds.MULTI_GRAPH, moduleName(registry, StructureIds.MULTI_GRAPH, "MultiGraph"), new FamilyNavigationMetadata(65, "⤳"), () -> new MultiGraphController(renderContext)));
         addIfAvailable(modules, registry,
                 new WorkbenchModuleDefinition(StructureIds.STRING, moduleName(registry, StructureIds.STRING, "String"), new FamilyNavigationMetadata(70, "Aa"), () -> new StringController(renderContext)));
         addIfAvailable(modules, registry,

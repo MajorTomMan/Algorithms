@@ -47,7 +47,7 @@ import java.util.function.Consumer;
 
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Object>>,
-        SnapshotAlgorithmInputSupport<GraphSnapshot<Object>>, RuntimeValueTypeSupport {
+        SnapshotAlgorithmInputSupport<GraphSnapshot<Object>>, RuntimeValueTypeSupport, GraphImplementationSelection {
 
     private Graph<Object> undirectedGraph;
     private Graph<Object> directedGraph;
@@ -62,6 +62,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private Consumer<Selection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
     private AlgorithmSelectorBinder algorithmBinder;
+    private Consumer<GraphImplementation> implementationChangeListener = ignored -> { };
+    @FXML private ComboBox<GraphImplementation> implementationSelector;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -95,6 +97,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
+        bindImplementationSelector();
         bindSelectors();
         if (weightField != null && weightField.getText().isBlank()) {
             weightField.setText("1");
@@ -574,6 +577,22 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public String selectedAlgorithmId() {
         if (algorithmBinder != null) return algorithmBinder.selectedId();
         return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
+    }
+
+    private void bindImplementationSelector() {
+        implementationSelector.setItems(FXCollections.observableArrayList(GraphImplementation.values()));
+        localizeChoiceCells(implementationSelector, choice -> I18N.text(choice.labelKey()));
+        implementationSelector.getSelectionModel().select(GraphImplementation.SIMPLE);
+        implementationSelector.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> {
+                    if (selected != null && selected != GraphImplementation.SIMPLE)
+                        implementationChangeListener.accept(selected);
+                });
+    }
+
+    @Override
+    public void setImplementationChangeListener(Consumer<GraphImplementation> listener) {
+        implementationChangeListener = listener == null ? ignored -> { } : listener;
     }
 
     private void bindSelectors() {

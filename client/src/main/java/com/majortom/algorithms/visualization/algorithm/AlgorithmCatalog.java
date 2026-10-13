@@ -4,6 +4,7 @@ import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.structure.graph.MultiGraphStructure;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
@@ -35,6 +36,8 @@ public final class AlgorithmCatalog {
       String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
     if (StructureIds.MULTI_GRAPH.equals(moduleId))
       return compatibleDescriptor(MultiGraphStructure.class, typeSignature, algorithmId);
+    if (StructureIds.GRAPH.equals(moduleId))
+      return compatibleDescriptor(GraphStructure.class, typeSignature, algorithmId);
     return REGISTRY.requireAlgorithm(
         StructureModule.fromId(moduleId), typeSignature, algorithmId);
   }
@@ -74,6 +77,10 @@ public final class AlgorithmCatalog {
     if (StructureIds.MULTI_GRAPH.equals(moduleId))
       return REGISTRY.compatibleAlgorithms(
           MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class));
+    if (StructureIds.GRAPH.equals(moduleId))
+      return REGISTRY.algorithms().stream()
+          .filter(descriptor -> descriptor.structureContract().isAssignableFrom(GraphStructure.class))
+          .toList();
     StructureModule module = StructureModule.fromId(moduleId);
     return REGISTRY.algorithms().stream()
         .filter(descriptor -> descriptor.module() == module)
@@ -84,6 +91,8 @@ public final class AlgorithmCatalog {
       String moduleId, AlgorithmTypeSignature typeSignature) {
     if (StructureIds.MULTI_GRAPH.equals(moduleId))
       return compatibleAlgorithms(MultiGraphStructure.class, typeSignature);
+    if (StructureIds.GRAPH.equals(moduleId))
+      return compatibleAlgorithms(GraphStructure.class, typeSignature);
     return REGISTRY.algorithms(StructureModule.fromId(moduleId), typeSignature).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()
