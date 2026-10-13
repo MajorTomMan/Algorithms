@@ -37,6 +37,9 @@ jobs:
       - name: Exercise annotated display fields
         run: |
           java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
+      - name: Exercise lazy annotation details
+        run: |
+          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.LazyGraphProjectionChecks
       - name: Exercise deterministic dense graph layout
         run: |
           java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.impl.visualizer.graph.GraphDenseLayoutChecks
