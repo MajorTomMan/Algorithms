@@ -30,6 +30,9 @@ import com.majortom.algorithms.visualization.render.api.RenderCommitContext;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.Cursor;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,11 +55,18 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
     private record Endpoints(long from, long to) {}
     private final Map<Endpoints, List<Long>> edgeIdsByEndpoints = new LinkedHashMap<>();
+    private final Map<Long, Endpoints> endpointsByEdgeId = new LinkedHashMap<>();
     private GraphViewState lastPresentedState;
     private long selectionRevision;
     private long appliedSelectionRevision = -1L;
     private Long previousTextSelectionId;
     private final Map<Long, Label> nodeIdLabels = new LinkedHashMap<>();
+    /** View-only coordinates, never written into GraphViewState or algorithm events. */
+    private final Map<Long, Point2D> manualCenters = new LinkedHashMap<>();
+    private Long draggedNodeId;
+    private Point2D dragPointerOffset;
+    private Point2D pressScenePoint;
+    private boolean movedDuringDrag;
     private final StructureAnimationRuntime<GraphViewState> animationRuntime =
             new StructureAnimationRuntime<>(new GraphAnimationPlanner());
     private final GraphAnimationSceneAdapter animationScene = new GraphAnimationSceneAdapter();
@@ -97,7 +107,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             if (bounds == null) continue;
             NodeView view = entry.getValue();
             view.setGeometry(new CircleGeometry(Math.max(GraphLayoutMetrics.MIN_NODE_RADIUS, bounds.width() / 2.0d)));
-            view.setCenter(bounds.x() + bounds.width() / 2.0d, bounds.y() + bounds.height() / 2.0d);
+            Point2D manual = manualCenters.get(entry.getKey());
+            view.setCenter(manual != null ? manual.getX() : bounds.x() + bounds.width() / 2.0d,
+                    manual != null ? manual.getY() : bounds.y() + bounds.height() / 2.0d);
         }
         applyRoutes(patch);
         animationRuntime.play(plan, animationScene, context.presentationProgress()::publish);
@@ -130,6 +142,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             NodeView view = nodeViews.remove(nodeId);
             if (view != null) surface.nodeLayer().getChildren().remove(view);
             removeNodeIdLabel(nodeId);
+            manualCenters.remove(nodeId);
         }
         boolean fullText = GraphRenderScale.fullNodeText(state.nodes().size(), state.edges().size());
         for (GraphViewState.Node node : state.nodes()) {
@@ -137,10 +150,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             NodeView view = new NodeView(new CircleGeometry(GraphLayoutMetrics.MIN_NODE_RADIUS),
                     fullText ? node.value().text() : "");
             long nodeId = node.id();
-            view.setOnMouseClicked(event -> {
-                selectNode(nodeId);
-                event.consume();
-            });
+            installDragHandlers(view, nodeId);
             nodeViews.put(node.id(), view);
             surface.nodeLayer().getChildren().add(view);
         }
@@ -155,6 +165,62 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                 if (!nodeIdLabels.containsKey(id)) installNodeIdLabel(id, view);
             });
         }
+    }
+
+    /**
+     * Drag positions use node-layer coordinates; sceneToLocal automatically accounts for
+     * GestureFX zoom and pan. Moving a node updates only attached EdgeViews because each
+     * edge already listens to its two endpoint center properties.
+     */
+    private void installDragHandlers(NodeView view, long nodeId) {
+        view.setCursor(Cursor.OPEN_HAND);
+        view.setOnMousePressed(event -> {
+            if (event.getButton() != MouseButton.PRIMARY) return;
+            animationRuntime.finishImmediately();
+            Point2D pointer = surface.nodeLayer().sceneToLocal(event.getSceneX(), event.getSceneY());
+            draggedNodeId = nodeId;
+            dragPointerOffset = pointer.subtract(view.visualCenter());
+            pressScenePoint = new Point2D(event.getSceneX(), event.getSceneY());
+            movedDuringDrag = false;
+            surface.setNodeDragActive(true);
+            view.setCursor(Cursor.CLOSED_HAND);
+            event.consume();
+        });
+        view.setOnMouseDragged(event -> {
+            if (!java.util.Objects.equals(draggedNodeId, nodeId)
+                    || !event.isPrimaryButtonDown()) return;
+            if (!movedDuringDrag && pressScenePoint.distance(event.getSceneX(), event.getSceneY()) < 4.0d) {
+                event.consume();
+                return;
+            }
+            Point2D pointer = surface.nodeLayer().sceneToLocal(event.getSceneX(), event.getSceneY());
+            Point2D center = pointer.subtract(dragPointerOffset);
+            // Do not dirty graph events, topology, or algorithm replay on a manual move.
+            if (center.distance(view.visualCenter()) > 0.01d) {
+                movedDuringDrag = true;
+                manualCenters.put(nodeId, center);
+                view.setCenter(center.getX(), center.getY());
+            }
+            event.consume();
+        });
+        view.setOnMouseReleased(event -> {
+            if (!java.util.Objects.equals(draggedNodeId, nodeId)
+                    || event.getButton() != MouseButton.PRIMARY) return;
+            draggedNodeId = null;
+            dragPointerOffset = null;
+            pressScenePoint = null;
+            surface.setNodeDragActive(false);
+            view.setCursor(Cursor.OPEN_HAND);
+            event.consume();
+        });
+        view.setOnMouseClicked(event -> {
+            if (movedDuringDrag) {
+                movedDuringDrag = false;
+            } else {
+                selectNode(nodeId);
+            }
+            event.consume();
+        });
     }
 
     private void reconcileEdges(GraphViewState state) {
@@ -195,10 +261,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             surface.edgeLayer().getChildren().add(view);
         }
         edgeIdsByEndpoints.clear();
+        endpointsByEdgeId.clear();
         for (GraphViewState.Edge edge : state.edges()) {
             if (!edgeViews.containsKey(edge.id())) continue;
-            edgeIdsByEndpoints.computeIfAbsent(new Endpoints(edge.fromId(), edge.toId()),
+            Endpoints endpoints = new Endpoints(edge.fromId(), edge.toId());
+            edgeIdsByEndpoints.computeIfAbsent(endpoints,
                     ignored -> new ArrayList<>()).add(edge.id());
+            endpointsByEdgeId.put(edge.id(), endpoints);
         }
         appliedSelectionRevision = -1L;
     }
@@ -301,7 +370,20 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             if (route == null || route.points().size() < 2) {
                 entry.getValue().clearRoute();
             } else {
-                entry.getValue().setRoute(route.points().stream().map(point -> new Point2D(point.x(), point.y())).toList());
+                EdgeView edge = entry.getValue();
+                Endpoints endpoints = endpointsByEdgeId.get(entry.getKey());
+                ElementGeometry from = endpoints == null ? null
+                        : patch.elements().get(GraphElkLayout.nodeId(endpoints.from()));
+                ElementGeometry to = endpoints == null ? null
+                        : patch.elements().get(GraphElkLayout.nodeId(endpoints.to()));
+                List<Point2D> points = route.points().stream()
+                        .map(point -> new Point2D(point.x(), point.y())).toList();
+                if (from == null || to == null) edge.setRoute(points);
+                else edge.setRoute(points,
+                        new Point2D(from.x() + from.width() / 2.0d,
+                                from.y() + from.height() / 2.0d),
+                        new Point2D(to.x() + to.width() / 2.0d,
+                                to.y() + to.height() / 2.0d));
             }
         }
         applyLabelLayout(patch);
@@ -483,6 +565,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         edgeViews.clear();
         nodeIdLabels.clear();
         edgeIdsByEndpoints.clear();
+        endpointsByEdgeId.clear();
+        manualCenters.clear();
+        draggedNodeId = null;
+        dragPointerOffset = null;
+        pressScenePoint = null;
+        surface.setNodeDragActive(false);
+        movedDuringDrag = false;
         lastPresentedState = null;
         appliedSelectionRevision = -1L;
         previousTextSelectionId = null;
