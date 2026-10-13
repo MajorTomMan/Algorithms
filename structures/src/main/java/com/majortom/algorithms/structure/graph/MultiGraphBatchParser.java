@@ -6,6 +6,7 @@ import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Converts an explicitly annotated batch object to graph topology, without inferring any
@@ -14,6 +15,9 @@ import java.util.*;
  */
 final class MultiGraphBatchParser {
   private MultiGraphBatchParser() {}
+  // One reflective inspection per concrete type and marker, independent of batch size.
+  private record MarkerKey(Class<?> type, Class<? extends Annotation> marker) {}
+  private static final Map<MarkerKey, List<Member>> ACCESSORS = new ConcurrentHashMap<>();
 
   static <T> MultiGraph<T> parse(GraphDirection direction, Class<T> nodeType, Object batch) {
     Objects.requireNonNull(direction, "direction");
@@ -159,6 +163,11 @@ final class MultiGraphBatchParser {
   }
 
   private static List<Member> members(Class<?> type, Class<? extends Annotation> marker) {
+    return ACCESSORS.computeIfAbsent(new MarkerKey(type, marker),
+        key -> scanMembers(key.type(), key.marker()));
+  }
+
+  private static List<Member> scanMembers(Class<?> type, Class<? extends Annotation> marker) {
     LinkedHashMap<String, Member> members = new LinkedHashMap<>();
     for (Class<?> cursor = type; cursor != null && cursor != Object.class; cursor = cursor.getSuperclass()) {
       for (Field field : cursor.getDeclaredFields()) {
