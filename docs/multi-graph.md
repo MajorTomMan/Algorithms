@@ -6,13 +6,15 @@
 ## 批量数据类型
 
 ```java
-@ValueType(MultiGraphStructure.class)
+@ValueType(value = MultiGraphStructure.class, immutable = true)
 record City(@ValueId String code,
             @ValueField({ValueDisplay.SUMMARY, ValueDisplay.DETAIL}) String name) {}
 
+@ValueType(immutable = true)
 record Railway(@GraphFrom City from, @GraphTo City to,
                @GraphWeight double kilometers, String line) {}
 
+@ValueType(immutable = true)
 record Road(@GraphFrom City from, @GraphTo City to,
             @GraphBidirectional boolean twoWay, @GraphWeight double kilometers) {}
 
@@ -113,3 +115,11 @@ JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
 同一类型和 `@ValueId` 的不同 Java 实例会映射到批量节点集合中的同一个节点。
 所有端点必须已出现在 `@GraphNodes` 中；这是明确的构图约束，而不是自动
 递归关系发现。方向、权重、是否双向都由用户自定义的边类型提供。
+
+### 运行算法时的不可变约束
+
+`MultiGraph.from()` 批量构图本身不要求业务类添加 `immutable = true`。
+但是工作台在运行 BFS/DFS 及历史回放前，要求节点值与边载荷都是可安全回放的不可变对象。
+如果业务类型及其**整个可达对象图**确实不可变，可以用 `@ValueType(immutable = true)`
+明确声明；标注了 `record` **不自动等于深度不可变**（record 内部可能持有可变 List）。
+需要可变业务对象时，应由开发者提供冻结/复制策略，不能仅靠注解绕过回放安全检查。
