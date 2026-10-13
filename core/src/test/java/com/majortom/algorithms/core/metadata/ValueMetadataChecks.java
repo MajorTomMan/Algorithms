@@ -20,7 +20,8 @@ public final class ValueMetadataChecks {
     City city = new City("sz", "深圳");
     var d = ValueMetadata.describe(City.class);
     if (!d.declared() || !d.name().equals("City") || !d.businessIdOf(city).equals("sz")
-        || d.fields().size() != 2 || !d.fields().getFirst().read(city).equals("深圳"))
+        || d.fields().size() != 2 || d.fields().stream().noneMatch(field ->
+            field.key().equals("name") && "深圳".equals(field.read(city))))
       throw new AssertionError("record metadata");
     if (AnnotatedMembers.marked(Network.class, GraphNodes.class).size() != 1)
       throw new AssertionError("record component was scanned more than once");
