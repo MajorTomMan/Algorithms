@@ -157,10 +157,10 @@ public final class ValueAdapters {
     Entry<Object> entry;
     try { entry = objectEntry(value.getClass()); }
     catch (IllegalArgumentException unsupported) {
-      return new ValueProjection(safeNodeText(value.getClass().getSimpleName()), List.of(), false);
+      return AnnotatedValueProjector.project(value);
     }
     ValuePresenter<Object> presenter = entry.presenter();
-    if (presenter == null) return new ValueProjection(safeNodeText(value.getClass().getSimpleName()), List.of(), false);
+    if (presenter == null) return AnnotatedValueProjector.project(value);
     List<FieldView> rows = new ArrayList<>();
     List<String> summary = new ArrayList<>();
     for (DisplayField<Object> field : presenter.fields()) {
