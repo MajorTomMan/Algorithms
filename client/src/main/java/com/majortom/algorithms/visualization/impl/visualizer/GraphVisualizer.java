@@ -55,6 +55,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private GraphViewState lastPresentedState;
     private long selectionRevision;
     private long appliedSelectionRevision = -1L;
+    private Long previousTextSelectionId;
     private final Map<Long, Label> nodeIdLabels = new LinkedHashMap<>();
     private final StructureAnimationRuntime<GraphViewState> animationRuntime =
             new StructureAnimationRuntime<>(new GraphAnimationPlanner());
@@ -222,7 +223,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
                     ? GraphVisualText.edgeLabel(edge) : null);
             view.setHighlighted(isObservedEdge(state, edge));
         }
-        syncSelectionState();
+        syncSelectionState(state);
         lastPresentedState = state;
     }
 
@@ -259,7 +260,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         updateObservedNodes(old.observation(), current);
         refreshObservedEdges(old.observation(), old.direction().isDirected(), false);
         refreshObservedEdges(current.observation(), current.direction().isDirected(), true);
-        syncSelectionState();
+        syncSelectionState(current);
         lastPresentedState = current;
     }
 
@@ -397,8 +398,27 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         return true;
     }
 
-    private void syncSelectionState() {
+    private void syncSelectionState(GraphViewState state) {
         if (appliedSelectionRevision == selectionRevision) return;
+        if (!GraphRenderScale.fullNodeText(state.nodes().size(), state.edges().size())) {
+            // In dense mode all nonselected labels are hidden. A selected node still
+            // reveals its summary, with full annotated details available in the inspector.
+            if (previousTextSelectionId != null
+                    && !previousTextSelectionId.equals(selectedNodeId)) {
+                NodeView old = nodeViews.get(previousTextSelectionId);
+                if (old != null) old.setText("");
+            }
+            if (selectedNodeId != null) {
+                for (GraphViewState.Node node : state.nodes()) {
+                    if (node.id() == selectedNodeId) {
+                        NodeView view = nodeViews.get(selectedNodeId);
+                        if (view != null) view.setText(node.value().text());
+                        break;
+                    }
+                }
+            }
+        }
+        previousTextSelectionId = selectedNodeId;
         nodeViews.forEach((id, view) -> view.setSelected(selectedNodeId != null && selectedNodeId.equals(id)));
         edgeViews.forEach((id, view) -> view.setSelected(selectedEdgeId != null && selectedEdgeId.equals(id)));
         syncNodeIdLabelVisibility();
@@ -465,6 +485,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         edgeIdsByEndpoints.clear();
         lastPresentedState = null;
         appliedSelectionRevision = -1L;
+        previousTextSelectionId = null;
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
