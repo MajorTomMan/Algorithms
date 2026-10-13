@@ -3,22 +3,37 @@
 <?import javafx.scene.layout.*?>
 <?import java.lang.String?>
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      alignment="TOP_LEFT" spacing="12" fillWidth="true"
+      alignment="TOP_LEFT" spacing="0" fillWidth="true"
       styleClass="module-control-panel">
-  <VBox spacing="8" styleClass="control-section,control-card,structure-section">
-    <Label text="实现方式 / Implementation" styleClass="control-label"/>
+
+  <!-- This section belongs to the structure sidebar, never to the algorithm sidebar. -->
+  <VBox spacing="8">
+    <styleClass>
+      <String fx:value="control-section"/>
+      <String fx:value="control-card"/>
+      <String fx:value="structure-section"/>
+    </styleClass>
+    <Label text="图实现 / Implementation" styleClass="control-label"/>
     <ComboBox fx:id="implementationSelector" maxWidth="Infinity"/>
-    <Label text="MultiGraph" styleClass="control-label"/>
+    <Label text="图方向 / Direction" styleClass="control-label"/>
     <ComboBox fx:id="directionSelector" maxWidth="Infinity"/>
-    <Label text="Algorithms / 算法" styleClass="control-label"/>
-    <ComboBox fx:id="algorithmSelector" maxWidth="Infinity"/>
+  </VBox>
+
+  <!-- Batch creation and selection details are only shown on the structure page. -->
+  <VBox spacing="8">
+    <styleClass>
+      <String fx:value="control-section"/>
+      <String fx:value="control-card"/>
+      <String fx:value="operation-section"/>
+      <String fx:value="structure-section"/>
+    </styleClass>
+    <Label text="批量构图 / Import" styleClass="control-label"/>
     <Button fx:id="sampleButton" maxWidth="Infinity"
-            styleClass="btn-ran-blue,operation-button" text="Load sample / 加载示例"/>
-    <Label text="Custom Java batch class / 自定义批量数据类" wrapText="true" styleClass="control-label"/>
+            styleClass="btn-ran-blue,operation-button" text="加载示例"/>
+    <Label text="自定义批量数据类 / Java class" wrapText="true" styleClass="control-label"/>
     <TextField fx:id="batchClassField" maxWidth="Infinity"/>
-    <Label text="JSON input / JSON 数据" wrapText="true" styleClass="control-label"/>
-    <TextArea fx:id="batchJsonField" wrapText="false" prefRowCount="7"
-              maxWidth="Infinity"/>
+    <Label text="JSON 数据" wrapText="true" styleClass="control-label"/>
+    <TextArea fx:id="batchJsonField" wrapText="false" prefRowCount="7" maxWidth="Infinity"/>
     <HBox spacing="6">
       <Button fx:id="chooseJsonButton" maxWidth="Infinity"
               styleClass="btn-ran-white,operation-button" HBox.hgrow="ALWAYS"/>
@@ -27,8 +42,26 @@
     </HBox>
     <Label fx:id="importStatus" wrapText="true" maxWidth="Infinity"/>
   </VBox>
-  <VBox spacing="8" styleClass="control-section,control-card,structure-section">
-    <Label text="Selected node / edge" styleClass="control-label"/>
+
+  <!-- AlgorithmSelector must be in algorithmControlsHost. The previous FXML put
+       it under structure-section, so the selector disappeared on algorithm page. -->
+  <VBox spacing="8">
+    <styleClass>
+      <String fx:value="control-section"/>
+      <String fx:value="control-card"/>
+      <String fx:value="algorithm-section"/>
+    </styleClass>
+    <Label text="图算法 / Algorithms" styleClass="control-label"/>
+    <ComboBox fx:id="algorithmSelector" maxWidth="Infinity"/>
+  </VBox>
+
+  <VBox spacing="8">
+    <styleClass>
+      <String fx:value="control-section"/>
+      <String fx:value="control-card"/>
+      <String fx:value="structure-section"/>
+    </styleClass>
+    <Label text="节点 / 边详情" styleClass="control-label"/>
     <Label fx:id="selectionInfo" wrapText="true" maxWidth="Infinity"/>
   </VBox>
 </VBox>
