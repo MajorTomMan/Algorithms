@@ -37,6 +37,7 @@ public final class GraphElkLayout implements LayoutEngine {
   private static final double LAYER_SPACING = 64.0d;
   private static final int RANDOM_SEED = 1;
   private final GraphTopologyLayout topologyLayout = new GraphTopologyLayout();
+  private final GraphParallelEdgeLayout parallelLayout = new GraphParallelEdgeLayout();
   private final GraphLabelLayout labelLayout = new GraphLabelLayout();
 
   @Override
@@ -56,7 +57,7 @@ public final class GraphElkLayout implements LayoutEngine {
     LayoutResult topology = directed && isDirectedAcyclic(request)
         ? layeredLayout(request)
         : topologyLayout.layout(request);
-    return labelLayout.resolve(request, topology);
+    return labelLayout.resolve(request, parallelLayout.spread(request, topology));
   }
 
   private LayoutResult layeredLayout(LayoutRequest request) {
