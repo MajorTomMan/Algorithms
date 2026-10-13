@@ -70,6 +70,7 @@ final class WorkbenchModuleNavigation {
     }
 
     List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return List.of();
         if (StructureIds.MAZE.equals(moduleId)) {
             return AlgorithmCatalog.forWorkbenchModule(moduleId).stream()
                     .distinct()

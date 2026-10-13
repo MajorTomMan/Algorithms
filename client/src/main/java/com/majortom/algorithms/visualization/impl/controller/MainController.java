@@ -887,7 +887,8 @@ public class MainController implements Initializable {
     private void refreshValueTypeSelectors() {
         if (activeDefinition == null || valueTypeBox == null || valueTypePanel == null) return;
         String moduleId = activeDefinition.id();
-        if (StructureIds.MAZE.equals(moduleId)) {
+        if (StructureIds.MAZE.equals(moduleId)
+                || StructureIds.MULTI_GRAPH.equals(moduleId)) {
             valueTypePanel.render(moduleId, false, false, false, null, List.of(), List.of());
             return;
         }
@@ -954,6 +955,7 @@ public class MainController implements Initializable {
     }
 
     private AlgorithmTypeSignature firstAvailableAlgorithmSignature(String moduleId) {
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return null;
         return COMPONENTS.algorithmTypeSignatures(StructureModule.fromId(moduleId)).stream()
                 .filter(signature -> StructureIds.HASH.equals(moduleId)
                         ? signature.arity() == 2
@@ -1237,6 +1239,9 @@ public class MainController implements Initializable {
         }
         if (currentSubController instanceof GraphController graphController) {
             graphController.setStructureSelectionEnabled(structure);
+        }
+        if (currentSubController instanceof MultiGraphController multiGraphController) {
+            multiGraphController.setStructureSelectionEnabled(structure);
         }
         if (currentSubController instanceof LinkedListController linkedController) {
             linkedController.setStructureSelectionEnabled(structure);
@@ -2480,6 +2485,10 @@ public class MainController implements Initializable {
         if (currentSubController instanceof GraphController graphController) {
             graphController.setSelectionListener(selectionInspector::showGraphSelection);
             graphController.setStructureSelectionEnabled(isStructurePageVisible());
+        }
+        if (currentSubController instanceof MultiGraphController multiGraphController) {
+            multiGraphController.setSelectionListener(selectionInspector::showGraphSelection);
+            multiGraphController.setStructureSelectionEnabled(isStructurePageVisible());
         }
         if (currentSubController instanceof MazeController mazeController) {
             mazeController.setSelectionListener(selectionInspector::showMazeSelection);
