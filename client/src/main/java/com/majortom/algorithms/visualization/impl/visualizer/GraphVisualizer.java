@@ -50,6 +50,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private final VisualizationSurface surface = new VisualizationSurface();
     private final Map<Long, NodeView> nodeViews = new LinkedHashMap<>();
     private final Map<Long, EdgeView> edgeViews = new LinkedHashMap<>();
+    private record Endpoints(long from, long to) {}
+    private final Map<Endpoints, List<Long>> edgeIdsByEndpoints = new LinkedHashMap<>();
+    private GraphViewState lastPresentedState;
+    private long selectionRevision;
+    private long appliedSelectionRevision = -1L;
     private final Map<Long, Label> nodeIdLabels = new LinkedHashMap<>();
     private final StructureAnimationRuntime<GraphViewState> animationRuntime =
             new StructureAnimationRuntime<>(new GraphAnimationPlanner());
@@ -104,7 +109,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         // The presenter routes every topology or label-geometry change through commitLayout.
         // Observation and selection frames must not rebuild the node/edge index.
         applyPendingSelection(state);
-        applyPresentation(state);
+        GraphViewState previous = lastPresentedState;
+        if (previous != null && previous.direction() == state.direction()
+                && previous.nodes() == state.nodes() && previous.edges() == state.edges()) {
+            applyTransientPresentation(previous, state);
+        } else {
+            applyPresentation(state);
+        }
         return CompletableFuture.completedFuture(null);
     }
 
@@ -132,6 +143,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             nodeViews.put(node.id(), view);
             surface.nodeLayer().getChildren().add(view);
         }
+        appliedSelectionRevision = -1L;
         // ID labels are the most expensive decorations for large graphs; instantiate them
         // only while the graph is small, and restore them when the user loads a small graph.
         boolean idsVisible = GraphRenderScale.nodeIds(state.nodes().size(), state.edges().size());
@@ -181,6 +193,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             edgeViews.put(edge.id(), view);
             surface.edgeLayer().getChildren().add(view);
         }
+        edgeIdsByEndpoints.clear();
+        for (GraphViewState.Edge edge : state.edges()) {
+            if (!edgeViews.containsKey(edge.id())) continue;
+            edgeIdsByEndpoints.computeIfAbsent(new Endpoints(edge.fromId(), edge.toId()),
+                    ignored -> new ArrayList<>()).add(edge.id());
+        }
+        appliedSelectionRevision = -1L;
     }
 
     private void applyPresentation(GraphViewState state) {
@@ -204,6 +223,73 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             view.setHighlighted(isObservedEdge(state, edge));
         }
         syncSelectionState();
+        lastPresentedState = state;
+    }
+
+    /**
+     * Observation frames reuse the same immutable node and edge lists. Update only changed
+     * visited/highlighted IDs; parallel edges are found through an endpoint index, not an
+     * O(E) scan on every algorithm step.
+     */
+    private void applyTransientPresentation(GraphViewState old, GraphViewState current) {
+        Set<Long> before = old.visitedNodeIds();
+        Set<Long> after = current.visitedNodeIds();
+        if (before != after && !before.equals(after)) {
+            Long newVisited = current.observation().type() == GraphViewState.Type.VISITED
+                    ? current.observation().firstNodeId() : null;
+            if (newVisited != null && after.size() == before.size() + 1
+                    && after.contains(newVisited) && !before.contains(newVisited)) {
+                NodeView view = nodeViews.get(newVisited);
+                if (view != null) view.setVisited(true);
+            } else {
+                for (Long id : before) {
+                    if (!after.contains(id)) {
+                        NodeView view = nodeViews.get(id);
+                        if (view != null) view.setVisited(false);
+                    }
+                }
+                for (Long id : after) {
+                    if (!before.contains(id)) {
+                        NodeView view = nodeViews.get(id);
+                        if (view != null) view.setVisited(true);
+                    }
+                }
+            }
+        }
+        updateObservedNodes(old.observation(), current);
+        refreshObservedEdges(old.observation(), old.direction().isDirected(), false);
+        refreshObservedEdges(current.observation(), current.direction().isDirected(), true);
+        syncSelectionState();
+        lastPresentedState = current;
+    }
+
+    private void updateObservedNodes(GraphViewState.Observation old, GraphViewState current) {
+        GraphViewState.Observation next = current.observation();
+        if (old.firstNodeId() != null) updateObservedNode(old.firstNodeId(), next);
+        if (old.secondNodeId() != null) updateObservedNode(old.secondNodeId(), next);
+        if (next.firstNodeId() != null) updateObservedNode(next.firstNodeId(), next);
+        if (next.secondNodeId() != null) updateObservedNode(next.secondNodeId(), next);
+    }
+
+    private void updateObservedNode(long id, GraphViewState.Observation observation) {
+        NodeView view = nodeViews.get(id);
+        if (view != null) view.setHighlighted(isObservedNode(observation, id));
+    }
+
+    private void refreshObservedEdges(GraphViewState.Observation observation,
+            boolean directed, boolean highlighted) {
+        if (observation.type() != GraphViewState.Type.EXAMINED
+                || observation.firstNodeId() == null || observation.secondNodeId() == null) return;
+        refreshObservedEdgePair(observation.firstNodeId(), observation.secondNodeId(), highlighted);
+        if (!directed && !observation.firstNodeId().equals(observation.secondNodeId()))
+            refreshObservedEdgePair(observation.secondNodeId(), observation.firstNodeId(), highlighted);
+    }
+
+    private void refreshObservedEdgePair(long from, long to, boolean highlighted) {
+        for (Long edgeId : edgeIdsByEndpoints.getOrDefault(new Endpoints(from, to), List.of())) {
+            EdgeView view = edgeViews.get(edgeId);
+            if (view != null) view.setHighlighted(highlighted);
+        }
     }
 
     private void applyRoutes(LayoutResult patch) {
@@ -264,6 +350,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public void clearSelection() {
+        selectionRevision++;
         selectedNodeId = null;
         selectedEdgeId = null;
         pendingSelectedNodeId = null;
@@ -286,6 +373,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public boolean showNodeSelection(long nodeId) {
+        selectionRevision++;
         selectedNodeId = nodeId;
         selectedEdgeId = null;
         pendingSelectedNodeId = nodeViews.containsKey(nodeId) ? null : nodeId;
@@ -301,6 +389,7 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     public boolean showEdgeSelection(long edgeId) {
+        selectionRevision++;
         selectedEdgeId = edgeId;
         selectedNodeId = null;
         pendingSelectedEdgeId = edgeViews.containsKey(edgeId) ? null : edgeId;
@@ -309,9 +398,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     }
 
     private void syncSelectionState() {
+        if (appliedSelectionRevision == selectionRevision) return;
         nodeViews.forEach((id, view) -> view.setSelected(selectedNodeId != null && selectedNodeId.equals(id)));
         edgeViews.forEach((id, view) -> view.setSelected(selectedEdgeId != null && selectedEdgeId.equals(id)));
         syncNodeIdLabelVisibility();
+        appliedSelectionRevision = selectionRevision;
     }
 
     private void installNodeIdLabel(long nodeId, NodeView view) {
@@ -371,6 +462,9 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
         nodeViews.clear();
         edgeViews.clear();
         nodeIdLabels.clear();
+        edgeIdsByEndpoints.clear();
+        lastPresentedState = null;
+        appliedSelectionRevision = -1L;
         surface.nodeLayer().getChildren().clear();
         surface.edgeLayer().getChildren().clear();
         surface.decorationLayer().getChildren().clear();
