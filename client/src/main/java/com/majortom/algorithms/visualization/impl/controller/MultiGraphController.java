@@ -32,6 +32,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -63,6 +65,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @FXML private Label importStatus;
   private long importVersion;
   private boolean importInProgress;
+  private Path selectedJsonFile;
   private record PreparedBatch(Object data, MultiGraph<Object> graph) {}
 
   public MultiGraphController(RenderContext context) {
@@ -82,6 +85,12 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     sampleButton.setOnAction(event -> loadSample());
     importJsonButton.setOnAction(event -> loadJsonFromUi());
     chooseJsonButton.setOnAction(event -> chooseJsonFile());
+    batchJsonField.textProperty().addListener((observable, previous, next) -> {
+      // Typing text after picking a file means the textarea is now the data source.
+      if (selectedJsonFile != null && next != null && !next.isBlank()) {
+        selectedJsonFile = null;
+      }
+    });
     algorithmSelector.setItems(FXCollections.observableArrayList(algorithmIds));
     localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
     algorithmSelector.getSelectionModel().selectFirst();
@@ -94,14 +103,20 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   private void loadJsonFromUi() {
     if (importInProgress) return;
     String className = batchClassField.getText();
-    String json = batchJsonField.getText();
+    Path file = selectedJsonFile;
+    String json = file == null ? batchJsonField.getText() : null;
     GraphDirection direction = graph.direction();
     long version = ++importVersion;
     importInProgress = true;
     setImportControlsDisabled(true);
     importStatus.setText(I18N.text("message.multi_graph.loading"));
     CompletableFuture.supplyAsync(() -> {
-      Object data = MultiGraphJsonLoader.read(className, json);
+      String dataJson = json;
+      if (file != null) {
+        try { dataJson = Files.readString(file, StandardCharsets.UTF_8); }
+        catch (IOException exception) { throw new UncheckedIOException(exception); }
+      }
+      Object data = MultiGraphJsonLoader.read(className, dataJson);
       return new PreparedBatch(data, MultiGraph.from(direction, data));
     }).whenComplete((prepared, error) -> FxDispatch.defer(() -> {
       if (importVersion != version) return;
@@ -152,13 +167,11 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     var file = chooser.showOpenDialog(
         chooseJsonButton.getScene() == null ? null : chooseJsonButton.getScene().getWindow());
     if (file == null) return;
-    try {
-      batchJsonField.setText(Files.readString(file.toPath(), StandardCharsets.UTF_8));
-      importStatus.setText(file.getName());
-    } catch (IOException exception) {
-      importStatus.setText(I18N.text("message.multi_graph.load_failed") + ": "
-          + exception.getMessage());
-    }
+    // Reading a large JSON document into TextArea freezes FX and duplicates memory.
+    // Preserve only the file path; the async import task will read the contents.
+    batchJsonField.clear();
+    selectedJsonFile = file.toPath();
+    importStatus.setText(file.getName());
   }
 
   /** Library consumers can provide their own annotated batch object directly. */

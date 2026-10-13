@@ -33,16 +33,16 @@ public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Ed
     return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
   }
 
-  /** Convert a multi-graph snapshot without dropping parallel edges or business payload labels. */
+  /** Convert a multigraph with compact value summaries; full details load on selection. */
   public static GraphViewState initial(MultiGraphSnapshot<?> graph) {
     Objects.requireNonNull(graph, "graph");
     List<Node> nodes = graph.vertices().stream()
-        .map(vertex -> new Node(vertex.id(), VisualValue.of(vertex.value()))).toList();
+        .map(vertex -> new Node(vertex.id(), VisualValue.compact(vertex.value()))).toList();
     List<Edge> edges = graph.edges().stream()
         .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight(),
             edge.value() == null ? null :
                 com.majortom.algorithms.visualization.runtime.value.ValueAdapters
-                    .project(edge.value()).summary())).toList();
+                    .summary(edge.value()))).toList();
     return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
   }
 

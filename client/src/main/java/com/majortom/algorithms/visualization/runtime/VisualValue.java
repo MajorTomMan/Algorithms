@@ -15,6 +15,14 @@ public record VisualValue(Object value, String text,
     projection = Objects.requireNonNull(projection, "projection");
   }
 
+  /** Compact value for large graphs: full annotated detail is projected on selection. */
+  public static VisualValue compact(Object value) {
+    String summary = com.majortom.algorithms.visualization.runtime.value.ValueAdapters.summary(value);
+    return new VisualValue(value, summary,
+        new com.majortom.algorithms.visualization.runtime.value.ValueProjection(
+            summary, java.util.List.of(), false));
+  }
+
   public static VisualValue of(Object value) {
     var projection = com.majortom.algorithms.visualization.runtime.value.ValueAdapters.project(value);
     return new VisualValue(value, projection.summary(), projection);

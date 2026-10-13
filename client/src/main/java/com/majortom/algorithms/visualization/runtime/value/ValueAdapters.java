@@ -151,6 +151,28 @@ public final class ValueAdapters {
     return distinct == null ? 0 : distinct.capacity();
   }
 
+  /**
+   * One-line projection for graph imports; DETAIL-only getters are not called.
+   * Registered explicit presenters retain their original priority.
+   */
+  public static String summary(Object value) {
+    if (value == null) return "null";
+    Entry<Object> entry;
+    try { entry = objectEntry(value.getClass()); }
+    catch (IllegalArgumentException unsupported) {
+      return AnnotatedValueProjector.summary(value);
+    }
+    ValuePresenter<Object> presenter = entry.presenter();
+    if (presenter == null) return AnnotatedValueProjector.summary(value);
+    List<String> values = new ArrayList<>();
+    for (DisplayField<Object> field : presenter.fields()) {
+      if (!field.summary()) continue;
+      try { values.add(String.valueOf(field.getter().apply(value))); }
+      catch (RuntimeException failure) { values.add("<error>"); }
+    }
+    return safeNodeText(String.join(" · ", values));
+  }
+
   public static ValueProjection project(Object value) {
     if (value == null) return new ValueProjection("null",
         List.of(new FieldView("value", "值", "null", true, false)), true);

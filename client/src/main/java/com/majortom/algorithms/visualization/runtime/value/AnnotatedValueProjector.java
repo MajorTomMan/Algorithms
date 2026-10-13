@@ -8,6 +8,23 @@ import java.util.List;
 final class AnnotatedValueProjector {
   private AnnotatedValueProjector() {}
 
+  /** Projection for lists/canvas only: never invoke DETAIL-only getters. */
+  static String summary(Object value) {
+    var descriptor = ValueMetadata.describe(value.getClass());
+    List<String> parts = new ArrayList<>();
+    for (var field : descriptor.fields()) {
+      if (!field.summary()) continue;
+      try { parts.add(format(field.read(value))); }
+      catch (RuntimeException failure) { parts.add("<error>"); }
+    }
+    return trim(parts.isEmpty() ? descriptor.name() : String.join(" · ", parts));
+  }
+
+  private static String trim(String label) {
+    String compact = label.replace('\n', ' ').replace('\r', ' ');
+    return compact.length() > 72 ? compact.substring(0, 71) + "…" : compact;
+  }
+
   static ValueProjection project(Object value) {
     var descriptor = ValueMetadata.describe(value.getClass());
     if (descriptor.fields().isEmpty())
@@ -26,9 +43,7 @@ final class AnnotatedValueProjector {
       }
     }
     String label = summary.isEmpty() ? descriptor.name() : String.join(" · ", summary);
-    label = label.replace('\n', ' ').replace('\r', ' ');
-    if (label.length() > 72) label = label.substring(0, 71) + "…";
-    return new ValueProjection(label, details, true);
+    return new ValueProjection(trim(label), details, true);
   }
 
   private static String format(Object value) {
