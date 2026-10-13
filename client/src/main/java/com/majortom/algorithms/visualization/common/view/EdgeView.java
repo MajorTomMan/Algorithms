@@ -44,6 +44,8 @@ public final class EdgeView extends Group {
   private boolean updatingGeometry;
   private boolean geometryDirty;
   private List<Point2D> route = List.of();
+  private Point2D routeSourceCenter;
+  private Point2D routeTargetCenter;
 
   public EdgeView(NodeView source, NodeView target, boolean directed) {
     this.source = Objects.requireNonNull(source, "source");
@@ -212,9 +214,23 @@ public final class EdgeView extends Group {
 
   /** Applies presentation-only route geometry, typically produced by ELK. */
   public void setRoute(List<Point2D> points) {
+    setRoute(points, source.visualCenter(), target.visualCenter());
+  }
+
+  /**
+   * The ELK route is based on the pre-drag layout. Keep its endpoint origins so that
+   * changing only one node can move its own end of the route without rerunning ELK.
+   * Explicit baselines are needed when a manual node position overrides a new layout.
+   */
+  public void setRoute(List<Point2D> points, Point2D layoutSource, Point2D layoutTarget) {
     List<Point2D> next = List.copyOf(Objects.requireNonNull(points, "points"));
-    if (!route.equals(next)) {
+    Objects.requireNonNull(layoutSource, "layoutSource");
+    Objects.requireNonNull(layoutTarget, "layoutTarget");
+    if (!route.equals(next) || !layoutSource.equals(routeSourceCenter)
+        || !layoutTarget.equals(routeTargetCenter)) {
       route = next;
+      routeSourceCenter = layoutSource;
+      routeTargetCenter = layoutTarget;
       updateGeometry();
     }
   }
@@ -225,6 +241,8 @@ public final class EdgeView extends Group {
       return;
     }
     route = List.of();
+    routeSourceCenter = null;
+    routeTargetCenter = null;
     updateGeometry();
   }
 
@@ -234,7 +252,26 @@ public final class EdgeView extends Group {
 
   /** Immutable snapshot of the currently rendered route for animation continuity. */
   public List<Point2D> routeSnapshot() {
-    return List.copyOf(route);
+    return adjustedRoute();
+  }
+
+  /** Translate bend points proportionally to the movement of each endpoint. */
+  private List<Point2D> adjustedRoute() {
+    if (route.size() < 2 || routeSourceCenter == null || routeTargetCenter == null)
+      return List.copyOf(route);
+    Point2D sourceDelta = source.visualCenter().subtract(routeSourceCenter);
+    Point2D targetDelta = target.visualCenter().subtract(routeTargetCenter);
+    if (sourceDelta.magnitude() < 0.000001d && targetDelta.magnitude() < 0.000001d)
+      return List.copyOf(route);
+    List<Point2D> shifted = new ArrayList<>(route.size());
+    int denominator = route.size() - 1;
+    for (int index = 0; index < route.size(); index++) {
+      double fraction = (double) index / denominator;
+      Point2D translation = sourceDelta.multiply(1.0d - fraction)
+          .add(targetDelta.multiply(fraction));
+      shifted.add(route.get(index).add(translation));
+    }
+    return shifted;
   }
 
   /** Releases endpoint listeners when this edge leaves the authoritative SceneGraph. */
@@ -254,6 +291,8 @@ public final class EdgeView extends Group {
     revealProgress.removeListener(geometryListener);
     arrow.fillProperty().unbind();
     route = List.of();
+    routeSourceCenter = null;
+    routeTargetCenter = null;
   }
 
   private void updateGeometry() {
@@ -328,10 +367,10 @@ public final class EdgeView extends Group {
       return;
     }
 
-    List<Point2D> points = new ArrayList<>(route);
+    List<Point2D> points = new ArrayList<>(adjustedRoute());
     Point2D sourceDirection;
-    if (route.size() > 2) {
-      sourceDirection = route.get(1);
+    if (points.size() > 2) {
+      sourceDirection = points.get(1);
     } else {
       sourceDirection = target.visualCenter();
     }
@@ -340,8 +379,8 @@ public final class EdgeView extends Group {
     }
 
     Point2D targetDirection;
-    if (route.size() > 2) {
-      targetDirection = route.get(route.size() - 2);
+    if (points.size() > 2) {
+      targetDirection = points.get(points.size() - 2);
     } else {
       targetDirection = source.visualCenter();
     }

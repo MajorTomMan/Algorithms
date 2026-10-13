@@ -82,6 +82,11 @@ public final class VisualizationSurface extends StackPane implements FxSurfaceAd
         heightProperty().addListener((observable, oldValue, newValue) -> notifyViewportChanged());
     }
 
+    /** While a graph node is being dragged, do not let GestureFX pan the viewport. */
+    public void setNodeDragActive(boolean active) {
+        gesturePane.setGestureEnabled(!active);
+    }
+
     public Group edgeLayer() {
         return edgeLayer;
     }
