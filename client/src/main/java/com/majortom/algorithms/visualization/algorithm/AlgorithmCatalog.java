@@ -2,6 +2,8 @@ package com.majortom.algorithms.visualization.algorithm;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.metadata.StructureModule;
+import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.structure.graph.MultiGraphStructure;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
@@ -31,6 +33,8 @@ public final class AlgorithmCatalog {
 
   public static AlgorithmDescriptor descriptor(
       String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
+    if (StructureIds.MULTI_GRAPH.equals(moduleId))
+      return compatibleDescriptor(MultiGraphStructure.class, typeSignature, algorithmId);
     return REGISTRY.requireAlgorithm(
         StructureModule.fromId(moduleId), typeSignature, algorithmId);
   }
@@ -67,6 +71,9 @@ public final class AlgorithmCatalog {
   }
 
   static List<AlgorithmDescriptor> descriptorsForWorkbenchModule(String moduleId) {
+    if (StructureIds.MULTI_GRAPH.equals(moduleId))
+      return REGISTRY.compatibleAlgorithms(
+          MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class));
     StructureModule module = StructureModule.fromId(moduleId);
     return REGISTRY.algorithms().stream()
         .filter(descriptor -> descriptor.module() == module)
@@ -75,6 +82,8 @@ public final class AlgorithmCatalog {
 
   public static List<String> forWorkbenchModule(
       String moduleId, AlgorithmTypeSignature typeSignature) {
+    if (StructureIds.MULTI_GRAPH.equals(moduleId))
+      return compatibleAlgorithms(MultiGraphStructure.class, typeSignature);
     return REGISTRY.algorithms(StructureModule.fromId(moduleId), typeSignature).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()

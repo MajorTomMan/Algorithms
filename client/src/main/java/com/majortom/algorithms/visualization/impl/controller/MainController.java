@@ -935,6 +935,8 @@ public class MainController implements Initializable {
     private String selectedValueType(String id) { return valueTypeCatalog.selectedValueType(id); }
 
     private AlgorithmTypeSignature selectedAlgorithmTypeSignature(String moduleId) {
+        if (StructureIds.MULTI_GRAPH.equals(moduleId))
+            return AlgorithmTypeSignature.of(Object.class);
         if (StructureIds.HASH.equals(moduleId)) {
             if (selectedHashKeyType == null || selectedHashValueType == null) {
                 if (currentSubController instanceof HashRuntimeTypeSupport hash) {
@@ -955,7 +957,7 @@ public class MainController implements Initializable {
     }
 
     private AlgorithmTypeSignature firstAvailableAlgorithmSignature(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return null;
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return AlgorithmTypeSignature.of(Object.class);
         return COMPONENTS.algorithmTypeSignatures(StructureModule.fromId(moduleId)).stream()
                 .filter(signature -> StructureIds.HASH.equals(moduleId)
                         ? signature.arity() == 2
@@ -970,6 +972,7 @@ public class MainController implements Initializable {
 
     private void commitSelectedAlgorithmTypeSignature(
             String moduleId, AlgorithmTypeSignature signature) {
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return;
         if (StructureIds.HASH.equals(moduleId)) {
             if (signature.arity() != 2) {
                 throw new IllegalArgumentException(
@@ -1124,7 +1127,7 @@ public class MainController implements Initializable {
 
         AlgorithmTypeSignature currentSignature =
                 selectedAlgorithmTypeSignature(activeDefinition.id());
-        if (currentSignature != null
+        if (currentSignature != null && !StructureIds.MULTI_GRAPH.equals(activeDefinition.id())
                 && currentSignature.types().stream().anyMatch(type -> !ValueAdapters.canReplay(type))) {
             Class<?> unsupported = currentSignature.types().stream()
                     .filter(type -> !ValueAdapters.canReplay(type))

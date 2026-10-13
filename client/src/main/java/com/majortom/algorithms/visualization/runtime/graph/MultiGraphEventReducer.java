@@ -1,6 +1,9 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.event.structure.MultiGraphStructureEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
+import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
+import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
@@ -24,6 +27,30 @@ public final class MultiGraphEventReducer implements EventReducer<GraphViewState
 
   @Override public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope envelope) {
     Object event = envelope.event();
+    if (event instanceof AlgorithmEvent.Visited visited
+        && visited.ref() instanceof AlgorithmEvent.EntityRef ref
+        && GraphObservationDomains.VERTEX.equals(ref.domain())) {
+      java.util.Set<Long> updated = new java.util.HashSet<>(previous.visitedNodeIds());
+      updated.add(ref.id());
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), updated, GraphViewState.Observation.visited(ref.id()), false),
+          EventImportance.TRANSIENT, true);
+    }
+    if (event instanceof AlgorithmEvent.Examined examined
+        && examined.fromRef() instanceof AlgorithmEvent.EntityRef from
+        && examined.toRef() instanceof AlgorithmEvent.EntityRef to
+        && GraphObservationDomains.VERTEX.equals(from.domain())
+        && GraphObservationDomains.VERTEX.equals(to.domain())) {
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), previous.visitedNodeIds(),
+          GraphViewState.Observation.examined(from.id(), to.id()), false),
+          EventImportance.TRANSIENT, true);
+    }
+    if (event instanceof RunCompletedEvent) {
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), previous.visitedNodeIds(),
+          GraphViewState.Observation.none(), true), EventImportance.TERMINAL, true);
+    }
     if (event instanceof MultiGraphStructureEvent.Reset reset)
       return changed(GraphViewState.initial(reset.snapshot()));
 

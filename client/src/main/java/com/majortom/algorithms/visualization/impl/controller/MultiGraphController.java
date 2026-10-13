@@ -2,6 +2,11 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.annotation.*;
 import com.majortom.algorithms.core.metadata.GraphDirection;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.runtime.graph.MultiGraphEventReducer;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
@@ -25,9 +30,14 @@ import java.util.function.Consumer;
 
 /** Separate MultiGraph workbench reusing Graph rendering while preserving simple Graph behavior. */
 public final class MultiGraphController extends BaseModuleController<GraphViewState>
-    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>> {
+    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>, AlgorithmSelectionSupport {
   private MultiGraph<Object> graph = new MultiGraph<>(GraphDirection.DIRECTED);
   private Object lastBatch;
+  private static final AlgorithmTypeSignature SIGNATURE = AlgorithmTypeSignature.of(Object.class);
+  private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(
+      MultiGraphStructure.class, SIGNATURE);
+  private Consumer<String> algorithmSelectionListener = ignored -> {};
+  @FXML private ComboBox<String> algorithmSelector;
   private boolean structureSelectionEnabled = true;
   private Consumer<GraphController.Selection> selectionListener = ignored -> {};
   @FXML private ComboBox<GraphDirection> directionSelector;
@@ -49,6 +59,11 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
       if (next != null && next != graph.direction()) changeDirection(next);
     });
     sampleButton.setOnAction(event -> loadSample());
+    algorithmSelector.setItems(FXCollections.observableArrayList(algorithmIds));
+    localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
+    algorithmSelector.getSelectionModel().selectFirst();
+    algorithmSelector.getSelectionModel().selectedItemProperty().addListener(
+        (observable, before, after) -> algorithmSelectionListener.accept(after));
   }
   private GraphVisualizer graphVisualizer() { return (GraphVisualizer) visualizer; }
 
@@ -139,7 +154,45 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     if (sampleButton != null) sampleButton.setText("Load sample / 加载示例");
   }
   @Override public void handleAlgorithmStart() {
-    appendLog("MultiGraph algorithm registration will be added separately.");
+    String id = selectedAlgorithmId();
+    if (id == null || graph.vertexCount() == 0 || isRunning()) return;
+    MultiGraphSnapshot<Object> snapshot = graph.snapshot();
+    for (var node : snapshot.vertices()) {
+      if (!safeToReplay(node.value())) {
+        appendLog("Replay requires immutable node payload: " + node.value().getClass().getName());
+        return;
+      }
+    }
+    for (var edge : snapshot.edges()) {
+      if (edge.value() != null && !safeToReplay(edge.value())) {
+        appendLog("Replay requires immutable edge payload: " + edge.value().getClass().getName());
+        return;
+      }
+    }
+    AlgorithmDescriptor descriptor = AlgorithmCatalog.compatibleDescriptor(
+        MultiGraphStructure.class, SIGNATURE, id);
+    MultiGraph<Object> input = MultiGraph.fromSnapshot(snapshot);
+    startAlgorithm(id, snapshot, () -> descriptor.invoke(input),
+        () -> new MultiGraphEventReducer(snapshot));
+  }
+  private static boolean safeToReplay(Object value) {
+    if (ValueAdapters.canReplay(value.getClass())) return true;
+    ValueType definition = value.getClass().getAnnotation(ValueType.class);
+    return definition != null && definition.immutable();
+  }
+  @Override public List<String> algorithmIds() { return algorithmIds; }
+  @Override public String selectedAlgorithmId() {
+    if (algorithmSelector == null) return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
+    return algorithmSelector.getSelectionModel().getSelectedItem();
+  }
+  @Override public boolean selectAlgorithm(String id) {
+    if (!algorithmIds.contains(id)) return false;
+    if (algorithmSelector != null) algorithmSelector.getSelectionModel().select(id);
+    algorithmSelectionListener.accept(id);
+    return true;
+  }
+  @Override public void setAlgorithmSelectionListener(Consumer<String> listener) {
+    algorithmSelectionListener = listener == null ? ignored -> {} : listener;
   }
   @Override protected String formatStatsMessage() {
     return "Nodes: " + graph.vertexCount() + " | Edges: " + graph.edgeCount();
@@ -189,9 +242,11 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @ValueType(value = MultiGraphStructure.class, name = "城市", immutable = true)
   private record City(@ValueId String code,
       @ValueField(value = {ValueDisplay.SUMMARY, ValueDisplay.DETAIL}, label = "名称") String name) {}
+  @ValueType(immutable = true)
   private record Railway(@GraphFrom City from, @GraphTo City to,
       @ValueField(value = ValueDisplay.SUMMARY, label = "线路") String line,
       @GraphWeight double kilometers) {}
+  @ValueType(immutable = true)
   private record Road(@GraphFrom City from, @GraphTo City to,
       @ValueField(value = ValueDisplay.SUMMARY, label = "公路") String name,
       @GraphBidirectional boolean twoWay, @GraphWeight double kilometers) {}

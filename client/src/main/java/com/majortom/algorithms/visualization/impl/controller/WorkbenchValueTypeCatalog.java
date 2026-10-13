@@ -1,6 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.structure.graph.MultiGraphStructure;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
@@ -32,7 +33,8 @@ final class WorkbenchValueTypeCatalog {
     }
 
     boolean hasAlgorithmForAnySupportedType(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return false;
+        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return !components.compatibleAlgorithms(
+                MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).isEmpty();
         StructureModule module = StructureModule.fromId(moduleId);
         return components.algorithmTypeSignatures(module).stream()
                 .anyMatch(signature -> supportsAlgorithmSignature(moduleId, signature));

@@ -8,6 +8,8 @@
   <VBox spacing="8" styleClass="control-section,control-card,structure-section">
     <Label text="MultiGraph" styleClass="control-label"/>
     <ComboBox fx:id="directionSelector" maxWidth="Infinity"/>
+    <Label text="Algorithms / 算法" styleClass="control-label"/>
+    <ComboBox fx:id="algorithmSelector" maxWidth="Infinity"/>
     <Button fx:id="sampleButton" maxWidth="Infinity"
             styleClass="btn-ran-blue,operation-button" text="Load sample / 加载示例"/>
     <Label text="Use loadBatch(data) to load an annotated batch object."

@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.module.WorkbenchModuleDefinition;
 import com.majortom.algorithms.visualization.navigation.FamilyEntry;
 import com.majortom.algorithms.visualization.navigation.FamilyNavigator;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
+import com.majortom.algorithms.structure.graph.MultiGraphStructure;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -70,7 +71,10 @@ final class WorkbenchModuleNavigation {
     }
 
     List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return List.of();
+        if (StructureIds.MULTI_GRAPH.equals(moduleId))
+            return AlgorithmCatalog.compatibleAlgorithms(
+                    MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).stream()
+                    .map(AlgorithmNavigationItem::new).toList();
         if (StructureIds.MAZE.equals(moduleId)) {
             return AlgorithmCatalog.forWorkbenchModule(moduleId).stream()
                     .distinct()
