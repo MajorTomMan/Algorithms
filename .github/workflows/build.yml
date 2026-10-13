@@ -23,6 +23,10 @@ jobs:
       - name: Exercise annotated MultiGraph batch imports
         run: |
           java -cp "structures/target/classes:structures/target/test-classes:$(cat structures/target/test-classpath.txt)" com.majortom.algorithms.structure.graph.MultiGraphChecks
+      - name: Exercise MultiGraph BFS DFS and discovery
+        run: |
+          mvn -B -ntp -pl algorithms dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
+          java -cp "algorithms/target/classes:algorithms/target/test-classes:$(cat algorithms/target/test-classpath.txt)" com.majortom.algorithms.algorithm.graph.impl.MultiGraphTraversalChecks
       - name: Exercise annotated display fields
         run: |
           java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
