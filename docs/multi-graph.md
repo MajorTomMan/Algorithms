@@ -66,7 +66,7 @@ graph.removeEdge(pair.forward().id());
 `snapshot()` / `initialize()` 支持整体加载，批量初始化发布一个 Reset 结构事件，
 而不是逐条事件。快照**不深拷贝**业务对象：用于历史回放时，业务值和边载荷须保持不可变。
 可视化展示层使用核心 `ValueMetadata` 元数据统一读取 `@ValueField` 摘要和详情。
-MultiGraph 已有独立 JavaFX 工作台、平行边布局和 BFS/DFS 结构算法。
+MultiGraph 现在位于统一的 **图 / Graph** 工作台中，作为「实现方式 / Implementation」的第二个选项；不再单独占据左侧的结构家族入口。保留平行边布局和 BFS/DFS 结构算法。
 在图形工作台中可输入批量类的 Java 完整类名，粘贴 JSON 或选择 JSON 文件批量加载。
 只支持已编译并存在于应用 classpath 上的 Java 类；不动态编译用户代码。
 
@@ -83,7 +83,7 @@ mvn -pl structures -am test-compile
 
 ### JavaFX 导入自定义批量 JSON
 
-工作台的 **MultiGraph** 模块内，填写类完整名称（例如
+工作台选择 **图（Graph）→ 实现方式：多重图（MultiGraph）** 后，填写类完整名称（例如
 `com.example.model.TransportNetwork`），粘贴符合该类型的 JSON，
 或通过“选择 JSON 文件”读入本地文件，然后点“导入图数据”。
 JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
@@ -150,3 +150,26 @@ BFS/DFS 观察事件使用端点索引更新本次节点及边高亮，减少重
 JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas 批量绘制、
 视口虚拟化或百万级数据分页。此策略主要消除高复杂度布局和无意义的标签/高亮开销；
 超大图的实际 FPS 和内存占用仍需在目标桌面设备上测试。
+
+### 普通图与多重图的工作台选择
+
+工作台侧栏仅保留一个「图 / Graph」导航项。进入结构界面后：
+
+- **实现方式：普通图**：继续使用 `GraphStructure<T>`、现有节点/边编辑操作与普通图算法；
+- **实现方式：多重图**：使用 `MultiGraphStructure<T>`、JSON/自定义批量对象导入与多重图 BFS/DFS；
+- **算法界面**：算法列表由当前实际结构契约过滤，普通图不显示多重图算法，反之亦然；
+- **有向/无向**：是选定实现内部的独立设置，不由「实现方式」决定。
+
+切换实现方式当前会重新创建相应的结构控制器，并清除与前一实现不兼容的工作台快照，
+防止把 `GraphSnapshot<T>` 误恢复为 `MultiGraphSnapshot<T>`。
+如需保留当前构图数据，请在切换前导出或保存对应数据。
+这只是前端归类调整：底层 `Graph<T>` 与 `MultiGraph<T>` 仍完全独立，
+注解构图、单向/双向连接及多重边 API 均不变。
+
+### 本地离线构建依赖说明
+
+项目需要 Spring Boot 父 POM、JavaFX、Jackson、ELK 等完整 Maven 本地仓库。
+仅有 ELK 0.12.0 的 jar/pom 无法进行完整离线构建；
+离线执行 `mvn -o -pl client -am test-compile` 需要事先下载全部父 POM、
+插件及传递依赖。GitHub Actions 的 Java 21 reactor install 与回归测试
+用于验证最新 `dev` 代码；本地旧版源码快照的结果不能代表最新分支。
