@@ -8,6 +8,7 @@ import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
 import com.majortom.algorithms.visualization.runtime.graph.MultiGraphEventReducer;
 import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.graph.*;
@@ -177,8 +178,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
   private static boolean safeToReplay(Object value) {
     if (ValueAdapters.canReplay(value.getClass())) return true;
-    ValueType definition = value.getClass().getAnnotation(ValueType.class);
-    return definition != null && definition.immutable();
+    return ValueMetadata.describe(value.getClass()).immutable();
   }
   @Override public List<String> algorithmIds() { return algorithmIds; }
   @Override public String selectedAlgorithmId() {

@@ -1,30 +1,26 @@
 package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.*;
+import com.majortom.algorithms.core.metadata.AnnotatedMembers;
 import com.majortom.algorithms.core.metadata.GraphDirection;
+import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Converts an explicitly annotated batch object to graph topology, without inferring any
- * business relationship. Nodes are declared by @GraphNodes and edges by @GraphEdges;
- * endpoint references must resolve to declared nodes (same instance or @ValueId).
+ * Builds a multigraph exclusively from explicit node and edge annotations.
+ * Reflection metadata is shared with the presentation layer via core.
  */
 final class MultiGraphBatchParser {
   private MultiGraphBatchParser() {}
-  // One reflective inspection per concrete type and marker, independent of batch size.
-  private record MarkerKey(Class<?> type, Class<? extends Annotation> marker) {}
-  private static final Map<MarkerKey, List<Member>> ACCESSORS = new ConcurrentHashMap<>();
 
   static <T> MultiGraph<T> parse(GraphDirection direction, Class<T> nodeType, Object batch) {
     Objects.requireNonNull(direction, "direction");
     Objects.requireNonNull(nodeType, "nodeType");
     Objects.requireNonNull(batch, "batch");
-    List<Member> nodeSources = members(batch.getClass(), GraphNodes.class);
-    List<Member> edgeSources = members(batch.getClass(), GraphEdges.class);
+    var nodeSources = AnnotatedMembers.marked(batch.getClass(), GraphNodes.class);
+    var edgeSources = AnnotatedMembers.marked(batch.getClass(), GraphEdges.class);
     if (nodeSources.isEmpty()) throw new IllegalArgumentException(
         "Batch class has no @GraphNodes member: " + batch.getClass().getName());
 
@@ -33,14 +29,13 @@ final class MultiGraphBatchParser {
     IdentityHashMap<Object, Vertex<T>> byReference = new IdentityHashMap<>();
     Map<NodeIdentity, Vertex<T>> byBusinessKey = new HashMap<>();
 
-    // Phase 1: collect *all* declared nodes, including isolated ones and forward-referenced nodes.
-    for (Member source : nodeSources) {
+    // Phase 1: collect explicitly declared vertices including isolated and forward-referenced nodes.
+    for (var source : nodeSources) {
       for (Object item : elements(source.read(batch))) {
         if (item == null) throw new IllegalArgumentException("null node in " + source.name());
         if (byReference.containsKey(item)) continue;
-        ValueType type = item.getClass().getAnnotation(ValueType.class);
-        if (type != null && type.value().length > 0 && Arrays.stream(type.value())
-            .noneMatch(contract -> contract.isAssignableFrom(MultiGraphStructure.class)))
+        var metadata = ValueMetadata.describe(item.getClass());
+        if (!metadata.supports(MultiGraphStructure.class))
           throw new IllegalArgumentException("value type is not enabled for MultiGraph: "
               + item.getClass().getName());
         T value = nodeType.cast(item);
@@ -54,25 +49,25 @@ final class MultiGraphBatchParser {
       }
     }
 
-    // Phase 2: read only the relations explicitly declared by the algorithm author.
-    for (Member source : edgeSources) {
+    // Phase 2: connect exactly the edges declared by the author; no recursive relationship inference.
+    for (var source : edgeSources) {
       for (Object item : elements(source.read(batch))) {
         if (item == null) throw new IllegalArgumentException("null edge in " + source.name());
-        Member fromMember = exactlyOne(item.getClass(), GraphFrom.class, true);
-        Member toMember = exactlyOne(item.getClass(), GraphTo.class, true);
-        Member bidirectional = exactlyOne(item.getClass(), GraphBidirectional.class, false);
-        Member weightMember = exactlyOne(item.getClass(), GraphWeight.class, false);
-        Object fromValue = Objects.requireNonNull(fromMember.read(item), "edge source is null");
-        Object toValue = Objects.requireNonNull(toMember.read(item), "edge target is null");
+        var fromAccessor = AnnotatedMembers.one(item.getClass(), GraphFrom.class, true);
+        var toAccessor = AnnotatedMembers.one(item.getClass(), GraphTo.class, true);
+        var bidirectional = AnnotatedMembers.one(item.getClass(), GraphBidirectional.class, false);
+        var weightAccessor = AnnotatedMembers.one(item.getClass(), GraphWeight.class, false);
+        Object fromValue = Objects.requireNonNull(fromAccessor.read(item), "edge source is null");
+        Object toValue = Objects.requireNonNull(toAccessor.read(item), "edge target is null");
         Vertex<T> from = resolve(fromValue, byReference, byBusinessKey);
         Vertex<T> to = resolve(toValue, byReference, byBusinessKey);
         if (from == null || to == null) throw new IllegalArgumentException(
             "edge endpoint is not declared in @GraphNodes: " + item.getClass().getName());
         double weight = 1.0;
-        if (weightMember != null) {
-          Object raw = weightMember.read(item);
+        if (weightAccessor != null) {
+          Object raw = weightAccessor.read(item);
           if (!(raw instanceof Number number))
-            throw new IllegalArgumentException("@GraphWeight must be numeric: " + weightMember.name());
+            throw new IllegalArgumentException("@GraphWeight must be numeric: " + weightAccessor.name());
           weight = number.doubleValue();
           if (!Double.isFinite(weight)) throw new IllegalArgumentException("edge weight must be finite");
         }
@@ -85,18 +80,14 @@ final class MultiGraphBatchParser {
           twoWay = flag;
         }
         long forwardId = new MultiEdge<>(from, to, item, weight).id();
-        edges.add(new MultiGraphSnapshot.Edge(
-            forwardId, from.id(), to.id(), item, weight));
+        edges.add(new MultiGraphSnapshot.Edge(forwardId, from.id(), to.id(), item, weight));
         if (twoWay && direction.isDirected()) {
           if (from == to) throw new IllegalArgumentException("bidirectional self-loop is ambiguous");
           long reverseId = new MultiEdge<>(to, from, item, weight).id();
-          edges.add(new MultiGraphSnapshot.Edge(
-              reverseId, to.id(), from.id(), item, weight));
+          edges.add(new MultiGraphSnapshot.Edge(reverseId, to.id(), from.id(), item, weight));
         }
       }
     }
-
-    // Snapshot restore validates all IDs/endpoints and initializes indexes without per-edge events.
     return MultiGraph.fromSnapshot(new MultiGraphSnapshot<>(direction, vertices, edges));
   }
 
@@ -111,16 +102,12 @@ final class MultiGraphBatchParser {
   private record NodeIdentity(Class<?> type, Object id) {}
 
   private static NodeIdentity identity(Object value) {
-    List<Member> ids = members(value.getClass(), ValueId.class);
-    if (ids.isEmpty()) return null;
-    if (ids.size() != 1) throw new IllegalArgumentException(
-        "Only one @ValueId is allowed: " + value.getClass().getName());
-    Object key = ids.getFirst().read(value);
-    if (key == null) throw new IllegalArgumentException("@ValueId returned null");
-    return new NodeIdentity(value.getClass(), key);
+    var descriptor = ValueMetadata.describe(value.getClass());
+    Object id = descriptor.businessIdOf(value);
+    return id == null ? null : new NodeIdentity(value.getClass(), id);
   }
 
-  /** Iterable, Java array, single object, and null values are supported. */
+  /** Accept collections, Java arrays, a scalar object and empty/null collections. */
   private static Iterable<?> elements(Object value) {
     if (value == null) return List.of();
     if (value instanceof Iterable<?> iterable) return iterable;
@@ -136,64 +123,5 @@ final class MultiGraphBatchParser {
       };
     }
     return List.of(value);
-  }
-
-  private static Member exactlyOne(Class<?> type, Class<? extends Annotation> marker, boolean required) {
-    List<Member> found = members(type, marker);
-    if (found.size() > 1 || required && found.isEmpty()) throw new IllegalArgumentException(
-        "Expected " + (required ? "exactly one" : "at most one") + " @"
-            + marker.getSimpleName() + " on " + type.getName());
-    return found.isEmpty() ? null : found.getFirst();
-  }
-
-  private record Member(String name, Field field, Method method) {
-    Object read(Object receiver) {
-      try {
-        if (field != null) {
-          if (!field.trySetAccessible()) throw new IllegalArgumentException("inaccessible field: " + field);
-          return field.get(receiver);
-        }
-        if (!method.trySetAccessible()) throw new IllegalArgumentException("inaccessible method: " + method);
-        return method.invoke(receiver);
-      } catch (ReflectiveOperationException exception) {
-        throw new IllegalArgumentException("Cannot read @" + name + " on "
-            + receiver.getClass().getName(), exception);
-      }
-    }
-  }
-
-  private static List<Member> members(Class<?> type, Class<? extends Annotation> marker) {
-    return ACCESSORS.computeIfAbsent(new MarkerKey(type, marker),
-        key -> scanMembers(key.type(), key.marker()));
-  }
-
-  private static List<Member> scanMembers(Class<?> type, Class<? extends Annotation> marker) {
-    LinkedHashMap<String, Member> members = new LinkedHashMap<>();
-    for (Class<?> cursor = type; cursor != null && cursor != Object.class; cursor = cursor.getSuperclass()) {
-      for (Field field : cursor.getDeclaredFields()) {
-        if (!field.isAnnotationPresent(marker)) continue;
-        if (Modifier.isStatic(field.getModifiers())) throw new IllegalArgumentException(
-            "Annotated member cannot be static: " + field);
-        members.putIfAbsent(field.getName(), new Member(field.getName(), field, null));
-      }
-      for (Method method : cursor.getDeclaredMethods()) {
-        if (!method.isAnnotationPresent(marker)) continue;
-        if (method.isSynthetic() || Modifier.isStatic(method.getModifiers())
-            || method.getParameterCount() != 0 || method.getReturnType() == void.class)
-          throw new IllegalArgumentException("Annotated method must be a non-static no-arg accessor: " + method);
-        String property = propertyName(method.getName());
-        // A record component may propagate its annotation to both field and accessor.
-        members.putIfAbsent(property, new Member(property, null, method));
-      }
-    }
-    return List.copyOf(members.values());
-  }
-
-  private static String propertyName(String method) {
-    if (method.startsWith("get") && method.length() > 3)
-      return Character.toLowerCase(method.charAt(3)) + method.substring(4);
-    if (method.startsWith("is") && method.length() > 2)
-      return Character.toLowerCase(method.charAt(2)) + method.substring(3);
-    return method;
   }
 }
