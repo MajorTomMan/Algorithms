@@ -12,8 +12,18 @@
     <ComboBox fx:id="algorithmSelector" maxWidth="Infinity"/>
     <Button fx:id="sampleButton" maxWidth="Infinity"
             styleClass="btn-ran-blue,operation-button" text="Load sample / 加载示例"/>
-    <Label text="Use loadBatch(data) to load an annotated batch object."
-           wrapText="true"/>
+    <Label text="Custom Java batch class / 自定义批量数据类" wrapText="true" styleClass="control-label"/>
+    <TextField fx:id="batchClassField" maxWidth="Infinity"/>
+    <Label text="JSON input / JSON 数据" wrapText="true" styleClass="control-label"/>
+    <TextArea fx:id="batchJsonField" wrapText="false" prefRowCount="7"
+              maxWidth="Infinity"/>
+    <HBox spacing="6">
+      <Button fx:id="chooseJsonButton" maxWidth="Infinity"
+              styleClass="btn-ran-white,operation-button" HBox.hgrow="ALWAYS"/>
+      <Button fx:id="importJsonButton" maxWidth="Infinity"
+              styleClass="btn-ran-blue,operation-button" HBox.hgrow="ALWAYS"/>
+    </HBox>
+    <Label fx:id="importStatus" wrapText="true" maxWidth="Infinity"/>
   </VBox>
   <VBox spacing="8" styleClass="control-section,control-card,structure-section">
     <Label text="Selected node / edge" styleClass="control-label"/>

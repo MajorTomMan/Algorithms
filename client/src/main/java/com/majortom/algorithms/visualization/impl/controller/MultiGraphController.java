@@ -10,6 +10,8 @@ import com.majortom.algorithms.visualization.runtime.graph.MultiGraphEventReduce
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
+import com.majortom.algorithms.core.event.structure.MultiGraphStructureEvent;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.graph.*;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
@@ -18,12 +20,22 @@ import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -44,6 +56,14 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @FXML private ComboBox<GraphDirection> directionSelector;
   @FXML private Button sampleButton;
   @FXML private Label selectionInfo;
+  @FXML private TextField batchClassField;
+  @FXML private TextArea batchJsonField;
+  @FXML private Button importJsonButton;
+  @FXML private Button chooseJsonButton;
+  @FXML private Label importStatus;
+  private long importVersion;
+  private boolean importInProgress;
+  private record PreparedBatch(Object data, MultiGraph<Object> graph) {}
 
   public MultiGraphController(RenderContext context) {
     super(new GraphVisualizer(), new GraphPresenter(), "/fxml/MultiGraphControls.fxml", context);
@@ -60,6 +80,8 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
       if (next != null && next != graph.direction()) changeDirection(next);
     });
     sampleButton.setOnAction(event -> loadSample());
+    importJsonButton.setOnAction(event -> loadJsonFromUi());
+    chooseJsonButton.setOnAction(event -> chooseJsonFile());
     algorithmSelector.setItems(FXCollections.observableArrayList(algorithmIds));
     localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
     algorithmSelector.getSelectionModel().selectFirst();
@@ -67,6 +89,77 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
         (observable, before, after) -> algorithmSelectionListener.accept(after));
   }
   private GraphVisualizer graphVisualizer() { return (GraphVisualizer) visualizer; }
+
+  /** JSON decoding and bulk indexing run off the FX thread. Publish only the final graph. */
+  private void loadJsonFromUi() {
+    if (importInProgress) return;
+    String className = batchClassField.getText();
+    String json = batchJsonField.getText();
+    GraphDirection direction = graph.direction();
+    long version = ++importVersion;
+    importInProgress = true;
+    setImportControlsDisabled(true);
+    importStatus.setText(I18N.text("message.multi_graph.loading"));
+    CompletableFuture.supplyAsync(() -> {
+      Object data = MultiGraphJsonLoader.read(className, json);
+      return new PreparedBatch(data, MultiGraph.from(direction, data));
+    }).whenComplete((prepared, error) -> FxDispatch.defer(() -> {
+      if (importVersion != version) return;
+      importInProgress = false;
+      setImportControlsDisabled(false);
+      if (error != null) {
+        Throwable cause = error instanceof CompletionException && error.getCause() != null
+            ? error.getCause() : error;
+        importStatus.setText(I18N.text("message.multi_graph.load_failed") + ": " + cause.getMessage());
+        return;
+      }
+      try {
+        boolean applied = executeStructureOperation("json-import", () -> {
+          graph = prepared.graph();
+          ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(graph.snapshot()));
+          return null;
+        });
+        if (!applied) {
+          importStatus.setText(I18N.text("message.multi_graph.load_failed"));
+          return;
+        }
+        lastBatch = prepared.data();
+        clearSelection();
+        renderGraph();
+        refreshStatsDisplay();
+        importStatus.setText(I18N.text("message.multi_graph.load_success",
+            graph.vertexCount(), graph.edgeCount()));
+      } catch (IllegalStateException disposed) {
+        importStatus.setText(I18N.text("message.multi_graph.load_failed"));
+      }
+    }));
+  }
+
+  private void setImportControlsDisabled(boolean disabled) {
+    importJsonButton.setDisable(disabled);
+    chooseJsonButton.setDisable(disabled);
+    directionSelector.setDisable(disabled);
+    sampleButton.setDisable(disabled);
+    batchClassField.setDisable(disabled);
+    batchJsonField.setDisable(disabled);
+  }
+
+  private void chooseJsonFile() {
+    FileChooser chooser = new FileChooser();
+    chooser.setTitle(I18N.text("action.multi_graph.select_file"));
+    chooser.getExtensionFilters().add(
+        new FileChooser.ExtensionFilter("JSON", "*.json"));
+    var file = chooser.showOpenDialog(
+        chooseJsonButton.getScene() == null ? null : chooseJsonButton.getScene().getWindow());
+    if (file == null) return;
+    try {
+      batchJsonField.setText(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+      importStatus.setText(file.getName());
+    } catch (IOException exception) {
+      importStatus.setText(I18N.text("message.multi_graph.load_failed") + ": "
+          + exception.getMessage());
+    }
+  }
 
   /** Library consumers can provide their own annotated batch object directly. */
   public void loadBatch(Object data) {
@@ -83,6 +176,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
 
   private void changeDirection(GraphDirection next) {
+    if (importInProgress) return;
     if (lastBatch != null) {
       if (executeStructureOperation("change-direction", () -> {
         graph = MultiGraph.from(next, lastBatch);
@@ -152,7 +246,13 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
 
   @Override protected String moduleId() { return StructureIds.MULTI_GRAPH; }
   @Override protected void setupI18n() {
-    if (sampleButton != null) sampleButton.setText("Load sample / 加载示例");
+    sampleButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.sample"));
+    importJsonButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.import"));
+    chooseJsonButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.select_file"));
+    batchClassField.promptTextProperty().bind(
+        I18N.createStringBinding("prompt.multi_graph.batch_class"));
+    batchJsonField.promptTextProperty().bind(
+        I18N.createStringBinding("prompt.multi_graph.batch_json"));
   }
   @Override public void handleAlgorithmStart() {
     String id = selectedAlgorithmId();
@@ -201,6 +301,9 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @Override public String structureSecondaryCount() { return Integer.toString(graph.edgeCount()); }
   @Override protected Object structureMemoryRoot() { return graph; }
   @Override protected void onResetData() {
+    ++importVersion;
+    importInProgress = false;
+    if (importJsonButton != null) setImportControlsDisabled(false);
     graph = new MultiGraph<>(graph.direction());
     lastBatch = null;
     clearSelection();
