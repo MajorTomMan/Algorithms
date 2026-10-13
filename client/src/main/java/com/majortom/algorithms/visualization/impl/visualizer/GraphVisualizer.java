@@ -14,6 +14,7 @@ import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphLayoutMetrics;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphRenderScale;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphDecorationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphVisualText;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.animation.GraphAnimationIds;
@@ -75,7 +76,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     @Override
     public CompletionStage<Void> commitLayout(
             GraphViewState state, LayoutResult patch, RenderCommitContext context) {
-        boolean animate = context.modelChange() && !context.initialFrame();
+        boolean animate = context.modelChange() && !context.initialFrame()
+                && GraphRenderScale.animate(state.nodes().size(), state.edges().size());
         AnimationPlan plan = animationRuntime.beginTransition(state, patch, animate);
         animationScene.prepare(plan, state, patch);
 
@@ -117,9 +119,11 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             if (view != null) surface.nodeLayer().getChildren().remove(view);
             removeNodeIdLabel(nodeId);
         }
+        boolean fullText = GraphRenderScale.fullNodeText(state.nodes().size(), state.edges().size());
         for (GraphViewState.Node node : state.nodes()) {
             if (nodeViews.containsKey(node.id())) continue;
-            NodeView view = new NodeView(new CircleGeometry(GraphLayoutMetrics.MIN_NODE_RADIUS), node.value().text());
+            NodeView view = new NodeView(new CircleGeometry(GraphLayoutMetrics.MIN_NODE_RADIUS),
+                    fullText ? node.value().text() : "");
             long nodeId = node.id();
             view.setOnMouseClicked(event -> {
                 selectNode(nodeId);
@@ -127,7 +131,16 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             });
             nodeViews.put(node.id(), view);
             surface.nodeLayer().getChildren().add(view);
-            installNodeIdLabel(node.id(), view);
+        }
+        // ID labels are the most expensive decorations for large graphs; instantiate them
+        // only while the graph is small, and restore them when the user loads a small graph.
+        boolean idsVisible = GraphRenderScale.nodeIds(state.nodes().size(), state.edges().size());
+        if (!idsVisible) {
+            for (Long nodeId : List.copyOf(nodeIdLabels.keySet())) removeNodeIdLabel(nodeId);
+        } else {
+            nodeViews.forEach((id, view) -> {
+                if (!nodeIdLabels.containsKey(id)) installNodeIdLabel(id, view);
+            });
         }
     }
 
@@ -172,10 +185,13 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
 
     private void applyPresentation(GraphViewState state) {
         density = densityFor(state.nodes().size());
+        boolean fullText = GraphRenderScale.fullNodeText(state.nodes().size(), state.edges().size());
+        boolean fullEdgeLabels = GraphRenderScale.allEdgeLabels(state.nodes().size(), state.edges().size());
         for (GraphViewState.Node node : state.nodes()) {
             NodeView view = nodeViews.get(node.id());
             if (view == null) continue;
-            view.setText(node.value().text());
+            view.setText(fullText || java.util.Objects.equals(selectedNodeId, node.id())
+                    ? node.value().text() : "");
             view.setVisited(state.visitedNodeIds().contains(node.id()));
             view.setHighlighted(isObservedNode(state.observation(), node.id()));
         }
@@ -183,7 +199,8 @@ public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
             EdgeView view = edgeViews.get(edge.id());
             if (view == null) continue;
             view.setDirected(state.direction().isDirected());
-            view.setLabelText(GraphVisualText.edgeLabel(edge));
+            view.setLabelText(fullEdgeLabels || java.util.Objects.equals(selectedEdgeId, edge.id())
+                    ? GraphVisualText.edgeLabel(edge) : null);
             view.setHighlighted(isObservedEdge(state, edge));
         }
         syncSelectionState();

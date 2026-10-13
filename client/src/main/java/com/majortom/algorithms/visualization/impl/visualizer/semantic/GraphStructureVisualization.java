@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.visualizer.semantic;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphDecorationIds;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphElkLayout;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphLayoutMetrics;
+import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphRenderScale;
 import com.majortom.algorithms.visualization.impl.visualizer.graph.GraphVisualText;
 import com.majortom.algorithms.visualization.render.api.DecorationInput;
 import com.majortom.algorithms.visualization.render.api.LayoutElement;
@@ -29,24 +30,31 @@ public final class GraphStructureVisualization implements StructureVisualization
                 .sorted(Comparator.comparingLong(GraphViewState.Node::id)).toList();
         List<LayoutElement> nodes = new ArrayList<>(orderedNodes.size());
         List<DecorationInput> decorations = new ArrayList<>();
+        int nodeCount = orderedNodes.size();
+        int edgeCount = state.edges().size();
+        boolean fast = GraphRenderScale.fastLayout(nodeCount, edgeCount);
+        boolean showNodeIds = GraphRenderScale.nodeIds(nodeCount, edgeCount);
+        boolean showEdgeLabels = GraphRenderScale.allEdgeLabels(nodeCount, edgeCount);
 
         for (GraphViewState.Node node : orderedNodes) {
             String nodeId = GraphElkLayout.nodeId(node.id());
             double minimumDiameter = GraphLayoutMetrics.MIN_NODE_RADIUS * 2.0d;
-            double diameter = Math.max(minimumDiameter,
+            double diameter = fast ? minimumDiameter : Math.max(minimumDiameter,
                     DetachedMetrics.boxWidth(node.value().text(), context.contentStyle(),
                             minimumDiameter, GraphLayoutMetrics.NODE_LABEL_PADDING));
             nodes.add(new LayoutElement(nodeId, quantize(diameter), quantize(diameter)));
 
-            String nodeIdText = "#" + node.id();
-            decorations.add(new DecorationInput(
-                    GraphDecorationIds.nodeId(nodeId),
-                    nodeId,
-                    DecorationInput.Kind.NODE_BELOW,
-                    quantize(DetachedMetrics.textWidth(nodeIdText, context.contentStyle())
-                            + GraphLayoutMetrics.DECORATION_HORIZONTAL_PADDING),
-                    quantize(DetachedMetrics.textHeight(context.contentStyle())
-                            + GraphLayoutMetrics.DECORATION_VERTICAL_PADDING)));
+            if (showNodeIds) {
+                String nodeIdText = "#" + node.id();
+                decorations.add(new DecorationInput(
+                        GraphDecorationIds.nodeId(nodeId),
+                        nodeId,
+                        DecorationInput.Kind.NODE_BELOW,
+                        quantize(DetachedMetrics.textWidth(nodeIdText, context.contentStyle())
+                                + GraphLayoutMetrics.DECORATION_HORIZONTAL_PADDING),
+                        quantize(DetachedMetrics.textHeight(context.contentStyle())
+                                + GraphLayoutMetrics.DECORATION_VERTICAL_PADDING)));
+            }
         }
 
         Set<String> available = nodes.stream().map(LayoutElement::id).collect(Collectors.toSet());
@@ -63,7 +71,7 @@ public final class GraphStructureVisualization implements StructureVisualization
                     GraphElkLayout.nodeId(edge.fromId()),
                     GraphElkLayout.nodeId(edge.toId())));
 
-            String weight = GraphVisualText.edgeLabel(edge);
+            String weight = showEdgeLabels ? GraphVisualText.edgeLabel(edge) : null;
             if (weight != null) {
                 decorations.add(new DecorationInput(
                         GraphDecorationIds.edgeLabel(edgeId),

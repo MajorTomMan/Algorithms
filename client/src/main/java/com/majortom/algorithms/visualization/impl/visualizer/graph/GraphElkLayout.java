@@ -37,6 +37,7 @@ public final class GraphElkLayout implements LayoutEngine {
   private static final double LAYER_SPACING = 64.0d;
   private static final int RANDOM_SEED = 1;
   private final GraphTopologyLayout topologyLayout = new GraphTopologyLayout();
+  private final GraphDenseLayout denseLayout = new GraphDenseLayout();
   private final GraphParallelEdgeLayout parallelLayout = new GraphParallelEdgeLayout();
   private final GraphLabelLayout labelLayout = new GraphLabelLayout();
 
@@ -50,6 +51,12 @@ public final class GraphElkLayout implements LayoutEngine {
     if (request.elements().isEmpty()) {
       return new LayoutResult(request.requestId(), request.modelRevision(), Map.of(), List.of(),
           BoundsSnapshot.empty());
+    }
+
+    // Dense imports must avoid both ELK and the quadratic force-layout branch.
+    // Keep parallel-edge routing for distinct edge IDs, but omit expensive decorations.
+    if (GraphRenderScale.fastLayout(request.elements().size(), request.links().size())) {
+      return parallelLayout.spread(request, denseLayout.layout(request));
     }
 
     boolean directed = Boolean.parseBoolean(

@@ -209,9 +209,13 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     if (!structureSelectionEnabled) return;
     Vertex<Object> node = graph.vertex(id);
     if (node == null) return;
-    int degree = 0;
-    for (MultiEdge<Object> edge : graph.edges())
-      if (edge.from().id() == id || edge.to().id() == id) degree++;
+    int degree = graph.outgoingEdges(node).size();
+    if (graph.direction().isDirected()) degree += graph.incomingEdges(node).size();
+    // Directed self-loops count once rather than twice in the inspector.
+    if (graph.direction().isDirected()) {
+      for (MultiEdge<Object> edge : graph.outgoingEdges(node))
+        if (edge.to().id() == id) degree--;
+    }
     VisualValue value = VisualValue.of(node.value());
     selectionInfo.setText(value.text() + "\n" + value.projection().details());
     selectionListener.accept(new GraphController.NodeSelection(id, value, degree));
