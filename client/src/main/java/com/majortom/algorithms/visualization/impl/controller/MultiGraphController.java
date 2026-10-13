@@ -78,14 +78,8 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
   @Override public void initialize(URL location, ResourceBundle resources) {
     super.initialize(location, resources);
-    implementationSelector.setItems(FXCollections.observableArrayList(GraphImplementation.values()));
-    localizeChoiceCells(implementationSelector, choice -> I18N.text(choice.labelKey()));
-    implementationSelector.getSelectionModel().select(GraphImplementation.MULTI);
-    implementationSelector.getSelectionModel().selectedItemProperty().addListener(
-        (observable, previous, selected) -> {
-          if (selected != null && selected != GraphImplementation.MULTI)
-            implementationChangeListener.accept(selected);
-        });
+    GraphImplementationSelector.install(implementationSelector,
+        GraphImplementation.MULTI, implementationChangeListener::accept);
     directionSelector.setItems(FXCollections.observableArrayList(
         GraphDirection.DIRECTED, GraphDirection.UNDIRECTED));
     directionSelector.getSelectionModel().select(graph.direction());

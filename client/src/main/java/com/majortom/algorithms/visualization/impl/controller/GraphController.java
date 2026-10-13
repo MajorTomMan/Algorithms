@@ -580,14 +580,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void bindImplementationSelector() {
-        implementationSelector.setItems(FXCollections.observableArrayList(GraphImplementation.values()));
-        localizeChoiceCells(implementationSelector, choice -> I18N.text(choice.labelKey()));
-        implementationSelector.getSelectionModel().select(GraphImplementation.SIMPLE);
-        implementationSelector.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> {
-                    if (selected != null && selected != GraphImplementation.SIMPLE)
-                        implementationChangeListener.accept(selected);
-                });
+        GraphImplementationSelector.install(implementationSelector,
+                GraphImplementation.SIMPLE, implementationChangeListener::accept);
     }
 
     @Override
