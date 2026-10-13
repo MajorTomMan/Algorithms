@@ -14,5 +14,11 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Compile project and regression checks
-        run: mvn -B -ntp -pl client -am test-compile
+      - name: Compile and install local reactor modules
+        run: mvn -B -ntp -pl client -am install -DskipTests
+      - name: Exercise annotated MultiGraph batch imports
+        run: mvn -B -ntp -pl structures org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.structure.graph.MultiGraphChecks -Dexec.classpathScope=test
+      - name: Exercise annotated display fields
+        run: mvn -B -ntp -pl client org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks -Dexec.classpathScope=test
+      - name: Exercise parallel-edge snapshot projection
+        run: mvn -B -ntp -pl client org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.graph.MultiGraphViewStateChecks -Dexec.classpathScope=test
