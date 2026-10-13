@@ -63,8 +63,10 @@ graph.removeEdge(pair.forward().id());
 
 `snapshot()` / `initialize()` 支持整体加载，批量初始化发布一个 Reset 结构事件，
 而不是逐条事件。快照**不深拷贝**业务对象：用于历史回放时，业务值和边载荷须保持不可变。
-可视化展示层能从 `@ValueField` 提取显式摘要和详情，但完整 MultiGraph JavaFX
-交互控制器、算法适配器仍属于后续集成工作。
+可视化展示层使用核心 `ValueMetadata` 元数据统一读取 `@ValueField` 摘要和详情。
+MultiGraph 已有独立 JavaFX 工作台、平行边布局和 BFS/DFS 结构算法。
+在图形工作台中可输入批量类的 Java 完整类名，粘贴 JSON 或选择 JSON 文件批量加载。
+只支持已编译并存在于应用 classpath 上的 Java 类；不动态编译用户代码。
 
 ## 验证
 
@@ -73,5 +75,41 @@ mvn -pl structures -am test-compile
 # 无需 JUnit：编译后按项目 classpath 手动运行 MultiGraphChecks.main()
 ```
 
-`ValueType` 注解用于声明类型的可用结构。当前批量解析会按实际对象读取注解；
-JavaFX 的完整 MultiGraph 控制器和自动元素输入解析仍需后续集成。
+`ValueType` 注解声明元素适用结构和展示名称；`ValueMetadata` 将 `@ValueId`
+和 `@ValueField` 元数据统一缓存，类型可直接按需发现，不要求为每个对象手工注册
+`ValueAdapter`。这不意味着自定义对象都自动支持文本解析、随机生成或深度不可变快照。
+
+### JavaFX 导入自定义批量 JSON
+
+工作台的 **MultiGraph** 模块内，填写类完整名称（例如
+`com.example.model.TransportNetwork`），粘贴符合该类型的 JSON，
+或通过“选择 JSON 文件”读入本地文件，然后点“导入图数据”。
+JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
+`MultiGraph.from(direction, data)` 统一解析 `@GraphNodes`、
+`@GraphEdges` 和端点注解。反序列化和构图不在 JavaFX UI 线程执行；
+成功提交前保留旧图。编译产物必须在 JavaFX 程序的 classpath 中。
+
+示例 JSON：
+
+```json
+{
+  "cities": [
+    {"code": "sz", "name": "深圳"},
+    {"code": "gz", "name": "广州"}
+  ],
+  "railways": [
+    {"from": {"code": "sz", "name": "深圳"},
+     "to": {"code": "gz", "name": "广州"},
+     "kilometers": 102, "line": "广深铁路"}
+  ],
+  "roads": [
+    {"from": {"code": "sz", "name": "深圳"},
+     "to": {"code": "gz", "name": "广州"},
+     "twoWay": true}
+  ]
+}
+```
+
+同一类型和 `@ValueId` 的不同 Java 实例会映射到批量节点集合中的同一个节点。
+所有端点必须已出现在 `@GraphNodes` 中；这是明确的构图约束，而不是自动
+递归关系发现。方向、权重、是否双向都由用户自定义的边类型提供。
