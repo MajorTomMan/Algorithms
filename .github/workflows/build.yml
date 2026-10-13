@@ -16,9 +16,16 @@ jobs:
           cache: maven
       - name: Compile and install local reactor modules
         run: mvn -B -ntp -pl client -am install -DskipTests
+      - name: Resolve test classpaths
+        run: |
+          mvn -B -ntp -pl structures dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
+          mvn -B -ntp -pl client dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
       - name: Exercise annotated MultiGraph batch imports
-        run: mvn -B -ntp -pl structures org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.structure.graph.MultiGraphChecks -Dexec.classpathScope=test
+        run: |
+          java -cp "structures/target/classes:structures/target/test-classes:$(cat structures/target/test-classpath.txt)" com.majortom.algorithms.structure.graph.MultiGraphChecks
       - name: Exercise annotated display fields
-        run: mvn -B -ntp -pl client org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks -Dexec.classpathScope=test
+        run: |
+          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
       - name: Exercise parallel-edge snapshot projection
-        run: mvn -B -ntp -pl client org.codehaus.mojo:exec-maven-plugin:3.3.0:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.graph.MultiGraphViewStateChecks -Dexec.classpathScope=test
+        run: |
+          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.graph.MultiGraphViewStateChecks
