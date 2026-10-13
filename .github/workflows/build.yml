@@ -14,8 +14,8 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Compile and install local reactor modules
-        run: mvn -B -ntp -pl client -am install -DskipTests
+      - name: Clean compile, test, package and install Java 21 modules
+        run: mvn -B -ntp -pl client -am clean install
       - name: Resolve test classpaths
         run: |
           mvn -B -ntp -pl structures dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
@@ -49,3 +49,18 @@ jobs:
       - name: Exercise parallel-edge snapshot projection
         run: |
           java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.graph.MultiGraphViewStateChecks
+      - name: Publish compiled module JARs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: algorithms-dev-java21-jars
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            core/target/algorithms-core-*.jar
+            telemetry/target/algorithms-telemetry-*.jar
+            structures/target/algorithms-structures-*.jar
+            algorithms/target/algorithms-library-*.jar
+            practice/target/algorithms-practice-*.jar
+            leetcode/target/algorithms-leetcode-*.jar
+            client/target/algorithms-client-*.jar
