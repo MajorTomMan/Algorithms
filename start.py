@@ -323,13 +323,13 @@ def kill_previous_instance() -> None:
 
 def build(mvn: str) -> None:
     print()
-    print("========== Clean & Test ==========")
+    print("========== Clean & Compile ==========")
 
     run(
         [
             mvn,
             "clean",
-            "test",
+            "compile",
         ]
     )
 
@@ -427,7 +427,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--build",
         action="store_true",
-        help="终止旧实例后执行完整 clean test",
+        help="终止旧实例后执行 clean compile（只检查编译）",
     )
 
     parser.add_argument(

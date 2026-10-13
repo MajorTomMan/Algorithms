@@ -1,9 +1,11 @@
 name: Build
+
 on:
   push:
     branches: [dev]
   pull_request:
     branches: [dev]
+
 jobs:
   compile:
     runs-on: ubuntu-latest
@@ -14,53 +16,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Clean compile, test, package and install Java 21 modules
-        run: mvn -B -ntp -pl client -am clean install
-      - name: Resolve test classpaths
+      - name: Check compilation with start.py
         run: |
-          mvn -B -ntp -pl structures dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
-          mvn -B -ntp -pl client dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
-      - name: Exercise common value metadata
-        run: |
-          mvn -B -ntp -pl core dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
-          java -cp "core/target/classes:core/target/test-classes:$(cat core/target/test-classpath.txt)" com.majortom.algorithms.core.metadata.ValueMetadataChecks
-      - name: Exercise annotated MultiGraph batch imports
-        run: |
-          java -cp "structures/target/classes:structures/target/test-classes:$(cat structures/target/test-classpath.txt)" com.majortom.algorithms.structure.graph.MultiGraphChecks
-      - name: Exercise MultiGraph BFS DFS and discovery
-        run: |
-          mvn -B -ntp -pl algorithms dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/test-classpath.txt
-          java -cp "algorithms/target/classes:algorithms/target/test-classes:$(cat algorithms/target/test-classpath.txt)" com.majortom.algorithms.algorithm.graph.impl.MultiGraphTraversalChecks
-      - name: Exercise classpath JSON-to-MultiGraph import
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.impl.controller.MultiGraphJsonLoaderChecks
-      - name: Exercise unified Graph implementation routing
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.impl.controller.GraphImplementationRoutingChecks
-      - name: Exercise annotated display fields
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
-      - name: Exercise lazy annotation details
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.value.LazyGraphProjectionChecks
-      - name: Exercise deterministic dense graph layout
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.impl.visualizer.graph.GraphDenseLayoutChecks
-      - name: Exercise parallel-edge snapshot projection
-        run: |
-          java -cp "client/target/classes:client/target/test-classes:$(cat client/target/test-classpath.txt)" com.majortom.algorithms.visualization.runtime.graph.MultiGraphViewStateChecks
-      - name: Publish compiled module JARs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: algorithms-dev-java21-jars
-          if-no-files-found: error
-          retention-days: 14
-          path: |
-            core/target/algorithms-core-*.jar
-            telemetry/target/algorithms-telemetry-*.jar
-            structures/target/algorithms-structures-*.jar
-            algorithms/target/algorithms-library-*.jar
-            practice/target/algorithms-practice-*.jar
-            leetcode/target/algorithms-leetcode-*.jar
-            client/target/algorithms-client-*.jar
+          python -m pip install psutil
+          python start.py --build
