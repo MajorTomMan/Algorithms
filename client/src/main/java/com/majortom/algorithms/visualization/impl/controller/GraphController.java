@@ -581,7 +581,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     private void bindImplementationSelector() {
         GraphImplementationSelector.install(implementationSelector,
-                GraphImplementation.SIMPLE, implementationChangeListener::accept);
+                GraphImplementation.SIMPLE, choice -> implementationChangeListener.accept(choice));
     }
 
     @Override

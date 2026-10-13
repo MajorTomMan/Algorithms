@@ -79,7 +79,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @Override public void initialize(URL location, ResourceBundle resources) {
     super.initialize(location, resources);
     GraphImplementationSelector.install(implementationSelector,
-        GraphImplementation.MULTI, implementationChangeListener::accept);
+        GraphImplementation.MULTI, choice -> implementationChangeListener.accept(choice));
     directionSelector.setItems(FXCollections.observableArrayList(
         GraphDirection.DIRECTED, GraphDirection.UNDIRECTED));
     directionSelector.getSelectionModel().select(graph.direction());
@@ -162,6 +162,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     importJsonButton.setDisable(disabled);
     chooseJsonButton.setDisable(disabled);
     directionSelector.setDisable(disabled);
+    implementationSelector.setDisable(disabled);
     sampleButton.setDisable(disabled);
     batchClassField.setDisable(disabled);
     batchJsonField.setDisable(disabled);
