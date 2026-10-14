@@ -67,7 +67,7 @@ graph.removeEdge(pair.forward().id());
 而不是逐条事件。快照**不深拷贝**业务对象：用于历史回放时，业务值和边载荷须保持不可变。
 可视化展示层使用核心 `ValueMetadata` 元数据统一读取 `@ValueField` 摘要和详情。
 MultiGraph 现在位于统一的 **图 / Graph** 工作台中，作为「实现方式 / Implementation」的第二个选项；不再单独占据左侧的结构家族入口。保留平行边布局和 BFS/DFS 结构算法。
-在图形工作台中可输入批量类的 Java 完整类名，粘贴 JSON 或选择 JSON 文件批量加载。
+多重图批量构建与数据导入由 Java 代码完成，不在 JavaFX 工作台增加专用导入控件。
 只支持已编译并存在于应用 classpath 上的 Java 类；不动态编译用户代码。
 
 ## 验证
@@ -83,7 +83,7 @@ mvn -pl structures -am test-compile
 
 ### JavaFX 导入自定义批量 JSON
 
-工作台选择 **图（Graph）→ 实现方式：多重图（MultiGraph）** 后，填写类完整名称（例如
+Java 代码中提供批量对象类型（例如
 `com.example.model.TransportNetwork`），粘贴符合该类型的 JSON，
 或通过“选择 JSON 文件”读入本地文件，然后点“导入图数据”。
 JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
@@ -173,3 +173,15 @@ JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas
 离线执行 `mvn -o -pl client -am test-compile` 需要事先下载全部父 POM、
 插件及传递依赖。GitHub Actions 的 Java 21 reactor install 与回归测试
 用于验证最新 `dev` 代码；本地旧版源码快照的结果不能代表最新分支。
+
+### 图结构 UI 复用约定
+
+Graph 与 MultiGraph 使用**同一套** `GraphControls.fxml`，包含实现方式、
+有向/无向选择、节点增删、边增删、权重编辑、算法选择与执行。
+切换到多重图不会出现 JSON 文本框、文件选择、批量导入或额外示例按钮。
+多重图数据导入在代码中调用 `MultiGraph.from(direction, batch)` 或
+`MultiGraphController.loadBatch(batch)`；无需编写任何专用 FXML。
+
+多重边存在多条同端点关系时，修改/删除操作需要先点击目标边，以明确指定边 ID；
+节点值重复时同样需要先点击目标节点。此 UI 不会根据业务对象
+`equals()` 擅自合并或删除节点、边。

@@ -890,9 +890,7 @@ public class MainController implements Initializable {
         if (activeDefinition == null || valueTypeBox == null || valueTypePanel == null) return;
         String moduleId = activeDefinition.id();
         if (StructureIds.MAZE.equals(moduleId)
-                || StructureIds.MULTI_GRAPH.equals(moduleId)
-                || StructureIds.GRAPH.equals(moduleId)
-                    && selectedGraphImplementation == GraphImplementation.MULTI) {
+                || StructureIds.MULTI_GRAPH.equals(moduleId)) {
             valueTypePanel.render(moduleId, false, false, false, null, List.of(), List.of());
             return;
         }

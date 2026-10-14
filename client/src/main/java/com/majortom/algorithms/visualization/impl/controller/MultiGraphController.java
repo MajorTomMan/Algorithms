@@ -1,289 +1,379 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
-import com.majortom.algorithms.core.annotation.*;
-import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
-import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
-import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
-import com.majortom.algorithms.visualization.runtime.graph.MultiGraphEventReducer;
-import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.core.metadata.ValueMetadata;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.core.event.structure.MultiGraphStructureEvent;
 import com.majortom.algorithms.core.runtime.ExecutionEvents;
+import com.majortom.algorithms.core.metadata.GraphDirection;
+import com.majortom.algorithms.core.metadata.StructureIds;
+import com.majortom.algorithms.core.metadata.ValueMetadata;
+import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
+import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
+import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
-import com.majortom.algorithms.structure.graph.*;
+import com.majortom.algorithms.structure.graph.MultiEdge;
+import com.majortom.algorithms.structure.graph.MultiGraph;
+import com.majortom.algorithms.structure.graph.MultiGraphStructure;
+import com.majortom.algorithms.structure.graph.Vertex;
+import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.GraphVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.presenter.GraphPresenter;
+import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.module.AlgorithmSelectionSupport;
+import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
+import com.majortom.algorithms.visualization.runtime.graph.MultiGraphEventReducer;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapter;
 import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
-import com.majortom.algorithms.visualization.render.fx.FxDispatch;
-import com.majortom.algorithms.visualization.international.I18N;
+import com.majortom.algorithms.visualization.structure.RuntimeValueTypeSupport;
 import com.majortom.algorithms.visualization.structure.StructureSnapshotSupport;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.stage.FileChooser;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
-/** Separate MultiGraph workbench reusing Graph rendering while preserving simple Graph behavior. */
+/**
+ * MultiGraph-specific data/algorithm adapter backed by the SAME GraphControls.fxml as GraphController.
+ * Bulk construction is a Java API, not a second import form or control panel.
+ */
 public final class MultiGraphController extends BaseModuleController<GraphViewState>
-    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>, AlgorithmSelectionSupport, GraphImplementationSelection {
-  private MultiGraph<Object> graph = new MultiGraph<>(GraphDirection.DIRECTED);
-  private Object lastBatch;
+    implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>,
+    AlgorithmSelectionSupport, GraphImplementationSelection, RuntimeValueTypeSupport {
+
   private static final AlgorithmTypeSignature SIGNATURE = AlgorithmTypeSignature.of(Object.class);
   private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(
       MultiGraphStructure.class, SIGNATURE);
-  private Consumer<String> algorithmSelectionListener = ignored -> {};
-  @FXML private ComboBox<String> algorithmSelector;
+  private MultiGraph<Object> directedGraph = new MultiGraph<>(GraphDirection.DIRECTED);
+  private MultiGraph<Object> undirectedGraph = new MultiGraph<>(GraphDirection.UNDIRECTED);
+  private GraphDirection activeDirection = GraphDirection.UNDIRECTED;
+  private Class<?> runtimeValueType = Integer.class;
+  private ValueAdapter<Object> valueAdapter = ValueAdapters.requireObjectAdapter(Integer.class);
+  private Consumer<String> algorithmSelectionListener = ignored -> { };
+  private Consumer<GraphImplementation> implementationChangeListener = ignored -> { };
+  private Consumer<GraphController.Selection> selectionListener = ignored -> { };
   private boolean structureSelectionEnabled = true;
-  private Consumer<GraphController.Selection> selectionListener = ignored -> {};
-  @FXML private ComboBox<GraphDirection> directionSelector;
+  private Long selectedNodeId;
+  private Long selectedEdgeId;
+
+  // These are the SAME fx:ids as GraphController; no MultiGraph-specific FXML or widgets.
+  @FXML private Label structureLabel;
+  @FXML private Label algorithmLabel;
+  @FXML private Label nodeOperationsLabel;
+  @FXML private Label edgeOperationsLabel;
+  @FXML private Label traversalLabel;
   @FXML private ComboBox<GraphImplementation> implementationSelector;
-  private Consumer<GraphImplementation> implementationChangeListener = ignored -> {};
-  @FXML private Button sampleButton;
-  @FXML private Label selectionInfo;
-  @FXML private TextField batchClassField;
-  @FXML private TextArea batchJsonField;
-  @FXML private Button importJsonButton;
-  @FXML private Button chooseJsonButton;
-  @FXML private Label importStatus;
-  private long importVersion;
-  private boolean importInProgress;
-  private Path selectedJsonFile;
-  private record PreparedBatch(Object data, MultiGraph<Object> graph) {}
+  @FXML private ComboBox<String> structureSelector;
+  @FXML private ComboBox<String> algorithmSelector;
+  @FXML private TextField nodeField;
+  @FXML private TextField fromField;
+  @FXML private TextField toField;
+  @FXML private TextField weightField;
+  @FXML private Button addNodeBtn;
+  @FXML private Button deleteNodeBtn;
+  @FXML private Button addEdgeBtn;
+  @FXML private Button deleteEdgeBtn;
+  @FXML private Button setWeightBtn;
+  @FXML private Button runBtn;
 
   public MultiGraphController(RenderContext context) {
-    super(new GraphVisualizer(), new GraphPresenter(), "/fxml/MultiGraphControls.fxml", context);
+    super(new GraphVisualizer(), new GraphPresenter(), "/fxml/GraphControls.fxml", context);
     graphVisualizer().setNodeSelectionListener(this::selectNode);
     graphVisualizer().setEdgeSelectionListener(this::selectEdge);
     renderGraph();
   }
+
   @Override public void initialize(URL location, ResourceBundle resources) {
     super.initialize(location, resources);
-    GraphImplementationSelector.install(implementationSelector,
-        GraphImplementation.MULTI, choice -> implementationChangeListener.accept(choice));
-    directionSelector.setItems(FXCollections.observableArrayList(
-        GraphDirection.DIRECTED, GraphDirection.UNDIRECTED));
-    directionSelector.getSelectionModel().select(graph.direction());
-    directionSelector.valueProperty().addListener((observable, oldValue, next) -> {
-      if (next != null && next != graph.direction()) changeDirection(next);
-    });
-    sampleButton.setOnAction(event -> loadSample());
-    importJsonButton.setOnAction(event -> loadJsonFromUi());
-    chooseJsonButton.setOnAction(event -> chooseJsonFile());
-    batchJsonField.textProperty().addListener((observable, previous, next) -> {
-      // Typing text after picking a file means the textarea is now the data source.
-      if (selectedJsonFile != null && next != null && !next.isBlank()) {
-        selectedJsonFile = null;
-      }
-    });
+    GraphImplementationSelector.install(implementationSelector, GraphImplementation.MULTI,
+        choice -> implementationChangeListener.accept(choice));
+    structureSelector.setItems(FXCollections.observableArrayList(
+        "label.graph.structure.undirected", "label.graph.structure.directed"));
+    localizeChoiceCells(structureSelector, I18N::text);
+    structureSelector.getSelectionModel().selectedIndexProperty().addListener(
+        (observable, previous, current) -> {
+          if (current == null || current.intValue() < 0) return;
+          changeDirection(current.intValue() == 0
+              ? GraphDirection.UNDIRECTED : GraphDirection.DIRECTED);
+        });
     algorithmSelector.setItems(FXCollections.observableArrayList(algorithmIds));
     localizeChoiceCells(algorithmSelector, AlgorithmCatalog::name);
-    algorithmSelector.getSelectionModel().selectFirst();
     algorithmSelector.getSelectionModel().selectedItemProperty().addListener(
-        (observable, before, after) -> algorithmSelectionListener.accept(after));
-  }
-  @Override public void setImplementationChangeListener(
-      Consumer<GraphImplementation> listener) {
-    implementationChangeListener = listener == null ? ignored -> {} : listener;
-  }
-  private GraphVisualizer graphVisualizer() { return (GraphVisualizer) visualizer; }
-
-  /** JSON decoding and bulk indexing run off the FX thread. Publish only the final graph. */
-  private void loadJsonFromUi() {
-    if (importInProgress) return;
-    String className = batchClassField.getText();
-    Path file = selectedJsonFile;
-    String json = file == null ? batchJsonField.getText() : null;
-    GraphDirection direction = graph.direction();
-    long version = ++importVersion;
-    importInProgress = true;
-    setImportControlsDisabled(true);
-    importStatus.setText(I18N.text("message.multi_graph.loading"));
-    CompletableFuture.supplyAsync(() -> {
-      String dataJson = json;
-      if (file != null) {
-        try { dataJson = Files.readString(file, StandardCharsets.UTF_8); }
-        catch (IOException exception) { throw new UncheckedIOException(exception); }
-      }
-      Object data = MultiGraphJsonLoader.read(className, dataJson);
-      return new PreparedBatch(data, MultiGraph.from(direction, data));
-    }).whenComplete((prepared, error) -> FxDispatch.defer(() -> {
-      if (importVersion != version) return;
-      importInProgress = false;
-      setImportControlsDisabled(false);
-      if (error != null) {
-        Throwable cause = error instanceof CompletionException && error.getCause() != null
-            ? error.getCause() : error;
-        importStatus.setText(I18N.text("message.multi_graph.load_failed") + ": " + cause.getMessage());
-        return;
-      }
-      try {
-        boolean applied = executeStructureOperation("json-import", () -> {
-          graph = prepared.graph();
-          ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(graph.snapshot()));
-          return null;
-        });
-        if (!applied) {
-          importStatus.setText(I18N.text("message.multi_graph.load_failed"));
-          return;
-        }
-        lastBatch = prepared.data();
-        clearSelection();
-        renderGraph();
-        refreshStatsDisplay();
-        importStatus.setText(I18N.text("message.multi_graph.load_success",
-            graph.vertexCount(), graph.edgeCount()));
-      } catch (IllegalStateException disposed) {
-        importStatus.setText(I18N.text("message.multi_graph.load_failed"));
-      }
-    }));
+        (observable, previous, current) -> algorithmSelectionListener.accept(current));
+    FxDispatch.defer(() -> {
+      selectActiveDirection();
+      algorithmSelector.getSelectionModel().selectFirst();
+      algorithmSelectionListener.accept(selectedAlgorithmId());
+    });
+    if (weightField.getText().isBlank()) weightField.setText("1");
   }
 
-  private void setImportControlsDisabled(boolean disabled) {
-    importJsonButton.setDisable(disabled);
-    chooseJsonButton.setDisable(disabled);
-    directionSelector.setDisable(disabled);
-    implementationSelector.setDisable(disabled);
-    sampleButton.setDisable(disabled);
-    batchClassField.setDisable(disabled);
-    batchJsonField.setDisable(disabled);
+  private MultiGraph<Object> currentGraph() {
+    return activeDirection.isDirected() ? directedGraph : undirectedGraph;
   }
 
-  private void chooseJsonFile() {
-    FileChooser chooser = new FileChooser();
-    chooser.setTitle(I18N.text("action.multi_graph.select_file"));
-    chooser.getExtensionFilters().add(
-        new FileChooser.ExtensionFilter("JSON", "*.json"));
-    var file = chooser.showOpenDialog(
-        chooseJsonButton.getScene() == null ? null : chooseJsonButton.getScene().getWindow());
-    if (file == null) return;
-    // Reading a large JSON document into TextArea freezes FX and duplicates memory.
-    // Preserve only the file path; the async import task will read the contents.
-    batchJsonField.clear();
-    selectedJsonFile = file.toPath();
-    importStatus.setText(file.getName());
-  }
-
-  /** Library consumers can provide their own annotated batch object directly. */
+  /** Replace one direction's graph from an annotated user object, without any UI import controls. */
   public void loadBatch(Object data) {
-    if (data == null) throw new IllegalArgumentException("batch data cannot be null");
-    if (executeStructureOperation("batch-import", () -> {
-      graph = MultiGraph.from(graph.direction(), data);
+    Objects.requireNonNull(data, "data");
+    MultiGraph<Object> replacement = MultiGraph.from(activeDirection, data);
+    if (!executeStructureOperation("batch-import", () -> {
+      replaceCurrentGraph(replacement);
+      ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(replacement.snapshot()));
       return null;
-    })) {
-      lastBatch = data;
-      clearSelection();
+    })) return;
+    clearSelection();
+    renderGraph();
+    refreshStatsDisplay();
+  }
+
+  /** Java-only bulk snapshot entry point. */
+  public void loadSnapshot(MultiGraphSnapshot<Object> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    MultiGraph<Object> replacement = MultiGraph.fromSnapshot(snapshot);
+    if (!executeStructureOperation("batch-snapshot", () -> {
+      if (replacement.direction().isDirected()) directedGraph = replacement;
+      else undirectedGraph = replacement;
+      ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(replacement.snapshot()));
+      return null;
+    })) return;
+    activeDirection = replacement.direction();
+    selectActiveDirection();
+    clearSelection();
+    renderGraph();
+    refreshStatsDisplay();
+  }
+
+  private void replaceCurrentGraph(MultiGraph<Object> next) {
+    if (activeDirection.isDirected()) directedGraph = next;
+    else undirectedGraph = next;
+  }
+
+  private void changeDirection(GraphDirection direction) {
+    if (direction == activeDirection) return;
+    activeDirection = direction;
+    invalidateExecutionForInputChange();
+    clearSelection();
+    renderGraph();
+    refreshStatsDisplay();
+  }
+
+  private void selectActiveDirection() {
+    if (structureSelector != null)
+      structureSelector.getSelectionModel().select(activeDirection.isDirected() ? 1 : 0);
+  }
+
+  @FXML private void handleAddNode() {
+    Object value = parseValue(nodeField.getText());
+    if (value == null) return;
+    if (!executeStructureOperation("add-vertex", () -> currentGraph().addVertex(value))) return;
+    Vertex<Object> added = null;
+    for (Vertex<Object> vertex : currentGraph().vertices()) added = vertex;
+    renderGraph();
+    if (added != null) graphVisualizer().selectNode(added.id());
+  }
+
+  @FXML private void handleDeleteNode() {
+    Vertex<Object> vertex = resolveVertex(nodeField.getText(), selectedNodeId);
+    if (vertex == null) return;
+    if (!executeStructureOperation("remove-vertex", () -> currentGraph().removeVertex(vertex.id()))) return;
+    clearSelection();
+    renderGraph();
+  }
+
+  @FXML private void handleAddEdge() {
+    Vertex<Object> from = resolveVertex(fromField.getText(), null);
+    Vertex<Object> to = resolveVertex(toField.getText(), null);
+    Double weight = parseWeight();
+    if (from == null || to == null || weight == null) return;
+    if (!executeStructureOperation("add-edge", () -> currentGraph().addEdge(from, to, null, weight)))
+      return;
+    MultiEdge<Object> created = null;
+    for (MultiEdge<Object> edge : currentGraph().edges()) created = edge;
+    renderGraph();
+    if (created != null) graphVisualizer().selectEdge(created.id());
+  }
+
+  @FXML private void handleDeleteEdge() {
+    MultiEdge<Object> edge = resolveEdgeFromFields();
+    if (edge == null) return;
+    if (!executeStructureOperation("remove-edge", () -> currentGraph().removeEdge(edge.id()))) return;
+    clearSelection();
+    renderGraph();
+  }
+
+  @FXML private void handleSetWeight() {
+    MultiEdge<Object> edge = resolveEdgeFromFields();
+    Double weight = parseWeight();
+    if (edge == null || weight == null) return;
+    if (executeStructureOperation("set-weight", () -> currentGraph().setWeight(edge.id(), weight)))
       renderGraph();
-      refreshStatsDisplay();
+  }
+
+  private Object parseValue(String text) {
+    try { return valueAdapter.parse(text); }
+    catch (RuntimeException failure) {
+      logI18n("message.error.invalid_graph_value");
+      return null;
     }
   }
 
-  private void changeDirection(GraphDirection next) {
-    if (importInProgress) return;
-    if (lastBatch != null) {
-      if (executeStructureOperation("change-direction", () -> {
-        graph = MultiGraph.from(next, lastBatch);
+  private Double parseWeight() {
+    try {
+      double weight = Double.parseDouble(weightField.getText().trim());
+      if (!Double.isFinite(weight)) throw new IllegalArgumentException("weight must be finite");
+      return weight;
+    } catch (RuntimeException failure) {
+      logI18n("message.error.invalid_graph_weight");
+      return null;
+    }
+  }
+
+  private Vertex<Object> resolveVertex(String text, Long preferredId) {
+    if (preferredId != null) {
+      Vertex<Object> selected = currentGraph().vertex(preferredId);
+      if (selected != null && formatValue(selected.value()).equals(text == null ? "" : text.trim()))
+        return selected;
+    }
+    Object value = parseValue(text);
+    if (value == null) return null;
+    Vertex<Object> matched = null;
+    for (Vertex<Object> candidate : currentGraph().vertices()) {
+      if (!candidate.value().equals(value)) continue;
+      if (matched != null) {
+        appendLog("More than one vertex has this value. Select the intended node first.");
         return null;
-      })) {
-        clearSelection();
-        renderGraph();
-        refreshStatsDisplay();
       }
-    } else {
-      graph = new MultiGraph<>(next);
-      clearSelection();
-      renderGraph();
-      refreshStatsDisplay();
+      matched = candidate;
     }
-    if (directionSelector != null && graph.direction() != next)
-      directionSelector.getSelectionModel().select(graph.direction());
+    if (matched == null) logI18n("message.error.graph_node_missing");
+    return matched;
   }
 
-  @FXML private void loadSample() {
-    City sz = new City("440300", "深圳");
-    City gz = new City("440100", "广州");
-    City dg = new City("441900", "东莞");
-    loadBatch(new TransportNetwork(List.of(sz, gz, dg),
-        List.of(new Railway(sz, gz, "广深高铁", 102)),
-        List.of(new Road(sz, gz, "广深高速", true, 125))));
+  private MultiEdge<Object> resolveEdgeFromFields() {
+    if (selectedEdgeId != null) {
+      MultiEdge<Object> selected = currentGraph().edge(selectedEdgeId);
+      if (selected != null && formatValue(selected.from().value()).equals(fromField.getText().trim())
+          && formatValue(selected.to().value()).equals(toField.getText().trim())) return selected;
+    }
+    Vertex<Object> from = resolveVertex(fromField.getText(), null);
+    Vertex<Object> to = resolveVertex(toField.getText(), null);
+    if (from == null || to == null) return null;
+    List<MultiEdge<Object>> matching = currentGraph().edges(from, to);
+    if (matching.isEmpty()) {
+      logI18n("message.graph.edge_not_found", from.value(), to.value());
+      return null;
+    }
+    if (selectedEdgeId != null) {
+      for (MultiEdge<Object> edge : matching)
+        if (edge.id() == selectedEdgeId) return edge;
+    }
+    if (matching.size() > 1) {
+      appendLog("Multiple edges connect these nodes. Select the specific edge on the graph first.");
+      return null;
+    }
+    return matching.getFirst();
   }
+
+  private GraphVisualizer graphVisualizer() { return (GraphVisualizer) visualizer; }
 
   private void selectNode(long id) {
     if (!structureSelectionEnabled) return;
-    Vertex<Object> node = graph.vertex(id);
+    Vertex<Object> node = currentGraph().vertex(id);
     if (node == null) return;
-    int degree = graph.outgoingEdges(node).size();
-    if (graph.direction().isDirected()) degree += graph.incomingEdges(node).size();
-    // Directed self-loops count once rather than twice in the inspector.
-    if (graph.direction().isDirected()) {
-      for (MultiEdge<Object> edge : graph.outgoingEdges(node))
-        if (edge.to().id() == id) degree--;
-    }
-    VisualValue value = VisualValue.of(node.value());
-    selectionInfo.setText(value.text() + "\n" + value.projection().details());
-    selectionListener.accept(new GraphController.NodeSelection(id, value, degree));
+    selectedNodeId = id;
+    selectedEdgeId = null;
+    if (nodeField != null) nodeField.setText(formatValue(node.value()));
+    int degree = 0;
+    for (MultiEdge<Object> edge : currentGraph().edges())
+      if (edge.from().id() == id || edge.to().id() == id) degree++;
+    selectionListener.accept(new GraphController.NodeSelection(id, VisualValue.of(node.value()), degree));
     requestPresentationRender();
   }
 
   private void selectEdge(long id) {
     if (!structureSelectionEnabled) return;
-    MultiEdge<Object> edge = graph.edge(id);
+    MultiEdge<Object> edge = currentGraph().edge(id);
     if (edge == null) return;
-    String label = edge.value() == null ? "Edge" : ValueAdapters.project(edge.value()).summary();
-    String details = edge.value() == null ? "" : ValueAdapters.project(edge.value()).details();
-    selectionInfo.setText(label + " · " + edge.weight() + "\n" + details);
-    selectionListener.accept(new GraphController.EdgeSelection(
-        id, VisualValue.of(edge.from().value()), VisualValue.of(edge.to().value()),
-        graph.direction().isDirected()));
+    selectedEdgeId = id;
+    selectedNodeId = null;
+    if (fromField != null) fromField.setText(formatValue(edge.from().value()));
+    if (toField != null) toField.setText(formatValue(edge.to().value()));
+    if (weightField != null) weightField.setText(Double.toString(edge.weight()));
+    selectionListener.accept(new GraphController.EdgeSelection(id,
+        VisualValue.of(edge.from().value()), VisualValue.of(edge.to().value()),
+        currentGraph().direction().isDirected()));
     requestPresentationRender();
   }
+
+  private String formatValue(Object value) {
+    try { return valueAdapter.format(value); }
+    catch (RuntimeException unsupported) { return ValueAdapters.summary(value); }
+  }
+
   public void setSelectionListener(Consumer<GraphController.Selection> listener) {
-    selectionListener = listener == null ? ignored -> {} : listener;
+    selectionListener = listener == null ? ignored -> { } : listener;
   }
+
   public void setStructureSelectionEnabled(boolean enabled) {
+    if (structureSelectionEnabled != enabled) clearSelection();
     structureSelectionEnabled = enabled;
-    if (!enabled) clearSelection();
   }
+
   private void clearSelection() {
+    selectedNodeId = null;
+    selectedEdgeId = null;
     graphVisualizer().clearSelection();
-    if (selectionInfo != null) selectionInfo.setText("");
     selectionListener.accept(null);
   }
-  private void renderGraph() { renderStructureState(GraphViewState.initial(graph.snapshot())); }
+
+  private void renderGraph() {
+    renderStructureState(GraphViewState.initial(currentGraph().snapshot()));
+    refreshStatsDisplay();
+  }
 
   @Override protected String moduleId() { return StructureIds.GRAPH; }
   @Override protected void setupI18n() {
-    sampleButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.sample"));
-    importJsonButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.import"));
-    chooseJsonButton.textProperty().bind(I18N.createStringBinding("action.multi_graph.select_file"));
-    batchClassField.promptTextProperty().bind(
-        I18N.createStringBinding("prompt.multi_graph.batch_class"));
-    batchJsonField.promptTextProperty().bind(
-        I18N.createStringBinding("prompt.multi_graph.batch_json"));
+    bindText(structureLabel, "label.common.structure");
+    bindText(algorithmLabel, "label.common.algorithm");
+    bindText(nodeOperationsLabel, "label.graph.node_ops");
+    bindText(edgeOperationsLabel, "label.graph.edge_ops");
+    bindText(traversalLabel, "label.panel.execution");
+    bindPrompt(nodeField, "prompt.graph.node");
+    bindPrompt(fromField, "prompt.graph.from");
+    bindPrompt(toField, "prompt.graph.to");
+    bindPrompt(weightField, "prompt.graph.weight");
+    bindButton(addNodeBtn, "action.graph.add");
+    bindButton(deleteNodeBtn, "action.graph.delete");
+    bindButton(addEdgeBtn, "action.graph.link");
+    bindButton(deleteEdgeBtn, "action.graph.delete_edge");
+    bindButton(setWeightBtn, "action.graph.set_weight");
+    bindButton(runBtn, "action.graph.run");
   }
+  private void bindText(Label label, String key) {
+    if (label != null) label.textProperty().bind(I18N.createStringBinding(key));
+  }
+  private void bindPrompt(TextField field, String key) {
+    if (field != null) field.promptTextProperty().bind(I18N.createStringBinding(key));
+  }
+  private void bindButton(Button button, String key) {
+    if (button != null) button.textProperty().bind(I18N.createStringBinding(key));
+  }
+
+  @Override public void setImplementationChangeListener(Consumer<GraphImplementation> listener) {
+    implementationChangeListener = listener == null ? ignored -> { } : listener;
+  }
+
   @Override public void handleAlgorithmStart() {
     String id = selectedAlgorithmId();
-    if (id == null || graph.vertexCount() == 0 || isRunning()) return;
-    MultiGraphSnapshot<Object> snapshot = graph.snapshot();
+    if (id == null || currentGraph().vertexCount() == 0 || isRunning()) return;
+    MultiGraphSnapshot<Object> snapshot = currentGraph().snapshot();
     for (var node : snapshot.vertices()) {
       if (!safeToReplay(node.value())) {
         appendLog("Replay requires immutable node payload: " + node.value().getClass().getName());
@@ -302,10 +392,12 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     startAlgorithm(id, snapshot, () -> descriptor.invoke(input),
         () -> new MultiGraphEventReducer(snapshot));
   }
+
   private static boolean safeToReplay(Object value) {
-    if (ValueAdapters.canReplay(value.getClass())) return true;
-    return ValueMetadata.describe(value.getClass()).immutable();
+    return ValueAdapters.canReplay(value.getClass())
+        || ValueMetadata.describe(value.getClass()).immutable();
   }
+
   @Override public List<String> algorithmIds() { return algorithmIds; }
   @Override public String selectedAlgorithmId() {
     if (algorithmSelector == null) return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
@@ -318,36 +410,53 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     return true;
   }
   @Override public void setAlgorithmSelectionListener(Consumer<String> listener) {
-    algorithmSelectionListener = listener == null ? ignored -> {} : listener;
-  }
-  @Override protected String formatStatsMessage() {
-    return "Nodes: " + graph.vertexCount() + " | Edges: " + graph.edgeCount();
-  }
-  @Override public String structurePrimaryCount() { return Integer.toString(graph.vertexCount()); }
-  @Override public String structureSecondaryCount() { return Integer.toString(graph.edgeCount()); }
-  @Override protected Object structureMemoryRoot() { return graph; }
-  @Override protected void onResetData() {
-    ++importVersion;
-    importInProgress = false;
-    if (importJsonButton != null) setImportControlsDisabled(false);
-    graph = new MultiGraph<>(graph.direction());
-    lastBatch = null;
-    clearSelection();
-    renderGraph();
+    algorithmSelectionListener = listener == null ? ignored -> { } : listener;
   }
 
+  @Override public Class<?> runtimeValueType() { return runtimeValueType; }
+  @Override public List<Class<?>> supportedValueTypes() { return ValueAdapters.supportedTypes(); }
+  @Override public boolean hasValues() {
+    return directedGraph.vertexCount() > 0 || undirectedGraph.vertexCount() > 0;
+  }
+  @Override public void setRuntimeValueType(Class<?> type) {
+    if (!supportedValueTypes().contains(type))
+      throw new IllegalArgumentException("Unsupported Graph value type: " + type.getName());
+    if (runtimeValueType.equals(type)) return;
+    runtimeValueType = type;
+    valueAdapter = ValueAdapters.requireObjectAdapter(type);
+    directedGraph = new MultiGraph<>(GraphDirection.DIRECTED);
+    undirectedGraph = new MultiGraph<>(GraphDirection.UNDIRECTED);
+    clearSelection();
+    invalidateExecutionForStructureChange();
+    if (controlPanel != null) renderGraph();
+  }
+
+  @Override protected String formatStatsMessage() {
+    return I18N.text("stats.graph.nodes", currentGraph().vertexCount()) + " | "
+        + I18N.text("stats.graph.edges", currentGraph().edgeCount());
+  }
+  @Override public String structurePrimaryCount() {
+    return Integer.toString(currentGraph().vertexCount());
+  }
+  @Override public String structureSecondaryCount() {
+    return Integer.toString(currentGraph().edgeCount());
+  }
+  @Override protected Object structureMemoryRoot() { return currentGraph(); }
+  @Override protected void onResetData() { renderGraph(); }
+
   @Override public StructureSnapshot<MultiGraphSnapshot<Object>> captureStructureSnapshot() {
-    return StructureSnapshot.create(moduleId(), graph.snapshot());
+    return StructureSnapshot.create(moduleId(), runtimeValueType, currentGraph().snapshot());
   }
   @Override public void restoreStructureSnapshot(StructureSnapshot<MultiGraphSnapshot<Object>> snapshot) {
     requireSnapshot(snapshot);
-    graph = MultiGraph.fromSnapshot(snapshot.state());
-    lastBatch = null;
-    if (directionSelector != null) directionSelector.getSelectionModel().select(graph.direction());
+    MultiGraph<Object> replacement = MultiGraph.fromSnapshot(snapshot.state());
+    if (replacement.direction().isDirected()) directedGraph = replacement;
+    else undirectedGraph = replacement;
+    activeDirection = replacement.direction();
+    selectActiveDirection();
     clearSelection();
     invalidateExecutionForStructureChange();
     renderGraph();
-    refreshStatsDisplay();
   }
   @Override public void previewStructureSnapshot(StructureSnapshot<MultiGraphSnapshot<Object>> snapshot) {
     requireSnapshot(snapshot);
@@ -355,10 +464,11 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     renderPreviewState(GraphViewState.initial(snapshot.state()));
   }
   private void requireSnapshot(StructureSnapshot<MultiGraphSnapshot<Object>> snapshot) {
-    if (!moduleId().equals(snapshot.moduleId())) throw new IllegalArgumentException("not a MultiGraph snapshot");
+    if (!moduleId().equals(snapshot.moduleId()))
+      throw new IllegalArgumentException("Not a Graph snapshot");
   }
   @Override public String describeStructureSnapshot(MultiGraphSnapshot<Object> state) {
-    return state.vertices().size() + " nodes · " + state.edges().size() + " edges";
+    return I18N.text("snapshot.graph.detail", state.vertices().size(), state.edges().size());
   }
   @Override public String snapshotPrimaryCount(MultiGraphSnapshot<Object> state) {
     return Integer.toString(state.vertices().size());
@@ -366,19 +476,4 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   @Override public String snapshotSecondaryCount(MultiGraphSnapshot<Object> state) {
     return Integer.toString(state.edges().size());
   }
-
-  /** Purely illustrative input; users import their own annotated data through loadBatch. */
-  @ValueType(value = MultiGraphStructure.class, name = "城市", immutable = true)
-  private record City(@ValueId String code,
-      @ValueField(value = {ValueDisplay.SUMMARY, ValueDisplay.DETAIL}, label = "名称") String name) {}
-  @ValueType(immutable = true)
-  private record Railway(@GraphFrom City from, @GraphTo City to,
-      @ValueField(value = ValueDisplay.SUMMARY, label = "线路") String line,
-      @GraphWeight double kilometers) {}
-  @ValueType(immutable = true)
-  private record Road(@GraphFrom City from, @GraphTo City to,
-      @ValueField(value = ValueDisplay.SUMMARY, label = "公路") String name,
-      @GraphBidirectional boolean twoWay, @GraphWeight double kilometers) {}
-  private record TransportNetwork(@GraphNodes List<City> cities,
-      @GraphEdges List<Railway> railways, @GraphEdges List<Road> roads) {}
 }

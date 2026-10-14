@@ -51,7 +51,9 @@ public final class GraphImplementationRoutingChecks {
                 throw new AssertionError("Graph catalog accidentally includes MultiGraph algorithms");
 
         checkSelector("fxml/GraphControls.fxml");
-        checkSelector("fxml/MultiGraphControls.fxml");
+        if (GraphImplementationRoutingChecks.class.getClassLoader()
+                .getResource("fxml/MultiGraphControls.fxml") != null)
+            throw new AssertionError("Obsolete MultiGraph-only controls must be removed");
         System.out.println("GraphImplementationRoutingChecks passed");
     }
 
