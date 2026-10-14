@@ -1,7 +1,6 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.structure.graph.MultiGraphStructure;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
@@ -33,15 +32,12 @@ final class WorkbenchValueTypeCatalog {
     }
 
     boolean hasAlgorithmForAnySupportedType(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return !components.compatibleAlgorithms(
-                MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).isEmpty();
         StructureModule module = StructureModule.fromId(moduleId);
         return components.algorithmTypeSignatures(module).stream()
                 .anyMatch(signature -> supportsAlgorithmSignature(moduleId, signature));
     }
 
     List<String> algorithmAvailableValueTypes(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return List.of();
         StructureModule module = StructureModule.fromId(moduleId);
         return components.algorithmTypeSignatures(module).stream()
                 .filter(signature -> signature.arity() == 1)
@@ -53,7 +49,6 @@ final class WorkbenchValueTypeCatalog {
     }
 
     List<String> availableValueTypes(String moduleId) {
-        if (StructureIds.MULTI_GRAPH.equals(moduleId)) return List.of();
         return switch (moduleId) {
             case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK,
                     StructureIds.QUEUE, StructureIds.GRAPH -> ValueAdapters.supportedTypeNames();
