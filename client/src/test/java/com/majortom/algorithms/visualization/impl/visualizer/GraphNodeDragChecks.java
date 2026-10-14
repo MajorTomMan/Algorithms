@@ -1,7 +1,7 @@
 package com.majortom.algorithms.visualization.impl.visualizer;
 
 import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.visualization.common.VisualizationSurface;
 import com.majortom.algorithms.visualization.common.view.EdgeView;
 import com.majortom.algorithms.visualization.common.view.NodeView;
@@ -41,12 +41,12 @@ public final class GraphNodeDragChecks {
     Stage stage = new Stage();
     stage.setScene(new Scene(new StackPane(surface), 840, 540));
     stage.show();
-    GraphViewState graph = GraphViewState.initial(new MultiGraphSnapshot<>(GraphDirection.DIRECTED,
-        List.of(new MultiGraphSnapshot.Vertex<>(1, "深圳"),
-                new MultiGraphSnapshot.Vertex<>(2, "广州"),
-                new MultiGraphSnapshot.Vertex<>(3, "东莞")),
-        List.of(new MultiGraphSnapshot.Edge(11, 1, 2, "rail", 102),
-                new MultiGraphSnapshot.Edge(12, 1, 2, "road", 125))));
+    GraphViewState graph = GraphViewState.initial(new GraphSnapshot<>(GraphDirection.DIRECTED,
+        List.of(new GraphSnapshot.Vertex<>(1, "深圳"),
+                new GraphSnapshot.Vertex<>(2, "广州"),
+                new GraphSnapshot.Vertex<>(3, "东莞")),
+        List.of(new GraphSnapshot.Edge(11, 1, 2, "rail", 102),
+                new GraphSnapshot.Edge(12, 1, 2, "road", 125))));
     var patch = new LayoutResult(new LayoutRequestId(1), 1,
         Map.of(GraphElkLayout.nodeId(1), new ElementGeometry(GraphElkLayout.nodeId(1), 80, 100, 56, 56),
                GraphElkLayout.nodeId(2), new ElementGeometry(GraphElkLayout.nodeId(2), 360, 110, 56, 56),

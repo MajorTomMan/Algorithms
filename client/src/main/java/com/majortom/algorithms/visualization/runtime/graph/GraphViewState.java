@@ -24,7 +24,7 @@ public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Ed
   public static GraphViewState initial(GraphSnapshot<?> graph) {
     Objects.requireNonNull(graph, "graph");
     List<Node> nodes = graph.vertices().stream()
-        .map(vertex -> new Node(vertex.id(), VisualValue.of(vertex.value())))
+        .map(vertex -> new Node(vertex.id(), VisualValue.compact(vertex.value())))
         .toList();
     List<Edge> edges = graph.edges().stream()
         .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight(),

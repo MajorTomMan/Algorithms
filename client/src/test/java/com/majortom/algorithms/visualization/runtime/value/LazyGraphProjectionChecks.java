@@ -3,7 +3,7 @@ package com.majortom.algorithms.visualization.runtime.value;
 import com.majortom.algorithms.core.annotation.ValueDisplay;
 import com.majortom.algorithms.core.annotation.ValueField;
 import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,10 +31,10 @@ public final class LazyGraphProjectionChecks {
     City a = new City("深圳");
     City b = new City("广州");
     Railway rail = new Railway("广深铁路");
-    MultiGraphSnapshot<City> snapshot = new MultiGraphSnapshot<>(GraphDirection.DIRECTED,
-        List.of(new MultiGraphSnapshot.Vertex<>(1, a),
-                new MultiGraphSnapshot.Vertex<>(2, b)),
-        List.of(new MultiGraphSnapshot.Edge(3, 1, 2, rail, 102.0)));
+    GraphSnapshot<City> snapshot = new GraphSnapshot<>(GraphDirection.DIRECTED,
+        List.of(new GraphSnapshot.Vertex<>(1, a),
+                new GraphSnapshot.Vertex<>(2, b)),
+        List.of(new GraphSnapshot.Edge(3, 1, 2, rail, 102.0)));
     GraphViewState view = GraphViewState.initial(snapshot);
     if (DETAIL_READS.get() != 0) throw new AssertionError("Eager DETAIL reflection");
     if (!view.nodes().getFirst().value().text().equals("深圳")
