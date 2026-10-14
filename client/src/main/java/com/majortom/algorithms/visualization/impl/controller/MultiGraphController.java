@@ -6,7 +6,6 @@ import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
-import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.core.snapshot.StructureSnapshot;
 import com.majortom.algorithms.structure.graph.MultiEdge;
@@ -48,9 +47,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     implements StructureSnapshotSupport<MultiGraphSnapshot<Object>>,
     AlgorithmSelectionSupport, GraphImplementationSelection, RuntimeValueTypeSupport {
 
-  private static final AlgorithmTypeSignature SIGNATURE = AlgorithmTypeSignature.of(Object.class);
-  private final List<String> algorithmIds = AlgorithmCatalog.compatibleAlgorithms(
-      MultiGraphStructure.class, SIGNATURE);
+  private List<String> algorithmIds = AlgorithmCatalog.multiGraphAlgorithms(Integer.class);
   private MultiGraph<Object> directedGraph = new MultiGraph<>(GraphDirection.DIRECTED);
   private MultiGraph<Object> undirectedGraph = new MultiGraph<>(GraphDirection.UNDIRECTED);
   private GraphDirection activeDirection = GraphDirection.UNDIRECTED;
@@ -119,25 +116,31 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     return activeDirection.isDirected() ? directedGraph : undirectedGraph;
   }
 
-  /** Replace one direction's graph from an annotated user object, without any UI import controls. */
+  /** Existing untyped entry point permits heterogeneous nodes when explicitly requested. */
   public void loadBatch(Object data) {
-    Objects.requireNonNull(data, "data");
-    MultiGraph<Object> replacement = MultiGraph.from(activeDirection, data);
-    if (!executeStructureOperation("batch-import", () -> {
-      replaceCurrentGraph(replacement);
-      ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(replacement.snapshot()));
-      return null;
-    })) return;
-    clearSelection();
-    renderGraph();
-    refreshStatsDisplay();
+    loadBatch(Object.class, data);
   }
 
-  /** Java-only bulk snapshot entry point. */
-  public void loadSnapshot(MultiGraphSnapshot<Object> snapshot) {
-    Objects.requireNonNull(snapshot, "snapshot");
-    MultiGraph<Object> replacement = MultiGraph.fromSnapshot(snapshot);
-    if (!executeStructureOperation("batch-snapshot", () -> {
+  /**
+   * Type-safe Java API for user-defined node values (City, Place, Province, etc.).
+   * All nodes are validated by MultiGraph.from(direction, nodeType, data).
+   * The JavaFX controller stores an erased copy only to bridge shared controls.
+   */
+  public <T> void loadBatch(Class<T> nodeType, Object data) {
+    Objects.requireNonNull(nodeType, "nodeType");
+    Objects.requireNonNull(data, "data");
+    loadGraph(nodeType, MultiGraph.from(activeDirection, nodeType, data));
+  }
+
+  /** Programmatically display a preconstructed MultiGraph<T>, without adding import UI. */
+  public <T> void loadGraph(Class<T> nodeType, MultiGraph<T> graph) {
+    Objects.requireNonNull(nodeType, "nodeType");
+    Objects.requireNonNull(graph, "graph");
+    for (Vertex<T> node : graph.vertices()) nodeType.cast(node.value());
+    // Snapshot restore detaches from the caller's mutable graph; no unsafe node writes occur.
+    MultiGraph<Object> replacement = eraseGraph(MultiGraph.fromSnapshot(graph.snapshot()));
+    if (!executeStructureOperation("batch-import", () -> {
+      setImportedNodeType(nodeType);
       if (replacement.direction().isDirected()) directedGraph = replacement;
       else undirectedGraph = replacement;
       ExecutionEvents.structure(new MultiGraphStructureEvent.Reset(replacement.snapshot()));
@@ -145,9 +148,46 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
     })) return;
     activeDirection = replacement.direction();
     selectActiveDirection();
+    refreshAlgorithmIds();
     clearSelection();
     renderGraph();
-    refreshStatsDisplay();
+  }
+
+  /** Java-only snapshot entry points, including an explicit generic type overload. */
+  public void loadSnapshot(MultiGraphSnapshot<Object> snapshot) {
+    loadSnapshot(Object.class, snapshot);
+  }
+
+  public <T> void loadSnapshot(Class<T> nodeType, MultiGraphSnapshot<T> snapshot) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    loadGraph(nodeType, MultiGraph.fromSnapshot(snapshot));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> MultiGraph<Object> eraseGraph(MultiGraph<T> graph) {
+    return (MultiGraph<Object>) (MultiGraph<?>) graph;
+  }
+
+  private void setImportedNodeType(Class<?> type) {
+    if (runtimeValueType == type) return;
+    runtimeValueType = type;
+    valueAdapter = ValueAdapters.supports(type) ? ValueAdapters.requireObjectAdapter(type) : null;
+    directedGraph = new MultiGraph<>(GraphDirection.DIRECTED);
+    undirectedGraph = new MultiGraph<>(GraphDirection.UNDIRECTED);
+    invalidateExecutionForStructureChange();
+  }
+
+  private void refreshAlgorithmIds() {
+    String selected = algorithmSelector == null ? null
+        : algorithmSelector.getSelectionModel().getSelectedItem();
+    algorithmIds = AlgorithmCatalog.multiGraphAlgorithms(runtimeValueType);
+    if (algorithmSelector != null) {
+      algorithmSelector.setItems(FXCollections.observableArrayList(algorithmIds));
+      if (selected != null && algorithmIds.contains(selected))
+        algorithmSelector.getSelectionModel().select(selected);
+      else algorithmSelector.getSelectionModel().selectFirst();
+    }
+    algorithmSelectionListener.accept(selectedAlgorithmId());
   }
 
   private void replaceCurrentGraph(MultiGraph<Object> next) {
@@ -217,6 +257,10 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
 
   private Object parseValue(String text) {
+    if (valueAdapter == null) {
+      appendLog("Custom nodes are created in code. Select an existing node to edit connections.");
+      return null;
+    }
     try { return valueAdapter.parse(text); }
     catch (RuntimeException failure) {
       logI18n("message.error.invalid_graph_value");
@@ -241,11 +285,14 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
       if (selected != null && formatValue(selected.value()).equals(text == null ? "" : text.trim()))
         return selected;
     }
-    Object value = parseValue(text);
-    if (value == null) return null;
+    Object value = valueAdapter == null ? null : parseValue(text);
+    if (valueAdapter != null && value == null) return null;
+    String label = text == null ? "" : text.trim();
     Vertex<Object> matched = null;
     for (Vertex<Object> candidate : currentGraph().vertices()) {
-      if (!candidate.value().equals(value)) continue;
+      if (valueAdapter == null
+          ? !formatValue(candidate.value()).equals(label)
+          : !candidate.value().equals(value)) continue;
       if (matched != null) {
         appendLog("More than one vertex has this value. Select the intended node first.");
         return null;
@@ -386,8 +433,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
         return;
       }
     }
-    AlgorithmDescriptor descriptor = AlgorithmCatalog.compatibleDescriptor(
-        MultiGraphStructure.class, SIGNATURE, id);
+    AlgorithmDescriptor descriptor = AlgorithmCatalog.multiGraphDescriptor(runtimeValueType, id);
     MultiGraph<Object> input = MultiGraph.fromSnapshot(snapshot);
     startAlgorithm(id, snapshot, () -> descriptor.invoke(input),
         () -> new MultiGraphEventReducer(snapshot));
@@ -414,7 +460,13 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   }
 
   @Override public Class<?> runtimeValueType() { return runtimeValueType; }
-  @Override public List<Class<?>> supportedValueTypes() { return ValueAdapters.supportedTypes(); }
+  @Override public List<Class<?>> supportedValueTypes() {
+    List<Class<?>> types = ValueAdapters.supportedTypes();
+    if (types.contains(runtimeValueType)) return types;
+    java.util.ArrayList<Class<?>> result = new java.util.ArrayList<>(types);
+    result.add(runtimeValueType);
+    return List.copyOf(result);
+  }
   @Override public boolean hasValues() {
     return directedGraph.vertexCount() > 0 || undirectedGraph.vertexCount() > 0;
   }
@@ -423,11 +475,12 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
       throw new IllegalArgumentException("Unsupported Graph value type: " + type.getName());
     if (runtimeValueType.equals(type)) return;
     runtimeValueType = type;
-    valueAdapter = ValueAdapters.requireObjectAdapter(type);
+    valueAdapter = ValueAdapters.supports(type) ? ValueAdapters.requireObjectAdapter(type) : null;
     directedGraph = new MultiGraph<>(GraphDirection.DIRECTED);
     undirectedGraph = new MultiGraph<>(GraphDirection.UNDIRECTED);
     clearSelection();
     invalidateExecutionForStructureChange();
+    refreshAlgorithmIds();
     if (controlPanel != null) renderGraph();
   }
 
@@ -466,6 +519,7 @@ public final class MultiGraphController extends BaseModuleController<GraphViewSt
   private void requireSnapshot(StructureSnapshot<MultiGraphSnapshot<Object>> snapshot) {
     if (!moduleId().equals(snapshot.moduleId()))
       throw new IllegalArgumentException("Not a Graph snapshot");
+    snapshot.requireValueType(runtimeValueType);
   }
   @Override public String describeStructureSnapshot(MultiGraphSnapshot<Object> state) {
     return I18N.text("snapshot.graph.detail", state.vertices().size(), state.edges().size());

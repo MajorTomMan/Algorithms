@@ -77,8 +77,9 @@ final class WorkbenchModuleNavigation {
     List<AlgorithmNavigationItem> algorithmNavigationItems(String moduleId) {
         if (StructureIds.GRAPH.equals(moduleId)
                 && graphImplementation.get() == GraphImplementation.MULTI)
-            return AlgorithmCatalog.compatibleAlgorithms(
-                    MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class)).stream()
+            return AlgorithmCatalog.multiGraphAlgorithms(
+                    selectedTypeSignature.apply(moduleId) == null ? Object.class
+                        : selectedTypeSignature.apply(moduleId).primaryType()).stream()
                     .map(AlgorithmNavigationItem::new).toList();
         if (StructureIds.MULTI_GRAPH.equals(moduleId))
             return AlgorithmCatalog.compatibleAlgorithms(

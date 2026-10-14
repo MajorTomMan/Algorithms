@@ -67,7 +67,7 @@ graph.removeEdge(pair.forward().id());
 而不是逐条事件。快照**不深拷贝**业务对象：用于历史回放时，业务值和边载荷须保持不可变。
 可视化展示层使用核心 `ValueMetadata` 元数据统一读取 `@ValueField` 摘要和详情。
 MultiGraph 现在位于统一的 **图 / Graph** 工作台中，作为「实现方式 / Implementation」的第二个选项；不再单独占据左侧的结构家族入口。保留平行边布局和 BFS/DFS 结构算法。
-多重图批量构建与数据导入由 Java 代码完成，不在 JavaFX 工作台增加专用导入控件。
+在图形工作台中可输入批量类的 Java 完整类名，粘贴 JSON 或选择 JSON 文件批量加载。
 只支持已编译并存在于应用 classpath 上的 Java 类；不动态编译用户代码。
 
 ## 验证
@@ -81,16 +81,15 @@ mvn -pl structures -am test-compile
 和 `@ValueField` 元数据统一缓存，类型可直接按需发现，不要求为每个对象手工注册
 `ValueAdapter`。这不意味着自定义对象都自动支持文本解析、随机生成或深度不可变快照。
 
-### 代码导入自定义批量数据
+### JavaFX 导入自定义批量 JSON
 
-定义好节点和边的注解后，直接在 Java 代码中调用
-`MultiGraph.from(GraphDirection.DIRECTED, batch)`，或在已有控制器上
-调用 `MultiGraphController.loadBatch(batch)`。框架解析自定义对象，
-统一构建节点和连接；JavaFX 不提供 JSON 文本输入、文件浏览或批量导入按钮。
-
-如果数据来源是 JSON，可以在代码中先调用
-`MultiGraphJsonLoader.read(className, json)` 得到对应 Java 对象，
-再传入上述构图 API。JSON 对应的类必须已编译且位于应用 classpath。
+工作台选择 **图（Graph）→ 实现方式：多重图（MultiGraph）** 后，填写类完整名称（例如
+`com.example.model.TransportNetwork`），粘贴符合该类型的 JSON，
+或通过“选择 JSON 文件”读入本地文件，然后点“导入图数据”。
+JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
+`MultiGraph.from(direction, data)` 统一解析 `@GraphNodes`、
+`@GraphEdges` 和端点注解。反序列化和构图不在 JavaFX UI 线程执行；
+成功提交前保留旧图。编译产物必须在 JavaFX 程序的 classpath 中。
 
 示例 JSON：
 
@@ -144,8 +143,8 @@ ELK 的高昂开销以及力导向布局的成对排斥计算，图可视化应�
 节点/边选中功能，完整业务字段通过 `@ValueField` 在选中对象后按需读取。
 BFS/DFS 观察事件使用端点索引更新本次节点及边高亮，减少重复 JavaFX 更新。
 
-**输入性能**：批量构图由调用方在代码中触发；大批量读取、反序列化
-可以由调用方放入后台任务，待成功后再更新工作台。
+**输入性能**：选择 JSON 文件后不会先把全文放进 JavaFX TextArea；点击导入后在
+后台线程读取文件、反序列化和构图。粘贴 JSON 仍受 TextArea 本身的大文本容量限制。
 
 **限制**：当前大图采用确定性网格而不是保留地理坐标的地图布局，
 JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas 批量绘制、
@@ -157,7 +156,7 @@ JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas
 工作台侧栏仅保留一个「图 / Graph」导航项。进入结构界面后：
 
 - **实现方式：普通图**：继续使用 `GraphStructure<T>`、现有节点/边编辑操作与普通图算法；
-- **实现方式：多重图**：使用 `MultiGraphStructure<T>`、与普通图一致的增删和权重 UI，以及代码批量导入与多重图 BFS/DFS；
+- **实现方式：多重图**：使用 `MultiGraphStructure<T>`、JSON/自定义批量对象导入与多重图 BFS/DFS；
 - **算法界面**：算法列表由当前实际结构契约过滤，普通图不显示多重图算法，反之亦然；
 - **有向/无向**：是选定实现内部的独立设置，不由「实现方式」决定。
 
@@ -169,20 +168,41 @@ JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas
 
 ### 本地离线构建依赖说明
 
-项目需要 JavaFX、Jackson、ELK 等完整 Maven 本地仓库（不依赖 Spring Boot 父 POM）。
+项目需要 Spring Boot 父 POM、JavaFX、Jackson、ELK 等完整 Maven 本地仓库。
 仅有 ELK 0.12.0 的 jar/pom 无法进行完整离线构建；
 离线执行 `mvn -o -pl client -am test-compile` 需要事先下载全部父 POM、
-插件及传递依赖。当前 GitHub Actions 仅通过 `python start.py --build`
-检查最新 `dev` 分支的编译，不运行其他回归检查。
+插件及传递依赖。GitHub Actions 的 Java 21 reactor install 与回归测试
+用于验证最新 `dev` 代码；本地旧版源码快照的结果不能代表最新分支。
 
-### 图结构 UI 复用约定
+### 泛型节点与算法类型匹配
 
-Graph 与 MultiGraph 使用**同一套** `GraphControls.fxml`，包含实现方式、
-有向/无向选择、节点增删、边增删、权重编辑、算法选择与执行。
-切换到多重图不会出现 JSON 文本框、文件选择、批量导入或额外示例按钮。
-多重图数据导入在代码中调用 `MultiGraph.from(direction, batch)` 或
-`MultiGraphController.loadBatch(batch)`；无需编写任何专用 FXML。
+`MultiGraph<T>` 是单一节点泛型，`T` 可以是 `City`、`Place`、
+`Province` 等自定义业务类型，边的数据载荷仍由边对象自行决定，**无需第二个泛型参数**。
 
-多重边存在多条同端点关系时，修改/删除操作需要先点击目标边，以明确指定边 ID；
-节点值重复时同样需要先点击目标节点。此 UI 不会根据业务对象
-`equals()` 擅自合并或删除节点、边。
+```java
+@ValueType(value = MultiGraphStructure.class, immutable = true)
+record City(@ValueId String code, @ValueField(ValueDisplay.SUMMARY) String name) {}
+
+record Network(@GraphNodes List<City> cities, @GraphEdges List<Road> roads) {}
+
+MultiGraph<City> graph = MultiGraph.from(GraphDirection.DIRECTED, City.class, network);
+
+// 编程式装载，不新增任何图形界面控件：
+multiGraphController.loadBatch(City.class, network);
+// 或者装载已经构造好的泛型结构：
+multiGraphController.loadGraph(City.class, graph);
+```
+
+`loadBatch(Object)` 仍然存在，供确实需要混合节点类型的场景使用；
+如果知道节点的公共类型，建议始终传入 `Class<T>`，让导入时完成类型校验。
+JavaFX 控制器因框架动态切换而持有擦除后的图引用，这不改变对外
+`MultiGraph<T>` 的静态类型或节点约束。
+
+**算法匹配**：声明 `@Algorithm(types = City.class, structure = MultiGraphStructure.class)`
+的算法只在当前顶点类型为 `City` 时出现；声明 `Object.class` 的多重图算法
+作为通用算法继续适用于任何 `T`。相同算法 ID 同时存在类型专用版本时，
+优先选用精确匹配的版本。普通图算法始终不会混入多重图。
+
+自定义对象如果没有注册 `ValueAdapter<T>`，仍可通过注解进行展示、批量导入
+和算法运行；共享 UI 的文本输入框不会自行推断如何构造自定义 Java 对象。
+新增节点应通过 Java 代码完成，选择已有节点时可以使用其展示摘要。
