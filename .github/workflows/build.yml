@@ -22,3 +22,13 @@ jobs:
           python start.py --build
       - name: Compile regression test sources
         run: mvn -B test-compile
+      - name: Run graph regression checks
+        run: |
+          mvn -B -q install -DskipTests
+          mvn -B -q -pl structures exec:java -Dexec.mainClass=com.majortom.algorithms.structure.graph.GraphChecks -Dexec.classpathScope=test
+          mvn -B -q -pl algorithms exec:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.impl.GraphTraversalChecks -Dexec.classpathScope=test
+          mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.impl.controller.GraphGenericChecks -Dexec.classpathScope=test
+          mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.impl.controller.GraphIOChecks -Dexec.classpathScope=test
+          mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.graph.GraphViewStateChecks -Dexec.classpathScope=test
+          mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.runtime.value.LazyGraphProjectionChecks -Dexec.classpathScope=test
+          mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.impl.controller.GraphImplementationRoutingChecks -Dexec.classpathScope=test
