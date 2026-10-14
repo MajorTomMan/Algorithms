@@ -9,12 +9,11 @@ import java.util.List;
 public final class MultiGraphChecks {
   @ValueType(MultiGraphStructure.class)
   record City(@ValueId String code, @ValueField(ValueDisplay.SUMMARY) String name) {}
-  record Railway(@GraphFrom City from, @GraphTo City to,
-                 @GraphWeight double distance, String name) {}
-  record Road(@GraphFrom City from, @GraphTo City to,
-              @GraphWeight double distance, @GraphBidirectional boolean twoWay) {}
-  record Network(@GraphNodes List<City> cities, @GraphEdges List<Railway> railways,
-                 @GraphEdges List<Road> roads) {}
+  record Railway(City from, City to, double distance, String name) {}
+  record Road(City from, City to, double distance, boolean twoWay) {}
+  record Network(@GraphNodes List<City> cities,
+      @GraphEdges(from="from", to="to", weight="distance") List<Railway> railways,
+      @GraphEdges(from="from", to="to", weight="distance", bidirectional="twoWay") List<Road> roads) {}
 
   public static void main(String[] args) {
     City shenzhen = new City("sz", "深圳");
@@ -78,7 +77,41 @@ public final class MultiGraphChecks {
           List.of(new MultiGraphSnapshot.Edge(1000000L, sz.id(), 99999999L, null, 1))));
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected && graph.edgeCount() == initial.edges().size(), "failed restore is atomic");
+    checkRecursiveGraph();
     System.out.println("MultiGraphChecks passed");
+  }
+
+  record Region(String code, @GraphNodes List<Region> children) {}
+  record Connection(Region source, Region destination, double km) {}
+  record Atlas(@GraphNodes List<Region> provinces,
+      @GraphEdges(from="source", to="destination", weight="km") List<Connection> roads) {}
+
+  private static void checkRecursiveGraph() {
+    Region district = new Region("440305", List.of());
+    Region city = new Region("440300", List.of(district));
+    Region province = new Region("440000", List.of(city));
+    Region second = new Region("440100", List.of());
+    MultiGraph<Region> graph = MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+        new Atlas(List.of(province, second), List.of(new Connection(city, second, 125))));
+    check(graph.vertexCount() == 4 && graph.edgeCount() == 1,
+        "recursive @GraphNodes visits descendants without creating containment edges");
+    MultiGraph<Region> rooted = MultiGraph.from(GraphDirection.DIRECTED, Region.class, province);
+    check(rooted.vertexCount() == 3 && rooted.edgeCount() == 0,
+        "typed recursive root is included");
+
+    // No business @ValueType or @ValueId annotations are required when endpoints share references.
+    boolean rejected = false;
+    try {
+      MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+          new Atlas(List.of(province), List.of(new Connection(second, district, 1))));
+    } catch (IllegalArgumentException expected) { rejected = true; }
+    check(rejected, "undeclared recursive endpoint rejected");
+
+    record Wrapper(@GraphNodes List<Region> nested) {}
+    record Nested(@GraphNodes List<Wrapper> wrappers) {}
+    var nested = MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+        new Nested(List.of(new Wrapper(List.of(province)))));
+    check(nested.vertexCount() == 3, "nested non-node wrappers discover children");
   }
 
   private static void check(boolean condition, String message) {

@@ -19,13 +19,13 @@ public final class MultiGraph<T> implements MultiGraphStructure<T> {
   public MultiGraph(GraphDirection direction) { this.direction = Objects.requireNonNull(direction); }
   public record BiEdges<T>(MultiEdge<T> forward, MultiEdge<T> reverse) {}
 
-  /** Batch import with mixed node types (MultiGraph<Object>). */
+  /** Read annotated objects as a graph with mixed node value types. */
   public static MultiGraph<Object> from(GraphDirection direction, Object data) {
-    return MultiGraphBatchParser.parse(direction, Object.class, data);
+    return GraphObjectMapper.read(direction, Object.class, data);
   }
-  /** Batch import with an enforced common node type. */
+  /** Read annotated objects with a validated node type. */
   public static <T> MultiGraph<T> from(GraphDirection direction, Class<T> nodeType, Object data) {
-    return MultiGraphBatchParser.parse(direction, nodeType, data);
+    return GraphObjectMapper.read(direction, nodeType, data);
   }
   public static <T> MultiGraph<T> fromSnapshot(MultiGraphSnapshot<T> snapshot) {
     MultiGraph<T> result = new MultiGraph<>(Objects.requireNonNull(snapshot).direction());

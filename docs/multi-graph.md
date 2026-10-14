@@ -1,208 +1,79 @@
-# MultiGraph：注解式批量构图（V1）
+# MultiGraph：统一注解与数据输入
 
-保留原有 `Graph<T>` / `Tree<T>`，新增 `MultiGraph<T>`。图的方向由
-`GraphDirection.DIRECTED` 或 `UNDIRECTED` 决定，不通过注解声明业务关系。
+`MultiGraph<T>` 是可存储平行边、孤立顶点、正反向关系的泛型多重图；
+`Graph<T>` 与 `MultiGraph<T>` 在客户端共用 `GraphControls.fxml`，不提供单独的导入界面。
 
-## 批量数据类型
+## 数据模型与两个注解
 
-```java
-@ValueType(value = MultiGraphStructure.class, immutable = true)
-record City(@ValueId String code,
-            @ValueField({ValueDisplay.SUMMARY, ValueDisplay.DETAIL}) String name) {}
+`@GraphNodes` 表示一个或多个节点，框架会递归读取**每个节点内部**再次声明的
+`@GraphNodes`。这仅用于发现节点，不会自动生成父子关系边。
 
-@ValueType(immutable = true)
-record Railway(@GraphFrom City from, @GraphTo City to,
-               @GraphWeight double kilometers, String line) {}
-
-@ValueType(immutable = true)
-record Road(@GraphFrom City from, @GraphTo City to,
-            @GraphBidirectional boolean twoWay, @GraphWeight double kilometers) {}
-
-record TransportNetwork(@GraphNodes List<City> cities,
-                        @GraphEdges List<Railway> railways,
-                        @GraphEdges List<Road> roads) {}
-```
+`@GraphEdges` 标记边对象的集合；其 `from` 和 `to` 指向**边对象本身**的字段、
+record accessor 或 JavaBean getter 名称。`weight` 可选（默认 `1.0`），
+`bidirectional` 可选（指定边对象中的布尔字段；仅有向图创建反向边）。
+多条边即使端点一致也不会合并。
 
 ```java
-City sz = new City("440300", "深圳");
-City gz = new City("440100", "广州");
-City dg = new City("441900", "东莞"); // 保留为孤立节点
+record Region(String code, String name, @GraphNodes List<Region> children) {}
+record Road(Region start, Region end, double km, boolean twoWay) {}
+record Network(
+    @GraphNodes List<Region> provinces,
+    @GraphEdges(from = "start", to = "end", weight = "km", bidirectional = "twoWay")
+    List<Road> roads) {}
 
-TransportNetwork data = new TransportNetwork(
-    List.of(sz, gz, dg),
-    List.of(new Railway(sz, gz, 102, "广深铁路")),
-    List.of(new Road(sz, gz, true, 125)));
-
-MultiGraph<City> graph = MultiGraph.from(GraphDirection.DIRECTED, City.class, data);
-// 3 个节点、3 条边：铁路单向 + 公路正反两个方向。
+MultiGraph<Region> graph = MultiGraph.from(
+    GraphDirection.DIRECTED, Region.class, network);
 ```
 
-调用方负责决定关系并提供包含端点的边对象；框架仅根据标记读取成员并构建图，
-不推断 `Road`、`Railway` 的业务含义。支持字段、record 组件、零参数方法；
-`@GraphNodes` / `@GraphEdges` 接受单个值、数组或 `Iterable`。
-`@GraphFrom` 与 `@GraphTo` 必须各出现一次；
-`@GraphBidirectional` 为可选布尔字段，`@GraphWeight` 为可选数值字段（默认 1）。
+不要求业务实体实现 `GraphNode` / `GraphEdge` 接口，不要求额外的包装实体或
+`@ValueType`。不同类型的节点可以使用共同的 Java 父类型，或者显式使用 `Object.class`。
+递归沿着有标记的属性前进，支持单值、`Iterable`、数组、`Map` 的值和 `Optional`。
+遍历使用对象身份防止循环引用；相同对象不会重复建点。通过已有的可选
+`@ValueId` 可匹配端点里**不同实例但相同业务 ID**的节点。重复业务 ID、
+不存在的端点、字段名错误、非数值权重都会明确报错。
 
-节点之间的关联优先采用相同 Java 对象实例；如在业务类型中标记 `@ValueId`，
-也可用同类型、同业务键的不同对象实例引用已声明的节点。
-同类型重复业务键、缺失端点、非法权重将被拒绝。
-任意未列在 `@GraphNodes` 中的关系端点**不会**被自动偷偷创建。
+## 两条数据输入途径
 
-## 增量操作
+代码输入直接使用 Java 对象：
 
 ```java
-MultiGraph<City> graph = new MultiGraph<>(GraphDirection.DIRECTED);
-var a = graph.addVertex(sz);
-var b = graph.addVertex(gz);
-graph.addEdge(a, b, new Railway(sz, gz, 102, "广深铁路"));
-var pair = graph.addBiEdge(a, b, new Road(sz, gz, true, 125));
-graph.removeEdge(pair.forward().id());
+MultiGraph<Region> graph = MultiGraph.from(GraphDirection.DIRECTED, Region.class, network);
+// 或者使用 graph.addVertex(...) / graph.addEdge(...)
 ```
 
-`MultiGraph` 按节点 ID 保存节点，不按对象的 `equals()` 去重。
-同一端点可以有多个不同的边。无向图直接调用 `addEdge`；
-`addBiEdge` 仅适用于有向图，原子添加两个方向。
-
-`snapshot()` / `initialize()` 支持整体加载，批量初始化发布一个 Reset 结构事件，
-而不是逐条事件。快照**不深拷贝**业务对象：用于历史回放时，业务值和边载荷须保持不可变。
-可视化展示层使用核心 `ValueMetadata` 元数据统一读取 `@ValueField` 摘要和详情。
-MultiGraph 现在位于统一的 **图 / Graph** 工作台中，作为「实现方式 / Implementation」的第二个选项；不再单独占据左侧的结构家族入口。保留平行边布局和 BFS/DFS 结构算法。
-在图形工作台中可输入批量类的 Java 完整类名，粘贴 JSON 或选择 JSON 文件批量加载。
-只支持已编译并存在于应用 classpath 上的 Java 类；不动态编译用户代码。
-
-## 验证
-
-```bash
-mvn -pl structures -am test-compile
-# 无需 JUnit：编译后按项目 classpath 手动运行 MultiGraphChecks.main()
-```
-
-`ValueType` 注解声明元素适用结构和展示名称；`ValueMetadata` 将 `@ValueId`
-和 `@ValueField` 元数据统一缓存，类型可直接按需发现，不要求为每个对象手工注册
-`ValueAdapter`。这不意味着自定义对象都自动支持文本解析、随机生成或深度不可变快照。
-
-### JavaFX 导入自定义批量 JSON
-
-工作台选择 **图（Graph）→ 实现方式：多重图（MultiGraph）** 后，填写类完整名称（例如
-`com.example.model.TransportNetwork`），粘贴符合该类型的 JSON，
-或通过“选择 JSON 文件”读入本地文件，然后点“导入图数据”。
-JSON 通过 Jackson 反序列化为该 Java 对象，之后交给
-`MultiGraph.from(direction, data)` 统一解析 `@GraphNodes`、
-`@GraphEdges` 和端点注解。反序列化和构图不在 JavaFX UI 线程执行；
-成功提交前保留旧图。编译产物必须在 JavaFX 程序的 classpath 中。
-
-示例 JSON：
-
-```json
-{
-  "cities": [
-    {"code": "sz", "name": "深圳"},
-    {"code": "gz", "name": "广州"}
-  ],
-  "railways": [
-    {"from": {"code": "sz", "name": "深圳"},
-     "to": {"code": "gz", "name": "广州"},
-     "kilometers": 102, "line": "广深铁路"}
-  ],
-  "roads": [
-    {"from": {"code": "sz", "name": "深圳"},
-     "to": {"code": "gz", "name": "广州"},
-     "twoWay": true}
-  ]
-}
-```
-
-同一类型和 `@ValueId` 的不同 Java 实例会映射到批量节点集合中的同一个节点。
-所有端点必须已出现在 `@GraphNodes` 中；这是明确的构图约束，而不是自动
-递归关系发现。方向、权重、是否双向都由用户自定义的边类型提供。
-
-### 运行算法时的不可变约束
-
-`MultiGraph.from()` 批量构图本身不要求业务类添加 `immutable = true`。
-但是工作台在运行 BFS/DFS 及历史回放前，要求节点值与边载荷都是可安全回放的不可变对象。
-如果业务类型及其**整个可达对象图**确实不可变，可以用 `@ValueType(immutable = true)`
-明确声明；标注了 `record` **不自动等于深度不可变**（record 内部可能持有可变 List）。
-需要可变业务对象时，应由开发者提供冻结/复制策略，不能仅靠注解绕过回放安全检查。
-
-## 大规模图的自适应可视化
-
-MultiGraph 和原有 Graph 共用渲染底座，不限制实际节点或边数量。为了避免大图触发
-ELK 的高昂开销以及力导向布局的成对排斥计算，图可视化应用以下默认策略：
-
-| 条件 | 渲染策略 |
-|---|---|
-| 节点 ≤ 180 且边 ≤ 450 | 保留原来的图布局选择（有向无环使用 ELK，否则力导向） |
-| 节点 > 180 或边 > 450 | 用并查集划分不连通分量，逐分量采用确定性网格布局 |
-| 节点 ≤ 80 且边 ≤ 450 | 允许完整的节点 ID 标签 |
-| 节点 ≤ 80 且边 ≤ 160 | 允许全部边权/边载荷标签 |
-| 节点 > 80 或边 > 450 | 默认不在全部节点上绘制文字，选中时展示摘要 |
-| 大于动画阈值 | 禁用逐元素布局切换动画，避免批量入图同时触发过量动画 |
-
-这里所有阈值统一放在 `GraphRenderScale`，属于**展示策略**，不会裁剪
-`MultiGraph` 的真实节点、边、权重或快照。大图仍然保留平行边分离路径和
-节点/边选中功能，完整业务字段通过 `@ValueField` 在选中对象后按需读取。
-BFS/DFS 观察事件使用端点索引更新本次节点及边高亮，减少重复 JavaFX 更新。
-
-**输入性能**：选择 JSON 文件后不会先把全文放进 JavaFX TextArea；点击导入后在
-后台线程读取文件、反序列化和构图。粘贴 JSON 仍受 TextArea 本身的大文本容量限制。
-
-**限制**：当前大图采用确定性网格而不是保留地理坐标的地图布局，
-JavaFX 仍会为每个实际节点和边创建图形对象，尚未实现 Canvas 批量绘制、
-视口虚拟化或百万级数据分页。此策略主要消除高复杂度布局和无意义的标签/高亮开销；
-超大图的实际 FPS 和内存占用仍需在目标桌面设备上测试。
-
-### 普通图与多重图的工作台选择
-
-工作台侧栏仅保留一个「图 / Graph」导航项。进入结构界面后：
-
-- **实现方式：普通图**：继续使用 `GraphStructure<T>`、现有节点/边编辑操作与普通图算法；
-- **实现方式：多重图**：使用 `MultiGraphStructure<T>`、JSON/自定义批量对象导入与多重图 BFS/DFS；
-- **算法界面**：算法列表由当前实际结构契约过滤，普通图不显示多重图算法，反之亦然；
-- **有向/无向**：是选定实现内部的独立设置，不由「实现方式」决定。
-
-切换实现方式当前会重新创建相应的结构控制器，并清除与前一实现不兼容的工作台快照，
-防止把 `GraphSnapshot<T>` 误恢复为 `MultiGraphSnapshot<T>`。
-如需保留当前构图数据，请在切换前导出或保存对应数据。
-这只是前端归类调整：底层 `Graph<T>` 与 `MultiGraph<T>` 仍完全独立，
-注解构图、单向/双向连接及多重边 API 均不变。
-
-### 本地离线构建依赖说明
-
-项目需要 Spring Boot 父 POM、JavaFX、Jackson、ELK 等完整 Maven 本地仓库。
-仅有 ELK 0.12.0 的 jar/pom 无法进行完整离线构建；
-离线执行 `mvn -o -pl client -am test-compile` 需要事先下载全部父 POM、
-插件及传递依赖。GitHub Actions 的 Java 21 reactor install 与回归测试
-用于验证最新 `dev` 代码；本地旧版源码快照的结果不能代表最新分支。
-
-### 泛型节点与算法类型匹配
-
-`MultiGraph<T>` 是单一节点泛型，`T` 可以是 `City`、`Place`、
-`Province` 等自定义业务类型，边的数据载荷仍由边对象自行决定，**无需第二个泛型参数**。
+外部文件输入复用 `core.io`，**不创建 MultiGraph 专用 JSON Loader**：
 
 ```java
-@ValueType(value = MultiGraphStructure.class, immutable = true)
-record City(@ValueId String code, @ValueField(ValueDisplay.SUMMARY) String name) {}
-
-record Network(@GraphNodes List<City> cities, @GraphEdges List<Road> roads) {}
-
-MultiGraph<City> graph = MultiGraph.from(GraphDirection.DIRECTED, City.class, network);
-
-// 编程式装载，不新增任何图形界面控件：
-multiGraphController.loadBatch(City.class, network);
-// 或者装载已经构造好的泛型结构：
-multiGraphController.loadGraph(City.class, graph);
+JsonDataCodec<Network> codec = new JsonDataCodec<>(Network.class);
+Network network = FileDataIO.read(Path.of("road-network.json"), codec);
+MultiGraph<Region> graph = MultiGraph.from(GraphDirection.DIRECTED, Region.class, network);
 ```
 
-`loadBatch(Object)` 仍然存在，供确实需要混合节点类型的场景使用；
-如果知道节点的公共类型，建议始终传入 `Class<T>`，让导入时完成类型校验。
-JavaFX 控制器因框架动态切换而持有擦除后的图引用，这不改变对外
-`MultiGraph<T>` 的静态类型或节点约束。
+`JsonDataCodec` 只处理输入格式，`MultiGraph.from()` 读取注解和图拓扑。
+通过 JSON 提供边端点的独立对象实例时，建议使用业务 ID（`@ValueId`）关联。
+当前没有将业务 JSON 字段名自动推断为节点身份的规则。
 
-**算法匹配**：声明 `@Algorithm(types = City.class, structure = MultiGraphStructure.class)`
-的算法只在当前顶点类型为 `City` 时出现；声明 `Object.class` 的多重图算法
-作为通用算法继续适用于任何 `T`。相同算法 ID 同时存在类型专用版本时，
-优先选用精确匹配的版本。普通图算法始终不会混入多重图。
+## 快照读写与恢复
 
-自定义对象如果没有注册 `ValueAdapter<T>`，仍可通过注解进行展示、批量导入
-和算法运行；共享 UI 的文本输入框不会自行推断如何构造自定义 Java 对象。
-新增节点应通过 Java 代码完成，选择已有节点时可以使用其展示摘要。
+`MultiGraphSnapshot<T>` 保存每个顶点、边的**独立数字 ID**。
+整体替换请使用 `MultiGraph.fromSnapshot(snapshot)` 或 `initialize(snapshot)`，
+不要让 JSON 业务对象的解析过程覆盖快照原有 ID。
+
+```java
+var codec = new JsonDataCodec<>(new TypeReference<MultiGraphSnapshot<Region>>() {});
+FileDataIO.write(Path.of("saved-graph.json"), graph.snapshot(), codec);
+MultiGraph<Region> restored = MultiGraph.fromSnapshot(
+    FileDataIO.read(Path.of("saved-graph.json"), codec));
+```
+
+业务值和边载荷不会被快照深拷贝。要参与历史回放，它们必须确实不可变，
+或有明确的冻结/复制策略。对于不提供文本解析器的自定义节点类型，
+节点应通过 Java 代码或外部反序列化创建；共享的 JavaFX 控制面板不会擅自构造对象。
+
+## 界面和算法
+
+普通图和多重图共用界面，通过“实现方式”切换。
+算法列表按 `GraphStructure` 与 `MultiGraphStructure` 契约区分，
+泛型节点类型会参与匹配；BFS/DFS 等 `Object` 类型通用算法仍然适用。
+UI 不提供专门的批量 JSON 输入、文件选择或导入按钮。
+大图沿用图可视化的自适应布局/标签策略；该策略不影响真实边和节点数量。

@@ -34,6 +34,32 @@ public final class AnnotatedMembers {
     return CACHE.get(type).computeIfAbsent(marker, ignored -> scan(type, marker));
   }
 
+  /** Resolves an explicitly named Java field, record accessor or bean getter. */
+  public static Accessor named(Class<?> type, String name) {
+    Objects.requireNonNull(type, "type");
+    if (name == null || name.isBlank())
+      throw new IllegalArgumentException("Graph property name cannot be blank");
+    for (Class<?> current = type; current != null && current != Object.class;
+        current = current.getSuperclass()) {
+      try {
+        Field field = current.getDeclaredField(name);
+        if (!field.isSynthetic() && !Modifier.isStatic(field.getModifiers()))
+          return new Accessor(name, field, null);
+      } catch (NoSuchFieldException ignored) { }
+      String suffix = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+      for (String methodName : List.of(name, "get" + suffix, "is" + suffix)) {
+        try {
+          Method method = current.getDeclaredMethod(methodName);
+          if (!method.isSynthetic() && !Modifier.isStatic(method.getModifiers())
+              && method.getParameterCount() == 0 && method.getReturnType() != void.class)
+            return new Accessor(name, null, method);
+        } catch (NoSuchMethodException ignored) { }
+      }
+    }
+    throw new IllegalArgumentException("No readable graph property '" + name
+        + "' on " + type.getName());
+  }
+
   public static Accessor one(Class<?> type, Class<? extends Annotation> marker, boolean required) {
     List<Accessor> found = marked(type, marker);
     if (found.size() > 1 || (required && found.isEmpty()))

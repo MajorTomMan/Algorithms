@@ -1,9 +1,7 @@
 package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.annotation.GraphEdges;
-import com.majortom.algorithms.core.annotation.GraphFrom;
 import com.majortom.algorithms.core.annotation.GraphNodes;
-import com.majortom.algorithms.core.annotation.GraphTo;
 import com.majortom.algorithms.core.annotation.ValueId;
 import com.majortom.algorithms.core.annotation.ValueType;
 import com.majortom.algorithms.core.metadata.GraphDirection;
@@ -16,8 +14,8 @@ import java.util.List;
 public final class MultiGraphGenericChecks {
   @ValueType(value = MultiGraphStructure.class, immutable = true)
   record City(@ValueId String id, String name) {}
-  record Road(@GraphFrom City from, @GraphTo City to) {}
-  record Roads(@GraphNodes List<City> cities, @GraphEdges List<Road> roads) {}
+  record Road(City from, City to) {}
+  record Roads(@GraphNodes List<City> cities, @GraphEdges(from="from", to="to") List<Road> roads) {}
 
   public static void main(String[] args) {
     City shenzhen = new City("sz", "深圳");
