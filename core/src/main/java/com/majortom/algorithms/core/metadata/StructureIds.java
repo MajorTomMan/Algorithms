@@ -8,7 +8,6 @@ public final class StructureIds {
   public static final String TREE = "tree";
   public static final String AVL_TREE = "avl-tree";
   public static final String GRAPH = "graph";
-  public static final String MULTI_GRAPH = "multi-graph";
   public static final String STRING = "string";
   public static final String MAZE = "maze";
   public static final String HASH = "hash";
