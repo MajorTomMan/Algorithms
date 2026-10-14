@@ -86,6 +86,12 @@ public final class MultiGraphChecks {
   record Atlas(@GraphNodes List<Region> provinces,
       @GraphEdges(from="source", to="destination", weight="km") List<Connection> roads) {}
 
+  static final class CyclicNode {
+    @GraphNodes List<CyclicNode> children = List.of();
+    @GraphEdges(from="from", to="to") List<CyclicEdge> roads = List.of();
+  }
+  record CyclicEdge(CyclicNode from, CyclicNode to) {}
+
   private static void checkRecursiveGraph() {
     Region district = new Region("440305", List.of());
     Region city = new Region("440300", List.of(district));
@@ -112,6 +118,15 @@ public final class MultiGraphChecks {
     var nested = MultiGraph.from(GraphDirection.DIRECTED, Region.class,
         new Nested(List.of(new Wrapper(List.of(province)))));
     check(nested.vertexCount() == 3, "nested non-node wrappers discover children");
+
+    CyclicNode a = new CyclicNode();
+    CyclicNode b = new CyclicNode();
+    a.children = List.of(b);
+    b.children = List.of(a);
+    b.roads = List.of(new CyclicEdge(b, a));
+    var cyclic = MultiGraph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
+    check(cyclic.vertexCount() == 2 && cyclic.edgeCount() == 1,
+        "cyclic references stop while nested node edges are discovered");
   }
 
   private static void check(boolean condition, String message) {
