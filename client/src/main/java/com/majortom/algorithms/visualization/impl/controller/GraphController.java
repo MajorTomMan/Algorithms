@@ -281,7 +281,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         List<Long> previousNodeOrder = snapshotVertexIds(currentSnapshot());
         int removedIndex = previousNodeOrder.indexOf(removedVertex.id());
-        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(removedVertex))) {
+        Vertex<Object> targetVertex = removedVertex;
+        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(targetVertex))) {
             return;
         }
         renderGraph();
