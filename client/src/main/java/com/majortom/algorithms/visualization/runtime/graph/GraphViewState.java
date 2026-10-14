@@ -2,7 +2,6 @@ package com.majortom.algorithms.visualization.runtime.graph;
 
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -28,21 +27,10 @@ public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Ed
         .map(vertex -> new Node(vertex.id(), VisualValue.of(vertex.value())))
         .toList();
     List<Edge> edges = graph.edges().stream()
-        .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight()))
-        .toList();
-    return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
-  }
-
-  /** Convert a multigraph with compact value summaries; full details load on selection. */
-  public static GraphViewState initial(MultiGraphSnapshot<?> graph) {
-    Objects.requireNonNull(graph, "graph");
-    List<Node> nodes = graph.vertices().stream()
-        .map(vertex -> new Node(vertex.id(), VisualValue.compact(vertex.value()))).toList();
-    List<Edge> edges = graph.edges().stream()
         .map(edge -> new Edge(edge.id(), edge.fromId(), edge.toId(), edge.weight(),
             edge.value() == null ? null :
-                com.majortom.algorithms.visualization.runtime.value.ValueAdapters
-                    .summary(edge.value()))).toList();
+                com.majortom.algorithms.visualization.runtime.value.ValueAdapters.summary(edge.value())))
+        .toList();
     return new GraphViewState(graph.direction(), nodes, edges, Set.of(), Observation.none(), false);
   }
 

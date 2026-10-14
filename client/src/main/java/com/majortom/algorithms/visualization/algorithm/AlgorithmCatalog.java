@@ -3,7 +3,6 @@ package com.majortom.algorithms.visualization.algorithm;
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.metadata.StructureIds;
-import com.majortom.algorithms.structure.graph.MultiGraphStructure;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
@@ -36,10 +35,8 @@ public final class AlgorithmCatalog {
 
   public static AlgorithmDescriptor descriptor(
       String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
-    if (StructureIds.MULTI_GRAPH.equals(moduleId))
-      return compatibleDescriptor(MultiGraphStructure.class, typeSignature, algorithmId);
     if (StructureIds.GRAPH.equals(moduleId))
-      return compatibleDescriptor(GraphStructure.class, typeSignature, algorithmId);
+      return graphDescriptor(typeSignature.primaryType(), algorithmId);
     return REGISTRY.requireAlgorithm(
         StructureModule.fromId(moduleId), typeSignature, algorithmId);
   }
@@ -76,9 +73,6 @@ public final class AlgorithmCatalog {
   }
 
   static List<AlgorithmDescriptor> descriptorsForWorkbenchModule(String moduleId) {
-    if (StructureIds.MULTI_GRAPH.equals(moduleId))
-      return REGISTRY.compatibleAlgorithms(
-          MultiGraphStructure.class, AlgorithmTypeSignature.of(Object.class));
     if (StructureIds.GRAPH.equals(moduleId))
       return REGISTRY.algorithms().stream()
           .filter(descriptor -> descriptor.structureContract().isAssignableFrom(GraphStructure.class))
@@ -91,47 +85,39 @@ public final class AlgorithmCatalog {
 
   public static List<String> forWorkbenchModule(
       String moduleId, AlgorithmTypeSignature typeSignature) {
-    if (StructureIds.MULTI_GRAPH.equals(moduleId))
-      return compatibleAlgorithms(MultiGraphStructure.class, typeSignature);
     if (StructureIds.GRAPH.equals(moduleId))
-      return compatibleAlgorithms(GraphStructure.class, typeSignature);
+      return graphAlgorithms(typeSignature.primaryType());
     return REGISTRY.algorithms(StructureModule.fromId(moduleId), typeSignature).stream()
         .map(AlgorithmDescriptor::id)
         .distinct()
         .toList();
   }
 
-  /**
-   * MultiGraph<T> algorithms: exact T registrations plus algorithms declared for Object.
-   * Object is an opt-in node-type wildcard for MultiGraph algorithms only, not for
-   * ordinary Graph<T> or other structure families. An exact signature takes precedence.
-   */
-  public static List<String> multiGraphAlgorithms(Class<?> nodeType) {
-    return multiGraphDescriptors(nodeType).stream()
-        .map(AlgorithmDescriptor::id).toList();
+  /** Exact node-type registrations override generic Object traversal implementations. */
+  public static List<String> graphAlgorithms(Class<?> nodeType) {
+    return graphDescriptors(nodeType).stream().map(AlgorithmDescriptor::id).toList();
   }
 
-  public static AlgorithmDescriptor multiGraphDescriptor(Class<?> nodeType, String algorithmId) {
-    return multiGraphDescriptors(nodeType).stream()
+  public static AlgorithmDescriptor graphDescriptor(Class<?> nodeType, String algorithmId) {
+    return graphDescriptors(nodeType).stream()
         .filter(descriptor -> descriptor.id().equals(algorithmId))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException(
-            "No MultiGraph algorithm '" + algorithmId + "' supports " + nodeType.getName()));
+            "No Graph algorithm '" + algorithmId + "' supports " + nodeType.getName()));
   }
 
-  private static List<AlgorithmDescriptor> multiGraphDescriptors(Class<?> nodeType) {
+  private static List<AlgorithmDescriptor> graphDescriptors(Class<?> nodeType) {
     java.util.Objects.requireNonNull(nodeType, "nodeType");
     AlgorithmTypeSignature exact = AlgorithmTypeSignature.of(nodeType);
     AlgorithmTypeSignature generic = AlgorithmTypeSignature.of(Object.class);
     Map<String, AlgorithmDescriptor> algorithms = new LinkedHashMap<>();
-    // Add generic implementations first; exact implementations replace by algorithm ID.
     for (AlgorithmDescriptor descriptor : REGISTRY.algorithms()) {
-      if (descriptor.structureContract().isAssignableFrom(MultiGraphStructure.class)
+      if (descriptor.structureContract().isAssignableFrom(GraphStructure.class)
           && descriptor.typeSignature().equals(generic))
         algorithms.put(descriptor.id(), descriptor);
     }
     for (AlgorithmDescriptor descriptor : REGISTRY.algorithms()) {
-      if (descriptor.structureContract().isAssignableFrom(MultiGraphStructure.class)
+      if (descriptor.structureContract().isAssignableFrom(GraphStructure.class)
           && descriptor.typeSignature().equals(exact))
         algorithms.put(descriptor.id(), descriptor);
     }

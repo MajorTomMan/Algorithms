@@ -4,82 +4,37 @@ import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
 import com.majortom.algorithms.core.runtime.AlgorithmEvents;
-import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
-import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.structure.graph.Vertex;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-@Algorithm(
-    id = "graph-bfs", name = "广度优先遍历", types = {Integer.class}, structure = GraphStructure.class)
+/** Traverses all components, using stable vertex IDs instead of business-value equality. */
+@Algorithm(id = "graph-bfs", name = "广度优先遍历", types = {Object.class},
+    structure = GraphStructure.class)
 public final class GraphBfs {
-
   @AlgorithmEntry
-  public List<Integer> traverse(GraphStructure<Integer> graph) {
+  public List<Object> traverse(GraphStructure<Object> graph) {
     Objects.requireNonNull(graph, "graph");
-    Integer start = firstVertexValue(graph);
-    Vertex<Integer> startVertex = vertex(graph, start);
-    if (startVertex == null) {
-      throw new IllegalArgumentException("startNode must exist in graph");
-    }
-    ArrayDeque<Vertex<Integer>> queue = new ArrayDeque<>();
-    Set<Vertex<Integer>> discovered = new HashSet<>();
-    List<Integer> order = new ArrayList<>();
-    queue.add(startVertex);
-    discovered.add(startVertex);
-    AlgorithmEvents.candidateAdded("graph-bfs", "vertex-" + startVertex.id(),
-        new AlgorithmEvent.EntityRef(
-            GraphObservationDomains.VERTEX, startVertex.id()));
-    while (!queue.isEmpty()) {
-      Vertex<Integer> node = queue.removeFirst();
-      AlgorithmEvents.candidateSelected("graph-bfs", "vertex-" + node.id());
-      AlgorithmEvents.visited(GraphObservationDomains.VERTEX, node.id());
-      order.add(node.value());
-      for (Vertex<Integer> neighbor : graph.neighbors(node)) {
-        AlgorithmEvents.examined(GraphObservationDomains.VERTEX, node.id(), neighbor.id());
-        if (discovered.add(neighbor)) {
-          queue.addLast(neighbor);
-          AlgorithmEvents.candidateAdded("graph-bfs", "vertex-" + neighbor.id(),
-              new AlgorithmEvent.EntityRef(
-                  GraphObservationDomains.VERTEX, neighbor.id()));
+    List<Object> order = new ArrayList<>();
+    Set<Long> visited = new HashSet<>();
+    for (Vertex<Object> origin : graph.vertices()) {
+      if (!visited.contains(origin.id())) {
+        ArrayDeque<Vertex<Object>> pending = new ArrayDeque<>();
+        pending.addLast(origin);
+        visited.add(origin.id());
+        while (!pending.isEmpty()) {
+          Vertex<Object> current = pending.removeFirst();
+          AlgorithmEvents.visited(GraphObservationDomains.VERTEX, current.id());
+          order.add(current.value());
+          for (Edge<Object> edge : graph.outgoingEdges(current)) {
+            Vertex<Object> neighbor = edge.from() == current ? edge.to() : edge.from();
+            AlgorithmEvents.examined(GraphObservationDomains.VERTEX, current.id(), neighbor.id());
+            if (visited.add(neighbor.id())) pending.addLast(neighbor);
+          }
         }
       }
     }
     return List.copyOf(order);
-  }
-
-  public static GraphSnapshot<Integer> snapshot(GraphStructure<Integer> graph) {
-    Objects.requireNonNull(graph, "graph");
-    List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
-    for (Vertex<Integer> vertex : graph.vertices()) {
-      vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
-    }
-    List<GraphSnapshot.Edge> edges = new ArrayList<>();
-    for (Edge<Integer> edge : graph.edges()) {
-      edges.add(new GraphSnapshot.Edge(edge.id(), edge.from().id(), edge.to().id(), graph.weight(edge)));
-    }
-    return new GraphSnapshot<>(graph.direction(), vertices, edges);
-  }
-
-  private static Integer firstVertexValue(GraphStructure<Integer> graph) {
-    for (Vertex<Integer> vertex : graph.vertices()) {
-      return vertex.value();
-    }
-    throw new IllegalArgumentException("graph must contain at least one vertex");
-  }
-
-  private static Vertex<Integer> vertex(GraphStructure<Integer> graph, int value) {
-    for (Vertex<Integer> vertex : graph.vertices()) {
-      if (vertex.value() == value) {
-        return vertex;
-      }
-    }
-    return null;
   }
 }

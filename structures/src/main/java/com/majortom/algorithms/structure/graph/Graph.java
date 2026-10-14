@@ -1,290 +1,243 @@
 package com.majortom.algorithms.structure.graph;
-
+import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.core.runtime.StructureEvents;
+import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
-/** A directed or undirected weighted graph with indexed adjacency and stable edge IDs. */
+import java.util.*;
+/**
+ * ID-based directed/undirected multigraph. No value-equality de-duplication:
+ * two vertices may hold the same Java object or equal values.
+ */
 public final class Graph<T> implements GraphStructure<T> {
   private final GraphDirection direction;
-  private final LinkedHashMap<T, Vertex<T>> verticesByValue = new LinkedHashMap<>();
-  private final LinkedHashMap<Vertex<T>, LinkedHashMap<Vertex<T>, Edge<T>>> adjacency =
-      new LinkedHashMap<>();
-  private final LinkedHashMap<Long, Edge<T>> edgesById = new LinkedHashMap<>();
+  private final LinkedHashMap<Long, Vertex<T>> vertices = new LinkedHashMap<>();
+  private final LinkedHashMap<Long, Edge<T>> edges = new LinkedHashMap<>();
+  private final LinkedHashMap<Long, LinkedHashSet<Long>> outgoing = new LinkedHashMap<>();
+  private final LinkedHashMap<Long, LinkedHashSet<Long>> incoming = new LinkedHashMap<>();
 
-  public Graph() {
-    this(GraphDirection.UNDIRECTED);
+  public Graph() { this(GraphDirection.UNDIRECTED); }
+  public Graph(GraphDirection direction) { this.direction = Objects.requireNonNull(direction); }
+  public record BiEdges<T>(Edge<T> forward, Edge<T> reverse) {}
+
+  /** Read annotated objects as a graph with mixed node value types. */
+  public static Graph<Object> from(GraphDirection direction, Object data) {
+    return GraphObjectMapper.read(direction, Object.class, data);
   }
-
-  public Graph(GraphDirection direction) {
-    this.direction = Objects.requireNonNull(direction, "direction");
+  /** Read annotated objects with a validated node type. */
+  public static <T> Graph<T> from(GraphDirection direction, Class<T> nodeType, Object data) {
+    return GraphObjectMapper.read(direction, nodeType, data);
   }
-
   public static <T> Graph<T> fromSnapshot(GraphSnapshot<T> snapshot) {
-    Objects.requireNonNull(snapshot, "snapshot");
-    Graph<T> graph = new Graph<>(snapshot.direction());
-    graph.initialize(snapshot);
-    return graph;
+    Graph<T> result = new Graph<>(Objects.requireNonNull(snapshot).direction());
+    result.restore(snapshot, false);
+    return result;
   }
-
-  private static <T> Graph<T> restore(GraphSnapshot<T> snapshot) {
-    Graph<T> graph = new Graph<>(snapshot.direction());
-    Map<Long, Vertex<T>> verticesById = new LinkedHashMap<>();
-    Set<T> values = new HashSet<>();
-
-    for (GraphSnapshot.Vertex<T> source : snapshot.vertices()) {
-      if (verticesById.containsKey(source.id())) {
-        throw new IllegalArgumentException("duplicate vertex id: " + source.id());
-      }
-      if (!values.add(source.value())) {
-        throw new IllegalArgumentException("duplicate vertex value: " + source.value());
-      }
-      Vertex<T> vertex = new Vertex<>(source.id(), source.value());
-      graph.verticesByValue.put(vertex.value(), vertex);
-      graph.adjacency.put(vertex, new LinkedHashMap<>());
-      verticesById.put(vertex.id(), vertex);
-    }
-
-    Set<EdgeKey> edgeKeys = new HashSet<>();
-    for (GraphSnapshot.Edge source : snapshot.edges()) {
-      Vertex<T> from = verticesById.get(source.fromId());
-      Vertex<T> to = verticesById.get(source.toId());
-      if (from == null || to == null) {
-        throw new IllegalArgumentException("edge references an unknown vertex");
-      }
-      if (graph.edgesById.containsKey(source.id())) {
-        throw new IllegalArgumentException("duplicate edge id: " + source.id());
-      }
-      EdgeKey key = EdgeKey.of(source.fromId(), source.toId(), graph.direction);
-      if (!edgeKeys.add(key)) {
-        throw new IllegalArgumentException("duplicate edge: " + source.fromId() + " -> " + source.toId());
-      }
-      Edge<T> edge = new Edge<>(source.id(), from, to, source.weight());
-      graph.attachEdge(edge);
-    }
-    return graph;
+  @Override public GraphDirection direction() { return direction; }
+  @Override public int vertexCount() { return vertices.size(); }
+  @Override public int edgeCount() { return edges.size(); }
+  @Override public Vertex<T> vertex(long id) { return vertices.get(id); }
+  /**
+   * Compatibility lookup for value-based callers; use vertex(id) when values are not unique.
+   */
+  @Override public Vertex<T> vertex(T value) {
+    for (Vertex<T> vertex : vertices.values())
+      if (Objects.equals(vertex.value(), value)) return vertex;
+    return null;
   }
-
-  public GraphSnapshot<T> snapshot() {
-    List<GraphSnapshot.Vertex<T>> vertices = new ArrayList<>();
-    for (Vertex<T> vertex : verticesByValue.values()) {
-      vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
-    }
-    List<GraphSnapshot.Edge> edges = new ArrayList<>();
-    for (Edge<T> edge : edgesById.values()) {
-      edges.add(new GraphSnapshot.Edge(
-          edge.id(), edge.from().id(), edge.to().id(), edge.weight()));
-    }
-    return new GraphSnapshot<>(direction, vertices, edges);
+  @Override public boolean containsVertex(Vertex<T> vertex) {
+    return vertex != null && vertices.get(vertex.id()) == vertex;
   }
-
-  @Override
-  public GraphDirection direction() {
-    return direction;
-  }
-
-  @Override
-  public int vertexCount() {
-    return verticesByValue.size();
-  }
-
-  @Override
-  public int edgeCount() {
-    return edgesById.size();
-  }
-
-  @Override
-  public void initialize(GraphSnapshot<T> snapshot) {
-    Objects.requireNonNull(snapshot, "snapshot");
-    if (direction != snapshot.direction()) {
-      throw new IllegalArgumentException("snapshot direction must match the graph direction");
-    }
-
-    // Validate and reconstruct everything before touching the current graph.
-    Graph<T> restored = restore(snapshot);
-    verticesByValue.clear();
-    verticesByValue.putAll(restored.verticesByValue);
-    adjacency.clear();
-    adjacency.putAll(restored.adjacency);
-    edgesById.clear();
-    edgesById.putAll(restored.edgesById);
-  }
-
-  @Override
-  public Vertex<T> vertex(T value) {
-    return verticesByValue.get(value);
-  }
-
-  @Override
-  public Vertex<T> addVertex(T value) {
-    Objects.requireNonNull(value, "value");
-    Vertex<T> existing = verticesByValue.get(value);
-    if (existing != null) {
-      return existing;
-    }
-    Vertex<T> vertex = new Vertex<>(value);
-    verticesByValue.put(value, vertex);
-    adjacency.put(vertex, new LinkedHashMap<>());
-    StructureEvents.graphVertexAdded(vertex.id(), vertex.value());
-    return vertex;
-  }
-
-  @Override
-  public boolean removeVertex(Vertex<T> vertex) {
-    if (!containsVertex(vertex)) {
-      return false;
-    }
-    List<Edge<T>> incident = new ArrayList<>();
-    for (Edge<T> edge : edgesById.values()) {
-      if (edge.from() == vertex || edge.to() == vertex) {
-        incident.add(edge);
-      }
-    }
-    for (Edge<T> edge : incident) {
-      removeEdge(edge.from(), edge.to());
-    }
-    adjacency.remove(vertex);
-    verticesByValue.remove(vertex.value());
-    StructureEvents.graphVertexRemoved(vertex.id(), vertex.value());
-    return true;
-  }
-
-  @Override
-  public Edge<T> edge(Vertex<T> from, Vertex<T> to) {
-    Map<Vertex<T>, Edge<T>> outgoing = adjacency.get(from);
-    if (outgoing == null) {
-      return null;
-    }
-    return outgoing.get(to);
-  }
-
-  @Override
-  public Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight) {
-    requireVertex(from);
-    requireVertex(to);
-    requireFinite(weight);
-    Edge<T> existing = edge(from, to);
-    if (existing != null) {
-      setWeight(existing, weight);
-      return existing;
-    }
-    Edge<T> added = new Edge<>(from, to, weight);
-    attachEdge(added);
-    StructureEvents.graphEdgeAdded(added.id(), from.id(), to.id(), weight);
-    return added;
-  }
-
-  @Override
-  public boolean removeEdge(Vertex<T> from, Vertex<T> to) {
-    Edge<T> found = edge(from, to);
-    if (found == null) {
-      return false;
-    }
-    adjacency.get(found.from()).remove(found.to());
-    if (!isDirected()) {
-      adjacency.get(found.to()).remove(found.from());
-    }
-    edgesById.remove(found.id());
-    StructureEvents.graphEdgeRemoved(found.id(), found.from().id(), found.to().id());
-    return true;
-  }
-
-  @Override
-  public boolean containsVertex(Vertex<T> vertex) {
-    return vertex != null && adjacency.containsKey(vertex);
-  }
-
-  @Override
-  public boolean containsEdge(Vertex<T> from, Vertex<T> to) {
+  @Override public boolean containsEdge(Vertex<T> from, Vertex<T> to) {
     return edge(from, to) != null;
   }
+  @Override public boolean isDirected() { return direction.isDirected(); }
+  @Override public boolean isEmpty() { return vertices.isEmpty(); }
 
-  @Override
-  public double weight(Edge<T> edge) {
-    requireEdge(edge);
+  @Override public Edge<T> edge(long id) { return edges.get(id); }
+  @Override public Iterable<Vertex<T>> vertices() { return List.copyOf(vertices.values()); }
+  @Override public Iterable<Edge<T>> edges() { return List.copyOf(edges.values()); }
+
+  @Override public Vertex<T> addVertex(T value) {
+    Vertex<T> vertex = new Vertex<>(Objects.requireNonNull(value, "value"));
+    addVertexInternal(vertex);
+    ExecutionEvents.structure(new GraphStructureEvent.VertexAdded(vertex.id(), value));
+    return vertex;
+  }
+  private void addVertexInternal(Vertex<T> vertex) {
+    if (vertices.putIfAbsent(vertex.id(), vertex) != null)
+      throw new IllegalArgumentException("duplicate vertex ID: " + vertex.id());
+    outgoing.put(vertex.id(), new LinkedHashSet<>());
+    incoming.put(vertex.id(), new LinkedHashSet<>());
+  }
+  private void requireVertex(Vertex<T> vertex) {
+    if (vertex == null || vertices.get(vertex.id()) != vertex)
+      throw new IllegalArgumentException("vertex does not belong to this graph");
+  }
+  private Edge<T> requireEdge(long edgeId) {
+    Edge<T> edge = edges.get(edgeId);
+    if (edge == null) throw new IllegalArgumentException("unknown edge ID: " + edgeId);
+    return edge;
+  }
+  private void attach(Edge<T> edge) {
+    if (edges.putIfAbsent(edge.id(), edge) != null)
+      throw new IllegalArgumentException("duplicate edge ID: " + edge.id());
+    outgoing.get(edge.from().id()).add(edge.id());
+    incoming.get(edge.to().id()).add(edge.id());
+    if (!direction.isDirected()) {
+      outgoing.get(edge.to().id()).add(edge.id());
+      incoming.get(edge.from().id()).add(edge.id());
+    }
+  }
+  private void detach(Edge<T> edge) {
+    edges.remove(edge.id());
+    outgoing.get(edge.from().id()).remove(edge.id());
+    incoming.get(edge.to().id()).remove(edge.id());
+    if (!direction.isDirected()) {
+      outgoing.get(edge.to().id()).remove(edge.id());
+      incoming.get(edge.from().id()).remove(edge.id());
+    }
+  }
+  private static <T> GraphStructureEvent.EdgeAdded added(Edge<T> edge) {
+    return new GraphStructureEvent.EdgeAdded(
+        edge.id(), edge.from().id(), edge.to().id(), edge.value(), edge.weight());
+  }
+  @Override public Edge<T> addEdge(Vertex<T> from, Vertex<T> to, Object value, double weight) {
+    requireVertex(from);
+    requireVertex(to);
+    Edge<T> edge = new Edge<>(from, to, value, weight);
+    attach(edge);
+    ExecutionEvents.structure(added(edge));
+    return edge;
+  }
+  @Override public BiEdges<T> addBiEdge(Vertex<T> from, Vertex<T> to, Object forwardValue,
+       Object reverseValue, double forwardWeight, double reverseWeight) {
+    if (!direction.isDirected()) throw new IllegalStateException("use addEdge for an undirected graph");
+    requireVertex(from);
+    requireVertex(to);
+    if (from == to) throw new IllegalArgumentException("bidirectional self-loop is ambiguous");
+    // Fully validate before mutating either adjacency index.
+    Edge<T> forward = new Edge<>(from, to, forwardValue, forwardWeight);
+    Edge<T> reverse = new Edge<>(to, from, reverseValue, reverseWeight);
+    attach(forward);
+    attach(reverse);
+    ExecutionEvents.structure(new GraphStructureEvent.EdgesAdded(added(forward), added(reverse)));
+    return new BiEdges<>(forward, reverse);
+  }
+  @Override public boolean removeEdge(long id) {
+    Edge<T> edge = edges.get(id);
+    if (edge == null) return false;
+    detach(edge);
+    ExecutionEvents.structure(new GraphStructureEvent.EdgeRemoved(id));
+    return true;
+  }
+  @Override public boolean removeVertex(long id) {
+    Vertex<T> vertex = vertices.get(id);
+    if (vertex == null) return false;
+    LinkedHashSet<Long> incident = new LinkedHashSet<>(outgoing.get(id));
+    incident.addAll(incoming.get(id));
+    for (long edgeId : incident) detach(edges.get(edgeId));
+    vertices.remove(id);
+    outgoing.remove(id);
+    incoming.remove(id);
+    ExecutionEvents.structure(new GraphStructureEvent.VertexRemoved(
+        id, vertex.value(), List.copyOf(incident)));
+    return true;
+  }
+  @Override public double setWeight(long id, double weight) {
+    if (!Double.isFinite(weight)) throw new IllegalArgumentException("non-finite edge weight");
+    Edge<T> edge = requireEdge(id);
+    double old = edge.weight();
+    if (Double.compare(old, weight) != 0) {
+      edge.updateWeight(weight);
+      ExecutionEvents.structure(new GraphStructureEvent.EdgeWeightChanged(id, old, weight));
+    }
+    return old;
+  }
+  @Override public List<Edge<T>> outgoingEdges(Vertex<T> vertex) {
+    requireVertex(vertex);
+    return outgoing.get(vertex.id()).stream().map(edges::get).toList();
+  }
+  @Override public List<Edge<T>> incomingEdges(Vertex<T> vertex) {
+    requireVertex(vertex);
+    return incoming.get(vertex.id()).stream().map(edges::get).toList();
+  }
+  @Override public List<Edge<T>> edges(Vertex<T> from, Vertex<T> to) {
+    requireVertex(from);
+    requireVertex(to);
+    return outgoing.get(from.id()).stream().map(edges::get)
+        .filter(edge -> direction.isDirected()
+            ? edge.to() == to : (edge.from() == to || edge.to() == to))
+        .toList();
+  }
+
+  // Traditional graph operations remain available; parallel edges are never collapsed.
+  @Override public Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight) {
+    return addEdge(from, to, null, weight);
+  }
+  @Override public Edge<T> edge(Vertex<T> from, Vertex<T> to) {
+    List<Edge<T>> matching = edges(from, to);
+    return matching.isEmpty() ? null : matching.getFirst();
+  }
+  @Override public boolean removeEdge(Vertex<T> from, Vertex<T> to) {
+    Edge<T> matching = edge(from, to);
+    return matching != null && removeEdge(matching.id());
+  }
+  @Override public boolean removeVertex(Vertex<T> vertex) {
+    return containsVertex(vertex) && removeVertex(vertex.id());
+  }
+  @Override public double weight(Edge<T> edge) {
+    requireEdge(edge.id());
+    if (edges.get(edge.id()) != edge)
+      throw new IllegalArgumentException("edge does not belong to this graph");
     return edge.weight();
   }
+  @Override public double setWeight(Edge<T> edge, double weight) {
+    if (edge == null || edges.get(edge.id()) != edge)
+      throw new IllegalArgumentException("edge does not belong to this graph");
+    return setWeight(edge.id(), weight);
+  }
+  @Override public Iterable<Vertex<T>> neighbors(Vertex<T> vertex) {
+    LinkedHashSet<Vertex<T>> result = new LinkedHashSet<>();
+    for (Edge<T> edge : outgoingEdges(vertex))
+      result.add(edge.from() == vertex ? edge.to() : edge.from());
+    return List.copyOf(result);
+  }
+  /** Legacy projection for algorithms that only require one edge per neighbor. */
+  @Override public Map<Vertex<T>, Edge<T>> adjacentEdges(Vertex<T> vertex) {
+    LinkedHashMap<Vertex<T>, Edge<T>> result = new LinkedHashMap<>();
+    for (Edge<T> edge : outgoingEdges(vertex))
+      result.putIfAbsent(edge.from() == vertex ? edge.to() : edge.from(), edge);
+    return Collections.unmodifiableMap(result);
+  }
+  @Override public GraphSnapshot<T> snapshot() {
+    List<GraphSnapshot.Vertex<T>> nodes = vertices.values().stream()
+        .map(v -> new GraphSnapshot.Vertex<>(v.id(), v.value())).toList();
+    List<GraphSnapshot.Edge> links = edges.values().stream()
+        .map(e -> new GraphSnapshot.Edge(e.id(), e.from().id(), e.to().id(),
+                                             e.value(), e.weight())).toList();
+    return new GraphSnapshot<>(direction, nodes, links);
+  }
+  @Override public void initialize(GraphSnapshot<T> snapshot) {
+    restore(snapshot, true);
+  }
 
-  @Override
-  public double setWeight(Edge<T> edge, double weight) {
-    requireEdge(edge);
-    requireFinite(weight);
-    double previous = edge.weight();
-    if (Double.compare(previous, weight) != 0) {
-      edge.updateWeight(weight);
-      StructureEvents.graphEdgeWeightChanged(edge.id(), previous, weight);
+  private void restore(GraphSnapshot<T> snapshot, boolean notifyReset) {
+    Objects.requireNonNull(snapshot, "snapshot");
+    if (snapshot.direction() != direction) throw new IllegalArgumentException("direction mismatch");
+    // Prepare and validate in a detached graph. Neither failures nor construction emit per-edge events.
+    Graph<T> restored = new Graph<>(direction);
+    for (GraphSnapshot.Vertex<T> node : snapshot.vertices())
+      restored.addVertexInternal(new Vertex<>(node.id(), node.value()));
+    for (GraphSnapshot.Edge link : snapshot.edges()) {
+      Vertex<T> from = restored.vertex(link.fromId());
+      Vertex<T> to = restored.vertex(link.toId());
+      if (from == null || to == null) throw new IllegalArgumentException("edge references unknown vertex");
+      restored.attach(new Edge<>(link.id(), from, to, link.value(), link.weight()));
     }
-    return previous;
-  }
-
-  @Override
-  public Iterable<Vertex<T>> vertices() {
-    return List.copyOf(verticesByValue.values());
-  }
-
-  @Override
-  public Iterable<Edge<T>> edges() {
-    return List.copyOf(edgesById.values());
-  }
-
-  @Override
-  public Iterable<Vertex<T>> neighbors(Vertex<T> vertex) {
-    Map<Vertex<T>, Edge<T>> outgoing = adjacency.get(vertex);
-    if (outgoing == null) {
-      return List.of();
-    }
-    return List.copyOf(outgoing.keySet());
-  }
-
-  @Override
-  public Map<Vertex<T>, Edge<T>> adjacentEdges(Vertex<T> vertex) {
-    Map<Vertex<T>, Edge<T>> outgoing = adjacency.get(vertex);
-    if (outgoing == null) {
-      return Map.of();
-    }
-    return Collections.unmodifiableMap(new LinkedHashMap<>(outgoing));
-  }
-
-  private void attachEdge(Edge<T> edge) {
-    edgesById.put(edge.id(), edge);
-    adjacency.get(edge.from()).put(edge.to(), edge);
-    if (!isDirected()) {
-      adjacency.get(edge.to()).put(edge.from(), edge);
-    }
-  }
-
-  private void requireVertex(Vertex<T> vertex) {
-    if (!containsVertex(vertex)) {
-      throw new IllegalArgumentException("vertex must belong to this graph");
-    }
-  }
-
-  private void requireEdge(Edge<T> edge) {
-    if (edge == null || edgesById.get(edge.id()) != edge) {
-      throw new IllegalArgumentException("edge must belong to this graph");
-    }
-  }
-
-  private static void requireFinite(double weight) {
-    if (!Double.isFinite(weight)) {
-      throw new IllegalArgumentException("edge weight must be finite");
-    }
-  }
-
-  private record EdgeKey(long fromId, long toId) {
-    private static EdgeKey of(long fromId, long toId, GraphDirection direction) {
-      if (direction.isDirected() || fromId <= toId) {
-        return new EdgeKey(fromId, toId);
-      }
-      return new EdgeKey(toId, fromId);
-    }
+    vertices.clear(); vertices.putAll(restored.vertices);
+    edges.clear(); edges.putAll(restored.edges);
+    outgoing.clear(); outgoing.putAll(restored.outgoing);
+    incoming.clear(); incoming.putAll(restored.incoming);
+    if (notifyReset) ExecutionEvents.structure(new GraphStructureEvent.Reset(snapshot()));
   }
 }

@@ -47,7 +47,7 @@ import java.util.function.Consumer;
 
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Object>>,
-        SnapshotAlgorithmInputSupport<GraphSnapshot<Object>>, RuntimeValueTypeSupport, GraphImplementationSelection {
+        SnapshotAlgorithmInputSupport<GraphSnapshot<Object>>, RuntimeValueTypeSupport {
 
     private Graph<Object> undirectedGraph;
     private Graph<Object> directedGraph;
@@ -59,11 +59,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private boolean structureSelectionEnabled = true;
     private Long algorithmSelectedNodeId;
     private Long algorithmSelectedEdgeId;
+    private Long structureSelectedNodeId;
+    private Long structureSelectedEdgeId;
     private Consumer<Selection> selectionListener = ignored -> { };
     private Consumer<String> algorithmSelectionListener = ignored -> { };
     private AlgorithmSelectorBinder algorithmBinder;
-    private Consumer<GraphImplementation> implementationChangeListener = ignored -> { };
-    @FXML private ComboBox<GraphImplementation> implementationSelector;
 
     @FXML private Label structureLabel;
     @FXML private ComboBox<String> structureSelector;
@@ -97,7 +97,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         super.initialize(location, resources);
-        bindImplementationSelector();
         bindSelectors();
         if (weightField != null && weightField.getText().isBlank()) {
             weightField.setText("1");
@@ -111,7 +110,11 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     @FXML
     public void handleAlgorithmStart() {
-        if (!ensureReplayableValue(runtimeValueType)) return;
+        if (!ValueAdapters.canReplay(runtimeValueType)
+                && !com.majortom.algorithms.core.metadata.ValueMetadata
+                     .describe(runtimeValueType).immutable()) {
+            if (!ensureReplayableValue(runtimeValueType)) return;
+        }
         if (isRunning()) {
             return;
         }
@@ -124,7 +127,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (inputGraph.isEmpty()) {
             return;
         }
-        AlgorithmDescriptor descriptor = algorithm(algorithmId, AlgorithmTypeSignature.of(runtimeValueType));
+        AlgorithmDescriptor descriptor = AlgorithmCatalog.graphDescriptor(runtimeValueType, algorithmId);
         // A minimum spanning tree is built in a separate graph. Present the original
         // vertices without the source edges, so each emitted EdgeAdded builds the
         // result instead of overlaying it on the input graph.
@@ -203,12 +206,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         GraphSnapshot<Object> previousSnapshot = currentSnapshot();
         List<Long> previousEdgeOrder = snapshotEdgeIds(previousSnapshot);
-        Long removedEdgeId = snapshotEdgeIdBetween(previousSnapshot, fromVertex.id(), toVertex.id());
+        Edge<Object> target = selectedEdge(graph, fromVertex, toVertex);
+        if (target == null) return;
+        Long removedEdgeId = target.id();
         int removedIndex = -1;
         if (removedEdgeId != null) {
             removedIndex = previousEdgeOrder.indexOf(removedEdgeId);
         }
-        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(fromVertex, toVertex))) {
+        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(removedEdgeId))) {
             return;
         }
         renderGraph();
@@ -231,11 +236,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             logI18n("message.error.graph_node_missing");
             return;
         }
-        Edge<Object> edge = graph.edge(fromVertex, toVertex);
-        if (edge == null) {
-            logI18n("message.graph.edge_not_found", from, to);
-            return;
-        }
+        Edge<Object> edge = selectedEdge(graph, fromVertex, toVertex);
+        if (edge == null) return;
         if (executeStructureOperation("set-weight", () -> graph.setWeight(edge, weight))) {
             renderGraph();
         }
@@ -248,10 +250,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        if (graph.vertex(id) != null) {
-            logI18n("message.graph.already_exists", id);
-            return;
-        }
         if (!executeStructureOperation("add-vertex", () -> {
             graph.addVertex(id);
             return null;
@@ -259,7 +257,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         renderGraph();
-        Vertex<Object> addedVertex = graph.vertex(id);
+        Vertex<Object> addedVertex = null;
+        for (Vertex<Object> vertex : graph.vertices()) addedVertex = vertex;
         if (addedVertex != null) {
             graphVisualizer().selectNode(addedVertex.id());
         }
@@ -272,7 +271,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
-        Vertex<Object> removedVertex = graph.vertex(id);
+        Vertex<Object> removedVertex = structureSelectedNodeId == null
+                ? graph.vertex(id) : graph.vertex(structureSelectedNodeId);
+        if (removedVertex != null && !java.util.Objects.equals(removedVertex.value(), id))
+            removedVertex = graph.vertex(id);
         if (removedVertex == null) {
             logI18n("message.graph.not_found", id);
             return;
@@ -299,10 +301,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (weight == null) {
             return;
         }
-        if (graph.containsEdge(graph.vertex(from), graph.vertex(to))) {
-            logI18n("message.graph.edge_exists", from, to);
-            return;
-        }
         if (!executeStructureOperation("add-edge", () -> {
             graph.addEdge(graph.vertex(from), graph.vertex(to), weight);
             return null;
@@ -312,7 +310,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         renderGraph();
         Vertex<Object> fromVertex = graph.vertex(from);
         Vertex<Object> toVertex = graph.vertex(to);
-        Long addedEdgeId = snapshotEdgeIdBetween(currentSnapshot(), fromVertex.id(), toVertex.id());
+        List<com.majortom.algorithms.structure.graph.Edge<Object>> parallel =
+                graph.edges(fromVertex, toVertex);
+        Long addedEdgeId = parallel.isEmpty() ? null : parallel.getLast().id();
         if (addedEdgeId != null) {
             graphVisualizer().selectEdge(addedEdgeId);
         }
@@ -321,6 +321,26 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         } else {
             logI18n("message.graph.link.undirected", from, to, 1);
         }
+    }
+
+    private Edge<Object> selectedEdge(GraphStructure<Object> graph,
+            Vertex<Object> from, Vertex<Object> to) {
+        if (structureSelectedEdgeId != null) {
+            Edge<Object> selected = graph.edge(structureSelectedEdgeId);
+            if (selected != null && java.util.Objects.equals(selected.from().value(), from.value())
+                    && java.util.Objects.equals(selected.to().value(), to.value()))
+                return selected;
+        }
+        List<Edge<Object>> matching = graph.edges(from, to);
+        if (matching.isEmpty()) {
+            logI18n("message.graph.edge_not_found", from.value(), to.value());
+            return null;
+        }
+        if (matching.size() > 1) {
+            appendLog("Multiple edges connect these nodes. Select a specific edge first.");
+            return null;
+        }
+        return matching.getFirst();
     }
 
     private void selectGraphNodeAfterRemoval(List<Long> previousOrder, int removedIndex) {
@@ -382,6 +402,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             }
         }
         return currentOrder.get(0);
+    }
+
+    private String formatNode(Object value) {
+        return valueAdapter == null ? String.valueOf(value) : valueAdapter.format(value);
     }
 
     private Object parseNode(String text) {
@@ -579,16 +603,6 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return algorithmIds.isEmpty() ? null : algorithmIds.getFirst();
     }
 
-    private void bindImplementationSelector() {
-        GraphImplementationSelector.install(implementationSelector,
-                GraphImplementation.SIMPLE, choice -> implementationChangeListener.accept(choice));
-    }
-
-    @Override
-    public void setImplementationChangeListener(Consumer<GraphImplementation> listener) {
-        implementationChangeListener = listener == null ? ignored -> { } : listener;
-    }
-
     private void bindSelectors() {
         structureSelector.setItems(FXCollections.observableArrayList(
                 "label.graph.structure.undirected", "label.graph.structure.directed"));
@@ -619,8 +633,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void refreshAlgorithmIds() {
-        algorithmIds = AlgorithmCatalog.compatibleAlgorithms(
-                GraphStructure.class, AlgorithmTypeSignature.of(runtimeValueType));
+        algorithmIds = AlgorithmCatalog.graphAlgorithms(runtimeValueType);
     }
 
     private void refreshAlgorithmSelector() {
@@ -769,7 +782,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         int degree = snapshotDegree(snapshot, nodeId);
-        String text = valueAdapter.format(value);
+        structureSelectedNodeId = nodeId;
+        structureSelectedEdgeId = null;
+        String text = formatNode(value);
         if (nodeField != null) {
             nodeField.setText(text);
         }
@@ -828,14 +843,16 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         if (fromField != null) {
-            fromField.setText(valueAdapter.format(from));
+            fromField.setText(formatNode(from));
         }
         if (toField != null) {
-            toField.setText(valueAdapter.format(to));
+            toField.setText(formatNode(to));
         }
         if (weightField != null) {
             weightField.setText(formatWeight(edge.weight()));
         }
+        structureSelectedEdgeId = edgeId;
+        structureSelectedNodeId = null;
         selectionListener.accept(new EdgeSelection(edgeId, VisualValue.of(from), VisualValue.of(to), snapshot.direction().isDirected()));
     }
 
@@ -905,6 +922,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     private void clearVisualSelection() {
         algorithmSelectedNodeId = null;
         algorithmSelectedEdgeId = null;
+        structureSelectedNodeId = null;
+        structureSelectedEdgeId = null;
         graphVisualizer().clearSelection();
         requestPresentationRender();
         selectionListener.accept(null);
@@ -921,6 +940,44 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     public record EdgeSelection(long id, VisualValue fromValue, VisualValue toValue, boolean directed) implements Selection {
+    }
+
+    /** Build a graph from annotated business objects without a second graph implementation. */
+    public <T> void loadBatch(Class<T> nodeType, Object data) {
+        loadGraph(nodeType, Graph.from(activeDirection, nodeType, data));
+    }
+
+    public void loadBatch(Object data) {
+        loadBatch(Object.class, data);
+    }
+
+    public <T> void loadGraph(Class<T> nodeType, Graph<T> input) {
+        java.util.Objects.requireNonNull(nodeType, "nodeType");
+        java.util.Objects.requireNonNull(input, "input");
+        for (Vertex<T> vertex : input.vertices()) nodeType.cast(vertex.value());
+        Graph<Object> restored = eraseGraph(Graph.fromSnapshot(input.snapshot()));
+        runtimeValueType = nodeType;
+        valueAdapter = ValueAdapters.supports(nodeType)
+                ? ValueAdapters.requireObjectAdapter(nodeType) : null;
+        if (restored.direction().isDirected()) directedGraph = restored;
+        else undirectedGraph = restored;
+        activeDirection = restored.direction();
+        algorithmInputSnapshot = null;
+        clearVisualSelection();
+        refreshAlgorithmIds();
+        invalidateExecutionForStructureChange();
+        refreshRandomDataButton();
+        if (controlPanel != null) {
+            refreshDirectionControls();
+            syncStructureSelectorSelection();
+            renderGraph();
+            refreshStatsDisplay();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Graph<Object> eraseGraph(Graph<T> graph) {
+        return (Graph<Object>) (Graph<?>) graph;
     }
 
     private Graph<Object> currentGraph() {

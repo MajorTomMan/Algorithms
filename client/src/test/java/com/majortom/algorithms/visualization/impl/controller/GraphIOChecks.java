@@ -4,8 +4,8 @@ import com.majortom.algorithms.core.annotation.*;
 import com.majortom.algorithms.core.io.FileDataIO;
 import com.majortom.algorithms.core.io.JsonDataCodec;
 import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.structure.graph.MultiGraph;
-import com.majortom.algorithms.structure.graph.MultiGraphStructure;
+import com.majortom.algorithms.structure.graph.Graph;
+import com.majortom.algorithms.structure.graph.GraphStructure;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,9 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-/** Headless check: the existing core.io pipeline supplies typed objects to MultiGraph. */
-public final class MultiGraphIOChecks {
-  @ValueType(MultiGraphStructure.class)
+/** Headless check: the existing core.io pipeline supplies typed objects to Graph. */
+public final class GraphIOChecks {
+  @ValueType(GraphStructure.class)
   public record City(@ValueId String code, @ValueField(ValueDisplay.SUMMARY) String name) {}
   public record Railway(City from, City to, double kilometers, String line) {}
   public record Road(City from, City to, boolean twoWay, String name) {}
@@ -48,7 +48,7 @@ public final class MultiGraphIOChecks {
     } finally {
       Files.deleteIfExists(file);
     }
-    MultiGraph<City> graph = MultiGraph.from(GraphDirection.DIRECTED, City.class, network);
+    Graph<City> graph = Graph.from(GraphDirection.DIRECTED, City.class, network);
     if (graph.vertexCount() != 3 || graph.edgeCount() != 3)
       throw new AssertionError("JSON graph topology");
     var vertices = graph.snapshot().vertices();
@@ -64,6 +64,6 @@ public final class MultiGraphIOChecks {
       codec.read(new ByteArrayInputStream("{bad-json}".getBytes(StandardCharsets.UTF_8)));
     } catch (IOException expected) { rejected = true; }
     if (!rejected) throw new AssertionError("malformed JSON must fail");
-    System.out.println("MultiGraphIOChecks passed");
+    System.out.println("GraphIOChecks passed");
   }
 }

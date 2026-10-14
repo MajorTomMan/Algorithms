@@ -5,7 +5,7 @@ import com.majortom.algorithms.core.annotation.GraphNodes;
 import com.majortom.algorithms.core.metadata.AnnotatedMembers;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.metadata.ValueMetadata;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -13,7 +13,7 @@ import java.util.*;
 final class GraphObjectMapper {
   private GraphObjectMapper() {}
 
-  static <T> MultiGraph<T> read(GraphDirection direction, Class<T> nodeType, Object data) {
+  static <T> Graph<T> read(GraphDirection direction, Class<T> nodeType, Object data) {
     Objects.requireNonNull(direction, "direction");
     Objects.requireNonNull(nodeType, "nodeType");
     Objects.requireNonNull(data, "data");
@@ -30,7 +30,7 @@ final class GraphObjectMapper {
     private final IdentityHashMap<Object, Vertex<T>> byReference = new IdentityHashMap<>();
     private final Map<NodeIdentity, Vertex<T>> byKey = new HashMap<>();
     private final Set<Object> walked = Collections.newSetFromMap(new IdentityHashMap<>());
-    private final List<MultiGraphSnapshot.Vertex<T>> nodes = new ArrayList<>();
+    private final List<GraphSnapshot.Vertex<T>> nodes = new ArrayList<>();
     private final List<EdgeSource> pendingEdges = new ArrayList<>();
 
     Collector(Class<T> nodeType) { this.nodeType = nodeType; }
@@ -58,8 +58,8 @@ final class GraphObjectMapper {
                 + " is incompatible with " + nodeType.getName());
         } else if (!byReference.containsKey(value)) {
           var metadata = ValueMetadata.describe(value.getClass());
-          if (!metadata.supports(MultiGraphStructure.class))
-            throw new IllegalArgumentException("Node type not enabled for MultiGraph: "
+          if (!metadata.supports(GraphStructure.class))
+            throw new IllegalArgumentException("Node type not enabled for Graph: "
                 + value.getClass().getName());
           NodeIdentity key = identity(value);
           if (key != null && byKey.containsKey(key))
@@ -67,7 +67,7 @@ final class GraphObjectMapper {
           Vertex<T> vertex = new Vertex<>(nodeType.cast(value));
           byReference.put(value, vertex);
           if (key != null) byKey.put(key, vertex);
-          nodes.add(new MultiGraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
+          nodes.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
         }
       }
       if (!walked.add(value)) return; // Identity-based recursion and cycle protection.
@@ -83,8 +83,8 @@ final class GraphObjectMapper {
       }
     }
 
-    MultiGraph<T> build(GraphDirection direction) {
-      List<MultiGraphSnapshot.Edge> links = new ArrayList<>();
+    Graph<T> build(GraphDirection direction) {
+      List<GraphSnapshot.Edge> links = new ArrayList<>();
       for (EdgeSource source : pendingEdges) {
         Object edge = source.edge();
         GraphEdges spec = source.mapping();
@@ -111,15 +111,15 @@ final class GraphObjectMapper {
             throw new IllegalArgumentException("Graph edge bidirectional flag must be boolean");
           twoWay = booleanFlag;
         }
-        long id = new MultiEdge<>(from, to, edge, weight).id();
-        links.add(new MultiGraphSnapshot.Edge(id, from.id(), to.id(), edge, weight));
+        long id = new Edge<>(from, to, edge, weight).id();
+        links.add(new GraphSnapshot.Edge(id, from.id(), to.id(), edge, weight));
         if (twoWay && direction.isDirected()) {
           if (from == to) throw new IllegalArgumentException("Bidirectional self-loop is ambiguous");
-          long reverseId = new MultiEdge<>(to, from, edge, weight).id();
-          links.add(new MultiGraphSnapshot.Edge(reverseId, to.id(), from.id(), edge, weight));
+          long reverseId = new Edge<>(to, from, edge, weight).id();
+          links.add(new GraphSnapshot.Edge(reverseId, to.id(), from.id(), edge, weight));
         }
       }
-      return MultiGraph.fromSnapshot(new MultiGraphSnapshot<>(direction, nodes, links));
+      return Graph.fromSnapshot(new GraphSnapshot<>(direction, nodes, links));
     }
 
     private Vertex<T> resolve(Object value) {

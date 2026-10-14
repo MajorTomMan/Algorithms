@@ -2,12 +2,12 @@ package com.majortom.algorithms.structure.graph;
 
 import com.majortom.algorithms.core.annotation.*;
 import com.majortom.algorithms.core.metadata.GraphDirection;
-import com.majortom.algorithms.core.snapshot.MultiGraphSnapshot;
+import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import java.util.List;
 
 /** No test framework dependency: run with java -ea after compiling structures. */
-public final class MultiGraphChecks {
-  @ValueType(MultiGraphStructure.class)
+public final class GraphChecks {
+  @ValueType(GraphStructure.class)
   record City(@ValueId String code, @ValueField(ValueDisplay.SUMMARY) String name) {}
   record Railway(City from, City to, double distance, String name) {}
   record Road(City from, City to, double distance, boolean twoWay) {}
@@ -23,7 +23,7 @@ public final class MultiGraphChecks {
     Network input = new Network(List.of(shenzhen, guangzhou, dongguan),
         List.of(new Railway(new City("sz", "深圳"), guangzhou, 102, "广深铁路")),
         List.of(new Road(shenzhen, guangzhou, 125, true)));
-    MultiGraph<City> graph = MultiGraph.from(GraphDirection.DIRECTED, City.class, input);
+    Graph<City> graph = Graph.from(GraphDirection.DIRECTED, City.class, input);
     check(graph.vertexCount() == 3 && graph.edgeCount() == 3, "batch topology");
     var nodes = graph.snapshot().vertices();
     Vertex<City> sz = graph.vertex(nodes.get(0).id());
@@ -33,7 +33,7 @@ public final class MultiGraphChecks {
     check(graph.edges(gz, sz).size() == 1, "automatic reverse road");
     check(graph.outgoingEdges(dg).isEmpty(), "isolated node");
 
-    var copied = MultiGraph.fromSnapshot(graph.snapshot());
+    var copied = Graph.fromSnapshot(graph.snapshot());
     check(copied.edgeCount() == graph.edgeCount(), "snapshot restoration");
     check(copied.edges(copied.vertex(sz.id()), copied.vertex(gz.id())).size() == 2,
         "snapshot parallel edges");
@@ -42,43 +42,53 @@ public final class MultiGraphChecks {
     double previous = graph.setWeight(graph.edges(sz, gz).getFirst().id(), 12);
     check(Double.isFinite(previous), "weight update");
 
-    MultiGraph<City> undirected = MultiGraph.from(GraphDirection.UNDIRECTED, City.class, input);
+    Graph<City> undirected = Graph.from(GraphDirection.UNDIRECTED, City.class, input);
     check(undirected.edgeCount() == 2, "no redundant reverse in undirected graph");
     var un = undirected.snapshot().vertices();
     check(undirected.edges(undirected.vertex(un.get(0).id()),
                            undirected.vertex(un.get(1).id())).size() == 2,
         "undirected parallel edges");
 
-    MultiGraph<City> manual = new MultiGraph<>(GraphDirection.DIRECTED);
+    Graph<City> manual = new Graph<>(GraphDirection.DIRECTED);
     var first = manual.addVertex(shenzhen);
     var equal = manual.addVertex(new City("sz", "深圳"));
     check(first.id() != equal.id(), "different vertices may hold equal business values");
     check(manual.addBiEdge(first, equal, new Object()).reverse() != null, "bidirectional API");
     check(manual.edgeCount() == 2, "bidirectional edge count");
+    var rail = manual.addEdge(first, equal, "rail", 10);
+    var road = manual.addEdge(first, equal, "road", 5);
+    check(rail.id() != road.id() && manual.edges(first, equal).size() == 3,
+        "parallel edges retain separate IDs and payloads");
+    check(manual.removeEdge(rail.id()) && manual.edges(first, equal).size() == 2,
+        "removing one parallel edge leaves the others");
+    var restored = Graph.fromSnapshot(manual.snapshot());
+    check(restored.edge(road.id()).value().equals("road"),
+        "graph snapshot preserves edge payloads");
+
 
     boolean rejected = false;
     try {
-      MultiGraph.from(GraphDirection.DIRECTED, City.class,
+      Graph.from(GraphDirection.DIRECTED, City.class,
           new Network(List.of(shenzhen, new City("sz", "重复")), List.of(), List.of()));
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected, "duplicate @ValueId rejected");
 
     rejected = false;
     try {
-      MultiGraph.from(GraphDirection.DIRECTED, City.class,
+      Graph.from(GraphDirection.DIRECTED, City.class,
           new Network(List.of(shenzhen), List.of(new Railway(shenzhen, guangzhou, 1, "missing")), List.of()));
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected, "undeclared endpoints rejected");
 
-    MultiGraphSnapshot<City> initial = graph.snapshot();
+    GraphSnapshot<City> initial = graph.snapshot();
     rejected = false;
     try {
-      graph.initialize(new MultiGraphSnapshot<>(GraphDirection.DIRECTED, initial.vertices(),
-          List.of(new MultiGraphSnapshot.Edge(1000000L, sz.id(), 99999999L, null, 1))));
+      graph.initialize(new GraphSnapshot<>(GraphDirection.DIRECTED, initial.vertices(),
+          List.of(new GraphSnapshot.Edge(1000000L, sz.id(), 99999999L, null, 1))));
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected && graph.edgeCount() == initial.edges().size(), "failed restore is atomic");
     checkRecursiveGraph();
-    System.out.println("MultiGraphChecks passed");
+    System.out.println("GraphChecks passed");
   }
 
   record Region(String code, @GraphNodes List<Region> children) {}
@@ -97,25 +107,25 @@ public final class MultiGraphChecks {
     Region city = new Region("440300", List.of(district));
     Region province = new Region("440000", List.of(city));
     Region second = new Region("440100", List.of());
-    MultiGraph<Region> graph = MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+    Graph<Region> graph = Graph.from(GraphDirection.DIRECTED, Region.class,
         new Atlas(List.of(province, second), List.of(new Connection(city, second, 125))));
     check(graph.vertexCount() == 4 && graph.edgeCount() == 1,
         "recursive @GraphNodes visits descendants without creating containment edges");
-    MultiGraph<Region> rooted = MultiGraph.from(GraphDirection.DIRECTED, Region.class, province);
+    Graph<Region> rooted = Graph.from(GraphDirection.DIRECTED, Region.class, province);
     check(rooted.vertexCount() == 3 && rooted.edgeCount() == 0,
         "typed recursive root is included");
 
     // No business @ValueType or @ValueId annotations are required when endpoints share references.
     boolean rejected = false;
     try {
-      MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+      Graph.from(GraphDirection.DIRECTED, Region.class,
           new Atlas(List.of(province), List.of(new Connection(second, district, 1))));
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected, "undeclared recursive endpoint rejected");
 
     record Wrapper(@GraphNodes List<Region> nested) {}
     record Nested(@GraphNodes List<Wrapper> wrappers) {}
-    var nested = MultiGraph.from(GraphDirection.DIRECTED, Region.class,
+    var nested = Graph.from(GraphDirection.DIRECTED, Region.class,
         new Nested(List.of(new Wrapper(List.of(province)))));
     check(nested.vertexCount() == 3, "nested non-node wrappers discover children");
 
@@ -124,7 +134,7 @@ public final class MultiGraphChecks {
     a.children = List.of(b);
     b.children = List.of(a);
     b.roads = List.of(new CyclicEdge(b, a));
-    var cyclic = MultiGraph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
+    var cyclic = Graph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
     check(cyclic.vertexCount() == 2 && cyclic.edgeCount() == 1,
         "cyclic references stop while nested node edges are discovered");
   }

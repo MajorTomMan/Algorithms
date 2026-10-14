@@ -1,129 +1,106 @@
 package com.majortom.algorithms.visualization.runtime.graph;
 
+import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
+import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.domain.execution.RunCompletedEvent;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
-import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
-import com.majortom.algorithms.core.event.structure.GraphStructureEvent;
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.EventImportance;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.Reduction;
+import com.majortom.algorithms.visualization.runtime.VisualValue;
+import com.majortom.algorithms.visualization.runtime.value.ValueAdapters;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Reduces factual Graph mutations, observations and Runtime lifecycle into GraphViewState. */
+/**
+ * Unified reducer: preserves each parallel edge by its independent ID.
+ * Uses a single immutable GraphViewState so the existing layout and JavaFX renderer are reused.
+ */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
-  private final GraphSnapshot<?> initialGraph;
+  private final GraphSnapshot<?> initial;
+  public GraphEventReducer(GraphSnapshot<?> initial) { this.initial = initial; }
 
-  public GraphEventReducer(GraphSnapshot<?> graph) {
-    initialGraph = graph;
-  }
+  @Override public GraphViewState initialState() { return GraphViewState.initial(initial); }
 
-  @Override
-  public GraphViewState initialState() {
-    return GraphViewState.initial(initialGraph);
-  }
-
-  @Override
-  public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope envelope) {
+  @Override public Reduction<GraphViewState> reduce(GraphViewState previous, EventEnvelope envelope) {
     Object event = envelope.event();
-    if (event instanceof GraphStructureEvent.VertexAdded added) {
-      List<GraphViewState.Node> nodes = new ArrayList<>(previous.nodes());
-      nodes.add(new GraphViewState.Node(added.vertexId(),
-          com.majortom.algorithms.visualization.runtime.VisualValue.of(added.value())));
-      return changed(state(previous, nodes, previous.edges(), previous.visitedNodeIds(),
-          GraphViewState.Observation.none(), false));
+    if (event instanceof AlgorithmEvent.Visited visited
+        && visited.ref() instanceof AlgorithmEvent.EntityRef ref
+        && GraphObservationDomains.VERTEX.equals(ref.domain())) {
+      java.util.Set<Long> updated = new java.util.HashSet<>(previous.visitedNodeIds());
+      updated.add(ref.id());
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), updated, GraphViewState.Observation.visited(ref.id()), false),
+          EventImportance.TRANSIENT, true);
     }
-    if (event instanceof GraphStructureEvent.VertexRemoved removed) {
-      List<GraphViewState.Node> nodes =
-          previous.nodes().stream().filter(node -> node.id() != removed.vertexId()).toList();
-      List<GraphViewState.Edge> edges =
-          previous.edges()
-              .stream()
-              .filter(
-                  edge -> edge.fromId() != removed.vertexId() && edge.toId() != removed.vertexId())
-              .toList();
-      Set<Long> visited = new LinkedHashSet<>(previous.visitedNodeIds());
-      visited.remove(removed.vertexId());
-      return changed(
-          state(previous, nodes, edges, visited, GraphViewState.Observation.none(), false));
-    }
-    if (event instanceof GraphStructureEvent.EdgeAdded added) {
-      List<GraphViewState.Edge> edges = new ArrayList<>(previous.edges());
-      edges.add(new GraphViewState.Edge(added.edgeId(), added.fromId(), added.toId(), added.weight()));
-      return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
-          GraphViewState.Observation.none(), false));
-    }
-    if (event instanceof GraphStructureEvent.EdgeRemoved removed) {
-      List<GraphViewState.Edge> edges =
-          previous.edges().stream().filter(edge -> edge.id() != removed.edgeId()).toList();
-      return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
-          GraphViewState.Observation.none(), false));
-    }
-    if (event instanceof GraphStructureEvent.EdgeWeightChanged changed) {
-      List<GraphViewState.Edge> edges = new ArrayList<>(previous.edges().size());
-      boolean found = false;
-      for (GraphViewState.Edge edge : previous.edges()) {
-        if (edge.id() == changed.edgeId()) {
-          edges.add(edge.withWeight(changed.weight()));
-          found = true;
-        } else {
-          edges.add(edge);
-        }
-      }
-      if (!found) {
-        return Reduction.unchanged(previous, EventImportance.TRANSIENT);
-      }
-      return changed(state(previous, previous.nodes(), edges, previous.visitedNodeIds(),
-          GraphViewState.Observation.none(), false));
-    }
-    if (event instanceof AlgorithmEvent.Visited visitedEvent) {
-      Long nodeId = graphNodeId(visitedEvent.ref());
-      if (nodeId != null) {
-        Set<Long> visited = previous.visitedWith(nodeId);
-        return observation(state(previous, previous.nodes(), previous.edges(), visited,
-            GraphViewState.Observation.visited(nodeId), false));
-      }
-    }
-    if (event instanceof AlgorithmEvent.Examined examined) {
-      Long fromId = graphNodeId(examined.fromRef());
-      Long toId = graphNodeId(examined.toRef());
-      if (fromId != null && toId != null) {
-        return observation(state(previous, previous.nodes(), previous.edges(),
-            previous.visitedNodeIds(), GraphViewState.Observation.examined(fromId, toId), false));
-      }
+    if (event instanceof AlgorithmEvent.Examined examined
+        && examined.fromRef() instanceof AlgorithmEvent.EntityRef from
+        && examined.toRef() instanceof AlgorithmEvent.EntityRef to
+        && GraphObservationDomains.VERTEX.equals(from.domain())
+        && GraphObservationDomains.VERTEX.equals(to.domain())) {
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), previous.visitedNodeIds(),
+          GraphViewState.Observation.examined(from.id(), to.id()), false),
+          EventImportance.TRANSIENT, true);
     }
     if (event instanceof RunCompletedEvent) {
-      return Reduction.changed(
-          state(previous, previous.nodes(), previous.edges(), previous.visitedNodeIds(),
-              GraphViewState.Observation.none(), true),
-          EventImportance.TERMINAL, true);
+      return Reduction.changed(new GraphViewState(previous.direction(), previous.nodes(),
+          previous.edges(), previous.visitedNodeIds(),
+          GraphViewState.Observation.none(), true), EventImportance.TERMINAL, true);
+    }
+    if (event instanceof GraphStructureEvent.Reset reset)
+      return changed(GraphViewState.initial(reset.snapshot()));
+
+    if (event instanceof GraphStructureEvent.VertexAdded added) {
+      List<GraphViewState.Node> nodes = new ArrayList<>(previous.nodes());
+      nodes.add(new GraphViewState.Node(added.vertexId(), VisualValue.of(added.value())));
+      return changed(state(previous, nodes, previous.edges()));
+    }
+    if (event instanceof GraphStructureEvent.VertexRemoved removed) {
+      List<GraphViewState.Node> nodes = previous.nodes().stream()
+          .filter(node -> node.id() != removed.vertexId()).toList();
+      List<GraphViewState.Edge> edges = previous.edges().stream()
+          .filter(edge -> edge.fromId() != removed.vertexId()
+              && edge.toId() != removed.vertexId()).toList();
+      return changed(state(previous, nodes, edges));
+    }
+    if (event instanceof GraphStructureEvent.EdgeAdded added)
+      return changed(addEdges(previous, List.of(added)));
+    if (event instanceof GraphStructureEvent.EdgesAdded pair)
+      return changed(addEdges(previous, List.of(pair.forward(), pair.reverse())));
+    if (event instanceof GraphStructureEvent.EdgeRemoved removed) {
+      List<GraphViewState.Edge> edges = previous.edges().stream()
+          .filter(edge -> edge.id() != removed.edgeId()).toList();
+      return changed(state(previous, previous.nodes(), edges));
+    }
+    if (event instanceof GraphStructureEvent.EdgeWeightChanged updated) {
+      List<GraphViewState.Edge> edges = previous.edges().stream()
+          .map(edge -> edge.id() == updated.edgeId()
+              ? edge.withWeight(updated.current()) : edge).toList();
+      return changed(state(previous, previous.nodes(), edges));
     }
     return Reduction.unchanged(previous, EventImportance.TRANSIENT);
   }
 
-  private static GraphViewState state(GraphViewState previous, List<GraphViewState.Node> nodes,
-      List<GraphViewState.Edge> edges, Set<Long> visited, GraphViewState.Observation observation,
-      boolean completed) {
-    return new GraphViewState(previous.direction(), nodes, edges, visited, observation, completed);
-  }
-
-  private static Long graphNodeId(AlgorithmEvent.Reference reference) {
-    if (reference instanceof AlgorithmEvent.EntityRef entity
-        && GraphObservationDomains.VERTEX.equals(entity.domain())) {
-      return entity.id();
+  private static GraphViewState addEdges(GraphViewState old,
+      List<GraphStructureEvent.EdgeAdded> additions) {
+    List<GraphViewState.Edge> edges = new ArrayList<>(old.edges());
+    for (var edge : additions) {
+      String label = edge.value() == null ? null : ValueAdapters.project(edge.value()).summary();
+      edges.add(new GraphViewState.Edge(edge.edgeId(), edge.fromId(), edge.toId(),
+                                        edge.weight(), label));
     }
-    return null;
+    return state(old, old.nodes(), edges);
   }
-
+  private static GraphViewState state(GraphViewState old,
+      List<GraphViewState.Node> nodes, List<GraphViewState.Edge> edges) {
+    return new GraphViewState(old.direction(), nodes, edges,
+        Set.of(), GraphViewState.Observation.none(), false);
+  }
   private static Reduction<GraphViewState> changed(GraphViewState state) {
     return Reduction.changed(state, EventImportance.STATE_CHANGE, true);
-  }
-
-  private static Reduction<GraphViewState> observation(GraphViewState state) {
-    return Reduction.changed(state, EventImportance.TRANSIENT, true);
   }
 }
