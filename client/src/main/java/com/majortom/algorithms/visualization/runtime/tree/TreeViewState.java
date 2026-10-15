@@ -104,13 +104,13 @@ public record TreeViewState(Kind kind, Long rootId, Map<Long, Node> nodes, Set<L
       childIds = List.copyOf(Objects.requireNonNull(childIds, "childIds"));
     }
     public static Node general(long id, Object value, List<Long> childIds) {
-      return new Node(id, VisualValue.of(value), childIds, null, null);
+      return new Node(id, VisualValue.compact(value), childIds, null, null);
     }
     public static Node binary(long id, Object value, Long leftId, Long rightId) {
-      return new Node(id, VisualValue.of(value), List.of(), leftId, rightId);
+      return new Node(id, VisualValue.compact(value), List.of(), leftId, rightId);
     }
     public Node withValue(Object value) {
-      return new Node(id, VisualValue.of(value), childIds, leftId, rightId);
+      return new Node(id, VisualValue.compact(value), childIds, leftId, rightId);
     }
     public Node withChildren(List<Long> childIds) {
       return new Node(id, value, childIds, leftId, rightId);

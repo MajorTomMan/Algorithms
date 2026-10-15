@@ -43,7 +43,7 @@ public record HashTableViewState(
     long id = 1L;
     for (HashTableSnapshot.Entry<?, ?> entry : snapshot.entries()) {
       entries.get(entry.bucketIndex()).add(
-          new Entry(id++, VisualValue.of(entry.key()), VisualValue.of(entry.value())));
+          new Entry(id++, VisualValue.compact(entry.key()), VisualValue.compact(entry.value())));
     }
     List<Bucket> buckets = new ArrayList<>(snapshot.capacity());
     for (int index = 0; index < snapshot.capacity(); index++) {

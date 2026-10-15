@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.runtime.value;
 
 import com.majortom.algorithms.core.annotation.ValueDisplay;
 import com.majortom.algorithms.core.annotation.ValueField;
+import com.majortom.algorithms.core.annotation.ValueType;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
@@ -14,12 +15,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class LazyGraphProjectionChecks {
   private static final AtomicInteger DETAIL_READS = new AtomicInteger();
+  @ValueType(immutable = true)
   record City(@ValueField(value = ValueDisplay.SUMMARY) String name) {
     @ValueField(value = ValueDisplay.DETAIL)
     int expensiveDetails() {
       return DETAIL_READS.incrementAndGet();
     }
   }
+  @ValueType(immutable = true)
   record Railway(@ValueField(value = ValueDisplay.SUMMARY) String name) {
     @ValueField(value = ValueDisplay.DETAIL)
     int expensiveDetails() {
@@ -41,7 +44,7 @@ public final class LazyGraphProjectionChecks {
         || !view.edges().getFirst().label().equals("广深铁路"))
       throw new AssertionError("Missing compact summary labels");
 
-    var inspected = ValueAdapters.project(a);
+    var inspected = view.nodes().getFirst().value().detailProjection();
     var inspectedEdge = ValueAdapters.project(rail);
     if (DETAIL_READS.get() != 2 || !inspected.details().contains("expensiveDetails")
         || !inspectedEdge.details().contains("expensiveDetails"))

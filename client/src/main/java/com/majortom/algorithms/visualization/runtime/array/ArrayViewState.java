@@ -23,7 +23,7 @@ public record ArrayViewState(
 
   private static List<VisualValue> project(List<?> values) {
     Objects.requireNonNull(values, "values");
-    return values.stream().map(VisualValue::of).toList();
+    return values.stream().map(VisualValue::compact).toList();
   }
 
   public record Mutation(Type type, int index, int otherIndex) {
@@ -60,7 +60,7 @@ public record ArrayViewState(
       return new Observation(ObservationType.COMPARED_INDEXES, firstIndex, secondIndex, null);
     }
     public static Observation comparedValue(int index, Object value) {
-      return new Observation(ObservationType.COMPARED_VALUE, index, -1, VisualValue.of(value));
+      return new Observation(ObservationType.COMPARED_VALUE, index, -1, VisualValue.compact(value));
     }
   }
 

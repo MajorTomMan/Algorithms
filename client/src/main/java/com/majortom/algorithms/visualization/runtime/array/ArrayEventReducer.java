@@ -33,7 +33,7 @@ public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
     Object event = envelope.event();
     if (event instanceof ArrayStructureEvent.Inserted inserted) {
       List<VisualValue> values = new ArrayList<>(previous.values());
-      values.add(inserted.index(), VisualValue.of(inserted.value()));
+      values.add(inserted.index(), VisualValue.compact(inserted.value()));
       return changed(state(values, ArrayViewState.Mutation.inserted(inserted.index())));
     }
     if (event instanceof ArrayStructureEvent.Removed removed) {
@@ -43,13 +43,13 @@ public final class ArrayEventReducer implements EventReducer<ArrayViewState> {
     }
     if (event instanceof ArrayStructureEvent.Updated updated) {
       List<VisualValue> values = new ArrayList<>(previous.values());
-      values.set(updated.index(), VisualValue.of(updated.value()));
+      values.set(updated.index(), VisualValue.compact(updated.value()));
       return changed(state(values, ArrayViewState.Mutation.updated(updated.index())));
     }
     if (event instanceof ArrayStructureEvent.Swapped swapped) {
       List<VisualValue> values = new ArrayList<>(previous.values());
-      values.set(swapped.leftIndex(), VisualValue.of(swapped.leftValue()));
-      values.set(swapped.rightIndex(), VisualValue.of(swapped.rightValue()));
+      values.set(swapped.leftIndex(), VisualValue.compact(swapped.leftValue()));
+      values.set(swapped.rightIndex(), VisualValue.compact(swapped.rightValue()));
       return changed(state(
           values, ArrayViewState.Mutation.swapped(swapped.leftIndex(), swapped.rightIndex())));
     }

@@ -196,7 +196,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         selectionListener.accept(new NodeSelection(
                 nodeId,
-                VisualValue.of(node.getValue()),
+                VisualValue.compact(node.getValue()),
                 parentId,
                 node.getChildren().size(),
                 generalDepthOf(generalTree.root(), node, 0)));
@@ -225,7 +225,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
         }
         selectionListener.accept(new NodeSelection(
                 nodeId,
-                VisualValue.of(node.getValue()),
+                VisualValue.compact(node.getValue()),
                 parentId,
                 childCount,
                 avlDepthOf(avlRoot(), node, 0)));

@@ -109,15 +109,18 @@ final class SelectionInspectorPanel {
                     I18N.text("label.workspace.selection.hash.bucket.detail",
                             bucket.bucketIndex(), bucket.entryCount(), bucket.size(), bucket.capacity()));
         } else if (selection instanceof HashTableController.EntrySelection entry) {
-            selectionPresentation = () -> presentSelection(
-                    I18N.text("label.workspace.selection.entry"), "#" + entry.id(),
-                    entry.key().text() + " → " + entry.value().text(),
-                    I18N.text("label.workspace.selection.hash.hint"),
-                    I18N.text("label.workspace.selection.hash.detail",
-                            entry.bucketIndex(), entry.key().text(), entry.value().text(),
-                            entry.size(), entry.capacity())
-                            + "\n\n" + entry.key().projection().details()
-                            + "\n\n" + entry.value().projection().details());
+            selectionPresentation = () -> {
+                String detail = I18N.text("label.workspace.selection.hash.detail",
+                        entry.bucketIndex(), entry.key().text(), entry.value().text(),
+                        entry.size(), entry.capacity());
+                detail = appendValueFields(detail, I18N.text("label.workspace.selection.hash.key_fields"),
+                        entry.key());
+                detail = appendValueFields(detail, I18N.text("label.workspace.selection.hash.value_fields"),
+                        entry.value());
+                presentSelection(I18N.text("label.workspace.selection.entry"), "#" + entry.id(),
+                        entry.key().text() + " → " + entry.value().text(),
+                        I18N.text("label.workspace.selection.hash.hint"), detail);
+            };
         }
         if (selectionPresentation != null) selectionPresentation.run();
     }
@@ -137,8 +140,8 @@ final class SelectionInspectorPanel {
             if (selection instanceof GraphController.NodeSelection node) {
                 String details = I18N.text("label.workspace.selection.graph.node.detail",
                         node.id(), node.value().text(), node.degree());
-                String properties = graphExtraFields(node.value());
-                if (!properties.isBlank()) details += "\n\n" + properties;
+                details = appendValueFields(
+                        details, I18N.text("label.workspace.selection.fields"), node.value());
                 presentSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
                         node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
                         details);
@@ -149,8 +152,8 @@ final class SelectionInspectorPanel {
                         I18N.text(edge.directed()
                                 ? "label.workspace.selection.yes"
                                 : "label.workspace.selection.no"));
-                String fromFields = graphExtraFields(edge.fromValue());
-                String toFields = graphExtraFields(edge.toValue());
+                String fromFields = additionalValueFields(edge.fromValue());
+                String toFields = additionalValueFields(edge.toValue());
                 if (!fromFields.isBlank())
                     details += "\n\n" + I18N.text("label.workspace.selection.graph.from_fields")
                             + " (#" + edge.fromId() + ")\n" + fromFields;
@@ -160,7 +163,7 @@ final class SelectionInspectorPanel {
                 if (edge.payload() != null) {
                     details += "\n\n" + I18N.text("label.workspace.selection.graph.edge.payload")
                             + "：" + edge.payload().text();
-                    String payloadFields = graphExtraFields(edge.payload());
+                    String payloadFields = additionalValueFields(edge.payload());
                     if (!payloadFields.isBlank()) details += "\n" + payloadFields;
                 }
                 presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
@@ -172,16 +175,14 @@ final class SelectionInspectorPanel {
         selectionPresentation.run();
     }
 
-    /** Skip a built-in scalar's redundant "值: ..." but retain meaningful business fields. */
-    private static String graphExtraFields(VisualValue value) {
-        var projection = value.projection();
-        if (!projection.fieldsDeclared()) return "";
-        if (projection.fields().size() == 1) {
-            var field = projection.fields().getFirst();
-            if ("value".equals(field.key()) && field.value().equals(value.text()))
-                return "";
-        }
-        return projection.details();
+    private static String additionalValueFields(VisualValue value) {
+        return value.additionalDetails();
+    }
+
+    /** Keep structural metadata and annotated business properties visibly separate. */
+    private static String appendValueFields(String structural, String section, VisualValue value) {
+        String fields = additionalValueFields(value);
+        return fields.isBlank() ? structural : structural + "\n\n" + section + "\n" + fields;
     }
 
     private static String formatGraphWeight(double weight) {
@@ -194,11 +195,11 @@ final class SelectionInspectorPanel {
         return id == null ? I18N.text("label.workspace.selection.none") : "#" + id;
     }
 
-    /** Structure identity remains in the existing detail; declared element fields follow it. */
+    /** The same attributes appear for values in arrays, trees, lists and queues. */
     private void presentValueSelection(String title, String id, String summary, String hint,
-                                       String structureDetail, com.majortom.algorithms.visualization.runtime.VisualValue value) {
-        String fields = value.projection().details();
-        presentSelection(title, id, summary, hint, structureDetail + "\n\n" + fields);
+                                       String structureDetail, VisualValue value) {
+        presentSelection(title, id, summary, hint,
+                appendValueFields(structureDetail, I18N.text("label.workspace.selection.fields"), value));
     }
 
     /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */

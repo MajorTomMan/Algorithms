@@ -449,7 +449,7 @@ public final class LinearStructureController extends BaseModuleController<Linear
         Object value = current.get(index);
         valueField.setText(valueAdapter.format(value));
         selectionListener.accept(
-                new ItemSelection(index, VisualValue.of(value), selectionRole(index, current.size()), current.size()));
+                new ItemSelection(index, VisualValue.compact(value), selectionRole(index, current.size()), current.size()));
     }
 
     private void handleAlgorithmSelection(int index) {

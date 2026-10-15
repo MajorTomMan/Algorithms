@@ -443,7 +443,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
         if (updateIndexField != null) updateIndexField.setText(Integer.toString(index));
         if (elementValueField != null) elementValueField.setText(valueAdapter.format(value));
         if (updateValueField != null) updateValueField.setText(valueAdapter.format(value));
-        selectionListener.accept(new IndexSelection(index, VisualValue.of(value), sourceArray.size()));
+        selectionListener.accept(new IndexSelection(index, VisualValue.compact(value), sourceArray.size()));
     }
 
     private void clearArraySelection() {

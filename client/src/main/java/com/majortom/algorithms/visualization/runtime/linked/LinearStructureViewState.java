@@ -13,12 +13,12 @@ public record LinearStructureViewState(String kind, List<VisualValue> values, Mu
   }
 
   public LinearStructureViewState(String kind, List<?> values) {
-    this(kind, values.stream().map(VisualValue::of).toList(), Mutation.none());
+    this(kind, values.stream().map(VisualValue::compact).toList(), Mutation.none());
   }
 
   public static LinearStructureViewState of(String kind, List<?> values, Mutation mutation) {
     return new LinearStructureViewState(
-        kind, values.stream().map(VisualValue::of).toList(), mutation);
+        kind, values.stream().map(VisualValue::compact).toList(), mutation);
   }
 
   public record Mutation(Type type, VisualValue value) {
@@ -31,7 +31,7 @@ public record LinearStructureViewState(String kind, List<VisualValue> values, Mu
     }
 
     public static Mutation of(Type type, Object value) {
-      return new Mutation(type, value == null ? null : VisualValue.of(value));
+      return new Mutation(type, value == null ? null : VisualValue.compact(value));
     }
   }
 
