@@ -29,3 +29,7 @@
 .root-pane .snapshot-preview-badge-id,
 .root-pane .snapshot-preview-notice-id { -fx-font-size: 0.62em; }
 .root-pane .snapshot-preview-notice-hint { -fx-font-size: 0.68em; }
+
+.root-pane .inspector-property-key,
+.root-pane .inspector-property-value,
+.root-pane .inspector-property-heading { -fx-font-size: 1em; }

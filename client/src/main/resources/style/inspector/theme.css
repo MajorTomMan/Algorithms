@@ -132,3 +132,16 @@
 .log-view-light .log-message {
     -fx-fill: #08090a;
 }
+
+
+/* Shared two-column selection properties: no string-padding or font-dependent tabs. */
+.inspector-property-key {
+    -fx-text-fill: #898989;
+}
+.inspector-property-value {
+    -fx-text-fill: #303030;
+}
+.inspector-property-heading {
+    -fx-text-fill: #555555;
+    -fx-font-weight: 600;
+}

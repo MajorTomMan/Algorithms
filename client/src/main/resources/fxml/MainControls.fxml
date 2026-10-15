@@ -199,9 +199,11 @@
                                                     <Label fx:id="currentSelectionHeadingLabel"
                                                         text="CURRENT SELECTION"
                                                         styleClass="inspector-heading" />
-                                                    <Label fx:id="structureInspectorBody"
-                                                        text="Select an element in the canvas."
-                                                        wrapText="true" styleClass="inspector-body" />
+                                                    <VBox fx:id="structureInspectorBody"
+                                                        spacing="0" fillWidth="true" styleClass="inspector-body">
+                                                        <Label text="Select an element in the canvas."
+                                                            wrapText="true" styleClass="inspector-property-heading" />
+                                                    </VBox>
                                                 </VBox>
                                                 <VBox spacing="10" styleClass="inspector-section">
                                                     <Label fx:id="structureOverviewHeadingLabel"

@@ -235,7 +235,7 @@ public class MainController implements Initializable {
     @FXML
     private Label selectedValueCaptionLabel;
     @FXML
-    private Label structureInspectorBody;
+    private VBox structureInspectorBody;
     @FXML
     private Label currentSelectionHeadingLabel;
     @FXML

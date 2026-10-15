@@ -4,6 +4,9 @@ import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.runtime.VisualValue;
 import java.util.function.BooleanSupplier;
 import javafx.scene.control.Label;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 /** Owns selection formatting, localization refresh and the two inspector overlays. */
@@ -18,7 +21,7 @@ final class SelectionInspectorPanel {
     private final Label algorithmSelectedEntityHintLabel;
     private final Label algorithmSelectedNodeIdLabel;
     private final Label algorithmSelectedNodeValueLabel;
-    private final Label structureInspectorBody;
+    private final VBox structureInspectorBody;
     private final BooleanSupplier structurePageVisible;
     private final Runnable updateObstruction;
     private Runnable selectionPresentation;
@@ -34,7 +37,7 @@ final class SelectionInspectorPanel {
             Label algorithmSelectedEntityHintLabel,
             Label algorithmSelectedNodeIdLabel,
             Label algorithmSelectedNodeValueLabel,
-            Label structureInspectorBody,
+            VBox structureInspectorBody,
             BooleanSupplier structurePageVisible, Runnable updateObstruction) {
         this.structureSelectionOverlay = structureSelectionOverlay;
         this.algorithmSelectionOverlay = algorithmSelectionOverlay;
@@ -205,7 +208,62 @@ final class SelectionInspectorPanel {
     /** All formatting completes before either view is changed, so a failed format cannot leave half a selection. */
     private void presentSelection(String title, String id, String value, String hint, String detail) {
         showStructureSelectionOverlay(title, id, value, hint);
-        if (structureInspectorBody != null) structureInspectorBody.setText(detail);
+        renderInspectorDetails(detail);
+    }
+
+    /**
+     * Every structure uses the same two-column grid. Text resources delimit the
+     * attribute name and value with a tab; business properties may use a fullwidth colon.
+     * Layout, rather than string padding, keeps values aligned in proportional fonts.
+     */
+    private void renderInspectorDetails(String detail) {
+        if (structureInspectorBody == null) return;
+        structureInspectorBody.getChildren().clear();
+        if (detail == null || detail.isBlank()) return;
+
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("inspector-property-grid");
+        grid.setHgap(12);
+        grid.setVgap(8);
+        ColumnConstraints keys = new ColumnConstraints();
+        keys.setMinWidth(112);
+        keys.setPrefWidth(112);
+        keys.setMaxWidth(112);
+        ColumnConstraints values = new ColumnConstraints();
+        values.setHgrow(Priority.ALWAYS);
+        values.setFillWidth(true);
+        grid.getColumnConstraints().addAll(keys, values);
+
+        int row = 0;
+        for (String line : detail.split("\\n", -1)) {
+            if (line.isBlank()) {
+                if (row > 0) {
+                    Label space = new Label();
+                    space.setMinHeight(6);
+                    grid.add(space, 0, row++, 2, 1);
+                }
+                continue;
+            }
+            int separator = line.indexOf('\t');
+            if (separator < 0) separator = line.indexOf('：');
+            if (separator >= 0) {
+                Label key = new Label(line.substring(0, separator).strip());
+                key.getStyleClass().add("inspector-property-key");
+                key.setWrapText(true);
+                Label value = new Label(line.substring(separator + 1).strip());
+                value.getStyleClass().add("inspector-property-value");
+                value.setWrapText(true);
+                value.setMaxWidth(Double.MAX_VALUE);
+                grid.add(key, 0, row);
+                grid.add(value, 1, row++);
+            } else {
+                Label heading = new Label(line.strip());
+                heading.setWrapText(true);
+                heading.getStyleClass().add("inspector-property-heading");
+                grid.add(heading, 0, row++, 2, 1);
+            }
+        }
+        structureInspectorBody.getChildren().add(grid);
     }
 
     private String linearRoleText(String role) {
@@ -289,7 +347,8 @@ final class SelectionInspectorPanel {
             algorithmSelectionOverlay.setVisible(false);
         }
         if (structureInspectorBody != null) {
-            structureInspectorBody.setText(I18N.text("label.workspace.selection.prompt"));
+            structureInspectorBody.getChildren().setAll(
+                    new Label(I18N.text("label.workspace.selection.prompt")));
         }
         updateObstruction.run();
     }
