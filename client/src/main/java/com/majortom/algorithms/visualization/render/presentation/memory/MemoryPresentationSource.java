@@ -73,19 +73,24 @@ public final class MemoryPresentationSource implements PresentationModelSource<M
       double ratio = Math.max(0.0d, Math.min(1.0d, (double) elapsedNanos / first.elapsedNanos()));
       return OptionalLong.of(Math.max(0L, Math.round(first.allocatedBytes() * ratio)));
     }
-    MemoryAllocationSample previous = first;
-    for (int index = 1; index < samples.size(); index++) {
-      MemoryAllocationSample next = samples.get(index);
-      if (elapsedNanos <= next.elapsedNanos()) {
-        long span = next.elapsedNanos() - previous.elapsedNanos();
-        if (span <= 0L) return OptionalLong.of(next.allocatedBytes());
-        double ratio = (double) (elapsedNanos - previous.elapsedNanos()) / span;
-        long bytes = previous.allocatedBytes()
-            + Math.round((next.allocatedBytes() - previous.allocatedBytes()) * ratio);
-        return OptionalLong.of(Math.max(0L, bytes));
-      }
-      previous = next;
+    // Telemetry samples are recorded in elapsed-time order (also after decimation).
+    // Find the first sample at or after the cursor to preserve duplicate-time behavior.
+    int low = 1;
+    int high = samples.size();
+    while (low < high) {
+      int mid = low + (high - low) / 2;
+      if (samples.get(mid).elapsedNanos() < elapsedNanos) low = mid + 1;
+      else high = mid;
     }
-    return OptionalLong.of(samples.getLast().allocatedBytes());
+    if (low == samples.size()) return OptionalLong.of(samples.getLast().allocatedBytes());
+
+    MemoryAllocationSample previous = samples.get(low - 1);
+    MemoryAllocationSample next = samples.get(low);
+    long span = next.elapsedNanos() - previous.elapsedNanos();
+    if (span <= 0L) return OptionalLong.of(next.allocatedBytes());
+    double ratio = (double) (elapsedNanos - previous.elapsedNanos()) / span;
+    long bytes = previous.allocatedBytes()
+        + Math.round((next.allocatedBytes() - previous.allocatedBytes()) * ratio);
+    return OptionalLong.of(Math.max(0L, bytes));
   }
 }

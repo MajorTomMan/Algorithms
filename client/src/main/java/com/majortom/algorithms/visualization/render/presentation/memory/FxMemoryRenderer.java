@@ -309,8 +309,10 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     area.getElements().add(new MoveTo(x0, y1));
     double lastX = x0;
     double lastY = y1;
+    MemoryAllocationSample lastVisible = null;
     for (MemoryAllocationSample sample : samples) {
       if (sample.elapsedNanos() > visibleElapsed) break;
+      lastVisible = sample;
       double x = chartX(sample.elapsedNanos(), maxElapsed, x0, x1);
       double y = chartY(sample.allocatedBytes(), maxAllocated, y0, y1);
       curve.getElements().add(new LineTo(x, y));
@@ -323,7 +325,6 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     if (currentBytes.isPresent()) {
       double x = chartX(visibleElapsed, maxElapsed, x0, x1);
       double y = chartY(currentBytes.getAsLong(), maxAllocated, y0, y1);
-      MemoryAllocationSample lastVisible = lastVisibleSample(samples, visibleElapsed);
       if (lastVisible == null
           || lastVisible.elapsedNanos() != visibleElapsed
           || lastVisible.allocatedBytes() != currentBytes.getAsLong()) {
@@ -420,23 +421,16 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     return measured ? OptionalLong.of(maximum) : OptionalLong.empty();
   }
 
+  /** Upper bound: duplicate timestamps at the cursor are all counted as visible. */
   private static int visibleSampleCount(List<MemoryAllocationSample> samples, long elapsedNanos) {
-    int count = 0;
-    for (MemoryAllocationSample sample : samples) {
-      if (sample.elapsedNanos() > elapsedNanos) break;
-      count++;
+    int low = 0;
+    int high = samples.size();
+    while (low < high) {
+      int mid = low + (high - low) / 2;
+      if (samples.get(mid).elapsedNanos() <= elapsedNanos) low = mid + 1;
+      else high = mid;
     }
-    return count;
-  }
-
-  private static MemoryAllocationSample lastVisibleSample(
-      List<MemoryAllocationSample> samples, long elapsedNanos) {
-    MemoryAllocationSample result = null;
-    for (MemoryAllocationSample sample : samples) {
-      if (sample.elapsedNanos() > elapsedNanos) break;
-      result = sample;
-    }
-    return result;
+    return low;
   }
 
   private static double chartX(long elapsed, long maxElapsed, double x0, double x1) {
