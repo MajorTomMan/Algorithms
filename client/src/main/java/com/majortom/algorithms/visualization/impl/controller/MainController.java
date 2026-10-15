@@ -716,6 +716,7 @@ public class MainController implements Initializable {
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
+            rebuildTimelineMarkers(); // Locale changes marker tooltips even when events are unchanged.
             telemetryPresentation.publishMemoryPresentations();
             if (uiFramework != null) uiFramework.scheduleRefresh();
             boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
@@ -2559,7 +2560,7 @@ public class MainController implements Initializable {
         if (resultPreviewLabel != null) resultPreviewLabel.setText(result);
         // The hidden event tab and inactive metric surfaces need no per-step JavaFX commits.
         if (statisticsTab.isSelected() || memoryTab.isSelected()) refreshRunSummary();
-        rebuildTimelineMarkers();
+        if (timelinePanel != null) timelinePanel.refresh();
         if (current == null || !(current.event() instanceof AlgorithmEvent)) refreshStructureSummary();
         if (playbackShell != null) playbackShell.refresh();
     }

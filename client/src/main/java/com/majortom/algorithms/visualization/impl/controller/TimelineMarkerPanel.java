@@ -32,6 +32,18 @@ final class TimelineMarkerPanel {
     private boolean timelineStructureVisible = true;
     private boolean timelineObservationVisible = true;
 
+    // Only UI nodes and a small invalidation token are retained, not a second event history.
+    private BaseController<?> renderedController;
+    private long renderedRevision = Long.MIN_VALUE;
+    private double renderedWidth = Double.NaN;
+    private double renderedHeight = Double.NaN;
+    private double renderedFontSize = Double.NaN;
+    private int renderedEventCount;
+    private int highlightedEventIndex = -1;
+    private Region cursorMarker;
+    private List<TimelineMarkerGroup> renderedGroups = List.of();
+    private List<VBox> renderedMarkers = List.of();
+
     TimelineMarkerPanel(Pane markers, Label label, Label runtime, Label structure, Label observation,
             Supplier<BaseController<?>> controller, Function<EventEnvelope, String> eventDisplayName,
             Runnable afterSeek) {
@@ -102,15 +114,40 @@ final class TimelineMarkerPanel {
         }
     }
 
+    /** Normal cursor refresh: no history copy or JavaFX node reconstruction when data is unchanged. */
+    void refresh() {
+        if (timelineMarkers == null) return;
+        BaseController<?> active = currentController();
+        long revision = active == null ? Long.MIN_VALUE : active.executionEventRevision();
+        if (active != renderedController || revision != renderedRevision
+                || Double.compare(renderedWidth, timelineMarkers.getWidth()) != 0
+                || Double.compare(renderedHeight, timelineMarkers.getHeight()) != 0
+                || Double.compare(renderedFontSize, timelineBaseFontSize()) != 0) {
+            rebuild();
+            return;
+        }
+        updateCursor(active == null ? -1 : active.presentationEventIndex());
+    }
+
+    /** Recreate marker groups only after a history, filter, locale or geometry change. */
     void rebuild() {
-        if (timelineMarkers == null || currentController() == null) {
-            return;
-        }
+        if (timelineMarkers == null) return;
+        BaseController<?> active = currentController();
         timelineMarkers.getChildren().clear();
-        List<EventEnvelope> events = currentController().executionEvents();
-        if (events.isEmpty()) {
-            return;
-        }
+        renderedController = active;
+        renderedRevision = active == null ? Long.MIN_VALUE : active.executionEventRevision();
+        renderedWidth = timelineMarkers.getWidth();
+        renderedHeight = timelineMarkers.getHeight();
+        renderedFontSize = timelineBaseFontSize();
+        renderedGroups = List.of();
+        renderedMarkers = List.of();
+        renderedEventCount = 0;
+        highlightedEventIndex = -1;
+        cursorMarker = null;
+        if (active == null) return;
+        List<EventEnvelope> events = active.executionEvents();
+        if (events.isEmpty()) return;
+        renderedEventCount = events.size();
 
         double paneWidth = timelineMarkers.getWidth();
         if (!(paneWidth > 0.0d)) {
@@ -133,22 +170,15 @@ final class TimelineMarkerPanel {
         double usableWidth = Math.max(1.0d, paneWidth - horizontalInset * 2.0d);
         double trackCenterY = paneHeight / 2.0d;
 
-        int currentIndex = currentController().presentationEventIndex();
-        if (currentIndex >= 0 && currentIndex < events.size()) {
-            Region cursor = new Region();
-            cursor.getStyleClass().add("timeline-marker-cursor");
-            cursor.setManaged(false);
-            cursor.setMouseTransparent(true);
-            double ratio = eventRatio(currentIndex, events.size());
-            double cursorWidth = Math.max(2.0d, fontSize * 0.10d);
-            double cursorHeight = Math.max(symbolSize * 2.4d, paneHeight * 0.72d);
-            double cursorX = horizontalInset + ratio * usableWidth - cursorWidth / 2.0d;
-            double cursorY = trackCenterY - cursorHeight / 2.0d;
-            cursor.resizeRelocate(cursorX, cursorY, cursorWidth, cursorHeight);
-            timelineMarkers.getChildren().add(cursor);
-        }
+        cursorMarker = new Region();
+        cursorMarker.getStyleClass().add("timeline-marker-cursor");
+        cursorMarker.setManaged(false);
+        cursorMarker.setMouseTransparent(true);
+        cursorMarker.setVisible(false);
+        timelineMarkers.getChildren().add(cursorMarker);
 
-        List<TimelineMarkerGroup> groups = timelineMarkerGroups(events, currentIndex, usableWidth);
+        List<TimelineMarkerGroup> groups = timelineMarkerGroups(events, usableWidth);
+        List<VBox> nodes = new ArrayList<>(groups.size());
         for (TimelineMarkerGroup group : groups) {
             int representativeIndex = group.representativeIndex();
             EventEnvelope envelope = events.get(representativeIndex);
@@ -166,20 +196,15 @@ final class TimelineMarkerPanel {
             symbol.setPrefSize(symbolSize, symbolSize);
             symbol.setMaxSize(symbolSize, symbolSize);
             symbol.getStyleClass().addAll("timeline-marker-symbol", eventMarkerClass(envelope));
-            if (group.eventIndexes().contains(currentIndex)) {
-                symbol.getStyleClass().add("timeline-marker-current");
-            }
             marker.getChildren().setAll(symbol);
             if (group.eventIndexes().size() > 1) {
                 Label aggregate = new Label("×" + group.eventIndexes().size());
                 aggregate.getStyleClass().add("timeline-marker-sequence");
-                if (group.eventIndexes().contains(currentIndex)) {
-                    aggregate.getStyleClass().add("timeline-marker-sequence-current");
-                }
                 marker.getChildren().add(aggregate);
             }
 
             timelineMarkers.getChildren().add(marker);
+            nodes.add(marker);
             marker.applyCss();
             marker.autosize();
             double markerWidth = Math.max(symbolSize, marker.prefWidth(-1.0d));
@@ -206,6 +231,53 @@ final class TimelineMarkerPanel {
                 }
             });
         }
+        renderedGroups = groups;
+        renderedMarkers = nodes;
+        updateCursor(active.presentationEventIndex());
+    }
+
+    /** Move the cursor and swap CSS states on existing markers; at most 48 groups. */
+    private void updateCursor(int currentIndex) {
+        if (currentIndex == highlightedEventIndex) return;
+        highlightedEventIndex = currentIndex;
+        boolean valid = currentIndex >= 0 && currentIndex < renderedEventCount;
+        if (cursorMarker != null) {
+            cursorMarker.setVisible(valid);
+            if (valid) {
+                double paneWidth = renderedWidth;
+                if (!(paneWidth > 0.0d)) paneWidth = timelineMarkers.prefWidth(-1.0d);
+                if (!(paneWidth > 0.0d) || !Double.isFinite(paneWidth)) paneWidth = 320.0d;
+                double paneHeight = renderedHeight;
+                if (!(paneHeight > 0.0d)) paneHeight = timelineMarkers.prefHeight(paneWidth);
+                if (!(paneHeight > 0.0d) || !Double.isFinite(paneHeight)) paneHeight = 36.0d;
+                double symbolSize = Math.max(7.0d, Math.min(14.0d, renderedFontSize * 0.52d));
+                double inset = Math.max(symbolSize, renderedFontSize * 0.62d);
+                double usableWidth = Math.max(1.0d, paneWidth - inset * 2.0d);
+                double width = Math.max(2.0d, renderedFontSize * 0.10d);
+                double height = Math.max(symbolSize * 2.4d, paneHeight * 0.72d);
+                double x = inset + eventRatio(currentIndex, renderedEventCount) * usableWidth - width / 2.0d;
+                cursorMarker.resizeRelocate(x, (paneHeight - height) / 2.0d, width, height);
+            }
+        }
+        for (int i = 0; i < renderedGroups.size(); i++) {
+            // Group indices are ordered; avoid scanning large aggregated groups each frame.
+            boolean selected = java.util.Collections.binarySearch(
+                    renderedGroups.get(i).eventIndexes(), currentIndex) >= 0;
+            VBox marker = renderedMarkers.get(i);
+            Region symbol = (Region) marker.getChildren().getFirst();
+            setStyleClass(symbol, "timeline-marker-current", selected);
+            if (marker.getChildren().size() > 1) {
+                setStyleClass(marker.getChildren().get(1), "timeline-marker-sequence-current", selected);
+            }
+        }
+    }
+
+    private static void setStyleClass(javafx.scene.Node node, String styleClass, boolean selected) {
+        if (selected) {
+            if (!node.getStyleClass().contains(styleClass)) node.getStyleClass().add(styleClass);
+        } else {
+            node.getStyleClass().remove(styleClass);
+        }
     }
 
     private double timelineBaseFontSize() {
@@ -216,36 +288,27 @@ final class TimelineMarkerPanel {
     }
 
     private void jumpToTimelineMarkerGroup(TimelineMarkerGroup group) {
-        if (currentController() == null || currentController().isRunning()) {
-            return;
-        }
-        int currentIndex = currentController().presentationEventIndex();
+        BaseController<?> active = currentController();
+        if (active == null || active.isRunning()) return;
+        int currentIndex = active.presentationEventIndex();
         int targetIndex = group.eventIndexes().getFirst();
         if (group.eventIndexes().size() > 1) {
-            for (int eventIndex : group.eventIndexes()) {
-                if (eventIndex > currentIndex) {
-                    targetIndex = eventIndex;
-                    break;
-                }
-            }
+            int nextIndex = java.util.Collections.binarySearch(group.eventIndexes(), currentIndex);
+            nextIndex = nextIndex >= 0 ? nextIndex + 1 : -nextIndex - 1;
+            if (nextIndex < group.eventIndexes().size())
+                targetIndex = group.eventIndexes().get(nextIndex);
         }
-        currentController().seekEventIndex(targetIndex);
+        active.seekEventIndex(targetIndex);
         afterSeek.run();
     }
 
     private List<TimelineMarkerGroup> timelineMarkerGroups(
-            List<EventEnvelope> events,
-            int currentIndex,
-            double usableWidth) {
+            List<EventEnvelope> events, double usableWidth) {
         List<Integer> candidates = new ArrayList<>();
         for (int index = 0; index < events.size(); index++) {
             if (isTimelineMarkerVisible(events.get(index))) {
                 candidates.add(index);
             }
-        }
-        if (currentIndex >= 0 && currentIndex < events.size() && !candidates.contains(currentIndex)) {
-            candidates.add(currentIndex);
-            candidates.sort(Integer::compareTo);
         }
         if (candidates.isEmpty()) {
             return List.of();
@@ -270,7 +333,7 @@ final class TimelineMarkerPanel {
         }
         List<TimelineMarkerGroup> groups = new ArrayList<>(buckets.size());
         for (List<Integer> eventIndexes : buckets.values()) {
-            int representative = representativeTimelineEvent(events, eventIndexes, currentIndex);
+            int representative = representativeTimelineEvent(events, eventIndexes);
             groups.add(new TimelineMarkerGroup(representative, List.copyOf(eventIndexes)));
         }
         groups.sort((left, right) -> Integer.compare(left.representativeIndex(), right.representativeIndex()));
@@ -279,11 +342,7 @@ final class TimelineMarkerPanel {
 
     private int representativeTimelineEvent(
             List<EventEnvelope> events,
-            List<Integer> eventIndexes,
-            int currentIndex) {
-        if (eventIndexes.contains(currentIndex)) {
-            return currentIndex;
-        }
+            List<Integer> eventIndexes) {
         for (int eventIndex : eventIndexes) {
             if (events.get(eventIndex).event() instanceof ExecutionLifecycleEvent) {
                 return eventIndex;

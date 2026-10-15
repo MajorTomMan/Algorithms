@@ -136,6 +136,8 @@ public abstract class BaseController<S> implements Initializable {
     private final ObjectProperty<EventEnvelope> presentationEvent = new SimpleObjectProperty<>();
     private int presentationEventIndex = -1;
     private int liveEventIndex = -1;
+    /** Invalidates timeline marker presentation only when the event stream changes. */
+    private long executionEventRevision;
     private final Timeline structureTimeline = new Timeline();
     private List<EventEnvelope> structureEventSnapshot = List.of();
     private int structureEventSnapshotSize = -1;
@@ -568,6 +570,7 @@ public abstract class BaseController<S> implements Initializable {
         paused.set(false);
         updatePlaybackButtonState();
         currentSession = null;
+        executionEventRevision++;
         EventReducer<S> reducer = reducerFactory.get();
         long expectedCompletionGeneration = ++completionGeneration;
         // The complete event stream can be large. Its checkpoint/frame index
@@ -612,6 +615,7 @@ public abstract class BaseController<S> implements Initializable {
         lastExecution = executionArchive.createRecord(
                 moduleId(), algorithmId, input, result, error, summary, events, lastExecutionAnchors, timeline.size());
         lastTimeline = timeline;
+        executionEventRevision++;
         replacePlaybackController(reducer, timeline);
         if (lastExecution != null) {
             executionArchive.retain(lastExecution);
@@ -643,6 +647,7 @@ public abstract class BaseController<S> implements Initializable {
     private void consumeLiveEvents(List<EventEnvelope> envelopes) {
         Runnable task = () -> {
             indexedMetricEvents.appendAll(envelopes);
+            if (!envelopes.isEmpty()) executionEventRevision++;
             EventEnvelope lastVisible = null;
             EventEnvelope lastEvent = null;
             for (EventEnvelope envelope : envelopes) {
@@ -892,6 +897,7 @@ public abstract class BaseController<S> implements Initializable {
     private void syncTimelineSlider(int index, int size) { replayControls.syncTimelineSlider(index, size); }
 
     private void clearExecutionState() {
+        executionEventRevision++;
         indexedMetricEvents.clear();
         if (replayController != null) {
             replayController.close();
@@ -1201,6 +1207,11 @@ public abstract class BaseController<S> implements Initializable {
 
     public final Region getVisualizerView() {
         return visualizer;
+    }
+
+    /** Lightweight marker invalidation, independent of the event snapshot size. */
+    public final long executionEventRevision() {
+        return executionEventRevision;
     }
 
     /** Read-only execution stream for the Workbench timeline/event inspector. */
