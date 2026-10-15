@@ -30,9 +30,13 @@ public final class KruskalMinimumSpanning {
 
     Map<Long, Long> parent = new HashMap<>();
     Map<Long, Integer> rank = new HashMap<>();
+    // Collect the result vertices while initializing union-find, avoiding
+    // another full graph.vertices() snapshot and traversal.
+    List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
     for (Vertex<Integer> vertex : graph.vertices()) {
       parent.put(vertex.id(), vertex.id());
       rank.put(vertex.id(), 0);
+      vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
     }
 
     List<Edge<Integer>> edges = new ArrayList<>();
@@ -41,13 +45,8 @@ public final class KruskalMinimumSpanning {
     }
     edges.sort(Comparator.comparingDouble(graph::weight).thenComparingLong(Edge::id));
 
-    // Build the result from the input vertices without recording a second set of
-    // VertexAdded events. Keeping vertex identities also lets the presentation
-    // reducer apply the ordinary EdgeAdded events to its vertex-only initial state.
-    List<GraphSnapshot.Vertex<Integer>> vertices = new ArrayList<>();
-    for (Vertex<Integer> vertex : graph.vertices()) {
-      vertices.add(new GraphSnapshot.Vertex<>(vertex.id(), vertex.value()));
-    }
+    // Keep vertex identities without recording a second set of VertexAdded events;
+    // the presentation reducer can apply EdgeAdded to the vertex-only initial state.
     Graph<Integer> result =
         Graph.fromSnapshot(new GraphSnapshot<>(GraphDirection.UNDIRECTED, vertices, List.of()));
 

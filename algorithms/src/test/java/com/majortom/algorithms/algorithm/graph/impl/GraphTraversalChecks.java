@@ -22,6 +22,20 @@ public final class GraphTraversalChecks {
         || !bfs.contains(isolated.value()) || !dfs.contains(isolated.value())
         || bfs.stream().distinct().count() != 3 || dfs.stream().distinct().count() != 3)
       throw new AssertionError("Traversal must visit each unique vertex, including isolated vertices");
+    if (!bfs.equals(List.of("A", "B", "ISOLATED"))
+        || !dfs.equals(List.of("A", "B", "ISOLATED")))
+      throw new AssertionError("Queue/stack reuse changed traversal order");
+
+    // Reuse the same traversal buffers across many isolated components.
+    Graph<Object> disconnected = new Graph<>(GraphDirection.UNDIRECTED);
+    List<Object> expected = new java.util.ArrayList<>();
+    for (int i = 0; i < 120; i++) {
+      expected.add("N" + i);
+      disconnected.addVertex("N" + i);
+    }
+    if (!new GraphBfs().traverse(disconnected).equals(expected)
+        || !new GraphDfs().traverse(disconnected).equals(expected))
+      throw new AssertionError("Disconnected component traversal order changed");
 
     // Kruskal must recover nodes by ID, never by business value.
     Graph<Integer> weighted = new Graph<>(GraphDirection.UNDIRECTED);

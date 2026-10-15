@@ -65,6 +65,11 @@ public final class GraphChecks {
     check(restored.edge(road.id()).value().equals("road"),
         "graph snapshot preserves edge payloads");
     check(manual.containsEdge(first, equal), "parallel edges still report an edge");
+    check(manual.containsEdge(equal, first), "explicit reverse direction is indexed");
+    var oldEdges = manual.outgoingEdges(first);
+    check(oldEdges.size() == 2, "all parallel outgoing edges are included");
+    check(manual.neighbors(first).iterator().next() == equal,
+        "parallel edges yield a single neighbor without changing order");
     check(manual.vertex(first.id()) == first && manual.vertex(equal.id()) == equal,
         "equal-valued nodes must remain distinguishable by ID");
     check(manual.edge(road.id()) == road && manual.edges(first, equal).size() == 2,
@@ -76,10 +81,23 @@ public final class GraphChecks {
     check(loops.edges(loopNode, loopNode).size() == 1, "undirected self-loop is stored once");
     check(loops.outgoingEdges(loopNode).size() == 1
             && loops.incomingEdges(loopNode).size() == 1, "self-loop indexes");
+    check(loops.containsEdge(loopNode, loopNode)
+            && loops.neighbors(loopNode).iterator().next() == loopNode,
+        "undirected self-loop must be visible only once in adjacency");
     check(loops.removeVertex(loopNode.id()) && loops.edgeCount() == 0,
         "vertex removal deletes self-loops");
     check(loops.edge(loop.id()) == null, "removed self-loop cannot be fetched");
-
+    // Neighbor and existence queries must follow direction and update after removals.
+    Graph<String> directed = new Graph<>(GraphDirection.DIRECTED);
+    Vertex<String> source = directed.addVertex("S");
+    Vertex<String> target = directed.addVertex("T");
+    Vertex<String> isolated = directed.addVertex("X");
+    Edge<String> link = directed.addEdge(source, target, 1.0);
+    check(directed.containsEdge(source, target) && !directed.containsEdge(target, source)
+            && !directed.containsEdge(isolated, source), "directed existence lookup");
+    check(directed.removeEdge(link.id()) && !directed.containsEdge(source, target)
+            && directed.neighbors(source).iterator().hasNext() == false,
+        "removed edges disappear from adjacency lookup");
 
 
     boolean rejected = false;

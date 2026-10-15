@@ -18,11 +18,11 @@ public final class GraphBfs {
     Objects.requireNonNull(graph, "graph");
     List<Object> order = new ArrayList<>();
     Set<Long> visited = new HashSet<>();
+    // Reuse one queue across disconnected components, including isolated vertices.
+    ArrayDeque<Vertex<Object>> pending = new ArrayDeque<>();
     for (Vertex<Object> origin : graph.vertices()) {
-      if (!visited.contains(origin.id())) {
-        ArrayDeque<Vertex<Object>> pending = new ArrayDeque<>();
+      if (visited.add(origin.id())) {
         pending.addLast(origin);
-        visited.add(origin.id());
         while (!pending.isEmpty()) {
           Vertex<Object> current = pending.removeFirst();
           AlgorithmEvents.visited(GraphObservationDomains.VERTEX, current.id());

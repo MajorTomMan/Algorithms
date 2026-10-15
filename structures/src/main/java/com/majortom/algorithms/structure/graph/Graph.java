@@ -40,7 +40,15 @@ public final class Graph<T> implements GraphStructure<T> {
     return vertex != null && vertices.get(vertex.id()) == vertex;
   }
   @Override public boolean containsEdge(Vertex<T> from, Vertex<T> to) {
-    return !edges(from, to).isEmpty();
+    requireVertex(from);
+    requireVertex(to);
+    // Existence requires no intermediate list of matching parallel edges.
+    for (long id : outgoing.get(from.id())) {
+      Edge<T> edge = edges.get(id);
+      if (direction.isDirected()
+          ? edge.to() == to : (edge.from() == to || edge.to() == to)) return true;
+    }
+    return false;
   }
   @Override public boolean isDirected() { return direction.isDirected(); }
   @Override public boolean isEmpty() { return vertices.isEmpty(); }
@@ -75,7 +83,7 @@ public final class Graph<T> implements GraphStructure<T> {
       throw new IllegalArgumentException("duplicate edge ID: " + edge.id());
     outgoing.get(edge.from().id()).add(edge.id());
     incoming.get(edge.to().id()).add(edge.id());
-    if (!direction.isDirected()) {
+    if (!direction.isDirected() && edge.from() != edge.to()) {
       outgoing.get(edge.to().id()).add(edge.id());
       incoming.get(edge.from().id()).add(edge.id());
     }
@@ -84,7 +92,7 @@ public final class Graph<T> implements GraphStructure<T> {
     edges.remove(edge.id());
     outgoing.get(edge.from().id()).remove(edge.id());
     incoming.get(edge.to().id()).remove(edge.id());
-    if (!direction.isDirected()) {
+    if (!direction.isDirected() && edge.from() != edge.to()) {
       outgoing.get(edge.to().id()).remove(edge.id());
       incoming.get(edge.from().id()).remove(edge.id());
     }
@@ -181,9 +189,12 @@ public final class Graph<T> implements GraphStructure<T> {
     return setWeight(edge.id(), weight);
   }
   @Override public Iterable<Vertex<T>> neighbors(Vertex<T> vertex) {
+    requireVertex(vertex);
     LinkedHashSet<Vertex<T>> result = new LinkedHashSet<>();
-    for (Edge<T> edge : outgoingEdges(vertex))
+    for (long id : outgoing.get(vertex.id())) {
+      Edge<T> edge = edges.get(id);
       result.add(edge.from() == vertex ? edge.to() : edge.from());
+    }
     return List.copyOf(result);
   }
   @Override public GraphSnapshot<T> snapshot() {

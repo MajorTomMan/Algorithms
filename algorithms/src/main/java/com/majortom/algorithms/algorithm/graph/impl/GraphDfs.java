@@ -18,16 +18,18 @@ public final class GraphDfs {
     Objects.requireNonNull(graph, "graph");
     List<Object> order = new ArrayList<>();
     Set<Long> visited = new HashSet<>();
+    // Neither stack nor neighbor buffer must be rebuilt for each component/node.
+    ArrayDeque<Vertex<Object>> pending = new ArrayDeque<>();
+    List<Vertex<Object>> neighbors = new ArrayList<>();
     for (Vertex<Object> origin : graph.vertices()) {
       if (!visited.contains(origin.id())) {
-        ArrayDeque<Vertex<Object>> pending = new ArrayDeque<>();
         pending.addLast(origin);
         while (!pending.isEmpty()) {
           Vertex<Object> current = pending.removeLast();
           if (!visited.add(current.id())) continue;
           AlgorithmEvents.visited(GraphObservationDomains.VERTEX, current.id());
           order.add(current.value());
-          List<Vertex<Object>> neighbors = new ArrayList<>();
+          neighbors.clear();
           for (Edge<Object> edge : graph.outgoingEdges(current)) {
             Vertex<Object> neighbor = edge.from() == current ? edge.to() : edge.from();
             AlgorithmEvents.examined(GraphObservationDomains.VERTEX, current.id(), neighbor.id());
