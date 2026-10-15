@@ -40,10 +40,11 @@ public final class RuntimeOverviewService {
       Map<String, Long> peaks) {
     List<MetricItem> algorithmMetrics = new java.util.ArrayList<>(
         algorithms.metrics(structureId, statistics, executionEvents, peaks));
+    // Typed event contributions are authoritative; structure-specific counters fill gaps.
+    java.util.Set<String> seen = new java.util.HashSet<>();
+    for (MetricItem metric : algorithmMetrics) seen.add(metric.key());
     for (MetricItem metric : structures.executionMetrics(structureId, structureState, executionEvents, peaks)) {
-      if (algorithmMetrics.stream().noneMatch(existing -> existing.key().equals(metric.key()))) {
-        algorithmMetrics.add(metric);
-      }
+      if (seen.add(metric.key())) algorithmMetrics.add(metric);
     }
     return new RuntimeOverviewModel(
         structures.metrics(structureId, structureState, structureEvents),

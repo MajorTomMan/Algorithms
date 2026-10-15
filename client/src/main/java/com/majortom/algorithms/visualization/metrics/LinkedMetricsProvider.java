@@ -4,6 +4,7 @@ import com.majortom.algorithms.core.event.structure.LinkedStructureEvent;
 import com.majortom.algorithms.visualization.runtime.linked.LinkedListViewState;
 import java.util.ArrayList;
 import java.util.List;
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import java.util.Map;
 import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;
 
@@ -26,8 +27,8 @@ final class LinkedMetricsProvider implements StructureMetricsProvider<LinkedList
   @Override
   public List<MetricItem> executionMetrics(LinkedListViewState state, List<com.majortom.algorithms.core.runtime.EventEnvelope> events, Map<String, Long> peaks) {
     List<MetricItem> result = new ArrayList<>();
-    addEventMetric(result, events, LinkedStructureEvent.NodeInserted.class, "nodeInsertions", "label.workspace.metric.insertions");
-    addEventMetric(result, events, LinkedStructureEvent.NodeRemoved.class, "nodeRemovals", "label.workspace.metric.removals");
+    addEventMetric(result, events, LinkedStructureEvent.NodeInserted.class, MetricKeys.INSERTIONS, "label.workspace.metric.insertions");
+    addEventMetric(result, events, LinkedStructureEvent.NodeRemoved.class, MetricKeys.REMOVALS, "label.workspace.metric.removals");
     long rewires = countEvents(events, LinkedStructureEvent.NextChanged.class)
         + countEvents(events, LinkedStructureEvent.PreviousChanged.class);
     if (rewires > 0L) result.add(MetricItem.of("rewires", "label.workspace.metric.rewires", rewires));

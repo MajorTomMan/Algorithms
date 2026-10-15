@@ -50,7 +50,7 @@ public final class StructureDiscovery {
       StructureDescriptor descriptor = new StructureDescriptor(annotation.id(),
           ComponentNames.resolve(annotation.name(), implementation), annotation.module(), contract,
           implementation);
-      descriptors.add(RegistrationValidator.validate(descriptor));
+      descriptors.add(descriptor);
     }
     descriptors.sort(Comparator.comparing(StructureDescriptor::id));
     RegistrationValidator.validateUniqueStructureIds(descriptors);

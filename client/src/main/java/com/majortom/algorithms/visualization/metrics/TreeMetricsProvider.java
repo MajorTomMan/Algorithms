@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import com.majortom.algorithms.core.statistics.MetricKeys;
 import java.util.Map;
 import java.util.Set;
 import static com.majortom.algorithms.visualization.metrics.MetricsSupport.*;
@@ -45,8 +46,8 @@ final class TreeMetricsProvider implements StructureMetricsProvider<TreeViewStat
   @Override
   public List<MetricItem> executionMetrics(TreeViewState state, List<com.majortom.algorithms.core.runtime.EventEnvelope> events, Map<String, Long> peaks) {
     List<MetricItem> result = new ArrayList<>();
-    addEventMetric(result, events, TreeStructureEvent.NodeInserted.class, "nodeInsertions", "label.workspace.metric.insertions");
-    addEventMetric(result, events, TreeStructureEvent.NodeRemoved.class, "nodeRemovals", "label.workspace.metric.removals");
+    addEventMetric(result, events, TreeStructureEvent.NodeInserted.class, MetricKeys.INSERTIONS, "label.workspace.metric.insertions");
+    addEventMetric(result, events, TreeStructureEvent.NodeRemoved.class, MetricKeys.REMOVALS, "label.workspace.metric.removals");
     long relations = countEvents(events, TreeStructureEvent.LeftChanged.class)
         + countEvents(events, TreeStructureEvent.RightChanged.class)
         + countEvents(events, TreeStructureEvent.ChildInserted.class)

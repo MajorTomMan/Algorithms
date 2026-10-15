@@ -52,7 +52,6 @@ public final class AlgorithmDiscovery {
           structureContract,
           implementation,
           entryPoint);
-      RegistrationValidator.validate(descriptor);
       validateTypeSignature(descriptor);
       descriptors.add(descriptor);
     }
