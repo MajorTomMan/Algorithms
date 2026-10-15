@@ -333,6 +333,7 @@ public abstract class BaseController<S> implements Initializable {
         stopReplay();
         if (currentSession != null) {
             currentSession.close();
+            executionEventRevision++;
         }
         currentSession = null;
         running.set(false);

@@ -1360,7 +1360,7 @@ public class MainController implements Initializable {
     private void setupTimelinePresentation() {
         timelinePanel = new TimelineMarkerPanel(timelineMarkers, timelineLabel,
                 timelineRuntimeLegendLabel, timelineStructureLegendLabel, timelineObservationLegendLabel,
-                () -> currentSubController, WorkbenchEventText::eventDisplayName, this::refreshExecutionPresentation);
+                () -> currentSubController, this::refreshExecutionPresentation);
         timelinePanel.install();
         setTimelineExpanded(false);
     }

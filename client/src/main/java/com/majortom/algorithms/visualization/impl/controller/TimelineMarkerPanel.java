@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -26,7 +25,6 @@ final class TimelineMarkerPanel {
     private final Label timelineStructureLegendLabel;
     private final Label timelineObservationLegendLabel;
     private final Supplier<BaseController<?>> controller;
-    private final Function<EventEnvelope, String> eventDisplayName;
     private final Runnable afterSeek;
     private boolean timelineRuntimeVisible = true;
     private boolean timelineStructureVisible = true;
@@ -45,15 +43,13 @@ final class TimelineMarkerPanel {
     private List<VBox> renderedMarkers = List.of();
 
     TimelineMarkerPanel(Pane markers, Label label, Label runtime, Label structure, Label observation,
-            Supplier<BaseController<?>> controller, Function<EventEnvelope, String> eventDisplayName,
-            Runnable afterSeek) {
+            Supplier<BaseController<?>> controller, Runnable afterSeek) {
         this.timelineMarkers = markers;
         this.timelineLabel = label;
         this.timelineRuntimeLegendLabel = runtime;
         this.timelineStructureLegendLabel = structure;
         this.timelineObservationLegendLabel = observation;
         this.controller = controller;
-        this.eventDisplayName = eventDisplayName;
         this.afterSeek = afterSeek;
     }
 
@@ -379,7 +375,7 @@ final class TimelineMarkerPanel {
     private String timelineMarkerTooltip(List<EventEnvelope> events, TimelineMarkerGroup group) {
         EventEnvelope envelope = events.get(group.representativeIndex());
         String base = I18N.text("label.workspace.event") + " " + envelope.sequence()
-                + " · " + eventDisplayName.apply(envelope);
+                + " · " + WorkbenchEventText.eventDisplayName(envelope);
         if (group.eventIndexes().size() <= 1) {
             return base;
         }
