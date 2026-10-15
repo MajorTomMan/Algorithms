@@ -7,7 +7,18 @@ import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
 
 /** Interprets annotated Java objects as graph topology; unrelated to input format or files. */
 final class GraphObjectMapper {

@@ -1,5 +1,12 @@
 package com.majortom.algorithms.algorithm.graph.impl;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
 import com.majortom.algorithms.core.domain.observation.GraphObservationDomains;
@@ -7,7 +14,7 @@ import com.majortom.algorithms.core.runtime.AlgorithmEvents;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.GraphStructure;
 import com.majortom.algorithms.structure.graph.Vertex;
-import java.util.*;
+
 
 /** Traverses all components, using stable vertex IDs instead of business-value equality. */
 @Algorithm(id = "graph-bfs", name = "广度优先遍历", types = {Object.class},

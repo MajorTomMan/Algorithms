@@ -1,9 +1,14 @@
 package com.majortom.algorithms.leetcode.support;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.Random;
+
 import com.majortom.algorithms.structure.linked.ListNode;
 import com.majortom.algorithms.structure.tree.BinaryTreeNode;
 import com.majortom.algorithms.structure.tree.TreeNode;
-import java.util.*;
+
 
 /**
  * 算法实验室工具类。
