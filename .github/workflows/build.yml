@@ -31,3 +31,4 @@ jobs:
           java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
           java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.SharedValueProjectionChecks
           java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.LazyGraphProjectionChecks
+          java -cp client/target/test-classes:client/target/classes com.majortom.algorithms.visualization.render.runtime.RenderSessionLifecycleChecks

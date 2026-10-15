@@ -16,7 +16,6 @@ import com.majortom.algorithms.algorithm.maze.MazeModel;
 import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.utils.EffectUtils;
 import com.majortom.algorithms.visualization.algorithm.AlgorithmCatalog;
-import com.majortom.algorithms.visualization.algorithm.MazeAlgorithmCatalog;
 import com.majortom.algorithms.visualization.impl.visualizer.MazeVisualizer;
 import com.majortom.algorithms.visualization.impl.visualizer.presenter.MazePresenter;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -45,8 +44,8 @@ public final class MazeController extends BaseModuleController<MazeViewState>
 
     private enum Operation { GENERATE, SOLVE }
 
-    private final List<String> generators = MazeAlgorithmCatalog.ids(MazeRole.GENERATOR, MazeModel.ARRAY);
-    private final List<String> arrayPathfinders = MazeAlgorithmCatalog.ids(MazeRole.PATHFINDER, MazeModel.ARRAY);
+    private final List<String> generators = AlgorithmCatalog.mazeAlgorithms(MazeRole.GENERATOR, MazeModel.ARRAY);
+    private final List<String> arrayPathfinders = AlgorithmCatalog.mazeAlgorithms(MazeRole.PATHFINDER, MazeModel.ARRAY);
 
     private int size = 51;
     private GridMaze generatedMaze;

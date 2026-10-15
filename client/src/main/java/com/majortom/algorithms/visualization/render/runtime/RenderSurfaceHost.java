@@ -20,7 +20,7 @@ public final class RenderSurfaceHost {
 
     public CompletionStage<Void> attach(RenderSurface<?> surface) {
         Objects.requireNonNull(surface, "surface");
-        return serialized(surface.sessionId(), () -> register(surface)
+        return serialized(surface.sessionId(), () -> lifecycle.registerSurface(surface)
                 .thenCompose(ignored -> lifecycle.activateSession(surface.sessionId())));
     }
 
@@ -29,16 +29,8 @@ public final class RenderSurfaceHost {
         Objects.requireNonNull(surface, "surface");
         Objects.requireNonNull(dispose, "dispose");
         return serialized(surface.sessionId(), () -> lifecycle.deactivateSession(surface.sessionId())
-                .thenCompose(ignored -> unregister(surface))
+                .thenCompose(ignored -> lifecycle.unregisterSurface(surface))
                 .thenCompose(ignored -> lifecycle.disposeSurface(dispose)));
-    }
-
-    private CompletionStage<Void> register(RenderSurface<?> surface) {
-        return lifecycle.registerSurface(surface);
-    }
-
-    private CompletionStage<Void> unregister(RenderSurface<?> surface) {
-        return lifecycle.unregisterSurface(surface);
     }
 
     private synchronized CompletionStage<Void> serialized(

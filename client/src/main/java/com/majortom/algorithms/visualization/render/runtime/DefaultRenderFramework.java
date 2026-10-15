@@ -57,7 +57,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
     private final PresentationSourceRegistry presentationSources = new PresentationSourceRegistry();
     private final CameraManager cameraManager;
     private final RenderTrace trace;
-    private final RenderSessionRegistry sessions = new RenderSessionRegistry();
+    private final Map<RenderSessionId, RenderSession> sessions = new java.util.LinkedHashMap<>();
     private final Map<RenderSessionId, RenderMailbox> mailboxes = new HashMap<>();
     private final AtomicLong transactionSequence = new AtomicLong();
     private final AtomicLong requestSequence = new AtomicLong();
@@ -128,7 +128,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             RenderMailbox mailbox = mailboxes.get(surfaceId);
             if (mailbox != null) mailbox.cancelPending();
             presentationSources.unregister(surfaceId);
-            RenderSession session = sessions.getOrCreate(surfaceId);
+            RenderSession session = session(surfaceId);
             session.deactivate();
             fxExecutor.execute(() -> presentationSurfaces.unregister(surfaceId))
                     .whenComplete((ignored, failure) -> {
@@ -161,7 +161,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
     public CompletionStage<Void> activateSession(RenderSessionId id) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(id);
+            RenderSession session = session(id);
             session.activate();
             drain(id);
             future.complete(null);
@@ -173,7 +173,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
     public CompletionStage<Void> deactivateSession(RenderSessionId id) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(id);
+            RenderSession session = session(id);
             session.deactivate();
             RenderMailbox mailbox = mailboxes.get(id);
             if (mailbox != null) mailbox.cancelPending();
@@ -189,7 +189,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         Objects.requireNonNull(cursor, "cursor");
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(sessionId);
+            RenderSession session = session(sessionId);
             session.presentationCursor = cursor;
             session.presentationCursorRevision++;
             invalidateCursorDependents(sessionId);
@@ -203,7 +203,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         Objects.requireNonNull(sessionId, "sessionId");
         CompletableFuture<Void> future = new CompletableFuture<>();
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(sessionId);
+            RenderSession session = session(sessionId);
             if (session.presentationCursor != null) {
                 session.presentationCursor = null;
                 session.presentationCursorRevision++;
@@ -219,7 +219,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         Objects.requireNonNull(intent, "intent");
         CompletableFuture<RenderResult> future = new CompletableFuture<>();
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(intent.sessionId());
+            RenderSession session = session(intent.sessionId());
             RenderMailbox mailbox = mailboxes.computeIfAbsent(intent.sessionId(), ignored -> new RenderMailbox());
             long modelRevision = session.modelRevision;
             long geometryRevision = session.geometryRevision;
@@ -284,8 +284,13 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         return fxExecutor.execute(Objects.requireNonNull(dispose, "dispose"));
     }
 
+    /** Session ownership stays with the runtime; no separate map wrapper is needed. */
+    private RenderSession session(RenderSessionId id) {
+        return sessions.computeIfAbsent(Objects.requireNonNull(id, "sessionId"), RenderSession::new);
+    }
+
     private void drain(RenderSessionId sessionId) {
-        RenderSession session = sessions.getOrCreate(sessionId);
+        RenderSession session = session(sessionId);
         RenderMailbox mailbox = mailboxes.computeIfAbsent(sessionId, ignored -> new RenderMailbox());
         if (!session.active() || mailbox.inFlight) return;
         RenderMailbox.Submission submission = mailbox.poll();
@@ -538,7 +543,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
         PresentationCursor cursor = null;
         long cursorRevision = 0L;
         if (entry.cursorSessionId().isPresent()) {
-            RenderSession cursorSession = sessions.getOrCreate(entry.cursorSessionId().orElseThrow());
+            RenderSession cursorSession = session(entry.cursorSessionId().orElseThrow());
             cursor = cursorSession.presentationCursor;
             cursorRevision = cursorSession.presentationCursorRevision;
         }
@@ -624,7 +629,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
             RenderSessionId sessionId, String runId, long eventSequence, double requestedProgress) {
         double progress = Math.max(0.0d, Math.min(1.0d, requestedProgress));
         scheduler.execute(() -> {
-            RenderSession session = sessions.getOrCreate(sessionId);
+            RenderSession session = session(sessionId);
             PresentationCursor current = session.presentationCursor;
             if (current == null
                     || !current.runId().equals(runId)
@@ -660,7 +665,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
 
     private void enqueuePresentationSurfaceInvalidation(
             RenderSessionId surfaceId, CompletableFuture<RenderResult> future) {
-        RenderSession session = sessions.getOrCreate(surfaceId);
+        RenderSession session = session(surfaceId);
         RenderMailbox mailbox = mailboxes.computeIfAbsent(surfaceId, ignored -> new RenderMailbox());
         mailbox.enqueue(new RenderMailbox.Submission(
                 new PresentationSurfaceRenderIntent(surfaceId),

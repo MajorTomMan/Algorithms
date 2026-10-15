@@ -1,6 +1,9 @@
 package com.majortom.algorithms.visualization.algorithm;
 
 import com.majortom.algorithms.algorithm.discovery.ComponentDiscovery;
+import com.majortom.algorithms.algorithm.maze.MazeAlgorithm;
+import com.majortom.algorithms.algorithm.maze.MazeModel;
+import com.majortom.algorithms.algorithm.maze.MazeRole;
 import com.majortom.algorithms.core.metadata.StructureModule;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.structure.graph.GraphStructure;
@@ -63,6 +66,20 @@ public final class AlgorithmCatalog {
   public static String name(
       String moduleId, AlgorithmTypeSignature typeSignature, String algorithmId) {
     return descriptor(moduleId, typeSignature, algorithmId).name();
+  }
+
+  /** Maze role/model filtering belongs to the shared algorithm catalog, not a second catalog. */
+  public static List<String> mazeAlgorithms(MazeRole role, MazeModel model) {
+    java.util.Objects.requireNonNull(role, "role");
+    java.util.Objects.requireNonNull(model, "model");
+    return descriptorsForWorkbenchModule(StructureIds.MAZE).stream()
+        .filter(descriptor -> {
+          MazeAlgorithm metadata = descriptor.implementation().getAnnotation(MazeAlgorithm.class);
+          return metadata != null && metadata.role() == role && metadata.model() == model;
+        })
+        .map(AlgorithmDescriptor::id)
+        .distinct()
+        .toList();
   }
 
   public static List<String> forWorkbenchModule(String moduleId) {

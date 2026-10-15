@@ -18,7 +18,7 @@ final class RenderSession {
   long presentationCursorRevision;
   long viewportRevision;
   long committedRevision;
-  RenderSessionState state = RenderSessionState.INACTIVE;
+  private boolean active;
   LayoutRequest lastLayoutRequest;
   LayoutResult layout;
   ViewportSnapshot viewport;
@@ -32,18 +32,18 @@ final class RenderSession {
   }
 
   void activate() {
-    if (state != RenderSessionState.ACTIVE) {
+    if (!active) {
       generation++;
-      state = RenderSessionState.ACTIVE;
+      active = true;
     }
   }
 
   void deactivate() {
     generation++;
-    state = RenderSessionState.INACTIVE;
+    active = false;
   }
 
   boolean active() {
-    return state == RenderSessionState.ACTIVE;
+    return active;
   }
 }
