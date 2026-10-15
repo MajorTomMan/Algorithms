@@ -198,12 +198,18 @@ public final class ChainedHashTable<K, V> implements HashTableStructure<K, V> {
     private void rehash(int newCapacity) {
         int previousCapacity = capacity();
         Node<K, V>[] next = newBuckets(newCapacity);
+        // Keep each new bucket's tail locally so collisions don't force repeated
+        // head-to-tail scans. The old table stays untouched until construction ends.
+        Node<K, V>[] tails = newBuckets(newCapacity);
 
         for (Node<K, V> head : buckets) {
             Node<K, V> current = head;
             while (current != null) {
                 int index = indexFor(current.key, newCapacity);
-                append(next, index, current.key, current.value);
+                Node<K, V> copied = new Node<>(current.key, current.value);
+                if (tails[index] == null) next[index] = copied;
+                else tails[index].next = copied;
+                tails[index] = copied;
                 current = current.next;
             }
         }

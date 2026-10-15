@@ -2,7 +2,6 @@ package com.majortom.algorithms.structure.linked;
 
 import com.majortom.algorithms.core.runtime.StructureEvents;
 import com.majortom.algorithms.core.snapshot.SequenceSnapshot;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -36,19 +35,20 @@ public final class LinkedList<T>
   @Override
   public void initialize(SequenceSnapshot<T> snapshot) {
     Objects.requireNonNull(snapshot, "snapshot");
-    java.util.List<T> values = snapshot.values();
-    ArrayList<ListNode<T>> nodes = new ArrayList<>(values.size());
-    for (T value : values) {
-      nodes.add(new ListNode<>(value));
+    // Link detached nodes as they are restored; no intermediate node array is needed.
+    ListNode<T> first = null;
+    ListNode<T> last = null;
+    int count = 0;
+    for (T value : snapshot.values()) {
+      ListNode<T> node = new ListNode<>(value, null, last);
+      if (last == null) first = node;
+      else last.initializeLinks(node, last.getPrevious());
+      last = node;
+      count++;
     }
-    for (int index = 0; index < nodes.size(); index++) {
-      ListNode<T> previous = index == 0 ? null : nodes.get(index - 1);
-      ListNode<T> next = index + 1 == nodes.size() ? null : nodes.get(index + 1);
-      nodes.get(index).initializeLinks(next, previous);
-    }
-    head = nodes.isEmpty() ? null : nodes.getFirst();
-    tail = nodes.isEmpty() ? null : nodes.getLast();
-    size = nodes.size();
+    head = first;
+    tail = last;
+    size = count;
   }
 
   @Override
@@ -248,5 +248,6 @@ public final class LinkedList<T>
   public void clear() {
     head = null;
     tail = null;
+    size = 0;
   }
 }

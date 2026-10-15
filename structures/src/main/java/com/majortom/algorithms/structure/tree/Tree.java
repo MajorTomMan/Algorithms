@@ -97,10 +97,12 @@ public final class Tree<T> implements GeneralTreeStructure<T> {
 
   @Override
   public GeneralTreeNode<T> addParent(GeneralTreeNode<T> node, T value) {
-    GeneralTreeNode<T> target = requireMember(node, "node");
+    GeneralTreeNode<T> target = requireNode(node);
     GeneralTreeNode<T> previousParent = null;
     int targetIndex = -1;
     if (target != root) {
+      // parentOf() already establishes membership by object identity. Avoid a
+      // preceding full-tree findById() search for the same target.
       previousParent = parentOf(target);
       if (previousParent == null) {
         throw new IllegalArgumentException("node does not belong to this tree");
