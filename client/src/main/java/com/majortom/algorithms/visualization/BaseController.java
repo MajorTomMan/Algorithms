@@ -156,6 +156,9 @@ public abstract class BaseController<S> implements Initializable {
     private final RuntimeMetricTracker runtimeMetricTracker = new RuntimeMetricTracker();
     // Used only for overview metrics. The authoritative history remains in ExecutionSession.
     private final IndexedExecutionEvents indexedMetricEvents = new IndexedExecutionEvents();
+    /** FX-thread-only read view; unlike executionEvents(), does not copy live history. */
+    private final List<EventEnvelope> timelineMarkerLiveEvents =
+            java.util.Collections.unmodifiableList(indexedMetricEvents);
     private final ControllerMemoryProfile memoryProfile = new ControllerMemoryProfile(this::refreshStatsDisplay);
     private boolean disposed;
 
@@ -1213,6 +1216,15 @@ public abstract class BaseController<S> implements Initializable {
     /** Lightweight marker invalidation, independent of the event snapshot size. */
     public final long executionEventRevision() {
         return executionEventRevision;
+    }
+
+    /**
+     * Borrowed, read-only event view for the JavaFX timeline marker panel only.
+     * Live events are appended on FX; do not retain or traverse this outside that thread.
+     * Normal executionEvents() remains a defensive snapshot for other consumers.
+     */
+    public final List<EventEnvelope> timelineMarkerEvents() {
+        return lastTimeline == null ? timelineMarkerLiveEvents : lastTimeline.events();
     }
 
     /** Read-only execution stream for the Workbench timeline/event inspector. */
