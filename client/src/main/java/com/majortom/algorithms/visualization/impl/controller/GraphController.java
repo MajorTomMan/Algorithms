@@ -36,10 +36,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
-import static com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.*;
-import com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQueries.SnapshotEdge;
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -124,7 +123,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         GraphSnapshot<Object> inputSnapshot = selectedAlgorithmSnapshot();
-        GraphStructure<Object> inputGraph = graphFromSnapshot(inputSnapshot);
+        GraphStructure<Object> inputGraph = Graph.fromSnapshot(inputSnapshot);
         if (inputGraph.isEmpty()) {
             return;
         }
@@ -193,7 +192,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         Edge<Object> target = resolveEditEdge(graph);
         if (target == null) return;
 
-        List<Long> previousOrder = snapshotEdgeIds(currentSnapshot());
+        List<Long> previousOrder = graphEdgeIds(graph);
         int removedIndex = previousOrder.indexOf(target.id());
         if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(target.id()))) return;
 
@@ -219,15 +218,15 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (id == null) {
             return;
         }
+        long[] created = new long[1];
         if (!executeStructureOperation("add-vertex", () -> {
-            graph.addVertex(id);
+            created[0] = graph.addVertex(id).id();
             return null;
         })) {
             return;
         }
         renderGraph();
-        List<Long> nodeIds = snapshotVertexIds(currentSnapshot());
-        if (!nodeIds.isEmpty()) graphVisualizer().selectNode(nodeIds.getLast());
+        graphVisualizer().selectNode(created[0]);
         logI18n("message.graph.node_added", id);
     }
 
@@ -238,7 +237,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
                 : graph.vertex(structureSelectedNodeId);
         if (target == null) return;
 
-        List<Long> previousOrder = snapshotVertexIds(currentSnapshot());
+        List<Long> previousOrder = graphVertexIds(graph);
         int removedIndex = previousOrder.indexOf(target.id());
         if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(target.id())))
             return;
@@ -326,9 +325,20 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return result;
     }
 
+    private static List<Long> graphVertexIds(Graph<?> graph) {
+        List<Long> ids = new ArrayList<>();
+        for (Vertex<?> vertex : graph.vertices()) ids.add(vertex.id());
+        return ids;
+    }
+
+    private static List<Long> graphEdgeIds(Graph<?> graph) {
+        List<Long> ids = new ArrayList<>();
+        for (Edge<?> edge : graph.edges()) ids.add(edge.id());
+        return ids;
+    }
+
     private void selectGraphNodeAfterRemoval(List<Long> previousOrder, int removedIndex) {
-        GraphSnapshot<Object> snapshot = currentSnapshot();
-        List<Long> currentOrder = snapshotVertexIds(snapshot);
+        List<Long> currentOrder = graphVertexIds(currentGraph());
         if (currentOrder.isEmpty()) {
             clearVisualSelection();
             nodeField.clear();
@@ -348,8 +358,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void selectGraphEdgeAfterRemoval(List<Long> previousOrder, int removedIndex) {
-        GraphSnapshot<Object> snapshot = currentSnapshot();
-        List<Long> currentOrder = snapshotEdgeIds(snapshot);
+        List<Long> currentOrder = graphEdgeIds(currentGraph());
         if (currentOrder.isEmpty()) {
             clearVisualSelection();
             fromField.clear();
@@ -723,9 +732,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     private void replaceGraphData(GraphBatch batch, String operationId, String messageKey) {
         Graph<Object> replacement;
+        GraphSnapshot<Object> replacementSnapshot;
         try {
-            GraphSnapshot<Object> snapshot = GraphDataFactory.snapshot(batch, activeDirection);
-            replacement = Graph.fromSnapshot(snapshot);
+            replacementSnapshot = GraphDataFactory.snapshot(batch, activeDirection);
+            replacement = Graph.fromSnapshot(replacementSnapshot);
         } catch (IllegalArgumentException exception) {
             logI18n("message.error.bulk_input_invalid");
             return;
@@ -746,7 +756,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         renderGraph();
         refreshStatsDisplay();
         if (!batch.nodes().isEmpty()) {
-            graphVisualizer().selectNode(replacement.snapshot().vertices().getFirst().id());
+            graphVisualizer().selectNode(replacementSnapshot.vertices().getFirst().id());
         }
         logI18n(messageKey, batch.nodes().size());
     }
@@ -772,13 +782,24 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             handleAlgorithmNodeSelection(nodeId);
             return;
         }
-        GraphSnapshot<Object> snapshot = currentSnapshot();
-        Object value = snapshotVertexValue(snapshot, nodeId);
-        if (value == null) {
+        Graph<Object> graph = currentGraph();
+        Vertex<Object> selected = graph.vertex(nodeId);
+        if (selected == null) {
             clearVisualSelection();
             return;
         }
-        int degree = snapshotDegree(snapshot, nodeId);
+        Object value = selected.value();
+        // In directed graphs a self-loop contributes once to each index.
+        // In undirected graphs every incident edge is indexed once; loops count twice.
+        List<Edge<Object>> outgoing = graph.outgoingEdges(selected);
+        int degree = outgoing.size();
+        if (graph.isDirected()) {
+            degree += graph.incomingEdges(selected).size();
+        } else {
+            for (Edge<Object> edge : outgoing) {
+                if (edge.from() == selected && edge.to() == selected) degree++;
+            }
+        }
         String text = formatNode(value);
         if (nodeField != null) nodeField.setText(text);
         structureSelectedNodeId = nodeId;
@@ -827,14 +848,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             handleAlgorithmEdgeSelection(edgeId);
             return;
         }
-        GraphSnapshot<Object> snapshot = currentSnapshot();
-        SnapshotEdge edge = snapshotEdge(snapshot, edgeId);
+        Graph<Object> graph = currentGraph();
+        Edge<Object> edge = graph.edge(edgeId);
         if (edge == null) {
             clearVisualSelection();
             return;
         }
-        Object from = snapshotVertexValue(snapshot, edge.fromId());
-        Object to = snapshotVertexValue(snapshot, edge.toId());
+        Object from = edge.from().value();
+        Object to = edge.to().value();
         if (from == null || to == null) {
             clearVisualSelection();
             return;
@@ -850,13 +871,12 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         structureSelectedEdgeId = edgeId;
         structureSelectedNodeId = null;
-        Edge<Object> selected = currentGraph().edge(edgeId);
-        VisualValue payload = selected == null || selected.value() == null
-                ? null : VisualValue.of(selected.value());
+        VisualValue payload = edge.value() == null
+                ? null : VisualValue.of(edge.value());
         selectionListener.accept(new EdgeSelection(
-                edgeId, edge.fromId(), edge.toId(),
+                edgeId, edge.from().id(), edge.to().id(),
                 VisualValue.of(from), VisualValue.of(to), edge.weight(),
-                snapshot.direction().isDirected(), payload));
+                graph.isDirected(), payload));
     }
 
     private void handleAlgorithmEdgeSelection(long edgeId) {

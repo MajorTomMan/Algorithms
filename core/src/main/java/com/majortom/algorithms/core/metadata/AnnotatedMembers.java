@@ -35,10 +35,20 @@ public final class AnnotatedMembers {
   }
 
   /** Resolves an explicitly named Java field, record accessor or bean getter. */
+  private static final ClassValue<Map<String, Accessor>> NAMED = new ClassValue<>() {
+    @Override protected Map<String, Accessor> computeValue(Class<?> type) {
+      return new ConcurrentHashMap<>();
+    }
+  };
+
   public static Accessor named(Class<?> type, String name) {
     Objects.requireNonNull(type, "type");
     if (name == null || name.isBlank())
       throw new IllegalArgumentException("Graph property name cannot be blank");
+    return NAMED.get(type).computeIfAbsent(name, key -> findNamed(type, key));
+  }
+
+  private static Accessor findNamed(Class<?> type, String name) {
     for (Class<?> current = type; current != null && current != Object.class;
         current = current.getSuperclass()) {
       try {

@@ -25,6 +25,10 @@ public final class GraphChecks {
         List.of(new Road(shenzhen, guangzhou, 125, true)));
     Graph<City> graph = Graph.from(GraphDirection.DIRECTED, City.class, input);
     check(graph.vertexCount() == 3 && graph.edgeCount() == 3, "batch topology");
+    var sourceAccessor = com.majortom.algorithms.core.metadata.AnnotatedMembers
+        .named(Railway.class, "from");
+    check(sourceAccessor == com.majortom.algorithms.core.metadata.AnnotatedMembers
+        .named(Railway.class, "from"), "named graph edge property lookup is cached");
     var nodes = graph.snapshot().vertices();
     Vertex<City> sz = graph.vertex(nodes.get(0).id());
     Vertex<City> gz = graph.vertex(nodes.get(1).id());
