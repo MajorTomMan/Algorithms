@@ -160,10 +160,6 @@ public final class ExecutionSession implements ExecutionHandle {
     }
   }
 
-  void retire() {
-    close();
-  }
-
   private void finishAfterPlayback(ExecutionResult result, Throwable failure) {
     if (failure != null) {
       runtimeCompletion.completeExceptionally(failure);

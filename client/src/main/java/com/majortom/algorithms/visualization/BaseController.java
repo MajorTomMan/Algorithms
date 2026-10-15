@@ -1241,11 +1241,12 @@ public abstract class BaseController<S> implements Initializable {
 
     /** Exact authoritative event inspection with canvas state resolved at-or-before that event. */
     public final void seekEventIndex(int eventIndex) {
-        if (lastTimeline == null || lastTimeline.events().isEmpty() || running.get()) {
-            return;
-        }
-        int exactEventIndex = Math.max(0, Math.min(lastTimeline.events().size() - 1, eventIndex));
-        int frameIndex = lastTimeline.frameIndexAtOrBeforeEvent(exactEventIndex);
+        ReducedEventTimeline<S> timeline = lastTimeline;
+        if (timeline == null || running.get()) return;
+        List<EventEnvelope> events = timeline.events();
+        if (events.isEmpty()) return;
+        int exactEventIndex = Math.max(0, Math.min(events.size() - 1, eventIndex));
+        int frameIndex = timeline.frameIndexAtOrBeforeEvent(exactEventIndex);
         stopReplay();
         beginScrubbing();
         long generation = replayControls.scrubGeneration();
@@ -1254,16 +1255,16 @@ public abstract class BaseController<S> implements Initializable {
                 if (!seekReplayFrame(frameIndex)) {
                     return;
                 }
-                syncTimelineSlider(frameIndex, lastTimeline.size());
+                syncTimelineSlider(frameIndex, timeline.size());
             } else if (visualizer != null) {
-                renderState(lastTimeline.initialState());
+                renderState(timeline.initialState());
             }
         } finally {
             releaseScrubbingAfterQueuedRender(generation);
         }
         paused.set(true);
         presentationEventIndex = exactEventIndex;
-        EventEnvelope exactEvent = lastTimeline.events().get(exactEventIndex);
+        EventEnvelope exactEvent = events.get(exactEventIndex);
         presentationEvent.set(exactEvent);
         publishPresentationCursor(PresentationCursor.completedEvent(
                 exactEvent.runId(), exactEvent.sequence(), PresentationCursor.Mode.REPLAY));

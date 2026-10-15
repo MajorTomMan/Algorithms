@@ -114,7 +114,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
       requireOpen();
       long runGeneration = generation.incrementAndGet();
       if (currentSession != null)
-        currentSession.retire();
+        currentSession.close();
 
       DefaultExecutionControl executionControl = new DefaultExecutionControl();
       ResourceSampler resourceSampler =
@@ -184,7 +184,7 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
       closed = true;
       generation.incrementAndGet();
       if (currentSession != null) {
-        currentSession.retire();
+        currentSession.close();
         currentSession = null;
       }
     }

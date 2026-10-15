@@ -21,7 +21,6 @@ public final class PlaybackController<S> implements AutoCloseable {
   private final Object lock = new Object();
 
   private ReducedEventTimeline<S> timeline;
-  private int currentIndex = -1;
   private long generation;
   private double speed = 1.0d;
   private boolean playing;
@@ -63,7 +62,6 @@ public final class PlaybackController<S> implements AutoCloseable {
       requireOpen();
       loadedTimeline.restart();
       timeline = loadedTimeline;
-      currentIndex = -1;
       playing = false;
       failure = null;
       playbackElapsedNanos = 0L;
@@ -102,7 +100,7 @@ public final class PlaybackController<S> implements AutoCloseable {
       if (!hasNextFrame()) {
         return false;
       }
-      targetIndex = currentIndex + 1;
+      targetIndex = timeline.currentIndex() + 1;
       expectedGeneration = generation;
     }
     return applyFrame(expectedGeneration, targetIndex);
@@ -115,10 +113,10 @@ public final class PlaybackController<S> implements AutoCloseable {
     synchronized (lock) {
       requireOpen();
       pauseLocked();
-      if (timeline == null || currentIndex <= 0) {
+      if (timeline == null || timeline.currentIndex() <= 0) {
         return false;
       }
-      targetIndex = currentIndex - 1;
+      targetIndex = timeline.currentIndex() - 1;
       expectedGeneration = generation;
     }
     return applyFrame(expectedGeneration, targetIndex);
@@ -139,10 +137,9 @@ public final class PlaybackController<S> implements AutoCloseable {
         fail(expectedGeneration, exception);
         throw exception;
       }
-      currentIndex = frameIndex;
     }
     try {
-      consumeState(state);
+      stateConsumer.accept(state);
     } catch (RuntimeException exception) {
       fail(expectedGeneration, exception);
       throw exception;
@@ -158,7 +155,6 @@ public final class PlaybackController<S> implements AutoCloseable {
       if (timeline != null) {
         timeline.restart();
       }
-      currentIndex = -1;
       failure = null;
     }
   }
@@ -191,13 +187,13 @@ public final class PlaybackController<S> implements AutoCloseable {
 
   public int currentIndex() {
     synchronized (lock) {
-      return currentIndex;
+      return timeline == null ? -1 : timeline.currentIndex();
     }
   }
 
   public int nextIndex() {
     synchronized (lock) {
-      return currentIndex + 1;
+      return timeline == null ? 0 : timeline.currentIndex() + 1;
     }
   }
 
@@ -273,7 +269,7 @@ public final class PlaybackController<S> implements AutoCloseable {
         playing = false;
         return;
       }
-      targetIndex = currentIndex + 1;
+      targetIndex = timeline.currentIndex() + 1;
     }
 
     if (!applyFrame(expectedGeneration, targetIndex)) {
@@ -301,18 +297,13 @@ public final class PlaybackController<S> implements AutoCloseable {
           return false;
         }
         state = requireTimeline().seek(targetIndex);
-        currentIndex = targetIndex;
-      }
-      consumeState(state);
+        }
+      stateConsumer.accept(state);
       return true;
     } catch (RuntimeException exception) {
       fail(expectedGeneration, exception);
       return false;
     }
-  }
-
-  private void consumeState(S state) {
-    stateConsumer.accept(state);
   }
 
   private void fail(long expectedGeneration, RuntimeException exception) {
@@ -339,7 +330,7 @@ public final class PlaybackController<S> implements AutoCloseable {
   }
 
   private boolean hasNextFrame() {
-    return timeline != null && currentIndex + 1 < timeline.size();
+    return timeline != null && timeline.currentIndex() + 1 < timeline.size();
   }
 
   private ReducedEventTimeline<S> requireTimeline() {
