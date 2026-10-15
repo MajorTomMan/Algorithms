@@ -57,6 +57,10 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private double chartHeight = Double.NaN;
   private long chartMaxElapsed;
   private long chartMaxAllocated;
+  private OptionalLong chartMaximumValue = OptionalLong.empty();
+  private long renderedVisibleElapsed = -1L;
+  private OptionalLong renderedCurrentAllocated = OptionalLong.empty();
+  private boolean renderedCursorProjected;
   private MemoryAllocationAnalysis renderedDeepAnalysis;
   private Locale renderedDeepLocale;
   private boolean renderedDeepSupported;
@@ -144,12 +148,15 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
     boolean showTimeline = profile.timingRepresentative() && model.timelineSamples().size() >= 2;
     visible(view.chartSection(), showTimeline);
-    OptionalLong chartMaximum = chartMaximum(profile, model.timelineSamples());
-    String maximumText = chartMaximum.isPresent() ? formatBytes(chartMaximum.getAsLong()) : "—";
+    if (profile != chartProfile || model.timelineSamples() != chartSamples) {
+      chartMaximumValue = chartMaximum(profile, model.timelineSamples());
+    }
+    String maximumText = chartMaximumValue.isPresent()
+        ? formatBytes(chartMaximumValue.getAsLong()) : "—";
     view.chartMaxLabel().setText(maximumText);
     view.chartYMaxLabel().setText(maximumText);
-    view.chartYMidLabel().setText(chartMaximum.isPresent()
-        ? formatBytes(chartMaximum.getAsLong() / 2L)
+    view.chartYMidLabel().setText(chartMaximumValue.isPresent()
+        ? formatBytes(chartMaximumValue.getAsLong() / 2L)
         : "—");
     view.chartYMinLabel().setText("0 B");
     view.chartStartLabel().setText("0 ms");
@@ -298,31 +305,30 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     positionGrid(middleGrid, x0, x1, middle);
     positionGrid(bottomGrid, x0, x1, y1);
 
-    area.getElements().clear();
-    curve.getElements().clear();
-    cursorGuide.setVisible(false);
-    cursorMarker.setVisible(false);
     List<MemoryAllocationSample> samples = model.timelineSamples();
     MemoryFacts profile = model.facts().orElse(null);
     if (profile == null || samples.isEmpty() || x1 <= x0 || y1 <= y0) {
       chartProfile = null;
       chartSamples = null;
+      renderedVisibleElapsed = -1L;
+      area.getElements().clear();
+      curve.getElements().clear();
       futureCurve.getElements().clear();
       futureCurve.setVisible(false);
+      cursorGuide.setVisible(false);
+      cursorMarker.setVisible(false);
       return;
     }
 
     // The source models contain immutable sample lists. A cursor-only update reuses the
     // existing background series and scale; profile/data/geometry changes rebuild them.
-    if (profile != chartProfile || samples != chartSamples
+    boolean chartChanged = profile != chartProfile || samples != chartSamples
         || Double.compare(width, chartWidth) != 0
-        || Double.compare(height, chartHeight) != 0) {
+        || Double.compare(height, chartHeight) != 0;
+    if (chartChanged) {
       chartMaxElapsed = Math.max(1L, Math.max(profile.durationNanos(), samples.getLast().elapsedNanos()));
-      chartMaxAllocated = profile.allocatedBytesValue().orElse(0L);
-      for (MemoryAllocationSample sample : samples) {
-        chartMaxAllocated = Math.max(chartMaxAllocated, sample.allocatedBytes());
-      }
-      chartMaxAllocated = Math.max(1L, chartMaxAllocated);
+      // renderProfile() already computed the same full-sample maximum for the labels.
+      chartMaxAllocated = Math.max(1L, chartMaximumValue.orElse(0L));
       futureCurve.getElements().clear();
       futureCurve.getElements().add(new MoveTo(x0, y1));
       for (MemoryAllocationSample sample : samples) {
@@ -341,7 +347,16 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
         ? Math.min(maxElapsed, model.visibleElapsedNanos())
         : maxElapsed;
     futureCurve.setVisible(model.cursorProjected());
+    OptionalLong currentBytes = model.currentAllocatedBytes();
+    if (!chartChanged && renderedVisibleElapsed == visibleElapsed
+        && renderedCursorProjected == model.cursorProjected()
+        && renderedCurrentAllocated.equals(currentBytes)) return;
 
+    // Rebuild the visible curve only when its source, geometry, or cursor actually changes.
+    area.getElements().clear();
+    curve.getElements().clear();
+    cursorGuide.setVisible(false);
+    cursorMarker.setVisible(false);
     curve.getElements().add(new MoveTo(x0, y1));
     area.getElements().add(new MoveTo(x0, y1));
     double lastX = x0;
@@ -358,7 +373,6 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
       lastY = y;
     }
 
-    OptionalLong currentBytes = model.currentAllocatedBytes();
     if (currentBytes.isPresent()) {
       double x = chartX(visibleElapsed, maxElapsed, x0, x1);
       double y = chartY(currentBytes.getAsLong(), maxAllocated, y0, y1);
@@ -382,6 +396,9 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
     area.getElements().add(new LineTo(lastX, y1));
     area.getElements().add(new ClosePath());
+    renderedVisibleElapsed = visibleElapsed;
+    renderedCurrentAllocated = currentBytes;
+    renderedCursorProjected = model.cursorProjected();
   }
 
   private void ensureChartInstalled() {
