@@ -294,7 +294,7 @@ public abstract class BaseController<S> implements Initializable {
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureEventSink, RunControl.unrestricted(), profiledOperation);
         lastStructureExecutionAnchors = executionAnchorRecorder.snapshot().orElse(null);
-        logChannels.appendStructureEventsSince(structureEvents(), eventStart);
+        logChannels.appendStructureEvents(structureTimeline.eventsSince(eventStart));
         if (result.status() == ExecutionStatus.COMPLETED) {
             return true;
         }
@@ -313,7 +313,7 @@ public abstract class BaseController<S> implements Initializable {
                     ExecutionEvents.emit(event);
                     return null;
                 });
-        logChannels.appendStructureEventsSince(structureEvents(), eventStart);
+        logChannels.appendStructureEvents(structureTimeline.eventsSince(eventStart));
         return result.status() == ExecutionStatus.COMPLETED;
     }
 

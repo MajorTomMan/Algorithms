@@ -7,9 +7,11 @@ import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.visualization.logging.LogChannel;
 import com.majortom.algorithms.visualization.logging.LogChannelId;
 import com.majortom.algorithms.visualization.logging.LogChannelStore;
+import com.majortom.algorithms.visualization.logging.LogEntry;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -57,24 +59,26 @@ final class ControllerLogChannels {
         if (channel != null) channel.append(event, timestamp);
     }
 
-    void appendStructureEventsSince(List<EventEnvelope> events, int eventStart) {
+    /** Project only the current operation's events, then update JavaFX once. */
+    void appendStructureEvents(List<EventEnvelope> events) {
         LogChannel target = structureChannel();
-        if (target == null) return;
-        int start = Math.max(0, Math.min(eventStart, events.size()));
-        for (int index = start; index < events.size(); index++) {
-            EventEnvelope envelope = events.get(index);
+        if (target == null || events.isEmpty()) return;
+        List<LogEntry> batch = new ArrayList<>();
+        for (EventEnvelope envelope : events) {
             if (envelope.event() instanceof ExecutionLifecycleEvent) continue;
             if (envelope.event() instanceof LogEvent logEvent) {
-                dispatch(() -> target.append(logEvent, envelope.timestamp()));
+                batch.add(new LogEntry(envelope.timestamp(), logEvent.level(),
+                        logEvent.tag(), logEvent.message()));
                 continue;
             }
             String operation = envelope.operationId();
             int lastDot = operation.lastIndexOf('.');
             if (lastDot >= 0 && lastDot + 1 < operation.length()) operation = operation.substring(lastDot + 1);
             String tag = operation.isBlank() ? "STRUCTURE" : operation;
-            String message = envelope.event().toString();
-            dispatch(() -> target.append(envelope.timestamp(), LogLevel.INFO, tag, message));
+            batch.add(new LogEntry(envelope.timestamp(), LogLevel.INFO,
+                    tag, envelope.event().toString()));
         }
+        if (!batch.isEmpty()) dispatch(() -> target.appendAll(batch));
     }
 
     private LogChannel structureChannel() {

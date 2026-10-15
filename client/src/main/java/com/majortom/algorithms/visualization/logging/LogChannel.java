@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.logging;
 import com.majortom.algorithms.core.logging.LogEvent;
 import com.majortom.algorithms.core.logging.LogLevel;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,5 +40,10 @@ public final class LogChannel {
 
   public void append(Instant timestamp, LogLevel level, String tag, String message) {
     entries.add(new LogEntry(timestamp, level, tag, message));
+  }
+
+  /** Append one operation's log entries as a single observable-list change. */
+  public void appendAll(List<LogEntry> batch) {
+    if (!batch.isEmpty()) entries.addAll(batch);
   }
 }

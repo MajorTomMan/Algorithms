@@ -30,6 +30,12 @@ public final class Timeline implements EventSink {
     return List.copyOf(events);
   }
 
+  /** Immutable snapshot of events appended after a previously observed size. */
+  public synchronized List<EventEnvelope> eventsSince(int startIndex) {
+    int start = Math.max(0, Math.min(startIndex, events.size()));
+    return List.copyOf(events.subList(start, events.size()));
+  }
+
   public synchronized List<EventEnvelope> run(String runId) {
     return events.stream().filter(event -> event.runId().equals(runId)).toList();
   }
