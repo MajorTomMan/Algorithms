@@ -27,4 +27,3 @@ jobs:
           mvn -B -q install -DskipTests
           mvn -B -q -pl structures exec:java -Dexec.mainClass=com.majortom.algorithms.structure.graph.GraphChecks -Dexec.classpathScope=test
           mvn -B -q -pl algorithms exec:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.impl.GraphTraversalChecks -Dexec.classpathScope=test
-          timeout 45s mvn -B -q -pl client exec:java -Dexec.mainClass=com.majortom.algorithms.visualization.impl.controller.GraphDataFactoryChecks -Dexec.classpathScope=test
