@@ -175,7 +175,7 @@ final class SelectionInspectorPanel {
     /** Skip a built-in scalar's redundant "值: ..." but retain meaningful business fields. */
     private static String graphExtraFields(VisualValue value) {
         var projection = value.projection();
-        if (!projection.presenterRegistered()) return "";
+        if (!projection.fieldsDeclared()) return "";
         if (projection.fields().size() == 1) {
             var field = projection.fields().getFirst();
             if ("value".equals(field.key()) && field.value().equals(value.text()))

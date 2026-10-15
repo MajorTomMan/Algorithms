@@ -384,7 +384,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private String formatNode(Object value) {
-        return valueAdapter == null ? String.valueOf(value) : valueAdapter.format(value);
+        return valueAdapter == null ? ValueAdapters.summary(value) : valueAdapter.format(value);
     }
 
     private Object parseNode(String text) {

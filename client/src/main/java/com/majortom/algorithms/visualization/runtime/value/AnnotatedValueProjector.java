@@ -10,6 +10,8 @@ final class AnnotatedValueProjector {
 
   /** Projection for lists/canvas only: never invoke DETAIL-only getters. */
   static String summary(Object value) {
+    if (value == null) return "null";
+    if (isScalar(value)) return trim(format(value));
     var descriptor = ValueMetadata.describe(value.getClass());
     List<String> parts = new ArrayList<>();
     for (var field : descriptor.fields()) {
@@ -26,6 +28,11 @@ final class AnnotatedValueProjector {
   }
 
   static ValueProjection project(Object value) {
+    if (value == null || isScalar(value)) {
+      String text = format(value);
+      return new ValueProjection(trim(text),
+          List.of(new FieldView("value", "值", text, true, false)), true);
+    }
     var descriptor = ValueMetadata.describe(value.getClass());
     if (descriptor.fields().isEmpty())
       return new ValueProjection(descriptor.name(), List.of(), false);
@@ -46,8 +53,15 @@ final class AnnotatedValueProjector {
     return new ValueProjection(trim(label), details, true);
   }
 
+  private static boolean isScalar(Object value) {
+    return value instanceof String || value instanceof Boolean
+        || value instanceof Character || value instanceof Enum<?>
+        || (value instanceof Number && value.getClass().getName().startsWith("java."));
+  }
+
   private static String format(Object value) {
     if (value == null) return "null";
+    if (value instanceof Enum<?> constant) return constant.name();
     if (value instanceof CharSequence || value instanceof Number || value instanceof Boolean
         || value instanceof Character || value instanceof Enum<?>)
       return String.valueOf(value);

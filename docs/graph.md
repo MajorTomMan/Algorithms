@@ -64,3 +64,30 @@ BFS/DFS 只各注册一份、支持不同节点类型，按稳定节点 ID 遍�
 - 文本批量输入可以重复声明相同端点的边或自环，但节点列表仍要求业务值唯一，
   因为此处的简易文本格式没有单独的节点 ID 字段。业务节点值相同的图请使用 Java 对象/注解输入。
 - 自环对节点的度数贡献为 2；可视化每条边保留独立 ID。
+
+## 自定义值的文本展示
+
+ALG 的算法实体由项目自行定义，使用已有的 `@ValueField` 声明可见属性，
+不再注册独立的 `ValuePresenter` 或 `DisplayField` 展示配置。
+
+```java
+record City(
+    @ValueId String code,
+    @ValueField(value = {ValueDisplay.SUMMARY, ValueDisplay.DETAIL}, label = "城市") String name,
+    @ValueField(label = "人口") long population
+) {}
+```
+
+- `ValueAdapters.summary(value)`：读取标记为 `SUMMARY` 的字段，适用于画布、
+  列表和其他轻量场景；不调用仅供 `DETAIL` 展示的 getter。
+- `ValueAdapters.project(value)`：选中对象时读取 `DETAIL` 字段，返回
+  `ValueProjection`，由 UI 统一生成属性行。
+- `String`、数字、布尔值等基础类型无需注解，自动提供“值”字段；
+  没有标记 `@ValueField` 的自定义类只显示类名，不自动调用 `toString()`。
+- 嵌套对象默认只显示其类型名，不进行递归反射。
+- `ValueAdapter<T>` 继续只负责文本解析、编辑和可选样本生成；
+  注册解析器不会覆盖实体上的展示注解。
+
+**图节点 ID 与业务对象的 `@ValueId` 分别负责拓扑身份与业务身份**，
+画布摘要不用于比较实体或寻找边的端点。大型图应先读取摘要，
+用户选择具体元素后再投影详细字段。

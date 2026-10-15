@@ -1,6 +1,5 @@
 package com.majortom.algorithms.visualization.runtime.value;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -9,14 +8,10 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /** Single Workbench registry for typed input, optional examples, and explicit field presentation. */
 public final class ValueAdapters {
   private static final Map<Class<?>, Entry<?>> ENTRIES = new LinkedHashMap<>();
-  private static final int MAX_NODE_TEXT = 72;
-  private static final Logger LOGGER = Logger.getLogger(ValueAdapters.class.getName());
   // Explicit contract: the developer guarantees the entire reachable value graph is immutable.
   // A record containing a mutable List does NOT automatically meet this contract.
   private static final Set<Class<?>> DECLARED_IMMUTABLE = new HashSet<>();
@@ -24,50 +19,24 @@ public final class ValueAdapters {
   private ValueAdapters() {}
 
   private record Entry<T>(ValueAdapter<T> adapter, SampleGenerator<T> generator,
-      DistinctSampleProvider<T> distinct, ValuePresenter<T> presenter) {}
+      DistinctSampleProvider<T> distinct) {}
 
+  /** Register text input and optional sample generation; display is declared on the value type. */
   public static synchronized <T> void register(ValueAdapter<T> adapter) {
-    register(adapter, null, null, null);
+    register(adapter, null, null);
   }
 
   public static synchronized <T> void register(ValueAdapter<T> adapter,
-      SampleGenerator<T> generator, DistinctSampleProvider<T> distinct, ValuePresenter<T> presenter) {
+      SampleGenerator<T> generator, DistinctSampleProvider<T> distinct) {
     Objects.requireNonNull(adapter, "adapter");
     Class<T> type = Objects.requireNonNull(adapter.type(), "adapter.type");
     if (type.isPrimitive() || type == Void.class || type.isArray())
       throw new IllegalArgumentException("Unsupported element type: " + type.getName());
-    if (ENTRIES.containsKey(type)) throw new IllegalArgumentException("Duplicate type: " + type.getName());
-    if (presenter != null && !type.equals(presenter.type()))
-      throw new IllegalArgumentException("Presenter type differs from input type: " + type.getName());
-    if (presenter != null) presenter = checkedPresenter(presenter);
+    if (ENTRIES.containsKey(type))
+      throw new IllegalArgumentException("Duplicate type: " + type.getName());
     if (distinct != null && distinct.capacity() < 0)
       throw new IllegalArgumentException("Negative distinct capacity: " + type.getName());
-    ENTRIES.put(type, new Entry<>(adapter, generator, distinct, presenter));
-  }
-
-  /** Adding an explicit presenter does not change the parser or previously registered generators. */
-  public static synchronized <T> void registerPresenter(ValuePresenter<T> presenter) {
-    Objects.requireNonNull(presenter, "presenter");
-    Class<T> type = Objects.requireNonNull(presenter.type(), "presenter.type");
-    presenter = checkedPresenter(presenter);
-    Entry<T> entry = entry(type);
-    if (entry.presenter() != null) throw new IllegalArgumentException("Duplicate presenter: " + type.getName());
-    ENTRIES.put(type, new Entry<>(entry.adapter(), entry.generator(), entry.distinct(), presenter));
-  }
-
-  private static <T> ValuePresenter<T> checkedPresenter(ValuePresenter<T> presenter) {
-    List<DisplayField<T>> fields = List.copyOf(Objects.requireNonNull(presenter.fields(), "fields"));
-    Set<String> keys = new HashSet<>();
-    for (DisplayField<T> field : fields) {
-      Objects.requireNonNull(field, "display field");
-      if (!keys.add(field.key())) throw new IllegalArgumentException("Duplicate field key: " + field.key());
-    }
-    // Freeze declarations at registration; a mutable list must not change a replay frame's schema.
-    Class<T> type = presenter.type();
-    return new ValuePresenter<>() {
-      @Override public Class<T> type() { return type; }
-      @Override public List<DisplayField<T>> fields() { return fields; }
-    };
+    ENTRIES.put(type, new Entry<>(adapter, generator, distinct));
   }
 
   public static synchronized List<Class<?>> supportedTypes() { return List.copyOf(ENTRIES.keySet()); }
@@ -151,58 +120,14 @@ public final class ValueAdapters {
     return distinct == null ? 0 : distinct.capacity();
   }
 
-  /**
-   * One-line projection for graph imports; DETAIL-only getters are not called.
-   * Registered explicit presenters retain their original priority.
-   */
+  /** Read annotated SUMMARY fields without invoking DETAIL-only accessors. */
   public static String summary(Object value) {
-    if (value == null) return "null";
-    Entry<Object> entry;
-    try { entry = objectEntry(value.getClass()); }
-    catch (IllegalArgumentException unsupported) {
-      return AnnotatedValueProjector.summary(value);
-    }
-    ValuePresenter<Object> presenter = entry.presenter();
-    if (presenter == null) return AnnotatedValueProjector.summary(value);
-    List<String> values = new ArrayList<>();
-    for (DisplayField<Object> field : presenter.fields()) {
-      if (!field.summary()) continue;
-      try { values.add(String.valueOf(field.getter().apply(value))); }
-      catch (RuntimeException failure) { values.add("<error>"); }
-    }
-    return safeNodeText(String.join(" · ", values));
+    return AnnotatedValueProjector.summary(value);
   }
 
+  /** Evaluate explicitly declared DETAIL fields only when an inspector requests them. */
   public static ValueProjection project(Object value) {
-    if (value == null) return new ValueProjection("null",
-        List.of(new FieldView("value", "值", "null", true, false)), true);
-    Entry<Object> entry;
-    try { entry = objectEntry(value.getClass()); }
-    catch (IllegalArgumentException unsupported) {
-      return AnnotatedValueProjector.project(value);
-    }
-    ValuePresenter<Object> presenter = entry.presenter();
-    if (presenter == null) return AnnotatedValueProjector.project(value);
-    List<FieldView> rows = new ArrayList<>();
-    List<String> summary = new ArrayList<>();
-    for (DisplayField<Object> field : presenter.fields()) {
-      String formatted;
-      boolean error = false;
-      try { formatted = String.valueOf(field.getter().apply(value)); }
-      catch (RuntimeException failure) {
-        LOGGER.log(Level.WARNING, "Value field getter failed: " + field.key(), failure);
-        formatted = "<error>";
-        error = true;
-      }
-      rows.add(new FieldView(field.key(), field.label(), formatted, field.summary(), error));
-      if (field.summary()) summary.add(formatted);
-    }
-    return new ValueProjection(safeNodeText(String.join(" · ", summary)), rows, true);
-  }
-
-  private static String safeNodeText(String value) {
-    String compact = value.replace('\n', ' ').replace('\r', ' ');
-    return compact.length() > MAX_NODE_TEXT ? compact.substring(0, MAX_NODE_TEXT - 1) + "…" : compact;
+    return AnnotatedValueProjector.project(value);
   }
 
   private static void registerBuiltIns() {
@@ -242,11 +167,6 @@ public final class ValueAdapters {
     register(adapter, generator, new DistinctSampleProvider<>() {
       @Override public int capacity() { return capacity; }
       @Override public T valueAt(int index) { return distinct.apply(index); }
-    }, new ValuePresenter<>() {
-      @Override public Class<T> type() { return type; }
-      @Override public List<DisplayField<T>> fields() {
-        return List.of(new DisplayField<>("value", "值", Function.identity(), true));
-      }
     });
   }
 }
