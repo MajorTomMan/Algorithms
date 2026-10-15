@@ -270,7 +270,7 @@ public abstract class BaseController<S> implements Initializable {
         Objects.requireNonNull(operationId, "operationId");
         Objects.requireNonNull(operation, "operation");
         invalidateExecutionForStructureChange();
-        int eventStart = structureTimeline.events().size();
+        int eventStart = structureTimeline.size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionOperation<?> profiledOperation = profileOperation(
                 TelemetryScopeId.structure(structureLogScopeId(), operationId),
@@ -298,7 +298,7 @@ public abstract class BaseController<S> implements Initializable {
     /** Records a non-mutation auxiliary event such as snapshot lifecycle state. */
     public final boolean recordAuxiliaryEvent(String operationId, ExecutionEvent event) {
         Objects.requireNonNull(event, "event");
-        int eventStart = structureTimeline.events().size();
+        int eventStart = structureTimeline.size();
         String runtimeOperationId = "structure." + moduleId() + "." + operationId;
         ExecutionResult result = new ExecutionRuntime().execute(
                 runtimeOperationId, moduleId(), structureTimeline, RunControl.unrestricted(), () -> {

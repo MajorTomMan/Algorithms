@@ -569,8 +569,8 @@ public class MainController implements Initializable {
         algorithmInspectorTabs.getSelectionModel().selectedItemProperty().addListener(
                 (observable, before, selected) -> {
                     if (currentSubController == null) return;
-                    if (selected == statisticsTab) publishRuntimeOverview(currentSubController.runtimeOverview());
-                    else if (selected == memoryTab) publishMemoryPresentations();
+                    if (selected == statisticsTab) telemetryPresentation.publishRuntimeOverview(currentSubController.runtimeOverview());
+                    else if (selected == memoryTab) telemetryPresentation.publishMemoryPresentations();
                 });
         setupSnapshotPreviewPresentation();
         setupFontSettings();
@@ -588,7 +588,7 @@ public class MainController implements Initializable {
                 jumpStartBtn, jumpEndBtn, endExecutionBtn, closeExecutionBtn,
                 speed1Btn, speed2Btn, speed4Btn, speed8Btn, speed16Btn,
                 delaySlider, timelineStatusLabel, timelineStatusDot,
-                () -> currentSubController, this::refreshExecutionPresentation, this::refreshTopContext);
+                () -> currentSubController, this::refreshExecutionPresentation);
         playbackShell.install();
         setupTimelinePresentation();
         telemetryPresentation.installRuntime(structureMetricsGrid, algorithmMetricsSection,
@@ -709,15 +709,14 @@ public class MainController implements Initializable {
         localeListener = (observable, oldValue, newValue) -> {
             if (fontSettingsPanel != null) fontSettingsPanel.hide();
             refreshPauseText();
-            refreshTimelineStatus();
+            if (playbackShell != null) playbackShell.refreshTimelineStatus();
             refreshWorkspaceContext();
-            refreshTopContext();
             refreshAlgorithmInputSource();
             refreshSnapshotPreviewPresentation();
             refreshValueTypeSelectors();
             refreshStructureSummary();
             refreshExecutionPresentation();
-            publishMemoryPresentations();
+            telemetryPresentation.publishMemoryPresentations();
             if (uiFramework != null) uiFramework.scheduleRefresh();
             boolean selectionVisible = structureSelectionOverlay != null && structureSelectionOverlay.isVisible();
             if (algorithmSelectionOverlay != null && algorithmSelectionOverlay.isVisible()) {
@@ -1298,7 +1297,6 @@ public class MainController implements Initializable {
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
         updateWorkspaceInteractionState();
-        refreshTopContext();
         refreshExecutionPresentation();
         if (practice) {
             practiceWorkspacePane.requestFocus();
@@ -1608,7 +1606,6 @@ public class MainController implements Initializable {
                 }
             });
             refreshPauseText();
-            refreshTopContext();
             refreshExecutionPresentation();
             updateWorkspaceInteractionState();
             refreshUiFramework();
@@ -1738,7 +1735,6 @@ public class MainController implements Initializable {
         if (activeDefinition != null) {
             updateAlgorithmWorkspaceAvailability(activeDefinition.id());
         }
-        refreshTopContext();
     }
 
     private void configureRuntimeValueType(String moduleId, BaseController<?> controller) {
@@ -1811,18 +1807,15 @@ public class MainController implements Initializable {
         }
         currentSubController.pausedProperty().addListener((observable, oldValue, newValue) -> {
             refreshPauseText();
-            refreshTopContext();
             refreshExecutionPresentation();
         });
         currentSubController.runningProperty().addListener((observable, oldValue, newValue) -> {
             updateSnapshotActionState();
             updateWorkspaceInteractionState();
-            refreshTopContext();
             refreshExecutionPresentation();
         });
         currentSubController.presentationEventProperty().addListener((observable, oldValue, newValue) -> {
             refreshExecutionPresentation();
-            refreshTopContext();
         });
         List<Node> preparedNodes = List.copyOf(preparedControls.getChildren());
         preparedControls.getChildren().clear();
@@ -2028,7 +2021,6 @@ public class MainController implements Initializable {
         algorithmWorkspaceSubtitleLabel.setText(moduleName);
         refreshSnapshotCards();
         refreshAlgorithmInputSource();
-        refreshTopContext();
         refreshStructureSummary();
         refreshExecutionPresentation();
     }
@@ -2059,7 +2051,6 @@ public class MainController implements Initializable {
             refreshStructureSummary();
             updateSnapshotActionState();
             updateWorkspaceInteractionState();
-            refreshTopContext();
             return;
         }
         applyCurrentStructureAlgorithmInput(false);
@@ -2101,7 +2092,6 @@ public class MainController implements Initializable {
         refreshStructureSummary();
         updateSnapshotActionState();
         updateWorkspaceInteractionState();
-        refreshTopContext();
     }
 
     private void applyCurrentStructureAlgorithmInput(boolean logSelection) {
@@ -2118,7 +2108,6 @@ public class MainController implements Initializable {
         }
         refreshAlgorithmInputSource();
         refreshSnapshotCards();
-        refreshTopContext();
         refreshExecutionPresentation();
         if (logSelection) {
             appendSystemLog(I18N.text("message.snapshot.input_current", ""));
@@ -2142,7 +2131,6 @@ public class MainController implements Initializable {
         }
         refreshAlgorithmInputSource();
         refreshSnapshotCards();
-        refreshTopContext();
         refreshExecutionPresentation();
         if (logSelection) {
             appendSystemLog(I18N.text("message.snapshot.input_saved", shortSnapshotId(snapshot)));
@@ -2284,7 +2272,6 @@ public class MainController implements Initializable {
         clearStructureSelection();
         updateSnapshotActionState();
         updateWorkspaceInteractionState();
-        refreshTopContext();
         appendStructureSystemLog(I18N.text("message.snapshot.restored", shortSnapshotId(snapshot)));
     }
 
@@ -2378,19 +2365,6 @@ public class MainController implements Initializable {
     }
 
 
-    private void refreshPlaybackShellControls() {
-        if (playbackShell != null) playbackShell.refresh();
-    }
-
-    private void refreshTimelineStatus() {
-        if (playbackShell != null) playbackShell.refreshTimelineStatus();
-    }
-
-    private void refreshTopContext() {
-        // Family identity is owned by FamilyNavigator and run state by the workspace.
-        // The header deliberately contains no duplicate breadcrumb or execution badge.
-    }
-
     private String workspaceStatusText(String state) {
         return I18N.text("status.workspace." + state.toLowerCase(Locale.ROOT));
     }
@@ -2399,7 +2373,7 @@ public class MainController implements Initializable {
         if (currentSubController == null) {
             return;
         }
-        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) publishMemoryPresentations();
+        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) telemetryPresentation.publishMemoryPresentations();
         StructureSnapshot<?> previewSnapshot = null;
         StructureSnapshotSupport<?> snapshotSupport = null;
         if (structureSnapshotPreviewActive && activeDefinition != null) {
@@ -2551,7 +2525,7 @@ public class MainController implements Initializable {
 
     private void refreshExecutionPresentation() {
         if (currentSubController == null) {
-            refreshPlaybackShellControls();
+            if (playbackShell != null) playbackShell.refresh();
             return;
         }
         EventEnvelope current = currentSubController.currentPresentationEvent();
@@ -2573,10 +2547,10 @@ public class MainController implements Initializable {
             }
             updateVisualizationObstruction(showStep);
             if (showStep) {
-                String kind = eventDisplayName(current);
+                String kind = WorkbenchEventText.eventDisplayName(current);
                 if (currentStepSequenceLabel != null) currentStepSequenceLabel.setText(String.format(Locale.ROOT, "#%04d", current.sequence()));
                 if (currentStepKindLabel != null) currentStepKindLabel.setText(kind);
-                if (currentStepDetailLabel != null) currentStepDetailLabel.setText(describeCurrentStep(current));
+                if (currentStepDetailLabel != null) currentStepDetailLabel.setText(WorkbenchEventText.describeCurrentStep(current));
             }
             if (timelineCursorLabel != null) timelineCursorLabel.setVisible(false);
         }
@@ -2587,7 +2561,7 @@ public class MainController implements Initializable {
         if (statisticsTab.isSelected() || memoryTab.isSelected()) refreshRunSummary();
         rebuildTimelineMarkers();
         if (current == null || !(current.event() instanceof AlgorithmEvent)) refreshStructureSummary();
-        refreshPlaybackShellControls();
+        if (playbackShell != null) playbackShell.refresh();
     }
 
     private void updateVisualizationObstruction(boolean currentStepVisible) {
@@ -2610,39 +2584,10 @@ public class MainController implements Initializable {
                 new javafx.geometry.Insets(0.0d, right, 0.0d, left));
     }
 
-    private String eventDisplayName(EventEnvelope envelope) {
-        return WorkbenchEventText.eventDisplayName(envelope);
-    }
-
-    private String describeCurrentStep(EventEnvelope envelope) {
-        return WorkbenchEventText.describeCurrentStep(envelope);
-    }
-
-    private String describeEventEnvelope(EventEnvelope envelope) {
-        return WorkbenchEventText.describeEventEnvelope(envelope);
-    }
-
-    private String eventDotClass(EventEnvelope envelope) {
-        return WorkbenchEventText.eventDotClass(envelope);
-    }
-
-    private void setEventDotClass(String styleClass) {
-        eventKindDot.getStyleClass().removeAll("event-dot-idle", "event-dot-runtime", "event-dot-structure", "event-dot-observation");
-        eventKindDot.getStyleClass().add(styleClass);
-    }
-
     private void refreshRunSummary() {
         if (currentSubController == null) return;
-        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) publishMemoryPresentations();
-        if (statisticsTab.isSelected()) publishRuntimeOverview(currentSubController.runtimeOverview());
-    }
-
-    private void publishRuntimeOverview(RuntimeOverviewModel overview) {
-        telemetryPresentation.publishRuntimeOverview(overview);
-    }
-
-    private void publishMemoryPresentations() {
-        telemetryPresentation.publishMemoryPresentations();
+        if (memoryTab.isSelected() || structureMemoryTab.isSelected()) telemetryPresentation.publishMemoryPresentations();
+        if (statisticsTab.isSelected()) telemetryPresentation.publishRuntimeOverview(currentSubController.runtimeOverview());
     }
 
     private void rebuildTimelineMarkers() {

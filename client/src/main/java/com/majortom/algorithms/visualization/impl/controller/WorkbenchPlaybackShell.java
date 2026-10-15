@@ -20,12 +20,11 @@ final class WorkbenchPlaybackShell {
     private final Region timelineStatusDot;
     private final Supplier<BaseController<?>> controller;
     private final Runnable refreshExecution;
-    private final Runnable refreshContext;
 
     WorkbenchPlaybackShell(Button jumpStartBtn, Button jumpEndBtn, Button endExecutionBtn, Button closeExecutionBtn,
             Button speed1Btn, Button speed2Btn, Button speed4Btn, Button speed8Btn, Button speed16Btn,
             Slider delaySlider, Label timelineStatusLabel, Region timelineStatusDot,
-            Supplier<BaseController<?>> controller, Runnable refreshExecution, Runnable refreshContext) {
+            Supplier<BaseController<?>> controller, Runnable refreshExecution) {
         this.jumpStartBtn = jumpStartBtn;
         this.jumpEndBtn = jumpEndBtn;
         this.endExecutionBtn = endExecutionBtn;
@@ -40,7 +39,6 @@ final class WorkbenchPlaybackShell {
         this.timelineStatusDot = timelineStatusDot;
         this.controller = controller;
         this.refreshExecution = refreshExecution;
-        this.refreshContext = refreshContext;
     }
 
     void install() {
@@ -60,32 +58,35 @@ final class WorkbenchPlaybackShell {
     private void setupPlaybackShellActions() {
         if (jumpStartBtn != null) {
             jumpStartBtn.setOnAction(event -> {
-                if (controller.get() != null && controller.get().jumpToStart()) {
+                BaseController<?> active = controller.get();
+                if (active != null && active.jumpToStart()) {
                     refreshExecution.run();
                 }
             });
         }
         if (jumpEndBtn != null) {
             jumpEndBtn.setOnAction(event -> {
-                if (controller.get() != null && controller.get().jumpToEnd()) {
+                BaseController<?> active = controller.get();
+                if (active != null && active.jumpToEnd()) {
                     refreshExecution.run();
                 }
             });
         }
         if (endExecutionBtn != null) {
             endExecutionBtn.setOnAction(event -> {
-                if (controller.get() != null) {
-                    controller.get().endAlgorithm();
+                BaseController<?> active = controller.get();
+                if (active != null) {
+                    active.endAlgorithm();
                     refreshExecution.run();
                 }
             });
         }
         if (closeExecutionBtn != null) {
             closeExecutionBtn.setOnAction(event -> {
-                if (controller.get() != null) {
-                    controller.get().closeExecution();
+                BaseController<?> active = controller.get();
+                if (active != null) {
+                    active.closeExecution();
                     refreshExecution.run();
-                    refreshContext.run();
                 }
             });
         }
@@ -93,9 +94,9 @@ final class WorkbenchPlaybackShell {
     }
 
     void refresh() {
-        boolean available = controller.get() != null;
-        boolean running = available && controller.get().isRunning();
-        boolean hasTimeline = available && controller.get().hasExecutionData();
+        BaseController<?> active = controller.get();
+        boolean running = active != null && active.isRunning();
+        boolean hasTimeline = active != null && active.hasExecutionData();
         if (jumpStartBtn != null) jumpStartBtn.setDisable(running || !hasTimeline);
         if (jumpEndBtn != null) jumpEndBtn.setDisable(running || !hasTimeline);
         if (endExecutionBtn != null) endExecutionBtn.setDisable(!running);
@@ -107,11 +108,11 @@ final class WorkbenchPlaybackShell {
         if (timelineStatusLabel == null) {
             return;
         }
-        boolean available = controller.get() != null;
-        boolean running = available && controller.get().isRunning();
-        boolean replaying = available && controller.get().isPlaybackPlaying();
-        boolean paused = available && controller.get().isPaused();
-        boolean hasTimeline = available && controller.get().hasExecutionData();
+        BaseController<?> active = controller.get();
+        boolean running = active != null && active.isRunning();
+        boolean replaying = active != null && active.isPlaybackPlaying();
+        boolean paused = active != null && active.isPaused();
+        boolean hasTimeline = active != null && active.hasExecutionData();
 
         String key;
         String tone;
@@ -151,9 +152,10 @@ final class WorkbenchPlaybackShell {
             if (delaySlider != null) {
                 delaySlider.setValue(delayMillis);
             }
-            if (controller.get() != null && controller.get().getVisualizer() != null) {
-                controller.get().getVisualizer().setPlaybackSpeed(speed);
-                controller.get().getVisualizer().setScrubbing(speed >= 16.0d);
+            BaseController<?> active = controller.get();
+            if (active != null && active.getVisualizer() != null) {
+                active.getVisualizer().setPlaybackSpeed(speed);
+                active.getVisualizer().setScrubbing(speed >= 16.0d);
             }
             setSelectedSpeed(button);
         });
