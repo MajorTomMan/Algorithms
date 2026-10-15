@@ -38,6 +38,20 @@ public final class RuntimeOverviewService {
       ExecutionSummary summary,
       Optional<Duration> playbackDuration,
       Map<String, Long> peaks) {
+    return build(structureState, new StructureMetricsContext(structureId, structureEvents),
+        statistics, executionEvents, summary, playbackDuration, peaks);
+  }
+
+  /** Uses the caller's already summarized structure history instead of rescanning it. */
+  public RuntimeOverviewModel build(
+      Object structureState,
+      StructureMetricsContext context,
+      ExecutionStatistics statistics,
+      List<EventEnvelope> executionEvents,
+      ExecutionSummary summary,
+      Optional<Duration> playbackDuration,
+      Map<String, Long> peaks) {
+    String structureId = context.structureId();
     List<MetricItem> algorithmMetrics = new java.util.ArrayList<>(
         algorithms.metrics(structureId, statistics, executionEvents, peaks));
     // Typed event contributions are authoritative; structure-specific counters fill gaps.
@@ -47,7 +61,7 @@ public final class RuntimeOverviewService {
       if (seen.add(metric.key())) algorithmMetrics.add(metric);
     }
     return new RuntimeOverviewModel(
-        structures.metrics(structureId, structureState, structureEvents),
+        structures.metrics(structureState, context),
         List.copyOf(algorithmMetrics),
         performance.metrics(summary, playbackDuration));
   }

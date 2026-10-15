@@ -35,6 +35,7 @@ import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.logging.LogView;
 import com.majortom.algorithms.visualization.metrics.IndexedExecutionEvents;
 import com.majortom.algorithms.visualization.metrics.RuntimeMetricTracker;
+import com.majortom.algorithms.visualization.metrics.StructureMetricsContext;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewService;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewText;
@@ -141,6 +142,8 @@ public abstract class BaseController<S> implements Initializable {
     private final Timeline structureTimeline = new Timeline();
     private List<EventEnvelope> structureEventSnapshot = List.of();
     private int structureEventSnapshotSize = -1;
+    /** Reused between statistics refreshes; reset whenever the history snapshot changes. */
+    private StructureMetricsContext structureMetricsContext;
     private S latestViewState;
     private long liveVisualFrameCount;
     private S latestStructureState;
@@ -325,6 +328,7 @@ public abstract class BaseController<S> implements Initializable {
         if (structureEventSnapshotSize != size) {
             structureEventSnapshot = structureTimeline.events();
             structureEventSnapshotSize = size;
+            structureMetricsContext = null;
         }
         return structureEventSnapshot;
     }
@@ -1388,10 +1392,15 @@ public abstract class BaseController<S> implements Initializable {
     }
 
     private RuntimeOverviewModel buildRuntimeOverview(S state) {
+        structureEvents(); // Refresh the shared immutable snapshot when an operation appended events.
+        String structureId = structureLogScopeId();
+        if (structureMetricsContext == null
+                || !structureMetricsContext.structureId().equals(structureId)) {
+            structureMetricsContext = new StructureMetricsContext(structureId, structureEventSnapshot);
+        }
         return RUNTIME_OVERVIEW.build(
-                structureLogScopeId(),
                 state,
-                structureEvents(),
+                structureMetricsContext,
                 stats,
                 indexedMetricEvents,
                 executionSummary(),

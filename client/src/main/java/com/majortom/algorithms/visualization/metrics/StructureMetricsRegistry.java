@@ -26,9 +26,15 @@ public final class StructureMetricsRegistry {
 
   public List<MetricItem> metrics(String structureId, Object state, List<com.majortom.algorithms.core.runtime.EventEnvelope> events) {
     if (state == null) return List.of();
-    StructureMetricsProvider<Object> provider = provider(structureId, state);
-    if (provider == null) return List.of();
-    return provider.metrics(state, new StructureMetricsContext(structureId, events));
+    return metrics(state, new StructureMetricsContext(structureId, events));
+  }
+
+  /** Reuse a history summary across frames while the structure events stay unchanged. */
+  public List<MetricItem> metrics(Object state, StructureMetricsContext context) {
+    Objects.requireNonNull(context, "context");
+    if (state == null) return List.of();
+    StructureMetricsProvider<Object> provider = provider(context.structureId(), state);
+    return provider == null ? List.of() : provider.metrics(state, context);
   }
 
   public Map<String, Long> samples(String structureId, Object state) {
