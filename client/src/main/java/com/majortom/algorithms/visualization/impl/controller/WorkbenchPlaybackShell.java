@@ -133,7 +133,7 @@ final class WorkbenchPlaybackShell {
             tone = "timeline-status-ready";
         }
         timelineStatusLabel.setText(I18N.text(key));
-        if (timelineStatusDot != null) {
+        if (timelineStatusDot != null && !timelineStatusDot.getStyleClass().contains(tone)) {
             timelineStatusDot.getStyleClass().removeAll(
                     "timeline-status-running",
                     "timeline-status-playing",

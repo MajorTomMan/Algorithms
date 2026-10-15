@@ -10,6 +10,10 @@ import javafx.collections.ObservableList;
 
 /** One independently retained log stream. */
 public final class LogChannel {
+  // Logs are a workbench view, not the authoritative execution event history.
+  // Trim in chunks so long-running sessions stay bounded without an O(N) shift per entry.
+  private static final int MAX_ENTRIES = 10_000;
+  private static final int RETAIN_ENTRIES = 8_000;
   private final LogChannelId id;
   private final ObservableList<LogEntry> entries = FXCollections.observableArrayList();
 
@@ -40,10 +44,24 @@ public final class LogChannel {
 
   public void append(Instant timestamp, LogLevel level, String tag, String message) {
     entries.add(new LogEntry(timestamp, level, tag, message));
+    trim();
   }
 
   /** Append one operation's log entries as a single observable-list change. */
   public void appendAll(List<LogEntry> batch) {
-    if (!batch.isEmpty()) entries.addAll(batch);
+    Objects.requireNonNull(batch, "batch");
+    if (batch.isEmpty()) return;
+    if (batch.size() >= MAX_ENTRIES) {
+      entries.setAll(batch.subList(batch.size() - RETAIN_ENTRIES, batch.size()));
+      return;
+    }
+    entries.addAll(batch);
+    trim();
+  }
+
+  private void trim() {
+    if (entries.size() > MAX_ENTRIES) {
+      entries.remove(0, entries.size() - RETAIN_ENTRIES);
+    }
   }
 }

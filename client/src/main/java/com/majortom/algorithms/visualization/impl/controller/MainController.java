@@ -2558,10 +2558,18 @@ public class MainController implements Initializable {
         String result = currentSubController.latestResultText();
         if (resultLabel != null) resultLabel.setText(result);
         if (resultPreviewLabel != null) resultPreviewLabel.setText(result);
-        // The hidden event tab and inactive metric surfaces need no per-step JavaFX commits.
-        if (statisticsTab.isSelected() || memoryTab.isSelected()) refreshRunSummary();
+        // A structural/lifecycle step already refreshes memory in refreshStructureSummary().
+        // Avoid publishing the same memory surfaces twice during a single presentation update.
+        boolean refreshStructure = current == null || !(current.event() instanceof AlgorithmEvent);
+        if (refreshStructure) {
+            refreshStructureSummary();
+            if (statisticsTab.isSelected()) {
+                telemetryPresentation.publishRuntimeOverview(currentSubController.runtimeOverview());
+            }
+        } else if (statisticsTab.isSelected() || memoryTab.isSelected()) {
+            refreshRunSummary();
+        }
         if (timelinePanel != null) timelinePanel.refresh();
-        if (current == null || !(current.event() instanceof AlgorithmEvent)) refreshStructureSummary();
         if (playbackShell != null) playbackShell.refresh();
     }
 
