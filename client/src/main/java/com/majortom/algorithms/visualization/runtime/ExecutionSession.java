@@ -8,6 +8,7 @@ import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionScheduler;
 import com.majortom.algorithms.core.runtime.ResourceSampler;
 import com.majortom.algorithms.core.runtime.ResourceUsage;
+import com.majortom.algorithms.visualization.execution.ExecutionHandle;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /** Handle and authoritative record for one local Runtime run plus independent live playback. */
-public final class ExecutionSession implements AutoCloseable {
+public final class ExecutionSession implements ExecutionHandle {
   private final long generation;
   private final DefaultExecutionControl executionControl;
   private final BoundedExecutionEventStore authoritativeEvents;

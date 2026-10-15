@@ -2,18 +2,12 @@ package com.majortom.algorithms.visualization.execution;
 
 import com.majortom.algorithms.core.runtime.EventEnvelope;
 import com.majortom.algorithms.core.runtime.ExecutionOperation;
-import com.majortom.algorithms.core.runtime.ExecutionAnchorTimeline;
-import com.majortom.algorithms.core.runtime.ExecutionResult;
 import com.majortom.algorithms.core.runtime.ExecutionStatistics;
-import com.majortom.algorithms.core.runtime.ResourceUsage;
 import com.majortom.algorithms.visualization.runtime.EventReducer;
 import com.majortom.algorithms.visualization.runtime.ExecutionSession;
 import com.majortom.algorithms.visualization.runtime.LocalAlgorithmExecution;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -38,7 +32,7 @@ public final class LocalClientExecutionService implements ClientExecutionService
         liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
     ExecutionSession session = delegate.start(operationId, operation, reducer, liveEventConsumer,
         liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
-    return new LocalExecutionHandle(session);
+    return session;
   }
 
   @Override
@@ -51,7 +45,7 @@ public final class LocalClientExecutionService implements ClientExecutionService
     Objects.requireNonNull(liveEventsConsumer, "liveEventsConsumer");
     ExecutionSession session = delegate.startBatched(operationId, operation, reducer,
         liveEventsConsumer, liveStateConsumer, liveStatisticsConsumer, delayMillisSupplier);
-    return new LocalExecutionHandle(session);
+    return session;
   }
 
   @Override
@@ -59,66 +53,4 @@ public final class LocalClientExecutionService implements ClientExecutionService
     delegate.close();
   }
 
-  private static final class LocalExecutionHandle implements ExecutionHandle {
-    private final ExecutionSession delegate;
-
-    private LocalExecutionHandle(ExecutionSession delegate) {
-      this.delegate = Objects.requireNonNull(delegate, "delegate");
-    }
-
-    @Override
-    public List<EventEnvelope> events() {
-      return delegate.events();
-    }
-
-    @Override
-    public Optional<ExecutionAnchorTimeline> executionAnchors() {
-      return delegate.executionAnchors();
-    }
-
-    @Override
-    public CompletableFuture<ExecutionResult> runtimeCompletion() {
-      return delegate.runtimeCompletion();
-    }
-
-    @Override
-    public CompletableFuture<ExecutionResult> presentationCompletion() {
-      return delegate.presentationCompletion();
-    }
-
-    @Override
-    public Optional<Duration> totalDuration() {
-      return delegate.totalDuration();
-    }
-
-    @Override
-    public ResourceUsage resourceUsage() {
-      return delegate.resourceUsage();
-    }
-
-    @Override
-    public void pauseExecution() {
-      delegate.pauseExecution();
-    }
-
-    @Override
-    public void resumeExecution() {
-      delegate.resumeExecution();
-    }
-
-    @Override
-    public void stepExecution() {
-      delegate.stepExecution();
-    }
-
-    @Override
-    public void closeObserver() {
-      delegate.closeObserver();
-    }
-
-    @Override
-    public void close() {
-      delegate.close();
-    }
-  }
 }

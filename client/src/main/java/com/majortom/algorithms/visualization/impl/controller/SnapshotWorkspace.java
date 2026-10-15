@@ -94,16 +94,16 @@ final class SnapshotWorkspace {
                 I18N.text("label.workspace.snapshot.current"), current, support, true,
                 selectedSnapshotId == null));
         if (inspectorSnapshotCards != null) {
-            inspectorSnapshotCards.getChildren().add(createInspectorCurrentSnapshotCard(
-                    current, support, selectedSnapshotId == null));
+            inspectorSnapshotCards.getChildren().add(
+                    createInspectorSnapshotCard(current, support, true, selectedSnapshotId == null));
         }
         for (StructureSnapshot<?> snapshot : saved) {
             boolean selected = snapshot.id().equals(selectedSnapshotId);
             snapshotCards.getChildren().add(createSnapshotCard(moduleName,
                     I18N.text("label.workspace.snapshot.saved"), snapshot, support, false, selected));
             if (inspectorSnapshotCards != null) {
-                inspectorSnapshotCards.getChildren().add(createInspectorSnapshotCard(
-                        snapshot, support, selected));
+                inspectorSnapshotCards.getChildren().add(
+                        createInspectorSnapshotCard(snapshot, support, false, selected));
             }
         }
         if (saved.isEmpty()) {
@@ -232,53 +232,36 @@ final class SnapshotWorkspace {
         return operationId.substring(lastDot + 1);
     }
 
-    Node createInspectorCurrentSnapshotCard(
+    /** Shared inspector card rendering for the live and saved snapshot. */
+    private Node createInspectorSnapshotCard(
             StructureSnapshot<?> snapshot,
             StructureSnapshotSupport<?> support,
+            boolean current,
             boolean selected) {
         VBox card = new VBox(5);
         card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add("snapshot-card-current");
-        if (selected) {
-            card.getStyleClass().add("snapshot-card-selected");
-        }
-        card.setOnMouseClicked(event -> selectCurrent.run());
-        HBox header = new HBox(8);
-        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label(I18N.text("label.workspace.snapshot.current"));
-        title.getStyleClass().add("snapshot-card-title");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label state = new Label(I18N.text("label.workspace.snapshot.current_state"));
-        state.getStyleClass().add("snapshot-card-state");
-        header.getChildren().addAll(title, spacer, state);
-        Label detail = new Label(describe.apply(support, snapshot));
-        detail.setWrapText(true);
-        detail.getStyleClass().add("snapshot-card-detail");
-        card.getChildren().addAll(header, detail);
-        return card;
-    }
-
-    Node createInspectorSnapshotCard(
-            StructureSnapshot<?> snapshot,
-            StructureSnapshotSupport<?> support,
-            boolean selected) {
-        VBox card = new VBox(5);
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.getStyleClass().add("snapshot-card");
-        card.getStyleClass().add("snapshot-card-saved");
+        card.getStyleClass().addAll("snapshot-card",
+                current ? "snapshot-card-current" : "snapshot-card-saved");
         if (selected) card.getStyleClass().add("snapshot-card-selected");
-        card.setOnMouseClicked(event -> selectSaved.accept(snapshot));
+        card.setOnMouseClicked(event -> {
+            if (current) selectCurrent.run();
+            else selectSaved.accept(snapshot);
+        });
+
         HBox header = new HBox(8);
         header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        Label title = new Label(I18N.text("label.workspace.snapshot.card", shortId.apply(snapshot)));
+        Label title = new Label(current
+                ? I18N.text("label.workspace.snapshot.current")
+                : I18N.text("label.workspace.snapshot.card", shortId.apply(snapshot)));
         title.getStyleClass().add("snapshot-card-title");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label time = new Label(formatTime.apply(snapshot));
-        time.getStyleClass().add("snapshot-card-detail");
-        header.getChildren().addAll(title, spacer, time);
+        Label suffix = new Label(current
+                ? I18N.text("label.workspace.snapshot.current_state")
+                : formatTime.apply(snapshot));
+        suffix.getStyleClass().add(current ? "snapshot-card-state" : "snapshot-card-detail");
+        header.getChildren().addAll(title, spacer, suffix);
+
         Label detail = new Label(describe.apply(support, snapshot));
         detail.setWrapText(true);
         detail.getStyleClass().add("snapshot-card-detail");
