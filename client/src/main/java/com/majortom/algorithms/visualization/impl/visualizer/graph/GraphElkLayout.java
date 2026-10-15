@@ -12,6 +12,7 @@ import com.majortom.algorithms.visualization.render.layout.LayoutEngine;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,12 +123,14 @@ public final class GraphElkLayout implements LayoutEngine {
   }
 
   private boolean isDirectedAcyclic(LayoutRequest request) {
-    Map<String, Integer> indegree = new LinkedHashMap<>();
-    Map<String, List<String>> outgoing = new LinkedHashMap<>();
-    request.elements().stream().map(LayoutElement::id).sorted().forEach(id -> {
-      indegree.put(id, 0);
-      outgoing.put(id, new ArrayList<>());
-    });
+    // Kahn's algorithm only needs indegrees: its visit order does not affect
+    // whether every node can be removed. Do not sort nodes or neighbors here.
+    Map<String, Integer> indegree = new HashMap<>();
+    Map<String, List<String>> outgoing = new HashMap<>();
+    for (LayoutElement element : request.elements()) {
+      indegree.put(element.id(), 0);
+      outgoing.put(element.id(), new ArrayList<>());
+    }
     for (LayoutLink link : request.links()) {
       if (!indegree.containsKey(link.sourceId()) || !indegree.containsKey(link.targetId()))
         continue;
@@ -137,21 +140,17 @@ public final class GraphElkLayout implements LayoutEngine {
       indegree.compute(link.targetId(), (ignored, current) -> current + 1);
     }
     ArrayDeque<String> ready = new ArrayDeque<>();
-    indegree.entrySet()
-        .stream()
-        .filter(entry -> entry.getValue() == 0)
-        .map(Map.Entry::getKey)
-        .sorted()
-        .forEach(ready::addLast);
+    for (Map.Entry<String, Integer> entry : indegree.entrySet()) {
+      if (entry.getValue() == 0) ready.addLast(entry.getKey());
+    }
     int visited = 0;
     while (!ready.isEmpty()) {
       String current = ready.removeFirst();
       visited++;
-      outgoing.get(current).stream().sorted().forEach(target -> {
+      for (String target : outgoing.get(current)) {
         int next = indegree.compute(target, (ignored, value) -> value - 1);
-        if (next == 0)
-          ready.addLast(target);
-      });
+        if (next == 0) ready.addLast(target);
+      }
     }
     return visited == indegree.size();
   }

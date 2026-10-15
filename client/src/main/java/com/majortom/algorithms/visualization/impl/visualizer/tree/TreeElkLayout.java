@@ -119,7 +119,8 @@ public final class TreeElkLayout implements LayoutEngine {
       ElkNode source = elkNodes.get(entry.getKey());
       if (source == null)
         continue;
-      List<LayoutLink> ordered = new ArrayList<>(entry.getValue());
+      // The grouped lists are owned by this method; sort in place, no second copy.
+      List<LayoutLink> ordered = entry.getValue();
       ordered.sort(Comparator.comparingInt(LayoutLink::order).thenComparing(LayoutLink::id));
       source.setProperty(CoreOptions.PORT_CONSTRAINTS, PortConstraints.FIXED_ORDER);
       for (int ordinal = 0; ordinal < ordered.size(); ordinal++) {

@@ -9,6 +9,7 @@ import com.majortom.algorithms.visualization.render.api.LayoutResult;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -31,16 +32,27 @@ final class GraphTopologyLayout {
         .sorted(Comparator.comparing(LayoutElement::id))
         .forEach(node -> nodesById.put(node.id(), node));
     List<Component> components = components(nodesById.keySet(), request.links());
+    // Assign each edge once instead of scanning every edge for every component.
+    // The per-component lists keep input edge order, including parallel edges and loops.
+    Map<String, Integer> componentByNode = new HashMap<>();
+    List<List<LayoutLink>> componentLinks = new ArrayList<>(components.size());
+    for (int index = 0; index < components.size(); index++) {
+      componentLinks.add(new ArrayList<>());
+      for (String id : components.get(index).nodeIds()) componentByNode.put(id, index);
+    }
+    for (LayoutLink link : request.links()) {
+      Integer sourceComponent = componentByNode.get(link.sourceId());
+      if (sourceComponent != null
+          && sourceComponent.equals(componentByNode.get(link.targetId()))) {
+        componentLinks.get(sourceComponent).add(link);
+      }
+    }
+
     List<ComponentLayout> layouts = new ArrayList<>(components.size());
-    for (Component component : components) {
-      List<LayoutElement> nodes = component.nodeIds().stream().map(nodesById::get).toList();
-      List<LayoutLink> links = request.links()
-                                   .stream()
-                                   .filter(link
-                                       -> component.nodeIds().contains(link.sourceId())
-                                           && component.nodeIds().contains(link.targetId()))
-                                   .toList();
-      layouts.add(force(nodes, links));
+    for (int index = 0; index < components.size(); index++) {
+      List<LayoutElement> nodes = components.get(index).nodeIds().stream()
+          .map(nodesById::get).toList();
+      layouts.add(force(nodes, componentLinks.get(index)));
     }
     return pack(request, layouts);
   }
