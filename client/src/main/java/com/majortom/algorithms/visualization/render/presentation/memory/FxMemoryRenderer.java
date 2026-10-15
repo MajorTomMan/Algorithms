@@ -50,6 +50,18 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   private final Circle cursorMarker = new Circle(4.0d);
   private final Rectangle clip = new Rectangle();
   private boolean chartInstalled;
+  // Static chart geometry and JFR rows are independent of the playback cursor.
+  private MemoryFacts chartProfile;
+  private List<MemoryAllocationSample> chartSamples;
+  private double chartWidth = Double.NaN;
+  private double chartHeight = Double.NaN;
+  private long chartMaxElapsed;
+  private long chartMaxAllocated;
+  private MemoryAllocationAnalysis renderedDeepAnalysis;
+  private Locale renderedDeepLocale;
+  private boolean renderedDeepSupported;
+  private boolean renderedDeepEnabled;
+  private boolean deepAnalysisRendered;
 
   public FxMemoryRenderer(MemoryProfileView target) {
     this.view = Objects.requireNonNull(target, "target").bindings();
@@ -226,8 +238,15 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   }
 
   private void renderDeepAnalysis(MemoryPresentationModel model) {
-    visible(view.deepSection(), true);
+    MemoryAllocationAnalysis deep = model.deepAnalysis().orElse(null);
     boolean deepSupported = model.capabilities().jfrAvailable();
+    Locale locale = I18N.getLocale();
+    if (deepAnalysisRendered && deep == renderedDeepAnalysis
+        && deepSupported == renderedDeepSupported
+        && model.deepAnalysisEnabled() == renderedDeepEnabled
+        && locale.equals(renderedDeepLocale)) return;
+
+    visible(view.deepSection(), true);
     visible(view.deepAnalysisToggle(), deepSupported);
     view.deepAnalysisToggle().setDisable(!deepSupported);
     view.deepAnalysisToggle().setSelected(model.deepAnalysisEnabled());
@@ -235,7 +254,6 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
     view.allocationTypes().getChildren().clear();
     view.allocationSites().getChildren().clear();
-    MemoryAllocationAnalysis deep = model.deepAnalysis().orElse(null);
     boolean hasDeepSamples = deep != null && deep.hasSamples();
     if (hasDeepSamples) {
       view.allocationTypes().getChildren().add(sectionHeading("label.workspace.memory.top_allocation_types"));
@@ -257,6 +275,11 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
     } else if (model.deepAnalysisEnabled() && deep != null && !deep.hasSamples()) {
       showDeepNotice(I18N.text("label.workspace.memory.deep_no_samples"));
     }
+    renderedDeepAnalysis = deep;
+    renderedDeepLocale = locale;
+    renderedDeepSupported = deepSupported;
+    renderedDeepEnabled = model.deepAnalysisEnabled();
+    deepAnalysisRendered = true;
   }
 
   private void renderChart(MemoryPresentationModel model) {
@@ -277,33 +300,47 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
 
     area.getElements().clear();
     curve.getElements().clear();
-    futureCurve.getElements().clear();
-    futureCurve.setVisible(false);
     cursorGuide.setVisible(false);
     cursorMarker.setVisible(false);
     List<MemoryAllocationSample> samples = model.timelineSamples();
     MemoryFacts profile = model.facts().orElse(null);
-    if (profile == null || samples.isEmpty() || x1 <= x0 || y1 <= y0) return;
-
-    long maxElapsed = Math.max(1L, Math.max(profile.durationNanos(), samples.getLast().elapsedNanos()));
-    long maxAllocated = profile.allocatedBytesValue().orElse(0L);
-    for (MemoryAllocationSample sample : samples) {
-      maxAllocated = Math.max(maxAllocated, sample.allocatedBytes());
+    if (profile == null || samples.isEmpty() || x1 <= x0 || y1 <= y0) {
+      chartProfile = null;
+      chartSamples = null;
+      futureCurve.getElements().clear();
+      futureCurve.setVisible(false);
+      return;
     }
-    maxAllocated = Math.max(1L, maxAllocated);
-    long visibleElapsed = model.cursorProjected()
-        ? Math.min(maxElapsed, model.visibleElapsedNanos())
-        : maxElapsed;
 
-    if (model.cursorProjected()) {
+    // The source models contain immutable sample lists. A cursor-only update reuses the
+    // existing background series and scale; profile/data/geometry changes rebuild them.
+    if (profile != chartProfile || samples != chartSamples
+        || Double.compare(width, chartWidth) != 0
+        || Double.compare(height, chartHeight) != 0) {
+      chartMaxElapsed = Math.max(1L, Math.max(profile.durationNanos(), samples.getLast().elapsedNanos()));
+      chartMaxAllocated = profile.allocatedBytesValue().orElse(0L);
+      for (MemoryAllocationSample sample : samples) {
+        chartMaxAllocated = Math.max(chartMaxAllocated, sample.allocatedBytes());
+      }
+      chartMaxAllocated = Math.max(1L, chartMaxAllocated);
+      futureCurve.getElements().clear();
       futureCurve.getElements().add(new MoveTo(x0, y1));
       for (MemoryAllocationSample sample : samples) {
         futureCurve.getElements().add(new LineTo(
-            chartX(sample.elapsedNanos(), maxElapsed, x0, x1),
-            chartY(sample.allocatedBytes(), maxAllocated, y0, y1)));
+            chartX(sample.elapsedNanos(), chartMaxElapsed, x0, x1),
+            chartY(sample.allocatedBytes(), chartMaxAllocated, y0, y1)));
       }
-      futureCurve.setVisible(true);
+      chartProfile = profile;
+      chartSamples = samples;
+      chartWidth = width;
+      chartHeight = height;
     }
+    long maxElapsed = chartMaxElapsed;
+    long maxAllocated = chartMaxAllocated;
+    long visibleElapsed = model.cursorProjected()
+        ? Math.min(maxElapsed, model.visibleElapsedNanos())
+        : maxElapsed;
+    futureCurve.setVisible(model.cursorProjected());
 
     curve.getElements().add(new MoveTo(x0, y1));
     area.getElements().add(new MoveTo(x0, y1));
@@ -396,6 +433,7 @@ public final class FxMemoryRenderer implements PresentationRenderer<MemoryPresen
   }
 
   private void setStatusStyle(String style) {
+    if (view.statusPill().getStyleClass().contains(style)) return;
     view.statusPill().getStyleClass().removeAll(
         "memory-status-live", "memory-status-complete", "memory-status-waiting");
     view.statusPill().getStyleClass().add(style);
