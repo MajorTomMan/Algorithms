@@ -44,11 +44,13 @@ public final class LayoutCoordinator implements AutoCloseable {
     }
 
     private static boolean sameGeometryInput(LayoutRequest previous, LayoutRequest current) {
+        // Metadata is usually tiny; reject changed layout settings before comparing
+        // potentially large node/edge lists on every model capture.
         return previous.engineId().equals(current.engineId())
                 && previous.geometryRevision() == current.geometryRevision()
+                && previous.metadata().equals(current.metadata())
                 && previous.elements().equals(current.elements())
                 && previous.links().equals(current.links())
-                && previous.metadata().equals(current.metadata())
                 && previous.decorations().equals(current.decorations());
     }
 

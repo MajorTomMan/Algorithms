@@ -1,11 +1,11 @@
 package com.majortom.algorithms.visualization.render.layout;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public final class LayoutEngineRegistry {
-  private final Map<String, LayoutEngine> engines = new LinkedHashMap<>();
+  private final Map<String, LayoutEngine> engines = new HashMap<>();
   public LayoutEngineRegistry register(LayoutEngine engine) {
     engines.put(Objects.requireNonNull(engine, "engine").id(), engine);
     return this;

@@ -21,6 +21,7 @@ public record LayoutResult(LayoutRequestId requestId, long modelRevision,
   }
 
   public LayoutResult withModelRevision(long revision) {
+    if (modelRevision == revision) return this;
     return new LayoutResult(requestId, revision, elements, edges, bounds, decorations);
   }
 }
