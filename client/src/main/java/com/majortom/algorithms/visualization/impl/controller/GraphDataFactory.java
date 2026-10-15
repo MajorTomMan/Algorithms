@@ -36,36 +36,85 @@ final class GraphDataFactory {
         return List.copyOf(values);
     }
 
+    /**
+     * Generate the canonical graph model, including sample parallel edges and self-loops.
+     * The simple-graph variant is useful for compatibility fixtures, not for storage.
+     */
     static GraphBatch randomGraphBatch(Class<?> valueType, int nodeCount, int edgeCount,
                                        GraphDirection direction, Random random) {
-        List<Object> nodes = defaultGraphValues(valueType, nodeCount);
-        Set<String> edgeKeys = new LinkedHashSet<>();
-        for (int node = 1; node < nodeCount; node++) {
-            edgeKeys.add((node - 1) + ":" + node);
+        return randomGraphBatch(valueType, nodeCount, edgeCount, direction, random, true, true);
+    }
+
+    static GraphBatch randomGraphBatch(Class<?> valueType, int nodeCount, int edgeCount,
+                                       GraphDirection direction, Random random,
+                                       boolean allowParallel, boolean allowLoops) {
+        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(direction, "direction");
+        Objects.requireNonNull(random, "random");
+        if (nodeCount < 0 || edgeCount < 0)
+            throw new IllegalArgumentException("Graph sizes cannot be negative");
+        if (nodeCount == 0) {
+            if (edgeCount != 0)
+                throw new IllegalArgumentException("An empty graph cannot have edges");
+            return new GraphBatch(List.of(), List.of());
         }
-        while (edgeKeys.size() < edgeCount) {
+
+        long maxUnique = direction.isDirected()
+                ? (long) nodeCount * (allowLoops ? nodeCount : nodeCount - 1)
+                : (long) nodeCount * (nodeCount - 1) / 2
+                    + (allowLoops ? nodeCount : 0);
+        if ((!allowParallel && edgeCount > maxUnique)
+                || (allowParallel && maxUnique == 0 && edgeCount > 0))
+            throw new IllegalArgumentException("Requested edge count is impossible");
+
+        List<Object> nodes = defaultGraphValues(valueType, nodeCount);
+        List<GraphBatchEdge> edges = new ArrayList<>(edgeCount);
+        Set<Long> uniquePairs = allowParallel ? null : new LinkedHashSet<>();
+        // Prefer a visible chain when enough edges were requested.
+        for (int i = 1; i < nodeCount && edges.size() < edgeCount; i++)
+            addRandomEdge(edges, uniquePairs, nodes, i - 1, i, direction, random);
+        // Deliberately showcase a parallel edge and a self-loop in the default mode.
+        if (allowParallel && !edges.isEmpty() && edges.size() < edgeCount)
+            edges.add(edges.getFirst());
+        if (allowLoops && edges.size() < edgeCount)
+            addRandomEdge(edges, uniquePairs, nodes, 0, 0, direction, random);
+
+        long misses = 0;
+        long retryLimit = Math.max(64L, maxUnique * 2L);
+        while (edges.size() < edgeCount) {
             int from = random.nextInt(nodeCount);
             int to = random.nextInt(nodeCount);
-            if (from == to) {
-                continue;
+            if (!allowLoops && from == to) continue;
+            if (addRandomEdge(edges, uniquePairs, nodes, from, to, direction, random)) {
+                misses = 0;
+            } else if (++misses >= retryLimit) {
+                // When sampling near the unique-edge capacity, enumerate the remainder.
+                // A bounded deterministic fallback guarantees termination.
+                for (int left = 0; left < nodeCount && edges.size() < edgeCount; left++)
+                    for (int right = 0; right < nodeCount && edges.size() < edgeCount; right++) {
+                        if (left == right && !allowLoops) continue;
+                        addRandomEdge(edges, uniquePairs, nodes, left, right, direction, random);
+                    }
+                break;
             }
-            String key;
-            if (direction.isDirected() || from < to) {
-                key = from + ":" + to;
-            } else {
-                key = to + ":" + from;
-            }
-            edgeKeys.add(key);
-        }
-        List<GraphBatchEdge> edges = new ArrayList<>();
-        for (String key : edgeKeys) {
-            String[] parts = key.split(":", 2);
-            edges.add(new GraphBatchEdge(
-                    nodes.get(Integer.parseInt(parts[0])),
-                    nodes.get(Integer.parseInt(parts[1])),
-                    1.0d + random.nextInt(20)));
         }
         return new GraphBatch(List.copyOf(nodes), List.copyOf(edges));
+    }
+
+    private static boolean addRandomEdge(List<GraphBatchEdge> edges, Set<Long> uniquePairs,
+                                      List<Object> nodes, int from, int to,
+                                      GraphDirection direction, Random random) {
+        if (uniquePairs != null) {
+            int left = from, right = to;
+            if (!direction.isDirected() && left > right) {
+                left = to;
+                right = from;
+            }
+            long key = ((long) left << 32) | (right & 0xffffffffL);
+            if (!uniquePairs.add(key)) return false;
+        }
+        edges.add(new GraphBatchEdge(nodes.get(from), nodes.get(to), 1.0d + random.nextInt(20)));
+        return true;
     }
 
     static GraphSnapshot<Object> snapshot(GraphBatch batch, GraphDirection direction) {

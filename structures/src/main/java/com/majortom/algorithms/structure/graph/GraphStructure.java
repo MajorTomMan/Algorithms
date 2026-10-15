@@ -14,6 +14,8 @@ public interface GraphStructure<T> {
   int vertexCount();
   int edgeCount();
   Vertex<T> addVertex(T value);
+  /** Convenience lookup only: throws if multiple vertices have the same value. Prefer vertex(id). */
+  @Deprecated
   Vertex<T> vertex(T value);
   boolean containsVertex(Vertex<T> vertex);
   boolean containsEdge(Vertex<T> from, Vertex<T> to);
@@ -22,11 +24,17 @@ public interface GraphStructure<T> {
   boolean removeVertex(Vertex<T> vertex);
   Edge<T> addEdge(Vertex<T> from, Vertex<T> to, Object value, double weight);
   Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight);
+  /** Convenience lookup only: throws if the endpoints have parallel edges. */
+  @Deprecated
   Edge<T> edge(Vertex<T> from, Vertex<T> to);
+  /** Convenience deletion only: throws if multiple edges match. Prefer removeEdge(id). */
+  @Deprecated
   boolean removeEdge(Vertex<T> from, Vertex<T> to);
   double weight(Edge<T> edge);
   double setWeight(Edge<T> edge, double weight);
   Iterable<Vertex<T>> neighbors(Vertex<T> vertex);
+  /** Single-edge projection: rejects parallel edges. Prefer outgoingEdges(vertex). */
+  @Deprecated
   java.util.Map<Vertex<T>, Edge<T>> adjacentEdges(Vertex<T> vertex);
   default Edge<T> addEdge(Vertex<T> from, Vertex<T> to, Object value) {
     return addEdge(from, to, value, 1.0);

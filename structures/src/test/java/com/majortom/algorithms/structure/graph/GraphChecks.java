@@ -64,6 +64,23 @@ public final class GraphChecks {
     var restored = Graph.fromSnapshot(manual.snapshot());
     check(restored.edge(road.id()).value().equals("road"),
         "graph snapshot preserves edge payloads");
+    check(manual.containsEdge(first, equal), "parallel edges still report an edge");
+    rejects(() -> manual.vertex(shenzhen), "equal-valued node lookup must be ambiguous");
+    rejects(() -> manual.edge(first, equal), "parallel edge lookup must be ambiguous");
+    rejects(() -> manual.removeEdge(first, equal), "parallel edge deletion must be ambiguous");
+    rejects(() -> manual.adjacentEdges(first), "single-edge map must reject parallel edges");
+    check(manual.vertex(first.id()) == first, "ID lookup selects the exact vertex");
+
+    Graph<String> loops = new Graph<>(GraphDirection.UNDIRECTED);
+    Vertex<String> loopNode = loops.addVertex("A");
+    Edge<String> loop = loops.addEdge(loopNode, loopNode, "self", 3);
+    check(loops.edges(loopNode, loopNode).size() == 1, "undirected self-loop is stored once");
+    check(loops.outgoingEdges(loopNode).size() == 1
+            && loops.incomingEdges(loopNode).size() == 1, "self-loop indexes");
+    check(loops.removeVertex(loopNode.id()) && loops.edgeCount() == 0,
+        "vertex removal deletes self-loops");
+    check(loops.edge(loop.id()) == null, "removed self-loop cannot be fetched");
+
 
 
     boolean rejected = false;
@@ -137,6 +154,13 @@ public final class GraphChecks {
     var cyclic = Graph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
     check(cyclic.vertexCount() == 2 && cyclic.edgeCount() == 1,
         "cyclic references stop while nested node edges are discovered");
+  }
+
+  private static void rejects(Runnable action, String message) {
+    boolean failed = false;
+    try { action.run(); }
+    catch (IllegalArgumentException expected) { failed = true; }
+    check(failed, message);
   }
 
   private static void check(boolean condition, String message) {

@@ -32,26 +32,6 @@ final class GraphSnapshotQueries {
         return List.copyOf(ids);
     }
 
-    static Long snapshotEdgeIdBetween(GraphSnapshot<Object> snapshot, long fromId, long toId) {
-        for (GraphSnapshot.Edge edge : snapshot.edges()) {
-            if (edgeConnects(snapshot.direction(), edge.fromId(), edge.toId(), fromId, toId)) {
-                return edge.id();
-            }
-        }
-        return null;
-    }
-
-    static boolean edgeConnects(GraphDirection direction, long edgeFrom, long edgeTo,
-                                long fromId, long toId) {
-        if (edgeFrom == fromId && edgeTo == toId) {
-            return true;
-        }
-        if (direction == GraphDirection.UNDIRECTED && edgeFrom == toId && edgeTo == fromId) {
-            return true;
-        }
-        return false;
-    }
-
     static Object snapshotVertexValue(GraphSnapshot<Object> snapshot, long nodeId) {
         for (GraphSnapshot.Vertex<Object> vertex : snapshot.vertices()) {
             if (vertex.id() == nodeId) {
@@ -64,7 +44,9 @@ final class GraphSnapshotQueries {
     static int snapshotDegree(GraphSnapshot<Object> snapshot, long nodeId) {
         int degree = 0;
         for (GraphSnapshot.Edge edge : snapshot.edges()) {
-            if (edge.fromId() == nodeId || edge.toId() == nodeId) {
+            if (edge.fromId() == nodeId && edge.toId() == nodeId) {
+                degree += 2; // A self-loop contributes two to graph-theoretic degree.
+            } else if (edge.fromId() == nodeId || edge.toId() == nodeId) {
                 degree++;
             }
         }

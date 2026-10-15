@@ -188,61 +188,29 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @FXML
     private void handleDeleteEdge() {
-        Object from = parseNode(fromField.getText());
-        Object to = parseNode(toField.getText());
-        GraphStructure<Object> graph = currentGraph();
-        if (from == null || to == null) {
-            return;
-        }
-        Vertex<Object> fromVertex = graph.vertex(from);
-        Vertex<Object> toVertex = graph.vertex(to);
-        if (fromVertex == null || toVertex == null) {
-            logI18n("message.error.graph_node_missing");
-            return;
-        }
-        if (!graph.containsEdge(fromVertex, toVertex)) {
-            logI18n("message.graph.edge_not_found", from, to);
-            return;
-        }
-        GraphSnapshot<Object> previousSnapshot = currentSnapshot();
-        List<Long> previousEdgeOrder = snapshotEdgeIds(previousSnapshot);
-        Edge<Object> target = selectedEdge(graph, fromVertex, toVertex);
+        Graph<Object> graph = currentGraph();
+        Edge<Object> target = resolveEditEdge(graph);
         if (target == null) return;
-        Long removedEdgeId = target.id();
-        int removedIndex = -1;
-        if (removedEdgeId != null) {
-            removedIndex = previousEdgeOrder.indexOf(removedEdgeId);
-        }
-        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(removedEdgeId))) {
-            return;
-        }
+
+        List<Long> previousOrder = snapshotEdgeIds(currentSnapshot());
+        int removedIndex = previousOrder.indexOf(target.id());
+        if (!executeStructureOperation("remove-edge", () -> graph.removeEdge(target.id()))) return;
+
         renderGraph();
-        selectGraphEdgeAfterRemoval(previousEdgeOrder, removedIndex);
-        logI18n("message.graph.edge_deleted", from, to);
+        selectGraphEdgeAfterRemoval(previousOrder, removedIndex);
+        logI18n("message.graph.edge_deleted", target.from().value(), target.to().value());
     }
 
     @FXML
     private void handleSetWeight() {
-        Object from = parseNode(fromField.getText());
-        Object to = parseNode(toField.getText());
         Double weight = parseWeight(weightField.getText());
-        if (from == null || to == null || weight == null) {
-            return;
-        }
+        if (weight == null) return;
         Graph<Object> graph = currentGraph();
-        Vertex<Object> fromVertex = graph.vertex(from);
-        Vertex<Object> toVertex = graph.vertex(to);
-        if (fromVertex == null || toVertex == null) {
-            logI18n("message.error.graph_node_missing");
-            return;
-        }
-        Edge<Object> edge = selectedEdge(graph, fromVertex, toVertex);
-        if (edge == null) return;
-        if (executeStructureOperation("set-weight", () -> graph.setWeight(edge, weight))) {
+        Edge<Object> target = resolveEditEdge(graph);
+        if (target == null) return;
+        if (executeStructureOperation("set-weight", () -> graph.setWeight(target.id(), weight)))
             renderGraph();
-        }
     }
-
 
     private void addNode(String text) {
         Object id = parseNode(text);
@@ -257,91 +225,101 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         renderGraph();
-        Vertex<Object> addedVertex = null;
-        for (Vertex<Object> vertex : graph.vertices()) addedVertex = vertex;
-        if (addedVertex != null) {
-            graphVisualizer().selectNode(addedVertex.id());
-        }
+        List<Long> nodeIds = snapshotVertexIds(currentSnapshot());
+        if (!nodeIds.isEmpty()) graphVisualizer().selectNode(nodeIds.getLast());
         logI18n("message.graph.node_added", id);
     }
 
     private void deleteNode(String text) {
-        Object id = parseNode(text);
-        GraphStructure<Object> graph = currentGraph();
-        if (id == null) {
+        Graph<Object> graph = currentGraph();
+        Vertex<Object> target = structureSelectedNodeId == null
+                ? uniqueVertexFromInput(graph, text)
+                : graph.vertex(structureSelectedNodeId);
+        if (target == null) return;
+
+        List<Long> previousOrder = snapshotVertexIds(currentSnapshot());
+        int removedIndex = previousOrder.indexOf(target.id());
+        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(target.id())))
             return;
-        }
-        Vertex<Object> removedVertex = structureSelectedNodeId == null
-                ? graph.vertex(id) : graph.vertex(structureSelectedNodeId);
-        if (removedVertex != null && !java.util.Objects.equals(removedVertex.value(), id))
-            removedVertex = graph.vertex(id);
-        if (removedVertex == null) {
-            logI18n("message.graph.not_found", id);
-            return;
-        }
-        List<Long> previousNodeOrder = snapshotVertexIds(currentSnapshot());
-        int removedIndex = previousNodeOrder.indexOf(removedVertex.id());
-        Vertex<Object> targetVertex = removedVertex;
-        if (!executeStructureOperation("remove-vertex", () -> graph.removeVertex(targetVertex))) {
-            return;
-        }
+
         renderGraph();
-        selectGraphNodeAfterRemoval(previousNodeOrder, removedIndex);
-        logI18n("message.graph.node_deleted", id);
+        selectGraphNodeAfterRemoval(previousOrder, removedIndex);
+        logI18n("message.graph.node_deleted", target.value());
     }
 
     private void linkNodes(String fromText, String toText) {
-        Object from = parseNode(fromText);
-        Object to = parseNode(toText);
         Graph<Object> graph = currentGraph();
-        if (from == null || to == null || graph.vertex(from) == null || graph.vertex(to) == null) {
-            logI18n("message.error.graph_node_missing");
-            return;
-        }
+        Edge<Object> chosen = structureSelectedEdgeId == null
+                ? null : graph.edge(structureSelectedEdgeId);
+        Vertex<Object> from = chosen == null
+                ? uniqueVertexFromInput(graph, fromText) : chosen.from();
+        Vertex<Object> to = chosen == null
+                ? uniqueVertexFromInput(graph, toText) : chosen.to();
+        if (from == null || to == null) return;
         Double weight = parseWeight(weightField.getText());
-        if (weight == null) {
-            return;
-        }
+        if (weight == null) return;
+
+        // Mutations retain the actual vertex identities, not the business values.
+        long[] created = new long[1];
         if (!executeStructureOperation("add-edge", () -> {
-            graph.addEdge(graph.vertex(from), graph.vertex(to), weight);
+            created[0] = graph.addEdge(from, to, weight).id();
             return null;
-        })) {
-            return;
-        }
+        })) return;
+
         renderGraph();
-        Vertex<Object> fromVertex = graph.vertex(from);
-        Vertex<Object> toVertex = graph.vertex(to);
-        List<com.majortom.algorithms.structure.graph.Edge<Object>> parallel =
-                graph.edges(fromVertex, toVertex);
-        Long addedEdgeId = parallel.isEmpty() ? null : parallel.getLast().id();
-        if (addedEdgeId != null) {
-            graphVisualizer().selectEdge(addedEdgeId);
-        }
-        if (graph.isDirected()) {
-            logI18n("message.graph.link.directed", from, to, 1);
-        } else {
-            logI18n("message.graph.link.undirected", from, to, 1);
-        }
+        graphVisualizer().selectEdge(created[0]);
+        if (graph.isDirected())
+            logI18n("message.graph.link.directed", from.value(), to.value(), 1);
+        else
+            logI18n("message.graph.link.undirected", from.value(), to.value(), 1);
     }
 
-    private Edge<Object> selectedEdge(GraphStructure<Object> graph,
-            Vertex<Object> from, Vertex<Object> to) {
+    /** An edge selected in the canvas remains authoritative even for equal-valued vertices. */
+    private Edge<Object> resolveEditEdge(Graph<Object> graph) {
         if (structureSelectedEdgeId != null) {
             Edge<Object> selected = graph.edge(structureSelectedEdgeId);
-            if (selected != null && java.util.Objects.equals(selected.from().value(), from.value())
-                    && java.util.Objects.equals(selected.to().value(), to.value()))
-                return selected;
+            if (selected != null) return selected;
+            structureSelectedEdgeId = null;
         }
+        Vertex<Object> from = uniqueVertexFromInput(graph, fromField.getText());
+        Vertex<Object> to = uniqueVertexFromInput(graph, toField.getText());
+        if (from == null || to == null) return null;
         List<Edge<Object>> matching = graph.edges(from, to);
         if (matching.isEmpty()) {
             logI18n("message.graph.edge_not_found", from.value(), to.value());
             return null;
         }
-        if (matching.size() > 1) {
-            appendLog("Multiple edges connect these nodes. Select a specific edge first.");
+        if (matching.size() != 1) {
+            appendLog("存在多条平行边，请先在图上选中要操作的边。");
             return null;
         }
         return matching.getFirst();
+    }
+
+    /** Never resolve a duplicated business value to an arbitrary graph vertex. */
+    private Vertex<Object> uniqueVertexFromInput(Graph<Object> graph, String text) {
+        // #123 addresses a node by ID, including equal-valued and custom business nodes.
+        if (text != null && text.trim().startsWith("#")) {
+            try {
+                long id = Long.parseLong(text.trim().substring(1).trim());
+                Vertex<Object> vertex = graph.vertex(id);
+                if (vertex == null) appendLog("找不到节点 ID：" + id);
+                return vertex;
+            } catch (NumberFormatException error) {
+                appendLog("节点 ID 格式无效，请输入 #数字。");
+                return null;
+            }
+        }
+        Object value = parseNode(text);
+        if (value == null) return null;
+        try {
+            Vertex<Object> result = graph.vertex(value);
+            if (result == null) logI18n("message.graph.not_found", value);
+            return result;
+        } catch (IllegalArgumentException ambiguous) {
+            appendLog("存在同值节点，请在图上通过节点或边 ID 选择具体对象。");
+            return null;
+        }
     }
 
     private void selectGraphNodeAfterRemoval(List<Long> previousOrder, int removedIndex) {
@@ -410,6 +388,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private Object parseNode(String text) {
+        if (valueAdapter == null) {
+            appendLog("该节点类型不支持文本解析，请在图中选择具体节点或边。");
+            return null;
+        }
         try {
             return valueAdapter.parse(text);
         } catch (RuntimeException exception) {
@@ -605,6 +587,22 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     }
 
     private void bindSelectors() {
+        nodeField.textProperty().addListener((ignored, previous, current) -> {
+            if (structureSelectedNodeId == null) return;
+            Vertex<Object> selected = currentGraph().vertex(structureSelectedNodeId);
+            if (selected == null || !java.util.Objects.equals(formatNode(selected.value()), current))
+                structureSelectedNodeId = null;
+        });
+        javafx.beans.value.ChangeListener<String> edgeInputChanged = (ignored, previous, current) -> {
+            if (structureSelectedEdgeId == null) return;
+            Edge<Object> selected = currentGraph().edge(structureSelectedEdgeId);
+            if (selected == null
+                    || !java.util.Objects.equals(formatNode(selected.from().value()), fromField.getText())
+                    || !java.util.Objects.equals(formatNode(selected.to().value()), toField.getText()))
+                structureSelectedEdgeId = null;
+        };
+        fromField.textProperty().addListener(edgeInputChanged);
+        toField.textProperty().addListener(edgeInputChanged);
         structureSelector.setItems(FXCollections.observableArrayList(
                 "label.graph.structure.undirected", "label.graph.structure.directed"));
         localizeChoiceCells(structureSelector, I18N::text);
@@ -713,11 +711,8 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     @Override
     protected void randomizeData() {
         int vertices = Math.min(10, ValueAdapters.maxDistinctSamples(runtimeValueType));
-        int maxEdges = vertices * (vertices - 1) / 2;
-        if (activeDirection.isDirected()) {
-            maxEdges = vertices * (vertices - 1);
-        }
-        int edges = Math.min(16, maxEdges);
+        // Parallel edges and self-loops are valid in the unified graph model.
+        int edges = vertices == 0 ? 0 : Math.min(16, vertices * 2);
         replaceGraphData(GraphDataFactory.randomGraphBatch(runtimeValueType, vertices, edges,
                 activeDirection, new Random()), "randomize", "message.data.randomized");
     }
@@ -747,10 +742,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         renderGraph();
         refreshStatsDisplay();
         if (!batch.nodes().isEmpty()) {
-            Vertex<Object> selected = replacement.vertex(batch.nodes().getFirst());
-            if (selected != null) {
-                graphVisualizer().selectNode(selected.id());
-            }
+            graphVisualizer().selectNode(replacement.snapshot().vertices().getFirst().id());
         }
         logI18n(messageKey, batch.nodes().size());
     }
@@ -783,12 +775,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
             return;
         }
         int degree = snapshotDegree(snapshot, nodeId);
+        String text = formatNode(value);
+        if (nodeField != null) nodeField.setText(text);
         structureSelectedNodeId = nodeId;
         structureSelectedEdgeId = null;
-        String text = formatNode(value);
-        if (nodeField != null) {
-            nodeField.setText(text);
-        }
         selectionListener.accept(new NodeSelection(nodeId, VisualValue.of(value), degree));
     }
 
@@ -817,7 +807,9 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         int degree = 0;
         for (GraphViewState.Edge edge : state.edges()) {
-            if (edge.fromId() == nodeId || edge.toId() == nodeId) {
+            if (edge.fromId() == nodeId && edge.toId() == nodeId) {
+                degree += 2;
+            } else if (edge.fromId() == nodeId || edge.toId() == nodeId) {
                 degree++;
             }
         }
