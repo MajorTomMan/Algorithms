@@ -100,11 +100,15 @@ final class GraphTopologyLayout {
       return new ComponentLayout(Map.of(node.id(), geometry), node.width(), node.height());
     }
 
-    double maxDiameter = ordered.stream()
-                             .mapToDouble(node -> Math.max(node.width(), node.height()))
-                             .max()
-                             .orElse(56.0d);
+    // Dimensions are constant across iterations; compute each node's diameter once.
+    double[] diameters = new double[ordered.size()];
+    double maxDiameter = 0.0d;
+    for (int index = 0; index < ordered.size(); index++) {
+      diameters[index] = Math.max(ordered.get(index).width(), ordered.get(index).height());
+      maxDiameter = Math.max(maxDiameter, diameters[index]);
+    }
     double ideal = Math.max(MIN_EDGE_LENGTH, maxDiameter + NODE_SPACING);
+    double idealSquared = ideal * ideal;
     double radius = Math.max(ideal, ideal * ordered.size() / (2.0d * Math.PI));
     Map<String, Point> positions = new LinkedHashMap<>();
     for (int index = 0; index < ordered.size(); index++) {
@@ -119,11 +123,16 @@ final class GraphTopologyLayout {
                                               && positions.containsKey(link.sourceId())
                                               && positions.containsKey(link.targetId()))
                                       .toList();
+    // Reuse displacement vectors instead of allocating a map and N points per iteration.
+    Map<String, Point> delta = new LinkedHashMap<>();
+    for (LayoutElement node : ordered) delta.put(node.id(), new Point(0.0d, 0.0d));
     int iterations = ordered.size() <= 30 ? 180 : ordered.size() <= 80 ? 130 : 90;
     double temperature = ideal * 0.72d;
     for (int iteration = 0; iteration < iterations; iteration++) {
-      Map<String, Point> delta = new LinkedHashMap<>();
-      ordered.forEach(node -> delta.put(node.id(), new Point(0.0d, 0.0d)));
+      for (Point movement : delta.values()) {
+        movement.x = 0.0d;
+        movement.y = 0.0d;
+      }
       for (int leftIndex = 0; leftIndex < ordered.size(); leftIndex++) {
         LayoutElement left = ordered.get(leftIndex);
         Point lp = positions.get(left.id());
@@ -135,11 +144,8 @@ final class GraphTopologyLayout {
           double distance = Math.max(0.01d, Math.hypot(dx, dy));
           double nx = dx / distance;
           double ny = dy / distance;
-          double repulsion = ideal * ideal / distance;
-          double minimum =
-              (Math.max(left.width(), left.height()) + Math.max(right.width(), right.height()))
-                  / 2.0d
-              + 18.0d;
+          double repulsion = idealSquared / distance;
+          double minimum = (diameters[leftIndex] + diameters[rightIndex]) / 2.0d + 18.0d;
           if (distance < minimum)
             repulsion += (minimum - distance) * 8.0d;
           delta.get(left.id()).add(nx * repulsion, ny * repulsion);

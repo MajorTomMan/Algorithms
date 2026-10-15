@@ -23,6 +23,20 @@ public final class GraphTraversalChecks {
         || bfs.stream().distinct().count() != 3 || dfs.stream().distinct().count() != 3)
       throw new AssertionError("Traversal must visit each unique vertex, including isolated vertices");
 
+    // Kruskal must recover nodes by ID, never by business value.
+    Graph<Integer> weighted = new Graph<>(GraphDirection.UNDIRECTED);
+    var first = weighted.addVertex(7);
+    var second = weighted.addVertex(7);
+    var third = weighted.addVertex(9);
+    weighted.addEdge(first, second, 1.0d);
+    weighted.addEdge(second, third, 2.0d);
+    var minimum = new KruskalMinimumSpanning().build(weighted);
+    if (minimum.vertices().size() != 3 || minimum.edges().size() != 2
+        || minimum.edges().getFirst().fromId() != first.id()
+        || minimum.edges().getFirst().toId() != second.id()) {
+      throw new AssertionError("Kruskal must distinguish equal-valued vertices by ID");
+    }
+
     var registered = ComponentDiscovery.discover().compatibleAlgorithms(
         GraphStructure.class, AlgorithmTypeSignature.of(Object.class));
     if (registered.stream().noneMatch(item -> item.id().equals("graph-bfs"))

@@ -41,6 +41,7 @@ import com.majortom.algorithms.visualization.impl.controller.GraphSnapshotQuerie
 import com.majortom.algorithms.visualization.impl.controller.GraphBatchParser.GraphBatch;
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -312,14 +313,17 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         Object value = parseNode(text);
         if (value == null) return null;
-        try {
-            Vertex<Object> result = graph.vertex(value);
-            if (result == null) logI18n("message.graph.not_found", value);
-            return result;
-        } catch (IllegalArgumentException ambiguous) {
-            appendLog("存在同值节点，请在图上通过节点或边 ID 选择具体对象。");
-            return null;
+        Vertex<Object> result = null;
+        for (Vertex<Object> vertex : graph.vertices()) {
+            if (!Objects.equals(vertex.value(), value)) continue;
+            if (result != null) {
+                appendLog("存在同值节点，请在图上通过节点或边 ID 选择具体对象。");
+                return null;
+            }
+            result = vertex;
         }
+        if (result == null) logI18n("message.graph.not_found", value);
+        return result;
     }
 
     private void selectGraphNodeAfterRemoval(List<Long> previousOrder, int removedIndex) {

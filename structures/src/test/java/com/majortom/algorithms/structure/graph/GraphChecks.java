@@ -65,11 +65,10 @@ public final class GraphChecks {
     check(restored.edge(road.id()).value().equals("road"),
         "graph snapshot preserves edge payloads");
     check(manual.containsEdge(first, equal), "parallel edges still report an edge");
-    rejects(() -> manual.vertex(shenzhen), "equal-valued node lookup must be ambiguous");
-    rejects(() -> manual.edge(first, equal), "parallel edge lookup must be ambiguous");
-    rejects(() -> manual.removeEdge(first, equal), "parallel edge deletion must be ambiguous");
-    rejects(() -> manual.adjacentEdges(first), "single-edge map must reject parallel edges");
-    check(manual.vertex(first.id()) == first, "ID lookup selects the exact vertex");
+    check(manual.vertex(first.id()) == first && manual.vertex(equal.id()) == equal,
+        "equal-valued nodes must remain distinguishable by ID");
+    check(manual.edge(road.id()) == road && manual.edges(first, equal).size() == 2,
+        "parallel edges must remain distinguishable by ID");
 
     Graph<String> loops = new Graph<>(GraphDirection.UNDIRECTED);
     Vertex<String> loopNode = loops.addVertex("A");
@@ -154,13 +153,6 @@ public final class GraphChecks {
     var cyclic = Graph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
     check(cyclic.vertexCount() == 2 && cyclic.edgeCount() == 1,
         "cyclic references stop while nested node edges are discovered");
-  }
-
-  private static void rejects(Runnable action, String message) {
-    boolean failed = false;
-    try { action.run(); }
-    catch (IllegalArgumentException expected) { failed = true; }
-    check(failed, message);
   }
 
   private static void check(boolean condition, String message) {

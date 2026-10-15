@@ -65,8 +65,9 @@ public final class KruskalMinimumSpanning {
       AlgorithmEvents.emit(new GraphAlgorithmEvent.EdgeAccepted(
           edge.id(), edge.from().id(), edge.to().id()));
       union(parent, rank, fromRoot, toRoot);
-      Vertex<Integer> from = result.vertex(edge.from().value());
-      Vertex<Integer> to = result.vertex(edge.to().value());
+      // Snapshot restoration preserves vertex IDs even for equal business values.
+      Vertex<Integer> from = result.vertex(edge.from().id());
+      Vertex<Integer> to = result.vertex(edge.to().id());
       result.addEdge(from, to, graph.weight(edge));
     }
     return result.snapshot();

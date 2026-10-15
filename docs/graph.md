@@ -11,11 +11,14 @@
 - `GraphSnapshot<T>`：同时保存节点、每一条边的身份与载荷，供保存和回放使用。
 
 以 ID 作为节点和边的唯一身份：
-`vertex(id)`、`edge(id)`、`edges(from, to)`、`outgoingEdges(vertex)`。
-旧的按值查找 `vertex(value)` 在重名节点下会抛出异常，
-`edge(from, to)` 和 `removeEdge(from, to)` 在平行边下会抛出异常；
-`adjacentEdges(vertex)` 无法完整表达平行边，也会拒绝有歧义的结果。
-它们仅作为兼容便利方法保留，不得用于多重图的核心操作。
+`vertex(id)`、`edge(id)`、`removeEdge(id)`、`edges(from, to)`、
+`outgoingEdges(vertex)`。节点值不具备唯一性，平行边也不应被折叠成
+单条边或 `Map<Vertex, Edge>`。
+
+已删除旧入口 `vertex(value)`、`edge(from, to)`、
+`removeEdge(from, to)`、`adjacentEdges(vertex)`，不再保留
+`@Deprecated` 兼容方法。业务值的文本解析/唯一性检查只由图编辑器负责，
+算法使用稳定 ID 定位实体，Kruskal 不会再根据业务值找回结果顶点。
 `addEdge` 始终创建独立边，不再将重复端点对应的权重覆盖。
 图的方向由 `GraphDirection.DIRECTED/UNDIRECTED` 指定。
 

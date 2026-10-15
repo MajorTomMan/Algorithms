@@ -36,22 +36,6 @@ public final class Graph<T> implements GraphStructure<T> {
   @Override public int vertexCount() { return vertices.size(); }
   @Override public int edgeCount() { return edges.size(); }
   @Override public Vertex<T> vertex(long id) { return vertices.get(id); }
-  /**
-   * Convenience lookup for a unique business value. Use vertex(id) for full identity.
-   *
-   * @throws IllegalArgumentException if more than one vertex has the same value
-   */
-  @Deprecated
-  @Override public Vertex<T> vertex(T value) {
-    Vertex<T> match = null;
-    for (Vertex<T> vertex : vertices.values()) {
-      if (!Objects.equals(vertex.value(), value)) continue;
-      if (match != null) throw new IllegalArgumentException(
-          "Ambiguous vertex value; select a vertex by ID: " + value);
-      match = vertex;
-    }
-    return match;
-  }
   @Override public boolean containsVertex(Vertex<T> vertex) {
     return vertex != null && vertices.get(vertex.id()) == vertex;
   }
@@ -178,21 +162,8 @@ public final class Graph<T> implements GraphStructure<T> {
         .toList();
   }
 
-  // Traditional graph operations remain available; parallel edges are never collapsed.
   @Override public Edge<T> addEdge(Vertex<T> from, Vertex<T> to, double weight) {
     return addEdge(from, to, null, weight);
-  }
-  /** Use edges(from, to) to access parallel edges, or edge(id) for one specific edge. */
-  @Deprecated
-  @Override public Edge<T> edge(Vertex<T> from, Vertex<T> to) {
-    List<Edge<T>> matching = edges(from, to);
-    if (matching.size() > 1) throw new IllegalArgumentException(
-        "Ambiguous parallel edges; select a specific edge by ID");
-    return matching.isEmpty() ? null : matching.getFirst();
-  }
-  @Override public boolean removeEdge(Vertex<T> from, Vertex<T> to) {
-    Edge<T> matching = edge(from, to);
-    return matching != null && removeEdge(matching.id());
   }
   @Override public boolean removeVertex(Vertex<T> vertex) {
     return containsVertex(vertex) && removeVertex(vertex.id());
@@ -214,20 +185,6 @@ public final class Graph<T> implements GraphStructure<T> {
     for (Edge<T> edge : outgoingEdges(vertex))
       result.add(edge.from() == vertex ? edge.to() : edge.from());
     return List.copyOf(result);
-  }
-  /**
-   * Legacy single-edge projection. Reject parallel edges rather than silently losing them.
-   * Use outgoingEdges(vertex) for the complete topology.
-   */
-  @Deprecated
-  @Override public Map<Vertex<T>, Edge<T>> adjacentEdges(Vertex<T> vertex) {
-    LinkedHashMap<Vertex<T>, Edge<T>> result = new LinkedHashMap<>();
-    for (Edge<T> edge : outgoingEdges(vertex)) {
-      Vertex<T> neighbor = edge.from() == vertex ? edge.to() : edge.from();
-      if (result.putIfAbsent(neighbor, edge) != null)
-        throw new IllegalArgumentException("Parallel edges cannot be represented as a map");
-    }
-    return Collections.unmodifiableMap(result);
   }
   @Override public GraphSnapshot<T> snapshot() {
     List<GraphSnapshot.Vertex<T>> nodes = vertices.values().stream()
