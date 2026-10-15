@@ -16,7 +16,6 @@ final class RenderSession {
   long layoutRevision;
   long presentationRevision;
   long presentationCursorRevision;
-  long viewportRevision;
   long committedRevision;
   private boolean active;
   LayoutRequest lastLayoutRequest;

@@ -585,11 +585,7 @@ public final class DefaultRenderFramework implements RenderPort, PresentationCur
 
     private CompletionStage<RenderResult> processViewport(RenderSession session, ViewportRenderIntent intent) {
         session.viewport = intent.viewport();
-        session.viewportRevision++;
         long generation = session.generation;
-        long transactionId = transactionSequence.incrementAndGet();
-        RenderTransaction transaction = new RenderTransaction(
-                transactionId, session.id, generation, session.modelRevision, session.geometryRevision);
         if (session.layout == null) {
             return CompletableFuture.completedFuture(new RenderResult(RenderStatus.NO_OP, session.id, session.modelRevision,
                     false, BoundsSnapshot.empty(), null));

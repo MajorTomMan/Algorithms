@@ -36,7 +36,6 @@ public final class UiRenderCoordinator {
   private final List<CompletableFuture<Void>> pending = new ArrayList<>();
   private FontSettings pendingFont;
   private boolean pendingMount;
-  private boolean pendingWorkbench;
   private boolean scheduled;
   private boolean running;
 
@@ -70,7 +69,6 @@ public final class UiRenderCoordinator {
     fx.execute(() -> {
       if (font != null) pendingFont = font;
       if (mounted) pendingMount = true;
-      pendingWorkbench = true;
       pending.add(result);
       schedule();
     }).whenComplete((ignored, failure) -> {
@@ -93,10 +91,8 @@ public final class UiRenderCoordinator {
     running = true;
     FontSettings font = pendingFont;
     boolean mounted = pendingMount;
-    boolean workbench = pendingWorkbench;
     pendingFont = null;
     pendingMount = false;
-    pendingWorkbench = false;
     List<CompletableFuture<Void>> batch = new ArrayList<>(pending);
     pending.clear();
 
@@ -106,7 +102,7 @@ public final class UiRenderCoordinator {
       // A normal shell refresh never re-scans every text node. The font
       // service already scans when applying a new font; a mount scans new nodes.
       if (font != null || mounted) participant.prepareStyles(mounted && font == null);
-      if (workbench) participant.refreshWorkbench();
+      participant.refreshWorkbench();
       completion = font == null
           ? CompletableFuture.completedFuture(null)
           : Objects.requireNonNull(participant.refreshContentGeometry(font),
@@ -132,7 +128,6 @@ public final class UiRenderCoordinator {
     scheduled = false;
     pendingFont = null;
     pendingMount = false;
-    pendingWorkbench = false;
     List<CompletableFuture<Void>> batch = new ArrayList<>(pending);
     pending.clear();
     for (CompletableFuture<Void> waiter : batch) waiter.completeExceptionally(failure);
