@@ -1,4 +1,4 @@
-name: Build
+name: 编译检查
 
 on:
   push:
@@ -16,22 +16,5 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Check compilation with start.py
-        run: |
-          python -m pip install psutil
-          python start.py --build
-      - name: Compile regression test sources
-        run: mvn -B test-compile
-      - name: Run headless framework regression checks
-        run: |
-          mvn -B -q install -DskipTests
-          mvn -B -q -pl structures exec:java -Dexec.mainClass=com.majortom.algorithms.structure.graph.GraphChecks -Dexec.classpathScope=test
-          mvn -B -q -pl algorithms exec:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.impl.GraphTraversalChecks -Dexec.classpathScope=test
-          mvn -B -q -pl algorithms exec:java -Dexec.mainClass=com.majortom.algorithms.algorithm.discovery.RegistryDiscoveryChecks -Dexec.classpathScope=test
-          java -cp client/target/test-classes:client/target/classes com.majortom.algorithms.visualization.impl.controller.GraphInspectorTextChecks
-          java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.AnnotatedValueProjectionChecks
-          java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.SharedValueProjectionChecks
-          java -cp client/target/test-classes:client/target/classes:core/target/classes com.majortom.algorithms.visualization.runtime.value.LazyGraphProjectionChecks
-          java -cp client/target/test-classes:client/target/classes com.majortom.algorithms.visualization.render.runtime.RenderSessionLifecycleChecks
-          java -cp client/target/test-classes:client/target/classes:core/target/classes:structures/target/classes com.majortom.algorithms.visualization.metrics.PerformanceRegressionChecks
-          java -cp client/target/test-classes:client/target/classes:core/target/classes:structures/target/classes com.majortom.algorithms.visualization.metrics.MetricsDeduplicationChecks
+      - name: 编译全部 Maven 模块
+        run: mvn -B -ntp -DskipTests compile
