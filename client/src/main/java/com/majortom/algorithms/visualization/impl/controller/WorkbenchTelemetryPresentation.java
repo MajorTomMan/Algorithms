@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.telemetry.api.TelemetryDomain;
 import com.majortom.algorithms.telemetry.memory.analysis.StructureFootprint;
 import com.majortom.algorithms.visualization.BaseController;
+import com.majortom.algorithms.visualization.international.I18N;
 import com.majortom.algorithms.visualization.memory.MemoryProfileView;
 import com.majortom.algorithms.visualization.metrics.RuntimeOverviewModel;
 import com.majortom.algorithms.visualization.render.api.PresentationSurfacePort;
@@ -14,6 +15,8 @@ import com.majortom.algorithms.visualization.render.presentation.memory.FxMemory
 import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationInput;
 import com.majortom.algorithms.visualization.render.presentation.memory.MemoryPresentationSource;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -30,6 +33,8 @@ final class WorkbenchTelemetryPresentation {
     private final PresentationSurfacePort presentationSurfacePort;
     private final Supplier<BaseController<?>> controller;
     private MutablePresentationModelSource<RuntimeOverviewModel> runtimeOverviewPresentationSource;
+    private RuntimeOverviewModel lastPublishedOverview;
+    private Locale lastPublishedOverviewLocale;
     private MemoryPresentationSource structureMemoryPresentationSource;
     private MemoryPresentationSource algorithmMemoryPresentationSource;
     private FxMemoryRenderer structureMemoryRenderer;
@@ -45,6 +50,8 @@ final class WorkbenchTelemetryPresentation {
 
     void resetContext() {
         memoryContextGeneration++;
+        lastPublishedOverview = null; // A new controller must get its first presentation commit.
+        lastPublishedOverviewLocale = null;
         structureFootprint = null;
         structureFootprintBusy = false;
     }
@@ -52,6 +59,8 @@ final class WorkbenchTelemetryPresentation {
     void installRuntime(GridPane structureMetricsGrid, VBox algorithmMetricsSection,
             GridPane algorithmMetricsGrid, GridPane performanceMetricsGrid,
             FxRuntimeOverviewRenderer.RunSummaryBindings runMetrics) {
+        lastPublishedOverview = null;
+        lastPublishedOverviewLocale = null;
         runtimeOverviewPresentationSource =
                 new MutablePresentationModelSource<>(RuntimeOverviewModel.empty());
         PresentationSurface<RuntimeOverviewModel> surface = PresentationSurface.standalone(
@@ -130,8 +139,16 @@ final class WorkbenchTelemetryPresentation {
 
     void publishRuntimeOverview(RuntimeOverviewModel overview) {
         if (runtimeOverviewPresentationSource == null) return;
-        runtimeOverviewPresentationSource.publish(
-                overview == null ? RuntimeOverviewModel.empty() : overview);
+        RuntimeOverviewModel next = overview == null ? RuntimeOverviewModel.empty() : overview;
+        Locale locale = I18N.getLocale();
+        // Metrics are immutable records. Avoid a render request when only the playback cursor
+        // advanced; still refresh translated labels after locale or controller changes.
+        if (next.equals(lastPublishedOverview) && Objects.equals(locale, lastPublishedOverviewLocale)) {
+            return;
+        }
+        lastPublishedOverview = next;
+        lastPublishedOverviewLocale = locale;
+        runtimeOverviewPresentationSource.publish(next);
         presentationSurfacePort.invalidatePresentationSurface(RUNTIME_OVERVIEW_SURFACE_ID);
     }
 
