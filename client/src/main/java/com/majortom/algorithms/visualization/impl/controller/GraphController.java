@@ -846,7 +846,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         }
         structureSelectedEdgeId = edgeId;
         structureSelectedNodeId = null;
-        selectionListener.accept(new EdgeSelection(edgeId, VisualValue.of(from), VisualValue.of(to), snapshot.direction().isDirected()));
+        Edge<Object> selected = currentGraph().edge(edgeId);
+        VisualValue payload = selected == null || selected.value() == null
+                ? null : VisualValue.of(selected.value());
+        selectionListener.accept(new EdgeSelection(
+                edgeId, edge.fromId(), edge.toId(),
+                VisualValue.of(from), VisualValue.of(to), edge.weight(),
+                snapshot.direction().isDirected(), payload));
     }
 
     private void handleAlgorithmEdgeSelection(long edgeId) {
@@ -877,7 +883,21 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (from == null || to == null) {
             return false;
         }
-        selectionListener.accept(new EdgeSelection(edgeId, from.value(), to.value(), state.direction().isDirected()));
+        // The replayed edge may not belong to the input graph (e.g. an algorithm
+        // produced a new edge ID), so prefer input payload details when available.
+        VisualValue payload = null;
+        for (GraphSnapshot.Edge edge : selectedAlgorithmSnapshot().edges()) {
+            if (edge.id() == edgeId && edge.value() != null) {
+                payload = VisualValue.of(edge.value());
+                break;
+            }
+        }
+        if (payload == null && selected.label() != null)
+            payload = VisualValue.compact(selected.label());
+        selectionListener.accept(new EdgeSelection(
+                edgeId, selected.fromId(), selected.toId(),
+                from.value(), to.value(), selected.weight(),
+                state.direction().isDirected(), payload));
         return true;
     }
 
@@ -932,7 +952,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
     public record NodeSelection(long id, VisualValue value, int degree) implements Selection {
     }
 
-    public record EdgeSelection(long id, VisualValue fromValue, VisualValue toValue, boolean directed) implements Selection {
+    public record EdgeSelection(long id, long fromId, long toId,
+                                VisualValue fromValue, VisualValue toValue,
+                                double weight, boolean directed, VisualValue payload)
+            implements Selection {
     }
 
     /** Build a graph from annotated business objects without a second graph implementation. */

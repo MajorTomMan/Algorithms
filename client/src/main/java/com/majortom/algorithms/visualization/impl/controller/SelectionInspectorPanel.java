@@ -135,21 +135,59 @@ final class SelectionInspectorPanel {
         if (selection == null) { clear(); return; }
         selectionPresentation = () -> {
             if (selection instanceof GraphController.NodeSelection node) {
-                presentValueSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
+                String details = I18N.text("label.workspace.selection.graph.node.detail",
+                        node.id(), node.value().text(), node.degree());
+                String properties = graphExtraFields(node.value());
+                if (!properties.isBlank()) details += "\n\n" + properties;
+                presentSelection(I18N.text("label.workspace.selection.node"), "#" + node.id(),
                         node.value().text(), I18N.text("label.workspace.selection.graph.node.hint"),
-                        I18N.text("label.workspace.selection.graph.node.detail", node.id(), node.value().text(), node.degree()), node.value());
+                        details);
             } else if (selection instanceof GraphController.EdgeSelection edge) {
+                String details = I18N.text("label.workspace.selection.graph.edge.detail",
+                        edge.id(), edge.fromId(), edge.fromValue().text(),
+                        edge.toId(), edge.toValue().text(), formatGraphWeight(edge.weight()),
+                        I18N.text(edge.directed()
+                                ? "label.workspace.selection.yes"
+                                : "label.workspace.selection.no"));
+                String fromFields = graphExtraFields(edge.fromValue());
+                String toFields = graphExtraFields(edge.toValue());
+                if (!fromFields.isBlank())
+                    details += "\n\n" + I18N.text("label.workspace.selection.graph.from_fields")
+                            + " (#" + edge.fromId() + ")\n" + fromFields;
+                if (!toFields.isBlank())
+                    details += "\n\n" + I18N.text("label.workspace.selection.graph.to_fields")
+                            + " (#" + edge.toId() + ")\n" + toFields;
+                if (edge.payload() != null) {
+                    details += "\n\n" + I18N.text("label.workspace.selection.graph.edge.payload")
+                            + "：" + edge.payload().text();
+                    String payloadFields = graphExtraFields(edge.payload());
+                    if (!payloadFields.isBlank()) details += "\n" + payloadFields;
+                }
                 presentSelection(I18N.text("label.workspace.selection.edge"), "E#" + edge.id(),
-                        edge.fromValue().text() + (edge.directed() ? " → " : " — ") + edge.toValue().text(),
-                        I18N.text("label.workspace.selection.graph.edge.hint"),
-                        I18N.text("label.workspace.selection.graph.edge.detail", edge.id(),
-                                edge.fromValue().text(), edge.toValue().text(),
-                                I18N.text(edge.directed() ? "label.workspace.selection.yes" : "label.workspace.selection.no"))
-                                + "\n\n" + edge.fromValue().projection().details()
-                                + "\n\n" + edge.toValue().projection().details());
+                        "#" + edge.fromId() + " " + (edge.directed() ? "→" : "—")
+                                + " #" + edge.toId(),
+                        I18N.text("label.workspace.selection.graph.edge.hint"), details);
             }
         };
         selectionPresentation.run();
+    }
+
+    /** Skip a built-in scalar's redundant "值: ..." but retain meaningful business fields. */
+    private static String graphExtraFields(VisualValue value) {
+        var projection = value.projection();
+        if (!projection.presenterRegistered()) return "";
+        if (projection.fields().size() == 1) {
+            var field = projection.fields().getFirst();
+            if ("value".equals(field.key()) && field.value().equals(value.text()))
+                return "";
+        }
+        return projection.details();
+    }
+
+    private static String formatGraphWeight(double weight) {
+        if (weight == Math.rint(weight) && weight >= Long.MIN_VALUE && weight <= Long.MAX_VALUE)
+            return Long.toString((long) weight);
+        return Double.toString(weight);
     }
 
     private String nodeIdText(Long id) {
