@@ -1,6 +1,7 @@
 package com.majortom.algorithms.core.registry;
 
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.annotation.AlgorithmInit;
 import com.majortom.algorithms.core.annotation.Structure;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -41,6 +42,7 @@ public final class RegistrationValidator {
     }
     validateImplementation(descriptor.implementation(), "Algorithm");
     validateEntryPoint(descriptor);
+    validateInitializer(descriptor);
     return descriptor;
   }
 
@@ -97,6 +99,40 @@ public final class RegistrationValidator {
       throw new RegistrationException("Algorithm " + descriptor.id() + " declares structure "
           + descriptor.structureContract().getName() + " but @AlgorithmEntry parameter "
           + actualStructure.getName() + " cannot accept that contract");
+    }
+  }
+
+  /**
+   * Initialization shares the same instance and Structure argument as @AlgorithmEntry.
+   * Reject mismatched signatures during discovery instead of failing reflectively at run time.
+   */
+  private static void validateInitializer(AlgorithmDescriptor descriptor) {
+    Method initializer = descriptor.initializer();
+    if (initializer == null) return;
+
+    Method entry = descriptor.entryPoint();
+    if (!initializer.isAnnotationPresent(AlgorithmInit.class))
+      throw new RegistrationException("Algorithm initializer missing @AlgorithmInit: " + initializer);
+    if (initializer.equals(entry))
+      throw new RegistrationException("@AlgorithmInit and @AlgorithmEntry must mark different methods: "
+          + initializer);
+    if (!Modifier.isPublic(initializer.getModifiers())
+        || Modifier.isStatic(initializer.getModifiers())) {
+      throw new RegistrationException("Algorithm initializer must be public and non-static: "
+          + initializer);
+    }
+    if (!initializer.getDeclaringClass().isAssignableFrom(descriptor.implementation())) {
+      throw new RegistrationException("Algorithm initializer does not belong to implementation: "
+          + initializer);
+    }
+    if (initializer.getReturnType() != void.class) {
+      throw new RegistrationException("Algorithm initializer must return void: " + initializer);
+    }
+    if (initializer.isVarArgs() || initializer.getParameterCount() != 1
+        || !initializer.getGenericParameterTypes()[0]
+            .equals(entry.getGenericParameterTypes()[0])) {
+      throw new RegistrationException("Algorithm initializer must accept the same Structure "
+          + "parameter (including generic type) as @AlgorithmEntry: " + initializer);
     }
   }
 

@@ -2,6 +2,7 @@ package com.majortom.algorithms.algorithm.discovery;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
+import com.majortom.algorithms.core.annotation.AlgorithmInit;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
@@ -10,6 +11,7 @@ import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import com.majortom.algorithms.core.registry.RegistrationException;
 import com.majortom.algorithms.core.registry.RegistrationValidator;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,13 +47,15 @@ public final class AlgorithmDiscovery {
       }
 
       Method entryPoint = findEntryPoint(implementation);
+      Method initializer = findInitializer(implementation);
       AlgorithmDescriptor descriptor = new AlgorithmDescriptor(
           annotation.id(),
           ComponentNames.resolve(annotation.name(), implementation),
           AlgorithmTypeSignature.of(annotation.types()),
           structureContract,
           implementation,
-          entryPoint);
+          entryPoint,
+          initializer);
       validateTypeSignature(descriptor);
       descriptors.add(descriptor);
     }
@@ -79,6 +83,29 @@ public final class AlgorithmDiscovery {
               + " do not match ordered entry Structure types " + entryTypes
               + " for " + descriptor.implementation().getName());
     }
+  }
+
+  /** An initializer is optional but must be unique; validate non-public declarations early. */
+  private Method findInitializer(Class<?> implementation) {
+    for (Method method : implementation.getDeclaredMethods()) {
+      if (method.isAnnotationPresent(AlgorithmInit.class)
+          && !Modifier.isPublic(method.getModifiers())) {
+        throw new RegistrationException(
+            "Algorithm @AlgorithmInit method must be public: " + method);
+      }
+    }
+
+    List<Method> initializers = new ArrayList<>();
+    for (Method method : implementation.getMethods()) {
+      if (method.isAnnotationPresent(AlgorithmInit.class))
+        initializers.add(method);
+    }
+    if (initializers.size() > 1) {
+      throw new RegistrationException("Algorithm " + implementation.getName()
+          + " must expose at most one @AlgorithmInit method, found "
+          + initializers.size());
+    }
+    return initializers.isEmpty() ? null : initializers.getFirst();
   }
 
   private Method findEntryPoint(Class<?> implementation) {

@@ -122,12 +122,14 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         if (algorithmId == null) {
             return;
         }
+        AlgorithmDescriptor descriptor = AlgorithmCatalog.graphDescriptor(runtimeValueType, algorithmId);
         GraphSnapshot<Object> inputSnapshot = selectedAlgorithmSnapshot();
         GraphStructure<Object> inputGraph = Graph.fromSnapshot(inputSnapshot);
-        if (inputGraph.isEmpty()) {
+        // Algorithms with @AlgorithmInit can populate an initially empty input graph.
+        // The resulting GraphStructureEvent.Reset is replayed by GraphEventReducer.
+        if (inputGraph.isEmpty() && !descriptor.hasInitializer()) {
             return;
         }
-        AlgorithmDescriptor descriptor = AlgorithmCatalog.graphDescriptor(runtimeValueType, algorithmId);
         // A minimum spanning tree is built in a separate graph. Present the original
         // vertices without the source edges, so each emitted EdgeAdded builds the
         // result instead of overlaying it on the input graph.

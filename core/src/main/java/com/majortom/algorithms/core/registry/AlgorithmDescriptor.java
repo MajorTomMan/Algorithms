@@ -7,7 +7,8 @@ import java.lang.reflect.Method;
 import java.util.Objects;
 
 public record AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature typeSignature,
-    Class<?> structureContract, Class<?> implementation, Method entryPoint) {
+    Class<?> structureContract, Class<?> implementation, Method entryPoint,
+    Method initializer) {
   public AlgorithmDescriptor {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(name, "name");
@@ -18,6 +19,17 @@ public record AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature
     Objects.requireNonNull(structureContract, "structureContract");
     Objects.requireNonNull(implementation, "implementation");
     Objects.requireNonNull(entryPoint, "entryPoint");
+  }
+
+  /** Preserve the constructor used by algorithms with no preparation hook. */
+  public AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature typeSignature,
+      Class<?> structureContract, Class<?> implementation, Method entryPoint) {
+    this(id, name, typeSignature, structureContract, implementation, entryPoint, null);
+  }
+
+  /** Whether this algorithm prepares its data before running the entry method. */
+  public boolean hasInitializer() {
+    return initializer != null;
   }
 
   public AlgorithmKey key() {
@@ -41,19 +53,26 @@ public record AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature
           + structureContract.getName() + " but received " + structure.getClass().getName());
     }
     Object algorithm = newInstance();
+    // Both lifecycle methods share the same instance and Structure object.
+    // This happens inside the caller's execution context, so changes and events
+    // emitted by initialization participate in normal execution/playback.
+    if (initializer != null)
+      invokeMethod(initializer, algorithm, structure, "initialization");
+    return invokeMethod(entryPoint, algorithm, structure, "entry");
+  }
+
+  private Object invokeMethod(Method method, Object instance, Object structure, String phase) {
     try {
-      return entryPoint.invoke(algorithm, structure);
+      return method.invoke(instance, structure);
     } catch (IllegalAccessException exception) {
-      throw new RegistrationException("Unable to access Algorithm entry " + implementation.getName()
-              + "#" + entryPoint.getName(),
-          exception);
+      throw new RegistrationException("Unable to access Algorithm " + phase + " "
+          + implementation.getName() + "#" + method.getName(), exception);
     } catch (InvocationTargetException exception) {
       Throwable cause = exception.getCause();
       if (cause instanceof RuntimeException runtime) throw runtime;
       if (cause instanceof Error error) throw error;
-      throw new RegistrationException(
-          "Algorithm entry failed: " + implementation.getName() + "#" + entryPoint.getName(),
-          cause);
+      throw new RegistrationException("Algorithm " + phase + " failed: "
+          + implementation.getName() + "#" + method.getName(), cause);
     }
   }
 
