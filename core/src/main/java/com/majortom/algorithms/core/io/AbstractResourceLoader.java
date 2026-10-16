@@ -7,12 +7,16 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Shared classpath resource loader for JSON and header-based CSV files.
+ * 跨模块共享的 classpath JSON/CSV 资源读取模板，不包含业务对象关联规则。
  *
- * <p>
- * Module-specific static facades provide the classpath anchor. Deserialization
- * only:
- * business-specific mapping and graph construction belong to the caller.
+ * <p>AlgorithmResourceLoader 等模块门面提供 Class 锚点；
+ * 本类负责路径校验、打开 classpath InputStream、按请求类型调用编解码器并关闭流。
+ * JSON 的 TypeReference 表示完整目标（例如 List&lt;City&gt;），
+ * CSV 的 TypeReference 表示单行类型，最终返回 List。
+ *
+ * <p><b>安全边界：</b>拒绝 ..、.、重复斜杠和反斜杠等无效资源路径；
+ * 只读取打包资源而非任意主机文件。加载的对象如何组成 Region、Graph、
+ * 如何通过业务 ID 关联实体，属于调用方而不是通用数据层。
  */
 public abstract class AbstractResourceLoader implements ResourceLoader {
   private final Class<?> resourceAnchor;

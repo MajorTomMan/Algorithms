@@ -13,7 +13,18 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 
-/** Per-session latest-wins mailbox. MODEL and derived GEOMETRY have separate lanes. */
+/**
+ * 每个渲染会话独立的提交邮箱，防止状态更新压垮布局与 JavaFX 线程。
+ *
+ * <p>MODEL/GEOMETRY/VIEWPORT 等允许 latest-wins：
+ * 后来的结构状态替换尚未提交的过期请求；
+ * 有序 presentation 帧则不能随意折叠，必须保持用户期望的逐帧顺序。
+ * 仅明确标记 coalescible 的瞬态帧可合并。
+ *
+ * <p>积压上限明确失败而非无限占用内存。
+ * 这个邮箱只处理“如何呈现状态”，不会删除 ExecutionRuntime
+ * 已记录的权威领域事件，也不会改变算法结果。
+ */
 final class RenderMailbox {
   Submission pendingModel;
   Submission pendingGeometry;

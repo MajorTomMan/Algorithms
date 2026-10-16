@@ -16,8 +16,18 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Unified reducer: preserves each parallel edge by its independent ID.
- * Uses a single immutable GraphViewState so the existing layout and JavaFX renderer are reused.
+ * 图领域事实到不可变 GraphViewState 的投影器。
+ *
+ * <p>GraphStructureEvent 修改拓扑可见状态（Reset、增删顶点边、权重变化）；
+ * AlgorithmEvent 只修改访问/检查等暂态观察字段；
+ * 生命周期完成事件令最终视觉状态进入终态。
+ *
+ * <p>本类不反向修改 Graph：权威结构操作已由算法/结构执行完毕，
+ * reducer 只是从事件重建“用户在此刻应该看到什么”，从而支持重放和 seek。
+ * GraphPresenter 再区分布局变化与单纯的观察帧，
+ * GraphVisualizer 才负责 JavaFX 对象与动画。
+ *
+ * <p>平行边由各自的 ID 区分，不能按端点合并，否则回放会丢失路径信息。
  */
 public final class GraphEventReducer implements EventReducer<GraphViewState> {
   private final GraphSnapshot<?> initial;

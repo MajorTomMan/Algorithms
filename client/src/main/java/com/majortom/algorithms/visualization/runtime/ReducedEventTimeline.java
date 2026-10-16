@@ -11,11 +11,15 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Visible-frame index over an authoritative execution event stream.
+ * 权威事件流上的“可见帧”稀疏索引，而不是第二份领域真值。
  *
- * <p>The complete stream remains available for replay, while lifecycle and other non-visual
- * reductions do not create blank frames. Sparse immutable-state checkpoints bound the amount of
- * reduction work required by a backward or random seek.</p>
+ * <p>遍历事件时由 Reducer 识别 visualFrame；非视觉的生命周期与日志事件
+ * 保留在原流，但不制造空白画面。定期保存不可变状态检查点，
+ * 使向后/随机 seek 无需从第零条事件完整重放；末帧直接缓存以减少开销。
+ *
+ * <p>任何快放策略只能减少实际绘制次数，不能删除或重排权威 EventEnvelope。
+ * {@link #frameIndexAtOrBeforeEvent(int)} 允许日志定位到准确事件，
+ * 同时在画布呈现不晚于该事件的最近视觉状态。
  */
 public final class ReducedEventTimeline<S> {
   static final int DEFAULT_CHECKPOINT_INTERVAL = 256;

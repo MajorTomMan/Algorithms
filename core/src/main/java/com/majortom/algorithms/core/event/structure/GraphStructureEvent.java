@@ -3,7 +3,17 @@ package com.majortom.algorithms.core.event.structure;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import java.util.List;
 
-/** Facts emitted by the single graph engine, including parallel edges. */
+/**
+ * Graph 结构状态变化的事实事件集合，支持多重图和平行边。
+ *
+ * <p>每条边由 edgeId 唯一标识，端点相同也不会合并。
+ * 增删和权重变化作为结构真值事件进入 ExecutionEvents.structure；
+ * GraphEventReducer 消费后重建 GraphViewState。
+ *
+ * <p>Reset(GraphSnapshot) 表示一次原子整图替换：
+ * Graph.initialize 校验成功后发送单条 Reset，
+ * 不通过零散的 Added 事件展示半初始化状态。
+ */
 public sealed interface GraphStructureEvent extends StructureEvent
     permits GraphStructureEvent.VertexAdded, GraphStructureEvent.VertexRemoved,
             GraphStructureEvent.EdgeAdded, GraphStructureEvent.EdgesAdded,

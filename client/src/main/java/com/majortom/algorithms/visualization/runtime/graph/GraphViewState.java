@@ -10,7 +10,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/** Immutable graph facts and per-step algorithm observations, independent of JavaFX. */
+/**
+ * 图模块的不可变显示状态：拓扑快照 + 算法观察信息。
+ *
+ * <p>包含节点、边、方向、已访问集合和当前一步的短暂 observation。
+ * 它是 GraphEventReducer 的输出，而不是领域 Graph 的替身；
+ * 用户查看过去某帧时不会反向撤销真实 Graph 对象中的数据。
+ *
+ * <p>GraphPresenter 比较两个 ViewState 决定是否重新布局，
+ * GraphVisualizer 根据节点和边的独立 long ID 管理 JavaFX 图元。
+ */
 public record GraphViewState(GraphDirection direction, List<Node> nodes, List<Edge> edges,
     Set<Long> visitedNodeIds, Observation observation, boolean completed) {
   public GraphViewState {

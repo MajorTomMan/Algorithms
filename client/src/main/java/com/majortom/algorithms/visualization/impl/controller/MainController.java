@@ -101,11 +101,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 单 Workbench JavaFX 外壳。
+ * 整个 JavaFX Workbench 的顶层协调器，不拥有各数据结构的领域算法。
  *
- * <p>Structure 与 Algorithm 是同一工作区的两个互斥模式。Structure 模式负责
- * 编辑真实结构和快照，Algorithm 模式消费当前或已保存快照的隔离副本并负责
- * 执行、时间线、统计和日志。</p>
+ * <p>Structure 与 Algorithm 是同一工作区的两种模式：
+ * Structure 模式修改当前真实结构并可保存快照；
+ * Algorithm 模式使用当前或已保存快照的隔离副本运行，
+ * 不因播放、回退或初始化而偷偷覆写用户正在编辑的原结构。
+ *
+ * <p>组件发现由 ComponentDiscovery/ComponentRegistry 提供；
+ * 模块级控制器负责实际结构操作和算法启动；BaseController
+ * 持有运行会话、事件历史与回放控制。渲染由 RenderRuntime 管理，
+ * 本类只协调 UI 布局、模块切换、类型菜单与工作区生命周期。
+ *
+ * <p><b>修改影响：</b>类型选择应同时考虑 ValueAdapters、@ValueType、
+ * WorkbenchValueTypeCatalog 与各模块 supportedValueTypes；
+ * 不能仅修改一个 ComboBox 就宣称某种业务实体已被算法支持。
  */
 public class MainController implements Initializable {
 

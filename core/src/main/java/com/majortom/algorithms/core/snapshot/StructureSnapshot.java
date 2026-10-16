@@ -4,7 +4,16 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-/** UI-neutral saved Structure state with optional runtime ValueType metadata. */
+/**
+ * 跨工作台保存、预览与重放领域结构状态的通用快照信封。
+ *
+ * <p>封装模块 ID、创建时间、可选的元素类全限定名和真实领域 state。
+ * {@link #requireValueType(Class)} 使用 Java 类型名而非 @ValueType.name
+ * 来保护恢复时的类型安全，防止把 City 数据载入 Integer 图。
+ *
+ * <p>Record 自身不复制 state 内部任意可变对象；模块需要提供可安全重用的结构快照。
+ * UI 通过对应 Controller 选择 live 或保存的输入，运行时并不持有 JavaFX 节点。
+ */
 public record StructureSnapshot<S>(
     String id, String moduleId, Instant createdAt, String valueTypeName, S state) {
   public StructureSnapshot {

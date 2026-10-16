@@ -46,7 +46,19 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-/** Graph renderer using measured JavaFX nodes, transient ELK Layered routes and GestureFX viewport. */
+/**
+ * 图模块最终的 JavaFX 场景实现，只根据 GraphViewState 绘制与交互。
+ *
+ * <p>GraphController 把执行输入交给 Runtime，GraphEventReducer 归约事件，
+ * GraphPresenter 选择 RenderIntent，RenderFramework 决定布局与提交时机，
+ * 本类在 FX 线程更新 NodeView/EdgeView、处理点击、拖动、选中与动画。
+ *
+ * <p>节点和边以内部 long ID 映射到 JavaFX 图元：平行边即使端点相同，
+ * 也必须保留独立 EdgeView。ELK/布局结果属于呈现信息，不得回写领域 Graph。
+ *
+ * <p>控制器切换结构或关闭 Surface 时清理 FX 资源；
+ * 不在这个类直接扫描 @Algorithm、读 JSON 或执行最短路径算法。
+ */
 public final class GraphVisualizer extends BaseVisualizer<GraphViewState> {
     private static final RenderSessionId SESSION_ID = RenderSessionId.of("GRAPH");
     private static final StructureVisualization<GraphViewState> STRUCTURE_VISUALIZATION = new GraphStructureVisualization();

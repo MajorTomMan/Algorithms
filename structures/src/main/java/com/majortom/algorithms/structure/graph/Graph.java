@@ -11,8 +11,22 @@ import com.majortom.algorithms.core.runtime.ExecutionEvents;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 
 /**
- * ID-based directed/undirected multigraph. No value-equality de-duplication:
- * two vertices may hold the same Java object or equal values.
+ * ID 为核心的有向/无向多重图实现，是真实拓扑及其不变量的所有者。
+ *
+ * <p>顶点、边分别以独立 long ID 存储，adjacency 中存的是边 ID，
+ * 所以两顶点之间允许多条平行边，具有相同 Java 值的顶点也不会合并。
+ * 有向图保留出/入方向；无向图同一条边可以从两个端点访问。
+ *
+ * <p>每次结构突变向 ExecutionEvents 发布事实；若未进入 Runtime 上下文，
+ * 结构仍能使用，但不会自动产生可回放记录。
+ *
+ * <p>{@link #from(GraphDirection, Class, Object)} 负责业务模型映射，
+ * {@link #fromSnapshot(GraphSnapshot)} 负责创建新结构，
+ * {@link #initialize(GraphSnapshot)} 在独立临时图验证后整体替换状态，
+ * 成功后只发布 Reset，避免中间状态与事件序列不一致。
+ * 图方向在实例构造时固定，初始化不能改变方向。
+ *
+ * <p>这里不做 ELK 布局、摄像机控制或动画：它们属于客户端 RenderFramework。
  */
 public final class Graph<T> implements GraphStructure<T> {
   private final GraphDirection direction;

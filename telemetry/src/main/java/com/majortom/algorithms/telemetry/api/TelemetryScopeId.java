@@ -4,7 +4,13 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
-/** Stable identity for one telemetry scope, independent of controllers and UI classes. */
+/**
+ * 遥测范围的稳定标识，与 UI 控件和具体执行线程身份无关。
+ *
+ * <p>三元组（domain、componentId、executionId）区分结构操作、
+ * 算法及练习任务。TelemetrySessionId 在 scope 基础上区分每次实际执行。
+ * 选择此设计是为了让多个控制器实例或多次打开工作区仍能查询同一类历史。
+ */
 public record TelemetryScopeId(
     TelemetryDomain domain,
     String componentId,

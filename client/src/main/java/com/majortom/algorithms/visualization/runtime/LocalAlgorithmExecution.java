@@ -23,7 +23,20 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-/** Local Runtime execution with an independent ordered JavaFX playback queue. */
+/**
+ * core.ExecutionRuntime 到 JavaFX 客户端之间的本地执行适配层。
+ *
+ * <p>每次 start 创建新的 generation、ExecutionScheduler、RunControl、
+ * BoundedExecutionEventStore、ExecutionAnchorRecorder 与 JavaFxEventSink。
+ * worker 负责实际执行；同一权威事件先进入有界存储/时间锚点，再经观察者队列
+ * 交付给 Reducer 和 UI。渲染积压不能反过来改变已记录的事实顺序。
+ *
+ * <p>generation 隔离被替换或取消的旧会话，避免过期异步回调覆盖新运行状态。
+ * 可批量交付视觉通知以减小 JavaFX 负担，但不会合并权威事件流；
+ * 超过事件数上限时明确返回失败，不能默默截断历史还标记成功。
+ *
+ * <p>算法生命周期、事件序号归属 core；重放帧和 FX 线程归属 client。
+ */
 public final class LocalAlgorithmExecution implements AutoCloseable {
   public static final int DEFAULT_MAXIMUM_EVENT_COUNT = ExecutionLimits.DEFAULT_MAXIMUM_EVENT_COUNT;
   private static final int RESOURCE_SAMPLE_INTERVAL = 128;
@@ -96,6 +109,11 @@ public final class LocalAlgorithmExecution implements AutoCloseable {
         viewStateConsumer, statisticsConsumer, delayMillisSupplier, 256);
   }
 
+  /**
+   * 建立一次完整运行的“记录通道”和“观察通道”。
+   * 前者是权威事实，后者允许批处理/延迟以保护 JavaFX 响应；
+   * 两者必须保持顺序，不能用 UI 队列取代事件存储。
+   */
   private <S> ExecutionSession startInternal(String operationId, ExecutionOperation<?> operation,
       EventReducer<S> reducer, Consumer<List<EventEnvelope>> liveEventsConsumer,
       Consumer<S> viewStateConsumer, Consumer<ExecutionStatistics> statisticsConsumer,

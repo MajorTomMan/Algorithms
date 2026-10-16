@@ -5,6 +5,18 @@ import com.majortom.algorithms.core.event.algorithm.AlgorithmEvent;
 import com.majortom.algorithms.core.event.structure.StructureEvent;
 import java.util.Objects;
 
+/**
+ * 算法与数据结构的事件发射门面：业务只产生事实，不依赖 JavaFX 或日志控件。
+ *
+ * <p>Runtime 将 RuntimeEventContext 绑定到当前线程的 ThreadLocal；
+ * {@link #algorithm} / {@link #structure} 按类别发布事实，
+ * 经过协作式许可检查后由上下文分配全局连续 sequence。
+ * {@link #emit} 仅用于不属于算法/结构事实的辅助事件。
+ *
+ * <p>不在运行上下文时事件会被忽略，数据结构仍可独立使用。
+ * 绑定不会自动传到新线程；Runtime 必须关闭 Binding，恢复先前上下文。
+ * 客户端 EventReducer 才负责把事件解释为视图状态。
+ */
 public final class ExecutionEvents {
   private static final ThreadLocal<RuntimeEventContext> CURRENT = new ThreadLocal<>();
 

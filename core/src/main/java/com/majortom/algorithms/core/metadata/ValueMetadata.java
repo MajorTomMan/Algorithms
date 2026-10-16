@@ -9,7 +9,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-/** Single cached metadata model shared by structure import, selection and presentation. */
+/**
+ * @ValueType、@ValueField、@ValueId 的唯一元数据解释层。
+ *
+ * <p>使用 ClassValue 缓存每个实体的不可变描述符，避免每次渲染或映射重复反射。
+ * Descriptor 同时提供工作台显示名称、适用结构、不可变承诺、业务 ID 和字段视图。
+ * UI 与 GraphObjectMapper 共享相同的属性含义，但 core 不依赖它们。
+ *
+ * <p>@ValueId 是“类 + 业务键”关联，不等于 Graph 顶点 long ID。
+ * @ValueField 的 SUMMARY 和 DETAIL 分开读取，避免节点每次刷新执行昂贵 getter。
+ * @ValueType.immutable 是开发者对完整可达对象图的承诺，不做深度冻结。
+ */
 public final class ValueMetadata {
   private ValueMetadata() {}
 

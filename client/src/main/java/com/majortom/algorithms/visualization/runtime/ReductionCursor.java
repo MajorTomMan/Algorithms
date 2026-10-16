@@ -7,8 +7,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Stateful replay cursor around a stateless reducer.
- * It is the common boundary for validating run, operation, and contiguous sequence envelopes.
+ * 包在无状态 EventReducer 外面的有状态执行游标。
+ *
+ * <p>每消费一个 EventEnvelope，先验证 runId、operationId、sequence 连续性，
+ * 再更新 ViewState 和 StatisticsReducer。这样直播与离线回放使用同一套
+ * 顺序检查，不会因某个客户端入口漏掉验证而悄然展示错误帧。
+ *
+ * <p>Reducer 仍是纯函数；状态历史由 ReducedEventTimeline 负责索引。
  */
 public final class ReductionCursor<S> {
   private final EventReducer<S> reducer;

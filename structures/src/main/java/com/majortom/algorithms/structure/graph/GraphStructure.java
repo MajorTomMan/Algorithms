@@ -7,6 +7,17 @@ import com.majortom.algorithms.core.snapshot.GraphSnapshot;
 import java.util.List;
 @Structure(id = StructureIds.GRAPH, name = "Graph",
     module = StructureModule.GRAPH, implementation = Graph.class)
+/**
+ * 图算法面向的能力契约：支持方向、具独立 ID 的顶点/边及快照初始化。
+ *
+ * <p>算法依赖此接口，不直接依赖实现类 Graph、文件加载器或可视化。
+ * 同值顶点允许并存；平行边和自环是合法拓扑。所有边查询以真实 Vertex
+ * 身份或边 ID 为依据，不能简单按业务值去重。
+ *
+ * <p>{@link #snapshot()} 是跨层状态边界；{@link #initialize(GraphSnapshot)}
+ * 用快照替换结构而不是执行单个增删操作。实现应先校验新状态，
+ * 再发布一个 Reset 事实，防止可视化看到半成品。
+ */
 public interface GraphStructure<T> {
   GraphDirection direction();
   default boolean isDirected() { return direction().isDirected(); }

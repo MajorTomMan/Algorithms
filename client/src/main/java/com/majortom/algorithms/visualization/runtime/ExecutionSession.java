@@ -18,7 +18,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-/** Handle and authoritative record for one local Runtime run plus independent live playback. */
+/**
+ * 单次本地算法执行的资源与控制所有者，实现跨线程的 ExecutionHandle。
+ *
+ * <p>会话同时拥有真实 worker Future、暂停/步进 RunControl、有界事件记录、
+ * UI 观察队列、执行时间锚点以及两个完成阶段：runtimeCompletion 表示
+ * 算法逻辑结束，presentationCompletion 表示观察/呈现也已完成。
+ * 两个 Future 不可混为一谈，否则快速算法可能在最终帧出现前被视为完成。
+ *
+ * <p>关闭时需要取消后台执行并停止观察队列；
+ * 操作性暂停/单步改变执行许可，不意味着在 JavaFX 上播放帧。
+ */
 public final class ExecutionSession implements ExecutionHandle {
   private final long generation;
   private final DefaultExecutionControl executionControl;

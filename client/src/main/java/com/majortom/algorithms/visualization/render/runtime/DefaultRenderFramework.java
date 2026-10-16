@@ -44,7 +44,20 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Single-control-plane render runtime. No stage blocks another thread; every boundary is a CompletionStage continuation.
+ * 进程级渲染控制平面：布局、FX 提交、视口和相机的统一仲裁者。
+ *
+ * <p>上层仅通过 RenderPort 提交 RenderIntent，本类在 sessionId 下维护
+ * RenderSession（generation/revision）及 RenderMailbox（背压和合并策略）。
+ * 一条结构请求通常经历 Capture → Describe → Layout → Apply →
+ * Pulse → Camera → Commit → Presented，不允许通过同步阻塞 FX 线程等待后台布局。
+ *
+ * <p>模型与布局在各自线程运行；JavaFX 场景的读取/修改必须经过 FxExecutor。
+ * 每个阶段使用 CompletionStage 连接，在新模型/会话关闭时旧的异步提交
+ * 应被忽略或覆盖，避免“旧布局反向覆盖新图”的竞态。
+ *
+ * <p>算法/结构生成权威事实，Reducer 决定视图状态，Presenter 决定
+ * Structural/Presentation 意图；本层才负责这些意图的最终渲染时序。
+ * 不在此层理解 BFS、Dijkstra 或任何特定算法的语义。
  */
 public final class DefaultRenderFramework implements RenderPort, PresentationCursorPort, PresentationSurfacePort, RenderSurfaceLifecyclePort, AutoCloseable {
 

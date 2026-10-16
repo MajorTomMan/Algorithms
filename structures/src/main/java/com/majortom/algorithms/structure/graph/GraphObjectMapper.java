@@ -18,7 +18,22 @@ import java.util.Optional;
 import java.util.Set;
 
 
-/** Interprets annotated Java objects as graph topology; unrelated to input format or files. */
+/**
+ * 注解式业务对象到 Graph 的映射器，刻意与文件格式和 UI 分离。
+ *
+ * <p><b>两阶段建图：</b>先递归读取 @GraphNodes 收集顶点与业务键，
+ * 同时暂存 @GraphEdges；收集结束后才解析边端点。
+ * 这种顺序允许边在数据中先于其端点出现，并可检测不存在的端点。
+ *
+ * <p>同一对象引用优先使用 IdentityHashMap 匹配；
+ * 不同对象按“运行时类型 + @ValueId”匹配，并拒绝重复业务键。
+ * 因此边端点应是 City 实体或可匹配的对象，单纯字符串 "sz"
+ * 并不会自动转换成 City：那是业务数据加载阶段的职责。
+ *
+ * <p>在有向图中 bidirectional 会展开两条独立边 ID；无向图只需一条。
+ * 最终通过 GraphSnapshot → Graph.fromSnapshot 构造合法图，
+ * 不在解析业务对象的途中修改工作台图。
+ */
 final class GraphObjectMapper {
   private GraphObjectMapper() {}
 

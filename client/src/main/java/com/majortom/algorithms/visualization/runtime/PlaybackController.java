@@ -11,7 +11,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-/** Replay state machine over reducer-defined visible frames; timing is delegated to RenderClock. */
+/**
+ * 基于可见帧索引的独立回放状态机，不重新执行算法。
+ *
+ * <p>输入来自 ReducedEventTimeline；play/pause/step/seek 只移动状态游标，
+ * 并由 RenderClock/RenderTimer 决定下一次可见帧的调度时间。
+ * 真正的算法执行许可由 RunControl 控制，与这里的播放按钮不同。
+ *
+ * <p>generation 令先前已排队但过期的计时器与 UI callback 自动失效；
+ * 用户切换运行/调整速度不会让旧帧写回当前视图。
+ * stateConsumer 收到不可变 ViewState，交给 RenderFramework 做最终呈现。
+ */
 public final class PlaybackController<S> implements AutoCloseable {
   private final EventReducer<S> reducer;
   private final Consumer<S> stateConsumer;

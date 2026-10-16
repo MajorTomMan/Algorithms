@@ -11,6 +11,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * @Structure 的发现入口，和 AlgorithmDiscovery 共用 FrameworkClassScanner。
+ *
+ * <p>只扫描结构能力接口：声明了稳定 ID 和实现类的契约成为实际注册项，
+ * 只有 module 元数据的家族接口只负责类型分类，不单独实例化。
+ * 二者必须成对声明，否则视为注册错误。
+ *
+ * <p>结果经 RegistrationValidator 校验并排序，
+ * ComponentRegistry 才把它们与算法注册表组合。
+ * 结构模块不引用 client，确保模型在命令行/无 UI 环境也能构造。
+ */
 public final class StructureDiscovery {
   public static final String ROOT_PACKAGE = "com.majortom.algorithms.structure";
 

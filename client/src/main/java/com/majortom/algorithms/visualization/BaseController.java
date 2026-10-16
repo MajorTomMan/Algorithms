@@ -89,7 +89,22 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-/** Shared JavaFX shell around the UI-neutral registry/runtime/event pipeline. */
+/**
+ * 所有模块控制器共享的执行、日志、指标及回放宿主。
+ *
+ * <p>模块控制器只提交 ExecutionOperation 和 EventReducer，不直接管理线程，
+ * 也不直接按算法步骤修改 JavaFX 画面。{@link #startAlgorithm} 创建一次独立会话：
+ * Runtime 顺序记录事实事件 → Reducer 产生不可变 ViewState →
+ * StructureRenderDriver 提交渲染意图 → RenderFramework 调度 JavaFX 提交。
+ *
+ * <p>真实执行和 UI 呈现由两个时钟管理：后台 worker 执行算法；
+ * JavaFX 只回放和渲染结果。完整事件流是回退/跳转/导出的权威依据，
+ * 快进或丢弃中间视觉通知不能改变事件序列。
+ *
+ * <p>此层还负责取消旧会话、分代屏蔽过期 UI 通知、
+ * 统计与内存 Profile 的生命周期，以及结构编辑与算法运行日志隔离。
+ * 派生 Controller 不得绕开执行会话自行写时间线。
+ */
 public abstract class BaseController<S> implements Initializable {
 
     private static final long LIVE_STATS_REFRESH_INTERVAL_NANOS = 50_000_000L;
@@ -217,6 +232,13 @@ public abstract class BaseController<S> implements Initializable {
         setupI18n();
     }
 
+    /**
+     * 所有工作台算法的唯一启动通道。
+     *
+     * <p>准备初始 reducer 状态、清除旧会话/回放游标，再创建真实运行；
+     * operation 会在 worker 执行，presenter 只收到 reducer 归约的状态。
+     * 这里的 input 是记录/历史用的输入快照，不是算法可变工作区。
+     */
     protected final void startAlgorithm(
             String algorithmId,
             Object input,

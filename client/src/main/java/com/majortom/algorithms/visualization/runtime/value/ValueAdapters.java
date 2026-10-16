@@ -15,8 +15,19 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Single Workbench registry for typed input, optional examples, and explicit
- * field presentation.
+ * 工作台唯一的“Java 类型 ↔ 可编辑文本/示例数据/展示”适配器目录。
+ *
+ * <p>内置标量保留显式解析规则；算法包中带 @ValueType 的实体在类加载时
+ * 通过 FrameworkClassScanner 自动发现，得到通用 JSON 文本适配器。
+ * {@link #typeName(Class)} 是稳定的类型选择键；用户可见中文名称来自
+ * ValueMetadata.describe(type).name()，两者不可混用。
+ *
+ * <p>{@link #supportedTypesFor(Class)} 结合 @ValueType.value 限制结构模块；
+ * {@link #canReplay(Class)} 还要求内置标量或显式不可变承诺。
+ * 不可变承诺用于保证事件历史不被之后的对象突变污染，而不是修改 Java 对象。
+ *
+ * <p>这里不加载算法 JSON 文件、不构造图、不渲染 JavaFX。
+ * 只有传入用户可编辑文本时才调用 {@link ValueAdapter#parse(String)}。
  */
 public final class ValueAdapters {
   private static final Map<Class<?>, Entry<?>> ENTRIES = new LinkedHashMap<>();
@@ -201,6 +212,11 @@ public final class ValueAdapters {
    * Discover @ValueType entities in algorithm packages without explicit startup
    * registration. This uses the same classpath scanning rules as
    * AlgorithmDiscovery.
+   */
+  /**
+   * 扫描已编译算法包：只注册标注 @ValueType 的具体类。
+   * 新实体必须位于扫描根包且已编译/打包，未进入 classpath 不会被发现。
+   * 与 AlgorithmDiscovery 共用扫描机制，但注册目标分别是值类型和算法。
    */
   private static void discoverAnnotatedValueTypes() {
     for (Class<?> type : new FrameworkClassScanner().scan("com.majortom.algorithms.algorithm")) {

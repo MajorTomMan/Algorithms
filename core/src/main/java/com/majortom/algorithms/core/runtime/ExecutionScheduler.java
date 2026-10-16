@@ -9,7 +9,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** Small runtime-owned execution scheduler. Presentation schedulers remain outside core. */
+/**
+ * Runtime 侧可替换的后台调度器，与客户端渲染调度器互不依赖。
+ *
+ * <p>提供 daemon 单线程和显式有界队列线程池。ExecutionRuntime 负责同步
+ * 的执行生命周期，不负责线程创建；UI 客户端按运行会话持有此调度器。
+ * 线程池满载时拒绝任务，以免内存因无界排队耗尽。
+ *
+ * <p>此类绝不直接调用 JavaFX；UI 交付使用客户端 FxDispatch。
+ * {@link #shutdownNow()} 是中断请求，不能替代 RunControl 的协作取消。
+ */
 public final class ExecutionScheduler implements AutoCloseable {
   private final ExecutorService executor;
 

@@ -13,7 +13,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/** Bounded session history keyed only by stable TelemetryScopeId, never by controllers or views. */
+/**
+ * 独立于控制器实例的有界遥测历史存储。
+ *
+ * <p>按稳定的 TelemetryScopeId 聚合终态 TelemetryProfile，
+ * 同时限制每个 scope 保留数量和全局上限，避免长时间运行工作台导致历史无限增长。
+ * 只接受已完成/失败/取消等可存储终态，避免把未结束会话混入历史比较。
+ *
+ * <p>无需依赖 JavaFX、Graph 或算法实现，可用于不同模块的性能分析。
+ */
 public final class TelemetryStore {
   public static final int DEFAULT_HISTORY_PER_SCOPE = 10;
   public static final int DEFAULT_MAXIMUM_PROFILES = 256;

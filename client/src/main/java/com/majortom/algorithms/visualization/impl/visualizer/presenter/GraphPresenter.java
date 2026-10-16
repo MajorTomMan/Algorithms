@@ -10,6 +10,16 @@ import com.majortom.algorithms.visualization.render.viewport.CameraPolicy;
 import com.majortom.algorithms.visualization.runtime.graph.GraphViewState;
 import java.util.Objects;
 
+/**
+ * 图的纯呈现策略：把前后 GraphViewState 比较转为 RenderIntent。
+ *
+ * <p>节点/边拓扑、方向、影响尺寸的边标签变更需要 StructuralRenderIntent；
+ * 仅访问标记等瞬态观察变化使用 PresentationRenderIntent，
+ * 避免每次算法事件都调用 ELK 重排整张图。
+ *
+ * <p>这里不拥有 JavaFX Node/摄像机，也不进行布局计算；
+ * DefaultRenderFramework 决定异步布局、相机策略与 FX 提交。
+ */
 public final class GraphPresenter implements StructurePresenter<GraphViewState> {
     @Override
     public RenderIntent present(RenderSessionId sessionId, GraphViewState previous, GraphViewState current) {

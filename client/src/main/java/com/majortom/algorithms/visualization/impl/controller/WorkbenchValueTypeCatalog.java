@@ -11,7 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Owns type availability and committed per-module element type, independent of selectors. */
+/**
+ * 工作台值类型的筛选与显示策略层，独立于 ComboBox 和业务实体构造。
+ *
+ * <p>候选类型来自 ValueAdapters，适配结构的范围取自 @ValueType.value；
+ * 展示名称取 ValueMetadata.name（例如 City → “城市”）；
+ * 底层保留 Java 类名作为选择 ID，避免重名和本地化导致算法类型误匹配。
+ *
+ * <p>树模块额外要求 Comparable；哈希表同时要求键/值类型兼容；
+ * 图模块允许 Object 通用算法与精确实体算法共存。
+ * 此类不修改结构状态：最终切换由各控制器执行。
+ */
 final class WorkbenchValueTypeCatalog {
     private final ComponentRegistry components;
     private final Map<String, String> selectedValueTypes;
@@ -21,6 +31,10 @@ final class WorkbenchValueTypeCatalog {
         this.selectedValueTypes = selections;
     }
 
+    /**
+     * 显示名称优先级：@ValueType.name → 本地化内置类型 → Java 类型名。
+     * 显示名称绝不可回写成 Class<?> 注册键。
+     */
     String displayName(String type) {
         Class<?> resolved;
         try { resolved = ValueAdapters.requireType(type); }
@@ -51,6 +65,11 @@ final class WorkbenchValueTypeCatalog {
                 .toList();
     }
 
+    /**
+     * 依据当前模块结构契约过滤候选类型。
+     * 仅修改 UI 列表不够：对应控制器的 supportedValueTypes
+     * 还必须采用相同的结构契约以阻止非法程序化切换。
+     */
     List<String> availableValueTypes(String moduleId) {
         return switch (moduleId) {
             case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK,

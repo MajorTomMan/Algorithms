@@ -6,7 +6,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 
-/** Records authoritative execution events against a monotonic clock, independent of wall time. */
+/**
+ * 记录权威事件的单调时间锚点，和动画播放时钟完全分离。
+ *
+ * <p>验证事件来自同一个 runId 且 sequence 严格连续，
+ * 并记录相对第一条事件的 System.nanoTime 耗时。
+ * 单调时间不受系统时间回拨影响；记录内容用于计算真实执行耗时，
+ * 不包含播放时用户停顿、拖动进度条的时间。
+ */
 public final class ExecutionAnchorRecorder implements EventSink {
   private final LongSupplier nanoTimeSource;
   private final List<ExecutionAnchor> anchors = new ArrayList<>();

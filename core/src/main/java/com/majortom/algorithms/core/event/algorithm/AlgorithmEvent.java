@@ -8,9 +8,16 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Algorithm-facing event payload. Events describe a decision or inspection; they never mutate
- * the canonical Structure. ExecutionRuntime owns run id, sequence, checkpoints and delivery.
- * Algorithms may publish their own record implementations without changing this interface.
+ * 算法对“刚观察或决定了什么”的事实描述，不拥有结构状态突变。
+ *
+ * <p>Visited / Examined / Compared 等用于算法过程与统计；
+ * 顶点/边实际新增删除则是 StructureEvent 的职责。
+ * 同一算法可以定义自己的 AlgorithmEvent record，
+ * 但事件必须具备可重放所需的不可变信息。
+ *
+ * <p>RuntimeEventContext 包装事件并赋予统一顺序与运行标识，
+ * GraphEventReducer 等客户端适配器选择哪些事件产生可见帧；
+ * 新算法不能直接发 JavaFX Animation 或修改 UI Node。
  */
 public interface AlgorithmEvent extends ExecutionEvent, StatisticsContribution {
   @Override

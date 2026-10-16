@@ -9,7 +9,20 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-/** Small runtime lifecycle owner; domain behavior remains in domain methods. */
+/**
+ * 一次执行的领域生命周期控制器，位于算法/结构与客户端之间。
+ *
+ * <p>创建 RuntimeEventContext → 发布 RunStarted → 等待运行许可 →
+ * 在 ExecutionEvents 绑定的线程上下文中执行操作 → 发布 Completed/Failed/Cancelled。
+ * 事实计算由算法/结构负责；事件被 EventSink 记录和分发。
+ *
+ * <p>Runtime 不创建线程也不触碰 JavaFX。GUI 的 LocalAlgorithmExecution
+ * 使用 ExecutionScheduler 放到 worker 执行；暂停/单步/取消通过 RunControl
+ * 协作检查点完成，而不是直接挂起工作线程。
+ *
+ * <p>业务异常转换为 ExecutionResult 和失败事件；事件投递失败单独分类，
+ * 防止把一段不完整事件流误认作成功执行。
+ */
 public final class ExecutionRuntime {
   private final Clock clock;
   private final Supplier<String> runIdSupplier;

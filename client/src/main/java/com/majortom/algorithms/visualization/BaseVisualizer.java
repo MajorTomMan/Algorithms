@@ -10,7 +10,16 @@ import java.util.Objects;
 import javafx.geometry.Insets;
 import javafx.scene.layout.StackPane;
 
-/** Passive JavaFX renderer base. Render submission and lifecycle state live outside the FX renderer. */
+/**
+ * JavaFX 画布的被动承载基类；不拥有算法事件、结构真值或渲染调度权。
+ *
+ * <p>各可视化器实现 StructureVisualization（非 FX 的布局语义）和
+ * FxStructureRenderer（FX 场景提交），由 RenderSurfaceHost 统一组装。
+ * 摄像机/视口通过 FxSurfaceAdapter 对接；普通模块控制器只提交 ViewState。
+ *
+ * <p>生命周期必须经 RenderFramework attach/detach；
+ * {@link #dispose()} 释放 renderer 资源后不得继续提交新画面。
+ */
 public abstract class BaseVisualizer<S> extends StackPane implements FxStructureRenderer<S> {
     private boolean disposed;
     private VisualizationSurface hostedSurface;

@@ -6,6 +6,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
+/**
+ * 单次算法注册的不可变描述符，也是注解元数据与实际调用之间的桥梁。
+ *
+ * <p>发现器在启动时解析 @AlgorithmEntry 与可选的 @AlgorithmInitialize；
+ * 注册表保存 Method 与类型签名，而不是共享一个可变算法实例。
+ * {@link #invoke(Object)} 每次新建实例，按“初始化 → 执行入口”顺序调用，
+ * 且两步共用相同的结构对象；初始化异常会阻止入口执行。
+ *
+ * <p>反射错误保留业务异常原始 cause，供 ExecutionRuntime 转换为失败结果。
+ * 此类不负责线程、控制许可、图拓扑或 UI。只有在运行上下文内调用 invoke，
+ * 领域事件才会进入可回放的权威事件流。
+ */
 public record AlgorithmDescriptor(String id, String name, AlgorithmTypeSignature typeSignature,
     Class<?> structureContract, Class<?> implementation, Method entryPoint,
     Method initializer) {

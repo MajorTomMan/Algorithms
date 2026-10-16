@@ -17,6 +17,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * @Algorithm 发现与注册元数据构造入口，不承担运行时执行。
+ *
+ * <p>扫描 algorithms 包中的实现，读取 @Algorithm 声明，
+ * 定位唯一 @AlgorithmEntry 和可选的唯一 @AlgorithmInitialize；
+ * 注册时验证结构契约与有序泛型类型签名。
+ *
+ * <p>最终返回 AlgorithmDescriptor，由 ComponentRegistry 统一索引。
+ * 这里仅缓存 Method 描述，不预先执行数据初始化，也不创建工作线程。
+ * 实际运行时由 AlgorithmDescriptor.invoke() 新建算法实例、初始化并执行。
+ *
+ * <p>如果源码未编译、未在扫描根包、没有 @Algorithm，或当前工作台
+ * 的顶点类型与 @Algorithm.types 不一致，就不会出现在对应算法列表。
+ */
 public final class AlgorithmDiscovery {
   public static final String ROOT_PACKAGE = "com.majortom.algorithms.algorithm";
 

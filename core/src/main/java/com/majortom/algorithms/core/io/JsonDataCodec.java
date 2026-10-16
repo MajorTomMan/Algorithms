@@ -14,8 +14,14 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 /**
- * JSON reader/writer for ordinary records, classes, and parameterized data models.
- * Input and output streams remain owned by the caller.
+ * 独立于结构与算法的 Jackson JSON 编解码器。
+ *
+ * <p>使用 Class 或 TypeReference 构造目标 JavaType，支持 record 和泛型容器。
+ * 每个实例持有自己的 ObjectMapper 配置；InputStream / OutputStream
+ * 所有权属于调用方，编解码时不会主动关闭传入流。
+ *
+ * <p>只执行 JSON ↔ Java 对象转换，不跨文件查找 @ValueId，
+ * 也不解释 @GraphNodes / @GraphEdges。因此字符串城市 ID 不能自动成为 City 对象。
  */
 public final class JsonDataCodec<T> implements DataCodec<T> {
   private final ObjectMapper mapper;

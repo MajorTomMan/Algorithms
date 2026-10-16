@@ -8,8 +8,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Cached mapping metadata for annotated graph input objects.
- * Property resolution and value validation live here; graph topology stays in structures.
+ * 将 @GraphNodes / @GraphEdges 解析成可复用访问器的纯元数据层。
+ *
+ * <p>本类只读取属性描述及类型约束，不创建图顶点、边或 JavaFX 节点。
+ * GraphObjectMapper 消费这些描述符，先收集节点，再解析边端点，
+ * 最后使用 Graph.fromSnapshot 创建实际结构。
+ *
+ * <p>ClassValue 按运行时实体类型缓存元数据；边成员访问器又按
+ * EdgeProperties 属性组合缓存，避免多次扫描同类不同配置的边。
+ * 此处分离“怎么读取业务对象”和“怎么存储图拓扑”，
+ * 使业务 JSON/CSV 格式完全独立于结构实现。
  */
 public final class GraphMappingMetadata {
   private GraphMappingMetadata() {}

@@ -14,7 +14,16 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Structure-driven algorithm lookup for the workbench. */
+/**
+ * 客户端算法选择策略层，不拥有算法对象、线程或注册表的写入权限。
+ *
+ * <p>通过 ComponentDiscovery 的只读注册目录筛选当前结构能力及元素类型。
+ * 图算法特殊规则：先收集针对 Object 顶点的通用算法，再让相同 ID 的
+ * 精确顶点类型算法覆盖，确保 City 专用算法不会出现在 Integer 图中。
+ *
+ * <p>发现/校验在 algorithms 层；本类仅决定 UI 可见哪些算法，
+ * 最终执行委托 AlgorithmDescriptor.invoke，而非 JavaFX 控件自行反射。
+ */
 public final class AlgorithmCatalog {
   private static final ComponentRegistry REGISTRY = ComponentDiscovery.discover();
 
@@ -123,6 +132,11 @@ public final class AlgorithmCatalog {
             "No Graph algorithm '" + algorithmId + "' supports " + nodeType.getName()));
   }
 
+  /**
+   * 图模块的兼容性裁决：通用 Object 算法作为后备，
+   * 精确类型注册项按相同 ID 覆盖它，避免歧义。
+   * 选择器显示何种顶点类型由 ValueAdapters/控制器决定。
+   */
   private static List<AlgorithmDescriptor> graphDescriptors(Class<?> nodeType) {
     java.util.Objects.requireNonNull(nodeType, "nodeType");
     AlgorithmTypeSignature exact = AlgorithmTypeSignature.of(nodeType);

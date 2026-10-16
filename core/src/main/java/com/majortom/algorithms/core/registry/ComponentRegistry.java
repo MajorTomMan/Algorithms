@@ -10,6 +10,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * 结构和算法的不可变注册目录，是发现阶段与 UI 查询阶段之间的稳定边界。
+ *
+ * <p>StructureDiscovery 提供结构实现描述符，AlgorithmDiscovery 提供算法描述符；
+ * 构造注册表时统一校验唯一性和类型兼容性。注册键由结构契约、
+ * 类型签名和算法 ID 共同决定，显示名称不参与匹配。
+ *
+ * <p>启动时反射/扫描一次，工作台切换元素类型时只进行查询；
+ * {@link #createStructure(String, Class)} 创建新结构实例，不加载业务文件。
+ * core 的注册目录不依赖 algorithms 与 JavaFX，避免反向模块依赖。
+ */
 public final class ComponentRegistry {
   private static final Comparator<AlgorithmDescriptor> ALGORITHM_ORDER =
       Comparator.comparing((AlgorithmDescriptor descriptor) -> descriptor.module().id())

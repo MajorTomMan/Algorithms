@@ -6,6 +6,17 @@ import java.time.Clock;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 一次运行的事件排序上下文，只有 ExecutionRuntime 可以创建并绑定。
+ *
+ * <p>每个事实封装为 EventEnvelope（runId、operationId、sequence、时间与来源），
+ * 同步投递 EventSink 成功才递增 sequence，失败时抛 EventDeliveryException，
+ * 不允许产生断序但表面成功的回放记录。
+ *
+ * <p>start/domain/completion 使用不同的 RunControl 许可点：
+ * 单步对应一个领域执行单位，终止完成需要显式恢复或取消。
+ * 领域代码不能通过 {@link #emit} 伪造生命周期事件。
+ */
 final class RuntimeEventContext {
   private final String runId;
   private final String operationId;

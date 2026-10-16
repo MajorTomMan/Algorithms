@@ -45,6 +45,26 @@ import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
+/**
+ * 图模块的工作台控制器：分离用户可编辑的图与某次算法的运行副本。
+ *
+ * <p>工作区同时持有 directedGraph / undirectedGraph，两者方向在创建时固定。
+ * runtimeValueType 由 ValueAdapters 决定；AlgorithmCatalog 按顶点 Class
+ * 查询算法，而不是按城市中文显示名称查询。
+ *
+ * <p>运行时读取 selectedAlgorithmSnapshot，再用 Graph.fromSnapshot
+ * 创建隔离 inputGraph；{@link #handleAlgorithmStart()} 把 AlgorithmDescriptor.invoke
+ * 交给 BaseController 的执行会话。若算法带 @AlgorithmInitialize，
+ * 空图也可启动，并通过 GraphStructureEvent.Reset 影响事件回放，
+ * 不会直接替换用户编辑区里的原始图。
+ *
+ * <p>GraphEventReducer 把事件变成不可变 GraphViewState；
+ * GraphPresenter 决定是否重算布局；GraphVisualizer 专门管理 JavaFX 图元。
+ * 因此不要在本类遍历算法步骤时直接操控可视顶点或 ELK。
+ *
+ * <p>顶点业务值与 Vertex.long ID 不同：手工选择含重复值的节点应使用
+ * 图节点 ID，平行边必须保留各自独立的边 ID。
+ */
 public final class GraphController extends BaseModuleController<GraphViewState>
         implements AlgorithmSelectionSupport, StructureSnapshotSupport<GraphSnapshot<Object>>,
         SnapshotAlgorithmInputSupport<GraphSnapshot<Object>>, RuntimeValueTypeSupport {
@@ -107,6 +127,13 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         refreshDirectionControls();
     }
 
+    /**
+     * 从快照启动独立运行，避免算法或初始化器改变当前可编辑图。
+     *
+     * <p>带初始化钩子的算法可从空图开始；
+     * 运行产生的 Reset/访问事实交由 GraphEventReducer 解释，而不是在这里
+     * 修改 UI 节点。初始化/执行发生在同一个 ExecutionRuntime 会话。
+     */
     @Override
     @FXML
     public void handleAlgorithmStart() {
@@ -1033,6 +1060,10 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         return currentGraph().snapshot();
     }
 
+    /**
+     * 统一读取算法输入：优先显式选择的已保存快照，否则使用当前图。
+     * 该输入值也是回放开始时的参考状态，不能与工作区正在编辑的图混淆。
+     */
     private GraphSnapshot<Object> selectedAlgorithmSnapshot() {
         GraphSnapshot<Object> state;
         if (algorithmInputSnapshot == null) {

@@ -15,6 +15,16 @@ import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * 面向 classpath 的轻量类发现器，供算法、结构及 @ValueType 实体注册复用。
+ *
+ * <p>递归扫描目录或 jar 资源中的顶层 .class 文件，通过给定 ClassLoader
+ * 加载类型但不运行其静态初始化；结果排序去重。
+ * 这意味着未编译或不在扫描根包下的类不会进入注册表。
+ *
+ * <p>这里只负责列出类，不解释注解、加载 JSON 或实例化组件；
+ * 发现器/注册校验器分别承担这些业务规则。
+ */
 public final class FrameworkClassScanner {
   public List<Class<?>> scan(String rootPackage) {
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

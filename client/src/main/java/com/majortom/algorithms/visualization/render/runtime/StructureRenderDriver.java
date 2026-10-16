@@ -9,7 +9,16 @@ import java.util.logging.Logger;
 import com.majortom.algorithms.visualization.render.api.StructurePresenter;
 import java.util.Objects;
 
-/** Owns structure render submission state and keeps FX renderers passive. */
+/**
+ * 一个模块的状态到渲染请求的提交驱动器，不执行算法，也不创建 Node。
+ *
+ * <p>持有最近不可变 ViewState，使用 StructurePresenter 比较前后状态并产生
+ * RenderIntent，再交给 RenderPort。Surface 尚未激活时仅保存最新状态，
+ * attach 后重新提交，避免在隐藏模块上浪费布局。
+ *
+ * <p>默认提交所有权威结构变化；只有已判定为 PresentationRenderIntent
+ * 的高频瞬态状态可以合并。关闭后不再接受新的渲染请求。
+ */
 public final class StructureRenderDriver<S> {
     private static final Logger LOG = Logger.getLogger(StructureRenderDriver.class.getName());
     private final RenderSessionId sessionId;

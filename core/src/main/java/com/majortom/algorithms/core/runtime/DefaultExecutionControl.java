@@ -8,7 +8,17 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-/** Default pause/step/cancel control for one run. */
+/**
+ * 单次运行的协作式暂停/继续/单步/取消控制器。
+ *
+ * <p>工作线程在许可点等待；UI 线程只更新控制状态，不直接改变算法执行栈。
+ * ReentrantLock + Condition 保证跨线程可见性。暂停/恢复的生命周期事件
+ * 在释放控制锁之后投递，避免事件接收器回调时死锁。
+ *
+ * <p>step 消耗一个领域许可，不是“播放一帧”：某个事实事件可以不产生可见帧。
+ * 开始许可不会提前消耗第一步；完成许可也不会因为单步就越过暂停。
+ * 取消会唤醒等待者，但领域代码必须继续到检查点才会观察到取消。
+ */
 public final class DefaultExecutionControl implements RunControl {
   private final ReentrantLock lock = new ReentrantLock();
   private final Condition stateChanged = lock.newCondition();
