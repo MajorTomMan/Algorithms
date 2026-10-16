@@ -24,10 +24,10 @@ jobs:
         run: |
           java -ea -cp core/target/classes:core/target/test-classes com.majortom.algorithms.core.metadata.GraphMappingMetadataChecks
           java -ea -cp core/target/classes:structures/target/classes:structures/target/test-classes com.majortom.algorithms.structure.graph.GraphChecks
-      - name: 编译并运行资源路网回归检查
+      - name: 验证算法侧自行构造路网
         run: |
           mvn -B -ntp -pl algorithms -am -DskipTests install
-          mvn -B -ntp -pl algorithms org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.io.RoadNetworkLoaderChecks -Dexec.classpathScope=test
+          mvn -B -ntp -pl algorithms org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.impl.RoadGraphConstructionChecks -Dexec.classpathScope=test
       - name: 测试算法模块通用资源加载
         run: mvn -B -ntp -pl algorithms org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.majortom.algorithms.algorithm.io.AlgorithmResourceLoaderChecks -Dexec.classpathScope=test
       - name: 测试程序模块通用资源加载

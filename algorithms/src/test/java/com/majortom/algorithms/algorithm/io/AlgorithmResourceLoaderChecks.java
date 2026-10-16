@@ -1,7 +1,6 @@
 package com.majortom.algorithms.algorithm.io;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.majortom.algorithms.algorithm.graph.io.RoadNetworkLoader;
 import com.majortom.algorithms.algorithm.graph.model.City;
 import java.util.List;
 
@@ -10,9 +9,9 @@ public final class AlgorithmResourceLoaderChecks {
   public static void main(String[] args) {
     var loader = new AlgorithmResourceLoader();
 
-    var raw = loader.load("graph/regions/demo.json", RoadNetworkLoader.RegionFile.class);
-    check(raw.cities().size() == 4 && raw.roads().size() == 7,
-        "custom class can read algorithm resources");
+    City city = loader.load("io/city.json", City.class);
+    check(city.id().equals("a") && city.name().equals("测试甲城"),
+        "caller-provided custom class");
 
     List<City> cities = loader.load("io/cities.json", new TypeReference<List<City>>() {});
     check(cities.size() == 2 && cities.getFirst().name().equals("测试甲城"),
