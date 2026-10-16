@@ -7,24 +7,22 @@ import java.util.List;
 /** Standalone checks for classpath JSON loading with caller-selected types. */
 public final class AlgorithmResourceLoaderChecks {
   public static void main(String[] args) {
-    var loader = new AlgorithmResourceLoader();
-
-    City city = loader.load("io/city.json", City.class);
+    City city = AlgorithmResourceLoader.load("io/city.json", City.class);
     check(city.id().equals("a") && city.name().equals("测试甲城"),
         "caller-provided custom class");
 
-    List<City> cities = loader.load("io/cities.json", new TypeReference<List<City>>() {});
+    List<City> cities = AlgorithmResourceLoader.load("io/cities.json", new TypeReference<List<City>>() {});
     check(cities.size() == 2 && cities.getFirst().name().equals("测试甲城"),
         "generic list preserves custom element type");
 
-    City[] array = loader.load("/io/cities.json", City[].class);
+    City[] array = AlgorithmResourceLoader.load("/io/cities.json", City[].class);
     check(array.length == 2 && array[1].id().equals("b"),
         "array class target and leading slash");
 
-    expectInvalid(() -> loader.load("io/missing.json", City[].class), "resource not found");
-    expectInvalid(() -> loader.load("../graph/regions/demo.json", Object.class),
+    expectInvalid(() -> AlgorithmResourceLoader.load("io/missing.json", City[].class), "resource not found");
+    expectInvalid(() -> AlgorithmResourceLoader.load("../graph/regions/demo.json", Object.class),
         "Invalid classpath resource path");
-    expectInvalid(() -> loader.load("io/invalid.json", Object.class),
+    expectInvalid(() -> AlgorithmResourceLoader.load("io/invalid.json", Object.class),
         "Cannot read JSON resource");
     System.out.println("AlgorithmResourceLoaderChecks passed");
   }

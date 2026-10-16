@@ -4,7 +4,6 @@ import com.majortom.algorithms.algorithm.graph.model.City;
 import com.majortom.algorithms.algorithm.graph.model.Region;
 import com.majortom.algorithms.algorithm.graph.model.Road;
 import com.majortom.algorithms.algorithm.io.AlgorithmResourceLoader;
-import com.majortom.algorithms.core.io.ResourceLoader;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.structure.graph.Edge;
 import com.majortom.algorithms.structure.graph.Graph;
@@ -26,10 +25,8 @@ public final class RoadGraphConstructionChecks {
                           Boolean bidirectional) {}
 
   public static void main(String[] args) {
-    ResourceLoader resources = new AlgorithmResourceLoader();
-
     // This is ordinary JSON -> caller-specified type, without graph semantics.
-    RegionInput input = resources.load("graph/regions/demo.json", RegionInput.class);
+    RegionInput input = AlgorithmResourceLoader.load("graph/regions/demo.json", RegionInput.class);
     check(input.cities().size() == 4 && input.roads().size() == 7, "JSON decoded");
 
     // Road-network interpretation belongs to the algorithm, not the loader.
@@ -49,12 +46,12 @@ public final class RoadGraphConstructionChecks {
       check(edge.weight() == ((Road) edge.value()).distance(), "road distance weight");
 
     // The generic loader accepts valid JSON even when roads refer to missing cities.
-    RegionInput invalid = resources.load(
+    RegionInput invalid = AlgorithmResourceLoader.load(
         "graph/regions/invalid-endpoint.json", RegionInput.class);
     check(invalid.roads().size() == 1, "loading does not validate road topology");
     expectInvalid(() -> buildRoadGraph(invalid), "Unknown city ID");
     expectInvalid(
-        () -> resources.load("graph/regions/missing.json", RegionInput.class),
+        () -> AlgorithmResourceLoader.load("graph/regions/missing.json", RegionInput.class),
         "resource not found");
 
     System.out.println("RoadGraphConstructionChecks passed");

@@ -10,21 +10,20 @@ public final class ProgramResourceLoaderChecks {
   public record CaseSet(String name, List<Case> cases) {}
 
   public static void main(String[] args) {
-    var loader = new ProgramResourceLoader();
-    CaseSet data = loader.load("program/demo.json", CaseSet.class);
+    CaseSet data = ProgramResourceLoader.load("program/demo.json", CaseSet.class);
     check("示例程序输入".equals(data.name())
         && data.cases().size() == 2
         && data.cases().getFirst().numbers().stream().mapToInt(Integer::intValue).sum() == 6,
         "custom record including nested data");
 
-    Map<String, Object> fields = loader.load("program/demo.json",
+    Map<String, Object> fields = ProgramResourceLoader.load("program/demo.json",
         new TypeReference<Map<String, Object>>() {});
     check(fields.containsKey("cases") && fields.containsKey("name"),
         "parameterized map target");
 
     boolean rejected = false;
     try {
-      loader.load("program/missing.json", CaseSet.class);
+      ProgramResourceLoader.load("program/missing.json", CaseSet.class);
     } catch (IllegalArgumentException expected) {
       rejected = expected.getMessage().contains("resource not found");
     }
