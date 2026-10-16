@@ -9,6 +9,10 @@
         <version>1.0</version>
     </parent>
     <artifactId>algorithms-practice</artifactId>
+    <properties>
+        <!-- Retain the snake game as the default exec:java entry point. -->
+        <practice.mainClass>com.majortom.algorithms.practice.exercises.snake.Game</practice.mainClass>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -53,7 +57,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
-                    <mainClass>com.majortom.algorithms.practice.exercises.snake.Game</mainClass>
+                    <mainClass>${practice.mainClass}</mainClass>
                 </configuration>
             </plugin>
         </plugins>
