@@ -126,6 +126,7 @@ public final class GraphChecks {
     } catch (IllegalArgumentException expected) { rejected = true; }
     check(rejected && graph.edgeCount() == initial.edges().size(), "failed restore is atomic");
     checkRecursiveGraph();
+    checkMappedParallelLoops();
     System.out.println("GraphChecks passed");
   }
 
@@ -175,6 +176,25 @@ public final class GraphChecks {
     var cyclic = Graph.from(GraphDirection.DIRECTED, CyclicNode.class, a);
     check(cyclic.vertexCount() == 2 && cyclic.edgeCount() == 1,
         "cyclic references stop while nested node edges are discovered");
+  }
+
+  record LoopRoad(City from, City to, double distance) {}
+  record LoopNetwork(@GraphNodes List<City> cities,
+      @GraphEdges(from = "from", to = "to", weight = "distance")
+      List<LoopRoad> roads) {}
+
+  private static void checkMappedParallelLoops() {
+    City city = new City("loop", "Loop City");
+    Graph<City> graph = Graph.from(GraphDirection.DIRECTED, City.class,
+        new LoopNetwork(List.of(city),
+            List.of(new LoopRoad(city, city, 3), new LoopRoad(city, city, 7))));
+    Vertex<City> vertex = graph.vertex(graph.snapshot().vertices().getFirst().id());
+    check(graph.vertexCount() == 1 && graph.edgeCount() == 2, "mapped parallel self-loops");
+    check(graph.edges(vertex, vertex).size() == 2, "both mapped loops remain distinct");
+    check(graph.outgoingEdges(vertex).size() == 2
+        && graph.incomingEdges(vertex).size() == 2, "mapped loop indices");
+    check(graph.edges(vertex, vertex).getFirst().weight() == 3
+        && graph.edges(vertex, vertex).getLast().weight() == 7, "mapped edge weights");
   }
 
   private static void check(boolean condition, String message) {

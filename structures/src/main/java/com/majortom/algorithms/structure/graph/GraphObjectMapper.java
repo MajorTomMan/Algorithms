@@ -1,8 +1,6 @@
 package com.majortom.algorithms.structure.graph;
 
-import com.majortom.algorithms.core.annotation.GraphEdges;
-import com.majortom.algorithms.core.annotation.GraphNodes;
-import com.majortom.algorithms.core.metadata.AnnotatedMembers;
+import com.majortom.algorithms.core.metadata.GraphMappingMetadata;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.snapshot.GraphSnapshot;
@@ -34,7 +32,7 @@ final class GraphObjectMapper {
   }
 
   private record NodeIdentity(Class<?> type, Object id) {}
-  private record EdgeSource(Object edge, GraphEdges mapping) {}
+  private record EdgeSource(Object edge, GraphMappingMetadata.EdgeCollection mapping) {}
 
   private static final class Collector<T> {
     private final Class<T> nodeType;
@@ -64,7 +62,7 @@ final class GraphObjectMapper {
       if (isNode) {
         if (!nodeType.isInstance(value)) {
           // Explicitly nested wrapper object: it may expose further annotated nodes.
-          if (AnnotatedMembers.marked(value.getClass(), GraphNodes.class).isEmpty())
+          if (GraphMappingMetadata.describe(value.getClass()).nodes().isEmpty())
             throw new IllegalArgumentException("Node type " + value.getClass().getName()
                 + " is incompatible with " + nodeType.getName());
         } else if (!byReference.containsKey(value)) {
@@ -82,14 +80,15 @@ final class GraphObjectMapper {
         }
       }
       if (!walked.add(value)) return; // Identity-based recursion and cycle protection.
-      for (var member : AnnotatedMembers.marked(value.getClass(), GraphEdges.class)) {
-        GraphEdges annotation = member.annotation(GraphEdges.class);
-        for (Object edge : elements(member.read(value))) {
-          if (edge == null) throw new IllegalArgumentException("Null graph edge at " + member.name());
-          pendingEdges.add(new EdgeSource(edge, annotation));
+      var metadata = GraphMappingMetadata.describe(value.getClass());
+      for (var mapping : metadata.edges()) {
+        for (Object edge : elements(mapping.member().read(value))) {
+          if (edge == null)
+            throw new IllegalArgumentException("Null graph edge at " + mapping.member().name());
+          pendingEdges.add(new EdgeSource(edge, mapping));
         }
       }
-      for (var member : AnnotatedMembers.marked(value.getClass(), GraphNodes.class)) {
+      for (var member : metadata.nodes()) {
         for (Object child : elements(member.read(value))) visit(child, true);
       }
     }
@@ -98,30 +97,13 @@ final class GraphObjectMapper {
       List<GraphSnapshot.Edge> links = new ArrayList<>();
       for (EdgeSource source : pendingEdges) {
         Object edge = source.edge();
-        GraphEdges spec = source.mapping();
-        Object fromValue = Objects.requireNonNull(
-            AnnotatedMembers.named(edge.getClass(), spec.from()).read(edge), "Null edge source");
-        Object toValue = Objects.requireNonNull(
-            AnnotatedMembers.named(edge.getClass(), spec.to()).read(edge), "Null edge target");
-        Vertex<T> from = resolve(fromValue);
-        Vertex<T> to = resolve(toValue);
+        GraphMappingMetadata.EdgeValues mapped = source.mapping().read(edge);
+        Vertex<T> from = resolve(mapped.from());
+        Vertex<T> to = resolve(mapped.to());
         if (from == null || to == null)
           throw new IllegalArgumentException("Undeclared graph edge endpoint in " + edge.getClass().getName());
-        double weight = 1.0;
-        if (!spec.weight().isBlank()) {
-          Object raw = AnnotatedMembers.named(edge.getClass(), spec.weight()).read(edge);
-          if (!(raw instanceof Number number))
-            throw new IllegalArgumentException("Graph edge weight must be numeric: " + spec.weight());
-          weight = number.doubleValue();
-          if (!Double.isFinite(weight)) throw new IllegalArgumentException("Non-finite graph edge weight");
-        }
-        boolean twoWay = false;
-        if (!spec.bidirectional().isBlank()) {
-          Object flag = AnnotatedMembers.named(edge.getClass(), spec.bidirectional()).read(edge);
-          if (!(flag instanceof Boolean booleanFlag))
-            throw new IllegalArgumentException("Graph edge bidirectional flag must be boolean");
-          twoWay = booleanFlag;
-        }
+        double weight = mapped.weight();
+        boolean twoWay = mapped.bidirectional();
         long id = new Edge<>(from, to, edge, weight).id();
         links.add(new GraphSnapshot.Edge(id, from.id(), to.id(), edge, weight));
         if (twoWay && direction.isDirected()) {
