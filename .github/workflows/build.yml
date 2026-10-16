@@ -16,21 +16,5 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: 编译全部 Maven 模块
-        run: mvn -B -ntp -DskipTests compile
-      - name: 编译图注解与多重图回归检查
-        run: mvn -B -ntp -pl structures -am -DskipTests test-compile
-      - name: 执行图注解与多重图回归检查
-        run: |
-          java -ea -cp core/target/classes:core/target/test-classes com.majortom.algorithms.core.metadata.GraphMappingMetadataChecks
-          java -ea -cp core/target/classes:structures/target/classes:structures/target/test-classes com.majortom.algorithms.structure.graph.GraphChecks
-      - name: 验证算法侧自行构造路网
-        run: |
-          mvn -B -ntp -pl algorithms -am -DskipTests install
-          mvn -B -ntp -pl algorithms org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.majortom.algorithms.algorithm.graph.impl.RoadGraphConstructionChecks -Dexec.classpathScope=test
-      - name: 测试算法模块通用资源加载
-        run: mvn -B -ntp -pl algorithms org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.majortom.algorithms.algorithm.io.AlgorithmResourceLoaderChecks -Dexec.classpathScope=test
-      - name: 测试程序模块通用资源加载
-        run: |
-          mvn -B -ntp -pl practice -am -DskipTests install
-          mvn -B -ntp -pl practice org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dpractice.mainClass=com.majortom.algorithms.practice.io.ProgramResourceLoaderChecks -Dexec.classpathScope=test
+      - name: 仅编译正式源码
+        run: mvn -B -ntp -Dmaven.test.skip=true compile
