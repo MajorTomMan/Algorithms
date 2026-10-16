@@ -173,7 +173,7 @@ public final class ValueAdapters {
    * handwritten parser per entity. Existing explicit adapters remain unchanged.
    */
   private static <T> void registerAnnotatedType(Class<T> type) {
-    register(new ValueAdapter<>() {
+    register(new ValueAdapter<T>() {
       @Override public Class<T> type() { return type; }
 
       @Override
