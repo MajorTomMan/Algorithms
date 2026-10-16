@@ -7,13 +7,15 @@ import java.util.List;
 
 /**
  * Static JSON and CSV resource access for algorithms.
- * Only deserializes classpath resources; algorithms construct their own structures.
+ * Only deserializes classpath resources; algorithms construct their own
+ * structures.
  */
 public final class AlgorithmResourceLoader {
-  private static final ResourceLoader LOADER =
-      new AbstractResourceLoader(AlgorithmResourceLoader.class) {};
+  private static final ResourceLoader LOADER = new AbstractResourceLoader(AlgorithmResourceLoader.class) {
+  };
 
-  private AlgorithmResourceLoader() {}
+  private AlgorithmResourceLoader() {
+  }
 
   /** Read JSON into the requested Java type. */
   public static <T> T load(String path, Class<T> type) {

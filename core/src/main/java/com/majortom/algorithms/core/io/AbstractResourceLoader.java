@@ -9,7 +9,9 @@ import java.util.Objects;
 /**
  * Shared classpath resource loader for JSON and header-based CSV files.
  *
- * <p>Module-specific static facades provide the classpath anchor. Deserialization only:
+ * <p>
+ * Module-specific static facades provide the classpath anchor. Deserialization
+ * only:
  * business-specific mapping and graph construction belong to the caller.
  */
 public abstract class AbstractResourceLoader implements ResourceLoader {

@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "ShortestPath",
+      "request": "launch",
+      "mainClass": "com.majortom.algorithms.algorithm.graph.impl.ShortestPath",
+      "projectName": "algorithms-library"
+    },
+    {
+      "type": "java",
       "name": "Algorithms App",
       "request": "launch",
       "mainClass": "com.majortom.algorithms.App",
