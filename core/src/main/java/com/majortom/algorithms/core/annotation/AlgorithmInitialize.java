@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * Optional preparation step invoked immediately before {@link AlgorithmEntry}.
  *
  * <p>A class annotated with {@link Algorithm} may declare at most one
- * {@code @AlgorithmInit} method. It must be public, non-static, return void,
+ * {@code @AlgorithmInitialize} method. It must be public, non-static, return void,
  * and accept the same Structure parameter (including generic arguments) as
  * its {@code @AlgorithmEntry} method.
  *
@@ -21,4 +21,4 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface AlgorithmInit {}
+public @interface AlgorithmInitialize {}

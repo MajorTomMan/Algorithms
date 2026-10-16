@@ -125,7 +125,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
         AlgorithmDescriptor descriptor = AlgorithmCatalog.graphDescriptor(runtimeValueType, algorithmId);
         GraphSnapshot<Object> inputSnapshot = selectedAlgorithmSnapshot();
         GraphStructure<Object> inputGraph = Graph.fromSnapshot(inputSnapshot);
-        // Algorithms with @AlgorithmInit can populate an initially empty input graph.
+        // Algorithms with @AlgorithmInitialize can populate an initially empty input graph.
         // The resulting GraphStructureEvent.Reset is replayed by GraphEventReducer.
         if (inputGraph.isEmpty() && !descriptor.hasInitializer()) {
             return;

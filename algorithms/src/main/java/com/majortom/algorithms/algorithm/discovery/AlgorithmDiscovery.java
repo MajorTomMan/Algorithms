@@ -2,7 +2,7 @@ package com.majortom.algorithms.algorithm.discovery;
 
 import com.majortom.algorithms.core.annotation.Algorithm;
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.annotation.AlgorithmInit;
+import com.majortom.algorithms.core.annotation.AlgorithmInitialize;
 import com.majortom.algorithms.core.annotation.Structure;
 import com.majortom.algorithms.core.metadata.ComponentNames;
 import com.majortom.algorithms.core.registry.AlgorithmDescriptor;
@@ -88,21 +88,21 @@ public final class AlgorithmDiscovery {
   /** An initializer is optional but must be unique; validate non-public declarations early. */
   private Method findInitializer(Class<?> implementation) {
     for (Method method : implementation.getDeclaredMethods()) {
-      if (method.isAnnotationPresent(AlgorithmInit.class)
+      if (method.isAnnotationPresent(AlgorithmInitialize.class)
           && !Modifier.isPublic(method.getModifiers())) {
         throw new RegistrationException(
-            "Algorithm @AlgorithmInit method must be public: " + method);
+            "Algorithm @AlgorithmInitialize method must be public: " + method);
       }
     }
 
     List<Method> initializers = new ArrayList<>();
     for (Method method : implementation.getMethods()) {
-      if (method.isAnnotationPresent(AlgorithmInit.class))
+      if (method.isAnnotationPresent(AlgorithmInitialize.class))
         initializers.add(method);
     }
     if (initializers.size() > 1) {
       throw new RegistrationException("Algorithm " + implementation.getName()
-          + " must expose at most one @AlgorithmInit method, found "
+          + " must expose at most one @AlgorithmInitialize method, found "
           + initializers.size());
     }
     return initializers.isEmpty() ? null : initializers.getFirst();

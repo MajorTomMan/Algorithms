@@ -1,7 +1,7 @@
 package com.majortom.algorithms.core.registry;
 
 import com.majortom.algorithms.core.annotation.AlgorithmEntry;
-import com.majortom.algorithms.core.annotation.AlgorithmInit;
+import com.majortom.algorithms.core.annotation.AlgorithmInitialize;
 import com.majortom.algorithms.core.annotation.Structure;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -111,10 +111,10 @@ public final class RegistrationValidator {
     if (initializer == null) return;
 
     Method entry = descriptor.entryPoint();
-    if (!initializer.isAnnotationPresent(AlgorithmInit.class))
-      throw new RegistrationException("Algorithm initializer missing @AlgorithmInit: " + initializer);
+    if (!initializer.isAnnotationPresent(AlgorithmInitialize.class))
+      throw new RegistrationException("Algorithm initializer missing @AlgorithmInitialize: " + initializer);
     if (initializer.equals(entry))
-      throw new RegistrationException("@AlgorithmInit and @AlgorithmEntry must mark different methods: "
+      throw new RegistrationException("@AlgorithmInitialize and @AlgorithmEntry must mark different methods: "
           + initializer);
     if (!Modifier.isPublic(initializer.getModifiers())
         || Modifier.isStatic(initializer.getModifiers())) {
