@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [dev]
 
+# 允许提交 src/main/resources 和 src/test/resources 下的数据。
+# CI/CD 不编译、不运行测试代码，只编译正式源码。
 jobs:
   compile:
     runs-on: ubuntu-latest
