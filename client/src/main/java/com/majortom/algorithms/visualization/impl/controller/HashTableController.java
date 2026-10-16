@@ -605,12 +605,12 @@ public final class HashTableController extends BaseModuleController<HashTableVie
 
   @Override
   public List<Class<?>> supportedKeyTypes() {
-    return ValueAdapters.supportedTypes();
+    return ValueAdapters.supportedTypesFor(HashTableStructure.class);
   }
 
   @Override
   public List<Class<?>> supportedHashValueTypes() {
-    return ValueAdapters.supportedTypes();
+    return ValueAdapters.supportedTypesFor(HashTableStructure.class);
   }
 
   @Override

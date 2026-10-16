@@ -1,5 +1,10 @@
 package com.majortom.algorithms.visualization.runtime.value;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.majortom.algorithms.core.annotation.ValueType;
+import com.majortom.algorithms.core.metadata.ValueMetadata;
+import com.majortom.algorithms.core.registry.FrameworkClassScanner;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,7 +20,12 @@ public final class ValueAdapters {
   // Explicit contract: the developer guarantees the entire reachable value graph is immutable.
   // A record containing a mutable List does NOT automatically meet this contract.
   private static final Set<Class<?>> DECLARED_IMMUTABLE = new HashSet<>();
-  static { registerBuiltIns(); }
+  private static final ObjectMapper ANNOTATED_JSON = new ObjectMapper();
+
+  static {
+    registerBuiltIns();
+    discoverAnnotatedValueTypes();
+  }
   private ValueAdapters() {}
 
   private record Entry<T>(ValueAdapter<T> adapter, SampleGenerator<T> generator,
@@ -41,6 +51,17 @@ public final class ValueAdapters {
 
   public static synchronized List<Class<?>> supportedTypes() { return List.copyOf(ENTRIES.keySet()); }
 
+  /**
+   * Filter registered types by their @ValueType structure contracts.
+   * Unannotated built-in types remain available to every structure.
+   */
+  public static synchronized List<Class<?>> supportedTypesFor(Class<?> structureContract) {
+    Objects.requireNonNull(structureContract, "structureContract");
+    return ENTRIES.keySet().stream()
+        .filter(type -> ValueMetadata.describe(type).supports(structureContract))
+        .toList();
+  }
+
   /** Display identifiers are disambiguated; type identity in the registry remains Class<?>. */
   public static synchronized List<String> supportedTypeNames() {
     return ENTRIES.keySet().stream().map(ValueAdapters::typeName).toList();
@@ -61,7 +82,8 @@ public final class ValueAdapters {
   }
 
   public static synchronized boolean canReplay(Class<?> type) {
-    return supports(type) && (isBuiltinScalar(type) || type.isEnum() || DECLARED_IMMUTABLE.contains(type));
+    return supports(type) && (isBuiltinScalar(type) || type.isEnum()
+        || DECLARED_IMMUTABLE.contains(type) || ValueMetadata.describe(type).immutable());
   }
 
   private static boolean isBuiltinScalar(Class<?> type) {
@@ -128,6 +150,50 @@ public final class ValueAdapters {
   /** Evaluate explicitly declared DETAIL fields only when an inspector requests them. */
   public static ValueProjection project(Object value) {
     return AnnotatedValueProjector.project(value);
+  }
+
+  /**
+   * Discover @ValueType entities in algorithm packages without explicit startup
+   * registration. This uses the same classpath scanning rules as AlgorithmDiscovery.
+   */
+  private static void discoverAnnotatedValueTypes() {
+    for (Class<?> type : new FrameworkClassScanner().scan("com.majortom.algorithms.algorithm")) {
+      if (!type.isAnnotationPresent(ValueType.class) || ENTRIES.containsKey(type))
+        continue;
+      if (type.isInterface() || java.lang.reflect.Modifier.isAbstract(type.getModifiers())) {
+        throw new IllegalArgumentException("@ValueType must be a concrete value class: "
+            + type.getName());
+      }
+      registerAnnotatedType(type);
+    }
+  }
+
+  /**
+   * JSON is a generic text representation of annotated values, not a
+   * handwritten parser per entity. Existing explicit adapters remain unchanged.
+   */
+  private static <T> void registerAnnotatedType(Class<T> type) {
+    register(new ValueAdapter<>() {
+      @Override public Class<T> type() { return type; }
+
+      @Override
+      public T parse(String text) {
+        try {
+          return ANNOTATED_JSON.readValue(Objects.requireNonNull(text, "text"), type);
+        } catch (JsonProcessingException exception) {
+          throw new IllegalArgumentException("Invalid JSON for " + type.getName(), exception);
+        }
+      }
+
+      @Override
+      public String format(T value) {
+        try {
+          return ANNOTATED_JSON.writeValueAsString(Objects.requireNonNull(value, "value"));
+        } catch (JsonProcessingException exception) {
+          throw new IllegalArgumentException("Cannot format " + type.getName(), exception);
+        }
+      }
+    });
   }
 
   private static void registerBuiltIns() {

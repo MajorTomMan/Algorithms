@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
+import com.majortom.algorithms.structure.array.ArrayStructure;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -658,7 +659,7 @@ public final class ArrayController extends BaseModuleController<ArrayViewState>
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
+        return ValueAdapters.supportedTypesFor(ArrayStructure.class);
     }
 
     @Override

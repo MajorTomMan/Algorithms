@@ -547,7 +547,8 @@ public final class LinearStructureController extends BaseModuleController<Linear
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
+        return ValueAdapters.supportedTypesFor(
+                kind == Kind.STACK ? StackStructure.class : QueueStructure.class);
     }
 
     @Override

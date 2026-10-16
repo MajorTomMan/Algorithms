@@ -2,6 +2,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.metadata.StructureModule;
+import com.majortom.algorithms.core.metadata.ValueMetadata;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
 import com.majortom.algorithms.core.registry.ComponentRegistry;
 import com.majortom.algorithms.visualization.international.I18N;
@@ -24,6 +25,8 @@ final class WorkbenchValueTypeCatalog {
         Class<?> resolved;
         try { resolved = ValueAdapters.requireType(type); }
         catch (IllegalArgumentException unsupported) { return type; }
+        var metadata = ValueMetadata.describe(resolved);
+        if (metadata.declared()) return metadata.name();
         String display = resolved.getSimpleName();
         if (!ValueAdapters.typeName(resolved).equals(display)) return resolved.getName();
         String key = "label.value_type." + display;
@@ -51,8 +54,10 @@ final class WorkbenchValueTypeCatalog {
     List<String> availableValueTypes(String moduleId) {
         return switch (moduleId) {
             case StructureIds.ARRAY, StructureIds.LINKED_LIST, StructureIds.STACK,
-                    StructureIds.QUEUE, StructureIds.GRAPH -> ValueAdapters.supportedTypeNames();
-            case StructureIds.TREE -> ValueAdapters.supportedTypes().stream()
+                    StructureIds.QUEUE, StructureIds.GRAPH -> compatibleTypes(moduleId).stream()
+                            .map(ValueAdapters::typeName)
+                            .toList();
+            case StructureIds.TREE -> compatibleTypes(moduleId).stream()
                     .filter(type -> Comparable.class.isAssignableFrom(type))
                     .map(ValueAdapters::typeName)
                     .toList();
@@ -61,10 +66,16 @@ final class WorkbenchValueTypeCatalog {
                     .filter(signature -> signature.arity() == 1)
                     .map(AlgorithmTypeSignature::primaryType)
                     .filter(ValueAdapters::supports)
+                    .filter(type -> ValueMetadata.describe(type)
+                            .supports(components.requireStructure(moduleId).contract()))
                     .map(ValueAdapters::typeName)
                     .distinct()
                     .toList();
         };
+    }
+
+    private List<Class<?>> compatibleTypes(String moduleId) {
+        return ValueAdapters.supportedTypesFor(components.requireStructure(moduleId).contract());
     }
 
     List<ValueTypeOption> valueTypeOptions(List<String> available) {
@@ -98,7 +109,9 @@ final class WorkbenchValueTypeCatalog {
             return false;
         }
         for (Class<?> type : signature.types()) {
-            if (!ValueAdapters.supports(type) || !ValueAdapters.canReplay(type)) {
+            if (!ValueAdapters.supports(type) || !ValueAdapters.canReplay(type)
+                    || !ValueMetadata.describe(type)
+                            .supports(components.requireStructure(moduleId).contract())) {
                 return false;
             }
         }

@@ -1075,7 +1075,7 @@ public final class GraphController extends BaseModuleController<GraphViewState>
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
+        return ValueAdapters.supportedTypesFor(GraphStructure.class);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.majortom.algorithms.visualization.impl.controller;
 import com.majortom.algorithms.core.statistics.MetricKeys;
 import com.majortom.algorithms.core.metadata.StructureIds;
 import com.majortom.algorithms.core.registry.AlgorithmTypeSignature;
+import com.majortom.algorithms.structure.tree.TreeStructure;
 import com.majortom.algorithms.visualization.render.runtime.RenderContext;
 import com.majortom.algorithms.visualization.render.fx.FxDispatch;
 
@@ -1040,7 +1041,7 @@ public final class TreeController extends BaseModuleController<TreeViewState>
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes().stream()
+        return ValueAdapters.supportedTypesFor(TreeStructure.class).stream()
                 .filter(type -> Comparable.class.isAssignableFrom(type)).toList();
     }
 

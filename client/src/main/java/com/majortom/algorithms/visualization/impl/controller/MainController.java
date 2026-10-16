@@ -952,7 +952,7 @@ public class MainController implements Initializable {
         return valueTypeCatalog.hasAlgorithmForAnySupportedType(id);
     }
     private List<String> algorithmAvailableValueTypes(String id) {
-        if (StructureIds.GRAPH.equals(id)) return ValueAdapters.supportedTypeNames();
+        if (StructureIds.GRAPH.equals(id)) return valueTypeCatalog.availableValueTypes(id);
         return valueTypeCatalog.algorithmAvailableValueTypes(id);
     }
     private List<String> availableValueTypes(String id) { return valueTypeCatalog.availableValueTypes(id); }

@@ -554,7 +554,7 @@ public final class LinkedListController extends BaseModuleController<LinkedListV
 
     @Override
     public List<Class<?>> supportedValueTypes() {
-        return ValueAdapters.supportedTypes();
+        return ValueAdapters.supportedTypesFor(LinkedStructure.class);
     }
 
     @Override

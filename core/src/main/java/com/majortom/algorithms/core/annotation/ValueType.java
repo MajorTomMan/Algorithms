@@ -1,6 +1,13 @@
 package com.majortom.algorithms.core.annotation;
 import java.lang.annotation.*;
-/** Marks a user value type and the structure contracts allowed to display it. */
+/**
+ * Declares a business value type for automatic Workbench discovery.
+ *
+ * <p>{@link #name()} is the visible display name (e.g. "城市"),
+ * while Java Class identity remains the registration key. {@link #value()}
+ * restricts the Structure contracts in which the type may be selected.
+ * Empty value() means all structures.
+ */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
