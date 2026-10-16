@@ -18,3 +18,9 @@ jobs:
           cache: maven
       - name: 编译全部 Maven 模块
         run: mvn -B -ntp -DskipTests compile
+      - name: 编译图注解与多重图回归检查
+        run: mvn -B -ntp -pl structures -am -DskipTests test-compile
+      - name: 执行图注解与多重图回归检查
+        run: |
+          java -ea -cp core/target/classes:core/target/test-classes com.majortom.algorithms.core.metadata.GraphMappingMetadataChecks
+          java -ea -cp core/target/classes:structures/target/classes:structures/target/test-classes com.majortom.algorithms.structure.graph.GraphChecks
