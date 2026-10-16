@@ -1,0 +1,7 @@
+{
+  "name": "示例程序输入",
+  "cases": [
+    {"id": "sum-1", "numbers": [1, 2, 3], "expected": 6},
+    {"id": "sum-2", "numbers": [8, 13], "expected": 21}
+  ]
+}

@@ -1,19 +1,17 @@
 package com.majortom.algorithms.algorithm.graph.io;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.majortom.algorithms.algorithm.io.AlgorithmResourceLoader;
 import com.majortom.algorithms.algorithm.graph.model.City;
 import com.majortom.algorithms.algorithm.graph.model.Region;
 import com.majortom.algorithms.algorithm.graph.model.Road;
+import com.majortom.algorithms.core.io.ResourceLoader;
 import com.majortom.algorithms.core.metadata.GraphDirection;
 import com.majortom.algorithms.structure.graph.Graph;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -23,26 +21,14 @@ import java.util.Set;
  * The loader resolves them to canonical City instances before invoking Graph.from(...).
  */
 public final class RoadNetworkLoader {
-  private static final ObjectMapper JSON = new ObjectMapper();
+  private static final ResourceLoader RESOURCES = new AlgorithmResourceLoader();
 
   private RoadNetworkLoader() {}
 
   /** Example: graph/regions/demo.json (relative to src/main/resources). */
   public static Region loadRegion(String resourcePath) {
-    Objects.requireNonNull(resourcePath, "resourcePath");
-    String path = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
-    if (path.isBlank())
-      throw new IllegalArgumentException("resource path cannot be blank");
-    try (InputStream input = RoadNetworkLoader.class.getClassLoader()
-        .getResourceAsStream(path)) {
-      if (input == null)
-        throw new IllegalArgumentException("Road-network resource not found: " + path);
-      RegionFile source = JSON.readValue(input, RegionFile.class);
-      return toRegion(source);
-    } catch (IOException exception) {
-      throw new IllegalArgumentException(
-          "Cannot read road-network resource: " + path, exception);
-    }
+    RegionFile source = RESOURCES.load(resourcePath, RegionFile.class);
+    return toRegion(source);
   }
 
   public static Graph<City> loadGraph(String resourcePath) {
