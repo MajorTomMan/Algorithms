@@ -21,7 +21,7 @@ public final class AlgorithmResourceLoaderChecks {
         "array class target and leading slash");
 
     expectInvalid(() -> AlgorithmResourceLoader.load("io/missing.json", City[].class), "resource not found");
-    expectInvalid(() -> AlgorithmResourceLoader.load("../graph/regions/demo.json", Object.class),
+    expectInvalid(() -> AlgorithmResourceLoader.load("../graph/regions/demo/region.json", Object.class),
         "Invalid classpath resource path");
     expectInvalid(() -> AlgorithmResourceLoader.load("io/invalid.json", Object.class),
         "Cannot read JSON resource");

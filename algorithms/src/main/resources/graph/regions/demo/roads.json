@@ -1,0 +1,51 @@
+[
+  {
+    "id": "sz-dg",
+    "from": "sz",
+    "to": "dg",
+    "distance": 72,
+    "bidirectional": true
+  },
+  {
+    "id": "dg-gz",
+    "from": "dg",
+    "to": "gz",
+    "distance": 65,
+    "bidirectional": true
+  },
+  {
+    "id": "g4",
+    "from": "sz",
+    "to": "gz",
+    "distance": 138,
+    "bidirectional": true
+  },
+  {
+    "id": "s3",
+    "from": "sz",
+    "to": "gz",
+    "distance": 144,
+    "bidirectional": false
+  },
+  {
+    "id": "gz-zh",
+    "from": "gz",
+    "to": "zh",
+    "distance": 115,
+    "bidirectional": true
+  },
+  {
+    "id": "sz-zh",
+    "from": "sz",
+    "to": "zh",
+    "distance": 165,
+    "bidirectional": true
+  },
+  {
+    "id": "sz-loop",
+    "from": "sz",
+    "to": "sz",
+    "distance": 4,
+    "bidirectional": false
+  }
+]

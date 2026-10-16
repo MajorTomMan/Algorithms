@@ -1,0 +1,5 @@
+{
+  "name": "珠三角示例路网（模拟数据）",
+  "cities": "graph/regions/demo/cities.json",
+  "roads": "graph/regions/demo/roads.json"
+}

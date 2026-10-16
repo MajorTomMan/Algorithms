@@ -1,0 +1,9 @@
+[
+  {
+    "id": "broken",
+    "from": "sz",
+    "to": "missing",
+    "distance": 10,
+    "bidirectional": false
+  }
+]

@@ -1,5 +1,6 @@
 package com.majortom.algorithms.algorithm.graph.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.majortom.algorithms.algorithm.graph.model.City;
 import com.majortom.algorithms.algorithm.graph.model.Region;
 import com.majortom.algorithms.algorithm.graph.model.Road;
@@ -14,23 +15,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Algorithm-side example: the generic resource loader only deserializes JSON;
- * this caller interprets city IDs, creates business entities and builds the graph.
- * No road-specific loader is involved.
+ * Algorithm-side example: read the region descriptor, cities and roads separately.
+ * The generic loader only parses JSON; this caller resolves city IDs into Road objects
+ * and constructs a directed multigraph.
  */
 public final class RoadGraphConstructionChecks {
-  public record RegionInput(String name, List<CityInput> cities, List<RoadInput> roads) {}
-  public record CityInput(String id, String name) {}
+  /** File manifest, NOT the domain model Region. */
+  public record RegionResources(String name, String cities, String roads) {}
+
+  /** Raw roads refer to city IDs; Road itself holds City objects. */
   public record RoadInput(String id, String from, String to, Double distance,
                           Boolean bidirectional) {}
 
   public static void main(String[] args) {
-    // This is ordinary JSON -> caller-specified type, without graph semantics.
-    RegionInput input = AlgorithmResourceLoader.load("graph/regions/demo.json", RegionInput.class);
-    check(input.cities().size() == 4 && input.roads().size() == 7, "JSON decoded");
+    // 1. Each JSON file maps to a caller-selected type.
+    RegionResources regionFile = AlgorithmResourceLoader.load(
+        "graph/regions/demo/region.json", RegionResources.class);
+    List<City> cities = AlgorithmResourceLoader.load(
+        regionFile.cities(), new TypeReference<List<City>>() {});
+    List<RoadInput> roads = AlgorithmResourceLoader.load(
+        regionFile.roads(), new TypeReference<List<RoadInput>>() {});
+    check(cities.size() == 4 && roads.size() == 7, "split JSON resources decoded");
+    check("深圳".equals(cities.getFirst().name()), "cities map directly to City");
 
-    // Road-network interpretation belongs to the algorithm, not the loader.
-    Graph<City> graph = buildRoadGraph(input);
+    // 2. Only the algorithm knows how ID references become Road and Graph objects.
+    Graph<City> graph = buildRoadGraph(regionFile, cities, roads);
     check(graph.isDirected() && graph.vertexCount() == 4, "directed graph");
     check(graph.edgeCount() == 12, "bidirectional roads become two directed edges");
 
@@ -45,35 +54,30 @@ public final class RoadGraphConstructionChecks {
     for (Edge<City> edge : graph.edges())
       check(edge.weight() == ((Road) edge.value()).distance(), "road distance weight");
 
-    // The generic loader accepts valid JSON even when roads refer to missing cities.
-    RegionInput invalid = AlgorithmResourceLoader.load(
-        "graph/regions/invalid-endpoint.json", RegionInput.class);
-    check(invalid.roads().size() == 1, "loading does not validate road topology");
-    expectInvalid(() -> buildRoadGraph(invalid), "Unknown city ID");
-    expectInvalid(
-        () -> AlgorithmResourceLoader.load("graph/regions/missing.json", RegionInput.class),
-        "resource not found");
+    // Valid JSON can still contain broken business references: validate during construction.
+    List<RoadInput> invalid = AlgorithmResourceLoader.load(
+        "graph/regions/invalid-roads.json", new TypeReference<List<RoadInput>>() {});
+    check(invalid.size() == 1, "generic loader does not validate road topology");
+    expectInvalid(() -> buildRoadGraph(regionFile, cities, invalid), "Unknown city ID");
+    expectInvalid(() -> AlgorithmResourceLoader.load(
+        "graph/regions/missing.json", RegionResources.class), "resource not found");
 
     System.out.println("RoadGraphConstructionChecks passed");
   }
 
-  /**
-   * Domain-specific graph construction; in a real algorithm this belongs to
-   * its input preparation, not to ResourceLoader.
-   */
-  private static Graph<City> buildRoadGraph(RegionInput input) {
-    if (input == null || input.cities() == null || input.roads() == null)
-      throw new IllegalArgumentException("Road network requires cities and roads");
+  private static Graph<City> buildRoadGraph(
+      RegionResources regionFile, List<City> cities, List<RoadInput> roadInputs) {
+    if (regionFile == null || cities == null || roadInputs == null)
+      throw new IllegalArgumentException("Road network requires a region, cities and roads");
 
     Map<String, City> citiesById = new LinkedHashMap<>();
-    for (CityInput data : input.cities()) {
-      City city = new City(data.id(), data.name());
+    for (City city : cities) {
       if (citiesById.putIfAbsent(city.id(), city) != null)
         throw new IllegalArgumentException("Duplicate city ID: " + city.id());
     }
 
     List<Road> roads = new ArrayList<>();
-    for (RoadInput data : input.roads()) {
+    for (RoadInput data : roadInputs) {
       City from = citiesById.get(data.from());
       City to = citiesById.get(data.to());
       if (from == null || to == null)
@@ -84,7 +88,7 @@ public final class RoadGraphConstructionChecks {
           Boolean.TRUE.equals(data.bidirectional())));
     }
 
-    Region region = new Region(input.name(), List.copyOf(citiesById.values()), roads);
+    Region region = new Region(regionFile.name(), List.copyOf(citiesById.values()), roads);
     return Graph.from(GraphDirection.DIRECTED, City.class, region);
   }
 
