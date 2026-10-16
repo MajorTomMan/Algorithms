@@ -1,0 +1,5 @@
+{
+  "name": "无效路网",
+  "cities": [{"id": "sz", "name": "深圳"}],
+  "roads": [{"id": "broken", "from": "sz", "to": "missing", "distance": 10}]
+}
