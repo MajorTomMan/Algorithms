@@ -3,6 +3,7 @@ package com.majortom.algorithms.algorithm.io;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.majortom.algorithms.algorithm.graph.model.City;
 import java.util.List;
+import java.util.Map;
 
 /** Standalone checks for classpath JSON loading with caller-selected types. */
 public final class AlgorithmResourceLoaderChecks {
@@ -24,6 +25,27 @@ public final class AlgorithmResourceLoaderChecks {
         "Invalid classpath resource path");
     expectInvalid(() -> AlgorithmResourceLoader.load("io/invalid.json", Object.class),
         "Cannot read JSON resource");
+    // CSV rows use the header to bind to the caller's own Java record.
+    List<City> csvCities = AlgorithmResourceLoader.loadCsv("io/cities.csv", City.class);
+    check(csvCities.size() == 3 && "测试,甲城".equals(csvCities.get(0).name()),
+        "CSV header mapping and quoted comma");
+    check("测试\"乙城".equals(csvCities.get(1).name()),
+        "CSV escaped double quote");
+    check("跨行\n城市".equals(csvCities.get(2).name()),
+        "CSV embedded newline");
+
+    List<Map<String, String>> csvMaps = AlgorithmResourceLoader.loadCsv(
+        "/io/cities.csv", new TypeReference<Map<String, String>>() {});
+    check(csvMaps.size() == 3 && "a".equals(csvMaps.getFirst().get("id")),
+        "CSV generic row type");
+
+    expectInvalid(() -> AlgorithmResourceLoader.loadCsv("io/missing.csv", City.class),
+        "CSV resource not found");
+    expectInvalid(() -> AlgorithmResourceLoader.loadCsv("../io/cities.csv", City.class),
+        "Invalid classpath resource path");
+    expectInvalid(() -> AlgorithmResourceLoader.loadCsv("io/invalid.csv", City.class),
+        "Cannot read CSV resource");
+
     System.out.println("AlgorithmResourceLoaderChecks passed");
   }
 

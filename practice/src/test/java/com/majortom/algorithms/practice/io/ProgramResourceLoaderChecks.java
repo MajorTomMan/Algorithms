@@ -8,6 +8,7 @@ import java.util.Map;
 public final class ProgramResourceLoaderChecks {
   public record Case(String id, List<Integer> numbers, int expected) {}
   public record CaseSet(String name, List<Case> cases) {}
+  public record CsvCase(String id, int left, int right, int expected) {}
 
   public static void main(String[] args) {
     CaseSet data = ProgramResourceLoader.load("program/demo.json", CaseSet.class);
@@ -28,6 +29,18 @@ public final class ProgramResourceLoaderChecks {
       rejected = expected.getMessage().contains("resource not found");
     }
     check(rejected, "missing program resource has a readable error");
+    List<CsvCase> csvCases = ProgramResourceLoader.loadCsv("program/cases.csv", CsvCase.class);
+    check(csvCases.size() == 2
+        && csvCases.getFirst().left() + csvCases.getFirst().right()
+            == csvCases.getFirst().expected()
+        && csvCases.getLast().expected() == 21,
+        "CSV records with numeric properties");
+
+    List<Map<String, String>> csvRows = ProgramResourceLoader.loadCsv(
+        "program/cases.csv", new TypeReference<Map<String, String>>() {});
+    check(csvRows.size() == 2 && "21".equals(csvRows.getLast().get("expected")),
+        "CSV generic map rows");
+
     System.out.println("ProgramResourceLoaderChecks passed");
   }
 
